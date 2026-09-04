@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -12,18 +13,24 @@ jobs:
 
     steps:
       - name: دریافت فایل‌های پروژه
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: نصب Node.js
-        uses: actions/setup-node@v4
+      - name: نصب Node.js 22
+        uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: '22'
 
-      - name: نصب Java
-        uses: actions/setup-java@v4
+      - name: نصب Java 21
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '21'
+          cache: gradle
+
+      - name: بررسی نسخه Java
+        run: |
+          java -version
+          javac -version
 
       - name: نصب وابستگی‌ها
         run: npm install
@@ -33,6 +40,9 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
 
+      - name: نصب Android برای Capacitor
+        run: npm install @capacitor/android
+
       - name: ایجاد پروژه Android
         run: npx cap add android
 
@@ -41,9 +51,9 @@ jobs:
 
       - name: ساخت APK آزمایشی
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew clean assembleDebug --stacktrace
 
-      - name: آماده‌کردن APK برای دانلود
+      - name: آماده‌سازی APK برای دانلود
         uses: actions/upload-artifact@v4
         with:
           name: Home-Calculator-APK
