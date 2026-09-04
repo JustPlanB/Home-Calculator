@@ -1,0 +1,50 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: دریافت فایل‌های پروژه
+        uses: actions/checkout@v4
+
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: نصب Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: نصب وابستگی‌ها
+        run: npm install
+
+      - name: ساخت پوشه www
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
+      - name: ایجاد پروژه Android
+        run: npx cap add android
+
+      - name: همگام‌سازی Capacitor
+        run: npx cap sync android
+
+      - name: ساخت APK آزمایشی
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: آماده‌کردن APK برای دانلود
+        uses: actions/upload-artifact@v4
+        with:
+          name: Home-Calculator-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
