@@ -36,7 +36,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     long ts=msgs[0].getTimestampMillis();
     for(SmsMessage m:msgs) if(m!=null && m.getMessageBody()!=null) body.append(m.getMessageBody()).append("\\n");
     String text=body.toString().trim();
-    if(!looksLikeBankTransaction(text)) return;
+    if(!looksLikeBankTransaction(text, sender)) return;
     SharedPreferences sp=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     try{
       JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
@@ -53,12 +53,28 @@ public class BankSmsReceiver extends BroadcastReceiver {
     }catch(Exception ignored){}
   }
 
-  static boolean looksLikeBankTransaction(String s){
-    String t=s.toLowerCase(java.util.Locale.ROOT);
-    boolean tx=t.contains("واریز")||t.contains("برداشت")||t.contains("کسر")||t.contains("خرید")||t.contains("انتقال")||t.contains("پرداخت")||t.contains("deposit")||t.contains("withdraw");
+  static String normFa(String s){
+    if(s==null) return "";
+    String r=s.toLowerCase(java.util.Locale.ROOT);
+    return r.replace('\u0643','\u06a9').replace('\u064a','\u06cc').replace('\u0649','\u06cc');
+  }
+
+  static boolean looksLikeBankTransaction(String s, String sender){
+    String t=normFa(s);
+    String sd=normFa(sender);
+
+    boolean tx=t.contains("واریز")||t.contains("برداشت")||t.contains("کسر")||t.contains("خرید")||t.contains("انتقال")||t.contains("پرداخت")||t.contains("تراکنش")||t.contains("وجه")||t.contains("اعلامیه")||t.contains("رمز")||t.contains("deposit")||t.contains("withdraw")||t.contains("transfer")||t.contains("purchase")||t.contains("payment");
+
+    boolean bankWord=t.contains("بانک")||t.contains("موجودی")||t.contains("مانده")||t.contains("کارت")||t.contains("حساب")||t.contains("atm")||t.contains("pos");
+
+    boolean bankName=t.contains("ملی")||t.contains("ملت")||t.contains("سپه")||t.contains("صادرات")||t.contains("تجارت")||t.contains("کشاورزی")||t.contains("مسکن")||t.contains("رفاه")||t.contains("پارسیان")||t.contains("پاسارگاد")||t.contains("سامان")||t.contains("سینا")||t.contains("شهر")||t.contains("انصار")||t.contains("کارافرین")||t.contains("گردشگری")||t.contains("پستبانک")||t.contains("مهر")||t.contains("رسالت")||t.contains("mellat")||t.contains("melli")||t.contains("sepah")||t.contains("saderat")||t.contains("tejarat")||t.contains("keshavarzi")||t.contains("maskan")||t.contains("refah")||t.contains("parsian")||t.contains("pasargad")||t.contains("saman");
+
+    boolean senderBank=sd.contains("بانک")||sd.contains("ملی")||sd.contains("ملت")||sd.contains("سپه")||sd.contains("صادرات")||sd.contains("تجارت")||sd.contains("کشاورزی")||sd.contains("مسکن")||sd.contains("رفاه")||sd.contains("پارسیان")||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
+
+    boolean bank=bankWord||bankName||senderBank;
     boolean money=t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
-    boolean bank=t.contains("بانک")||t.contains("موجودی")||t.contains("مانده")||t.contains("کارت")||t.contains("حساب")||t.contains("atm")||t.contains("pos")||t.contains("mellat")||t.contains("melli")||t.contains("tejarat")||t.contains("saderat");
-    return tx && money && bank;
+
+    return money && (tx || bank);
   }
 
   static void postNotification(Context c,String text){
