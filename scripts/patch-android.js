@@ -56,7 +56,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
   static boolean looksLikeBankTransaction(String s){
     String t=s.toLowerCase(java.util.Locale.ROOT);
     boolean tx=t.contains("واریز")||t.contains("برداشت")||t.contains("کسر")||t.contains("خرید")||t.contains("انتقال")||t.contains("پرداخت")||t.contains("deposit")||t.contains("withdraw");
-    boolean money=t.matches("(?s).*\\d[\\d,٬،. ]{2,}.*");
+    boolean money=t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
     boolean bank=t.contains("بانک")||t.contains("موجودی")||t.contains("مانده")||t.contains("کارت")||t.contains("حساب")||t.contains("atm")||t.contains("pos")||t.contains("mellat")||t.contains("melli")||t.contains("tejarat")||t.contains("saderat");
     return tx && money && bank;
   }
