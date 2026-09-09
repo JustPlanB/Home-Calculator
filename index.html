@@ -998,6 +998,17 @@
       margin: 0 0 10px;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif !important;
     }
+    #smsConfirmModal, #smsConfirmModal input, #smsConfirmModal select,
+    #smsConfirmModal button, #smsConfirmModal label {
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif !important;
+    }
+    .sms-confirm-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
 
     .modal-overlay {
       display: none;
@@ -3245,7 +3256,7 @@
       <label class="family-label">بخش مقصد</label>
       <div id="smsConfirmSectionWrap" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت در اپ</button>
+        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت</button>
         <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsConfirmModal()">انصراف</button>
       </div>
     </div>
@@ -8787,6 +8798,7 @@
 
     /* —— ثبت از پیامک بانکی —— */
     let pendingSmsEntry = null;
+    const pendingSmsEntries = [];
 
     const BANK_SMS_ALIASES = [
       { keys: ['ملی', 'bmi', 'bam'], name: 'بانک ملی' },
@@ -8847,6 +8859,20 @@
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
       pendingSmsEntry = null;
+      // یک پیامک در هر نوبت نمایش داده می‌شود تا اطلاعات فرم پیامک بعدی روی فرم فعلی ننشیند.
+      setTimeout(showNextPendingSmsEntry, 0);
+    }
+
+    function enqueueSmsEntry(parsed) {
+      if (!parsed) return;
+      pendingSmsEntries.push(parsed);
+      showNextPendingSmsEntry();
+    }
+
+    function showNextPendingSmsEntry() {
+      if (pendingSmsEntry || !pendingSmsEntries.length) return;
+      pendingSmsEntry = pendingSmsEntries.shift();
+      openSmsConfirmModal(pendingSmsEntry);
     }
     async function pasteSmsFromClipboard() {
       try {
@@ -8908,6 +8934,12 @@
           if (low.indexOf(String(a.keys[k]).toLowerCase()) >= 0) return a.name;
         }
       }
+      // برخی پیامک‌های ملت نام فرستنده یا نام بانک ندارند، اما قالب تاریخِ خاص
+      // «سال/ماه/روز-ساعت:دقیقه» را همراه با مبلغ، کارت و مانده دارند. این الگو
+      // فقط پس از رد تمام نام‌های بانک بررسی می‌شود تا بانک دیگری اشتباه تشخیص داده نشود.
+      const mellatFormat = /(?:مبلغ|amount)\s*[:：=\-]?\s*[+\-]?\s*[0-9][0-9,\.\s]*[\s\S]{0,140}(?:کارت|حساب)[\s\S]{0,140}(?:مانده|موجودی)[\s\S]{0,140}\b\d{1,2}\s*[\/-]\s*\d{1,2}\s*[\/-]\s*\d{1,2}\s*-\s*\d{1,2}:\d{2}\b/i;
+      const mellatFormatReversed = /\b\d{1,2}\s*[\/-]\s*\d{1,2}\s*[\/-]\s*\d{1,2}\s*-\s*\d{1,2}:\d{2}\b[\s\S]{0,140}(?:مبلغ|amount)[\s\S]{0,140}(?:کارت|حساب)[\s\S]{0,140}(?:مانده|موجودی)/i;
+      if (mellatFormat.test(low) || mellatFormatReversed.test(low)) return 'بانک ملت';
       if (selectedBankAccounts && selectedBankAccounts.length === 1) return selectedBankAccounts[0];
       return '';
     }
@@ -9092,18 +9124,8 @@
       } else if (!parsed.bank) {
         showToast('بانک تشخیص داده نشد — در صورت نیاز دستی مشخص کنید');
       }
-      pendingSmsEntry = parsed;
       closeSmsImportModal();
-      openSmsConfirmModal(parsed);
-      try {
-        if (parsed.amount && 'Notification' in window && Notification.permission === 'granted') {
-          const kind = parsed.type === 'income' ? 'واریز' : 'برداشت';
-          new Notification('تراکنش بانکی — ' + kind, {
-            body: (parsed.bank ? parsed.bank + ' · ' : '') + formatNum(parsed.amount) + ' تومان',
-            dir: 'rtl'
-          });
-        }
-      } catch (e) {}
+      enqueueSmsEntry(parsed);
     }
 
     function openSmsConfirmModal(parsed) {
@@ -9115,23 +9137,23 @@
       const meta = document.getElementById('smsConfirmMeta');
       if (meta) {
         meta.innerHTML =
-          '<div style="margin-bottom:8px;"><strong>نوع:</strong></div>' +
-          '<select id="smsConfirmType" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;">' +
+          '<label class="sms-confirm-label">نوع</label>' +
+          '<select id="smsConfirmType" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-weight:600;margin-bottom:10px;">' +
             '<option value="income"' + (parsed.type === 'income' ? ' selected' : '') + '>واریز (درآمد)</option>' +
             '<option value="expense"' + (parsed.type === 'expense' ? ' selected' : '') + '>برداشت (مخارج)</option>' +
           '</select>' +
-          '<div style="margin-bottom:4px;"><strong>مبلغ (تومان):</strong></div>' +
+          '<label class="sms-confirm-label">مبلغ (تومان)</label>' +
           '<input id="smsConfirmAmount" type="text" inputmode="numeric" value="' + (parsed.amount ? formatNum(parsed.amount) : '') + '" ' +
-            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
-          '<div style="margin-bottom:4px;"><strong>بانک:</strong></div>' +
-          '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<div style="margin-bottom:4px;"><strong>روز ماه:</strong></div>' +
+            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
+          '<label class="sms-confirm-label">بانک</label>' +
+          '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-weight:600;margin-bottom:10px;"></select>' +
+          '<label class="sms-confirm-label">روز ماه</label>' +
           '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" ' +
-            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
+            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-weight:600;direction:ltr;text-align:left;margin-bottom:4px;">';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          const opts = [''].concat(selectedBankAccounts && selectedBankAccounts.length ? selectedBankAccounts.slice() : ALL_IRAN_BANKS.slice(0, 12));
-          if (parsed.bank && opts.indexOf(parsed.bank) < 0) opts.unshift(parsed.bank);
+          const opts = [''].concat(ALL_IRAN_BANKS);
+          if (parsed.bank && opts.indexOf(parsed.bank) < 0) opts.splice(1, 0, parsed.bank);
           opts.forEach(n => {
             const o = document.createElement('option');
             o.value = n;
@@ -9154,40 +9176,34 @@
       const wrap = document.getElementById('smsConfirmSectionWrap');
       if (wrap) {
         wrap.innerHTML = '';
-        const tab = parsed.type === 'income' ? 'income' : 'expense';
-        const sections = (periodData[tab] && periodData[tab].sections) || [];
         const sel = document.createElement('select');
         sel.id = 'smsConfirmSectionSel';
-        sel.style.cssText = 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:0.95rem;';
-        const autoTitle = tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
-        const optAuto = document.createElement('option');
-        optAuto.value = '__auto__';
-        optAuto.textContent = 'خودکار: «' + autoTitle + '»';
-        sel.appendChild(optAuto);
-        sections.forEach(s => {
-          const o = document.createElement('option');
-          o.value = s.id;
-          o.textContent = (s.title || '').trim() || 'بدون نام';
-          sel.appendChild(o);
-        });
+        sel.style.cssText = 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-weight:600;font-size:0.95rem;';
+        function populateSectionOptions(tab) {
+          const sections = (periodData[tab] && periodData[tab].sections) || [];
+          sel.innerHTML = '';
+          if (!sections.length) {
+            const fallback = document.createElement('option');
+            fallback.value = '__auto__';
+            fallback.textContent = 'خودکار: «' + (tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی') + '»';
+            sel.appendChild(fallback);
+            return;
+          }
+          sections.forEach((s, index) => {
+            const o = document.createElement('option');
+            o.value = s.id;
+            o.textContent = (s.title || '').trim() || 'بدون نام';
+            o.selected = index === 0;
+            sel.appendChild(o);
+          });
+        }
+        populateSectionOptions(parsed.type === 'income' ? 'income' : 'expense');
         wrap.appendChild(sel);
         const typeSel = document.getElementById('smsConfirmType');
         if (typeSel) {
           typeSel.onchange = () => {
             const t = typeSel.value === 'income' ? 'income' : 'expense';
-            const secs = (periodData[t] && periodData[t].sections) || [];
-            sel.innerHTML = '';
-            const at = t === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
-            const oa = document.createElement('option');
-            oa.value = '__auto__';
-            oa.textContent = 'خودکار: «' + at + '»';
-            sel.appendChild(oa);
-            secs.forEach(s => {
-              const o = document.createElement('option');
-              o.value = s.id;
-              o.textContent = (s.title || '').trim() || 'بدون نام';
-              sel.appendChild(o);
-            });
+            populateSectionOptions(t);
           };
         }
       }
@@ -9268,21 +9284,7 @@
         return;
       }
       parsed.bank = matchSelectedBank(parsed.bank);
-      pendingSmsEntry = parsed;
-      openSmsConfirmModal(parsed);
-      try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const kind = parsed.type === 'income' ? 'واریز' : 'برداشت';
-          new Notification('تراکنش بانکی — ' + kind, {
-            body: (parsed.bank ? parsed.bank + ' · ' : '') + formatNum(parsed.amount) + ' تومان',
-            dir: 'rtl'
-          });
-        } else {
-          showToast('پیامک بانکی تشخیص داده شد');
-        }
-      } catch (e) {
-        showToast('پیامک بانکی تشخیص داده شد');
-      }
+      enqueueSmsEntry(parsed);
     };
 
     // --- اتصال به پلاگین بومی BankSms (Capacitor) برای خواندن خودکار پیامک‌های بانکی ---
@@ -9292,15 +9294,17 @@
         return C && C.Plugins && C.Plugins.BankSms;
       }
       let smsPollTimer = null;
+      let smsPollInFlight = false;
       function pollPendingSms() {
         const BankSms = getPlugin();
-        if (!BankSms) return;
+        if (!BankSms || smsPollInFlight) return;
+        smsPollInFlight = true;
         BankSms.getPendingSms().then(function (res) {
           if (res && res.has && res.text) {
             try { window.onBankSmsReceived(res.text); } catch (e) {}
             BankSms.markHandled().catch(function () {});
           }
-        }).catch(function () {});
+        }).catch(function () {}).finally(function () { smsPollInFlight = false; });
       }
       function startSmsBridge() {
         const BankSms = getPlugin();
