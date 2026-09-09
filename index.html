@@ -2963,7 +2963,7 @@
         </button>
         <button class="menu-item" onclick="openBankAccountsModal()">انتخاب حساب بانکی</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg></span>اقدامات</div>
-        <button class="menu-item" onclick="enableBankSmsAuto()">ثبت از پیامک بانکی</button>
+        <button class="menu-item" onclick="openSmsImportModal()">ثبت از پیامک بانکی</button>
         <button class="menu-item" onclick="askExport()">خروجی (اکسل / PDF)</button>
         <button class="menu-item" onclick="exportFullBackup()">پشتیبان‌گیری کامل</button>
         <button class="menu-item" onclick="triggerImportBackup()">بازیابی از پشتیبان</button>
@@ -3222,8 +3222,8 @@
     <div class="modal-box family-modal-box" style="max-width:360px;text-align:right;">
       <div class="modal-msg" style="margin-bottom:8px;">ثبت از پیامک بانکی</div>
       <p class="family-help" style="margin-bottom:10px;">
-        می‌توانید دریافت خودکار پیامک‌های بانکی را فعال کنید. در صورت دریافت پیامک تراکنش، مبلغ و نوع و بانک استخراج می‌شود و قبل از ثبت، فقط شرح تراکنش را از شما می‌پرسیم.
-        برای تست دستی هم می‌توانید متن پیامک را پایین بچسبانید.
+        پیامک واریز/برداشت بانک را کپی کنید و اینجا بچسبانید.
+        اپ وب به‌خاطر محدودیت سیستم‌عامل نمی‌تواند خودش پیامک‌ها را بخواند؛ بعد از چسباندن، مبلغ و بانک و نوع تراکنش استخراج می‌شود.
       </p>
       <textarea id="smsImportText" rows="6" placeholder="متن پیامک را اینجا بچسبانید…" dir="rtl"
         style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.9rem;line-height:1.7;resize:vertical;margin-bottom:10px;"></textarea>
@@ -8785,36 +8785,6 @@
       'موسسه اعتباری ملل', 'بانک قرض‌الحسنه مهر', 'بانک قرض‌الحسنه رسالت'
     ];
 
-    /* —— ثبت خودکار از پیامک بانکی (Capacitor Android) —— */
-    function getBankSmsNative(){
-      try{
-        const C=window.Capacitor, p=C&&C.Plugins;
-        return p&&p.BankSms ? p.BankSms : null;
-      }catch(e){ return null; }
-    }
-    async function enableBankSmsAuto(){
-      const n=getBankSmsNative();
-      if(!n){ openSmsImportModal(); return; }
-      try{
-        const r=await n.requestPermission();
-        if(r && r.granted){
-          showToast('دریافت خودکار پیامک‌های بانکی فعال شد');
-          setTimeout(checkPendingBankSms,250);
-        }else showToast('اجازه دسترسی به پیامک داده نشد');
-      }catch(e){ console.error(e); showToast('فعال‌سازی پیامک بانکی ناموفق بود'); }
-    }
-    async function checkPendingBankSms(){
-      const n=getBankSmsNative(); if(!n) return;
-      try{
-        const r=await n.getPendingSms();
-        if(r && r.has && r.text && !pendingSmsEntry) window.onBankSmsReceived(r.text);
-      }catch(e){ console.error(e); }
-    }
-    async function markPendingBankSmsHandled(){
-      const n=getBankSmsNative(); if(!n) return;
-      try{ await n.markHandled(); }catch(e){ console.error(e); }
-    }
-
     /* —— ثبت از پیامک بانکی —— */
     let pendingSmsEntry = null;
 
@@ -8876,9 +8846,7 @@
     function closeSmsConfirmModal() {
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
-      const wasNative = !!(pendingSmsEntry && pendingSmsEntry._fromNative);
       pendingSmsEntry = null;
-      if(wasNative) markPendingBankSmsHandled();
     }
     async function pasteSmsFromClipboard() {
       try {
@@ -8955,6 +8923,9 @@
       // علامت +/- کنار مبلغ ملاک تشخیص است (رایج در پیامک بانک ملی و مشابه آن)
       if (/[:：]\s*\+\s*[0-9]/.test(t)) return 'income';
       if (/[:：]\s*-\s*[0-9]/.test(t)) return 'expense';
+      // علامت +/- بعد از خود عدد (رایج در بانک ملی، مثل «انتقال:2,000,000+»)
+      if (/[0-9]\+(?:\s|$)/m.test(t)) return 'income';
+      if (/[0-9]-(?:\s|$)/m.test(t)) return 'expense';
       return 'expense';
     }
 
@@ -9297,7 +9268,6 @@
         return;
       }
       parsed.bank = matchSelectedBank(parsed.bank);
-      parsed._fromNative = true;
       pendingSmsEntry = parsed;
       openSmsConfirmModal(parsed);
       try {
@@ -9314,6 +9284,43 @@
         showToast('پیامک بانکی تشخیص داده شد');
       }
     };
+
+    // --- اتصال به پلاگین بومی BankSms (Capacitor) برای خواندن خودکار پیامک‌های بانکی ---
+    (function () {
+      function getPlugin() {
+        const C = window.Capacitor;
+        return C && C.Plugins && C.Plugins.BankSms;
+      }
+      let smsPollTimer = null;
+      function pollPendingSms() {
+        const BankSms = getPlugin();
+        if (!BankSms) return;
+        BankSms.getPendingSms().then(function (res) {
+          if (res && res.has && res.text) {
+            try { window.onBankSmsReceived(res.text); } catch (e) {}
+            BankSms.markHandled().catch(function () {});
+          }
+        }).catch(function () {});
+      }
+      function startSmsBridge() {
+        const BankSms = getPlugin();
+        if (!BankSms) return;
+        BankSms.requestPermission().finally(function () {
+          if (smsPollTimer) clearInterval(smsPollTimer);
+          smsPollTimer = setInterval(pollPendingSms, 4000);
+          pollPendingSms();
+        });
+      }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        startSmsBridge();
+      } else {
+        document.addEventListener('DOMContentLoaded', startSmsBridge);
+      }
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') pollPendingSms();
+      });
+    })();
+
     const BANK_NAME_MIGRATE = {
       'بانک ملی ایران': 'بانک ملی',
       'بانک صادرات ایران': 'بانک صادرات',
@@ -12472,17 +12479,6 @@
         if (currentTab === 'balance') renderBalanceTab();
       }).catch(() => {});
     }
-  
-    (function(){
-      let bankSmsChecked=false;
-      function bootBankSms(){
-        if(bankSmsChecked) return; bankSmsChecked=true;
-        setTimeout(checkPendingBankSms,700);
-      }
-      if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootBankSms,{once:true});
-      else bootBankSms();
-      document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') setTimeout(checkPendingBankSms,250); });
-    })();
-</script>
+  </script>
 </body>
 </html>
