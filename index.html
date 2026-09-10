@@ -9306,11 +9306,6 @@
       }
       m.classList.add('open');
       try { syncModalOverlaysToViewport(); } catch (e) {}
-      setTimeout(() => {
-        try { document.getElementById('smsConfirmDesc').focus({ preventScroll: true }); } catch (e) {
-          try { document.getElementById('smsConfirmDesc').focus(); } catch (e2) {}
-        }
-      }, 80);
     }
 
     function confirmSmsEntry() {
@@ -9365,6 +9360,11 @@
       const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
       if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
       else sec.rows.push(row);
+      sec.rows.sort((a, b) => {
+        const da = parseInt(a.day, 10) || 99;
+        const db = parseInt(b.day, 10) || 99;
+        return da - db;
+      });
       sec.collapsed = false;
 
       persistCurrent();
