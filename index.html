@@ -920,6 +920,8 @@
     }
     td.col-num.paid-cell .sms-top { color: var(--green-tx); }
     td.col-num.unpaid-cell .sms-top { color: var(--red-tx); }
+    td.col-num.paid-cell .status-num { color: var(--green-tx); }
+    td.col-num.unpaid-cell .status-num { color: var(--red-tx); }
     td.col-num.paid-cell .sms-bot,
     td.col-num.unpaid-cell .sms-bot {
       color: var(--muted);
@@ -1294,6 +1296,63 @@
       margin-bottom: 14px;
       border-radius: 10px;
     }
+    .btn-circle-plus {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      margin: 10px auto 6px;
+      border-radius: 50%;
+      border: 2px solid #2563eb;
+      background: transparent;
+      color: #2563eb;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-circle-plus svg {
+      width: 18px;
+      height: 18px;
+      stroke: #2563eb;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+    .btn-circle-plus:active { background: rgba(37,99,235,0.12); }
+    .btn-circle-plus.lg {
+      width: 48px;
+      height: 48px;
+      margin: 14px auto 16px;
+      border-width: 2.5px;
+    }
+    .btn-circle-plus.lg svg {
+      width: 24px;
+      height: 24px;
+      stroke-width: 2.5;
+    }
+    .add-row-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 4px 0 8px;
+    }
+    th.col-num .status-only {
+      display: block;
+      text-align: center;
+      font-weight: bold;
+    }
+    td.col-num .status-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-height: 28px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
     .btn-pay {
       background: #2563eb;
       color: #fff;
@@ -3065,7 +3124,7 @@
     <!-- درآمد -->
     <div id="panel-income" class="tab-panel">
       <div id="sections-income"></div>
-      <button class="btn btn-add-sec" onclick="addSection()">＋ بخش جدید</button>
+      <button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 
       <div class="summary-section" id="summaryBox-income">
         <div class="summary-header" id="summaryTitle-income">خلاصه درآمد</div>
@@ -3095,7 +3154,7 @@
     <!-- مخارج -->
     <div id="panel-expense" class="tab-panel">
       <div id="sections-expense"></div>
-      <button class="btn btn-add-sec" onclick="addSection()">＋ بخش جدید</button>
+      <button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 
       <div class="summary-section" id="summaryBox-expense">
         <div class="summary-header" id="summaryTitle-expense">خلاصه مخارج</div>
@@ -9712,7 +9771,6 @@
             '</div>' +
             (recurringSelectMode ? '' : (
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
-              '<button class="btn btn-add-row" type="button" data-ri="' + i + '" style="font-size:0.8rem;">افزودن</button>' +
               '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="font-size:1.1rem;">×</button>'
             )) +
             '</div>';
@@ -10116,18 +10174,6 @@
       };
       field('مبلغ ماهانه (تومان)', inpAmt);
 
-      const accOptionsRec = [{ value: '', label: 'نام حساب را انتخاب کنید' }].concat(selectedBankAccounts.map(n => ({ value: n, label: bankShortLabel(n) })));
-      const accSelRec = createDarkSelect({
-        options: accOptionsRec,
-        value: existing.account || ''
-      });
-      if (accSelRec._list) {
-        accSelRec._list.classList.add('bank-acc-list');
-        accSelRec._list.classList.add('bank-acc-list-lg');
-      }
-      accSelRec.style.marginBottom = '7px';
-      field('حساب بانکی', accSelRec);
-
       const inpDay = document.createElement('input');
       inpDay.type = 'text';
       inpDay.inputMode = 'numeric';
@@ -10142,6 +10188,29 @@
         inpDay.value = n ? toPersianDigits(n) : '';
       };
       field('روز ماه (۱–۳۱)', inpDay);
+
+      const incomeSecs = (periodData.income && periodData.income.sections) || [];
+      const secOptionsRec = [{ value: '', label: 'بخش را انتخاب کنید (اختیاری)' }].concat(
+        incomeSecs.map(s => ({ value: s.id, label: (s.title || '').trim() || 'بدون عنوان' }))
+      );
+      const secSelRec = createDarkSelect({
+        options: secOptionsRec,
+        value: ''
+      });
+      secSelRec.style.marginBottom = '7px';
+      field('بخش مقصد', secSelRec);
+
+      const accOptionsRec = [{ value: '', label: 'نام حساب را انتخاب کنید' }].concat(selectedBankAccounts.map(n => ({ value: n, label: bankShortLabel(n) })));
+      const accSelRec = createDarkSelect({
+        options: accOptionsRec,
+        value: existing.account || ''
+      });
+      if (accSelRec._list) {
+        accSelRec._list.classList.add('bank-acc-list');
+        accSelRec._list.classList.add('bank-acc-list-lg');
+      }
+      accSelRec.style.marginBottom = '7px';
+      field('حساب بانکی', accSelRec);
 
       const actions = document.createElement('div');
       actions.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
@@ -10162,6 +10231,7 @@
       const close = () => {
         try { sheet.remove(); } catch (e) {}
         try { if (accSelRec._list) accSelRec._list.remove(); } catch (e) {}
+        try { if (secSelRec._list) secSelRec._list.remove(); } catch (e) {}
         try { if (window.visualViewport) window.visualViewport.removeEventListener('resize', repositionSheet); } catch (e) {}
         const bd2 = document.getElementById('textInputBackdrop');
         if (bd2) {
@@ -10200,8 +10270,31 @@
           stampRowOwner(item);
           recurringIncomes.push(item);
         }
+        // اگر بخش مقصد انتخاب شده، به همان بخش هم اضافه کن
+        const destSecId = (secSelRec.getValue && secSelRec.getValue()) || '';
+        if (destSecId) {
+          const secs = (periodData.income && periodData.income.sections) || [];
+          const sec = secs.find(s => s.id === destSecId);
+          if (sec) {
+            if (sectionHasRecurringIncome(sec, item)) {
+              showToast('این درآمد قبلاً در این بخش اضافه شده است');
+            } else {
+              sec.rows.push({
+                day: item.day ? String(item.day) : '',
+                desc: item.name || '',
+                amount: Number(item.amount) || 0,
+                status: 'paid',
+                account: item.account || ''
+              });
+              sortSectionRows(sec.id);
+              showToast('به «' + (sec.title || 'بخش') + '» هم اضافه شد');
+            }
+          }
+        }
         saveRecurring();
         renderRecurringBar();
+        renderAll();
+        scheduleSave();
         close();
       };
       ok.onclick = save;
@@ -10513,14 +10606,6 @@
       titleWrap.appendChild(titleDisplay);
       titleWrap.appendChild(titleMenu);
 
-      const btnAdd = document.createElement('button');
-      btnAdd.className = 'btn btn-add-row';
-      btnAdd.textContent = '＋ ردیف';
-      btnAdd.onclick = (e) => {
-        e.stopPropagation();
-        openAddRowCountMenu(btnAdd, (n) => addRow(sec.id, n));
-      };
-
       const btnDel = document.createElement('button');
       btnDel.type = 'button';
       btnDel.className = 'btn btn-del-row';
@@ -10541,13 +10626,12 @@
       header.appendChild(dot);
       header.appendChild(titleWrap);
       header.appendChild(editTitleBtn);
-      header.appendChild(btnAdd);
       header.appendChild(btnDel);
 
       // کل هدر شامل اسم → جمع/باز
       header.onclick = (e) => {
         if (div._skipClick || div.classList.contains('dragging')) return;
-        if (e.target === btnAdd || e.target === btnDel || e.target === editTitleBtn) return;
+        if (e.target === btnDel || e.target === editTitleBtn) return;
         if (btnDel.contains(e.target) || editTitleBtn.contains(e.target)) return;
         if (titleMenu.contains(e.target)) return;
         sec.collapsed = !sec.collapsed;
@@ -10569,7 +10653,7 @@
       table.innerHTML = `
         <thead>
           <tr>
-            <th class="col-num"><div class="status-member-split"><div class="sms-top">وضع</div><div class="sms-bot">عضو</div></div></th>
+            <th class="col-num"><span class="status-only">وضع</span></th>
             <th class="col-day">روز</th>
             <th class="col-desc th-desc">شرح</th>
             <th class="col-amount">مبلغ</th>
@@ -10582,6 +10666,20 @@
       sec.rows.forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
       table.appendChild(tbody);
       body.appendChild(table);
+      const addRowWrap = document.createElement('div');
+      addRowWrap.className = 'add-row-wrap';
+      const btnAddRow = document.createElement('button');
+      btnAddRow.type = 'button';
+      btnAddRow.className = 'btn-circle-plus';
+      btnAddRow.title = 'ردیف جدید';
+      btnAddRow.setAttribute('aria-label', 'ردیف جدید');
+      btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+      btnAddRow.onclick = (e) => {
+        e.stopPropagation();
+        addRow(sec.id, 1);
+      };
+      addRowWrap.appendChild(btnAddRow);
+      body.appendChild(addRowWrap);
       const hint = document.createElement('div');
       hint.className = 'tap-hint';
       hint.textContent = 'برای ویرایش فیلد پرشده دو بار روی آن بزنید';
@@ -10596,23 +10694,10 @@
 
       const tdNum = document.createElement('td');
       tdNum.className = 'num col-num';
-      const split = document.createElement('div');
-      split.className = 'status-member-split';
       const numWrap = document.createElement('div');
-      numWrap.className = 'sms-top';
+      numWrap.className = 'status-num';
       numWrap.textContent = toPersianDigits(idx + 1);
-      split.appendChild(numWrap);
-      const author = document.createElement('div');
-      author.className = 'sms-bot row-author';
-      const authorName = resolveRecordAuthorName(row);
-      if ((row.createdByName || row.createdBy || '').trim() || authorName) {
-        author.title = row.createdByName || row.createdBy || authorName || '';
-        author.textContent = authorName || '';
-      } else {
-        author.textContent = '';
-      }
-      split.appendChild(author);
-      tdNum.appendChild(split);
+      tdNum.appendChild(numWrap);
 
       const tdDay = document.createElement('td');
       tdDay.className = 'col-day';
@@ -11354,10 +11439,10 @@
   <h4>تب درآمد</h4>
   <ul>
     <li>هر <strong>بخش</strong> یک دسته درآمد است (مثلاً حقوق، اجاره).</li>
-    <li>「＋ بخش جدید」 بخش می‌سازد؛ با آیکون مداد نام را عوض کنید.</li>
-    <li>「＋ ردیف」: روز ماه، شرح، مبلغ و حساب بانکی را پر کنید.</li>
+    <li>آیکون <strong>＋</strong> آبی (بزرگ) بخش جدید می‌سازد؛ با آیکون مداد نام را عوض کنید.</li>
+    <li>آیکون <strong>＋</strong> آبی زیر آخرین ردیف هر بخش، ردیف جدید می‌سازد؛ روز ماه، شرح، مبلغ و حساب بانکی را پر کنید.</li>
     <li>روی ستون <strong>وضع</strong> بزنید تا «دریافت‌شده / نشده» عوض شود.</li>
-    <li>جعبه <strong>درآمدهای ثابت</strong>: درآمد تکراری ماهانه؛ با «افزودن» به بخش دلخواه می‌رود. برای افزودن چندتایی: روی یک ردیف <strong>لمس طولانی</strong> کنید، بقیه را هم انتخاب کنید، سپس «افزودن به بخش» را بزنید.</li>
+    <li>جعبه <strong>درآمدهای ثابت</strong>: هنگام افزودن درآمد ثابت می‌توانید بخش مقصد را هم انتخاب کنید تا مستقیم اضافه شود. برای افزودن چندتایی: روی یک ردیف <strong>لمس طولانی</strong> کنید، بقیه را هم انتخاب کنید، سپس «افزودن به بخش» را بزنید.</li>
     <li>برای ویرایش سلول پرشده <strong>دو بار</strong> روی آن بزنید.</li>
   </ul>
 </div>
