@@ -627,7 +627,7 @@
       border-radius: 7px;
       background: transparent;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
-      font-size: 0.95rem;
+      font-size: 1.12rem;
       font-weight: 700;
       color: #8e8e93;
       cursor: pointer;
@@ -637,7 +637,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 34px;
+      min-height: 38px;
       line-height: 1.15;
       letter-spacing: -0.01em;
       white-space: nowrap;
@@ -1334,30 +1334,44 @@
       height: 22px;
       stroke-width: 3.8;
     }
-    /* باکس تیره دور آیکون بخش جدید */
+    /* باکس تیره دور آیکون بخش جدید — کمی بزرگ‌تر از خود دایره */
     .add-sec-box {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      margin: 0 0 14px;
-      padding: 12px 10px;
-      border-radius: 12px;
+      width: auto;
+      margin: 8px auto 14px;
+      padding: 8px;
+      border-radius: 14px;
       background: var(--bg3);
       border: 1px solid var(--border);
       box-sizing: border-box;
+    }
+    .add-sec-box {
+      /* وسط‌چین در عرض کامل */
+      display: flex;
+      width: fit-content;
+      max-width: 100%;
+    }
+    /* والد را وسط کن */
+    #panel-income > .add-sec-box,
+    #panel-expense > .add-sec-box,
+    #panel-install > .add-sec-box,
+    #panel-ledger > .add-sec-box {
+      margin-left: auto;
+      margin-right: auto;
     }
     [data-theme="light"] .add-sec-box {
       background: #e8e8ed;
       border-color: #d0d0d8;
     }
-    /* بعلاوه ردیف: گوشه پایین چپ (زیر ضربدر) */
+    /* بعلاوه ردیف: گوشه پایین چپ، فاصله بیشتر از ردیف آخر */
     .add-row-wrap {
       display: flex;
       justify-content: flex-start;
       direction: ltr;
-      padding: 2px 6px 8px;
-      margin: 0;
+      padding: 14px 6px 12px;
+      margin: 4px 0 0;
     }
     th.col-num .status-only {
       display: block;
@@ -1492,23 +1506,26 @@
       display: block;
       line-height: 28px !important;
       text-align: right !important;
-      background: var(--bg3) !important;
+      background: transparent !important;
       border: 1px solid transparent !important;
-      border-radius: 4px !important;
+      border-radius: 5px !important;
       color: var(--text) !important;
       box-shadow: none !important;
+    }
+    .col-acc .dark-select-btn:hover,
+    .col-acc .dark-select-btn:focus {
+      background: var(--bg3) !important;
     }
     .col-acc .dark-select-btn::after {
       display: none !important;
       content: none !important;
     }
     .col-acc .dark-select-btn.is-empty-acc {
-      /* یکسان با بقیه سلول‌ها */
       height: 28px !important;
       min-height: 28px !important;
       max-height: 28px !important;
       line-height: 28px !important;
-      background: var(--bg3) !important;
+      background: transparent !important;
       border: 1px solid transparent !important;
       opacity: 1;
       margin: 0 !important;
@@ -2341,6 +2358,24 @@
       background: #fff !important;
       color: #1d1d1f !important;
     }
+    /* سلول حساب در ردیف‌ها — همیشه مثل بقیه سلول‌ها */
+    td.col-acc .dark-select-btn,
+    td.col-acc .dark-select-btn.is-empty-acc,
+    [data-theme="light"] td.col-acc .dark-select-btn,
+    [data-theme="light"] td.col-acc .dark-select-btn.is-empty-acc {
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      color: var(--text) !important;
+      -webkit-text-fill-color: var(--text) !important;
+      font-weight: normal !important;
+      box-shadow: none !important;
+    }
+    td.col-acc .dark-select-btn:hover,
+    td.col-acc .dark-select-btn:focus,
+    [data-theme="light"] td.col-acc .dark-select-btn:hover,
+    [data-theme="light"] td.col-acc .dark-select-btn:focus {
+      background: var(--bg3) !important;
+    }
     .dark-select-btn::after {
       content: '';
       position: absolute;
@@ -3091,14 +3126,10 @@
       <div class="menu-dropdown" id="menuDropdown">
         <div class="menu-app-title">حساب‌کتاب</div>
         <div class="menu-scroll">
-        <div class="menu-section-label">همگام‌سازی</div>
-        <button class="menu-item" onclick="pullRemote(true)">دریافت از ابر</button>
-        <button class="menu-item" onclick="pushRemote(true)">ارسال به ابر</button>
-        <button class="menu-item" onclick="openFamilyModal()">حساب مشترک / کد اشتراک</button>
         <div class="menu-section-label">بخش‌ها</div>
-        <button class="menu-item" onclick="openRecurringFromMenu()">درآمدهای ثابت</button>
-        <button class="menu-item" onclick="switchTabFromMenu('install')">اقساط</button>
-        <button class="menu-item" onclick="switchTabFromMenu('ledger')">بده‌بستان</button>
+        <button type="button" class="menu-item" onclick="event.stopPropagation(); openRecurringFromMenu();">درآمدهای ثابت</button>
+        <button type="button" class="menu-item" onclick="event.stopPropagation(); switchTabFromMenu('install');">اقساط</button>
+        <button type="button" class="menu-item" onclick="event.stopPropagation(); switchTabFromMenu('ledger');">بده‌بستان</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>تنظیمات</div>
         <button type="button" class="menu-theme-row" onclick="event.stopPropagation(); toggleTheme();">
           <span>حالت شب / روز</span>
@@ -3261,6 +3292,11 @@
           <tbody id="day-detail-body"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- درآمدهای ثابت (فقط از منو) -->
+    <div id="panel-recurring" class="tab-panel">
+      <div id="recurringPanelInner"></div>
     </div>
 
     <!-- اقساط -->
@@ -3828,12 +3864,17 @@
     let supabaseTokenExp = 0;
     let syncQueue = []; // صف تغییرات آفلاین برای همگام با ابر
 
-    function getSections() { return periodData[currentTab === 'install' ? 'expense' : currentTab].sections; }
+    function dataTabKey() {
+      if (currentTab === 'install') return 'expense';
+      if (currentTab === 'income' || currentTab === 'expense') return currentTab;
+      return 'income';
+    }
+    function getSections() { return periodData[dataTabKey()].sections; }
     function setSections(s) {
       if (currentTab === 'expense' || currentTab === 'income') periodData[currentTab].sections = s;
     }
-    function getNextId() { return periodData[currentTab].nextId; }
-    function setNextId(n) { periodData[currentTab].nextId = n; }
+    function getNextId() { return periodData[dataTabKey()].nextId; }
+    function setNextId(n) { periodData[dataTabKey()].nextId = n; }
 
     const faDigits = '۰۱۲۳۴۵۶۷۸۹';
     const enDigits = '0123456789';
@@ -4114,51 +4155,61 @@
     if (_tibd) _tibd.addEventListener('click', () => closeTextInputModal());
 
     /* —— Tabs —— */
-    function switchTab(tab) {
-      if (tab === currentTab) return;
-      persistCurrent();
+    function activatePanel(tab) {
+      const all = ['income', 'expense', 'balance', 'install', 'ledger', 'recurring'];
+      all.forEach(t => {
+        const p = document.getElementById('panel-' + t);
+        if (p) p.classList.toggle('active', t === tab);
+      });
+    }
+    function switchTab(tab, force) {
+      if (!force && tab === currentTab) return;
+      try { persistCurrent(); } catch (e) {}
       const prevY = window.scrollY || 0;
       currentTab = tab;
+      activatePanel(tab);
       updateTabUI();
       renderAll();
-      saveArchive();
-      // جلوگیری از پرش: موقعیت اسکرول را حفظ کن؛ اگر از صفحه خارج شد به زیر هدر ثابت برگرد
+      try { saveArchive(); } catch (e) {}
       requestAnimationFrame(() => {
-        const chrome = document.getElementById('stickyChrome');
-        const minY = 0;
         const maxY = Math.max(0, (document.documentElement.scrollHeight || 0) - window.innerHeight);
         let y = Math.min(prevY, maxY);
-        if (y < minY) y = minY;
+        if (y < 0) y = 0;
+        // تب‌های منو از بالا شروع شوند
+        if (tab === 'install' || tab === 'ledger' || tab === 'recurring') y = 0;
         window.scrollTo(0, y);
         moveTabIndicator();
       });
     }
     function switchTabFromMenu(tab) {
       try { closeSideMenu(); } catch (e) {}
-      switchTab(tab);
-      // برای اقساط/بده‌بستان اسکرول بالا
-      if (tab === 'install' || tab === 'ledger') {
-        setTimeout(() => { try { window.scrollTo(0, 0); } catch (e) {} }, 50);
-      }
+      setTimeout(() => {
+        try {
+          switchTab(tab, true);
+          activatePanel(tab);
+          window.scrollTo(0, 0);
+        } catch (err) {
+          console.error(err);
+        }
+      }, 30);
     }
     function openRecurringFromMenu() {
       try { closeSideMenu(); } catch (e) {}
-      const go = () => {
-        recurringCollapsed = false;
-        if (currentTab !== 'income') switchTab('income');
-        else renderRecurringBar();
-        setTimeout(() => {
-          try {
-            const box = document.getElementById('recurringBox');
-            if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } catch (e) {}
-        }, 120);
-      };
-      go();
+      setTimeout(() => {
+        try {
+          recurringCollapsed = false;
+          switchTab('recurring', true);
+          activatePanel('recurring');
+          renderRecurringBar();
+          window.scrollTo(0, 0);
+        } catch (err) {
+          console.error(err);
+        }
+      }, 30);
     }
 
     const TAB_ORDER = ['income', 'expense', 'balance'];
-    const ALL_TABS = ['income', 'expense', 'balance', 'install', 'ledger'];
+    const ALL_TABS = ['income', 'expense', 'balance', 'install', 'ledger', 'recurring'];
     const TAB_IDS = { income: 'tabIncome', expense: 'tabExpense', balance: 'tabBalance', install: 'tabInstall', ledger: 'tabLedger' };
     function tabIndexOf(tab) {
       const i = TAB_ORDER.indexOf(tab);
@@ -4167,22 +4218,15 @@
     function setTrackAtIndex(indexFloat, dragging) {
       // فقط نمایش یک تب — بدون سُر خوردن محتوا
       if (dragging) return;
-      // اگر تب از منو آمده (اقساط/بده‌بستان) همان را فعال نگه دار
-      const activeTab = (typeof currentTab === 'string' && ALL_TABS.indexOf(currentTab) >= 0) ? currentTab : null;
-      if (activeTab === 'install' || activeTab === 'ledger') {
-        ALL_TABS.forEach(t => {
-          const p = document.getElementById('panel-' + t);
-          if (p) p.classList.toggle('active', t === activeTab);
-        });
+      // تب‌های منو (اقساط / بده‌بستان / درآمد ثابت)
+      if (currentTab === 'install' || currentTab === 'ledger' || currentTab === 'recurring') {
+        activatePanel(currentTab);
         return;
       }
       const n = TAB_ORDER.length;
       const idx = Math.max(0, Math.min(n - 1, Math.round(indexFloat)));
       const tab = TAB_ORDER[idx];
-      ALL_TABS.forEach(t => {
-        const p = document.getElementById('panel-' + t);
-        if (p) p.classList.toggle('active', t === tab);
-      });
+      activatePanel(tab);
     }
     function setIndicatorAtIndex(indexFloat, dragging) {
       const bar = document.getElementById('tabsBar');
@@ -4253,14 +4297,26 @@
       setIndicatorAtIndex(tabIndexOf(currentTab), false);
     }
     function updateTabUI() {
-      document.getElementById('tabExpense').classList.toggle('active', currentTab === 'expense');
-      document.getElementById('tabIncome').classList.toggle('active', currentTab === 'income');
-      document.getElementById('tabInstall').classList.toggle('active', currentTab === 'install');
-      const tabBal = document.getElementById('tabBalance');
-      if (tabBal) tabBal.classList.toggle('active', currentTab === 'balance');
-      const tabLed = document.getElementById('tabLedger');
-      if (tabLed) tabLed.classList.toggle('active', currentTab === 'ledger');
-      setTrackAtIndex(tabIndexOf(currentTab), false);
+      const te = document.getElementById('tabExpense');
+      const ti = document.getElementById('tabIncome');
+      const tb = document.getElementById('tabBalance');
+      const tins = document.getElementById('tabInstall');
+      const tled = document.getElementById('tabLedger');
+      if (te) te.classList.toggle('active', currentTab === 'expense');
+      if (ti) ti.classList.toggle('active', currentTab === 'income');
+      if (tb) tb.classList.toggle('active', currentTab === 'balance');
+      if (tins) tins.classList.toggle('active', currentTab === 'install');
+      if (tled) tled.classList.toggle('active', currentTab === 'ledger');
+      // برای تب‌های اصلی ایندیکاتور؛ برای منو فقط پنل
+      if (currentTab === 'install' || currentTab === 'ledger' || currentTab === 'recurring') {
+        activatePanel(currentTab);
+        // هیچ تب اصلی‌ای active نماند
+        if (te) te.classList.remove('active', 'near');
+        if (ti) ti.classList.remove('active', 'near');
+        if (tb) tb.classList.remove('active', 'near');
+      } else {
+        setTrackAtIndex(tabIndexOf(currentTab), false);
+      }
       requestAnimationFrame(() => requestAnimationFrame(moveTabIndicator));
     }
 
@@ -8898,7 +8954,7 @@
         else if (t === 'balance') renderBalanceTab();
         else if (t === 'ledger') renderLedgerTab();
       });
-      if (currentTab === 'income') renderRecurringBar();
+      if (currentTab === 'recurring') renderRecurringBar();
       else {
         const rb = document.getElementById('recurringBox');
         if (rb) rb.remove();
@@ -8931,24 +8987,21 @@
         wraps.forEach(w => { if (w._list === el) used = true; });
         if (!used) el.remove();
       });
+      // درآمد ثابت دیگر روی تب درآمد نیست — فقط پنل جدا
+      const rbOld = document.getElementById('recurringBox');
+      if (rbOld && currentTab !== 'recurring') {
+        try { rbOld.remove(); } catch (e) {}
+      }
       if (currentTab === 'install') {
         renderPlans();
       } else if (currentTab === 'balance') {
-        const rb = document.getElementById('recurringBox');
-        if (rb) rb.remove();
         renderBalanceTab();
       } else if (currentTab === 'ledger') {
-        const rb = document.getElementById('recurringBox');
-        if (rb) rb.remove();
         renderLedgerTab();
-      } else {
-        if (currentTab === 'income') renderRecurringBar();
-        else {
-          const rb = document.getElementById('recurringBox');
-          if (rb) rb.remove();
-        }
+      } else if (currentTab === 'recurring') {
+        renderRecurringBar();
       }
-      setTrackAtIndex(tabIndexOf(currentTab), false);
+      activatePanel(currentTab);
       checkInstallReminders();
       moveTabIndicator();
     }
@@ -9783,18 +9836,20 @@
 
     function renderRecurringBar() {
       let box = document.getElementById('recurringBox');
-      if (currentTab !== 'income') {
+      if (currentTab !== 'recurring') {
         if (box) box.remove();
         clearRecurringSelection();
         return;
       }
-      const container = document.getElementById('sections-income');
+      const container = document.getElementById('recurringPanelInner') || document.getElementById('panel-recurring');
       if (!container) return;
       if (!box) {
         box = document.createElement('div');
         box.id = 'recurringBox';
         box.className = 'recurring-box';
-        container.parentNode.insertBefore(box, container);
+        container.appendChild(box);
+      } else if (box.parentNode !== container) {
+        container.appendChild(box);
       }
       const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
       let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (recurringCollapsed ? '0' : '10px') + ';cursor:pointer;" id="recurringHead">' +
