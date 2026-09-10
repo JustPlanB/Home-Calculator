@@ -3431,7 +3431,7 @@
 
   <div class="modal-overlay" id="bankAccountsModal">
     <div class="modal-box family-modal-box" style="max-width:340px; text-align:right;">
-      <div class="modal-msg" style="margin-bottom:12px;">حساب‌(ها)</div>
+      <div class="modal-msg" style="margin-bottom:12px;">حساب‌های من</div>
       <p class="family-help">
         بانک‌هایی که حساب دارید را تیک بزنید تا در فهرست انتخاب حساب برای درآمد و مخارج نمایش داده شوند.
       </p>
@@ -7687,24 +7687,109 @@
     }
 
     /* ===== PDF آفلاین: رندر محلی HTML به تصویر و ساخت PDF بدون اینترنت ===== */
-    function pdfByteString(bytes){ let out=''; const chunk=0x8000; for(let i=0;i<bytes.length;i+=chunk) out+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length))); return out; }
-    function pdfConcat(a){ let n=0;a.forEach(x=>n+=x.length);let o=new Uint8Array(n),p=0;a.forEach(x=>{o.set(x,p);p+=x.length});return o; }
-    function buildSimpleImagePdf(pageImages,pageW,pageH){
-      const objs=[]; const pages=[]; let num=3;
-      pageImages.forEach((im,i)=>{ const imgObj=num++, contObj=num++, pageObj=num++; pages.push({imgObj,contObj,pageObj,w:im.w,h:im.h,jpg:im.jpg}); });
-      const kids=pages.map(p=>p.pageObj+' 0 R').join(' ');
-      objs[1]='<< /Type /Catalog /Pages 2 0 R >>';
-      objs[2]='<< /Type /Pages /Count '+pages.length+' /Kids ['+kids+'] >>';
-      pages.forEach(p=>{ objs[p.imgObj]='<< /Type /XObject /Subtype /Image /Width '+p.w+' /Height '+p.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+p.jpg.length+' >>\nSTREAM\n'+pdfByteString(p.jpg)+'\nENDSTREAM';
-        const sx=(pageW-24)/p.w, sy=(pageH-24)/p.h, sc=Math.min(sx,sy), dw=p.w*sc, dh=p.h*sc, x=(pageW-dw)/2, y=(pageH-dh)/2;
-        const content='q\n'+dw.toFixed(2)+' 0 0 '+dh.toFixed(2)+' '+x.toFixed(2)+' '+y.toFixed(2)+' cm\n/Im'+p.imgObj+' Do\nQ\n';
-        const cb=new TextEncoder().encode(content); objs[p.contObj]='<< /Length '+cb.length+' >>\nSTREAM\n'+content+'ENDSTREAM';
-        objs[p.pageObj]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /XObject << /Im'+p.imgObj+' '+p.imgObj+' 0 R >> >> /Contents '+p.contObj+' 0 R >>';
-      });
-      const chunks=[new TextEncoder().encode('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n')]; const offsets=[0]; let pos=chunks[0].length;
-      for(let i=1;i<objs.length;i++){ if(!objs[i])continue; offsets[i]=pos; const b=new TextEncoder().encode(i+' 0 obj\n'); chunks.push(b);pos+=b.length; const ob=objs[i]; if(ob.includes('STREAM\n') && ob.includes('/Filter /DCTDecode')){ const m=ob.indexOf('\nSTREAM\n'); const head=ob.slice(0,m+8), tail='\nENDSTREAM'; const hb=new TextEncoder().encode(head); chunks.push(hb);pos+=hb.length; const jpg=pages.find(p=>ob===objs[p.imgObj])?.jpg||new Uint8Array(); chunks.push(jpg);pos+=jpg.length; const tb=new TextEncoder().encode(tail);chunks.push(tb);pos+=tb.length; } else { const b2=new TextEncoder().encode(ob+'\nendobj\n'); chunks.push(b2);pos+=b2.length; } if(ob.includes('/Filter /DCTDecode')){ const tailb=new TextEncoder().encode('\nendobj\n');chunks.push(tailb);pos+=tailb.length; } }
-      const xref=pos; let xr='xref\n0 '+objs.length+'\n0000000000 65535 f \n'; for(let i=1;i<objs.length;i++) xr+=(String(offsets[i]||0).padStart(10,'0'))+' 00000 n \n'; xr+='trailer\n<< /Size '+objs.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF'; chunks.push(new TextEncoder().encode(xr)); return new Blob([pdfConcat(chunks)],{type:'application/pdf'});
+    function pdfEnc(str) {
+      const out = new Uint8Array(str.length);
+      for (let i = 0; i < str.length; i++) out[i] = str.charCodeAt(i) & 0xff;
+      return out;
     }
+    function pdfConcat(arrs) {
+      let n = 0;
+      arrs.forEach(a => { n += a.length; });
+      const o = new Uint8Array(n);
+      let p = 0;
+      arrs.forEach(a => { o.set(a, p); p += a.length; });
+      return o;
+    }
+    /** ساخت PDF معتبر از تصاویر JPEG (قابل ذخیره در اندروید/وب) */
+    function buildSimpleImagePdf(pageImages, pageW, pageH) {
+      if (!pageImages || !pageImages.length) {
+        throw new Error('no pages');
+      }
+      const enc = pdfEnc;
+      const parts = [];
+      const offsets = [0];
+      let pos = 0;
+      function addBytes(u8) {
+        parts.push(u8);
+        pos += u8.length;
+      }
+      function addStr(s) { addBytes(enc(s)); }
+      function startObj(id) {
+        offsets[id] = pos;
+        addStr(id + ' 0 obj\n');
+      }
+      function endObj() { addStr('endobj\n'); }
+
+      addStr('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
+
+      // جمع‌آوری اشیاء: 1=Catalog, 2=Pages, سپس برای هر صفحه: Image, Content, Page
+      const pageMeta = [];
+      let nextId = 3;
+      pageImages.forEach((im) => {
+        const imgId = nextId++;
+        const contId = nextId++;
+        const pageId = nextId++;
+        pageMeta.push({ imgId, contId, pageId, w: im.w, h: im.h, jpg: im.jpg });
+      });
+
+      // 1 Catalog
+      startObj(1);
+      addStr('<< /Type /Catalog /Pages 2 0 R >>\n');
+      endObj();
+
+      // 2 Pages
+      const kids = pageMeta.map(p => p.pageId + ' 0 R').join(' ');
+      startObj(2);
+      addStr('<< /Type /Pages /Count ' + pageMeta.length + ' /Kids [' + kids + '] >>\n');
+      endObj();
+
+      pageMeta.forEach((p) => {
+        const jpg = p.jpg || new Uint8Array(0);
+        // Image XObject — باینری JPEG جدا از متن
+        startObj(p.imgId);
+        addStr('<< /Type /XObject /Subtype /Image /Width ' + p.w + ' /Height ' + p.h +
+          ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\n');
+        addStr('stream\n');
+        addBytes(jpg);
+        addStr('\nendstream\n');
+        endObj();
+
+        // Content stream
+        const sx = (pageW - 24) / p.w;
+        const sy = (pageH - 24) / p.h;
+        const sc = Math.min(sx, sy);
+        const dw = p.w * sc;
+        const dh = p.h * sc;
+        const x = (pageW - dw) / 2;
+        const y = (pageH - dh) / 2;
+        const content = 'q\n' + dw.toFixed(2) + ' 0 0 ' + dh.toFixed(2) + ' ' +
+          x.toFixed(2) + ' ' + y.toFixed(2) + ' cm\n/Im' + p.imgId + ' Do\nQ\n';
+        const cb = enc(content);
+        startObj(p.contId);
+        addStr('<< /Length ' + cb.length + ' >>\nstream\n');
+        addBytes(cb);
+        addStr('endstream\n');
+        endObj();
+
+        // Page
+        startObj(p.pageId);
+        addStr('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pageW + ' ' + pageH +
+          '] /Resources << /XObject << /Im' + p.imgId + ' ' + p.imgId + ' 0 R >> >> /Contents ' +
+          p.contId + ' 0 R >>\n');
+        endObj();
+      });
+
+      const xrefPos = pos;
+      let xr = 'xref\n0 ' + nextId + '\n';
+      xr += '0000000000 65535 f \n';
+      for (let i = 1; i < nextId; i++) {
+        xr += String(offsets[i] || 0).padStart(10, '0') + ' 00000 n \n';
+      }
+      xr += 'trailer\n<< /Size ' + nextId + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF\n';
+      addStr(xr);
+      return new Blob([pdfConcat(parts)], { type: 'application/pdf' });
+    }
+
     function buildPdfContent() {
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       // استایل اینلاین تا html2canvas رنگ را از تم نگیرد
@@ -7909,8 +7994,25 @@
       return buildSimpleImagePdf(pages,841.89,595.28);
     }
     async function exportPdf(){
-      try{ persistCurrent(); showToast('در حال ساخت PDF آفلاین...'); const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf'; const blob=await renderPdfPagesOffline(); const shared=await shareExportFile(blob,name,'application/pdf'); if(!shared) downloadBlob(blob,name); showToast(shared?'PDF آماده است':'دانلود PDF شروع شد'); }
-      catch(e){ console.error('offline PDF failed',e); showToast('ساخت PDF ناموفق بود'); setTimeout(()=>openPdfPrintWindow(),300); }
+      try{
+        persistCurrent();
+        showToast('در حال ساخت PDF…');
+        const name = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
+        const blob = await renderPdfPagesOffline();
+        if (!blob || !(blob.size > 100)) throw new Error('empty pdf');
+        let shared = false;
+        try { shared = await shareExportFile(blob, name, 'application/pdf'); } catch (e) { shared = false; }
+        if (!shared) {
+          downloadBlob(blob, name);
+          showToast('دانلود PDF شروع شد');
+        } else {
+          showToast('PDF آماده است');
+        }
+      } catch (e) {
+        console.error('offline PDF failed', e);
+        showToast('ساخت PDF ناموفق بود — پیش‌نمایش چاپ');
+        setTimeout(() => openPdfPrintWindow(), 300);
+      }
     }
     function openPdfPrintWindow(){
       // Android WebView/Print Preview ممکن است afterprint را خیلی زود، درست هنگام
@@ -9830,16 +9932,37 @@
     function saveBankAccountsSelection() {
       try { localStorage.setItem(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts)); } catch (e) {}
     }
-    function openBankAccountsModal() {
-      closeSideMenu();
+    function openBankAccountsModal(fromMenu) {
+      _bankModalFromMenu = fromMenu !== false;
+      try { closeSideMenu(); } catch (e) {}
       renderBankAccountsList();
       document.getElementById('bankAccountsModal').classList.add('open');
     }
+    function maybeShowFirstRunBankSetup() {
+      try {
+        if (localStorage.getItem(STORAGE_KEY + '_bankSetupDone') === '1') return;
+        if ((selectedBankAccounts || []).length > 0) {
+          localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1');
+          return;
+        }
+      } catch (e) {}
+      // بعد از مجوزها، انتخاب حساب‌ها را نشان بده
+      setTimeout(() => {
+        try { openBankAccountsModal(false); } catch (e) {}
+      }, 600);
+    }
+    let _bankModalFromMenu = true;
     function closeBankAccountsModal() {
       document.getElementById('bankAccountsModal').classList.remove('open');
       // فهرست حساب‌های موجود در همه ردیف‌های صفحه را به‌روز کن
-      renderAll();
-      openSideMenu();
+      try { renderAll(); } catch (e) {}
+      try {
+        localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1');
+      } catch (e) {}
+      if (_bankModalFromMenu) {
+        try { openSideMenu(); } catch (e) {}
+      }
+      _bankModalFromMenu = true;
     }
     function renderBankAccountsList() {
       const box = document.getElementById('bankAccountsList');
@@ -12983,6 +13106,22 @@
     updateFamilyUI();
     renderAll();
     requestNotifPermission();
+    try {
+      // بعد از نوتیف (و پیامک در Capacitor)، منوی انتخاب حساب اولین‌بار
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BankSms) {
+        const BankSms = window.Capacitor.Plugins.BankSms;
+        Promise.resolve()
+          .then(() => BankSms.requestPermission())
+          .catch(() => {})
+          .finally(() => {
+            try { maybeShowFirstRunBankSetup(); } catch (e) {}
+          });
+      } else {
+        maybeShowFirstRunBankSetup();
+      }
+    } catch (e) {
+      try { maybeShowFirstRunBankSetup(); } catch (e2) {}
+    }
     checkInstallReminders();
     startSyncLoop();
     /* Sync خودکار پس از Auth و سپس هر ۱۰ ثانیه فعال است. */
