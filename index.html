@@ -2109,7 +2109,12 @@
       margin-bottom: 8px;
       overflow: hidden;
       position: relative;
-      z-index: 2;
+      z-index: 5;
+      flex-shrink: 0;
+    }
+    .remind-bar[style*="display: block"],
+    .remind-bar[style*="display:block"] {
+      display: block !important;
     }
     .remind-bar-head {
       display: flex;
@@ -3597,7 +3602,7 @@
     }
     function emptySections() {
       return [
-        { id: 's1', title: '', color: '#0a84ff', rows: [emptyRow(), emptyRow(), emptyRow()] }
+        { id: 's1', title: '', color: '#0a84ff', rows: [emptyRow()] }
       ];
     }
     function emptyPeriodData() {
@@ -3873,7 +3878,7 @@
             title: secTitle,
             color: tabAccentColor('expense'),
             collapsed: true,
-            rows: [emptyRow(), emptyRow(), emptyRow()]
+            rows: [emptyRow()]
           });
           pd.expense.nextId = nid + 1;
         }
@@ -4013,7 +4018,7 @@
           if (active && active.classList && active.classList.contains('unlocked')) { setTimeout(attempt, 280); return; }
           if (document.querySelector('.dark-select-list.open')) { setTimeout(attempt, 280); return; }
         } catch (e) {}
-        if (!(row && row.day && row.amount)) return;
+        if (!(row && (row.day || row.amount || row.desc))) return;
         sortSectionRows(secId);
         // فقط تب مربوطه را رندر کن — نه کل اپ — برای جلوگیری از لگ
         try {
@@ -4335,6 +4340,7 @@
         activatePanel(back);
         try { renderAll(); } catch (e2) {}
       }
+      try { checkInstallReminders(); } catch (e) {}
     }
     function switchTabFromMenu(tab) {
       try { closeSideMenu(); } catch (e) {}
@@ -4810,7 +4816,7 @@
           color: s.color || tabAccentColor(tab),
           headerBg: s.headerBg,
           collapsed: true,
-          rows: [emptyRow(), emptyRow(), emptyRow()]
+          rows: [emptyRow()]
         }));
         out[tab].nextId = named.length + 1;
       });
@@ -7107,8 +7113,18 @@
       const bar = document.getElementById('remindBar');
       const banner = document.getElementById('remindBanner');
       const dot = document.getElementById('remindDot');
-      const items = getReminderItems();
+      let items = [];
+      try { items = getReminderItems() || []; } catch (e) { items = []; }
       if (!bar || !banner) return;
+      // یادآور باید داخل sticky-chrome بماند
+      try {
+        const chrome = document.getElementById('stickyChrome');
+        if (chrome && bar.parentNode !== chrome) {
+          const tabs = document.getElementById('tabsBar');
+          if (tabs && tabs.parentNode === chrome) chrome.insertBefore(bar, tabs);
+          else chrome.appendChild(bar);
+        }
+      } catch (e) {}
       if (!items.length) {
         bar.style.display = 'none';
         bar.classList.remove('has-alerts');
@@ -9443,7 +9459,7 @@
         title: title,
         color: tabAccentColor(tab),
         collapsed: false,
-        rows: [emptyRow(), emptyRow(), emptyRow()]
+        rows: [emptyRow()]
       };
       periodData[tab].sections.push(sec);
       periodData[tab].nextId = nid + 1;
@@ -9948,17 +9964,21 @@
             skipped++;
             return;
           }
-          sec.rows.push({
+          const emptyIdx = (sec.rows || []).findIndex(row => !row.desc && !row.amount && !row.day && !row.fromPlanId);
+          const newRow = {
             day: r.day ? String(r.day) : '',
             desc: r.name || '',
             amount: Number(r.amount) || 0,
             status: 'paid',
             account: r.account || ''
-          });
+          };
+          if (emptyIdx >= 0) sec.rows[emptyIdx] = newRow;
+          else sec.rows.push(newRow);
           n++;
         });
         sortSectionRows(sec.id);
         clearRecurringSelection();
+        try { renderSectionsForTab('income'); } catch (e) {}
         renderAll();
         scheduleSave();
         if (!n && skipped) {
@@ -9993,8 +10013,7 @@
       const plusSvgRec = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (recurringCollapsed ? '0' : '10px') + ';cursor:pointer;" id="recurringHead">' +
         '<span class="collapse-arrow">' + (recurringCollapsed ? '▼' : '▲') + '</span>' +
-        '<h3 style="margin:0;flex:1;">درآمدهای ثابت</h3>' +
-        '<button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید" style="' + (recurringCollapsed ? 'display:none;' : '') + '">' + plusSvgRec + '</button></div>';
+        '<h3 style="margin:0;flex:1;">درآمدهای ثابت</h3></div>';
       if (!recurringCollapsed) {
         if (recurringSelectMode) {
           const cnt = recurringSelected.size;
@@ -10032,7 +10051,14 @@
         if (!recurringSelectMode && recurringIncomes.length) {
           html += '<div class="tap-hint">برای انتخاب دسته‌ای، انگشتتان را روی یک درآمد نگه دارید</div>';
         }
+        if (!recurringSelectMode) {
+          html += '<div class="add-sec-wrap" style="margin-top:10px;margin-bottom:2px;"><button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید">' + plusSvgRec + '</button></div>';
+        }
       } // end !recurringCollapsed
+      else {
+        // جمع‌شده: فقط آیکون افزودن پایین باکس
+        html += '<div class="add-sec-wrap" style="margin-top:8px;margin-bottom:2px;"><button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید">' + plusSvgRec + '</button></div>';
+      }
       box.innerHTML = html;
 
       const head = document.getElementById('recurringHead');
@@ -10189,14 +10215,18 @@
               showToast('این درآمد قبلاً اضافه شده است');
               return;
             }
-            sec.rows.push({
+            const emptyIdx = (sec.rows || []).findIndex(row => !row.desc && !row.amount && !row.day && !row.fromPlanId);
+            const newRow = {
               day: r.day ? String(r.day) : '',
               desc: r.name || '',
               amount: Number(r.amount) || 0,
               status: 'paid',
               account: r.account || ''
-            });
+            };
+            if (emptyIdx >= 0) sec.rows[emptyIdx] = newRow;
+            else sec.rows.push(newRow);
             sortSectionRows(sec.id);
+            try { renderSectionsForTab('income'); } catch (e) {}
             renderAll();
             scheduleSave();
             showToast('به «' + (sec.title || 'بخش') + '» اضافه شد');
@@ -10533,14 +10563,19 @@
             if (sectionHasRecurringIncome(sec, item)) {
               showToast('این درآمد قبلاً در این بخش اضافه شده است');
             } else {
-              sec.rows.push({
+              // اگر ردیف خالی پیش‌فرض هست، جایش بگذار؛ وگرنه اضافه کن
+              const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
+              const newRow = {
                 day: item.day ? String(item.day) : '',
                 desc: item.name || '',
                 amount: Number(item.amount) || 0,
                 status: 'paid',
                 account: item.account || ''
-              });
+              };
+              if (emptyIdx >= 0) sec.rows[emptyIdx] = newRow;
+              else sec.rows.push(newRow);
               sortSectionRows(sec.id);
+              try { renderSectionsForTab('income'); } catch (e) {}
               showToast('به «' + (sec.title || 'بخش') + '» هم اضافه شد');
             }
           }
@@ -11362,7 +11397,7 @@
           title: t,
           color: tabAccentColor(tab),
           collapsed: true,
-          rows: [emptyRow(), emptyRow(), emptyRow()]
+          rows: [emptyRow()]
         });
         pd[tab].nextId = nid + 1;
       });
@@ -11502,7 +11537,7 @@
       const color = tabAccentColor(currentTab);
       const nid = periodData[currentTab].nextId;
       const newId = 's' + nid;
-      const sec = { id: newId, title: '', color, collapsed: false, rows: [emptyRow(), emptyRow(), emptyRow()] };
+      const sec = { id: newId, title: '', color, collapsed: false, rows: [emptyRow()] };
       stampRowOwner(sec);
       sections.push(sec);
       periodData[currentTab].nextId = nid + 1;
