@@ -1,172 +1,20 @@
-const fs=require('fs'), path=require('path');
-const root=path.resolve(__dirname,'..');
-const pkg='ir.hesabketab.app';
-const base=path.join(root,'android');
-const javaDir=path.join(base,'app/src/main/java',...pkg.split('.'));
-fs.mkdirSync(javaDir,{recursive:true});
-const receiver=`package ${pkg};
-
-import android.Manifest;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.provider.Telephony;
-import android.telephony.SmsMessage;
-import androidx.core.app.NotificationCompat;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-public class BankSmsReceiver extends BroadcastReceiver {
-  static final String PREFS="bank_sms_bridge";
-  static final String QUEUE="pending_queue";
-  static final String CHANNEL="bank_sms";
-
-  @Override public void onReceive(Context context, Intent intent) {
-    if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
-    if (context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) return;
-    SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
-    if (msgs == null || msgs.length == 0) return;
-    StringBuilder body=new StringBuilder(); String sender=msgs[0].getOriginatingAddress();
-    long ts=msgs[0].getTimestampMillis();
-    for(SmsMessage m:msgs) if(m!=null && m.getMessageBody()!=null) body.append(m.getMessageBody()).append("\\n");
-    String text=body.toString().trim();
-    if(!looksLikeBankTransaction(text, sender)) return;
-    SharedPreferences sp=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    try{
-      JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
-      long now=System.currentTimeMillis();
-      for(int i=0;i<q.length();i++){
-        JSONObject x=q.optJSONObject(i);
-        if(x!=null && text.equals(x.optString("text")) && now-x.optLong("receivedAt",0)<60000) return;
-      }
-      JSONObject item=new JSONObject(); item.put("text",text); item.put("sender",sender==null?"":sender); item.put("receivedAt",ts>0?ts:now);
-      q.put(item);
-      while(q.length()>20){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
-      sp.edit().putString(QUEUE,q.toString()).apply();
-      postNotification(context,text);
-    }catch(Exception ignored){}
-  }
-
-  static String normFa(String s){
-    if(s==null) return "";
-    String r=s.toLowerCase(java.util.Locale.ROOT);
-    return r.replace('\u0643','\u06a9').replace('\u064a','\u06cc').replace('\u0649','\u06cc');
-  }
-
-  static boolean looksLikeBankTransaction(String s, String sender){
-    String t=normFa(s);
-    String sd=normFa(sender);
-
-    boolean tx=t.contains("واریز")||t.contains("برداشت")||t.contains("کسر")||t.contains("خرید")||t.contains("انتقال")||t.contains("پرداخت")||t.contains("تراکنش")||t.contains("وجه")||t.contains("اعلامیه")||t.contains("رمز")||t.contains("deposit")||t.contains("withdraw")||t.contains("transfer")||t.contains("purchase")||t.contains("payment");
-
-    boolean bankWord=t.contains("بانک")||t.contains("موجودی")||t.contains("مانده")||t.contains("کارت")||t.contains("حساب")||t.contains("atm")||t.contains("pos");
-
-    boolean bankName=t.contains("ملی")||t.contains("ملت")||t.contains("سپه")||t.contains("صادرات")||t.contains("تجارت")||t.contains("کشاورزی")||t.contains("مسکن")||t.contains("رفاه")||t.contains("پارسیان")||t.contains("پاسارگاد")||t.contains("سامان")||t.contains("سینا")||t.contains("شهر")||t.contains("انصار")||t.contains("کارافرین")||t.contains("گردشگری")||t.contains("پستبانک")||t.contains("مهر")||t.contains("رسالت")||t.contains("mellat")||t.contains("melli")||t.contains("sepah")||t.contains("saderat")||t.contains("tejarat")||t.contains("keshavarzi")||t.contains("maskan")||t.contains("refah")||t.contains("parsian")||t.contains("pasargad")||t.contains("saman");
-
-    boolean senderBank=sd.contains("بانک")||sd.contains("ملی")||sd.contains("ملت")||sd.contains("سپه")||sd.contains("صادرات")||sd.contains("تجارت")||sd.contains("کشاورزی")||sd.contains("مسکن")||sd.contains("رفاه")||sd.contains("پارسیان")||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
-
-    boolean bank=bankWord||bankName||senderBank;
-    boolean money=t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
-
-    return money && (tx || bank);
-  }
-
-  static void postNotification(Context c,String text){
-    if(Build.VERSION.SDK_INT>=33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return;
-    NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
-    if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); nm.createNotificationChannel(ch); }
-    Intent i=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
-    if(i==null)return; i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    PendingIntent pi=PendingIntent.getActivity(c,1001,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-    String shortText=text.replace('\\n',' '); if(shortText.length()>110) shortText=shortText.substring(0,110)+"…";
-    NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(c.getApplicationInfo().icon).setContentTitle("تراکنش بانکی جدید").setContentText(shortText).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setContentIntent(pi).setPriority(NotificationCompat.PRIORITY_HIGH);
-    nm.notify((int)(System.currentTimeMillis()&0x7fffffff),b.build());
-  }
-}
-`;
-const plugin=`package ${pkg};
-
-import android.Manifest;
-import android.app.Activity;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import androidx.activity.result.ActivityResultLauncher;
-import com.getcapacitor.JSObject;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.PluginCall;
-import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.annotation.Permission;
-import com.getcapacitor.annotation.PermissionCallback;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-@CapacitorPlugin(name="BankSms", permissions={@Permission(strings={Manifest.permission.RECEIVE_SMS},alias="sms")})
-public class BankSmsPlugin extends Plugin {
-  private static final String PREFS=BankSmsReceiver.PREFS;
-  private static final String QUEUE=BankSmsReceiver.QUEUE;
-
-  @com.getcapacitor.PluginMethod public void requestPermission(PluginCall call){
-    if(getPermissionState("sms")==com.getcapacitor.PermissionState.GRANTED){ JSObject r=new JSObject(); r.put("granted",true); call.resolve(r); return; }
-    requestPermissionForAlias("sms",call,"smsPerm");
-  }
-  @PermissionCallback private void smsPerm(PluginCall call){ JSObject r=new JSObject(); r.put("granted",getPermissionState("sms")==com.getcapacitor.PermissionState.GRANTED); call.resolve(r); }
-
-  @com.getcapacitor.PluginMethod public void getPendingSms(PluginCall call){
-    SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    try{
-      JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
-      if(q.length()==0){call.resolve(new JSObject().put("has",false));return;}
-      JSONObject x=q.getJSONObject(0); JSObject r=new JSObject(); r.put("has",true); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); call.resolve(r);
-    }catch(Exception e){call.reject("pending_sms_error",e);}
-  }
-  @com.getcapacitor.PluginMethod public void markHandled(PluginCall call){
-    SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    try{ JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); JSONArray n=new JSONArray(); for(int i=1;i<q.length();i++) n.put(q.get(i)); sp.edit().putString(QUEUE,n.toString()).apply(); call.resolve(); }catch(Exception e){call.reject("pending_sms_error",e);}
-  }
-  @com.getcapacitor.PluginMethod public void clearPending(PluginCall call){ getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().remove(QUEUE).apply(); call.resolve(); }
-}
-`;
-const main=`package ${pkg};
-
-import android.Manifest;
-import android.os.Build;
-import android.os.Bundle;
-import android.content.pm.PackageManager;
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-  @Override public void onCreate(Bundle savedInstanceState){
-    registerPlugin(BankSmsPlugin.class);
-    super.onCreate(savedInstanceState);
-    if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},4201);
-    if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},4202);
-  }
-}
-`;
-fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
-fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),plugin);
-fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
-const gradle=path.join(base,'app/build.gradle');
-if(fs.existsSync(gradle)){
- let s=fs.readFileSync(gradle,'utf8');
- if(!s.includes('androidx.core:core')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.core:core:1.15.0"');
- fs.writeFileSync(gradle,s);
-}
-const manifest=path.join(base,'app/src/main/AndroidManifest.xml');
-if(fs.existsSync(manifest)){
- let s=fs.readFileSync(manifest,'utf8');
- if(!s.includes('android.permission.RECEIVE_SMS')){
-   s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_SMS"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>');
- }
- const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
- if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
- fs.writeFileSync(manifest,s);
-}
-console.log('Android SMS bridge patched');
+const fs=require('fs'),path=require('path');
+const base=path.resolve(__dirname,'../android'),dir=path.join(base,'app/src/main/java/ir/hesabketab/app');
+fs.mkdirSync(dir,{recursive:true});
+const receiver=String.raw`package ir.hesabketab.app;
+import android.Manifest;import android.app.*;import android.content.*;import android.content.pm.PackageManager;import android.os.Build;import android.provider.Telephony;import android.telephony.SmsMessage;import androidx.core.app.NotificationCompat;import org.json.*;
+public class BankSmsReceiver extends BroadcastReceiver{
+ static final String PREFS="bank_sms_bridge",QUEUE="pending_queue",DONE="confirmed_queue",CHANNEL="bank_sms";
+ public void onReceive(Context c,Intent in){if(!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(in.getAction())||c.checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED)return;SmsMessage[] ms=Telephony.Sms.Intents.getMessagesFromIntent(in);if(ms==null||ms.length==0)return;StringBuilder b=new StringBuilder();for(SmsMessage m:ms)if(m!=null)b.append(m.getMessageBody());String text=b.toString().trim();if(!text.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*")||!(text.contains("واریز")||text.contains("برداشت")||text.contains("خرید")||text.contains("پرداخت")||text.contains("انتقال")||text.contains("بانک")||text.contains("موجودی")))return;try{SharedPreferences p=c.getSharedPreferences(PREFS,0);JSONArray q=new JSONArray(p.getString(QUEUE,"[]"));long now=System.currentTimeMillis();for(int x=0;x<q.length();x++){JSONObject o=q.getJSONObject(x);if(text.equals(o.optString("text"))&&now-o.optLong("receivedAt")<60000)return;}String id=now+"-"+Integer.toHexString(text.hashCode());int nid=("sms-"+id).hashCode()&0x7fffffff;JSONObject o=new JSONObject();o.put("id",id);o.put("text",text);o.put("receivedAt",now);o.put("notificationId",nid);q.put(o);p.edit().putString(QUEUE,q.toString()).apply();notify(c,text,id,nid);}catch(Exception e){}}
+ static void notify(Context c,String text,String id,int nid){if(Build.VERSION.SDK_INT>=33&&c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return;NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(Build.VERSION.SDK_INT>=26)nm.createNotificationChannel(new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH));Intent i=new Intent(c,SmsEntryActivity.class).putExtra("id",id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);PendingIntent pi=PendingIntent.getActivity(c,nid,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);nm.notify(nid,new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(c.getApplicationInfo().icon).setContentTitle("تراکنش بانکی جدید").setContentText("برای ثبت تراکنش لمس کنید").setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setOnlyAlertOnce(true).setContentIntent(pi).build());}
+}`;
+const plugin=String.raw`package ir.hesabketab.app;
+import android.Manifest;import android.content.*;import com.getcapacitor.*;import com.getcapacitor.annotation.*;import org.json.*;
+@CapacitorPlugin(name="BankSms",permissions={@Permission(strings={Manifest.permission.RECEIVE_SMS},alias="sms")}) public class BankSmsPlugin extends Plugin{SharedPreferences p(){return getContext().getSharedPreferences(BankSmsReceiver.PREFS,0);}@PluginMethod public void requestPermission(PluginCall c){if(getPermissionState("sms")==PermissionState.GRANTED){c.resolve(new JSObject().put("granted",true));return;}requestPermissionForAlias("sms",c,"ok");}@PermissionCallback private void ok(PluginCall c){c.resolve(new JSObject().put("granted",getPermissionState("sms")==PermissionState.GRANTED));}@PluginMethod public void getPendingSms(PluginCall c){get(c,BankSmsReceiver.QUEUE);}@PluginMethod public void getConfirmedSms(PluginCall c){get(c,BankSmsReceiver.DONE);}void get(PluginCall c,String k){try{JSONArray q=new JSONArray(p().getString(k,"[]"));if(q.length()==0){c.resolve(new JSObject().put("has",false));return;}JSONObject o=q.getJSONObject(0);JSObject r=new JSObject();for(java.util.Iterator<String> it=o.keys();it.hasNext();){String n=it.next();r.put(n,o.opt(n));}r.put("has",true);c.resolve(r);}catch(Exception e){c.reject("queue",e);}}@PluginMethod public void markHandled(PluginCall c){drop(c,BankSmsReceiver.QUEUE);}@PluginMethod public void markConfirmedHandled(PluginCall c){drop(c,BankSmsReceiver.DONE);}void drop(PluginCall c,String k){try{JSONArray q=new JSONArray(p().getString(k,"[]")),n=new JSONArray();for(int i=1;i<q.length();i++)n.put(q.get(i));p().edit().putString(k,n.toString()).apply();c.resolve();}catch(Exception e){c.reject("queue",e);}}}`;
+const activity=String.raw`package ir.hesabketab.app;
+import android.app.*;import android.content.*;import android.os.*;import android.text.InputType;import android.view.*;import android.widget.*;import org.json.*;
+public class SmsEntryActivity extends Activity{JSONObject src;EditText amount,bank,day,desc;RadioGroup type;int d(float n){return(int)(n*getResources().getDisplayMetrics().density);}EditText f(String h,int t){EditText e=new EditText(this);e.setHint(h);e.setInputType(t);e.setTextDirection(View.TEXT_DIRECTION_RTL);return e;}public void onCreate(Bundle b){super.onCreate(b);src=find(getIntent().getStringExtra("id"));if(src==null){finish();return;}ScrollView s=new ScrollView(this);LinearLayout l=new LinearLayout(this);l.setPadding(d(20),d(16),d(20),d(20));l.setOrientation(LinearLayout.VERTICAL);s.addView(l);TextView title=new TextView(this);title.setText("ثبت تراکنش بانکی");title.setTextSize(22);title.setGravity(Gravity.RIGHT);l.addView(title);TextView raw=new TextView(this);raw.setText(src.optString("text"));raw.setGravity(Gravity.RIGHT);raw.setPadding(0,d(12),0,d(12));l.addView(raw);type=new RadioGroup(this);RadioButton out=new RadioButton(this);out.setText("برداشت");out.setId(1);RadioButton in=new RadioButton(this);in.setText("واریز");in.setId(2);type.addView(out);type.addView(in);type.check(src.optString("text").contains("واریز")?2:1);l.addView(type);amount=f("مبلغ (تومان)",InputType.TYPE_CLASS_NUMBER);l.addView(amount);bank=f("نام بانک",InputType.TYPE_CLASS_TEXT);l.addView(bank);day=f("روز ماه",InputType.TYPE_CLASS_NUMBER);l.addView(day);desc=f("شرح",InputType.TYPE_CLASS_TEXT);l.addView(desc);Button save=new Button(this);save.setText("ثبت");l.addView(save);save.setOnClickListener(v->save());setContentView(s);}JSONObject find(String id){try{JSONArray q=new JSONArray(getSharedPreferences(BankSmsReceiver.PREFS,0).getString(BankSmsReceiver.QUEUE,"[]"));for(int i=0;i<q.length();i++)if(id.equals(q.getJSONObject(i).optString("id")))return q.getJSONObject(i);}catch(Exception e){}return null;}void save(){String a=amount.getText().toString().replaceAll("[^0-9]","");if(a.isEmpty()){Toast.makeText(this,"مبلغ را وارد کنید",0).show();return;}try{JSONObject x=new JSONObject();x.put("type",type.getCheckedRadioButtonId()==2?"income":"expense");x.put("amount",a);x.put("bank",bank.getText().toString());x.put("day",day.getText().toString());x.put("desc",desc.getText().toString());SharedPreferences p=getSharedPreferences(BankSmsReceiver.PREFS,0);JSONArray q=new JSONArray(p.getString(BankSmsReceiver.QUEUE,"[]")),rest=new JSONArray(),done=new JSONArray(p.getString(BankSmsReceiver.DONE,"[]"));for(int i=0;i<q.length();i++)if(!src.optString("id").equals(q.getJSONObject(i).optString("id")))rest.put(q.get(i));done.put(x);p.edit().putString(BankSmsReceiver.QUEUE,rest.toString()).putString(BankSmsReceiver.DONE,done.toString()).apply();((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).cancel(src.optInt("notificationId"));finish();}catch(Exception e){Toast.makeText(this,"ثبت انجام نشد",0).show();}}}`;
+const main=String.raw`package ir.hesabketab.app;import android.Manifest;import android.os.*;import android.content.pm.PackageManager;import com.getcapacitor.BridgeActivity;public class MainActivity extends BridgeActivity{public void onCreate(Bundle b){registerPlugin(BankSmsPlugin.class);super.onCreate(b);if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},4201);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},4202);}}`;
+fs.writeFileSync(path.join(dir,'BankSmsReceiver.java'),receiver);fs.writeFileSync(path.join(dir,'BankSmsPlugin.java'),plugin);fs.writeFileSync(path.join(dir,'SmsEntryActivity.java'),activity);fs.writeFileSync(path.join(dir,'MainActivity.java'),main);
+const m=path.join(base,'app/src/main/AndroidManifest.xml');if(fs.existsSync(m)){let s=fs.readFileSync(m,'utf8');if(!s.includes('RECEIVE_SMS'))s=s.replace(/(<manifest\b[^>]*>)/,'$1\n<uses-permission android:name="android.permission.RECEIVE_SMS"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>');if(!s.includes('SmsEntryActivity'))s=s.replace('</application>','<activity android:name=".SmsEntryActivity" android:exported="false"/><receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS"><intent-filter><action android:name="android.provider.Telephony.SMS_RECEIVED"/></intent-filter></receiver></application>');fs.writeFileSync(m,s);}
+const g=path.join(base,'app/build.gradle');if(fs.existsSync(g)){let s=fs.readFileSync(g,'utf8');if(!s.includes('androidx.core:core'))s=s.replace(/dependencies\s*\{/,'dependencies {\nimplementation "androidx.core:core:1.15.0"');fs.writeFileSync(g,s);}
