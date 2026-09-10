@@ -1297,13 +1297,13 @@
       margin-bottom: 14px;
       border-radius: 10px;
     }
-    /* آیکون بعلاوه آبی توپر (مثل تصویر) */
+    /* آیکون بعلاوه آبی توپر */
     .btn-circle-plus {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
-      height: 34px;
+      width: 28px;
+      height: 28px;
       margin: 0;
       border-radius: 50%;
       border: none;
@@ -1312,66 +1312,102 @@
       cursor: pointer;
       padding: 0;
       line-height: 1;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+      box-shadow: 0 2px 6px rgba(37,99,235,0.3);
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
     }
     .btn-circle-plus svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       stroke: #ffffff;
       fill: none;
-      stroke-width: 3.6;
+      stroke-width: 3.4;
       stroke-linecap: round;
     }
     .btn-circle-plus:active { filter: brightness(0.92); transform: scale(0.96); }
     .btn-circle-plus.lg {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
     }
     .btn-circle-plus.lg svg {
-      width: 22px;
-      height: 22px;
-      stroke-width: 3.8;
+      width: 20px;
+      height: 20px;
+      stroke-width: 3.6;
     }
-    /* باکس تیره دور آیکون بخش جدید — کمی بزرگ‌تر از خود دایره */
-    .add-sec-box {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: auto;
-      margin: 8px auto 14px;
-      padding: 8px;
-      border-radius: 14px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      box-sizing: border-box;
-    }
-    .add-sec-box {
-      /* وسط‌چین در عرض کامل */
+    /* فقط وسط‌چین کردن آیکون بخش جدید — بدون باکس پشتی */
+    .add-sec-wrap {
       display: flex;
-      width: fit-content;
-      max-width: 100%;
+      justify-content: center;
+      align-items: center;
+      margin: 12px 0 16px;
+      padding: 0;
+      background: transparent;
+      border: none;
     }
-    /* والد را وسط کن */
-    #panel-income > .add-sec-box,
-    #panel-expense > .add-sec-box,
-    #panel-install > .add-sec-box,
-    #panel-ledger > .add-sec-box {
-      margin-left: auto;
-      margin-right: auto;
-    }
-    [data-theme="light"] .add-sec-box {
-      background: #e8e8ed;
-      border-color: #d0d0d8;
-    }
-    /* بعلاوه ردیف: گوشه پایین چپ، فاصله بیشتر از ردیف آخر */
+    /* بعلاوه ردیف: گوشه پایین چپ، فاصله از ردیف آخر */
     .add-row-wrap {
       display: flex;
       justify-content: flex-start;
       direction: ltr;
       padding: 14px 6px 12px;
       margin: 4px 0 0;
+    }
+    /* پنجره تمام‌صفحه برای درآمد ثابت / اقساط / بده‌بستان */
+    .feature-sheet {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 260;
+      background: var(--bg);
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    .feature-sheet.open {
+      display: flex;
+    }
+    .feature-sheet-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      padding-top: max(10px, env(safe-area-inset-top, 0px));
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      z-index: 2;
+    }
+    .feature-sheet-bar .fs-title {
+      flex: 1;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text);
+      text-align: center;
+    }
+    .feature-sheet-bar .fs-close {
+      border: none;
+      background: var(--bg3);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .feature-sheet-bar .fs-close:active { opacity: 0.85; }
+    .feature-sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 10px 28px;
+      box-sizing: border-box;
+    }
+    .feature-sheet-body .tab-panel {
+      display: block !important;
+      visibility: visible !important;
     }
     th.col-num .status-only {
       display: block;
@@ -1493,10 +1529,7 @@
 
     .col-acc .dark-select { width: 100%; flex: none; }
     .col-acc .dark-select-btn {
-      padding: 0 6px !important;
-      min-height: 28px !important;
-      height: 28px !important;
-      max-height: 28px !important;
+      padding: 0 4px !important;
       font-size: 0.85rem !important;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif !important;
       font-weight: normal !important;
@@ -1504,32 +1537,15 @@
       overflow: hidden;
       text-overflow: ellipsis;
       display: block;
-      line-height: 28px !important;
-      text-align: right !important;
+      text-align: center !important;
       background: transparent !important;
-      border: 1px solid transparent !important;
       border-radius: 5px !important;
       color: var(--text) !important;
       box-shadow: none !important;
     }
-    .col-acc .dark-select-btn:hover,
-    .col-acc .dark-select-btn:focus {
-      background: var(--bg3) !important;
-    }
     .col-acc .dark-select-btn::after {
       display: none !important;
       content: none !important;
-    }
-    .col-acc .dark-select-btn.is-empty-acc {
-      height: 28px !important;
-      min-height: 28px !important;
-      max-height: 28px !important;
-      line-height: 28px !important;
-      background: transparent !important;
-      border: 1px solid transparent !important;
-      opacity: 1;
-      margin: 0 !important;
-      width: 100% !important;
     }
 
     .num {
@@ -2359,22 +2375,53 @@
       color: #1d1d1f !important;
     }
     /* سلول حساب در ردیف‌ها — همیشه مثل بقیه سلول‌ها */
+    /* حساب بانکی: مثل سلول‌های خالی — کادر خط‌چین روشن */
     td.col-acc .dark-select-btn,
     td.col-acc .dark-select-btn.is-empty-acc,
     [data-theme="light"] td.col-acc .dark-select-btn,
     [data-theme="light"] td.col-acc .dark-select-btn.is-empty-acc {
       background: transparent !important;
-      border: 1px solid transparent !important;
+      border: 1px dashed rgba(150,150,160,0.28) !important;
       color: var(--text) !important;
       -webkit-text-fill-color: var(--text) !important;
       font-weight: normal !important;
       box-shadow: none !important;
+      height: 18px !important;
+      min-height: 18px !important;
+      max-height: 18px !important;
+      line-height: 18px !important;
+      margin: 4px auto !important;
+      width: 88% !important;
+      opacity: 0.65;
+      border-radius: 5px !important;
+      padding: 0 4px !important;
+    }
+    /* وقتی مقدار دارد — مثل سلول پر */
+    td.col-acc .dark-select-btn:not(.is-empty-acc),
+    [data-theme="light"] td.col-acc .dark-select-btn:not(.is-empty-acc) {
+      height: 28px !important;
+      min-height: 28px !important;
+      max-height: 28px !important;
+      line-height: 28px !important;
+      margin: 0 !important;
+      width: 100% !important;
+      opacity: 1;
+      border: 1px solid transparent !important;
+      background: transparent !important;
     }
     td.col-acc .dark-select-btn:hover,
     td.col-acc .dark-select-btn:focus,
     [data-theme="light"] td.col-acc .dark-select-btn:hover,
     [data-theme="light"] td.col-acc .dark-select-btn:focus {
       background: var(--bg3) !important;
+      opacity: 1;
+      height: 28px !important;
+      min-height: 28px !important;
+      max-height: 28px !important;
+      line-height: 28px !important;
+      margin: 0 !important;
+      width: 100% !important;
+      border: 1px solid transparent !important;
     }
     .dark-select-btn::after {
       content: '';
@@ -3182,7 +3229,6 @@
     <!-- درآمد -->
     <div id="panel-income" class="tab-panel">
       <div id="sections-income"></div>
-      <div class="add-sec-box"><button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="summary-section" id="summaryBox-income">
         <div class="summary-header" id="summaryTitle-income">خلاصه درآمد</div>
@@ -3206,13 +3252,13 @@
           </tfoot>
         </table>
       </div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
     </div>
 
     <!-- مخارج -->
     <div id="panel-expense" class="tab-panel">
       <div id="sections-expense"></div>
-      <div class="add-sec-box"><button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="summary-section" id="summaryBox-expense">
         <div class="summary-header" id="summaryTitle-expense">خلاصه مخارج</div>
@@ -3236,6 +3282,7 @@
           </tfoot>
         </table>
       </div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addSection()" title="بخش جدید" aria-label="بخش جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
     </div>
 
@@ -3302,7 +3349,7 @@
     <!-- اقساط -->
     <div id="panel-install" class="tab-panel">
       <div id="plans-container"></div>
-      <div class="add-sec-box"><button type="button" class="btn-circle-plus lg" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="summary-section">
         <div class="summary-header install-h">خلاصه اقساط</div>
@@ -3332,7 +3379,7 @@
     <!-- بده‌بستان -->
     <div id="panel-ledger" class="tab-panel">
       <div id="sections-ledger"></div>
-      <div class="add-sec-box"><button type="button" class="btn-circle-plus lg" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="filter-bar" id="ledgerFilters"></div>
 
@@ -3351,6 +3398,16 @@
     </div>
 
     </div>
+  </div>
+
+  <!-- پنجره تمام‌صفحه: درآمد ثابت / اقساط / بده‌بستان -->
+  <div class="feature-sheet" id="featureSheet" aria-hidden="true">
+    <div class="feature-sheet-bar">
+      <button type="button" class="fs-close" id="featureSheetClose" onclick="closeFeatureSheet()">بازگشت</button>
+      <div class="fs-title" id="featureSheetTitle"></div>
+      <button type="button" class="fs-close" id="featureSheetDone" onclick="closeFeatureSheet()">ثبت</button>
+    </div>
+    <div class="feature-sheet-body" id="featureSheetBody"></div>
   </div>
 
   <div class="modal-overlay" id="bankAccountsModal">
@@ -4181,31 +4238,97 @@
         moveTabIndicator();
       });
     }
+    let _featureReturnTab = 'expense';
+    let _featureActive = null; // 'recurring' | 'install' | 'ledger'
+    const FEATURE_TITLES = {
+      recurring: 'درآمدهای ثابت',
+      install: 'اقساط',
+      ledger: 'بده‌بستان'
+    };
+    function openFeatureSheet(kind) {
+      try { closeSideMenu(); } catch (e) {}
+      const sheet = document.getElementById('featureSheet');
+      const body = document.getElementById('featureSheetBody');
+      const title = document.getElementById('featureSheetTitle');
+      if (!sheet || !body) return;
+      // تب اصلی فعلی را برای بازگشت ذخیره کن
+      if (currentTab === 'income' || currentTab === 'expense' || currentTab === 'balance') {
+        _featureReturnTab = currentTab;
+      } else if (!(_featureReturnTab === 'income' || _featureReturnTab === 'expense' || _featureReturnTab === 'balance')) {
+        _featureReturnTab = 'expense';
+      }
+      _featureActive = kind;
+      if (title) title.textContent = FEATURE_TITLES[kind] || '';
+      const panelId = (kind === 'recurring') ? 'panel-recurring' : ('panel-' + kind);
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        if (panel.parentNode !== body) {
+          body.innerHTML = '';
+          body.appendChild(panel);
+        }
+        panel.classList.add('active');
+        panel.style.display = 'block';
+      }
+      // رندر با currentTab موقت فقط برای توابع وابسته
+      const savedTab = currentTab;
+      currentTab = kind;
+      try {
+        if (kind === 'recurring') {
+          recurringCollapsed = false;
+          renderRecurringBar();
+        } else if (kind === 'install') {
+          renderPlans();
+          try { updateInstallSummary(); } catch (e) {}
+        } else if (kind === 'ledger') {
+          renderLedgerTab();
+        }
+      } catch (err) { console.error(err); }
+      // تب اصلی را دست نزن — فقط شیت باز است
+      currentTab = savedTab;
+      activatePanel(savedTab);
+      sheet.classList.add('open');
+      sheet.setAttribute('aria-hidden', 'false');
+      try { lockBodyScroll(); } catch (e) {}
+      try { body.scrollTop = 0; } catch (e) {}
+    }
+    function closeFeatureSheet() {
+      const sheet = document.getElementById('featureSheet');
+      const body = document.getElementById('featureSheetBody');
+      if (sheet) {
+        sheet.classList.remove('open');
+        sheet.setAttribute('aria-hidden', 'true');
+      }
+      try {
+        const track = document.getElementById('tabTrack');
+        if (track && body) {
+          Array.from(body.children).forEach(ch => {
+            if (ch && ch.id && ch.id.indexOf('panel-') === 0) {
+              track.appendChild(ch);
+              ch.classList.remove('active');
+              ch.style.display = '';
+            }
+          });
+        }
+      } catch (e) {}
+      _featureActive = null;
+      try { unlockBodyScroll(); } catch (e) {}
+      const back = (_featureReturnTab === 'income' || _featureReturnTab === 'expense' || _featureReturnTab === 'balance')
+        ? _featureReturnTab : 'expense';
+      try {
+        switchTab(back, true);
+      } catch (e) {
+        currentTab = back;
+        activatePanel(back);
+        try { renderAll(); } catch (e2) {}
+      }
+    }
     function switchTabFromMenu(tab) {
       try { closeSideMenu(); } catch (e) {}
-      setTimeout(() => {
-        try {
-          switchTab(tab, true);
-          activatePanel(tab);
-          window.scrollTo(0, 0);
-        } catch (err) {
-          console.error(err);
-        }
-      }, 30);
+      setTimeout(() => openFeatureSheet(tab), 40);
     }
     function openRecurringFromMenu() {
       try { closeSideMenu(); } catch (e) {}
-      setTimeout(() => {
-        try {
-          recurringCollapsed = false;
-          switchTab('recurring', true);
-          activatePanel('recurring');
-          renderRecurringBar();
-          window.scrollTo(0, 0);
-        } catch (err) {
-          console.error(err);
-        }
-      }, 30);
+      setTimeout(() => openFeatureSheet('recurring'), 40);
     }
 
     const TAB_ORDER = ['income', 'expense', 'balance'];
@@ -9836,7 +9959,8 @@
 
     function renderRecurringBar() {
       let box = document.getElementById('recurringBox');
-      if (currentTab !== 'recurring') {
+      const inSheet = !!(_featureActive === 'recurring' || (document.getElementById('featureSheet') || {}).classList && document.getElementById('featureSheet').classList.contains('open') && document.getElementById('panel-recurring') && document.getElementById('panel-recurring').closest('#featureSheetBody'));
+      if (currentTab !== 'recurring' && !inSheet && _featureActive !== 'recurring') {
         if (box) box.remove();
         clearRecurringSelection();
         return;
