@@ -993,6 +993,62 @@
       font-size: 0.85rem;
       font-weight: 500;
     }
+    .fancy-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .fancy-select-btn {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: right;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif !important;
+      font-weight: 600;
+      font-size: 0.88rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .fancy-select-btn::after {
+      content: '▾';
+      font-size: 0.7rem;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+    .fancy-select-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      left: 0;
+      z-index: 500;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      display: none;
+    }
+    .fancy-select-list.open {
+      display: block;
+    }
+    .fancy-select-opt {
+      padding: 9px 10px;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif !important;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .fancy-select-opt.selected, .fancy-select-opt:hover {
+      background: var(--bg3);
+    }
     .family-btn {
       width: 100%;
       margin: 0 0 10px;
@@ -3249,7 +3305,7 @@
       <label class="family-label">بخش مقصد</label>
       <div id="smsConfirmSectionWrap" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت در اپ</button>
+        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت</button>
         <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsConfirmModal()">انصراف</button>
       </div>
     </div>
@@ -9112,6 +9168,50 @@
       } catch (e) {}
     }
 
+    function enhanceSelectFont(selectEl) {
+      if (!selectEl) return;
+      if (selectEl._fancyRender) { selectEl._fancyRender(); return; }
+      selectEl.style.display = 'none';
+      const wrap = document.createElement('div');
+      wrap.className = 'fancy-select-wrap';
+      selectEl.parentNode.insertBefore(wrap, selectEl);
+      wrap.appendChild(selectEl);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fancy-select-btn';
+      const list = document.createElement('div');
+      list.className = 'fancy-select-list';
+      function render() {
+        const opts = Array.from(selectEl.options);
+        const cur = opts.find(o => o.value === selectEl.value) || opts[0];
+        btn.textContent = cur ? cur.textContent : '';
+        list.innerHTML = '';
+        opts.forEach(o => {
+          const item = document.createElement('div');
+          item.className = 'fancy-select-opt' + (o.value === selectEl.value ? ' selected' : '');
+          item.textContent = o.textContent;
+          item.onclick = (e) => {
+            e.stopPropagation();
+            selectEl.value = o.value;
+            selectEl.dispatchEvent(new Event('change'));
+            render();
+            list.classList.remove('open');
+          };
+          list.appendChild(item);
+        });
+      }
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.fancy-select-list.open').forEach(l => { if (l !== list) l.classList.remove('open'); });
+        list.classList.toggle('open');
+      };
+      document.addEventListener('click', () => list.classList.remove('open'));
+      wrap.appendChild(btn);
+      wrap.appendChild(list);
+      render();
+      selectEl._fancyRender = render;
+    }
+
     function openSmsConfirmModal(parsed) {
       const m = document.getElementById('smsConfirmModal');
       if (!m) return;
@@ -9121,17 +9221,17 @@
       const meta = document.getElementById('smsConfirmMeta');
       if (meta) {
         meta.innerHTML =
-          '<div style="margin-bottom:8px;"><strong>نوع:</strong></div>' +
+          '<label class="family-label">نوع:</label>' +
           '<select id="smsConfirmType" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;">' +
             '<option value="income"' + (parsed.type === 'income' ? ' selected' : '') + '>واریز (درآمد)</option>' +
             '<option value="expense"' + (parsed.type === 'expense' ? ' selected' : '') + '>برداشت (مخارج)</option>' +
           '</select>' +
-          '<div style="margin-bottom:4px;"><strong>مبلغ (تومان):</strong></div>' +
+          '<label class="family-label">مبلغ (تومان):</label>' +
           '<input id="smsConfirmAmount" type="text" inputmode="numeric" value="' + (parsed.amount ? formatNum(parsed.amount) : '') + '" ' +
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
-          '<div style="margin-bottom:4px;"><strong>بانک:</strong></div>' +
+          '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<div style="margin-bottom:4px;"><strong>روز ماه:</strong></div>' +
+          '<label class="family-label">روز ماه:</label>' +
           '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" ' +
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
         const bankSel = meta.querySelector('#smsConfirmBank');
@@ -9145,7 +9245,10 @@
             if (n && n === parsed.bank) o.selected = true;
             bankSel.appendChild(o);
           });
+          enhanceSelectFont(bankSel);
         }
+        const typeSelEl = meta.querySelector('#smsConfirmType');
+        if (typeSelEl) enhanceSelectFont(typeSelEl);
         const amtInp = meta.querySelector('#smsConfirmAmount');
         if (amtInp) {
           amtInp.oninput = () => {
@@ -9170,13 +9273,15 @@
         optAuto.value = '__auto__';
         optAuto.textContent = 'خودکار: «' + autoTitle + '»';
         sel.appendChild(optAuto);
-        sections.forEach(s => {
+        sections.forEach((s, idx) => {
           const o = document.createElement('option');
           o.value = s.id;
           o.textContent = (s.title || '').trim() || 'بدون نام';
+          if (idx === 0) o.selected = true;
           sel.appendChild(o);
         });
         wrap.appendChild(sel);
+        enhanceSelectFont(sel);
         const typeSel = document.getElementById('smsConfirmType');
         if (typeSel) {
           typeSel.onchange = () => {
@@ -9188,12 +9293,14 @@
             oa.value = '__auto__';
             oa.textContent = 'خودکار: «' + at + '»';
             sel.appendChild(oa);
-            secs.forEach(s => {
+            secs.forEach((s, idx) => {
               const o = document.createElement('option');
               o.value = s.id;
               o.textContent = (s.title || '').trim() || 'بدون نام';
+              if (idx === 0) o.selected = true;
               sel.appendChild(o);
             });
+            if (sel._fancyRender) sel._fancyRender();
           };
         }
       }
