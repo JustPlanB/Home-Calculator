@@ -1443,14 +1443,19 @@
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
     th {
-      background: var(--bg3);
+      background: #243040;
       padding: 8px 2px;
       text-align: center;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
       font-weight: bold;
       font-size: 0.8rem;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
+      border-bottom: 1px solid #2a3f55;
+      color: #9ec4e8;
+    }
+    [data-theme="light"] th {
+      background: #e8f1fa;
+      border-bottom: 1px solid #b5cfe8;
+      color: #3a5a7a;
     }
     th.th-desc { text-align: right; padding-right: 8px; }
 
@@ -1804,33 +1809,54 @@
       border: 1px solid var(--border) !important;
     }
     .summary-header {
-      background: var(--header-tint);
-      color: var(--accent);
+      background: #1a2a3a;
+      color: #8ec8ff;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
       font-weight: bold;
       font-size: 1rem;
       padding: 10px 14px;
       text-align: center;
-      border-bottom: 1px solid #e8e8e8;
+      border-bottom: 1px solid #2a3f55;
+    }
+    [data-theme="light"] .summary-header {
+      background: #d6e6f7;
+      color: #0a4a8a;
+      border-bottom: 1px solid #b5cfe8;
     }
     .summary-header.expense-h, .summary-header.income-h, .summary-header.install-h, .summary-header.balance-h {
-      background: var(--header-tint);
-      color: var(--text);
+      background: #1a2a3a;
+      color: #c8e4ff;
+    }
+    [data-theme="light"] .summary-header.expense-h,
+    [data-theme="light"] .summary-header.income-h,
+    [data-theme="light"] .summary-header.install-h,
+    [data-theme="light"] .summary-header.balance-h {
+      background: #d6e6f7;
+      color: #0a4a8a;
     }
     #summaryTitle-income, #summaryTitle-expense, .summary-header.balance-h {
-      color: var(--text) !important;
+      color: #c8e4ff !important;
       font-size: 1rem;
       font-weight: bold;
+    }
+    [data-theme="light"] #summaryTitle-income,
+    [data-theme="light"] #summaryTitle-expense,
+    [data-theme="light"] .summary-header.balance-h {
+      color: #0a4a8a !important;
     }
 
     .summary-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .summary-table th {
-      background: var(--bg3);
+      background: #243040;
       padding: 9px 6px;
       font-size: 0.85rem;
       text-align: center;
       border-bottom: 1px solid var(--border);
-      color: var(--muted);
+      color: #9ec4e8;
+    }
+    [data-theme="light"] .summary-table th {
+      background: #e8f1fa;
+      color: #3a5a7a;
     }
     .summary-table td {
       padding: 9px 6px;
@@ -2103,14 +2129,18 @@
       flex-shrink: 0;
     }
     .remind-bar {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: #3a3018;
+      border: 1px solid #c9a227;
       border-radius: 10px;
       margin-bottom: 8px;
       overflow: hidden;
       position: relative;
       z-index: 5;
       flex-shrink: 0;
+    }
+    [data-theme="light"] .remind-bar {
+      background: #fff6e0;
+      border: 1px solid #e0b84a;
     }
     .remind-bar[style*="display: block"],
     .remind-bar[style*="display:block"] {
@@ -2123,11 +2153,15 @@
       padding: 10px 12px;
       cursor: pointer;
       user-select: none;
-      color: var(--text);
+      color: #ffe9a8;
       font-weight: bold;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
-      background: var(--header-tint);
+      background: #4a3d1a;
       border-bottom: 1px solid transparent;
+    }
+    [data-theme="light"] .remind-bar-head {
+      color: #5c4500;
+      background: #ffe8a8;
     }
     .remind-bar.open .remind-bar-head {
       border-bottom-color: var(--border);
@@ -2137,8 +2171,12 @@
     .remind-bar .collapse-arrow { color: var(--muted); }
     .remind-bar .remind-table-wrap { margin: 0; }
     .remind-bar .remind-table th {
-      background: var(--bg3);
-      color: var(--table-muted);
+      background: #4a3d1a;
+      color: #ffe9a8;
+    }
+    [data-theme="light"] .remind-bar .remind-table th {
+      background: #ffe8a8;
+      color: #5c4500;
     }
     .remind-bar .remind-table td {
       color: var(--table-text);
@@ -7994,86 +8032,93 @@
       return buildSimpleImagePdf(pages,841.89,595.28);
     }
     async function exportPdf(){
-      try{
+      try {
         persistCurrent();
-        showToast('در حال ساخت PDF…');
-        const name = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
-        const blob = await renderPdfPagesOffline();
-        if (!blob || !(blob.size > 100)) throw new Error('empty pdf');
-        let shared = false;
-        try { shared = await shareExportFile(blob, name, 'application/pdf'); } catch (e) { shared = false; }
-        if (!shared) {
-          downloadBlob(blob, name);
-          showToast('دانلود PDF شروع شد');
-        } else {
-          showToast('PDF آماده است');
-        }
+        showToast('در حال باز کردن صفحه چاپ…');
+        // مسیر قابل‌اعتماد: Print Preview اندروید/وب → Save as PDF → برگشت به اپ
+        setTimeout(() => openPdfPrintWindow(), 120);
       } catch (e) {
-        console.error('offline PDF failed', e);
-        showToast('ساخت PDF ناموفق بود — پیش‌نمایش چاپ');
-        setTimeout(() => openPdfPrintWindow(), 300);
+        console.error('PDF print failed', e);
+        showToast('باز کردن صفحه چاپ ناموفق بود');
       }
     }
     function openPdfPrintWindow(){
-      // Android WebView/Print Preview ممکن است afterprint را خیلی زود، درست هنگام
-      // باز شدن پیش‌نمایش، اجرا کند. اگر همان لحظه اپ را برگردانیم، سرویس چاپ
-      // به‌جای سند چاپی، صفحه اصلی را ذخیره می‌کند. بنابراین تا وقتی کاربر از
-      // Print Preview برنگشته، صفحه گزارش را دست نمی‌زنیم.
-      const appUrl=window.location.href;
-      const printHtml=buildPdfFullDocument();
-      let printingStarted=false;
-      let restored=false;
-      let returnedFromPrint=false;
-      let leftForPrintPreview=false;
-      const cleanup=()=>{
-        try{document.removeEventListener('visibilitychange',onVisibilityChange,true);}catch(e){}
-        try{window.removeEventListener('pageshow',onPageShow,true);}catch(e){}
-        try{window.removeEventListener('focus',onFocus,true);}catch(e){}
-      };
-      const restoreApp=()=>{
-        if(restored || !printingStarted || !returnedFromPrint)return;
-        restored=true; cleanup();
-        setTimeout(()=>{try{window.location.replace(appUrl);}catch(e){try{window.location.reload();}catch(x){}}},150);
-      };
-      const onVisibilityChange=()=>{
-        // hidden = ورود به Print Preview؛ visible بعد از Save/Cancel = برگشت به اپ
-        if(printingStarted && document.visibilityState==='hidden'){
-          leftForPrintPreview=true;
+      // Android WebView: Print Preview → Save as PDF؛ بعد از بستن پیش‌نمایش برگرد به اپ
+      const appUrl = window.location.href;
+      const printHtml = buildPdfFullDocument();
+      let printingStarted = false;
+      let restored = false;
+      let returnedFromPrint = false;
+      let leftForPrintPreview = false;
+
+      function cleanup() {
+        try { document.removeEventListener('visibilitychange', onVisibilityChange, true); } catch (e) {}
+        try { window.removeEventListener('pageshow', onPageShow, true); } catch (e) {}
+        try { window.removeEventListener('focus', onFocus, true); } catch (e) {}
+        try { window.removeEventListener('afterprint', onAfterPrint, true); } catch (e) {}
+      }
+      function restoreApp() {
+        if (restored) return;
+        if (!printingStarted) return;
+        restored = true;
+        cleanup();
+        setTimeout(() => {
+          try { window.location.replace(appUrl); }
+          catch (e) { try { window.location.reload(); } catch (x) {} }
+        }, 180);
+      }
+      function onVisibilityChange() {
+        if (printingStarted && document.visibilityState === 'hidden') {
+          leftForPrintPreview = true;
           return;
         }
-        if(printingStarted && leftForPrintPreview && document.visibilityState==='visible'){
-          returnedFromPrint=true;
+        if (printingStarted && leftForPrintPreview && document.visibilityState === 'visible') {
+          returnedFromPrint = true;
           restoreApp();
         }
-      };
-      const onPageShow=()=>{
-        if(printingStarted && leftForPrintPreview){ returnedFromPrint=true; restoreApp(); }
-      };
-      const onFocus=()=>{
-        if(printingStarted && leftForPrintPreview && document.visibilityState==='visible'){
-          returnedFromPrint=true; restoreApp();
+      }
+      function onPageShow() {
+        if (printingStarted && leftForPrintPreview) {
+          returnedFromPrint = true;
+          restoreApp();
         }
-      };
-      try{
+      }
+      function onFocus() {
+        if (printingStarted && leftForPrintPreview && document.visibilityState === 'visible') {
+          returnedFromPrint = true;
+          restoreApp();
+        }
+      }
+      function onAfterPrint() {
+        leftForPrintPreview = true;
+        returnedFromPrint = true;
+        setTimeout(restoreApp, 280);
+      }
+
+      try {
         document.open();
         document.write(printHtml);
         document.close();
-        document.addEventListener('visibilitychange',onVisibilityChange,true);
-        window.addEventListener('pageshow',onPageShow,true);
-        window.addEventListener('focus',onFocus,true);
-        setTimeout(()=>{
-          printingStarted=true;
-          try{window.focus();window.print();}
-          catch(e){returnedFromPrint=true;restoreApp();}
-        },700);
-        // فقط برای حالت خرابی کامل Print Service؛ نباید در چاپ عادی فعال شود.
-        setTimeout(()=>{
-          if(!restored && printingStarted && leftForPrintPreview && document.visibilityState==='visible') { returnedFromPrint=true; restoreApp(); }
-        },180000);
+        document.addEventListener('visibilitychange', onVisibilityChange, true);
+        window.addEventListener('pageshow', onPageShow, true);
+        window.addEventListener('focus', onFocus, true);
+        window.addEventListener('afterprint', onAfterPrint, true);
+        setTimeout(() => {
+          printingStarted = true;
+          try {
+            window.focus();
+            window.print();
+          } catch (e) {
+            restoreApp();
+          }
+        }, 700);
+        setTimeout(() => {
+          if (!restored && printingStarted) restoreApp();
+        }, 180000);
         return true;
-      }catch(e){
-        console.error('print export failed',e);
-        try{window.location.replace(appUrl);}catch(x){window.location.reload();}
+      } catch (e) {
+        console.error('print export failed', e);
+        try { window.location.replace(appUrl); } catch (x) { window.location.reload(); }
         return false;
       }
     }
@@ -11993,82 +12038,166 @@
       applyTheme(t);
     })();
 
-    /* —— همیشه دو بار بک برای خروج —— */
-    let exitPending = false;
-    let exitTimer = null;
+    /* —— دکمه بازگشت گوشی: لایه به لایه عقب + تأیید خروج —— */
     function trapBack() {
       try { history.pushState({ hesabTrap: Date.now() }, '', location.href); } catch (e) {}
     }
     trapBack();
     trapBack();
-    window.addEventListener('popstate', function onBackGuard() {
-      // اول هر مودال/منوی باز را ببند — از اپ خارج نشو
-      try {
-        const fam = document.getElementById('familyModal');
-        if (fam && fam.classList.contains('open')) {
-          fam.classList.remove('open');
-          trapBack();
-          return;
-        }
-      } catch (e) {}
-      try {
-        const bank = document.getElementById('bankAccountsModal');
-        if (bank && bank.classList.contains('open')) {
-          bank.classList.remove('open');
-          trapBack();
-          return;
-        }
-      } catch (e) {}
-      try {
-        const help = document.getElementById('helpModal');
-        if (help && help.classList.contains('open')) {
-          help.classList.remove('open');
-          trapBack();
-          return;
-        }
-      } catch (e) {}
+
+    function closeTopOverlayOrMenu() {
+      // ۰) مودال تأیید (مثلاً خروج)
       try {
         const conf = document.getElementById('confirmModal');
         if (conf && conf.classList.contains('open')) {
           conf.classList.remove('open');
-          trapBack();
+          const cb = (typeof confirmNoCallback !== 'undefined') ? confirmNoCallback : null;
+          try { confirmCallback = null; confirmNoCallback = null; } catch (e) {}
+          if (cb) try { cb(); } catch (e) {}
+          return true;
+        }
+      } catch (e) {}
+      // ۱) لیست‌های کشویی
+      try {
+        const lists = document.querySelectorAll('.dark-select-list.open');
+        if (lists.length) {
+          lists.forEach(l => l.classList.remove('open'));
+          const bd = document.getElementById('darkSelectBackdrop');
+          if (bd) bd.classList.remove('open');
+          return true;
+        }
+      } catch (e) {}
+      // ۲) شیت ورودی متن
+      try {
+        const tip = document.getElementById('textInputModal');
+        if (tip && tip.classList.contains('open')) {
+          tip.classList.remove('open');
+          const bd = document.getElementById('textInputBackdrop');
+          if (bd) bd.classList.remove('open');
+          try { unlockBodyScroll(); } catch (e) {}
+          return true;
+        }
+      } catch (e) {}
+      // ۳) هر مودال باز (به‌جز confirm که جدا مدیریت می‌شود)
+      try {
+        const overlays = document.querySelectorAll('.modal-overlay.open');
+        for (let i = overlays.length - 1; i >= 0; i--) {
+          const ov = overlays[i];
+          if (ov.id === 'textInputBackdrop' || ov.id === 'darkSelectBackdrop') {
+            ov.classList.remove('open');
+            continue;
+          }
+          if (ov.id === 'confirmModal') continue;
+          // توابع اختصاصی در صورت وجود
+          if (ov.id === 'bankAccountsModal' && typeof closeBankAccountsModal === 'function') {
+            _bankModalFromMenu = false;
+            closeBankAccountsModal();
+            return true;
+          }
+          if (ov.id === 'familyModal' && typeof closeFamilyModal === 'function') {
+            closeFamilyModal();
+            return true;
+          }
+          if (ov.id === 'smsImportModal' && typeof closeSmsImportModal === 'function') {
+            closeSmsImportModal();
+            return true;
+          }
+          if (ov.id === 'smsConfirmModal' && typeof closeSmsConfirmModal === 'function') {
+            closeSmsConfirmModal();
+            return true;
+          }
+          if (ov.id === 'helpModal') {
+            ov.classList.remove('open');
+            return true;
+          }
+          ov.classList.remove('open');
+          return true;
+        }
+      } catch (e) {}
+      // ۴) انتخاب خروجی اکسل/PDF
+      try {
+        const exp = document.getElementById('exportChoiceOverlay');
+        if (exp) { exp.remove(); return true; }
+      } catch (e) {}
+      // ۵) پنجره تمام‌صفحه (درآمد ثابت / اقساط / بده‌بستان)
+      try {
+        const fs = document.getElementById('featureSheet');
+        if (fs && fs.classList.contains('open')) {
+          closeFeatureSheet();
+          return true;
+        }
+      } catch (e) {}
+      // ۶) منوی همبرگری
+      try {
+        const menu = document.getElementById('menuDropdown');
+        if (menu && menu.classList.contains('open')) {
+          closeSideMenu();
+          return true;
+        }
+        if (document.body && document.body.classList.contains('menu-open')) {
+          closeSideMenu();
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function doAppExit() {
+      try {
+        const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (App && typeof App.exitApp === 'function') {
+          App.exitApp();
           return;
         }
       } catch (e) {}
-      const menu = document.getElementById('menuDropdown');
-      if (menu && menu.classList.contains('open')) {
-        closeSideMenu();
-        trapBack();
-        return;
-      }
-      if (document.body && document.body.classList.contains('menu-open')) {
-        try { closeSideMenu(); } catch (e) {}
-        trapBack();
-        return;
-      }
-      if (exitPending) {
-        // بار دوم — خارج شو
-        clearTimeout(exitTimer);
-        exitPending = false;
+      try {
         window.removeEventListener('popstate', onBackGuard);
-        setTimeout(() => {
-          try { history.back(); } catch (e) {}
-          // اگر ماندیم دوباره تله را فعال کن
-          setTimeout(() => {
-            window.addEventListener('popstate', onBackGuard);
-            exitPending = false;
-            trapBack();
-            trapBack();
-          }, 500);
-        }, 10);
+        history.back();
+      } catch (e) {}
+      setTimeout(() => {
+        try {
+          window.addEventListener('popstate', onBackGuard);
+          trapBack();
+          trapBack();
+        } catch (e) {}
+      }, 400);
+    }
+
+    function onBackGuard() {
+      // لایه باز را ببند
+      if (closeTopOverlayOrMenu()) {
+        trapBack();
         return;
       }
+      // تأیید خروج
       trapBack();
-      exitPending = true;
-      showToast('برای خروج یک‌بار دیگر بازگشت را بزنید');
-      clearTimeout(exitTimer);
-      exitTimer = setTimeout(() => { exitPending = false; }, 2500);
-    });
+      try {
+        askConfirm('آیا می‌خواهید از برنامه خارج شوید؟', function () {
+          doAppExit();
+        }, function () {
+          /* انصراف */
+        });
+      } catch (e) {
+        doAppExit();
+      }
+    }
+    window.addEventListener('popstate', onBackGuard);
+
+    // Capacitor hardware back button
+    try {
+      document.addEventListener('backbutton', function (e) {
+        try { if (e && e.preventDefault) e.preventDefault(); } catch (x) {}
+        onBackGuard();
+      }, false);
+    } catch (e) {}
+    try {
+      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if (App && App.addListener) {
+        App.addListener('backButton', function () {
+          onBackGuard();
+        });
+      }
+    } catch (e) {}
 
     let balanceSelectedTitles = []; // empty = all
     let balanceSelectedAccount = ''; // empty = all accounts
