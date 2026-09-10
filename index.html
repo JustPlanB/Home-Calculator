@@ -1337,10 +1337,11 @@
     /* فقط وسط‌چین کردن آیکون بخش جدید — بدون باکس پشتی */
     .add-sec-wrap {
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
+      direction: ltr;
       margin: 12px 0 16px;
-      padding: 0;
+      padding: 0 6px;
       background: transparent;
       border: none;
     }
@@ -1384,6 +1385,8 @@
       font-size: 1.05rem;
       color: var(--text);
       text-align: center;
+      padding-left: 4px;
+      padding-right: 4px;
     }
     .feature-sheet-bar .fs-close {
       border: none;
@@ -2695,12 +2698,24 @@
       background: var(--input-bg);
       overflow: hidden;
       box-sizing: border-box;
-      height: 32px;
-      min-height: 32px;
+      height: 36px;
+      min-height: 36px;
       flex: 0 0 auto;
       width: 92px;
       min-width: 92px;
       max-width: 92px;
+    }
+    /* هم ارتفاع با باکس روز */
+    .balance-day-row .filter-chip#balanceDayAllBtn,
+    #balanceDayAllBtn {
+      height: 36px !important;
+      min-height: 36px !important;
+      box-sizing: border-box !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
     }
     .day-select-label {
       display: flex;
@@ -2734,8 +2749,9 @@
       height: 100%;
     }
     .day-select-value-wrap .dark-select-btn {
-      height: 32px !important;
-      min-height: 32px !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      max-height: 36px !important;
       box-sizing: border-box !important;
       border: none !important;
       border-radius: 0 !important;
@@ -3349,7 +3365,6 @@
     <!-- اقساط -->
     <div id="panel-install" class="tab-panel">
       <div id="plans-container"></div>
-      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="summary-section">
         <div class="summary-header install-h">خلاصه اقساط</div>
@@ -3373,13 +3388,12 @@
           </tfoot>
         </table>
       </div>
-      </div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     <!-- بده‌بستان -->
     <div id="panel-ledger" class="tab-panel">
       <div id="sections-ledger"></div>
-      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
       <div class="filter-bar" id="ledgerFilters"></div>
 
@@ -3395,6 +3409,7 @@
           <tbody id="ledger-summary-body"></tbody>
         </table>
       </div>
+      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     </div>
@@ -3405,7 +3420,6 @@
     <div class="feature-sheet-bar">
       <button type="button" class="fs-close" id="featureSheetClose" onclick="closeFeatureSheet()">بازگشت</button>
       <div class="fs-title" id="featureSheetTitle"></div>
-      <button type="button" class="fs-close" id="featureSheetDone" onclick="closeFeatureSheet()">ثبت</button>
     </div>
     <div class="feature-sheet-body" id="featureSheetBody"></div>
   </div>
@@ -9976,10 +9990,11 @@
         container.appendChild(box);
       }
       const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+      const plusSvgRec = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (recurringCollapsed ? '0' : '10px') + ';cursor:pointer;" id="recurringHead">' +
         '<span class="collapse-arrow">' + (recurringCollapsed ? '▼' : '▲') + '</span>' +
         '<h3 style="margin:0;flex:1;">درآمدهای ثابت</h3>' +
-        '<button class="btn btn-add-row" type="button" id="addRecurringBtn" style="' + (recurringCollapsed ? 'display:none;' : '') + '">＋ جدید</button></div>';
+        '<button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید" style="' + (recurringCollapsed ? 'display:none;' : '') + '">' + plusSvgRec + '</button></div>';
       if (!recurringCollapsed) {
         if (recurringSelectMode) {
           const cnt = recurringSelected.size;
@@ -10531,9 +10546,18 @@
           }
         }
         saveRecurring();
-        renderRecurringBar();
-        renderAll();
-        scheduleSave();
+        // بعد از تأیید، لیست همه درآمدهای ثابت را نشان بده
+        try {
+          recurringCollapsed = false;
+          if (_featureActive !== 'recurring') {
+            openFeatureSheet('recurring');
+          } else {
+            renderRecurringBar();
+          }
+        } catch (e) {
+          try { renderRecurringBar(); } catch (e2) {}
+        }
+        try { scheduleSave(); } catch (e) {}
         close();
       };
       ok.onclick = save;
@@ -12758,15 +12782,21 @@
         filters.appendChild(chip);
       });
 
-      // باکس «همه روزها» را دقیقاً هم‌اندازه باکس «همه بخش‌ها» کن
+      // باکس «همه روزها» هم‌عرض «همه بخش‌ها»؛ ارتفاع با باکس روز یکسان
       const dayAllBtn = document.getElementById('balanceDayAllBtn');
+      const daySelectBox = document.getElementById('balanceDaySelectBox');
       if (dayAllBtn) {
         const r = allChip.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0) {
+        if (r.width > 0) {
           dayAllBtn.style.boxSizing = 'border-box';
           dayAllBtn.style.width = r.width + 'px';
-          dayAllBtn.style.height = r.height + 'px';
         }
+        dayAllBtn.style.height = '36px';
+        dayAllBtn.style.minHeight = '36px';
+      }
+      if (daySelectBox) {
+        daySelectBox.style.height = '36px';
+        daySelectBox.style.minHeight = '36px';
       }
 
       renderBalanceDayFilter();
