@@ -7481,7 +7481,18 @@
           payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
         } catch (e) {}
         const textOut = JSON.stringify(payload);
-        const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
+        // نام‌گذاری: اولین فایل hesab-backup-YYYY-MM.json ، بعدی‌ها hesab-backup-N-YYYY-MM.json
+        // همیشه با .json تمام می‌شود و چیزی بعد از پسوند اضافه نمی‌شود
+        const ym = currentYear + '-' + String(currentMonth).padStart(2, '0');
+        let seq = 0;
+        try {
+          const key = 'hesab_backup_seq_' + ym;
+          seq = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+          localStorage.setItem(key, String(seq + 1));
+        } catch (e) { seq = 0; }
+        const name = seq === 0
+          ? ('hesab-backup-' + ym + '.json')
+          : ('hesab-backup-' + seq + '-' + ym + '.json');
         showToast('در حال ساخت پشتیبان…');
         const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
         const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
@@ -8332,17 +8343,90 @@
     }
 
     async function renderPdfPagesOffline(){
-      const content=buildPdfFullDocument();
-      const holder=document.createElement('div'); holder.style.cssText='position:fixed;left:-100000px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;'; holder.innerHTML=buildPdfContent(); document.body.appendChild(holder); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      const width=1200, height=Math.max(holder.scrollHeight,holder.offsetHeight,100); holder.style.width=width+'px';
-      const inner=content.replace(/<\/body>[\s\S]*?<\/html>/,'</body></html>');
-      const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="'+width+'" height="'+height+'"><foreignObject x="0" y="0" width="'+width+'" height="'+height+'"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;">'+buildPdfContent()+'</div></foreignObject></svg>';
+      // روش ۱: رندر مستقیم DOM به canvas با clone آفلاین (بدون foreignObject که در WebView اغلب سفید می‌شود)
+      const width = 1100;
+      const holder = document.createElement('div');
+      holder.setAttribute('dir', 'rtl');
+      holder.style.cssText = 'position:fixed;left:-99999px;top:0;width:'+width+'px;background:#ffffff;color:#000000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;box-sizing:border-box;padding:16px;line-height:1.4;';
+      holder.innerHTML = buildPdfContent();
+      document.body.appendChild(holder);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 120));
+      const height = Math.max(holder.scrollHeight, holder.offsetHeight, 300);
+
+      // تلاش برای رندر با SVG foreignObject (با HTML خام معتبر XHTML — تگ‌ها escape نمی‌شوند)
+      // فقط & تنها در متن‌های از قبل escapeHtml شده‌اند
+      const xhtml = buildPdfContent()
+        .replace(/<br\s*>/gi, '<br/>')
+        .replace(/&(?!(amp|lt|gt|quot|apos);)/g, '&amp;');
+      const svg =
+        '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">' +
+        '<foreignObject width="100%" height="100%">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;background:#ffffff;color:#000000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;padding:16px;box-sizing:border-box;">' +
+        xhtml +
+        '</div></foreignObject></svg>';
+
+      let canvas = null;
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        await new Promise((res, rej) => {
+          const t = setTimeout(() => rej(new Error('SVG timeout')), 8000);
+          img.onload = () => { clearTimeout(t); res(); };
+          img.onerror = () => { clearTimeout(t); rej(new Error('SVG load error')); };
+          img.src = svgUrl;
+        });
+        const scale = 2;
+        canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(width * scale);
+        canvas.height = Math.ceil(height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // تشخیص صفحه سفید
+        const sw = Math.min(180, canvas.width), sh = Math.min(180, canvas.height);
+        const sample = ctx.getImageData(0, 0, sw, sh).data;
+        let nonWhite = 0;
+        for (let i = 0; i < sample.length; i += 20) {
+          if (sample[i] < 248 || sample[i+1] < 248 || sample[i+2] < 248) nonWhite++;
+        }
+        if (nonWhite < 5) {
+          canvas = null;
+          throw new Error('blank image from SVG');
+        }
+      } catch (svgErr) {
+        console.warn('SVG foreignObject path failed:', svgErr);
+        canvas = null;
+      }
+
       holder.remove();
-      const img=new Image(); img.decoding='sync'; const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
-      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;}); URL.revokeObjectURL(url);
-      const scale=1.5, canvas=document.createElement('canvas'); canvas.width=Math.ceil(width*scale); canvas.height=Math.ceil(height*scale); const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      const pageHpx=Math.floor(canvas.width*(595.28/841.89)); const pages=[]; for(let y=0;y<canvas.height;y+=pageHpx){ const h=Math.min(pageHpx,canvas.height-y); const pc=document.createElement('canvas');pc.width=canvas.width;pc.height=h;const pctx=pc.getContext('2d');pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,h);pctx.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h); const data=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(data.length);for(let i=0;i<data.length;i++)jpg[i]=data.charCodeAt(i); pages.push({jpg,w:pc.width,h:pc.height}); }
-      return buildSimpleImagePdf(pages,841.89,595.28);
+
+      if (!canvas) {
+        // foreignObject در این محیط کار نکرد → به print fallback می‌رویم
+        throw new Error('PDF offline render unavailable (would be white)');
+      }
+
+      const pageHpx = Math.floor(canvas.width * (595.28 / 841.89));
+      const pages = [];
+      for (let y = 0; y < canvas.height; y += pageHpx) {
+        const h = Math.min(pageHpx, canvas.height - y);
+        const pc = document.createElement('canvas');
+        pc.width = canvas.width;
+        pc.height = h;
+        const pctx = pc.getContext('2d');
+        pctx.fillStyle = '#ffffff';
+        pctx.fillRect(0, 0, pc.width, h);
+        pctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        const data = atob(pc.toDataURL('image/jpeg', 0.92).split(',')[1]);
+        const jpg = new Uint8Array(data.length);
+        for (let i = 0; i < data.length; i++) jpg[i] = data.charCodeAt(i);
+        pages.push({ jpg, w: pc.width, h: pc.height });
+      }
+      return buildSimpleImagePdf(pages, 841.89, 595.28);
     }
     async function exportPdf(){
       try{
@@ -8355,10 +8439,17 @@
           if(result && result.uri){ showToast('PDF در پوشه Download ذخیره شد'); return; }
           throw new Error('native PDF export returned no URI');
         }
-        const blob=await renderPdfPagesOffline();
-        const saved=await shareExportFile(blob,name,'application/pdf');
-        if(!saved) downloadBlob(blob,name);
-        showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+        try {
+          const blob=await renderPdfPagesOffline();
+          const saved=await shareExportFile(blob,name,'application/pdf');
+          if(!saved) downloadBlob(blob,name);
+          showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+        } catch (offlineErr) {
+          console.warn('Offline PDF failed, falling back to print', offlineErr);
+          showToast('در حال باز کردن پیش‌نمایش چاپ…');
+          const ok = openPdfPrintWindow();
+          if (!ok) throw offlineErr;
+        }
       }catch(e){
         console.error('PDF export failed',e);
         showToast('ساخت PDF ناموفق بود');
