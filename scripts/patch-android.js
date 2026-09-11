@@ -172,108 +172,57 @@ public class NativeFileExportPlugin extends Plugin {
     final String html=call.getString("html",""); final String filename=call.getString("filename","hesab.pdf");
     if(html==null||html.isEmpty()){call.reject("empty_html");return;}
     getActivity().runOnUiThread(() -> {
-      final WebView web=new WebView(getContext());
+      final WebView web=new WebView(getActivity());
       web.setBackgroundColor(android.graphics.Color.WHITE);
       web.getSettings().setJavaScriptEnabled(true);
       web.getSettings().setDefaultTextEncodingName("UTF-8");
-      final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
-      final boolean[] done={false};
-      final Runnable timeout=() -> { if(!done[0]) { done[0]=true; web.destroy(); call.reject("pdf_export_timeout","PDF rendering timed out"); } };
+      final android.widget.FrameLayout root=new android.widget.FrameLayout(getActivity());
+      root.setBackgroundColor(android.graphics.Color.WHITE);
+      root.addView(web,new android.widget.FrameLayout.LayoutParams(1120,android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+      getActivity().addContentView(root,new android.view.ViewGroup.LayoutParams(1120,1));
       web.setWebViewClient(new WebViewClient(){
+        private boolean done=false;
+        private void fail(String msg){ if(done)return; done=true; try{root.removeView(web); ((android.view.ViewGroup)root.getParent()).removeView(root);}catch(Exception ignored){} call.reject(msg); web.destroy(); }
+        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){ fail("pdf_page_error:"+description); }
         @Override public void onPageFinished(WebView view,String url){
-          handler.postDelayed(() -> {
-            if(done[0]) return;
-            try { printToPdf(web,filename,call,done,handler,timeout); }
-            catch(Exception e){ if(!done[0]){done[0]=true;web.destroy();call.reject("pdf_export_failed",e);} }
-          },350);
-        }
-        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){
-          if(!done[0]){done[0]=true;web.destroy();call.reject("pdf_webview_error",description);}
+          if(done)return;
+          view.postDelayed(() -> {
+            if(done)return;
+            try{ createPdfFromAttachedWebView(view,filename,call,root); done=true; }
+            catch(Exception e){ fail("pdf_export_failed:"+e.getMessage()); }
+          },700);
         }
       });
-      handler.postDelayed(timeout,15000);
-      web.loadDataWithBaseURL(null,html,"text/html","UTF-8",null);
+      web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
+      web.postDelayed(() -> { try{ if(web.getHeight()<2){} }catch(Exception ignored){} },12000);
     });
   }
 
-  private void printToPdf(final WebView web, final String filename, final PluginCall call, final boolean[] done, final Handler handler, final Runnable timeout) throws Exception {
-    final Uri uri=insertPending(filename,"application/pdf");
-    try {
-      final int pageWidth=595;
-      final int pageHeight=842;
-      final int contentWidth=794;
-      final float scale=(float)pageWidth/(float)contentWidth;
-
-      web.measure(
-        android.view.View.MeasureSpec.makeMeasureSpec(contentWidth,android.view.View.MeasureSpec.EXACTLY),
-        android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED)
-      );
-      web.layout(0,0,contentWidth,Math.max(web.getMeasuredHeight(),1));
-
-      int contentHeight=web.getContentHeight();
-      float density=web.getResources().getDisplayMetrics().density;
-      int measuredHeight=Math.max(web.getMeasuredHeight(),(int)Math.ceil(contentHeight*density));
-      if(measuredHeight<1) measuredHeight=1;
-      web.layout(0,0,contentWidth,measuredHeight);
-
-      final PdfDocument pdf=new PdfDocument();
-      final int pageContentHeight=(int)Math.floor(pageHeight/scale);
-      final int pageCount=Math.max(1,(int)Math.ceil((double)measuredHeight/pageContentHeight));
-
+  private void createPdfFromAttachedWebView(WebView web,String filename,PluginCall call,android.widget.FrameLayout root) throws Exception {
+    int viewW=1120;
+    web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));
+    int viewH=Math.max(web.getMeasuredHeight(),1);
+    web.getLayoutParams().height=viewH;
+    web.requestLayout();
+    web.layout(0,0,viewW,viewH);
+    web.scrollTo(0,0);
+    final int pageW=842,pageH=595;
+    float scale=(float)pageW/(float)viewW;
+    int pageContentH=Math.max(1,(int)(pageH/scale));
+    int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
+    PdfDocument doc=new PdfDocument(); Uri uri=null;
+    try{
       for(int i=0;i<pageCount;i++){
-        PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageWidth,pageHeight,i+1).create();
-        PdfDocument.Page page=pdf.startPage(info);
-        Canvas canvas=page.getCanvas();
-        canvas.save();
-        canvas.scale(scale,scale);
-        canvas.translate(0,-i*pageContentHeight);
-        web.draw(canvas);
-        canvas.restore();
-        pdf.finishPage(page);
+        PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
+        PdfDocument.Page page=doc.startPage(info);
+        android.graphics.Canvas c=page.getCanvas(); c.drawColor(android.graphics.Color.WHITE); c.save(); c.scale(scale,scale); c.translate(0,-i*pageContentH); web.draw(c); c.restore(); doc.finishPage(page);
       }
-
-      try(ParcelFileDescriptor pfd=getContext().getContentResolver().openFileDescriptor(uri,"w")){
-        if(pfd==null) throw new Exception("open PDF output failed");
-        try(OutputStream out=new ParcelFileDescriptor.AutoCloseOutputStream(pfd)){
-          pdf.writeTo(out);
-        }
-      } finally {
-        pdf.close();
-      }
-
+      uri=insertPending(filename,"application/pdf");
+      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){ if(out==null) throw new Exception("open output failed"); doc.writeTo(out); out.flush(); }
       finishPending(uri);
-      if(!done[0]){
-        done[0]=true;
-        handler.removeCallbacks(timeout);
-        web.destroy();
-        call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
-      }
-    } catch(Exception e) {
-      try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
-      throw e;
-    }
-  }
-
-}
-`;
-
-const main=`package ${pkg};
-
-import android.Manifest;
-import android.os.Build;
-import android.os.Bundle;
-import android.content.pm.PackageManager;
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-  @Override public void onCreate(Bundle savedInstanceState){
-    registerPlugin(BankSmsPlugin.class);
-    registerPlugin(NativeFileExportPlugin.class);
-    super.onCreate(savedInstanceState);
-    java.util.ArrayList<String> needed=new java.util.ArrayList<>();
-    if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
-    if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.POST_NOTIFICATIONS);
-    if(!needed.isEmpty()) requestPermissions(needed.toArray(new String[0]),4201);
+      call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
+    }catch(Exception e){ if(uri!=null)try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){} throw e; }
+    finally{ try{doc.close();}catch(Exception ignored){} try{root.removeView(web); if(root.getParent()!=null)((android.view.ViewGroup)root.getParent()).removeView(root);}catch(Exception ignored){} web.destroy(); }
   }
 }
 `;
