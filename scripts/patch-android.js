@@ -139,8 +139,30 @@ import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
+  private String uniqueDownloadName(String filename) {
+    if(filename==null || filename.trim().isEmpty()) filename="download.bin";
+    ContentResolver cr=getContext().getContentResolver();
+    String candidate=filename;
+    String base=filename;
+    String ext="";
+    int dot=filename.lastIndexOf('.');
+    if(dot>0){ base=filename.substring(0,dot); ext=filename.substring(dot); }
+    for(int n=0;n<10000;n++){
+      android.database.Cursor c=null;
+      try {
+        c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+          new String[]{MediaStore.Downloads.DISPLAY_NAME},
+          MediaStore.Downloads.DISPLAY_NAME+"=?",new String[]{candidate},null);
+        if(c==null || !c.moveToFirst()) return candidate;
+      } finally { if(c!=null) c.close(); }
+      candidate=base+"-"+(n+1)+ext;
+    }
+    return candidate;
+  }
+
   private Uri insertPending(String filename,String mimeType) throws Exception {
     ContentResolver cr=getContext().getContentResolver();
+    filename=uniqueDownloadName(filename);
     ContentValues v=new ContentValues();
     v.put(MediaStore.Downloads.DISPLAY_NAME,filename);
     v.put(MediaStore.Downloads.MIME_TYPE,mimeType==null?"application/octet-stream":mimeType);
@@ -166,85 +188,49 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   @com.getcapacitor.PluginMethod public void exportHtmlToPdf(final PluginCall call){
-    final String html=call.getString("html","");
-    final String filename=call.getString("filename","hesab.pdf");
+    final String html=call.getString("html",""); final String filename=call.getString("filename","hesab.pdf");
     if(html==null||html.isEmpty()){call.reject("empty_html");return;}
     getActivity().runOnUiThread(() -> {
-      final WebView web=new WebView(getActivity());
+      final android.widget.FrameLayout root=(android.widget.FrameLayout)getActivity().getWindow().getDecorView();
+      final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
+      host.setBackgroundColor(android.graphics.Color.WHITE);
+      root.addView(host,new android.widget.FrameLayout.LayoutParams(1120,1200));
+      final WebView web=new WebView(getContext());
       web.setBackgroundColor(android.graphics.Color.WHITE);
+      host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1200));
       web.getSettings().setJavaScriptEnabled(true);
       web.getSettings().setDefaultTextEncodingName("UTF-8");
-
-      final android.widget.FrameLayout host=new android.widget.FrameLayout(getActivity());
-      host.setBackgroundColor(android.graphics.Color.WHITE);
-      host.setAlpha(0f);
-      android.view.ViewGroup decor=(android.view.ViewGroup)getActivity().getWindow().getDecorView();
-      decor.addView(host,new android.view.ViewGroup.LayoutParams(1,1));
-      host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1));
-
       web.setWebViewClient(new WebViewClient(){
-        private boolean started=false;
         @Override public void onPageFinished(WebView view,String url){
-          if(started)return;
-          started=true;
-          view.postDelayed(() -> createPdf(view,filename,call,host),1000);
-        }
-        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){
-          call.reject("pdf_page_error:"+description);
-          try{ if(host.getParent()!=null)((android.view.ViewGroup)host.getParent()).removeView(host); }catch(Exception ignored){}
-          view.destroy();
+          view.postDelayed(() -> createPdf(view,filename,call,host,root),1200);
         }
       });
       web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
     });
   }
 
-  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host){
+  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host,android.widget.FrameLayout root){
     PdfDocument doc=null; Uri uri=null;
     try{
-      final int viewW=1120;
-      float density=getActivity().getResources().getDisplayMetrics().density;
-      int contentHeight=Math.max(web.getContentHeight(),1);
-      int viewH=Math.max((int)Math.ceil(contentHeight*density),1);
-
-      android.view.ViewGroup.LayoutParams lp=web.getLayoutParams();
-      lp.width=viewW; lp.height=viewH; web.setLayoutParams(lp);
-      android.view.ViewGroup.LayoutParams hp=host.getLayoutParams();
-      hp.width=viewW; hp.height=viewH; host.setLayoutParams(hp);
-      host.setAlpha(1f);
-      host.requestLayout();
-
-      web.measure(
-        android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),
-        android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY)
-      );
+      int viewW=1120;
+      web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));
+      int viewH=Math.max(web.getMeasuredHeight(),1);
       web.layout(0,0,viewW,viewH);
-      web.scrollTo(0,0);
-
-      final int pageW=842,pageH=595;
+      final int pageW=842, pageH=595;
       float scale=(float)pageW/(float)viewW;
-      int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
-      int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
-
+      int pageContentH=Math.max(1,(int)(pageH/scale));
+      int pageCount=(int)Math.ceil((double)viewH/(double)pageContentH);
       doc=new PdfDocument();
       for(int i=0;i<pageCount;i++){
         PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
         PdfDocument.Page page=doc.startPage(info);
         android.graphics.Canvas c=page.getCanvas();
         c.drawColor(android.graphics.Color.WHITE);
-        c.save();
-        c.scale(scale,scale);
-        c.translate(0,-i*pageContentH);
-        web.draw(c);
-        c.restore();
+        c.save(); c.scale(scale,scale); c.translate(0,-i*pageContentH); web.draw(c); c.restore();
         doc.finishPage(page);
       }
-
       uri=insertPending(filename,"application/pdf");
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){
-        if(out==null) throw new Exception("open output failed");
-        doc.writeTo(out); out.flush();
-      }
+      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){ if(out==null) throw new Exception("open output failed"); doc.writeTo(out); out.flush(); }
       finishPending(uri);
       call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
     }catch(Exception e){
@@ -252,8 +238,8 @@ public class NativeFileExportPlugin extends Plugin {
       call.reject("pdf_export_failed",e);
     }finally{
       if(doc!=null) try{doc.close();}catch(Exception ignored){}
-      try{ if(host.getParent()!=null)((android.view.ViewGroup)host.getParent()).removeView(host); }catch(Exception ignored){}
-      try{web.destroy();}catch(Exception ignored){}
+      try{ host.removeView(web); root.removeView(host); }catch(Exception ignored){}
+      web.destroy();
     }
   }
 }
