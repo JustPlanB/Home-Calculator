@@ -8520,6 +8520,56 @@
       }
     }
 
+    /* —— Swipe gesture for hamburger menu —— */
+    (function bindMenuSwipeGesture() {
+      let sx = 0, sy = 0, tracking = false;
+      const EDGE = 42;
+      const MIN_X = 70;
+      const MAX_Y = 90;
+
+      document.addEventListener('touchstart', function(e) {
+        if (!e.touches || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        sx = t.clientX; sy = t.clientY;
+        const menu = document.getElementById('menuDropdown');
+        tracking = !!menu && !menu.classList.contains('open') && sx >= window.innerWidth - EDGE;
+      }, {passive:true});
+
+      document.addEventListener('touchend', function(e) {
+        if (!tracking || !e.changedTouches || !e.changedTouches.length) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+        tracking = false;
+        if (dx <= -MIN_X && Math.abs(dy) <= MAX_Y) {
+          openSideMenu();
+          if (e.cancelable) e.preventDefault();
+        }
+      }, {passive:false});
+
+      document.addEventListener('touchstart', function(e) {
+        if (!e.touches || e.touches.length !== 1) return;
+        const menu = document.getElementById('menuDropdown');
+        if (!menu || !menu.classList.contains('open')) return;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+        tracking = true;
+      }, {passive:true});
+
+      document.addEventListener('touchend', function(e) {
+        if (!tracking || !e.changedTouches || !e.changedTouches.length) return;
+        const menu = document.getElementById('menuDropdown');
+        if (!menu || !menu.classList.contains('open')) { tracking = false; return; }
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+        tracking = false;
+        if (dx >= MIN_X && Math.abs(dy) <= MAX_Y) {
+          closeSideMenu();
+          if (e.cancelable) e.preventDefault();
+        }
+      }, {passive:false});
+    })();
+
     function openSideMenu() {
       const menu = document.getElementById('menuDropdown');
       const bd = document.getElementById('menuBackdrop');
