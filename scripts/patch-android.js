@@ -199,33 +199,72 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   private void createPdfFromAttachedWebView(WebView web,String filename,PluginCall call,android.widget.FrameLayout root) throws Exception {
-    int viewW=1120;
-    web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));
-    int viewH=Math.max(web.getMeasuredHeight(),1);
-    web.getLayoutParams().height=viewH;
-    web.requestLayout();
+    final int viewW=1120;
+    // WebView.getContentHeight() is CSS pixels; multiply by density for the
+    // actual Android view height before drawing. This avoids blank PdfDocument
+    // pages caused by a WebView that was laid out at height 1.
+    float density=getActivity().getResources().getDisplayMetrics().density;
+    int cssH=Math.max(web.getContentHeight(),1);
+    int viewH=Math.max((int)Math.ceil(cssH*density),1);
+
+    android.view.ViewGroup.LayoutParams lp=web.getLayoutParams();
+    lp.width=viewW;
+    lp.height=viewH;
+    web.setLayoutParams(lp);
+    root.getLayoutParams().width=viewW;
+    root.getLayoutParams().height=viewH;
+    root.requestLayout();
+
+    web.measure(
+      android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),
+      android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY)
+    );
     web.layout(0,0,viewW,viewH);
     web.scrollTo(0,0);
+
     final int pageW=842,pageH=595;
     float scale=(float)pageW/(float)viewW;
-    int pageContentH=Math.max(1,(int)(pageH/scale));
+    int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
     int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
-    PdfDocument doc=new PdfDocument(); Uri uri=null;
+
+    PdfDocument doc=new PdfDocument();
+    Uri uri=null;
     try{
       for(int i=0;i<pageCount;i++){
         PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
         PdfDocument.Page page=doc.startPage(info);
-        android.graphics.Canvas c=page.getCanvas(); c.drawColor(android.graphics.Color.WHITE); c.save(); c.scale(scale,scale); c.translate(0,-i*pageContentH); web.draw(c); c.restore(); doc.finishPage(page);
+        android.graphics.Canvas c=page.getCanvas();
+        c.drawColor(android.graphics.Color.WHITE);
+        c.save();
+        c.scale(scale,scale);
+        c.translate(0,-i*pageContentH);
+        web.draw(c);
+        c.restore();
+        doc.finishPage(page);
       }
       uri=insertPending(filename,"application/pdf");
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){ if(out==null) throw new Exception("open output failed"); doc.writeTo(out); out.flush(); }
+      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){
+        if(out==null) throw new Exception("open output failed");
+        doc.writeTo(out);
+        out.flush();
+      }
       finishPending(uri);
       call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
-    }catch(Exception e){ if(uri!=null)try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){} throw e; }
-    finally{ try{doc.close();}catch(Exception ignored){} try{root.removeView(web); if(root.getParent()!=null)((android.view.ViewGroup)root.getParent()).removeView(root);}catch(Exception ignored){} web.destroy(); }
+    }catch(Exception e){
+      if(uri!=null)try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+      throw e;
+    }finally{
+      try{doc.close();}catch(Exception ignored){}
+      try{
+        if(root.getParent()!=null)((android.view.ViewGroup)root.getParent()).removeView(root);
+      }catch(Exception ignored){}
+      web.destroy();
+    }
   }
 }
 `;
+
+const main=`package ${pkg};\n\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n}\n`;
 
 fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
