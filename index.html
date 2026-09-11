@@ -73,10 +73,10 @@
       --accent2: #007aff;
       --green-bg: #c8f5d6;
       --green-bd: #c6e6d0;
-      --green-tx: #1c1c1e;
+      --green-tx: #15803d;
       --red-bg: #ffd0d4;
       --red-bd: #f0c8cc;
-      --red-tx: #1c1c1e;
+      --red-tx: #dc2626;
       --warn-bg: #ffffff;
       --warn-bd: #c6c6c8;
       --warn-tx: #1c1c1e;
@@ -3097,7 +3097,7 @@
     .ledger-table input.cell.desc { text-align:right; }
     .ledger-summary .val { text-align:center; font-variant-numeric:tabular-nums; }
     .summary-header.ledger-h {
-      border-right: 3px solid #ffea00;
+      /* بدون نوار رنگی کناری */
     }
 
     .tab-indicator.neon-install {
@@ -3660,7 +3660,7 @@
         id: 'l' + Date.now().toString(36),
         personA: '',
         personB: '',
-        collapsed: false,
+        collapsed: true,
         rows: [emptyLedgerRow()]
       };
     }
@@ -10184,17 +10184,25 @@
       let total = 0;
       // ماه جاری
       total += applyToSections((periodData.income && periodData.income.sections) || []);
-      // همه ماه‌های آرشیو
+      // همه ماه‌های آرشیو + ۱۲ ماه سال جاری
       try { persistCurrent(); } catch (e) {}
-      Object.keys(archive || {}).forEach(k => {
-        const pd = archive[k];
-        if (!pd || !pd.income) return;
+      try { ensureYearMonthsInArchive(currentYear); } catch (e) {}
+      const keys = new Set(Object.keys(archive || {}));
+      for (let m = 1; m <= 12; m++) keys.add(periodKey(currentYear, m));
+      keys.forEach(k => {
+        let pd = archive[k];
+        if (!pd) {
+          pd = emptyPeriodData();
+          archive[k] = pd;
+        }
+        if (!pd.income) pd.income = { sections: [], nextId: 1 };
         const before = JSON.stringify(pd.income.sections || []);
         applyToSections(pd.income.sections || []);
         const after = JSON.stringify(pd.income.sections || []);
         if (before !== after) total++;
       });
       try { persistCurrent(); } catch (e) {}
+      try { saveArchive(); } catch (e) {}
       return total;
     }
 
@@ -11116,8 +11124,11 @@
         e.stopPropagation();
         if (!canEditRow(sec)) { showToast(OWNERSHIP_LOCK_MSG); return; }
         try { editTitleBtn.classList.add('is-editing'); } catch (err) {}
-        openSectionNameSheet(sec, () => {
+        openSectionNameSheet(sec, (v) => {
           try { editTitleBtn.classList.remove('is-editing'); } catch (err) {}
+          if (v && (currentTab === 'income' || currentTab === 'expense')) {
+            try { propagateSectionToAllMonths(currentTab, v); } catch (err) {}
+          }
         });
       };
       if (pendingRenameSecId && pendingRenameSecId === sec.id) {
@@ -11381,7 +11392,10 @@
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
         const paid = v === 'paid';
-        amtInp.style.setProperty('color', paid ? 'var(--green-tx)' : 'var(--red-tx)', 'important');
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const green = theme === 'light' ? '#15803d' : '#00e676';
+        const red = theme === 'light' ? '#dc2626' : '#ff1744';
+        amtInp.style.setProperty('color', paid ? green : red, 'important');
         amtInp.style.setProperty('font-weight', '800', 'important');
         amtInp.classList.toggle('status-paid', paid);
         amtInp.classList.toggle('status-unpaid', !paid);
@@ -11643,14 +11657,35 @@
         if (n > 200) return 'بخش جدید ' + toPersianDigits(Date.now() % 10000);
       }
     }
+    function ensureYearMonthsInArchive(year) {
+      const y = year || currentYear;
+      if (!archive || typeof archive !== 'object') archive = {};
+      for (let m = 1; m <= 12; m++) {
+        const k = periodKey(y, m);
+        if (!archive[k]) {
+          archive[k] = emptyPeriodData();
+        }
+      }
+    }
     function propagateSectionToAllMonths(tab, title) {
       const t = (title || '').trim();
       if (!t) return;
+      if (tab !== 'income' && tab !== 'expense') return;
       persistCurrent();
-      Object.keys(archive || {}).forEach(k => {
-        if (k === periodKey(currentYear, currentMonth)) return;
-        const pd = archive[k];
-        if (!pd) return;
+      // برای هر ۱۲ ماه سال جاری (و ماه‌های موجود در آرشیو)
+      ensureYearMonthsInArchive(currentYear);
+      const keys = new Set(Object.keys(archive || {}));
+      for (let m = 1; m <= 12; m++) keys.add(periodKey(currentYear, m));
+      keys.forEach(k => {
+        if (k === periodKey(currentYear, currentMonth)) {
+          // ماه جاری از periodData است؛ فقط مطمئن شو عنوان هست
+          return;
+        }
+        let pd = archive[k];
+        if (!pd) {
+          pd = emptyPeriodData();
+          archive[k] = pd;
+        }
         if (!pd[tab]) pd[tab] = { sections: [], nextId: 1 };
         if (!pd[tab].sections) pd[tab].sections = [];
         const exists = pd[tab].sections.some(s => (s.title || '').trim() === t);
@@ -11801,7 +11836,7 @@
       const color = tabAccentColor(currentTab);
       const nid = periodData[currentTab].nextId;
       const newId = 's' + nid;
-      const sec = { id: newId, title: '', color, collapsed: false, rows: [emptyRow()] };
+      const sec = { id: newId, title: '', color, collapsed: true, rows: [emptyRow()] };
       stampRowOwner(sec);
       sections.push(sec);
       periodData[currentTab].nextId = nid + 1;
@@ -12414,7 +12449,7 @@
       const sec = emptyLedgerSection();
       sec.id = 'l' + (led.nextId || 1);
       led.nextId = (led.nextId || 1) + 1;
-      sec.collapsed = false;
+      sec.collapsed = true;
       stampRowOwner(sec);
       led.sections.push(sec);
       pendingRenameLedgerId = sec.id;
@@ -12818,7 +12853,10 @@
       const isCredit = r.status === 'credit';
       function applyLedgerAmountColor(v) {
         const credit = v === 'credit';
-        amtInp.style.setProperty('color', credit ? 'var(--green-tx)' : 'var(--red-tx)', 'important');
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const green = theme === 'light' ? '#15803d' : '#00e676';
+        const red = theme === 'light' ? '#dc2626' : '#ff1744';
+        amtInp.style.setProperty('color', credit ? green : red, 'important');
         amtInp.style.setProperty('font-weight', '800', 'important');
         amtInp.classList.toggle('status-paid', credit);
         amtInp.classList.toggle('status-unpaid', !credit);
@@ -13085,14 +13123,6 @@
           openLedgerNameEditor(s, titleDisplay, editTitleBtn);
         };
 
-        const btnAdd = document.createElement('button');
-        btnAdd.className = 'btn btn-add-row';
-        btnAdd.textContent = '＋ ردیف';
-        btnAdd.onclick = (e) => {
-          e.stopPropagation();
-          openAddRowCountMenu(btnAdd, (n) => addLedgerRow(thisSecId, n));
-        };
-
         const btnDel = document.createElement('button');
         btnDel.type = 'button';
         btnDel.className = 'btn btn-del-row';
@@ -13104,7 +13134,6 @@
         header.appendChild(arrow);
         header.appendChild(titleWrap);
         header.appendChild(editTitleBtn);
-        header.appendChild(btnAdd);
         header.appendChild(btnDel);
 
         // شناسه ثابت روی خود هدر تا هر کلیک فقط همان بخش را باز/بسته کند
@@ -13145,6 +13174,20 @@
         (secRef.rows || []).forEach((_, i) => tbody.appendChild(buildLedgerRowEl(secRef, i)));
         table.appendChild(tbody);
         body.appendChild(table);
+        const addRowWrap = document.createElement('div');
+        addRowWrap.className = 'add-row-wrap';
+        const btnAddRow = document.createElement('button');
+        btnAddRow.type = 'button';
+        btnAddRow.className = 'btn-circle-plus';
+        btnAddRow.title = 'ردیف جدید';
+        btnAddRow.setAttribute('aria-label', 'ردیف جدید');
+        btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+        btnAddRow.onclick = (e) => {
+          e.stopPropagation();
+          addLedgerRow(thisSecId, 1);
+        };
+        addRowWrap.appendChild(btnAddRow);
+        body.appendChild(addRowWrap);
 
         div.appendChild(header);
         div.appendChild(body);
