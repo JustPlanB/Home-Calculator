@@ -8331,17 +8331,18 @@
       return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:10mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:11px;direction:rtl;">'+buildPdfContent()+'</body></html>';
     }
 
-    async function renderPdfPagesOffline(){
-      // رندر آفلاین قابل‌اعتمادتر: ابتدا در DOM واقعی اندازه‌گیری، سپس SVG foreignObject با استایل کامل
+        async function renderPdfPagesOffline(){
+      // کیفیت بالاتر + حذف صفحات سفید
       const holder=document.createElement('div');
-      holder.style.cssText='position:fixed;left:-99999px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;box-sizing:border-box;padding:8px;';
+      holder.style.cssText='position:fixed;left:-99999px;top:0;width:1400px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;box-sizing:border-box;padding:12px;line-height:1.45;';
       holder.innerHTML=buildPdfContent();
       document.body.appendChild(holder);
-      // صبر برای layout و فونت
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      await new Promise(r=>setTimeout(r,80));
-      const width=1200;
-      const height=Math.max(holder.scrollHeight, holder.offsetHeight, 200);
+      await new Promise(r=>setTimeout(r,120));
+      const width=1400;
+      let height=Math.max(holder.scrollHeight, holder.offsetHeight, 300);
+      // کمی حاشیه پایین
+      height = Math.ceil(height * 1.02) + 20;
       holder.style.width=width+'px';
       holder.style.height=height+'px';
 
@@ -8350,7 +8351,7 @@
       const svg = '<?xml version="1.0" encoding="UTF-8"?>' +
         '<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">' +
         '<foreignObject x="0" y="0" width="'+width+'" height="'+height+'">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#ffffff;color:#000000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;padding:8px;">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;min-height:'+height+'px;box-sizing:border-box;background:#ffffff;color:#000000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;padding:12px;line-height:1.45;">' +
         safeHtml +
         '</div></foreignObject></svg>';
 
@@ -8370,31 +8371,37 @@
         URL.revokeObjectURL(url);
       }
 
-      const scale = 1.6;
+      // مقیاس بالاتر برای کیفیت متن بهتر
+      const scale = 2.2;
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(width * scale);
       canvas.height = Math.ceil(height * scale);
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // anti-alias بهتر
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // اگر بوم تقریباً سفید بود، خطا بده تا به مسیر دیگر برویم
+      // بررسی خالی نبودن
       try {
-        const sample = ctx.getImageData(10, 10, 40, 40).data;
+        const sample = ctx.getImageData(20, 20, 60, 60).data;
         let nonWhite = 0;
         for (let i = 0; i < sample.length; i += 4) {
-          if (sample[i] < 250 || sample[i+1] < 250 || sample[i+2] < 250) nonWhite++;
+          if (sample[i] < 248 || sample[i+1] < 248 || sample[i+2] < 248) nonWhite++;
         }
-        if (nonWhite < 5) throw new Error('blank canvas from svg');
+        if (nonWhite < 8) throw new Error('blank canvas from svg');
       } catch (e) {
         if (e && e.message === 'blank canvas from svg') throw e;
       }
 
+      // ارتفاع صفحه A4 landscape به نسبت عرض
       const pageHpx = Math.floor(canvas.width * (595.28 / 841.89));
       const pages = [];
       for (let y = 0; y < canvas.height; y += pageHpx) {
         const h = Math.min(pageHpx, canvas.height - y);
+        // رد کردن صفحه تقریباً خالی (آخرین صفحات سفید)
         const pc = document.createElement('canvas');
         pc.width = canvas.width;
         pc.height = h;
@@ -8402,14 +8409,35 @@
         pctx.fillStyle = '#ffffff';
         pctx.fillRect(0, 0, pc.width, h);
         pctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
-        const data = atob(pc.toDataURL('image/jpeg', 0.90).split(',')[1]);
+
+        // چک کردن اینکه صفحه محتوا دارد یا نه
+        let hasContent = true;
+        try {
+          const checkH = Math.min(h, 80);
+          const sample = pctx.getImageData(30, 10, Math.min(200, pc.width-60), checkH).data;
+          let nonW = 0;
+          for (let i = 0; i < sample.length; i += 4) {
+            if (sample[i] < 245 || sample[i+1] < 245 || sample[i+2] < 245) nonW++;
+          }
+          // اگر کمتر از ۲٪ پیکسل غیرسفید باشد، صفحه خالی است
+          if (nonW < (sample.length / 4) * 0.02) hasContent = false;
+        } catch(e) {}
+
+        if (!hasContent && pages.length > 0) {
+          // صفحه سفید اضافی را ننویس
+          continue;
+        }
+
+        // کیفیت بالاتر با JPEG 0.95 (یا تقریباً lossless)
+        const data = atob(pc.toDataURL('image/jpeg', 0.95).split(',')[1]);
         const jpg = new Uint8Array(data.length);
         for (let i = 0; i < data.length; i++) jpg[i] = data.charCodeAt(i);
         pages.push({jpg, w: pc.width, h: pc.height});
       }
+      if (pages.length === 0) throw new Error('no pages generated');
       return buildSimpleImagePdf(pages, 841.89, 595.28);
     }
-    async function exportPdf(){
+async function exportPdf(){
       try{
         persistCurrent();
         const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf';
