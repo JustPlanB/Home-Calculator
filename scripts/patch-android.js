@@ -128,14 +128,18 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.graphics.pdf.PdfDocument;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintDocumentInfo;
+import android.print.PageRange;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import android.util.Base64;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
@@ -173,43 +177,67 @@ public class NativeFileExportPlugin extends Plugin {
       web.setBackgroundColor(android.graphics.Color.WHITE);
       web.getSettings().setJavaScriptEnabled(true);
       web.getSettings().setDefaultTextEncodingName("UTF-8");
+      final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+      final boolean[] done={false};
+      final Runnable timeout=() -> { if(!done[0]) { done[0]=true; web.destroy(); call.reject("pdf_export_timeout","PDF rendering timed out"); } };
       web.setWebViewClient(new WebViewClient(){
         @Override public void onPageFinished(WebView view,String url){
-          view.postDelayed(() -> createPdf(view,filename,call),500);
+          handler.postDelayed(() -> {
+            if(done[0]) return;
+            try { printToPdf(web,filename,call,done,handler,timeout); }
+            catch(Exception e){ if(!done[0]){done[0]=true;web.destroy();call.reject("pdf_export_failed",e);} }
+          },350);
+        }
+        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){
+          if(!done[0]){done[0]=true;web.destroy();call.reject("pdf_webview_error",description);}
         }
       });
-      web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
+      handler.postDelayed(timeout,15000);
+      web.loadDataWithBaseURL(null,html,"text/html","UTF-8",null);
     });
   }
 
-  private void createPdf(WebView web,String filename,PluginCall call){
-    PdfDocument doc=null; Uri uri=null;
-    try{
-      int viewW=1120;
-      web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));
-      int viewH=Math.max(web.getMeasuredHeight(),1);
-      web.layout(0,0,viewW,viewH);
-      final int pageW=842, pageH=595;
-      float scale=(float)pageW/(float)viewW;
-      int pageContentH=Math.max(1,(int)(pageH/scale));
-      int pageCount=(int)Math.ceil((double)viewH/(double)pageContentH);
-      doc=new PdfDocument();
-      for(int i=0;i<pageCount;i++){
-        PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
-        PdfDocument.Page page=doc.startPage(info);
-        android.graphics.Canvas c=page.getCanvas();
-        c.drawColor(android.graphics.Color.WHITE);
-        c.save(); c.scale(scale,scale); c.translate(0,-i*pageContentH); web.draw(c); c.restore();
-        doc.finishPage(page);
+  private void printToPdf(final WebView web, final String filename, final PluginCall call, final boolean[] done, final android.os.Handler handler, final Runnable timeout) throws Exception {
+    final Uri uri=insertPending(filename,"application/pdf");
+    final PrintDocumentAdapter adapter=web.createPrintDocumentAdapter(filename);
+    final PrintAttributes attrs=new PrintAttributes.Builder()
+      .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+      .setResolution(new PrintAttributes.Resolution("hesabketab","Hesab Ketab",600,600))
+      .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+      .build();
+    adapter.onLayout(null,attrs,new CancellationSignal(),new PrintDocumentAdapter.LayoutResultCallback(){
+      @Override public void onLayoutFinished(PrintDocumentInfo info,boolean changed){
+        try{
+          ParcelFileDescriptor pfd=getContext().getContentResolver().openFileDescriptor(uri,"w");
+          if(pfd==null) throw new Exception("open PDF output failed");
+          adapter.onWrite(new PageRange[]{PageRange.ALL_PAGES},pfd,new CancellationSignal(),new PrintDocumentAdapter.WriteResultCallback(){
+            @Override public void onWriteFinished(PageRange[] pages){
+              try{ finishPending(uri); }catch(Exception ignored){}
+              if(!done[0]){ done[0]=true; handler.removeCallbacks(timeout); web.destroy(); call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename)); }
+            }
+            @Override public void onWriteFailed(CharSequence error){
+              try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+              if(!done[0]){done[0]=true;handler.removeCallbacks(timeout);web.destroy();call.reject("pdf_write_failed",error==null?"write failed":error.toString());}
+            }
+            @Override public void onWriteCancelled(){
+              try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+              if(!done[0]){done[0]=true;handler.removeCallbacks(timeout);web.destroy();call.reject("pdf_write_cancelled");}
+            }
+          },null);
+        }catch(Exception e){
+          try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+          if(!done[0]){done[0]=true;handler.removeCallbacks(timeout);web.destroy();call.reject("pdf_write_failed",e);}
+        }
       }
-      uri=insertPending(filename,"application/pdf");
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){ if(out==null) throw new Exception("open output failed"); doc.writeTo(out); out.flush(); }
-      finishPending(uri);
-      call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
-    }catch(Exception e){
-      if(uri!=null) try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
-      call.reject("pdf_export_failed",e);
-    }finally{ if(doc!=null) try{doc.close();}catch(Exception ignored){} web.destroy(); }
+      @Override public void onLayoutFailed(CharSequence error){
+        try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+        if(!done[0]){done[0]=true;handler.removeCallbacks(timeout);web.destroy();call.reject("pdf_layout_failed",error==null?"layout failed":error.toString());}
+      }
+      @Override public void onLayoutCancelled(){
+        try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+        if(!done[0]){done[0]=true;handler.removeCallbacks(timeout);web.destroy();call.reject("pdf_layout_cancelled");}
+      }
+    },null);
   }
 }
 `;
