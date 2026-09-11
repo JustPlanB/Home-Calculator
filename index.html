@@ -1620,6 +1620,39 @@
       -webkit-text-fill-color: var(--text) !important;
       caret-color: var(--text) !important;
     }
+    /* مبلغ با وضعیت: رنگ وضعیت بر رنگ عمومی فوکوس غلبه کند */
+    input.amount-input.status-paid:focus,
+    input.amount-input.status-paid.unlocked,
+    input.cell.amount-input.status-paid:focus,
+    input.cell.amount-input.status-paid.unlocked {
+      color: #00e676 !important;
+      -webkit-text-fill-color: #00e676 !important;
+      caret-color: #00e676 !important;
+    }
+    input.amount-input.status-unpaid:focus,
+    input.amount-input.status-unpaid.unlocked,
+    input.cell.amount-input.status-unpaid:focus,
+    input.cell.amount-input.status-unpaid.unlocked {
+      color: #ff1744 !important;
+      -webkit-text-fill-color: #ff1744 !important;
+      caret-color: #ff1744 !important;
+    }
+    [data-theme="light"] input.amount-input.status-paid:focus,
+    [data-theme="light"] input.amount-input.status-paid.unlocked,
+    [data-theme="light"] input.cell.amount-input.status-paid:focus,
+    [data-theme="light"] input.cell.amount-input.status-paid.unlocked {
+      color: #15803d !important;
+      -webkit-text-fill-color: #15803d !important;
+      caret-color: #15803d !important;
+    }
+    [data-theme="light"] input.amount-input.status-unpaid:focus,
+    [data-theme="light"] input.amount-input.status-unpaid.unlocked,
+    [data-theme="light"] input.cell.amount-input.status-unpaid:focus,
+    [data-theme="light"] input.cell.amount-input.status-unpaid.unlocked {
+      color: #dc2626 !important;
+      -webkit-text-fill-color: #dc2626 !important;
+      caret-color: #dc2626 !important;
+    }
     * {
       -webkit-tap-highlight-color: transparent;
     }
@@ -1738,16 +1771,44 @@
       color: var(--muted) !important;
       font-weight: 600 !important;
     }
-    /* وضعیت روی خود مبلغ (نه کل سلول) */
+    /* وضعیت روی خود مبلغ (نه کل سلول) — webkit-text-fill برای رنگ واقعی لازم است */
     input.amount-input.status-paid,
-    input.cell.amount-input.status-paid {
-      color: var(--green-tx) !important;
+    input.cell.amount-input.status-paid,
+    input.amount-input.locked.status-paid,
+    input.cell.amount-input.locked.status-paid,
+    input.amount-input.unlocked.status-paid,
+    input.cell.amount-input.unlocked.status-paid {
+      color: #00e676 !important;
+      -webkit-text-fill-color: #00e676 !important;
+      caret-color: #00e676 !important;
       font-weight: 800 !important;
     }
     input.amount-input.status-unpaid,
-    input.cell.amount-input.status-unpaid {
-      color: var(--red-tx) !important;
+    input.cell.amount-input.status-unpaid,
+    input.amount-input.locked.status-unpaid,
+    input.cell.amount-input.locked.status-unpaid,
+    input.amount-input.unlocked.status-unpaid,
+    input.cell.amount-input.unlocked.status-unpaid {
+      color: #ff1744 !important;
+      -webkit-text-fill-color: #ff1744 !important;
+      caret-color: #ff1744 !important;
       font-weight: 800 !important;
+    }
+    [data-theme="light"] input.amount-input.status-paid,
+    [data-theme="light"] input.cell.amount-input.status-paid,
+    [data-theme="light"] input.amount-input.locked.status-paid,
+    [data-theme="light"] input.cell.amount-input.locked.status-paid {
+      color: #15803d !important;
+      -webkit-text-fill-color: #15803d !important;
+      caret-color: #15803d !important;
+    }
+    [data-theme="light"] input.amount-input.status-unpaid,
+    [data-theme="light"] input.cell.amount-input.status-unpaid,
+    [data-theme="light"] input.amount-input.locked.status-unpaid,
+    [data-theme="light"] input.cell.amount-input.locked.status-unpaid {
+      color: #dc2626 !important;
+      -webkit-text-fill-color: #dc2626 !important;
+      caret-color: #dc2626 !important;
     }
     select.status-select.paid,
     button.status-select.paid {
@@ -3641,14 +3702,13 @@
       return { id: '', day: '', desc: '', amount: 0, status: 'paid', account: '', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
     }
     function emptySections() {
-      return [
-        { id: 's1', title: '', color: '#0a84ff', rows: [emptyRow()] }
-      ];
+      // بدون هدر پیش‌فرض — کاربر خودش بخش می‌سازد
+      return [];
     }
     function emptyPeriodData() {
       return {
-        expense: { sections: emptySections(), nextId: 3 },
-        income: { sections: emptySections(), nextId: 3 },
+        expense: { sections: emptySections(), nextId: 1 },
+        income: { sections: emptySections(), nextId: 1 },
         ledger: { sections: [], nextId: 1 }
       };
     }
@@ -4808,7 +4868,7 @@
     }
 
     function normalizeSide(side) {
-      if (!side || !side.sections) return { sections: emptySections(), nextId: 3 };
+      if (!side || !side.sections) return { sections: [], nextId: 1 };
       // کپی عمیق — تا ماه‌ها به هم وصل نباشند
       const copy = JSON.parse(JSON.stringify(side));
       (copy.sections || []).forEach(sec => {
@@ -5883,12 +5943,7 @@
             if (sec) sec.rows = filterRows(sec.rows || []);
             return true;
           });
-          if (!pd[tab].sections.length) {
-            // حداقل یک بخش خالی نگه دار
-            try {
-              pd[tab].sections = [{ id: 's1', title: tab === 'income' ? 'عمومی' : 'عمومی', color: '', collapsed: false, rows: [emptyRow()] }];
-            } catch (e) {}
-          }
+          // بخش پیش‌فرض اجباری نیست؛ اگر خالی شد همان‌طور بماند
         });
         if (pd.ledger && Array.isArray(pd.ledger.sections)) {
           pd.ledger.sections = pd.ledger.sections.filter(sec => {
@@ -11395,7 +11450,10 @@
         const theme = document.documentElement.getAttribute('data-theme') || 'dark';
         const green = theme === 'light' ? '#15803d' : '#00e676';
         const red = theme === 'light' ? '#dc2626' : '#ff1744';
-        amtInp.style.setProperty('color', paid ? green : red, 'important');
+        const c = paid ? green : red;
+        amtInp.style.setProperty('color', c, 'important');
+        amtInp.style.setProperty('-webkit-text-fill-color', c, 'important');
+        amtInp.style.setProperty('caret-color', c, 'important');
         amtInp.style.setProperty('font-weight', '800', 'important');
         amtInp.classList.toggle('status-paid', paid);
         amtInp.classList.toggle('status-unpaid', !paid);
@@ -11851,10 +11909,6 @@
       }, 60);
     }
     function askDeleteSection(secId) {
-      if (periodData[currentTab].sections.length <= 1) {
-        showToast('حداقل یک بخش لازم است');
-        return;
-      }
       askConfirm('این بخش حذف شود؟', () => {
         periodData[currentTab].sections = periodData[currentTab].sections.filter(s => s.id !== secId);
         renderAll();
@@ -12856,7 +12910,10 @@
         const theme = document.documentElement.getAttribute('data-theme') || 'dark';
         const green = theme === 'light' ? '#15803d' : '#00e676';
         const red = theme === 'light' ? '#dc2626' : '#ff1744';
-        amtInp.style.setProperty('color', credit ? green : red, 'important');
+        const c = credit ? green : red;
+        amtInp.style.setProperty('color', c, 'important');
+        amtInp.style.setProperty('-webkit-text-fill-color', c, 'important');
+        amtInp.style.setProperty('caret-color', c, 'important');
         amtInp.style.setProperty('font-weight', '800', 'important');
         amtInp.classList.toggle('status-paid', credit);
         amtInp.classList.toggle('status-unpaid', !credit);
