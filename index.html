@@ -8115,114 +8115,29 @@
     }
 
     /* ===== PDF آفلاین: رندر محلی HTML به تصویر و ساخت PDF بدون اینترنت ===== */
-    function pdfEnc(str) {
-      const out = new Uint8Array(str.length);
-      for (let i = 0; i < str.length; i++) out[i] = str.charCodeAt(i) & 0xff;
-      return out;
-    }
-    function pdfConcat(arrs) {
-      let n = 0;
-      arrs.forEach(a => { n += a.length; });
-      const o = new Uint8Array(n);
-      let p = 0;
-      arrs.forEach(a => { o.set(a, p); p += a.length; });
-      return o;
-    }
-    /** ساخت PDF معتبر از تصاویر JPEG (قابل ذخیره در اندروید/وب) */
-    function buildSimpleImagePdf(pageImages, pageW, pageH) {
-      if (!pageImages || !pageImages.length) {
-        throw new Error('no pages');
-      }
-      const enc = pdfEnc;
-      const parts = [];
-      const offsets = [0];
-      let pos = 0;
-      function addBytes(u8) {
-        parts.push(u8);
-        pos += u8.length;
-      }
-      function addStr(s) { addBytes(enc(s)); }
-      function startObj(id) {
-        offsets[id] = pos;
-        addStr(id + ' 0 obj\n');
-      }
-      function endObj() { addStr('endobj\n'); }
-
-      addStr('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
-
-      // جمع‌آوری اشیاء: 1=Catalog, 2=Pages, سپس برای هر صفحه: Image, Content, Page
-      const pageMeta = [];
-      let nextId = 3;
-      pageImages.forEach((im) => {
-        const imgId = nextId++;
-        const contId = nextId++;
-        const pageId = nextId++;
-        pageMeta.push({ imgId, contId, pageId, w: im.w, h: im.h, jpg: im.jpg });
+    function pdfByteString(bytes){ let out=''; const chunk=0x8000; for(let i=0;i<bytes.length;i+=chunk) out+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length))); return out; }
+    function pdfConcat(a){ let n=0;a.forEach(x=>n+=x.length);let o=new Uint8Array(n),p=0;a.forEach(x=>{o.set(x,p);p+=x.length});return o; }
+    function buildSimpleImagePdf(pageImages,pageW,pageH){
+      const objs=[]; const pages=[]; let num=3;
+      pageImages.forEach((im,i)=>{ const imgObj=num++, contObj=num++, pageObj=num++; pages.push({imgObj,contObj,pageObj,w:im.w,h:im.h,jpg:im.jpg}); });
+      const kids=pages.map(p=>p.pageObj+' 0 R').join(' ');
+      objs[1]='<< /Type /Catalog /Pages 2 0 R >>';
+      objs[2]='<< /Type /Pages /Count '+pages.length+' /Kids ['+kids+'] >>';
+      pages.forEach(p=>{ objs[p.imgObj]='<< /Type /XObject /Subtype /Image /Width '+p.w+' /Height '+p.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+p.jpg.length+' >>\nSTREAM\n'+pdfByteString(p.jpg)+'\nENDSTREAM';
+        const sx=(pageW-24)/p.w, sy=(pageH-24)/p.h, sc=Math.min(sx,sy), dw=p.w*sc, dh=p.h*sc, x=(pageW-dw)/2, y=(pageH-dh)/2;
+        const content='q\n'+dw.toFixed(2)+' 0 0 '+dh.toFixed(2)+' '+x.toFixed(2)+' '+y.toFixed(2)+' cm\n/Im'+p.imgObj+' Do\nQ\n';
+        const cb=new TextEncoder().encode(content); objs[p.contObj]='<< /Length '+cb.length+' >>\nSTREAM\n'+content+'ENDSTREAM';
+        objs[p.pageObj]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /XObject << /Im'+p.imgObj+' '+p.imgObj+' 0 R >> >> /Contents '+p.contObj+' 0 R >>';
       });
-
-      // 1 Catalog
-      startObj(1);
-      addStr('<< /Type /Catalog /Pages 2 0 R >>\n');
-      endObj();
-
-      // 2 Pages
-      const kids = pageMeta.map(p => p.pageId + ' 0 R').join(' ');
-      startObj(2);
-      addStr('<< /Type /Pages /Count ' + pageMeta.length + ' /Kids [' + kids + '] >>\n');
-      endObj();
-
-      pageMeta.forEach((p) => {
-        const jpg = p.jpg || new Uint8Array(0);
-        // Image XObject — باینری JPEG جدا از متن
-        startObj(p.imgId);
-        addStr('<< /Type /XObject /Subtype /Image /Width ' + p.w + ' /Height ' + p.h +
-          ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\n');
-        addStr('stream\n');
-        addBytes(jpg);
-        addStr('\nendstream\n');
-        endObj();
-
-        // Content stream
-        const sx = (pageW - 24) / p.w;
-        const sy = (pageH - 24) / p.h;
-        const sc = Math.min(sx, sy);
-        const dw = p.w * sc;
-        const dh = p.h * sc;
-        const x = (pageW - dw) / 2;
-        const y = (pageH - dh) / 2;
-        const content = 'q\n' + dw.toFixed(2) + ' 0 0 ' + dh.toFixed(2) + ' ' +
-          x.toFixed(2) + ' ' + y.toFixed(2) + ' cm\n/Im' + p.imgId + ' Do\nQ\n';
-        const cb = enc(content);
-        startObj(p.contId);
-        addStr('<< /Length ' + cb.length + ' >>\nstream\n');
-        addBytes(cb);
-        addStr('endstream\n');
-        endObj();
-
-        // Page
-        startObj(p.pageId);
-        addStr('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pageW + ' ' + pageH +
-          '] /Resources << /XObject << /Im' + p.imgId + ' ' + p.imgId + ' 0 R >> >> /Contents ' +
-          p.contId + ' 0 R >>\n');
-        endObj();
-      });
-
-      const xrefPos = pos;
-      let xr = 'xref\n0 ' + nextId + '\n';
-      xr += '0000000000 65535 f \n';
-      for (let i = 1; i < nextId; i++) {
-        xr += String(offsets[i] || 0).padStart(10, '0') + ' 00000 n \n';
-      }
-      xr += 'trailer\n<< /Size ' + nextId + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF\n';
-      addStr(xr);
-      return new Blob([pdfConcat(parts)], { type: 'application/pdf' });
+      const chunks=[new TextEncoder().encode('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n')]; const offsets=[0]; let pos=chunks[0].length;
+      for(let i=1;i<objs.length;i++){ if(!objs[i])continue; offsets[i]=pos; const b=new TextEncoder().encode(i+' 0 obj\n'); chunks.push(b);pos+=b.length; const ob=objs[i]; if(ob.includes('STREAM\n') && ob.includes('/Filter /DCTDecode')){ const m=ob.indexOf('\nSTREAM\n'); const head=ob.slice(0,m+8), tail='\nENDSTREAM'; const hb=new TextEncoder().encode(head); chunks.push(hb);pos+=hb.length; const jpg=pages.find(p=>ob===objs[p.imgObj])?.jpg||new Uint8Array(); chunks.push(jpg);pos+=jpg.length; const tb=new TextEncoder().encode(tail);chunks.push(tb);pos+=tb.length; } else { const b2=new TextEncoder().encode(ob+'\nendobj\n'); chunks.push(b2);pos+=b2.length; } if(ob.includes('/Filter /DCTDecode')){ const tailb=new TextEncoder().encode('\nendobj\n');chunks.push(tailb);pos+=tailb.length; } }
+      const xref=pos; let xr='xref\n0 '+objs.length+'\n0000000000 65535 f \n'; for(let i=1;i<objs.length;i++) xr+=(String(offsets[i]||0).padStart(10,'0'))+' 00000 n \n'; xr+='trailer\n<< /Size '+objs.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF'; chunks.push(new TextEncoder().encode(xr)); return new Blob([pdfConcat(chunks)],{type:'application/pdf'});
     }
-
     function buildPdfContent() {
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       // استایل اینلاین تا html2canvas رنگ را از تم نگیرد
-      const th = 'border:1px solid #000;padding:3px 4px;background:#eeeeee;color:#000;font-size:9px;text-align:center;font-weight:bold;white-space:nowrap;';
-      const td = 'border:1px solid #000;padding:3px 4px;background:#fff;color:#000;font-size:9px;vertical-align:middle;line-height:1.35;';
+      const th = 'border:1px solid #000;padding:4px 5px;background:#e8e8e8;color:#000;font-size:10px;text-align:center;font-weight:bold;';
+      const td = 'border:1px solid #000;padding:4px 5px;background:#fff;color:#000;font-size:10px;vertical-align:top;';
       const tdN = td + 'text-align:center;direction:ltr;white-space:nowrap;';
       const tdR = td + 'text-align:right;word-break:break-word;white-space:normal;';
       const tbl = 'width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;margin:0;';
@@ -8232,11 +8147,11 @@
         const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
         const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
         let html = '<table style="' + tbl + '"><thead><tr>' +
-          '<th style="' + th + 'width:20%;">بخش</th>' +
+          '<th style="' + th + 'width:16%;">بخش</th>' +
           '<th style="' + th + 'width:8%;">روز</th>' +
-          '<th style="' + th + 'width:40%;">شرح</th>' +
-          '<th style="' + th + 'width:18%;">مبلغ</th>' +
-          '<th style="' + th + 'width:14%;">وضعیت</th></tr></thead><tbody>';
+          '<th style="' + th + 'width:38%;">شرح</th>' +
+          '<th style="' + th + 'width:20%;">مبلغ</th>' +
+          '<th style="' + th + 'width:18%;">وضعیت</th></tr></thead><tbody>';
         let any = false;
         (periodData[tab].sections || []).forEach(sec => {
           const title = (sec.title || '').trim() || '—';
@@ -8245,7 +8160,7 @@
             any = true;
             const st = r.status === 'paid' ? paidL : unpaidL;
             html += '<tr>' +
-              '<td style="' + tdR + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(title) + '</td>' +
+              '<td style="' + tdR + '">' + escapeHtml(title) + '</td>' +
               '<td style="' + tdN + '">' + (r.day ? toPersianPad2(r.day) : '') + '</td>' +
               '<td style="' + tdR + '">' + escapeHtml(r.desc || '') + '</td>' +
               '<td style="' + tdN + '">' + (r.amount ? formatNum(r.amount) : '۰') + '</td>' +
@@ -8262,7 +8177,7 @@
         const paidH = isIncome ? 'دریافت شده' : 'پرداخت شده';
         const unpaidH = isIncome ? 'دریافت نشده' : 'پرداخت نشده';
         let html = '<table style="' + tbl + '"><thead><tr>' +
-          '<th style="' + th + 'width:24%;">بخش</th>' +
+          '<th style="' + th + '">بخش</th>' +
           '<th style="' + th + '">' + paidH + '</th>' +
           '<th style="' + th + '">' + unpaidH + '</th>' +
           '<th style="' + th + '">جمع</th></tr></thead><tbody>';
@@ -8310,7 +8225,7 @@
           const exp = expMap[title] || 0;
           gInc += inc; gExp += exp;
           html += '<tr>' +
-            '<td style="' + tdR + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(title) + '</td>' +
+            '<td style="' + tdR + '">' + escapeHtml(title) + '</td>' +
             '<td style="' + tdN + '">' + formatNum(inc) + '</td>' +
             '<td style="' + tdN + '">' + formatNum(exp) + '</td>' +
             '<td style="' + tdN + '">' + formatNum(inc - exp) + '</td></tr>';
@@ -8374,26 +8289,20 @@
       }
 
       function pair(title, left, right) {
-        return '<div style="margin:0 0 9px 0;background:#fff;page-break-inside:avoid;">' +
-          '<div style="text-align:center;font-weight:bold;font-size:12px;color:#000;margin:0 0 4px 0;padding:3px 0;border-bottom:2px solid #000;">' + escapeHtml(title) + '</div>' +
-          '<table style="width:100%;border-collapse:separate;border-spacing:5px 0;background:#fff;"><tr>' +
-          '<td style="width:70%;vertical-align:top;background:#fff;padding:0;">' +
-          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 3px 0;">جزئیات</div>' + left +
+        return '<div style="margin:0 0 14px 0;background:#fff;">' +
+          '<div style="text-align:center;font-weight:bold;font-size:13px;color:#000;margin:0 0 6px 0;">' + escapeHtml(title) + '</div>' +
+          '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;background:#fff;"><tr>' +
+          '<td style="width:62%;vertical-align:top;background:#fff;padding:0;">' +
+          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 4px 0;">جزئیات</div>' + left +
           '</td>' +
-          '<td style="width:30%;vertical-align:top;background:#fff;padding:0;">' +
-          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 3px 0;">خلاصه</div>' + right +
+          '<td style="width:38%;vertical-align:top;background:#fff;padding:0;">' +
+          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 4px 0;">خلاصه</div>' + right +
           '</td></tr></table></div>';
       }
 
       // ترتیب: درآمد → مخارج → مانده → اقساط
-      let body = '<div style="margin:0 0 9px 0;padding:6px 10px;border:1.5px solid #000;background:#fff;text-align:center;page-break-inside:avoid;">' +
-        '<div style="font-weight:bold;font-size:16px;line-height:1.25;">حساب کتاب</div>' +
-        '<div style="font-size:10px;margin-top:2px;">گزارش مالی ماهانه — ' + escapeHtml(periodLabel) + '</div>' +
-        '</div>' +
-        '<div style="display:flex;width:100%;gap:6px;margin:0 0 9px 0;page-break-inside:avoid;">' +
-        '<div style="flex:1;border:1px solid #000;padding:4px;text-align:center;font-size:9px;">گزارش شامل درآمد، مخارج، مانده و اقساط</div>' +
-        '<div style="width:25%;border:1px solid #000;padding:4px;text-align:center;font-size:9px;">' + escapeHtml(periodLabel) + '</div>' +
-        '</div>';
+      let body = '<div style="text-align:center;font-weight:bold;font-size:15px;color:#000;margin:0 0 12px 0;background:#fff;">حساب کتاب — ' +
+        escapeHtml(periodLabel) + '</div>';
       body += pair('درآمد', detailTable('income'), summaryTable('income'));
       body += pair('مخارج', detailTable('expense'), summaryTable('expense'));
       body += '<div style="margin:0 0 14px 0;background:#fff;">' +
@@ -8405,223 +8314,86 @@
 
     function buildPdfFullDocument(){
       const periodLabel=MONTHS[currentMonth-1]+' '+toPersianDigits(currentYear);
-      return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:7mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:9.5px;direction:rtl;">'+buildPdfContent()+'</body></html>';
+      return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:10mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:11px;direction:rtl;">'+buildPdfContent()+'</body></html>';
     }
 
-    async function renderPdfPagesOffline() {
-      const pageWpt = 841.89, pageHpt = 595.28;
-      const scale = 2;
-      const pageW = Math.round(pageWpt * scale);
-      const pageH = Math.round(pageHpt * scale);
-      const margin = Math.round(24 * scale);
-      const lineH = Math.round(13 * scale);
-      const fontMain = Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif';
-      const fontTitle = 'bold ' + Math.round(16 * scale) + 'px Tahoma, Arial, sans-serif';
-      const fontHead = 'bold ' + Math.round(13 * scale) + 'px Tahoma, Arial, sans-serif';
-      const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
-      const lines = [];
-      function push(t, opts) {
-        lines.push(Object.assign({ text: String(t || ''), bold: false, size: 'main', gap: 0 }, opts || {}));
-      }
-      push('حساب کتاب', { bold: true, size: 'title', gap: 6 });
-      push('گزارش مالی — ' + periodLabel, { gap: 12 });
-
-      function addDetailTab(tab, title) {
-        push(title, { bold: true, size: 'head', gap: 6 });
-        const isIncome = tab === 'income';
-        const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
-        const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
-        let any = false;
-        ((periodData[tab] && periodData[tab].sections) || []).forEach(sec => {
-          const st = (sec.title || '').trim() || '—';
-          (sec.rows || []).forEach(r => {
-            if (!r.desc && !r.amount && !r.day) return;
-            any = true;
-            const status = r.status === 'paid' ? paidL : unpaidL;
-            const day = r.day ? toPersianDigits(r.day) : '—';
-            const amt = r.amount ? formatNum(r.amount) : '۰';
-            push(st + '  |  روز ' + day + '  |  ' + (r.desc || '—') + '  |  ' + amt + '  |  ' + status);
-          });
-        });
-        if (!any) push('(موردی ثبت نشده)');
-        push(' ', { gap: 8 });
-      }
-      addDetailTab('income', 'درآمد');
-      addDetailTab('expense', 'مخارج');
-
-      push('مانده', { bold: true, size: 'head', gap: 6 });
-      try {
-        const order = [];
-        const seen = new Set();
-        function addTitle(t) {
-          const x = (t || '').trim() || '—';
-          if (!seen.has(x)) { seen.add(x); order.push(x); }
-        }
-        try { (allSectionTitles() || []).forEach(addTitle); } catch (e) {}
-        ((periodData.income && periodData.income.sections) || []).forEach(s => addTitle(s.title));
-        ((periodData.expense && periodData.expense.sections) || []).forEach(s => addTitle(s.title));
-        let gInc = 0, gExp = 0;
-        order.forEach(title => {
-          let inc = 0, exp = 0;
-          ((periodData.income && periodData.income.sections) || []).forEach(sec => {
-            if (((sec.title || '').trim() || '—') !== title) return;
-            (sec.rows || []).forEach(r => { inc += Number(r.amount) || 0; });
-          });
-          ((periodData.expense && periodData.expense.sections) || []).forEach(sec => {
-            if (((sec.title || '').trim() || '—') !== title) return;
-            (sec.rows || []).forEach(r => { exp += Number(r.amount) || 0; });
-          });
-          gInc += inc; gExp += exp;
-          push(title + '  |  درآمد ' + formatNum(inc) + '  |  مخارج ' + formatNum(exp) + '  |  مانده ' + formatNum(inc - exp));
-        });
-        push('جمع  |  درآمد ' + formatNum(gInc) + '  |  مخارج ' + formatNum(gExp) + '  |  مانده ' + formatNum(gInc - gExp), { bold: true, gap: 8 });
-      } catch (e) {
-        push('(خلاصه مانده در دسترس نیست)', { gap: 8 });
-      }
-
-      push('اقساط', { bold: true, size: 'head', gap: 6 });
-      try {
-        const list = Array.isArray(plans) ? plans : [];
-        let anyP = false;
-        list.forEach(p => {
-          if (!p || p.deletedAt) return;
-          anyP = true;
-          push((p.name || '—') + '  |  ' + toPersianDigits(p.paidCount || 0) + '/' + toPersianDigits(p.count || 0) + '  |  ' + formatNum(p.amount || 0));
-        });
-        if (!anyP) push('(قسطی ثبت نشده)');
-      } catch (e) {
-        push('(اقساط در دسترس نیست)');
-      }
-
-      const pages = [];
-      const canvas = document.createElement('canvas');
-      canvas.width = pageW;
-      canvas.height = pageH;
-      const ctx = canvas.getContext('2d');
-      function clearPage() {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, pageW, pageH);
-        ctx.fillStyle = '#000000';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'top';
-      }
-      function flushPage() {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        const b64 = dataUrl.split(',')[1] || '';
-        const bin = atob(b64);
-        const jpg = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-        pages.push({ jpg: jpg, w: pageW, h: pageH });
-      }
-      clearPage();
-      let y = margin;
-      const maxW = pageW - margin * 2;
-      lines.forEach(ln => {
-        if (ln.size === 'title') ctx.font = fontTitle;
-        else if (ln.size === 'head') ctx.font = fontHead;
-        else ctx.font = ln.bold ? ('bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif') : fontMain;
-        let t = ln.text || '';
-        if (!t.trim() && ln.gap) {
-          y += lineH * 0.5 + (ln.gap || 0);
+    async function renderPdfPagesOffline(){
+      const content=buildPdfFullDocument();
+      const holder=document.createElement('div'); holder.style.cssText='position:fixed;left:-100000px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;'; holder.innerHTML=buildPdfContent(); document.body.appendChild(holder); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const width=1200, height=Math.max(holder.scrollHeight,holder.offsetHeight,100); holder.style.width=width+'px';
+      const inner=content.replace(/<\/body>[\s\S]*?<\/html>/,'</body></html>');
+      const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="'+width+'" height="'+height+'"><foreignObject x="0" y="0" width="'+width+'" height="'+height+'"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;">'+buildPdfContent()+'</div></foreignObject></svg>';
+      holder.remove();
+      const img=new Image(); img.decoding='sync'; const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;}); URL.revokeObjectURL(url);
+      const scale=1.5, canvas=document.createElement('canvas'); canvas.width=Math.ceil(width*scale); canvas.height=Math.ceil(height*scale); const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      const pageHpx=Math.floor(canvas.width*(595.28/841.89)); const pages=[]; for(let y=0;y<canvas.height;y+=pageHpx){ const h=Math.min(pageHpx,canvas.height-y); const pc=document.createElement('canvas');pc.width=canvas.width;pc.height=h;const pctx=pc.getContext('2d');pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,h);pctx.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h); const data=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(data.length);for(let i=0;i<data.length;i++)jpg[i]=data.charCodeAt(i); pages.push({jpg,w:pc.width,h:pc.height}); }
+      return buildSimpleImagePdf(pages,841.89,595.28);
+    }
+    async function exportPdf(){
+      try{ persistCurrent(); showToast('در حال ساخت PDF آفلاین...'); const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf'; const blob=await renderPdfPagesOffline(); const shared=await shareExportFile(blob,name,'application/pdf'); if(!shared) downloadBlob(blob,name); showToast(shared?'PDF آماده است':'دانلود PDF شروع شد'); }
+      catch(e){ console.error('offline PDF failed',e); showToast('ساخت PDF ناموفق بود'); setTimeout(()=>openPdfPrintWindow(),300); }
+    }
+    function openPdfPrintWindow(){
+      // Android WebView/Print Preview ممکن است afterprint را خیلی زود، درست هنگام
+      // باز شدن پیش‌نمایش، اجرا کند. اگر همان لحظه اپ را برگردانیم، سرویس چاپ
+      // به‌جای سند چاپی، صفحه اصلی را ذخیره می‌کند. بنابراین تا وقتی کاربر از
+      // Print Preview برنگشته، صفحه گزارش را دست نمی‌زنیم.
+      const appUrl=window.location.href;
+      const printHtml=buildPdfFullDocument();
+      let printingStarted=false;
+      let restored=false;
+      let returnedFromPrint=false;
+      let leftForPrintPreview=false;
+      const cleanup=()=>{
+        try{document.removeEventListener('visibilitychange',onVisibilityChange,true);}catch(e){}
+        try{window.removeEventListener('pageshow',onPageShow,true);}catch(e){}
+        try{window.removeEventListener('focus',onFocus,true);}catch(e){}
+      };
+      const restoreApp=()=>{
+        if(restored || !printingStarted || !returnedFromPrint)return;
+        restored=true; cleanup();
+        setTimeout(()=>{try{window.location.replace(appUrl);}catch(e){try{window.location.reload();}catch(x){}}},150);
+      };
+      const onVisibilityChange=()=>{
+        // hidden = ورود به Print Preview؛ visible بعد از Save/Cancel = برگشت به اپ
+        if(printingStarted && document.visibilityState==='hidden'){
+          leftForPrintPreview=true;
           return;
         }
-        while (t.length > 4 && ctx.measureText(t).width > maxW) t = t.slice(0, t.length - 2);
-        if (y + lineH > pageH - margin) {
-          flushPage();
-          clearPage();
-          y = margin;
-          if (ln.size === 'title') ctx.font = fontTitle;
-          else if (ln.size === 'head') ctx.font = fontHead;
-          else ctx.font = ln.bold ? ('bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif') : fontMain;
+        if(printingStarted && leftForPrintPreview && document.visibilityState==='visible'){
+          returnedFromPrint=true;
+          restoreApp();
         }
-        ctx.fillStyle = '#000000';
-        ctx.fillText(t, pageW - margin, y);
-        y += lineH + (ln.gap ? Math.round(ln.gap * 0.2) : 0);
-      });
-      flushPage();
-      if (!pages.length) throw new Error('no pdf pages');
-      return buildSimpleImagePdf(pages, pageWpt, pageHpt);
-    }
-
-    async function exportPdf() {
-      try {
-        persistCurrent();
-        showToast('در حال ساخت PDF…');
-        const blob = await renderPdfPagesOffline();
-        if (!blob || !blob.size) throw new Error('empty pdf');
-        const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
-        const mode = await saveOrShareBlob(blob, fname, 'application/pdf');
-        if (mode === 'abort') showToast('لغو شد');
-        else showToast('PDF آماده شد');
-      } catch (e) {
-        console.error('PDF failed', e);
-        // fallback: پیش‌نمایش چاپ
-        try {
-          openPdfPrintWindow();
-        } catch (e2) {
-          showToast('خروجی PDF ناموفق بود');
+      };
+      const onPageShow=()=>{
+        if(printingStarted && leftForPrintPreview){ returnedFromPrint=true; restoreApp(); }
+      };
+      const onFocus=()=>{
+        if(printingStarted && leftForPrintPreview && document.visibilityState==='visible'){
+          returnedFromPrint=true; restoreApp();
         }
-      }
-    }
-
-    function openPdfPrintWindow() {
-      try {
-        const old = document.getElementById('pdfPrintFrame');
-        if (old) old.remove();
-        const oldBar = document.getElementById('pdfPrintBar');
-        if (oldBar) oldBar.remove();
-
-        const printHtml = buildPdfFullDocument();
-        const iframe = document.createElement('iframe');
-        iframe.id = 'pdfPrintFrame';
-        iframe.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;border:0;z-index:100000;background:#fff;';
-        document.body.appendChild(iframe);
-
-        const bar = document.createElement('div');
-        bar.id = 'pdfPrintBar';
-        bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:100001;display:flex;gap:8px;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:rgba(0,0,0,0.88);';
-        bar.innerHTML = '<button type="button" id="pdfPrintBtn" style="flex:1;padding:12px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-family:Vazirmatn,Tahoma,sans-serif;font-weight:800;font-size:1rem;">ذخیره PDF / چاپ</button>' +
-          '<button type="button" id="pdfCloseBtn" style="flex:0 0 auto;padding:12px 16px;border:none;border-radius:10px;background:#3a3a3c;color:#fff;font-family:Vazirmatn,Tahoma,sans-serif;font-weight:700;">بستن</button>';
-        document.body.appendChild(bar);
-
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        doc.open();
-        doc.write(printHtml);
-        doc.close();
-
-        const cleanup = () => {
-          try { iframe.remove(); } catch (e) {}
-          try { bar.remove(); } catch (e) {}
-        };
-        document.getElementById('pdfCloseBtn').onclick = cleanup;
-        document.getElementById('pdfPrintBtn').onclick = async () => {
-          const btn = document.getElementById('pdfPrintBtn');
-          try {
-            if (btn) { btn.disabled = true; btn.textContent = 'در حال ساخت…'; }
-            showToast('در حال ساخت PDF…');
-            const blob = await renderPdfPagesOffline();
-            const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
-            if (blob && blob.size) {
-              const mode = await saveOrShareBlob(blob, fname, 'application/pdf');
-              if (mode === 'abort') showToast('لغو شد');
-              else showToast('PDF آماده شد');
-            }
-            try {
-              const win = iframe.contentWindow;
-              if (win) { win.focus(); setTimeout(() => { try { win.print(); } catch (e) {} }, 200); }
-            } catch (e) {}
-          } catch (err) {
-            console.error(err);
-            try { iframe.contentWindow && iframe.contentWindow.print(); } catch (e2) {}
-            showToast('ذخیره PDF ناموفق بود');
-          } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
-          }
-        };
+      };
+      try{
+        document.open();
+        document.write(printHtml);
+        document.close();
+        document.addEventListener('visibilitychange',onVisibilityChange,true);
+        window.addEventListener('pageshow',onPageShow,true);
+        window.addEventListener('focus',onFocus,true);
+        setTimeout(()=>{
+          printingStarted=true;
+          try{window.focus();window.print();}
+          catch(e){returnedFromPrint=true;restoreApp();}
+        },700);
+        // فقط برای حالت خرابی کامل Print Service؛ نباید در چاپ عادی فعال شود.
+        setTimeout(()=>{
+          if(!restored && printingStarted && leftForPrintPreview && document.visibilityState==='visible') { returnedFromPrint=true; restoreApp(); }
+        },180000);
         return true;
-      } catch (e) {
-        console.error('openPdfPrintWindow', e);
-        showToast('باز کردن چاپ ناموفق بود');
+      }catch(e){
+        console.error('print export failed',e);
+        try{window.location.replace(appUrl);}catch(x){window.location.reload();}
         return false;
       }
     }
