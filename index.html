@@ -8332,17 +8332,82 @@
     }
 
     async function renderPdfPagesOffline(){
-      const content=buildPdfFullDocument();
-      const holder=document.createElement('div'); holder.style.cssText='position:fixed;left:-100000px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;'; holder.innerHTML=buildPdfContent(); document.body.appendChild(holder); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      const width=1200, height=Math.max(holder.scrollHeight,holder.offsetHeight,100); holder.style.width=width+'px';
-      const inner=content.replace(/<\/body>[\s\S]*?<\/html>/,'</body></html>');
-      const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="'+width+'" height="'+height+'"><foreignObject x="0" y="0" width="'+width+'" height="'+height+'"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;">'+buildPdfContent()+'</div></foreignObject></svg>';
+      // رندر آفلاین قابل‌اعتمادتر: ابتدا در DOM واقعی اندازه‌گیری، سپس SVG foreignObject با استایل کامل
+      const holder=document.createElement('div');
+      holder.style.cssText='position:fixed;left:-99999px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;box-sizing:border-box;padding:8px;';
+      holder.innerHTML=buildPdfContent();
+      document.body.appendChild(holder);
+      // صبر برای layout و فونت
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      await new Promise(r=>setTimeout(r,80));
+      const width=1200;
+      const height=Math.max(holder.scrollHeight, holder.offsetHeight, 200);
+      holder.style.width=width+'px';
+      holder.style.height=height+'px';
+
+      const safeHtml = buildPdfContent();
+
+      const svg = '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">' +
+        '<foreignObject x="0" y="0" width="'+width+'" height="'+height+'">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#ffffff;color:#000000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;padding:8px;">' +
+        safeHtml +
+        '</div></foreignObject></svg>';
+
       holder.remove();
-      const img=new Image(); img.decoding='sync'; const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
-      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;}); URL.revokeObjectURL(url);
-      const scale=1.5, canvas=document.createElement('canvas'); canvas.width=Math.ceil(width*scale); canvas.height=Math.ceil(height*scale); const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      const pageHpx=Math.floor(canvas.width*(595.28/841.89)); const pages=[]; for(let y=0;y<canvas.height;y+=pageHpx){ const h=Math.min(pageHpx,canvas.height-y); const pc=document.createElement('canvas');pc.width=canvas.width;pc.height=h;const pctx=pc.getContext('2d');pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,h);pctx.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h); const data=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(data.length);for(let i=0;i<data.length;i++)jpg[i]=data.charCodeAt(i); pages.push({jpg,w:pc.width,h:pc.height}); }
-      return buildSimpleImagePdf(pages,841.89,595.28);
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'sync';
+      const url = URL.createObjectURL(new Blob([svg], {type: 'image/svg+xml;charset=utf-8'}));
+      try {
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = () => rej(new Error('svg image load failed'));
+          img.src = url;
+        });
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+
+      const scale = 1.6;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(width * scale);
+      canvas.height = Math.ceil(height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // اگر بوم تقریباً سفید بود، خطا بده تا به مسیر دیگر برویم
+      try {
+        const sample = ctx.getImageData(10, 10, 40, 40).data;
+        let nonWhite = 0;
+        for (let i = 0; i < sample.length; i += 4) {
+          if (sample[i] < 250 || sample[i+1] < 250 || sample[i+2] < 250) nonWhite++;
+        }
+        if (nonWhite < 5) throw new Error('blank canvas from svg');
+      } catch (e) {
+        if (e && e.message === 'blank canvas from svg') throw e;
+      }
+
+      const pageHpx = Math.floor(canvas.width * (595.28 / 841.89));
+      const pages = [];
+      for (let y = 0; y < canvas.height; y += pageHpx) {
+        const h = Math.min(pageHpx, canvas.height - y);
+        const pc = document.createElement('canvas');
+        pc.width = canvas.width;
+        pc.height = h;
+        const pctx = pc.getContext('2d');
+        pctx.fillStyle = '#ffffff';
+        pctx.fillRect(0, 0, pc.width, h);
+        pctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        const data = atob(pc.toDataURL('image/jpeg', 0.90).split(',')[1]);
+        const jpg = new Uint8Array(data.length);
+        for (let i = 0; i < data.length; i++) jpg[i] = data.charCodeAt(i);
+        pages.push({jpg, w: pc.width, h: pc.height});
+      }
+      return buildSimpleImagePdf(pages, 841.89, 595.28);
     }
     async function exportPdf(){
       try{
@@ -8351,14 +8416,25 @@
         showToast('در حال ساخت PDF...');
         const C=window.Capacitor, plugins=C&&C.Plugins, native=plugins&&plugins.NativeFileExport;
         if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform() && native && typeof native.exportHtmlToPdf==='function'){
-          const result=await native.exportHtmlToPdf({html:buildPdfFullDocument(),filename:name});
-          if(result && result.uri){ showToast('PDF در پوشه Download ذخیره شد'); return; }
-          throw new Error('native PDF export returned no URI');
+          try {
+            const result=await native.exportHtmlToPdf({html:buildPdfFullDocument(),filename:name});
+            if(result && result.uri){ showToast('PDF در پوشه Download ذخیره شد'); return; }
+          } catch(ne) {
+            console.warn('native PDF failed, trying offline', ne);
+          }
         }
-        const blob=await renderPdfPagesOffline();
-        const saved=await shareExportFile(blob,name,'application/pdf');
-        if(!saved) downloadBlob(blob,name);
-        showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+        try {
+          const blob=await renderPdfPagesOffline();
+          const saved=await shareExportFile(blob,name,'application/pdf');
+          if(!saved) downloadBlob(blob,name);
+          showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+          return;
+        } catch(oe) {
+          console.warn('offline PDF failed, falling back to print', oe);
+        }
+        // آخرین راه: پنجره چاپ مرورگر / WebView
+        openPdfPrintWindow();
+        showToast('پیش‌نمایش چاپ باز شد — Save as PDF را انتخاب کنید');
       }catch(e){
         console.error('PDF export failed',e);
         showToast('ساخت PDF ناموفق بود');
