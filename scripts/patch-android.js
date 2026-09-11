@@ -134,8 +134,9 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import android.util.Base64;
+import android.os.Handler;
+import android.os.Looper;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
@@ -149,12 +150,12 @@ public class NativeFileExportPlugin extends Plugin {
     if(dot>0){ base=filename.substring(0,dot); ext=filename.substring(dot); }
     for(int n=0;n<10000;n++){
       android.database.Cursor c=null;
-      try {
+      try{
         c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
           new String[]{MediaStore.Downloads.DISPLAY_NAME},
           MediaStore.Downloads.DISPLAY_NAME+"=?",new String[]{candidate},null);
         if(c==null || !c.moveToFirst()) return candidate;
-      } finally { if(c!=null) c.close(); }
+      }finally{ if(c!=null) c.close(); }
       candidate=base+"-"+(n+1)+ext;
     }
     return candidate;
@@ -174,69 +175,82 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   private void finishPending(Uri u) {
-    if(Build.VERSION.SDK_INT>=29){ ContentValues v=new ContentValues(); v.put(MediaStore.Downloads.IS_PENDING,0); getContext().getContentResolver().update(u,v,null,null); }
+    if(Build.VERSION.SDK_INT>=29){
+      ContentValues v=new ContentValues();
+      v.put(MediaStore.Downloads.IS_PENDING,0);
+      getContext().getContentResolver().update(u,v,null,null);
+    }
   }
 
   @com.getcapacitor.PluginMethod public void saveBase64ToDownloads(PluginCall call){
     try{
-      String filename=call.getString("filename","download.bin"); String mime=call.getString("mimeType","application/octet-stream"); String data=call.getString("data","");
+      String filename=call.getString("filename","download.bin");
+      String mime=call.getString("mimeType","application/octet-stream");
+      String data=call.getString("data","");
       if(data==null||data.isEmpty()) throw new Exception("empty data");
-      byte[] bytes=Base64.decode(data,Base64.DEFAULT); Uri u=insertPending(filename,mime);
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(u)){ if(out==null) throw new Exception("open output failed"); out.write(bytes); out.flush(); }
-      finishPending(u); call.resolve(new JSObject().put("uri",u.toString()).put("filename",filename));
-    }catch(Exception e){call.reject("save_download_failed",e);}
+      byte[] bytes=Base64.decode(data,Base64.DEFAULT);
+      Uri u=insertPending(filename,mime);
+      try(OutputStream out=getContext().getContentResolver().openOutputStream(u)){
+        if(out==null) throw new Exception("open output failed");
+        out.write(bytes); out.flush();
+      }
+      finishPending(u);
+      call.resolve(new JSObject().put("uri",u.toString()).put("filename",filename));
+    }catch(Exception e){ call.reject("save_download_failed",e); }
   }
 
   @com.getcapacitor.PluginMethod public void exportHtmlToPdf(final PluginCall call){
-    final String html=call.getString("html",""); final String filename=call.getString("filename","hesab.pdf");
-    if(html==null||html.isEmpty()){call.reject("empty_html");return;}
-    getActivity().runOnUiThread(() -> {
-      final android.widget.FrameLayout root=(android.widget.FrameLayout)getActivity().getWindow().getDecorView();
-      final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
-      host.setBackgroundColor(android.graphics.Color.WHITE);
-      android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(1120,1200);
-      hp.leftMargin=0; hp.topMargin=0;
-      root.addView(host,hp);
-      final WebView web=new WebView(getContext());
-      web.setBackgroundColor(android.graphics.Color.WHITE);
-      web.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
-      host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1200));
-      web.getSettings().setJavaScriptEnabled(true);
-      web.getSettings().setDefaultTextEncodingName("UTF-8");
-      web.getSettings().setLoadWithOverviewMode(false);
-      web.getSettings().setUseWideViewPort(false);
-      web.setWebViewClient(new WebViewClient(){
-        private boolean started=false;
-        @Override public void onPageFinished(WebView view,String url){
-          if(started)return;
-          view.postDelayed(() -> view.evaluateJavascript(
-            "(function(){var b=document.body,e=document.documentElement;return JSON.stringify({w:Math.max(b?b.scrollWidth:0,e?e.scrollWidth:0,1120),h:Math.max(b?b.scrollHeight:0,e?e.scrollHeight:0,1)});})()",
-            value -> {
-              if(started)return;
-              started=true;
-              try{
-                String raw=value==null?"null":value;
-                Object parsed=new org.json.JSONTokener(raw).nextValue();
-                String json=(parsed instanceof String)?(String)parsed:raw;
-                org.json.JSONObject dims=new org.json.JSONObject(json);
-                int h=Math.max(1,dims.optInt("h",1));
-                createPdf(view,filename,call,host,root,h);
-              }catch(Exception e){
+    final String html=call.getString("html","");
+    final String filename=call.getString("filename","hesab.pdf");
+    if(html==null||html.isEmpty()){ call.reject("empty_html"); return; }
+
+    getActivity().runOnUiThread(new Runnable(){
+      @Override public void run(){
+        final android.widget.FrameLayout root=(android.widget.FrameLayout)getActivity().getWindow().getDecorView();
+        final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
+        host.setBackgroundColor(android.graphics.Color.WHITE);
+        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(1120,1200);
+        hp.leftMargin=0; hp.topMargin=0;
+        root.addView(host,hp);
+
+        final WebView web=new WebView(getContext());
+        web.setBackgroundColor(android.graphics.Color.WHITE);
+        web.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
+        web.getSettings().setJavaScriptEnabled(true);
+        web.getSettings().setDefaultTextEncodingName("UTF-8");
+        web.getSettings().setLoadWithOverviewMode(false);
+        web.getSettings().setUseWideViewPort(false);
+        host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1200));
+
+        web.setWebViewClient(new WebViewClient(){
+          private boolean started=false;
+          @Override public void onPageFinished(final WebView view,String url){
+            if(started) return;
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable(){
+              @Override public void run(){
+                if(started) return;
                 started=true;
-                call.reject("pdf_measure_failed",e);
-                try{host.removeView(view);root.removeView(host);}catch(Exception ignored){}
-                view.destroy();
+                try{
+                  int measured=(int)Math.ceil(view.getContentHeight()*view.getScale());
+                  if(measured<1) measured=1;
+                  createPdf(view,filename,call,host,root,measured);
+                }catch(Exception e){
+                  call.reject("pdf_measure_failed",e);
+                  try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
+                  view.destroy();
+                }
               }
-            });
-          },1500);
-        }
-      });
-      web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
+            },1500L);
+          }
+        });
+        web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
+      }
     });
   }
 
   private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host,android.widget.FrameLayout root,int contentH){
-    PdfDocument doc=null; Uri uri=null;
+    PdfDocument doc=null;
+    Uri uri=null;
     try{
       final int viewW=1120;
       final int viewH=Math.max(contentH,1);
@@ -245,10 +259,13 @@ public class NativeFileExportPlugin extends Plugin {
       host.updateViewLayout(web,new android.widget.FrameLayout.LayoutParams(viewW,viewH));
       host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       host.layout(0,0,viewW,viewH);
-      final int pageW=842, pageH=595;
+
+      final int pageW=842;
+      final int pageH=595;
       final float scale=(float)pageW/(float)viewW;
       final int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
       final int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
+
       doc=new PdfDocument();
       for(int i=0;i<pageCount;i++){
         PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
@@ -263,20 +280,23 @@ public class NativeFileExportPlugin extends Plugin {
         c.restore();
         doc.finishPage(page);
       }
+
       uri=insertPending(filename,"application/pdf");
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){ if(out==null) throw new Exception("open output failed"); doc.writeTo(out); out.flush(); }
+      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){
+        if(out==null) throw new Exception("open output failed");
+        doc.writeTo(out); out.flush();
+      }
       finishPending(uri);
       call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
     }catch(Exception e){
-      if(uri!=null) try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+      if(uri!=null) try{ getContext().getContentResolver().delete(uri,null,null); }catch(Exception ignored){}
       call.reject("pdf_export_failed",e);
     }finally{
-      if(doc!=null) try{doc.close();}catch(Exception ignored){}
-      try{host.removeView(web);root.removeView(host);}catch(Exception ignored){}
+      if(doc!=null) try{ doc.close(); }catch(Exception ignored){}
+      try{ host.removeView(web); root.removeView(host); }catch(Exception ignored){}
       web.destroy();
     }
   }
-
 }
 `;
 
