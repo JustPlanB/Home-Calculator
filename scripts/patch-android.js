@@ -143,12 +143,23 @@ public class NativeFileExportPlugin extends Plugin {
   private String uniqueDownloadName(String filename) {
     if(filename==null || filename.trim().isEmpty()) filename="download.bin";
     ContentResolver cr=getContext().getContentResolver();
-    String candidate=filename;
     String base=filename;
     String ext="";
     int dot=filename.lastIndexOf('.');
     if(dot>0){ base=filename.substring(0,dot); ext=filename.substring(dot); }
+    // همیشه پسوند دقیقاً .json یا .pdf بماند؛ شمارنده فقط سمت چپ نقطه
+    // برای بکاپ: hesab-backup-1405-06.json → hesab-backup-1-1405-06.json
+    boolean isHesabBackup = base.startsWith("hesab-backup-");
+    String restAfterPrefix = isHesabBackup ? base.substring("hesab-backup-".length()) : null;
     for(int n=0;n<10000;n++){
+      String candidate;
+      if(n==0){
+        candidate = filename;
+      } else if(isHesabBackup){
+        candidate = "hesab-backup-" + n + "-" + restAfterPrefix + ext;
+      } else {
+        candidate = base + "-" + n + ext;
+      }
       android.database.Cursor c=null;
       try{
         c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
@@ -156,9 +167,8 @@ public class NativeFileExportPlugin extends Plugin {
           MediaStore.Downloads.DISPLAY_NAME+"=?",new String[]{candidate},null);
         if(c==null || !c.moveToFirst()) return candidate;
       }finally{ if(c!=null) c.close(); }
-      candidate=base+"-"+(n+1)+ext;
     }
-    return candidate;
+    return filename;
   }
 
   private Uri insertPending(String filename,String mimeType) throws Exception {
@@ -209,58 +219,81 @@ public class NativeFileExportPlugin extends Plugin {
         final android.widget.FrameLayout root=(android.widget.FrameLayout)getActivity().getWindow().getDecorView();
         final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(1120,1200);
+        // عرض بزرگ‌تر برای رندر بهتر جداول RTL
+        final int viewW = 1200;
+        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 1800);
         hp.leftMargin=0; hp.topMargin=0;
         root.addView(host,hp);
 
         final WebView web=new WebView(getContext());
         web.setBackgroundColor(android.graphics.Color.WHITE);
-        web.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
+        // HARDWARE بهتر برای رندر متن و جدول است؛ SOFTWARE گاهی صفحه سفید می‌دهد
+        web.setLayerType(android.view.View.LAYER_TYPE_HARDWARE,null);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDefaultTextEncodingName("UTF-8");
         web.getSettings().setLoadWithOverviewMode(false);
         web.getSettings().setUseWideViewPort(false);
-        host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1200));
+        web.getSettings().setDomStorageEnabled(true);
+        web.getSettings().setBuiltInZoomControls(false);
+        web.getSettings().setDisplayZoomControls(false);
+        web.getSettings().setSupportZoom(false);
+        web.setInitialScale(100);
+        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 1800));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
+          private int attempts=0;
           @Override public void onPageFinished(final WebView view,String url){
             if(started) return;
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable(){
+            // چند بار تلاش می‌کنیم تا ارتفاع محتوا درست اندازه‌گیری شود
+            final Runnable measureAndCreate = new Runnable(){
               @Override public void run(){
                 if(started) return;
-                started=true;
+                attempts++;
                 try{
-                  int measured=(int)Math.ceil(view.getContentHeight()*view.getScale());
-                  if(measured<1) measured=1;
-                  createPdf(view,filename,call,host,root,measured);
+                  int contentH = view.getContentHeight();
+                  float scale = view.getScale();
+                  int measured = (int)Math.ceil(contentH * scale);
+                  // اگر هنوز خیلی کوچک است، دوباره صبر کن
+                  if(measured < 80 && attempts < 6){
+                    new Handler(Looper.getMainLooper()).postDelayed(this, 600L);
+                    return;
+                  }
+                  if(measured < 1) measured = 400;
+                  started=true;
+                  createPdf(view,filename,call,host,root,measured, viewW);
                 }catch(Exception e){
+                  started=true;
                   call.reject("pdf_measure_failed",e);
                   try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
                   view.destroy();
                 }
               }
-            },1500L);
+            };
+            new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 1200L);
           }
         });
+        // baseURL کمک می‌کند فونت و استایل‌ها بهتر لود شوند
         web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
       }
     });
   }
 
-  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host,android.widget.FrameLayout root,int contentH){
+  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host,android.widget.FrameLayout root,int contentH, int viewW){
     PdfDocument doc=null;
     Uri uri=null;
     try{
-      final int viewW=1120;
-      final int viewH=Math.max(contentH,1);
+      final int viewH=Math.max(contentH, 200);
       web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       web.layout(0,0,viewW,viewH);
       host.updateViewLayout(web,new android.widget.FrameLayout.LayoutParams(viewW,viewH));
       host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       host.layout(0,0,viewW,viewH);
 
-      final int pageW=842;
+      // کمی صبر اضافه برای paint شدن محتوا
+      try{ Thread.sleep(300); }catch(InterruptedException ignored){}
+
+      final int pageW=842; // A4 landscape points
       final int pageH=595;
       final float scale=(float)pageW/(float)viewW;
       final int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
