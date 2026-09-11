@@ -1732,13 +1732,20 @@
     td.col-status.unpaid-cell {
       background: var(--red-bg) !important;
     }
-    td.col-num.paid-cell {
-      background: var(--green-bg) !important;
+    td.col-num.paid-cell,
+    td.col-num.unpaid-cell {
+      background: transparent !important;
+      color: var(--muted) !important;
+      font-weight: 600 !important;
+    }
+    /* وضعیت روی خود مبلغ (نه کل سلول) */
+    input.amount-input.status-paid,
+    input.cell.amount-input.status-paid {
       color: var(--green-tx) !important;
       font-weight: 800 !important;
     }
-    td.col-num.unpaid-cell {
-      background: var(--red-bg) !important;
+    input.amount-input.status-unpaid,
+    input.cell.amount-input.status-unpaid {
       color: var(--red-tx) !important;
       font-weight: 800 !important;
     }
@@ -1825,7 +1832,8 @@
       color: var(--text);
     }
     #summaryTitle-income, #summaryTitle-expense, .summary-header.balance-h {
-      color: var(--text) !important;
+      background: #0a2a4a !important;
+      color: #e8f1fa !important;
       font-size: 1rem;
       font-weight: bold;
     }
@@ -2111,8 +2119,8 @@
       flex-shrink: 0;
     }
     .remind-bar {
-      background: #1c1c1e;
-      border: 1px solid #3a3a3c;
+      background: #0a1f33;
+      border: 1px solid #0d2a45;
       border-radius: 10px;
       margin-bottom: 8px;
       overflow: hidden;
@@ -2121,8 +2129,8 @@
       flex-shrink: 0;
     }
     [data-theme="light"] .remind-bar {
-      background: #c7c7cc;
-      border: 1px solid #8e8e93;
+      background: #0a1f33;
+      border: 1px solid #0d2a45;
     }
     .remind-bar[style*="display: block"],
     .remind-bar[style*="display:block"] {
@@ -2135,15 +2143,15 @@
       padding: 10px 12px;
       cursor: pointer;
       user-select: none;
-      color: #f2f2f7;
+      color: #e8f1fa;
       font-weight: bold;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
-      background: #2c2c2e;
+      background: #0a2a4a;
       border-bottom: 1px solid transparent;
     }
     [data-theme="light"] .remind-bar-head {
-      color: #1c1c1e;
-      background: #aeaeb2;
+      color: #e8f1fa;
+      background: #0a2a4a;
     }
     .remind-bar.open .remind-bar-head {
       border-bottom-color: var(--border);
@@ -2153,12 +2161,12 @@
     .remind-bar .collapse-arrow { color: var(--muted); }
     .remind-bar .remind-table-wrap { margin: 0; }
     .remind-bar .remind-table th {
-      background: #2c2c2e;
-      color: #d1d1d6;
+      background: #0a2a4a;
+      color: #d6e6f5;
     }
     [data-theme="light"] .remind-bar .remind-table th {
-      background: #c7c7cc;
-      color: #3a3a3c;
+      background: #0a2a4a;
+      color: #d6e6f5;
     }
     .remind-bar .remind-table td {
       color: var(--table-text);
@@ -9365,33 +9373,51 @@
 
     function detectBankFromSms(text) {
       const low = normalizeSmsText(text).toLowerCase();
-      // اولویت با نام‌های کامل‌تر
+      // اولویت با نام‌های کامل‌تر و شناسه فرستنده رایج پیامک
       const ordered = [
-        { keys: ['بانک ملی', 'بانك ملی', 'بانک ملی ایران', 'bmi', 'bam'], name: 'بانک ملی' },
-        { keys: ['بانک ملت', 'بانك ملت', 'mellat', 'behpardakht'], name: 'بانک ملت' },
-        { keys: ['بانک صادرات', 'صادرات'], name: 'بانک صادرات' },
-        { keys: ['بانک مسکن', 'مسکن'], name: 'بانک مسکن' },
-        { keys: ['بانک سپه', 'سپه'], name: 'بانک سپه' },
-        { keys: ['بانک تجارت', 'تجارت'], name: 'بانک تجارت' },
+        { keys: ['بانک ملی', 'بانك ملی', 'بانک ملی ایران', 'bmi.ir', 'bmi', 'bam', 'bankmelli', 'melli bank'], name: 'بانک ملی' },
+        { keys: ['بانک ملت', 'بانك ملت', 'mellat', 'behpardakht', 'bankmellat', 'bmellat'], name: 'بانک ملت' },
+        { keys: ['بانک صادرات', 'بانك صادرات', 'bsi.ir', 'bsi'], name: 'بانک صادرات' },
+        { keys: ['بانک مسکن', 'بانك مسکن', 'maskan', 'bankmaskan'], name: 'بانک مسکن' },
+        { keys: ['بانک سپه', 'بانك سپه', 'banksepah', 'sepah'], name: 'بانک سپه' },
+        { keys: ['بانک تجارت', 'بانك تجارت', 'tejarat', 'banktejarat'], name: 'بانک تجارت' },
+        { keys: ['بانک رفاه', 'رفاه کارگران', 'refah'], name: 'بانک رفاه کارگران' },
+        { keys: ['بانک کشاورزی', 'کشاورزی', 'bki'], name: 'بانک کشاورزی' },
+        { keys: ['بانک پاسارگاد', 'پاسارگاد', 'pasargad', 'bpi'], name: 'بانک پاسارگاد' },
+        { keys: ['بانک پارسیان', 'پارسیان', 'parsian'], name: 'بانک پارسیان' },
+        { keys: ['بانک سامان', 'سامان', 'sb24', 'saman'], name: 'بانک سامان' },
+        { keys: ['اقتصاد نوین', 'enbank'], name: 'بانک اقتصاد نوین' },
+        { keys: ['بانک آینده', 'آینده', 'ba24', 'ayandeh'], name: 'بانک آینده' },
+        { keys: ['بانک شهر', 'شهر', 'shahr'], name: 'بانک شهر' },
+        { keys: ['بانک سینا', 'سینا', 'sina'], name: 'بانک سینا' },
+        { keys: ['بانک کارآفرین', 'کارآفرین', 'karafarin'], name: 'بانک کارآفرین' },
+        { keys: ['بانک گردشگری', 'گردشگری', 'tourism'], name: 'بانک گردشگری' },
+        { keys: ['ایران زمین', 'ایران‌زمین', 'izbank'], name: 'بانک ایران‌زمین' },
+        { keys: ['خاورمیانه', 'middleeast', 'middle east'], name: 'بانک خاورمیانه' },
+        { keys: ['رسالت', 'resalat'], name: 'بانک قرض‌الحسنه رسالت' },
+        { keys: ['مهر ایران', 'قرض الحسنه مهر', 'قرض‌الحسنه مهر', 'qmb'], name: 'بانک قرض‌الحسنه مهر' },
+        { keys: ['بلوبانک', 'بلو بانک', 'blubank', 'blue bank'], name: 'بلوبانک' },
+        { keys: ['پست بانک', 'postbank', 'post bank'], name: 'پست بانک' },
+        { keys: ['موسسه اعتباری ملل', 'ملل'], name: 'موسسه اعتباری ملل' },
+        { keys: ['بانک دی', 'daybank', 'bank day'], name: 'بانک دی' },
+        { keys: ['حکمت ایرانیان', 'حکمت'], name: 'بانک حکمت ایرانیان' },
+        { keys: ['انصار'], name: 'بانک انصار' },
+        { keys: ['قوامین'], name: 'بانک قوامین' },
+        { keys: ['کوثر'], name: 'بانک کوثر' },
+        { keys: ['سرمایه'], name: 'بانک سرمایه' },
+        { keys: ['تات'], name: 'بانک تات' },
+        // کوتاه — آخر (پس از نام‌های کامل)
+        { keys: ['صادرات'], name: 'بانک صادرات' },
+        { keys: ['مسکن'], name: 'بانک مسکن' },
+        { keys: ['سپه'], name: 'بانک سپه' },
+        { keys: ['تجارت'], name: 'بانک تجارت' },
         { keys: ['رفاه'], name: 'بانک رفاه کارگران' },
         { keys: ['کشاورزی'], name: 'بانک کشاورزی' },
         { keys: ['پاسارگاد'], name: 'بانک پاسارگاد' },
         { keys: ['پارسیان'], name: 'بانک پارسیان' },
         { keys: ['سامان'], name: 'بانک سامان' },
-        { keys: ['اقتصاد نوین'], name: 'بانک اقتصاد نوین' },
         { keys: ['آینده'], name: 'بانک آینده' },
         { keys: ['شهر'], name: 'بانک شهر' },
-        { keys: ['سینا'], name: 'بانک سینا' },
-        { keys: ['کارآفرین'], name: 'بانک کارآفرین' },
-        { keys: ['گردشگری'], name: 'بانک گردشگری' },
-        { keys: ['ایران زمین', 'ایران‌زمین'], name: 'بانک ایران‌زمین' },
-        { keys: ['خاورمیانه'], name: 'بانک خاورمیانه' },
-        { keys: ['رسالت'], name: 'بانک قرض‌الحسنه رسالت' },
-        { keys: ['مهر ایران', 'قرض الحسنه مهر', 'قرض‌الحسنه مهر'], name: 'بانک قرض‌الحسنه مهر' },
-        { keys: ['بلوبانک', 'بلو بانک', 'blubank'], name: 'بلوبانک' },
-        { keys: ['پست بانک'], name: 'پست بانک' },
-        { keys: ['ملل'], name: 'موسسه اعتباری ملل' },
-        // کوتاه — آخر
         { keys: ['ملت'], name: 'بانک ملت' },
         { keys: ['ملی'], name: 'بانک ملی' },
         { keys: ['دی'], name: 'بانک دی' }
@@ -9490,36 +9516,59 @@
 
     function extractDayFromSms(text) {
       const raw = normalizeSmsText(text);
-      // 1404/06/15 یا 1404-6-15 یا 1404.06.15
+      const okDay = (n) => { const d = parseInt(n, 10); return (d >= 1 && d <= 31) ? String(d) : ''; };
+
+      // 1404/06/15 یا 1404/6/01 یا 1404-06-01 یا 1404.06.01 (روز با صفر اول هم پشتیبانی می‌شود)
       let m = raw.match(/(?:13|14)\d{2}\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
-      if (m) {
-        const dd = parseInt(m[2], 10);
-        if (dd >= 1 && dd <= 31) return String(dd);
-      }
-      // 15/06/1404
+      if (m) { const d = okDay(m[2]); if (d) return d; }
+
+      // 15/06/1404 یا 01/06/1404
       m = raw.match(/(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(?:13|14)\d{2}/);
+      if (m) { const d = okDay(m[1]); if (d) return d; }
+
+      // سال دو رقمی + ساعت، مثل بانک ملت: 05/06/12-16:43 یا 05/06/01-09:05 (سال/ماه/روز-ساعت:دقیقه)
+      m = raw.match(/\b\d{1,2}\s*[\/\-\.]\s*\d{1,2}\s*[\/\-\.]\s*(\d{1,2})\s*[-–]\s*\d{1,2}:\d{2}/);
+      if (m) { const d = okDay(m[1]); if (d) return d; }
+
+      // بانک ملی و مشابه: MMDD-HH:MM مثل 0611-19:31 یا 0601-09:05 (روز با صفر اول)
+      m = raw.match(/(?:^|[^\d])(\d{2})(\d{2})\s*[-–]\s*\d{1,2}:\d{2}(?:[^\d]|$)/);
       if (m) {
-        const dd = parseInt(m[1], 10);
-        if (dd >= 1 && dd <= 31) return String(dd);
+        const mm = parseInt(m[1], 10);
+        const dd = okDay(m[2]);
+        if (dd && mm >= 1 && mm <= 12) return dd;
       }
-      // سال دو رقمی به‌همراه ساعت، مثل بانک ملت: 05/06/12-16:43 (سال/ماه/روز-ساعت:دقیقه)
-      m = raw.match(/\b\d{1,2}\s*[\/\-\.]\s*\d{1,2}\s*[\/\-\.]\s*(\d{1,2})\s*-\s*\d{1,2}:\d{2}/);
+
+      // MMDDHHMM چسبیده بدون خط تیره (بعضی نسخه‌های ملی): 06011931
+      m = raw.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})(\d{2})(?:[^\d]|$)/);
       if (m) {
-        const dd = parseInt(m[1], 10);
-        if (dd >= 1 && dd <= 31) return String(dd);
+        const mm = parseInt(m[1], 10), dd = okDay(m[2]);
+        const hh = parseInt(m[3], 10), mi = parseInt(m[4], 10);
+        if (dd && mm >= 1 && mm <= 12 && hh <= 23 && mi <= 59) return dd;
       }
-      // ماه‌روز چسبیده به‌همراه ساعت، مثل بانک ملی: 0611-19:31 (ماه‌روز-ساعت:دقیقه)
-      m = raw.match(/\b\d{2}(\d{2})-\d{1,2}:\d{2}\b/);
+
+      // MM/DD-HH:MM یا MM-DD HH:MM
+      m = raw.match(/\b(\d{1,2})\s*[\/\-]\s*(\d{1,2})\s*[-–\s]\s*\d{1,2}:\d{2}/);
       if (m) {
-        const dd = parseInt(m[1], 10);
-        if (dd >= 1 && dd <= 31) return String(dd);
+        const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+        // اگر a ماه و b روز
+        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return String(b);
+        // اگر a روز و b ماه
+        if (a >= 1 && a <= 31 && b >= 1 && b <= 12) return String(a);
       }
-      // تاریخ: 15-06 یا 15/06 بدون سال (اگر نزدیک «تاریخ»)
-      m = raw.match(/تاریخ\s*[:：]?\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
+
+      // تاریخ: 01-06 یا 01/06 یا تاريخ:1404/06/01
+      m = raw.match(/تاریخ\s*[:：]?\s*(?:(?:13|14)\d{2}\s*[\/\-\.]\s*)?(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
       if (m) {
-        const dd = parseInt(m[1], 10);
-        if (dd >= 1 && dd <= 31) return String(dd);
+        // اگر دو گروه بعد از سال احتمالی: ممکن است ماه/روز یا روز/ماه باشد
+        const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return String(b);
+        if (a >= 1 && a <= 31) return String(a);
       }
+
+      // هر الگوی YYYY/MM/DD یا YY/MM/DD در متن
+      m = raw.match(/(?:^|[^\d])(?:\d{2}|\d{4})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})(?:[^\d]|$)/);
+      if (m) { const d = okDay(m[2]); if (d) return d; }
+
       return '';
     }
 
@@ -11120,7 +11169,7 @@
       table.innerHTML = `
         <thead>
           <tr>
-            <th class="col-num"><span class="status-only">وضع</span></th>
+            <th class="col-num"><span class="status-only">ردیف</span></th>
             <th class="col-day">روز</th>
             <th class="col-desc th-desc">شرح</th>
             <th class="col-amount">مبلغ</th>
@@ -11318,11 +11367,15 @@
       setupLockable(amtInp, !!(row.amount), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const st0 = row.status || 'paid';
-      tdNum.classList.add(st0 === 'paid' ? 'paid-cell' : 'unpaid-cell');
+      function applyAmountStatusColor(v) {
+        const paid = v === 'paid';
+        amtInp.style.color = paid ? 'var(--green-tx)' : 'var(--red-tx)';
+        amtInp.style.fontWeight = '800';
+      }
+      applyAmountStatusColor(st0);
       function applyStatusVisual(v) {
         row.status = v;
-        tdNum.classList.remove('paid-cell', 'unpaid-cell');
-        tdNum.classList.add(v === 'paid' ? 'paid-cell' : 'unpaid-cell');
+        applyAmountStatusColor(v);
       }
       /** اگر ردیف از قسط آمده و پرداخت شد → در اقساط هم پرداخت‌شده حساب شود */
       function syncPlanFromExpenseStatus(newStatus) {
@@ -11364,7 +11417,7 @@
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        const r = tdNum.getBoundingClientRect();
+        const r = tdAmt.getBoundingClientRect();
         menu.style.top = Math.min(r.bottom + 4, window.innerHeight - 120) + 'px';
         menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 160)) + 'px';
         [
@@ -11386,7 +11439,7 @@
         });
         document.body.appendChild(menu);
         const closer = (ev) => {
-          if (!menu.contains(ev.target) && ev.target !== tdNum) {
+          if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
             menu.remove();
             document.removeEventListener('click', closer);
             document.removeEventListener('touchstart', closer);
@@ -11397,8 +11450,22 @@
           document.addEventListener('touchstart', closer, { passive: true });
         }, 10);
       }
-      tdNum.style.cursor = 'pointer';
-      tdNum.onclick = openStatusMenu;
+      // یک‌بار لمس مبلغ → انتخاب وضعیت (رنگ فقط روی خود مبلغ)
+      let _amtTapTimer = null;
+      let _amtTouchMoved = false;
+      const onAmtStatusTap = (e) => {
+        // اگر در حال ویرایش (unlocked) هستیم، منوی وضعیت باز نشود
+        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        openStatusMenu(e);
+      };
+      tdAmt.style.cursor = 'pointer';
+      amtInp.addEventListener('click', (e) => {
+        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
+        // جلوگیری از تداخل با double-tap unlock
+        if (_amtTapTimer) { clearTimeout(_amtTapTimer); _amtTapTimer = null; return; }
+        _amtTapTimer = setTimeout(() => { _amtTapTimer = null; onAmtStatusTap(e); }, 220);
+      });
 
       const tdAcc = document.createElement('td');
       tdAcc.className = 'col-acc';
@@ -12721,12 +12788,16 @@
       setupLockable(amtInp, !!(r.amount), !canEditRow(r), OWNERSHIP_LOCK_MSG);
 
       const isCredit = r.status === 'credit';
-      tdNum.classList.add(isCredit ? 'paid-cell' : 'unpaid-cell');
+      function applyLedgerAmountColor(v) {
+        const credit = v === 'credit';
+        amtInp.style.color = credit ? 'var(--green-tx)' : 'var(--red-tx)';
+        amtInp.style.fontWeight = '800';
+      }
+      applyLedgerAmountColor(isCredit ? 'credit' : 'debt');
       function applyLedgerStatusVisual(v) {
         const credit = v === 'credit';
         updateLedgerRowField(sec.id, idx, 'status', credit ? 'credit' : 'debt');
-        tdNum.classList.remove('paid-cell', 'unpaid-cell');
-        tdNum.classList.add(credit ? 'paid-cell' : 'unpaid-cell');
+        applyLedgerAmountColor(credit ? 'credit' : 'debt');
       }
       function openLedgerStatusMenu(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -12734,7 +12805,7 @@
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        const rct = (e && e.currentTarget ? e.currentTarget : tdNum).getBoundingClientRect();
+        const rct = tdAmt.getBoundingClientRect();
         menu.style.top = Math.min(rct.bottom + 4, window.innerHeight - 120) + 'px';
         menu.style.left = Math.max(8, Math.min(rct.left, window.innerWidth - 160)) + 'px';
         [
@@ -12754,7 +12825,7 @@
         });
         document.body.appendChild(menu);
         const closer = (ev) => {
-          if (!menu.contains(ev.target)) {
+          if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
             menu.remove();
             document.removeEventListener('click', closer);
             document.removeEventListener('touchstart', closer);
@@ -12765,8 +12836,13 @@
           document.addEventListener('touchstart', closer, { passive: true });
         }, 10);
       }
-      tdNum.style.cursor = 'pointer';
-      tdNum.onclick = openLedgerStatusMenu;
+      tdAmt.style.cursor = 'pointer';
+      let _ledAmtTapTimer = null;
+      amtInp.addEventListener('click', (e) => {
+        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
+        if (_ledAmtTapTimer) { clearTimeout(_ledAmtTapTimer); _ledAmtTapTimer = null; return; }
+        _ledAmtTapTimer = setTimeout(() => { _ledAmtTapTimer = null; openLedgerStatusMenu(e); }, 220);
+      });
 
       const tdAct = document.createElement('td');
       tdAct.className = 'col-actions actions-cell';
@@ -13009,7 +13085,7 @@
         const table = document.createElement('table');
         const thead = document.createElement('thead');
         thead.innerHTML = '<tr>' +
-          '<th class="col-num">وضع</th>' +
+          '<th class="col-num">ردیف</th>' +
           '<th class="col-day">روز</th>' +
           '<th class="col-desc th-desc">شرح</th>' +
           '<th class="col-amount">مبلغ</th>' +
