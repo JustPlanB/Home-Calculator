@@ -1529,12 +1529,12 @@
     }
     .section-body { border-top: none; }
 
-    .col-num { width: 52px; }
+    .col-num { width: 34px; }
     .col-day { width: 40px; }
     .col-desc { width: auto; }
     .col-amount { width: 96px; }
     .col-status { width: 56px; }
-    .col-acc { width: 72px; }
+    .col-acc { width: 90px; }
     .col-actions { width: 28px; }
 
     .col-acc .dark-select { width: 100%; flex: none; }
@@ -2445,9 +2445,9 @@
       .col-day { width: 36px; }
       .col-amount { width: 88px; }
       .col-status { width: 50px; }
-      .col-acc { width: 64px; }
+      .col-acc { width: 82px; }
       .col-actions { width: 26px; }
-      .col-num { width: 46px; }
+      .col-num { width: 30px; }
       .section-header { top: 44px; }
       .tab-btn { font-size: 0.86rem; padding: 6px 0; letter-spacing: -0.02em; }
       input.cell { padding: 5px 3px; font-size: 0.85rem; }
@@ -3698,8 +3698,11 @@
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
-    function emptyRow() {
-      return { id: '', day: '', desc: '', amount: 0, status: 'paid', account: '', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
+    function emptyRow(forTab) {
+      const tab = (forTab === 'income' || forTab === 'expense') ? forTab : (typeof currentTab !== 'undefined' ? currentTab : 'expense');
+      // درآمد جدید: دریافت‌نشده؛ مخارج: پرداخت‌شده (پیش‌فرض قبلی)
+      const st = (tab === 'income') ? 'unpaid' : 'paid';
+      return { id: '', day: '', desc: '', amount: 0, status: st, account: '', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
     }
     function emptySections() {
       // بدون هدر پیش‌فرض — کاربر خودش بخش می‌سازد
@@ -8075,23 +8078,88 @@
       return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:7mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:9.5px;direction:rtl;">'+buildPdfContent()+'</body></html>';
     }
 
-    async function renderPdfPagesOffline(){
-      const content=buildPdfFullDocument();
-      const holder=document.createElement('div'); holder.style.cssText='position:fixed;left:-100000px;top:0;width:1200px;background:#fff;color:#000;direction:rtl;'; holder.innerHTML=buildPdfContent(); document.body.appendChild(holder); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      const width=1200, height=Math.max(holder.scrollHeight,holder.offsetHeight,100); holder.style.width=width+'px';
-      const inner=content.replace(/<\/body>[\s\S]*?<\/html>/,'</body></html>');
-      const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="'+width+'" height="'+height+'"><foreignObject x="0" y="0" width="'+width+'" height="'+height+'"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;">'+buildPdfContent()+'</div></foreignObject></svg>';
+    async function renderPdfPagesOffline(fromIframe){
+      const width = 1200;
+      let htmlContent = buildPdfContent();
+      try {
+        if (fromIframe && fromIframe.contentDocument && fromIframe.contentDocument.body) {
+          const b = fromIframe.contentDocument.body;
+          if ((b.innerHTML || '').trim()) htmlContent = b.innerHTML;
+        }
+      } catch (e) {}
+      // پاکسازی برای foreignObject (حذف اسکریپت و لینک خارجی)
+      htmlContent = String(htmlContent || '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<link[^>]*>/gi, '');
+      const holder = document.createElement('div');
+      holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:' + width + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;box-sizing:border-box;padding:8px;';
+      holder.innerHTML = htmlContent;
+      document.body.appendChild(holder);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 50));
+      const height = Math.max(holder.scrollHeight, holder.offsetHeight, 200);
+      holder.style.height = height + 'px';
+      // escape برای قرارگیری داخل SVG
+      const safe = holder.innerHTML
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      // روش مطمئن‌تر: رسم مستقیم با foreignObject بدون double-escape محتوا
+      const xhtml = holder.innerHTML;
       holder.remove();
-      const img=new Image(); img.decoding='sync'; const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
-      await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;}); URL.revokeObjectURL(url);
-      const scale=1.5, canvas=document.createElement('canvas'); canvas.width=Math.ceil(width*scale); canvas.height=Math.ceil(height*scale); const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      const pageHpx=Math.floor(canvas.width*(595.28/841.89)); const pages=[]; for(let y=0;y<canvas.height;y+=pageHpx){ const h=Math.min(pageHpx,canvas.height-y); const pc=document.createElement('canvas');pc.width=canvas.width;pc.height=h;const pctx=pc.getContext('2d');pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,h);pctx.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h); const data=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(data.length);for(let i=0;i<data.length;i++)jpg[i]=data.charCodeAt(i); pages.push({jpg,w:pc.width,h:pc.height}); }
-      return buildSimpleImagePdf(pages,841.89,595.28);
+      const svg = '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
+        '<foreignObject x="0" y="0" width="' + width + '" height="' + height + '">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + width + 'px;min-height:' + height + 'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;padding:8px;">' +
+        xhtml.replace(/&(?!amp;|lt;|gt;|quot;|#)/g, '&amp;') +
+        '</div></foreignObject></svg>';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+      try {
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = url;
+        });
+      } finally {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+      }
+      const scale = 1.5;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(width * scale);
+      canvas.height = Math.ceil(height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // A4 landscape points: 841.89 x 595.28
+      const pageW = 841.89, pageH = 595.28;
+      const pageHpx = Math.floor(canvas.width * (pageH / pageW));
+      const pages = [];
+      for (let y = 0; y < canvas.height; y += pageHpx) {
+        const h = Math.min(pageHpx, canvas.height - y);
+        const pc = document.createElement('canvas');
+        pc.width = canvas.width;
+        pc.height = h;
+        const pctx = pc.getContext('2d');
+        pctx.fillStyle = '#fff';
+        pctx.fillRect(0, 0, pc.width, h);
+        pctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        const dataUrl = pc.toDataURL('image/jpeg', 0.9);
+        const b64 = dataUrl.split(',')[1] || '';
+        const bin = atob(b64);
+        const jpg = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+        pages.push({ jpg: jpg, w: pc.width, h: pc.height });
+      }
+      if (!pages.length) throw new Error('no pdf pages');
+      return buildSimpleImagePdf(pages, pageW, pageH);
     }
     async function exportPdf(){
       try {
         persistCurrent();
-        showToast('در حال باز کردن صفحه چاپ…');
+        showToast('در حال آماده‌سازی گزارش…');
         openPdfPrintWindow();
       } catch (e) {
         console.error('PDF failed', e);
@@ -8134,21 +8202,77 @@
         };
 
         document.getElementById('pdfCloseBtn').onclick = cleanup;
-        document.getElementById('pdfPrintBtn').onclick = () => {
+        document.getElementById('pdfPrintBtn').onclick = async () => {
+          const btn = document.getElementById('pdfPrintBtn');
           try {
-            const win = iframe.contentWindow;
-            win.focus();
-            win.print();
+            if (btn) { btn.disabled = true; btn.textContent = 'در حال ساخت PDF…'; }
+            showToast('در حال ساخت PDF…');
+            let blob = null;
+            try {
+              blob = await renderPdfPagesOffline(iframe);
+            } catch (renderErr) {
+              console.error('renderPdfPagesOffline', renderErr);
+              blob = null;
+            }
+            const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
+            if (blob && blob.size > 0) {
+              // Web Share (موبایل)
+              try {
+                if (navigator.canShare && typeof File !== 'undefined') {
+                  const file = new File([blob], fname, { type: 'application/pdf' });
+                  if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: fname });
+                    showToast('PDF به‌اشتراک گذاشته شد');
+                    if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
+                    return;
+                  }
+                }
+              } catch (shareErr) {
+                /* کاربر ممکن است share را لغو کند */
+                if (shareErr && shareErr.name === 'AbortError') {
+                  if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
+                  return;
+                }
+              }
+              // دانلود مستقیم
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fname;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 2500);
+              showToast('فایل PDF ذخیره شد');
+            }
+            // چاپ از iframe (اگر مرورگر/وب‌ویو پشتیبانی کند)
+            try {
+              const win = iframe.contentWindow;
+              if (win) {
+                win.focus();
+                setTimeout(() => { try { win.print(); } catch (e) {} }, 200);
+              }
+            } catch (printErr) {
+              console.error(printErr);
+              if (!blob) showToast('چاپ/ذخیره باز نشد');
+            }
           } catch (err) {
             console.error(err);
-            showToast('چاپ باز نشد');
+            try {
+              const win = iframe.contentWindow;
+              if (win) { win.focus(); win.print(); }
+              else showToast('ذخیره PDF ناموفق بود');
+            } catch (e2) {
+              showToast('ذخیره PDF ناموفق بود');
+            }
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
           }
         };
 
-        // بعد از چاپ، iframe را نگه دار تا کاربر بتواند دوباره بزند؛ با بستن حذف می‌شود
         try {
           iframe.contentWindow.addEventListener('afterprint', function () {
-            /* عمداً cleanup نمی‌کنیم تا اگر Save طول کشید محتوا بماند */
+            /* عمداً cleanup نمی‌کنیم */
           });
         } catch (e) {}
 
