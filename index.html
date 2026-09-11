@@ -1827,11 +1827,12 @@
       text-align: center;
       border-bottom: 1px solid var(--border);
     }
-    .summary-header.expense-h, .summary-header.income-h, .summary-header.install-h, .summary-header.balance-h {
+    .summary-header.expense-h, .summary-header.income-h, .summary-header.install-h, .summary-header.balance-h, .summary-header.ledger-h {
       background: var(--header-tint);
       color: var(--text);
     }
-    #summaryTitle-income, #summaryTitle-expense, .summary-header.balance-h {
+    #summaryTitle-income, #summaryTitle-expense, .summary-header.balance-h,
+    .summary-header.install-h, .summary-header.ledger-h {
       background: #0a2a4a !important;
       color: #e8f1fa !important;
       font-size: 1rem;
@@ -2168,9 +2169,20 @@
       background: #0a2a4a;
       color: #d6e6f5;
     }
+    .remind-bar .remind-table-wrap,
+    .remind-bar-body,
+    .remind-bar .remind-table {
+      background: #0a1f33 !important;
+    }
     .remind-bar .remind-table td {
-      color: var(--table-text);
-      background: var(--card);
+      color: #e8f1fa !important;
+      background: #0a1f33 !important;
+      border-color: #0d2a45 !important;
+    }
+    .remind-bar .remind-table .r-amt,
+    .remind-bar .remind-table .r-name,
+    .remind-bar .remind-table .r-due {
+      color: #e8f1fa !important;
     }
     .filter-bar {
       display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center;
@@ -3431,7 +3443,7 @@
       <div class="filter-bar" id="ledgerFilters"></div>
 
       <div class="summary-section ledger-summary">
-        <div class="summary-header install-h">خلاصه بده‌بستان</div>
+        <div class="summary-header ledger-h">خلاصه بده‌بستان</div>
         <table class="summary-table">
           <thead>
             <tr>
@@ -11369,8 +11381,10 @@
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
         const paid = v === 'paid';
-        amtInp.style.color = paid ? 'var(--green-tx)' : 'var(--red-tx)';
-        amtInp.style.fontWeight = '800';
+        amtInp.style.setProperty('color', paid ? 'var(--green-tx)' : 'var(--red-tx)', 'important');
+        amtInp.style.setProperty('font-weight', '800', 'important');
+        amtInp.classList.toggle('status-paid', paid);
+        amtInp.classList.toggle('status-unpaid', !paid);
       }
       applyAmountStatusColor(st0);
       function applyStatusVisual(v) {
@@ -11450,22 +11464,36 @@
           document.addEventListener('touchstart', closer, { passive: true });
         }, 10);
       }
-      // یک‌بار لمس مبلغ → انتخاب وضعیت (رنگ فقط روی خود مبلغ)
-      let _amtTapTimer = null;
-      let _amtTouchMoved = false;
-      const onAmtStatusTap = (e) => {
-        // اگر در حال ویرایش (unlocked) هستیم، منوی وضعیت باز نشود
-        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        openStatusMenu(e);
-      };
+      // یک‌بار کلیک روی سلول مبلغ (وقتی قفل/پر است) → منوی وضعیت
+      // دوبار کلیک → ویرایش مبلغ (setupLockable)
+      // سلول خالی → تایپ عادی بدون منو
       tdAmt.style.cursor = 'pointer';
-      amtInp.addEventListener('click', (e) => {
-        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
-        // جلوگیری از تداخل با double-tap unlock
-        if (_amtTapTimer) { clearTimeout(_amtTapTimer); _amtTapTimer = null; return; }
-        _amtTapTimer = setTimeout(() => { _amtTapTimer = null; onAmtStatusTap(e); }, 220);
+      tdAmt.title = 'برای تغییر وضعیت یک‌بار بزنید';
+      const isAmtEditing = () => (
+        document.activeElement === amtInp &&
+        !amtInp.readOnly &&
+        amtInp.classList.contains('unlocked')
+      );
+      const shouldOpenStatus = () => {
+        if (isAmtEditing()) return false;
+        // خالی: اجازه تایپ
+        if (amtInp.classList.contains('is-empty') && !row.amount) return false;
+        return true;
+      };
+      tdAmt.addEventListener('pointerup', (e) => {
+        if (e.button != null && e.button !== 0) return;
+        if (!shouldOpenStatus()) return;
+        if (e.detail && e.detail >= 2) return;
+        const token = {};
+        tdAmt._statusToken = token;
+        setTimeout(() => {
+          if (tdAmt._statusToken !== token) return;
+          if (!shouldOpenStatus()) return;
+          openStatusMenu(e);
+        }, 250);
       });
+      tdAmt.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
+      amtInp.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
 
       const tdAcc = document.createElement('td');
       tdAcc.className = 'col-acc';
@@ -12790,8 +12818,10 @@
       const isCredit = r.status === 'credit';
       function applyLedgerAmountColor(v) {
         const credit = v === 'credit';
-        amtInp.style.color = credit ? 'var(--green-tx)' : 'var(--red-tx)';
-        amtInp.style.fontWeight = '800';
+        amtInp.style.setProperty('color', credit ? 'var(--green-tx)' : 'var(--red-tx)', 'important');
+        amtInp.style.setProperty('font-weight', '800', 'important');
+        amtInp.classList.toggle('status-paid', credit);
+        amtInp.classList.toggle('status-unpaid', !credit);
       }
       applyLedgerAmountColor(isCredit ? 'credit' : 'debt');
       function applyLedgerStatusVisual(v) {
@@ -12837,12 +12867,31 @@
         }, 10);
       }
       tdAmt.style.cursor = 'pointer';
-      let _ledAmtTapTimer = null;
-      amtInp.addEventListener('click', (e) => {
-        if (amtInp.classList.contains('unlocked') && !amtInp.readOnly) return;
-        if (_ledAmtTapTimer) { clearTimeout(_ledAmtTapTimer); _ledAmtTapTimer = null; return; }
-        _ledAmtTapTimer = setTimeout(() => { _ledAmtTapTimer = null; openLedgerStatusMenu(e); }, 220);
+      tdAmt.title = 'برای تغییر وضعیت یک‌بار بزنید';
+      const isLedAmtEditing = () => (
+        document.activeElement === amtInp &&
+        !amtInp.readOnly &&
+        amtInp.classList.contains('unlocked')
+      );
+      const shouldOpenLedStatus = () => {
+        if (isLedAmtEditing()) return false;
+        if (amtInp.classList.contains('is-empty') && !(r.amount)) return false;
+        return true;
+      };
+      tdAmt.addEventListener('pointerup', (e) => {
+        if (e.button != null && e.button !== 0) return;
+        if (!shouldOpenLedStatus()) return;
+        if (e.detail && e.detail >= 2) return;
+        const token = {};
+        tdAmt._statusToken = token;
+        setTimeout(() => {
+          if (tdAmt._statusToken !== token) return;
+          if (!shouldOpenLedStatus()) return;
+          openLedgerStatusMenu(e);
+        }, 250);
       });
+      tdAmt.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
+      amtInp.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
 
       const tdAct = document.createElement('td');
       tdAct.className = 'col-actions actions-cell';
