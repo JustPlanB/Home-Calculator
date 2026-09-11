@@ -128,17 +128,14 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.graphics.Canvas;
 import android.graphics.pdf.PdfDocument;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.ParcelFileDescriptor;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import android.util.Base64;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
@@ -169,67 +166,67 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   @com.getcapacitor.PluginMethod public void exportHtmlToPdf(final PluginCall call){
-    final String html=call.getString("html",""); final String filename=call.getString("filename","hesab.pdf");
+    final String html=call.getString("html","");
+    final String filename=call.getString("filename","hesab.pdf");
     if(html==null||html.isEmpty()){call.reject("empty_html");return;}
     getActivity().runOnUiThread(() -> {
       final WebView web=new WebView(getActivity());
       web.setBackgroundColor(android.graphics.Color.WHITE);
       web.getSettings().setJavaScriptEnabled(true);
       web.getSettings().setDefaultTextEncodingName("UTF-8");
-      final android.widget.FrameLayout root=new android.widget.FrameLayout(getActivity());
-      root.setBackgroundColor(android.graphics.Color.WHITE);
-      root.addView(web,new android.widget.FrameLayout.LayoutParams(1120,android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
-      getActivity().addContentView(root,new android.view.ViewGroup.LayoutParams(1120,1));
+
+      final android.widget.FrameLayout host=new android.widget.FrameLayout(getActivity());
+      host.setBackgroundColor(android.graphics.Color.WHITE);
+      host.setAlpha(0f);
+      android.view.ViewGroup decor=(android.view.ViewGroup)getActivity().getWindow().getDecorView();
+      decor.addView(host,new android.view.ViewGroup.LayoutParams(1,1));
+      host.addView(web,new android.widget.FrameLayout.LayoutParams(1120,1));
+
       web.setWebViewClient(new WebViewClient(){
-        private boolean done=false;
-        private void fail(String msg){ if(done)return; done=true; try{root.removeView(web); ((android.view.ViewGroup)root.getParent()).removeView(root);}catch(Exception ignored){} call.reject(msg); web.destroy(); }
-        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){ fail("pdf_page_error:"+description); }
+        private boolean started=false;
         @Override public void onPageFinished(WebView view,String url){
-          if(done)return;
-          view.postDelayed(() -> {
-            if(done)return;
-            try{ createPdfFromAttachedWebView(view,filename,call,root); done=true; }
-            catch(Exception e){ fail("pdf_export_failed:"+e.getMessage()); }
-          },700);
+          if(started)return;
+          started=true;
+          view.postDelayed(() -> createPdf(view,filename,call,host),1000);
+        }
+        @Override public void onReceivedError(WebView view,int errorCode,String description,String failingUrl){
+          call.reject("pdf_page_error:"+description);
+          try{ if(host.getParent()!=null)((android.view.ViewGroup)host.getParent()).removeView(host); }catch(Exception ignored){}
+          view.destroy();
         }
       });
       web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
-      web.postDelayed(() -> { try{ if(web.getHeight()<2){} }catch(Exception ignored){} },12000);
     });
   }
 
-  private void createPdfFromAttachedWebView(WebView web,String filename,PluginCall call,android.widget.FrameLayout root) throws Exception {
-    final int viewW=1120;
-    // WebView.getContentHeight() is CSS pixels; multiply by density for the
-    // actual Android view height before drawing. This avoids blank PdfDocument
-    // pages caused by a WebView that was laid out at height 1.
-    float density=getActivity().getResources().getDisplayMetrics().density;
-    int cssH=Math.max(web.getContentHeight(),1);
-    int viewH=Math.max((int)Math.ceil(cssH*density),1);
-
-    android.view.ViewGroup.LayoutParams lp=web.getLayoutParams();
-    lp.width=viewW;
-    lp.height=viewH;
-    web.setLayoutParams(lp);
-    root.getLayoutParams().width=viewW;
-    root.getLayoutParams().height=viewH;
-    root.requestLayout();
-
-    web.measure(
-      android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),
-      android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY)
-    );
-    web.layout(0,0,viewW,viewH);
-    web.scrollTo(0,0);
-
-    final int pageW=842,pageH=595;
-    float scale=(float)pageW/(float)viewW;
-    int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
-    int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
-
-    PdfDocument doc=new PdfDocument();
-    Uri uri=null;
+  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host){
+    PdfDocument doc=null; Uri uri=null;
     try{
+      final int viewW=1120;
+      float density=getActivity().getResources().getDisplayMetrics().density;
+      int contentHeight=Math.max(web.getContentHeight(),1);
+      int viewH=Math.max((int)Math.ceil(contentHeight*density),1);
+
+      android.view.ViewGroup.LayoutParams lp=web.getLayoutParams();
+      lp.width=viewW; lp.height=viewH; web.setLayoutParams(lp);
+      android.view.ViewGroup.LayoutParams hp=host.getLayoutParams();
+      hp.width=viewW; hp.height=viewH; host.setLayoutParams(hp);
+      host.setAlpha(1f);
+      host.requestLayout();
+
+      web.measure(
+        android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),
+        android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY)
+      );
+      web.layout(0,0,viewW,viewH);
+      web.scrollTo(0,0);
+
+      final int pageW=842,pageH=595;
+      float scale=(float)pageW/(float)viewW;
+      int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
+      int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
+
+      doc=new PdfDocument();
       for(int i=0;i<pageCount;i++){
         PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
         PdfDocument.Page page=doc.startPage(info);
@@ -242,29 +239,46 @@ public class NativeFileExportPlugin extends Plugin {
         c.restore();
         doc.finishPage(page);
       }
+
       uri=insertPending(filename,"application/pdf");
       try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){
         if(out==null) throw new Exception("open output failed");
-        doc.writeTo(out);
-        out.flush();
+        doc.writeTo(out); out.flush();
       }
       finishPending(uri);
       call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
     }catch(Exception e){
-      if(uri!=null)try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
-      throw e;
+      if(uri!=null) try{getContext().getContentResolver().delete(uri,null,null);}catch(Exception ignored){}
+      call.reject("pdf_export_failed",e);
     }finally{
-      try{doc.close();}catch(Exception ignored){}
-      try{
-        if(root.getParent()!=null)((android.view.ViewGroup)root.getParent()).removeView(root);
-      }catch(Exception ignored){}
-      web.destroy();
+      if(doc!=null) try{doc.close();}catch(Exception ignored){}
+      try{ if(host.getParent()!=null)((android.view.ViewGroup)host.getParent()).removeView(host); }catch(Exception ignored){}
+      try{web.destroy();}catch(Exception ignored){}
     }
   }
 }
 `;
 
-const main=`package ${pkg};\n\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n}\n`;
+const main=`package ${pkg};
+
+import android.Manifest;
+import android.os.Build;
+import android.os.Bundle;
+import android.content.pm.PackageManager;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+  @Override public void onCreate(Bundle savedInstanceState){
+    registerPlugin(BankSmsPlugin.class);
+    registerPlugin(NativeFileExportPlugin.class);
+    super.onCreate(savedInstanceState);
+    java.util.ArrayList<String> needed=new java.util.ArrayList<>();
+    if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
+    if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.POST_NOTIFICATIONS);
+    if(!needed.isEmpty()) requestPermissions(needed.toArray(new String[0]),4201);
+  }
+}
+`;
 
 fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
