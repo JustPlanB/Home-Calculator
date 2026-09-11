@@ -8078,85 +8078,186 @@
       return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:7mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:9.5px;direction:rtl;">'+buildPdfContent()+'</body></html>';
     }
 
-    async function renderPdfPagesOffline(fromIframe){
-      const width = 1200;
-      let htmlContent = buildPdfContent();
-      try {
-        if (fromIframe && fromIframe.contentDocument && fromIframe.contentDocument.body) {
-          const b = fromIframe.contentDocument.body;
-          if ((b.innerHTML || '').trim()) htmlContent = b.innerHTML;
-        }
-      } catch (e) {}
-      // پاکسازی برای foreignObject (حذف اسکریپت و لینک خارجی)
-      htmlContent = String(htmlContent || '')
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<link[^>]*>/gi, '');
-      const holder = document.createElement('div');
-      holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:' + width + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;box-sizing:border-box;padding:8px;';
-      holder.innerHTML = htmlContent;
-      document.body.appendChild(holder);
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      await new Promise(r => setTimeout(r, 50));
-      const height = Math.max(holder.scrollHeight, holder.offsetHeight, 200);
-      holder.style.height = height + 'px';
-      // escape برای قرارگیری داخل SVG
-      const safe = holder.innerHTML
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      // روش مطمئن‌تر: رسم مستقیم با foreignObject بدون double-escape محتوا
-      const xhtml = holder.innerHTML;
-      holder.remove();
-      const svg = '<?xml version="1.0" encoding="UTF-8"?>' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
-        '<foreignObject x="0" y="0" width="' + width + '" height="' + height + '">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + width + 'px;min-height:' + height + 'px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:11px;padding:8px;">' +
-        xhtml.replace(/&(?!amp;|lt;|gt;|quot;|#)/g, '&amp;') +
-        '</div></foreignObject></svg>';
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
-      try {
-        await new Promise((res, rej) => {
-          img.onload = res;
-          img.onerror = rej;
-          img.src = url;
+        async function renderPdfPagesOffline(fromIframe) {
+      // رسم مستقیم روی canvas (قابل اعتمادتر از SVG foreignObject در WebView)
+      const pageWpt = 841.89, pageHpt = 595.28; // A4 landscape
+      const scale = 2;
+      const pageW = Math.round(pageWpt * scale);
+      const pageH = Math.round(pageHpt * scale);
+      const margin = Math.round(28 * scale);
+      const lineH = Math.round(12 * scale);
+      const fontMain = Math.round(10 * scale) + 'px Tahoma, Arial, sans-serif';
+      const fontTitle = 'bold ' + Math.round(14 * scale) + 'px Tahoma, Arial, sans-serif';
+      const fontHead = 'bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif';
+
+      const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
+      const lines = [];
+      function push(text, opts) {
+        lines.push(Object.assign({ text: String(text || ''), bold: false, size: 'main', gap: 0 }, opts || {}));
+      }
+      push('حساب کتاب', { bold: true, size: 'title', gap: 4 });
+      push('گزارش مالی ماهانه — ' + periodLabel, { gap: 10 });
+
+      function addDetailTab(tab, title) {
+        push(title, { bold: true, size: 'head', gap: 6 });
+        const isIncome = tab === 'income';
+        const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
+        const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
+        let any = false;
+        (periodData[tab] && periodData[tab].sections || []).forEach(sec => {
+          const st = (sec.title || '').trim() || '—';
+          (sec.rows || []).forEach(r => {
+            if (!r.desc && !r.amount && !r.day) return;
+            any = true;
+            const status = r.status === 'paid' ? paidL : unpaidL;
+            const day = r.day ? toPersianDigits(r.day) : '—';
+            const amt = r.amount ? formatNum(r.amount) : '۰';
+            push(st + ' | روز ' + day + ' | ' + (r.desc || '—') + ' | ' + amt + ' | ' + status);
+          });
         });
-      } finally {
-        try { URL.revokeObjectURL(url); } catch (e) {}
+        if (!any) push('(موردی ثبت نشده)');
+        push('', { gap: 8 });
       }
-      const scale = 1.5;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(width * scale);
-      canvas.height = Math.ceil(height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      // A4 landscape points: 841.89 x 595.28
-      const pageW = 841.89, pageH = 595.28;
-      const pageHpx = Math.floor(canvas.width * (pageH / pageW));
+      addDetailTab('income', 'درآمد');
+      addDetailTab('expense', 'مخارج');
+
+      // مانده خلاصه
+      push('مانده', { bold: true, size: 'head', gap: 6 });
+      try {
+        const titles = typeof allSectionTitles === 'function' ? allSectionTitles() : [];
+        let gInc = 0, gExp = 0;
+        const order = titles.length ? titles : [];
+        const seen = new Set(order);
+        (periodData.income && periodData.income.sections || []).forEach(s => {
+          const t = (s.title || '').trim() || '—';
+          if (!seen.has(t)) { order.push(t); seen.add(t); }
+        });
+        (periodData.expense && periodData.expense.sections || []).forEach(s => {
+          const t = (s.title || '').trim() || '—';
+          if (!seen.has(t)) { order.push(t); seen.add(t); }
+        });
+        order.forEach(title => {
+          let inc = 0, exp = 0;
+          (periodData.income && periodData.income.sections || []).forEach(sec => {
+            if (((sec.title || '').trim() || '—') !== title) return;
+            (sec.rows || []).forEach(r => { inc += Number(r.amount) || 0; });
+          });
+          (periodData.expense && periodData.expense.sections || []).forEach(sec => {
+            if (((sec.title || '').trim() || '—') !== title) return;
+            (sec.rows || []).forEach(r => { exp += Number(r.amount) || 0; });
+          });
+          gInc += inc; gExp += exp;
+          push(title + ' | درآمد ' + formatNum(inc) + ' | مخارج ' + formatNum(exp) + ' | مانده ' + formatNum(inc - exp));
+        });
+        push('جمع | درآمد ' + formatNum(gInc) + ' | مخارج ' + formatNum(gExp) + ' | مانده ' + formatNum(gInc - gExp), { bold: true, gap: 8 });
+      } catch (e) {
+        push('(خلاصه مانده در دسترس نیست)', { gap: 8 });
+      }
+
+      // اقساط
+      push('اقساط', { bold: true, size: 'head', gap: 6 });
+      try {
+        const list = (typeof plans !== 'undefined' && Array.isArray(plans)) ? plans : [];
+        if (!list.length) push('(قسطی ثبت نشده)');
+        list.forEach(p => {
+          if (!p || p.deletedAt) return;
+          const name = p.name || '—';
+          const paid = parseInt(p.paidCount, 10) || 0;
+          const count = parseInt(p.count, 10) || 0;
+          const amt = p.amount ? formatNum(p.amount) : '۰';
+          push(name + ' | ' + toPersianDigits(paid) + '/' + toPersianDigits(count) + ' | ' + amt);
+        });
+      } catch (e) {
+        push('(اقساط در دسترس نیست)');
+      }
+
+      // صفحه‌بندی و رسم
       const pages = [];
-      for (let y = 0; y < canvas.height; y += pageHpx) {
-        const h = Math.min(pageHpx, canvas.height - y);
-        const pc = document.createElement('canvas');
-        pc.width = canvas.width;
-        pc.height = h;
-        const pctx = pc.getContext('2d');
-        pctx.fillStyle = '#fff';
-        pctx.fillRect(0, 0, pc.width, h);
-        pctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
-        const dataUrl = pc.toDataURL('image/jpeg', 0.9);
-        const b64 = dataUrl.split(',')[1] || '';
-        const bin = atob(b64);
-        const jpg = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-        pages.push({ jpg: jpg, w: pc.width, h: pc.height });
+      let canvas = document.createElement('canvas');
+      canvas.width = pageW;
+      canvas.height = pageH;
+      let ctx = canvas.getContext('2d');
+      function newPage() {
+        if (canvas) {
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          const b64 = dataUrl.split(',')[1] || '';
+          const bin = atob(b64);
+          const jpg = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+          pages.push({ jpg: jpg, w: pageW, h: pageH });
+        }
+        canvas = document.createElement('canvas');
+        canvas.width = pageW;
+        canvas.height = pageH;
+        ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageW, pageH);
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        y = margin;
       }
+      let y = margin;
+      newPage();
+      // discard empty first push from newPage double - actually first newPage creates blank and pushes nothing useful
+      // Fix: first call should only init
+      pages.length = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageW, pageH);
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      y = margin;
+
+      const maxW = pageW - margin * 2;
+      lines.forEach(ln => {
+        if (ln.size === 'title') ctx.font = fontTitle;
+        else if (ln.size === 'head') ctx.font = fontHead;
+        else ctx.font = ln.bold ? ('bold ' + fontMain) : fontMain;
+        const text = ln.text || '';
+        if (!text && ln.gap) {
+          y += ln.gap * scale / 2 + lineH * 0.3;
+          return;
+        }
+        // ساده: یک خط (برش در صورت طولانی بودن)
+        let t = text;
+        while (ctx.measureText(t).width > maxW && t.length > 4) {
+          t = t.slice(0, Math.floor(t.length * 0.9));
+        }
+        if (y + lineH > pageH - margin) {
+          // ذخیره صفحه و صفحه جدید
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          const b64 = dataUrl.split(',')[1] || '';
+          const bin = atob(b64);
+          const jpg = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+          pages.push({ jpg: jpg, w: pageW, h: pageH });
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageW, pageH);
+          ctx.fillStyle = '#000000';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          y = margin;
+          if (ln.size === 'title') ctx.font = fontTitle;
+          else if (ln.size === 'head') ctx.font = fontHead;
+          else ctx.font = ln.bold ? ('bold ' + fontMain) : fontMain;
+        }
+        ctx.fillStyle = '#000000';
+        ctx.fillText(t, pageW - margin, y);
+        y += lineH + (ln.gap || 0) * scale * 0.15;
+      });
+      // آخرین صفحه
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const b64 = dataUrl.split(',')[1] || '';
+      const bin = atob(b64);
+      const jpg = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+      pages.push({ jpg: jpg, w: pageW, h: pageH });
       if (!pages.length) throw new Error('no pdf pages');
-      return buildSimpleImagePdf(pages, pageW, pageH);
+      return buildSimpleImagePdf(pages, pageWpt, pageHpt);
     }
-    async function exportPdf(){
+
+async function exportPdf(){
       try {
         persistCurrent();
         showToast('در حال آماده‌سازی گزارش…');
@@ -8202,69 +8303,103 @@
         };
 
         document.getElementById('pdfCloseBtn').onclick = cleanup;
+        async function downloadPdfBlob(blob, fname) {
+          if (!blob || !blob.size) throw new Error('empty pdf');
+          // 1) Web Share
+          try {
+            if (navigator.canShare && typeof File !== 'undefined') {
+              const file = new File([blob], fname, { type: 'application/pdf' });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: fname });
+                return 'share';
+              }
+            }
+          } catch (e) {
+            if (e && e.name === 'AbortError') return 'abort';
+          }
+          // 2) Capacitor Filesystem + Share (در صورت وجود)
+          try {
+            const Cap = window.Capacitor;
+            const FS = Cap && Cap.Plugins && Cap.Plugins.Filesystem;
+            const Share = Cap && Cap.Plugins && Cap.Plugins.Share;
+            if (FS && FS.writeFile) {
+              const reader = new FileReader();
+              const b64 = await new Promise((res, rej) => {
+                reader.onload = () => {
+                  const s = String(reader.result || '');
+                  res(s.split(',')[1] || '');
+                };
+                reader.onerror = rej;
+                reader.readAsDataURL(blob);
+              });
+              const path = fname;
+              await FS.writeFile({ path: path, data: b64, directory: 'CACHE', recursive: true });
+              if (Share && Share.share) {
+                const uriRes = FS.getUri ? await FS.getUri({ path: path, directory: 'CACHE' }) : null;
+                const url = (uriRes && (uriRes.uri || uriRes)) || path;
+                await Share.share({ title: fname, url: url, dialogTitle: 'ذخیره PDF' });
+                return 'cap-share';
+              }
+            }
+          } catch (e) { console.error('cap share pdf', e); }
+          // 3) anchor download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fname;
+          a.rel = 'noopener';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 3000);
+          // 4) open in new tab as fallback
+          try {
+            const w = window.open(url, '_blank');
+            if (!w) {
+              // some webviews block; ignore
+            }
+          } catch (e) {}
+          return 'download';
+        }
         document.getElementById('pdfPrintBtn').onclick = async () => {
           const btn = document.getElementById('pdfPrintBtn');
           try {
             if (btn) { btn.disabled = true; btn.textContent = 'در حال ساخت PDF…'; }
             showToast('در حال ساخت PDF…');
+            const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
             let blob = null;
             try {
               blob = await renderPdfPagesOffline(iframe);
             } catch (renderErr) {
               console.error('renderPdfPagesOffline', renderErr);
-              blob = null;
             }
-            const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
             if (blob && blob.size > 0) {
-              // Web Share (موبایل)
-              try {
-                if (navigator.canShare && typeof File !== 'undefined') {
-                  const file = new File([blob], fname, { type: 'application/pdf' });
-                  if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: fname });
-                    showToast('PDF به‌اشتراک گذاشته شد');
-                    if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
-                    return;
-                  }
-                }
-              } catch (shareErr) {
-                /* کاربر ممکن است share را لغو کند */
-                if (shareErr && shareErr.name === 'AbortError') {
-                  if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
-                  return;
-                }
+              const mode = await downloadPdfBlob(blob, fname);
+              if (mode === 'abort') {
+                showToast('لغو شد');
+              } else if (mode === 'share' || mode === 'cap-share') {
+                showToast('PDF آماده شد');
+              } else {
+                showToast('فایل PDF ذخیره شد');
               }
-              // دانلود مستقیم
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = fname;
-              a.style.display = 'none';
-              document.body.appendChild(a);
-              a.click();
-              setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 2500);
-              showToast('فایل PDF ذخیره شد');
+            } else {
+              showToast('ساخت PDF ناموفق بود — تلاش برای چاپ…');
             }
-            // چاپ از iframe (اگر مرورگر/وب‌ویو پشتیبانی کند)
+            // چاپ پیش‌نمایش
             try {
               const win = iframe.contentWindow;
               if (win) {
                 win.focus();
-                setTimeout(() => { try { win.print(); } catch (e) {} }, 200);
+                setTimeout(() => { try { win.print(); } catch (e) {} }, 250);
               }
-            } catch (printErr) {
-              console.error(printErr);
-              if (!blob) showToast('چاپ/ذخیره باز نشد');
-            }
+            } catch (e) {}
           } catch (err) {
             console.error(err);
+            showToast('ذخیره PDF ناموفق بود');
             try {
               const win = iframe.contentWindow;
               if (win) { win.focus(); win.print(); }
-              else showToast('ذخیره PDF ناموفق بود');
-            } catch (e2) {
-              showToast('ذخیره PDF ناموفق بود');
-            }
+            } catch (e2) {}
           } finally {
             if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
           }
@@ -10324,7 +10459,7 @@
         day: item.day ? String(item.day) : '',
         desc: item.name || item.desc || '',
         amount: Number(item.amount) || 0,
-        status: 'paid',
+        status: 'unpaid',
         account: item.account || ''
       };
       function applyToSections(sections) {
@@ -10403,11 +10538,14 @@
             skipped++;
             return;
           }
+          r.sectionId = sec.id;
+          r.sectionTitle = (sec.title || '').trim();
           const titleKey = (sec.title || '').trim() || sec.id;
           addRecurringRowToAllMonths(titleKey, r);
           if ((sec.title || '').trim()) addRecurringRowToAllMonths(sec.id, r);
           n++;
         });
+        try { saveRecurring(); } catch (e) {}
         try { sortSectionRows(sec.id); } catch (e) {}
         clearRecurringSelection();
         try { renderSectionsForTab('income'); } catch (e) {}
@@ -10464,7 +10602,13 @@
           });
         sortedIdx.forEach(({ r, i }) => {
           const dayStr = r.day ? ('روز ' + toPersianDigits(r.day) + ' هر ماه') : 'بدون روز مشخص';
-          const accLine = r.account ? ('<div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">' + escapeHtml(r.account) + '</div>') : '';
+          const secName = (r.sectionTitle || r.sectionName || '').trim();
+          const metaParts = [];
+          if (r.account) metaParts.push(escapeHtml(r.account));
+          if (secName) metaParts.push(escapeHtml(secName));
+          const accLine = metaParts.length
+            ? ('<div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">' + metaParts.join(' · ') + '</div>')
+            : '';
           const selected = recurringSelected.has(i);
           const rowCls = 'recurring-row' + (recurringSelectMode ? ' rec-select-mode' : '') + (selected ? ' rec-selected' : '');
           html += '<div class="' + rowCls + '" data-rec-idx="' + i + '" style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:10px;">' +
@@ -10964,6 +11108,20 @@
         if (day < 0) day = 0;
         if (day > 31) day = 31;
         const item = { name: name, amount: amount, day: day || '', account: accSelRec.getValue() || '' };
+        // اگر بخش مقصد انتخاب شده، نام بخش را روی رکورد نگه دار
+        const destSecId = (secSelRec.getValue && secSelRec.getValue()) || '';
+        if (destSecId) {
+          const secs0 = (periodData.income && periodData.income.sections) || [];
+          const sec0 = secs0.find(s => s.id === destSecId);
+          if (sec0) {
+            item.sectionId = sec0.id;
+            item.sectionTitle = (sec0.title || '').trim();
+          }
+        } else if (index >= 0 && recurringIncomes[index]) {
+          // حفظ بخش قبلی اگر عوض نشده
+          if (recurringIncomes[index].sectionId) item.sectionId = recurringIncomes[index].sectionId;
+          if (recurringIncomes[index].sectionTitle) item.sectionTitle = recurringIncomes[index].sectionTitle;
+        }
         if (index >= 0 && recurringIncomes[index]) {
           // شناسه و مالکیت رکورد قبلی حفظ شود تا با Sync قبلی تداخل نکند
           const prev = recurringIncomes[index];
@@ -10979,7 +11137,6 @@
           recurringIncomes.push(item);
         }
         // اگر بخش مقصد انتخاب شده، به همان بخش هم اضافه کن
-        const destSecId = (secSelRec.getValue && secSelRec.getValue()) || '';
         if (destSecId) {
           const secs = (periodData.income && periodData.income.sections) || [];
           const sec = secs.find(s => s.id === destSecId);
