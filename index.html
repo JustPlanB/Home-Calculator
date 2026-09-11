@@ -7337,72 +7337,149 @@
       return rows;
     }
 
-    function downloadBlob(blob, filename) {
+    /** ذخیره/اشتراک فایل — سازگار با مرورگر و WebView اندروید */
+    async function saveOrShareBlob(blob, filename, mime) {
+      if (!blob) throw new Error('empty blob');
+      const type = mime || blob.type || 'application/octet-stream';
+      // 1) Web Share API با فایل
+      try {
+        if (navigator.canShare && typeof File !== 'undefined') {
+          const file = new File([blob], filename, { type: type });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: filename });
+            return 'share';
+          }
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return 'abort';
+      }
+      // 2) Capacitor Filesystem + Share
+      try {
+        const Cap = window.Capacitor;
+        const Plugins = (Cap && Cap.Plugins) || {};
+        const FS = Plugins.Filesystem;
+        const Share = Plugins.Share;
+        if (FS && FS.writeFile) {
+          const b64 = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(String(r.result || '').split(',')[1] || '');
+            r.onerror = rej;
+            r.readAsDataURL(blob);
+          });
+          const dir = 'CACHE';
+          await FS.writeFile({ path: filename, data: b64, directory: dir, recursive: true });
+          if (Share && Share.share) {
+            let url = filename;
+            try {
+              if (FS.getUri) {
+                const uriRes = await FS.getUri({ path: filename, directory: dir });
+                url = (uriRes && (uriRes.uri || uriRes)) || filename;
+              }
+            } catch (e) {}
+            await Share.share({ title: filename, url: String(url), dialogTitle: filename });
+            return 'cap-share';
+          }
+        }
+      } catch (e) { console.error('cap save', e); }
+      // 3) msSaveOrOpenBlob
       try {
         if (window.navigator && window.navigator.msSaveOrOpenBlob) {
           window.navigator.msSaveOrOpenBlob(blob, filename);
-          return true;
+          return 'ms';
         }
       } catch (e) {}
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        try { URL.revokeObjectURL(url); } catch (e) {}
-        a.remove();
-      }, 1500);
+      // 4) <a download>
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.rel = 'noopener';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 2500);
+        return 'download';
+      } catch (e) { console.error(e); }
+      // 5) باز کردن data URL در پنجره جدید
+      try {
+        const dataUrl = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(blob);
+        });
+        const w = window.open();
+        if (w) {
+          w.document.write('<html><head><meta charset="utf-8"><title>' + filename + '</title></head><body style="font-family:Tahoma;padding:16px;direction:rtl;">' +
+            '<p>اگر دانلود خودکار نشد، لینک زیر را لمس کنید و «ذخیره» را بزنید:</p>' +
+            '<p><a download="' + filename + '" href="' + dataUrl + '">' + filename + '</a></p></body></html>');
+          w.document.close();
+          return 'popup';
+        }
+      } catch (e) {}
+      throw new Error('save failed');
+    }
+
+    function downloadBlob(blob, filename) {
+      saveOrShareBlob(blob, filename, blob && blob.type).then(() => {}).catch(() => {
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename; a.style.display = 'none';
+          document.body.appendChild(a); a.click();
+          setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 1500);
+        } catch (e) {}
+      });
       return true;
     }
 
     function downloadTextFile(text, filename, mime) {
       const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
-      // روش data-URI برای موبایل‌هایی که blob download را بلاک می‌کنند
-      try {
-        const reader = new FileReader();
-        reader.onload = function () {
-          const a = document.createElement('a');
-          a.href = reader.result;
-          a.download = filename;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => a.remove(), 800);
-        };
-        reader.onerror = function () { downloadBlob(blob, filename); };
-        reader.readAsDataURL(blob);
-      } catch (e) {
-        downloadBlob(blob, filename);
-      }
+      saveOrShareBlob(blob, filename, mime || 'text/plain;charset=utf-8')
+        .then((mode) => {
+          if (mode === 'abort') showToast('لغو شد');
+          else showToast('فایل آماده شد');
+        })
+        .catch(() => showToast('ذخیره فایل ناموفق بود'));
     }
 
-    function exportFullBackup() {
+    async function exportFullBackup() {
       closeSideMenu();
-      persistCurrent();
-      saveArchive();
-      const payload = {
-        version: 1,
-        app: 'hesab-ketab',
-        exportedAt: new Date().toISOString(),
-        archive: archive,
-        plans: plans,
-        recurringIncomes: recurringIncomes,
-        currentYear: currentYear,
-        currentMonth: currentMonth,
-        familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
-        theme: document.documentElement.getAttribute('data-theme') || 'dark'
-      };
-      let meta = null;
-      try { meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null'); } catch (e) {}
-      if (meta) payload.meta = meta;
-      const text = JSON.stringify(payload, null, 2);
-      const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
-      downloadTextFile(text, name, 'application/json;charset=utf-8');
-      showToast('پشتیبان کامل دانلود شد');
+      try {
+        persistCurrent();
+        saveArchive();
+        const payload = {
+          version: 1,
+          app: 'hesab-ketab',
+          exportedAt: new Date().toISOString(),
+          archive: archive,
+          plans: plans,
+          recurringIncomes: recurringIncomes,
+          currentYear: currentYear,
+          currentMonth: currentMonth,
+          familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
+          theme: document.documentElement.getAttribute('data-theme') || 'dark'
+        };
+        let meta = null;
+        try { meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null'); } catch (e) {}
+        if (meta) payload.meta = meta;
+        // حساب‌های بانکی انتخاب‌شده و نقشه پیامک
+        try {
+          payload.selectedBankAccounts = selectedBankAccounts;
+          payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+        } catch (e) {}
+        const textOut = JSON.stringify(payload);
+        const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
+        showToast('در حال ساخت پشتیبان…');
+        const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
+        const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
+        if (mode === 'abort') showToast('لغو شد');
+        else showToast('پشتیبان آماده شد');
+      } catch (e) {
+        console.error(e);
+        showToast('پشتیبان‌گیری ناموفق بود');
+      }
     }
 
     function triggerImportBackup() {
@@ -7414,6 +7491,274 @@
       }
     }
 
+    function rowFingerprint(r) {
+      if (!r) return '';
+      return [r.day || '', (r.desc || '').trim(), Number(r.amount) || 0, r.status || '', r.account || '', r.from || '', r.to || ''].join('|');
+    }
+
+    function mergeSectionRows(localRows, incomingRows) {
+      const out = Array.isArray(localRows) ? localRows.slice() : [];
+      const seen = new Set(out.map(rowFingerprint));
+      (incomingRows || []).forEach(r => {
+        if (!r) return;
+        // ردیف کاملاً خالی را رد کن
+        if (!r.desc && !r.amount && !r.day && !r.from && !r.to) return;
+        const fp = rowFingerprint(r);
+        if (seen.has(fp)) return;
+        seen.add(fp);
+        out.push(JSON.parse(JSON.stringify(r)));
+      });
+      // مرتب‌سازی بر اساس روز
+      return out
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => {
+          const da = parseInt(String(a.r.day || ''), 10) || 0;
+          const db = parseInt(String(b.r.day || ''), 10) || 0;
+          if (!da && !db) return a.i - b.i;
+          if (!da) return 1;
+          if (!db) return -1;
+          if (da !== db) return da - db;
+          return a.i - b.i;
+        })
+        .map(x => x.r);
+    }
+
+    function mergeSideBlocks(localSide, incomingSide) {
+      const base = localSide && typeof localSide === 'object'
+        ? JSON.parse(JSON.stringify(localSide))
+        : { sections: [], nextId: 1 };
+      if (!base.sections) base.sections = [];
+      const inc = incomingSide && typeof incomingSide === 'object' ? incomingSide : { sections: [] };
+      (inc.sections || []).forEach(secIn => {
+        if (!secIn) return;
+        const title = (secIn.title || '').trim();
+        let local = null;
+        if (secIn.id) local = base.sections.find(s => s.id === secIn.id);
+        if (!local && title) local = base.sections.find(s => (s.title || '').trim() === title);
+        if (local) {
+          local.rows = mergeSectionRows(local.rows || [], secIn.rows || []);
+          if (!local.title && secIn.title) local.title = secIn.title;
+          if (!local.color && secIn.color) local.color = secIn.color;
+        } else {
+          const copy = JSON.parse(JSON.stringify(secIn));
+          if (!copy.id) copy.id = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          copy.rows = mergeSectionRows([], copy.rows || []);
+          base.sections.push(copy);
+        }
+      });
+      base.nextId = Math.max(base.nextId || 1, (base.sections.length || 0) + 1, inc.nextId || 1);
+      return base;
+    }
+
+    function mergeLedgerBlocks(localLed, incomingLed) {
+      const base = localLed && typeof localLed === 'object'
+        ? JSON.parse(JSON.stringify(localLed))
+        : { sections: [], nextId: 1 };
+      if (!base.sections) base.sections = [];
+      const inc = incomingLed && typeof incomingLed === 'object' ? incomingLed : { sections: [] };
+      (inc.sections || []).forEach(secIn => {
+        if (!secIn) return;
+        let local = null;
+        if (secIn.id) local = base.sections.find(s => s.id === secIn.id);
+        if (!local) {
+          const a = (secIn.personA || '').trim();
+          const b = (secIn.personB || '').trim();
+          local = base.sections.find(s => (s.personA || '').trim() === a && (s.personB || '').trim() === b);
+        }
+        if (local) {
+          local.rows = mergeSectionRows(local.rows || [], secIn.rows || []);
+        } else {
+          const copy = JSON.parse(JSON.stringify(secIn));
+          if (!copy.id) copy.id = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          copy.rows = mergeSectionRows([], copy.rows || []);
+          base.sections.push(copy);
+        }
+      });
+      base.nextId = Math.max(base.nextId || 1, (base.sections.length || 0) + 1, inc.nextId || 1);
+      return base;
+    }
+
+    function mergeArchives(localArch, incomingArch) {
+      const out = localArch && typeof localArch === 'object' ? JSON.parse(JSON.stringify(localArch)) : {};
+      const inc = incomingArch && typeof incomingArch === 'object' ? incomingArch : {};
+      Object.keys(inc).forEach(key => {
+        const src = inc[key];
+        if (!src || typeof src !== 'object') return;
+        if (!out[key]) {
+          out[key] = JSON.parse(JSON.stringify(src));
+          // مرتب‌سازی ردیف‌ها بر اساس روز
+          ['income', 'expense'].forEach(tab => {
+            if (out[key][tab] && Array.isArray(out[key][tab].sections)) {
+              out[key][tab].sections.forEach(sec => {
+                sec.rows = mergeSectionRows([], sec.rows || []);
+              });
+            }
+          });
+          if (out[key].ledger && Array.isArray(out[key].ledger.sections)) {
+            out[key].ledger.sections.forEach(sec => {
+              sec.rows = mergeSectionRows([], sec.rows || []);
+            });
+          }
+          return;
+        }
+        const dst = out[key];
+        dst.income = mergeSideBlocks(dst.income, src.income);
+        dst.expense = mergeSideBlocks(dst.expense, src.expense);
+        dst.ledger = mergeLedgerBlocks(dst.ledger, src.ledger);
+      });
+      return out;
+    }
+
+    function mergePlansList(localPlans, incomingPlans) {
+      const out = Array.isArray(localPlans) ? localPlans.slice() : [];
+      const byId = new Map();
+      const byName = new Map();
+      out.forEach((p, i) => {
+        if (p && p.id) byId.set(String(p.id), i);
+        const n = ((p && p.name) || '').trim();
+        if (n) byName.set(n, i);
+      });
+      (incomingPlans || []).forEach(p => {
+        if (!p) return;
+        let idx = -1;
+        if (p.id && byId.has(String(p.id))) idx = byId.get(String(p.id));
+        else {
+          const n = (p.name || '').trim();
+          if (n && byName.has(n)) idx = byName.get(n);
+        }
+        if (idx >= 0) {
+          // ادغام ملایم: تعداد پرداخت‌شده را بیشتر نگه دار
+          const cur = out[idx];
+          const merged = Object.assign({}, cur, p);
+          const pc = Math.max(parseInt(cur.paidCount, 10) || 0, parseInt(p.paidCount, 10) || 0);
+          merged.paidCount = pc;
+          out[idx] = merged;
+        } else {
+          const copy = JSON.parse(JSON.stringify(p));
+          out.push(copy);
+          if (copy.id) byId.set(String(copy.id), out.length - 1);
+          const n = (copy.name || '').trim();
+          if (n) byName.set(n, out.length - 1);
+        }
+      });
+      return out;
+    }
+
+    function mergeRecurringList(localRec, incomingRec) {
+      const out = Array.isArray(localRec) ? localRec.slice() : [];
+      const byId = new Map();
+      const byName = new Map();
+      out.forEach((r, i) => {
+        if (r && r.id) byId.set(String(r.id), i);
+        const n = ((r && r.name) || '').trim();
+        if (n) byName.set(n, i);
+      });
+      (incomingRec || []).forEach(r => {
+        if (!r) return;
+        let idx = -1;
+        if (r.id && byId.has(String(r.id))) idx = byId.get(String(r.id));
+        else {
+          const n = (r.name || '').trim();
+          if (n && byName.has(n)) idx = byName.get(n);
+        }
+        if (idx >= 0) {
+          out[idx] = Object.assign({}, out[idx], r);
+        } else {
+          const copy = JSON.parse(JSON.stringify(r));
+          out.push(copy);
+          if (copy.id) byId.set(String(copy.id), out.length - 1);
+          const n = (copy.name || '').trim();
+          if (n) byName.set(n, out.length - 1);
+        }
+      });
+      return out;
+    }
+
+    function applyBackupData(data, mode) {
+      // mode: 'replace' | 'merge'
+      if (mode === 'replace') {
+        if (data.archive && typeof data.archive === 'object') archive = data.archive;
+        if (Array.isArray(data.plans)) plans = data.plans;
+        if (Array.isArray(data.recurringIncomes)) {
+          recurringIncomes = data.recurringIncomes;
+          saveRecurring();
+        }
+      } else {
+        // merge
+        archive = mergeArchives(archive, data.archive || {});
+        if (Array.isArray(data.plans)) plans = mergePlansList(plans, data.plans);
+        if (Array.isArray(data.recurringIncomes)) {
+          recurringIncomes = mergeRecurringList(recurringIncomes, data.recurringIncomes);
+          saveRecurring();
+        }
+      }
+      if (Array.isArray(data.selectedBankAccounts)) {
+        try {
+          selectedBankAccounts = Array.from(new Set([].concat(selectedBankAccounts || [], data.selectedBankAccounts)));
+          saveBankAccountsSelection();
+        } catch (e) {}
+      }
+      if (data.smsAccountBankMap && typeof data.smsAccountBankMap === 'object') {
+        try {
+          Object.assign(smsAccountBankMap, data.smsAccountBankMap);
+          saveSmsAccountBankMap();
+        } catch (e) {}
+      }
+      if (data.currentYear) currentYear = parseInt(data.currentYear, 10) || currentYear;
+      if (data.currentMonth) currentMonth = parseInt(data.currentMonth, 10) || currentMonth;
+      if (mode === 'replace' && (data.theme === 'light' || data.theme === 'dark')) applyTheme(data.theme);
+      const key = periodKey(currentYear, currentMonth);
+      if (archive[key]) periodData = archive[key];
+      else periodData = emptyPeriodData();
+      saveArchive();
+      initSelectors();
+      updateTabUI();
+      renderAll();
+      checkInstallReminders();
+    }
+
+    function openBackupRestoreChoice(data) {
+      let old = document.getElementById('backupRestoreOverlay');
+      if (old) old.remove();
+      const overlay = document.createElement('div');
+      overlay.id = 'backupRestoreOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--card);color:var(--text);border-radius:14px;padding:16px;max-width:360px;width:100%;border:1px solid var(--border);box-shadow:0 12px 32px rgba(0,0,0,0.35);font-family:Vazirmatn,Tahoma,sans-serif;';
+      card.innerHTML =
+        '<div style="font-weight:800;font-size:1.05rem;margin-bottom:8px;text-align:center;">بازیابی پشتیبان</div>' +
+        '<div style="font-size:0.88rem;color:var(--muted);margin-bottom:14px;line-height:1.6;text-align:center;">چگونه بازیابی شود؟</div>' +
+        '<button type="button" id="backupReplaceBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#ff3b30;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">جایگزین کردن اطلاعات فعلی</button>' +
+        '<button type="button" id="backupMergeBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">افزودن به اطلاعات فعلی</button>' +
+        '<button type="button" id="backupCancelBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--bg3);color:var(--text);font-weight:700;font-size:0.9rem;font-family:inherit;">انصراف</button>' +
+        '<div style="font-size:0.75rem;color:var(--muted);margin-top:10px;line-height:1.5;text-align:center;">در حالت افزودن، ردیف‌ها بر اساس روز در ماه مربوطه قرار می‌گیرند و تکراری‌ها رد می‌شوند.</div>';
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      const close = () => { try { overlay.remove(); } catch (e) {} };
+      document.getElementById('backupCancelBtn').onclick = close;
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+      document.getElementById('backupReplaceBtn').onclick = () => {
+        close();
+        try {
+          applyBackupData(data, 'replace');
+          showToast('بازیابی با جایگزینی انجام شد');
+        } catch (err) {
+          console.error(err);
+          showToast('خطا در بازیابی');
+        }
+      };
+      document.getElementById('backupMergeBtn').onclick = () => {
+        close();
+        try {
+          applyBackupData(data, 'merge');
+          showToast('بازیابی با ادغام انجام شد');
+        } catch (err) {
+          console.error(err);
+          showToast('خطا در ادغام');
+        }
+      };
+    }
+
     function importFullBackup(ev) {
       const file = ev && ev.target && ev.target.files && ev.target.files[0];
       if (!file) return;
@@ -7422,31 +7767,16 @@
         try {
           const data = JSON.parse(reader.result);
           if (!data || typeof data !== 'object') throw new Error('invalid');
-          askConfirm('بازیابی پشتیبان همه داده‌های فعلی را جایگزین می‌کند. ادامه؟', () => {
-            try {
-              if (data.archive && typeof data.archive === 'object') archive = data.archive;
-              if (Array.isArray(data.plans)) plans = data.plans;
-              if (Array.isArray(data.recurringIncomes)) {
-                recurringIncomes = data.recurringIncomes;
-                saveRecurring();
-              }
-              if (data.currentYear) currentYear = parseInt(data.currentYear, 10) || currentYear;
-              if (data.currentMonth) currentMonth = parseInt(data.currentMonth, 10) || currentMonth;
-              if (data.theme === 'light' || data.theme === 'dark') applyTheme(data.theme);
-              // بارگذاری ماه جاری از آرشیو
-              const key = periodKey(currentYear, currentMonth);
-              if (archive[key]) periodData = archive[key];
-              else periodData = emptyPeriodData();
-              saveArchive();
-              initSelectors();
-              updateTabUI();
-              renderAll();
-              checkInstallReminders();
-              showToast('بازیابی انجام شد');
-            } catch (err) {
-              showToast('خطا در بازیابی');
+          // پشتیبانی از فایل‌هایی که فقط archive هستند
+          if (!data.archive && !data.plans && !data.recurringIncomes) {
+            // شاید خود archive باشد
+            if (typeof data === 'object' && Object.keys(data).some(k => /^\d{4}-\d{1,2}$/.test(k))) {
+              openBackupRestoreChoice({ archive: data });
+              return;
             }
-          });
+            throw new Error('invalid');
+          }
+          openBackupRestoreChoice(data);
         } catch (e) {
           showToast('فایل پشتیبان نامعتبر است');
         }
@@ -8078,25 +8408,23 @@
       return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 landscape;margin:7mm;}html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}</style></head><body style="background:#fff;color:#000;font-family:Tahoma,Arial,sans-serif;font-size:9.5px;direction:rtl;">'+buildPdfContent()+'</body></html>';
     }
 
-        async function renderPdfPagesOffline(fromIframe) {
-      // رسم مستقیم روی canvas (قابل اعتمادتر از SVG foreignObject در WebView)
-      const pageWpt = 841.89, pageHpt = 595.28; // A4 landscape
+    async function renderPdfPagesOffline() {
+      const pageWpt = 841.89, pageHpt = 595.28;
       const scale = 2;
       const pageW = Math.round(pageWpt * scale);
       const pageH = Math.round(pageHpt * scale);
-      const margin = Math.round(28 * scale);
-      const lineH = Math.round(12 * scale);
-      const fontMain = Math.round(10 * scale) + 'px Tahoma, Arial, sans-serif';
-      const fontTitle = 'bold ' + Math.round(14 * scale) + 'px Tahoma, Arial, sans-serif';
-      const fontHead = 'bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif';
-
+      const margin = Math.round(24 * scale);
+      const lineH = Math.round(13 * scale);
+      const fontMain = Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif';
+      const fontTitle = 'bold ' + Math.round(16 * scale) + 'px Tahoma, Arial, sans-serif';
+      const fontHead = 'bold ' + Math.round(13 * scale) + 'px Tahoma, Arial, sans-serif';
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       const lines = [];
-      function push(text, opts) {
-        lines.push(Object.assign({ text: String(text || ''), bold: false, size: 'main', gap: 0 }, opts || {}));
+      function push(t, opts) {
+        lines.push(Object.assign({ text: String(t || ''), bold: false, size: 'main', gap: 0 }, opts || {}));
       }
-      push('حساب کتاب', { bold: true, size: 'title', gap: 4 });
-      push('گزارش مالی ماهانه — ' + periodLabel, { gap: 10 });
+      push('حساب کتاب', { bold: true, size: 'title', gap: 6 });
+      push('گزارش مالی — ' + periodLabel, { gap: 12 });
 
       function addDetailTab(tab, title) {
         push(title, { bold: true, size: 'head', gap: 6 });
@@ -8104,7 +8432,7 @@
         const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
         const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
         let any = false;
-        (periodData[tab] && periodData[tab].sections || []).forEach(sec => {
+        ((periodData[tab] && periodData[tab].sections) || []).forEach(sec => {
           const st = (sec.title || '').trim() || '—';
           (sec.rows || []).forEach(r => {
             if (!r.desc && !r.amount && !r.day) return;
@@ -8112,167 +8440,131 @@
             const status = r.status === 'paid' ? paidL : unpaidL;
             const day = r.day ? toPersianDigits(r.day) : '—';
             const amt = r.amount ? formatNum(r.amount) : '۰';
-            push(st + ' | روز ' + day + ' | ' + (r.desc || '—') + ' | ' + amt + ' | ' + status);
+            push(st + '  |  روز ' + day + '  |  ' + (r.desc || '—') + '  |  ' + amt + '  |  ' + status);
           });
         });
         if (!any) push('(موردی ثبت نشده)');
-        push('', { gap: 8 });
+        push(' ', { gap: 8 });
       }
       addDetailTab('income', 'درآمد');
       addDetailTab('expense', 'مخارج');
 
-      // مانده خلاصه
       push('مانده', { bold: true, size: 'head', gap: 6 });
       try {
-        const titles = typeof allSectionTitles === 'function' ? allSectionTitles() : [];
+        const order = [];
+        const seen = new Set();
+        function addTitle(t) {
+          const x = (t || '').trim() || '—';
+          if (!seen.has(x)) { seen.add(x); order.push(x); }
+        }
+        try { (allSectionTitles() || []).forEach(addTitle); } catch (e) {}
+        ((periodData.income && periodData.income.sections) || []).forEach(s => addTitle(s.title));
+        ((periodData.expense && periodData.expense.sections) || []).forEach(s => addTitle(s.title));
         let gInc = 0, gExp = 0;
-        const order = titles.length ? titles : [];
-        const seen = new Set(order);
-        (periodData.income && periodData.income.sections || []).forEach(s => {
-          const t = (s.title || '').trim() || '—';
-          if (!seen.has(t)) { order.push(t); seen.add(t); }
-        });
-        (periodData.expense && periodData.expense.sections || []).forEach(s => {
-          const t = (s.title || '').trim() || '—';
-          if (!seen.has(t)) { order.push(t); seen.add(t); }
-        });
         order.forEach(title => {
           let inc = 0, exp = 0;
-          (periodData.income && periodData.income.sections || []).forEach(sec => {
+          ((periodData.income && periodData.income.sections) || []).forEach(sec => {
             if (((sec.title || '').trim() || '—') !== title) return;
             (sec.rows || []).forEach(r => { inc += Number(r.amount) || 0; });
           });
-          (periodData.expense && periodData.expense.sections || []).forEach(sec => {
+          ((periodData.expense && periodData.expense.sections) || []).forEach(sec => {
             if (((sec.title || '').trim() || '—') !== title) return;
             (sec.rows || []).forEach(r => { exp += Number(r.amount) || 0; });
           });
           gInc += inc; gExp += exp;
-          push(title + ' | درآمد ' + formatNum(inc) + ' | مخارج ' + formatNum(exp) + ' | مانده ' + formatNum(inc - exp));
+          push(title + '  |  درآمد ' + formatNum(inc) + '  |  مخارج ' + formatNum(exp) + '  |  مانده ' + formatNum(inc - exp));
         });
-        push('جمع | درآمد ' + formatNum(gInc) + ' | مخارج ' + formatNum(gExp) + ' | مانده ' + formatNum(gInc - gExp), { bold: true, gap: 8 });
+        push('جمع  |  درآمد ' + formatNum(gInc) + '  |  مخارج ' + formatNum(gExp) + '  |  مانده ' + formatNum(gInc - gExp), { bold: true, gap: 8 });
       } catch (e) {
         push('(خلاصه مانده در دسترس نیست)', { gap: 8 });
       }
 
-      // اقساط
       push('اقساط', { bold: true, size: 'head', gap: 6 });
       try {
-        const list = (typeof plans !== 'undefined' && Array.isArray(plans)) ? plans : [];
-        if (!list.length) push('(قسطی ثبت نشده)');
+        const list = Array.isArray(plans) ? plans : [];
+        let anyP = false;
         list.forEach(p => {
           if (!p || p.deletedAt) return;
-          const name = p.name || '—';
-          const paid = parseInt(p.paidCount, 10) || 0;
-          const count = parseInt(p.count, 10) || 0;
-          const amt = p.amount ? formatNum(p.amount) : '۰';
-          push(name + ' | ' + toPersianDigits(paid) + '/' + toPersianDigits(count) + ' | ' + amt);
+          anyP = true;
+          push((p.name || '—') + '  |  ' + toPersianDigits(p.paidCount || 0) + '/' + toPersianDigits(p.count || 0) + '  |  ' + formatNum(p.amount || 0));
         });
+        if (!anyP) push('(قسطی ثبت نشده)');
       } catch (e) {
         push('(اقساط در دسترس نیست)');
       }
 
-      // صفحه‌بندی و رسم
       const pages = [];
-      let canvas = document.createElement('canvas');
+      const canvas = document.createElement('canvas');
       canvas.width = pageW;
       canvas.height = pageH;
-      let ctx = canvas.getContext('2d');
-      function newPage() {
-        if (canvas) {
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          const b64 = dataUrl.split(',')[1] || '';
-          const bin = atob(b64);
-          const jpg = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-          pages.push({ jpg: jpg, w: pageW, h: pageH });
-        }
-        canvas = document.createElement('canvas');
-        canvas.width = pageW;
-        canvas.height = pageH;
-        ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d');
+      function clearPage() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, pageW, pageH);
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'top';
-        y = margin;
       }
+      function flushPage() {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const b64 = dataUrl.split(',')[1] || '';
+        const bin = atob(b64);
+        const jpg = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+        pages.push({ jpg: jpg, w: pageW, h: pageH });
+      }
+      clearPage();
       let y = margin;
-      newPage();
-      // discard empty first push from newPage double - actually first newPage creates blank and pushes nothing useful
-      // Fix: first call should only init
-      pages.length = 0;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, pageW, pageH);
-      ctx.fillStyle = '#000000';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      y = margin;
-
       const maxW = pageW - margin * 2;
       lines.forEach(ln => {
         if (ln.size === 'title') ctx.font = fontTitle;
         else if (ln.size === 'head') ctx.font = fontHead;
-        else ctx.font = ln.bold ? ('bold ' + fontMain) : fontMain;
-        const text = ln.text || '';
-        if (!text && ln.gap) {
-          y += ln.gap * scale / 2 + lineH * 0.3;
+        else ctx.font = ln.bold ? ('bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif') : fontMain;
+        let t = ln.text || '';
+        if (!t.trim() && ln.gap) {
+          y += lineH * 0.5 + (ln.gap || 0);
           return;
         }
-        // ساده: یک خط (برش در صورت طولانی بودن)
-        let t = text;
-        while (ctx.measureText(t).width > maxW && t.length > 4) {
-          t = t.slice(0, Math.floor(t.length * 0.9));
-        }
+        while (t.length > 4 && ctx.measureText(t).width > maxW) t = t.slice(0, t.length - 2);
         if (y + lineH > pageH - margin) {
-          // ذخیره صفحه و صفحه جدید
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          const b64 = dataUrl.split(',')[1] || '';
-          const bin = atob(b64);
-          const jpg = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-          pages.push({ jpg: jpg, w: pageW, h: pageH });
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageW, pageH);
-          ctx.fillStyle = '#000000';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'top';
+          flushPage();
+          clearPage();
           y = margin;
           if (ln.size === 'title') ctx.font = fontTitle;
           else if (ln.size === 'head') ctx.font = fontHead;
-          else ctx.font = ln.bold ? ('bold ' + fontMain) : fontMain;
+          else ctx.font = ln.bold ? ('bold ' + Math.round(11 * scale) + 'px Tahoma, Arial, sans-serif') : fontMain;
         }
         ctx.fillStyle = '#000000';
         ctx.fillText(t, pageW - margin, y);
-        y += lineH + (ln.gap || 0) * scale * 0.15;
+        y += lineH + (ln.gap ? Math.round(ln.gap * 0.2) : 0);
       });
-      // آخرین صفحه
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      const b64 = dataUrl.split(',')[1] || '';
-      const bin = atob(b64);
-      const jpg = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-      pages.push({ jpg: jpg, w: pageW, h: pageH });
+      flushPage();
       if (!pages.length) throw new Error('no pdf pages');
       return buildSimpleImagePdf(pages, pageWpt, pageHpt);
     }
 
-async function exportPdf(){
+    async function exportPdf() {
       try {
         persistCurrent();
-        showToast('در حال آماده‌سازی گزارش…');
-        openPdfPrintWindow();
+        showToast('در حال ساخت PDF…');
+        const blob = await renderPdfPagesOffline();
+        if (!blob || !blob.size) throw new Error('empty pdf');
+        const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
+        const mode = await saveOrShareBlob(blob, fname, 'application/pdf');
+        if (mode === 'abort') showToast('لغو شد');
+        else showToast('PDF آماده شد');
       } catch (e) {
         console.error('PDF failed', e);
-        showToast('خروجی PDF ناموفق بود');
+        // fallback: پیش‌نمایش چاپ
+        try {
+          openPdfPrintWindow();
+        } catch (e2) {
+          showToast('خروجی PDF ناموفق بود');
+        }
       }
     }
 
-    /**
-     * iframe تمام‌صفحه برای چاپ — در WebView اندروید iframe صفر‌سایز چاپ نمی‌شود.
-     * بعد از بستن پیش‌نمایش چاپ، iframe حذف می‌شود و اپ سر جایش می‌ماند.
-     */
-    function openPdfPrintWindow(){
+    function openPdfPrintWindow() {
       try {
         const old = document.getElementById('pdfPrintFrame');
         if (old) old.remove();
@@ -8301,116 +8593,31 @@ async function exportPdf(){
           try { iframe.remove(); } catch (e) {}
           try { bar.remove(); } catch (e) {}
         };
-
         document.getElementById('pdfCloseBtn').onclick = cleanup;
-        async function downloadPdfBlob(blob, fname) {
-          if (!blob || !blob.size) throw new Error('empty pdf');
-          // 1) Web Share
-          try {
-            if (navigator.canShare && typeof File !== 'undefined') {
-              const file = new File([blob], fname, { type: 'application/pdf' });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: fname });
-                return 'share';
-              }
-            }
-          } catch (e) {
-            if (e && e.name === 'AbortError') return 'abort';
-          }
-          // 2) Capacitor Filesystem + Share (در صورت وجود)
-          try {
-            const Cap = window.Capacitor;
-            const FS = Cap && Cap.Plugins && Cap.Plugins.Filesystem;
-            const Share = Cap && Cap.Plugins && Cap.Plugins.Share;
-            if (FS && FS.writeFile) {
-              const reader = new FileReader();
-              const b64 = await new Promise((res, rej) => {
-                reader.onload = () => {
-                  const s = String(reader.result || '');
-                  res(s.split(',')[1] || '');
-                };
-                reader.onerror = rej;
-                reader.readAsDataURL(blob);
-              });
-              const path = fname;
-              await FS.writeFile({ path: path, data: b64, directory: 'CACHE', recursive: true });
-              if (Share && Share.share) {
-                const uriRes = FS.getUri ? await FS.getUri({ path: path, directory: 'CACHE' }) : null;
-                const url = (uriRes && (uriRes.uri || uriRes)) || path;
-                await Share.share({ title: fname, url: url, dialogTitle: 'ذخیره PDF' });
-                return 'cap-share';
-              }
-            }
-          } catch (e) { console.error('cap share pdf', e); }
-          // 3) anchor download
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fname;
-          a.rel = 'noopener';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 3000);
-          // 4) open in new tab as fallback
-          try {
-            const w = window.open(url, '_blank');
-            if (!w) {
-              // some webviews block; ignore
-            }
-          } catch (e) {}
-          return 'download';
-        }
         document.getElementById('pdfPrintBtn').onclick = async () => {
           const btn = document.getElementById('pdfPrintBtn');
           try {
-            if (btn) { btn.disabled = true; btn.textContent = 'در حال ساخت PDF…'; }
+            if (btn) { btn.disabled = true; btn.textContent = 'در حال ساخت…'; }
             showToast('در حال ساخت PDF…');
+            const blob = await renderPdfPagesOffline();
             const fname = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
-            let blob = null;
-            try {
-              blob = await renderPdfPagesOffline(iframe);
-            } catch (renderErr) {
-              console.error('renderPdfPagesOffline', renderErr);
+            if (blob && blob.size) {
+              const mode = await saveOrShareBlob(blob, fname, 'application/pdf');
+              if (mode === 'abort') showToast('لغو شد');
+              else showToast('PDF آماده شد');
             }
-            if (blob && blob.size > 0) {
-              const mode = await downloadPdfBlob(blob, fname);
-              if (mode === 'abort') {
-                showToast('لغو شد');
-              } else if (mode === 'share' || mode === 'cap-share') {
-                showToast('PDF آماده شد');
-              } else {
-                showToast('فایل PDF ذخیره شد');
-              }
-            } else {
-              showToast('ساخت PDF ناموفق بود — تلاش برای چاپ…');
-            }
-            // چاپ پیش‌نمایش
             try {
               const win = iframe.contentWindow;
-              if (win) {
-                win.focus();
-                setTimeout(() => { try { win.print(); } catch (e) {} }, 250);
-              }
+              if (win) { win.focus(); setTimeout(() => { try { win.print(); } catch (e) {} }, 200); }
             } catch (e) {}
           } catch (err) {
             console.error(err);
+            try { iframe.contentWindow && iframe.contentWindow.print(); } catch (e2) {}
             showToast('ذخیره PDF ناموفق بود');
-            try {
-              const win = iframe.contentWindow;
-              if (win) { win.focus(); win.print(); }
-            } catch (e2) {}
           } finally {
             if (btn) { btn.disabled = false; btn.textContent = 'ذخیره PDF / چاپ'; }
           }
         };
-
-        try {
-          iframe.contentWindow.addEventListener('afterprint', function () {
-            /* عمداً cleanup نمی‌کنیم */
-          });
-        } catch (e) {}
-
         return true;
       } catch (e) {
         console.error('openPdfPrintWindow', e);
