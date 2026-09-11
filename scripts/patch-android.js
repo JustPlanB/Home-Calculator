@@ -245,7 +245,9 @@ public class NativeFileExportPlugin extends Plugin {
           private int attempts=0;
           @Override public void onPageFinished(final WebView view,String url){
             if(started) return;
-            final Runnable measureAndCreate = new Runnable(){
+            // آرایه یک‌عضوی برای جلوگیری از خطای "might not have been initialized"
+            final Runnable[] holder = new Runnable[1];
+            holder[0] = new Runnable(){
               @Override public void run(){
                 if(started) return;
                 attempts++;
@@ -267,7 +269,7 @@ public class NativeFileExportPlugin extends Plugin {
                           measured = (int)Math.ceil(ch * sc);
                         }
                         if(measured < 80 && attempts < 8){
-                          new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 500L);
+                          new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                           return;
                         }
                         if(measured < 200) measured = 400;
@@ -285,7 +287,7 @@ public class NativeFileExportPlugin extends Plugin {
                     float scale = view.getScale();
                     int measured = (int)Math.ceil(contentH * scale);
                     if(measured < 80 && attempts < 8){
-                      new Handler(Looper.getMainLooper()).postDelayed(this, 500L);
+                      new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                       return;
                     }
                     if(measured < 200) measured = 400;
@@ -301,7 +303,7 @@ public class NativeFileExportPlugin extends Plugin {
                 }
               }
             };
-            new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 1000L);
+            new Handler(Looper.getMainLooper()).postDelayed(holder[0], 1000L);
           }
         });
         // baseURL کمک می‌کند فونت و استایل‌ها بهتر لود شوند
