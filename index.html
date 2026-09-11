@@ -7341,6 +7341,17 @@
     async function saveOrShareBlob(blob, filename, mime) {
       if (!blob) throw new Error('empty blob');
       const type = mime || blob.type || 'application/octet-stream';
+      // 0) Android native: ذخیره مستقیم در پوشه Download دستگاه
+      try {
+        const C = window.Capacitor, Plugins = C && C.Plugins, NativeFileExport = Plugins && Plugins.NativeFileExport;
+        if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform() && NativeFileExport && typeof NativeFileExport.saveBase64ToDownloads === 'function') {
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          let binary = ''; const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+          const saved = await NativeFileExport.saveBase64ToDownloads({ filename, mimeType: type, data: btoa(binary) });
+          if (saved && saved.uri) return 'native-download';
+        }
+      } catch (e) { console.warn('Native Downloads save failed:', e); }
       // 1) Web Share API با فایل
       try {
         if (navigator.canShare && typeof File !== 'undefined') {
@@ -7444,18 +7455,6 @@
         .catch(() => showToast('ذخیره فایل ناموفق بود'));
     }
 
-    /** نام فایل بکاپ را با شمارنده افزایشی می‌سازد تا فایل قبلی رونویسی نشود.
-     * بکاپ اول: hesab-backup-1405-06.json
-     * بکاپ‌های بعدی: hesab-backup-1-1405-06.json ، hesab-backup-2-1405-06.json و... */
-    function nextBackupFilename(year, month) {
-      let seq = 0;
-      try { seq = parseInt(localStorage.getItem(STORAGE_KEY + '_backupSeq') || '0', 10) || 0; } catch (e) {}
-      seq += 1;
-      try { localStorage.setItem(STORAGE_KEY + '_backupSeq', String(seq)); } catch (e) {}
-      const mm = String(month).padStart(2, '0');
-      return 'hesab-backup-' + (seq > 1 ? (seq - 1) + '-' : '') + year + '-' + mm + '.json';
-    }
-
     async function exportFullBackup() {
       closeSideMenu();
       try {
@@ -7482,7 +7481,7 @@
           payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
         } catch (e) {}
         const textOut = JSON.stringify(payload);
-        const name = nextBackupFilename(currentYear, currentMonth);
+        const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
         showToast('در حال ساخت پشتیبان…');
         const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
         const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
@@ -8101,17 +8100,20 @@
       const files=[{name:'[Content_Types].xml',data:content},{name:'_rels/.rels',data:rootrels},{name:'xl/workbook.xml',data:workbook},{name:'xl/_rels/workbook.xml.rels',data:wbRels},{name:'xl/styles.xml',data:styles},{name:'xl/sharedStrings.xml',data:ss.xml},{name:'docProps/core.xml',data:core}].concat(sheetFiles);
       return new Blob([xlsxZip(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     }
+    async function nativeSaveBlobToDownloads(blob, filename, mimeType){
+      const C=window.Capacitor, plugins=C&&C.Plugins, native=plugins&&plugins.NativeFileExport;
+      if(!C || !native || typeof native.saveBase64ToDownloads !== 'function') return false;
+      const bytes=new Uint8Array(await blob.arrayBuffer());
+      let binary=''; const chunk=0x8000;
+      for(let i=0;i<bytes.length;i+=chunk) binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+      const result=await native.saveBase64ToDownloads({filename:filename,mimeType:mimeType||blob.type||'application/octet-stream',data:btoa(binary)});
+      return !!(result && result.uri);
+    }
+
     async function shareExportFile(blob, filename, mimeType){
       try{
-        const C=window.Capacitor, plugins=C&&C.Plugins, fs=plugins&&plugins.Filesystem, share=plugins&&plugins.Share;
-        if(C&&typeof C.isNativePlatform==='function'&&C.isNativePlatform()&&fs&&share){
-          const bytes=new Uint8Array(await blob.arrayBuffer()); let binary=''; const chunk=0x8000;
-          for(let i=0;i<bytes.length;i+=chunk) binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
-          const result=await fs.writeFile({path:filename,data:btoa(binary),directory:'CACHE',recursive:true});
-          if(!result||!result.uri) throw new Error('No file URI');
-          await share.share({title:filename,text:filename,files:[result.uri],mimeType:mimeType,dialogTitle:'باز کردن فایل با…'}); return true;
-        }
-      }catch(e){console.warn('Native share failed:',e);}
+        if(await nativeSaveBlobToDownloads(blob,filename,mimeType)) return true;
+      }catch(e){console.warn('Native Downloads save failed:',e);}
       try{
         if(navigator.share&&typeof File!=='undefined'){
           const file=new File([blob],filename,{type:mimeType});
@@ -8343,18 +8345,22 @@
       return buildSimpleImagePdf(pages,841.89,595.28);
     }
     async function exportPdf(){
-      // روش قبلی (foreignObject → canvas → JPEG) در بسیاری از WebViewهای اندروید
-      // به‌صورت خاموش شکست می‌خورد و یک تصویر کاملاً سفید تولید می‌کند، چون
-      // foreignObject در آن‌ها رندر نمی‌شود. به همین دلیل مستقیماً از پیش‌نمایش
-      // چاپ واقعی مرورگر استفاده می‌کنیم که محتوا را با رندر واقعی DOM می‌سازد
-      // و از طریق سرویس «ذخیره به‌صورت PDF» سیستم، خروجی درست تولید می‌شود.
-      try {
+      try{
         persistCurrent();
-        showToast('در حال آماده‌سازی PDF…');
-        const ok = openPdfPrintWindow();
-        if (!ok) showToast('باز کردن پیش‌نمایش PDF ناموفق بود');
-      } catch (e) {
-        console.error('PDF export failed', e);
+        const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf';
+        showToast('در حال ساخت PDF...');
+        const C=window.Capacitor, plugins=C&&C.Plugins, native=plugins&&plugins.NativeFileExport;
+        if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform() && native && typeof native.exportHtmlToPdf==='function'){
+          const result=await native.exportHtmlToPdf({html:buildPdfFullDocument(),filename:name});
+          if(result && result.uri){ showToast('PDF در پوشه Download ذخیره شد'); return; }
+          throw new Error('native PDF export returned no URI');
+        }
+        const blob=await renderPdfPagesOffline();
+        const saved=await shareExportFile(blob,name,'application/pdf');
+        if(!saved) downloadBlob(blob,name);
+        showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+      }catch(e){
+        console.error('PDF export failed',e);
         showToast('ساخت PDF ناموفق بود');
       }
     }
@@ -12507,15 +12513,12 @@
       applyTheme(t);
     })();
 
-    /* —— دکمه بازگشت گوشی: لایه به لایه عقب + تأیید خروج —— */
-    function trapBack() {
-      try { history.pushState({ hesabTrap: Date.now() }, '', location.href); } catch (e) {}
-    }
-    trapBack();
-    trapBack();
+    /* —— دکمه بازگشت گوشی: یک مرحله عقب؛ دو بار سریع = خروج —— */
+    let _backHandling = false;
+    let _lastBackAt = 0;
+    const BACK_EXIT_WINDOW = 1800;
 
     function closeTopOverlayOrMenu() {
-      // ۰) مودال تأیید
       try {
         const conf = document.getElementById('confirmModal');
         if (conf && conf.classList.contains('open')) {
@@ -12526,7 +12529,6 @@
           return true;
         }
       } catch (e) {}
-      // ۰b) شیت‌های پویا (درآمد ثابت / انتخاب بخش)
       try {
         const dyn = document.getElementById('recurringSheet') || document.getElementById('sectionPickerSheet');
         if (dyn && dyn.parentNode) {
@@ -12537,7 +12539,6 @@
           return true;
         }
       } catch (e) {}
-      // ۱) لیست‌های کشویی
       try {
         const lists = document.querySelectorAll('.dark-select-list.open');
         if (lists.length) {
@@ -12547,7 +12548,6 @@
           return true;
         }
       } catch (e) {}
-      // ۲) شیت ورودی متن
       try {
         const tip = document.getElementById('textInputModal');
         if (tip && tip.classList.contains('open')) {
@@ -12558,139 +12558,67 @@
           return true;
         }
       } catch (e) {}
-      // ۳) مودال‌ها
       try {
         const overlays = document.querySelectorAll('.modal-overlay.open');
         for (let i = overlays.length - 1; i >= 0; i--) {
           const ov = overlays[i];
           if (!ov) continue;
-          if (ov.id === 'textInputBackdrop' || ov.id === 'darkSelectBackdrop') {
-            ov.classList.remove('open');
-            continue;
-          }
+          if (ov.id === 'textInputBackdrop' || ov.id === 'darkSelectBackdrop') { ov.classList.remove('open'); continue; }
           if (ov.id === 'confirmModal') continue;
-          if (ov.id === 'bankAccountsModal' && typeof closeBankAccountsModal === 'function') {
-            _bankModalFromMenu = false;
-            closeBankAccountsModal();
-            return true;
-          }
-          if (ov.id === 'familyModal' && typeof closeFamilyModal === 'function') {
-            closeFamilyModal();
-            return true;
-          }
-          if (ov.id === 'smsImportModal' && typeof closeSmsImportModal === 'function') {
-            closeSmsImportModal();
-            return true;
-          }
-          if (ov.id === 'smsConfirmModal' && typeof closeSmsConfirmModal === 'function') {
-            closeSmsConfirmModal();
-            return true;
-          }
-          if (ov.id === 'helpModal') {
-            ov.classList.remove('open');
-            return true;
-          }
+          if (ov.id === 'bankAccountsModal' && typeof closeBankAccountsModal === 'function') { _bankModalFromMenu=false; closeBankAccountsModal(); return true; }
+          if (ov.id === 'familyModal' && typeof closeFamilyModal === 'function') { closeFamilyModal(); return true; }
+          if (ov.id === 'smsImportModal' && typeof closeSmsImportModal === 'function') { closeSmsImportModal(); return true; }
+          if (ov.id === 'smsConfirmModal' && typeof closeSmsConfirmModal === 'function') { closeSmsConfirmModal(); return true; }
           ov.classList.remove('open');
           return true;
         }
       } catch (e) {}
-      // ۴) خروجی / پیش‌نمایش PDF
+      try { const exp=document.getElementById('exportChoiceOverlay'); if(exp){exp.remove();return true;} } catch(e){}
+      try { const pf=document.getElementById('pdfPrintFrame'), pb=document.getElementById('pdfPrintBar'); if(pf||pb){if(pf)pf.remove();if(pb)pb.remove();return true;} } catch(e){}
       try {
-        const exp = document.getElementById('exportChoiceOverlay');
-        if (exp) { exp.remove(); return true; }
-      } catch (e) {}
+        const fs=document.getElementById('featureSheet');
+        if((fs&&fs.classList.contains('open')) || _featureActive){ closeFeatureSheet(); return true; }
+      } catch(e){}
       try {
-        const pf = document.getElementById('pdfPrintFrame');
-        const pb = document.getElementById('pdfPrintBar');
-        if (pf || pb) {
-          if (pf) pf.remove();
-          if (pb) pb.remove();
-          return true;
-        }
-      } catch (e) {}
-      // ۵) پنجره تمام‌صفحه ویژگی
-      try {
-        const fs = document.getElementById('featureSheet');
-        if ((fs && fs.classList.contains('open')) || _featureActive) {
-          closeFeatureSheet();
-          return true;
-        }
-      } catch (e) {}
-      // ۶) منوی همبرگری
-      try {
-        const menu = document.getElementById('menuDropdown');
-        if (menu && menu.classList.contains('open')) {
-          closeSideMenu();
-          return true;
-        }
-        if (document.body && document.body.classList.contains('menu-open')) {
-          closeSideMenu();
-          return true;
-        }
-      } catch (e) {}
+        const menu=document.getElementById('menuDropdown');
+        if((menu&&menu.classList.contains('open')) || (document.body&&document.body.classList.contains('menu-open'))){ closeSideMenu(); return true; }
+      } catch(e){}
       return false;
     }
 
-    function doAppExit() {
-      try {
-        const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-        if (App && typeof App.exitApp === 'function') {
-          App.exitApp();
-          return;
-        }
-      } catch (e) {}
-      try {
-        window.removeEventListener('popstate', onBackGuard);
-        history.back();
-      } catch (e) {}
-      setTimeout(() => {
-        try {
-          window.addEventListener('popstate', onBackGuard);
-          trapBack();
-          trapBack();
-        } catch (e) {}
-      }, 400);
+    function doAppExit(){
+      try{
+        const C=window.Capacitor, plugins=C&&C.Plugins, App=plugins&&plugins.App;
+        if(App && typeof App.exitApp==='function'){ App.exitApp(); return; }
+      }catch(e){}
+      try{ window.close(); }catch(e){}
     }
 
-    let _backHandling = false;
-    function onBackGuard() {
-      if (_backHandling) return;
-      _backHandling = true;
-      setTimeout(() => { _backHandling = false; }, 350);
-      // لایه باز را ببند (یک مرحله عقب)
-      if (closeTopOverlayOrMenu()) {
-        trapBack();
+    function onBackGuard(){
+      if(_backHandling) return;
+      _backHandling=true;
+      setTimeout(()=>{_backHandling=false;},250);
+      if(closeTopOverlayOrMenu()) return;
+      const now=Date.now();
+      if(now-_lastBackAt <= BACK_EXIT_WINDOW){
+        _lastBackAt=0;
+        doAppExit();
         return;
       }
-      // هیچ منویی باز نیست → تأیید خروج
-      trapBack();
-      try {
-        askConfirm('مطمئنید می‌خواهید از برنامه خارج شوید؟', function () {
-          doAppExit();
-        }, function () {
-          /* انصراف — در اپ بمان */
-        });
-      } catch (e) {
-        /* در صورت خطا خارج نشو */
-      }
+      _lastBackAt=now;
+      showToast('برای خروج، یک‌بار دیگر بازگشت را بزنید');
     }
-    window.addEventListener('popstate', onBackGuard);
 
-    // Capacitor hardware back — اولویت با بستن منو، نه خروج مستقیم
     try {
-      document.addEventListener('backbutton', function (e) {
-        try { if (e && e.preventDefault) e.preventDefault(); } catch (x) {}
-        onBackGuard();
-      }, false);
-    } catch (e) {}
-    try {
-      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-      if (App && App.addListener) {
-        App.addListener('backButton', function () {
-          onBackGuard();
-        });
-      }
-    } catch (e) {}
+      const C=window.Capacitor, plugins=C&&C.Plugins, App=plugins&&plugins.App;
+      if(App && App.addListener) App.addListener('backButton',()=>onBackGuard());
+    } catch(e){}
+
+    // نسخه مرورگر/وب: یک history entry نگه می‌داریم تا Back از صفحه خارج نشود.
+    try{
+      history.pushState({hesabBackGuard:true},'',location.href);
+      window.addEventListener('popstate',()=>{ try{history.pushState({hesabBackGuard:true},'',location.href);}catch(e){} onBackGuard(); });
+    }catch(e){}
 
     let balanceSelectedTitles = []; // empty = all
     let balanceSelectedAccount = ''; // empty = all accounts
