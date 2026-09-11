@@ -245,32 +245,63 @@ public class NativeFileExportPlugin extends Plugin {
           private int attempts=0;
           @Override public void onPageFinished(final WebView view,String url){
             if(started) return;
-            // چند بار تلاش می‌کنیم تا ارتفاع محتوا درست اندازه‌گیری شود
             final Runnable measureAndCreate = new Runnable(){
               @Override public void run(){
                 if(started) return;
                 attempts++;
                 try{
-                  int contentH = view.getContentHeight();
-                  float scale = view.getScale();
-                  int measured = (int)Math.ceil(contentH * scale);
-                  // اگر هنوز خیلی کوچک است، دوباره صبر کن
-                  if(measured < 80 && attempts < 6){
-                    new Handler(Looper.getMainLooper()).postDelayed(this, 600L);
-                    return;
-                  }
-                  if(measured < 1) measured = 400;
-                  started=true;
-                  createPdf(view,filename,call,host,root,measured, viewW);
+                  // اندازه‌گیری دقیق‌تر ارتفاع واقعی محتوا با جاوااسکریپت
+                  view.evaluateJavascript(
+                    "(function(){var b=document.body,h=document.documentElement;return Math.max(b.scrollHeight,b.offsetHeight,h.clientHeight,h.scrollHeight,h.offsetHeight);})()",
+                    new android.webkit.ValueCallback<String>(){
+                      @Override public void onReceiveValue(String value){
+                        if(started) return;
+                        int measured = 0;
+                        try{
+                          if(value!=null && !value.equals("null")) measured = (int)Math.ceil(Double.parseDouble(value));
+                        }catch(Exception ignored){}
+                        if(measured < 80){
+                          // fallback به contentHeight
+                          int ch = view.getContentHeight();
+                          float sc = view.getScale();
+                          measured = (int)Math.ceil(ch * sc);
+                        }
+                        if(measured < 80 && attempts < 8){
+                          new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 500L);
+                          return;
+                        }
+                        if(measured < 200) measured = 400;
+                        // کمی حاشیه اضافه تا آخرین خطوط بریده نشوند
+                        measured = (int)(measured * 1.05) + 40;
+                        started=true;
+                        createPdf(view,filename,call,host,root,measured, viewW);
+                      }
+                    }
+                  );
                 }catch(Exception e){
-                  started=true;
-                  call.reject("pdf_measure_failed",e);
-                  try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
-                  view.destroy();
+                  // اگر evaluateJavascript کار نکرد
+                  try{
+                    int contentH = view.getContentHeight();
+                    float scale = view.getScale();
+                    int measured = (int)Math.ceil(contentH * scale);
+                    if(measured < 80 && attempts < 8){
+                      new Handler(Looper.getMainLooper()).postDelayed(this, 500L);
+                      return;
+                    }
+                    if(measured < 200) measured = 400;
+                    measured = (int)(measured * 1.05) + 40;
+                    started=true;
+                    createPdf(view,filename,call,host,root,measured, viewW);
+                  }catch(Exception e2){
+                    started=true;
+                    call.reject("pdf_measure_failed",e2);
+                    try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
+                    view.destroy();
+                  }
                 }
               }
             };
-            new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 1200L);
+            new Handler(Looper.getMainLooper()).postDelayed(measureAndCreate, 1000L);
           }
         });
         // baseURL کمک می‌کند فونت و استایل‌ها بهتر لود شوند
@@ -290,14 +321,21 @@ public class NativeFileExportPlugin extends Plugin {
       host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       host.layout(0,0,viewW,viewH);
 
-      // کمی صبر اضافه برای paint شدن محتوا
-      try{ Thread.sleep(300); }catch(InterruptedException ignored){}
+      // صبر برای paint کامل
+      try{ Thread.sleep(450); }catch(InterruptedException ignored){}
 
-      final int pageW=842; // A4 landscape points
+      // A4 landscape با حاشیه کوچک برای کیفیت بهتر
+      final int pageW=842;
       final int pageH=595;
-      final float scale=(float)pageW/(float)viewW;
-      final int pageContentH=Math.max(1,(int)Math.floor(pageH/scale));
-      final int pageCount=Math.max(1,(int)Math.ceil((double)viewH/(double)pageContentH));
+      final int margin=18; // حاشیه سفید دور صفحه
+      final float usableW = pageW - 2*margin;
+      final float scale = usableW / (float)viewW;
+      final int pageContentH = Math.max(1, (int)Math.floor((pageH - 2*margin) / scale));
+      int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
+      // جلوگیری از صفحه سفید اضافی در انتها
+      if(pageCount > 1 && (viewH % pageContentH) < (pageContentH * 0.08)) {
+        pageCount = Math.max(1, pageCount - 1);
+      }
 
       doc=new PdfDocument();
       for(int i=0;i<pageCount;i++){
@@ -306,9 +344,11 @@ public class NativeFileExportPlugin extends Plugin {
         android.graphics.Canvas c=page.getCanvas();
         c.drawColor(android.graphics.Color.WHITE);
         c.save();
-        c.clipRect(0,0,pageW,pageH);
-        c.scale(scale,scale);
-        c.translate(0,-i*pageContentH);
+        // حاشیه
+        c.translate(margin, margin);
+        c.clipRect(0, 0, usableW, pageH - 2*margin);
+        c.scale(scale, scale);
+        c.translate(0, -i * pageContentH);
         web.draw(c);
         c.restore();
         doc.finishPage(page);
