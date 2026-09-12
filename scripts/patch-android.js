@@ -147,24 +147,31 @@ const nativeExport=`package ${pkg};
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.graphics.pdf.PdfDocument;
+import android.widget.FrameLayout;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import android.util.Base64;
-import android.os.Handler;
-import android.os.Looper;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
+
   private String uniqueDownloadName(String filename) {
     if(filename==null || filename.trim().isEmpty()) filename="download.bin";
     ContentResolver cr=getContext().getContentResolver();
@@ -172,19 +179,13 @@ public class NativeFileExportPlugin extends Plugin {
     String ext="";
     int dot=filename.lastIndexOf('.');
     if(dot>0){ base=filename.substring(0,dot); ext=filename.substring(dot); }
-    // همیشه پسوند دقیقاً .json یا .pdf بماند؛ شمارنده فقط سمت چپ نقطه
-    // برای بکاپ: hesab-backup-1405-06.json → hesab-backup-1-1405-06.json
     boolean isHesabBackup = base.startsWith("hesab-backup-");
     String restAfterPrefix = isHesabBackup ? base.substring("hesab-backup-".length()) : null;
     for(int n=0;n<10000;n++){
       String candidate;
-      if(n==0){
-        candidate = filename;
-      } else if(isHesabBackup){
-        candidate = "hesab-backup-" + n + "-" + restAfterPrefix + ext;
-      } else {
-        candidate = base + "-" + n + ext;
-      }
+      if(n==0) candidate = filename;
+      else if(isHesabBackup) candidate = "hesab-backup-" + n + "-" + restAfterPrefix + ext;
+      else candidate = base + "-" + n + ext;
       android.database.Cursor c=null;
       try{
         c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
@@ -217,21 +218,85 @@ public class NativeFileExportPlugin extends Plugin {
     }
   }
 
+  private byte[] decodeBase64(String data) throws Exception {
+    if(data==null||data.isEmpty()) throw new Exception("empty data");
+    int comma=data.indexOf(',');
+    if(data.startsWith("data:") && comma>0) data=data.substring(comma+1);
+    return Base64.decode(data, Base64.DEFAULT);
+  }
+
+  private File writeCacheFile(String filename, byte[] bytes) throws Exception {
+    File dir=new File(getContext().getCacheDir(), "share");
+    if(!dir.exists() && !dir.mkdirs()) throw new Exception("cache dir failed");
+    String safe=(filename==null?"file.bin":filename).replaceAll("[\\\\/]+","_");
+    File out=new File(dir, safe);
+    try(FileOutputStream fos=new FileOutputStream(out)){
+      fos.write(bytes);
+      fos.flush();
+    }
+    return out;
+  }
+
+  private Uri saveToDownloads(String filename, String mimeType, byte[] bytes) throws Exception {
+    Uri u=insertPending(filename, mimeType);
+    try(OutputStream out=getContext().getContentResolver().openOutputStream(u)){
+      if(out==null) throw new Exception("open output failed");
+      out.write(bytes);
+      out.flush();
+    }
+    finishPending(u);
+    return u;
+  }
+
   @com.getcapacitor.PluginMethod public void saveBase64ToDownloads(PluginCall call){
     try{
       String filename=call.getString("filename","download.bin");
       String mime=call.getString("mimeType","application/octet-stream");
       String data=call.getString("data","");
-      if(data==null||data.isEmpty()) throw new Exception("empty data");
-      byte[] bytes=Base64.decode(data,Base64.DEFAULT);
-      Uri u=insertPending(filename,mime);
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(u)){
-        if(out==null) throw new Exception("open output failed");
-        out.write(bytes); out.flush();
-      }
-      finishPending(u);
-      call.resolve(new JSObject().put("uri",u.toString()).put("filename",filename));
+      byte[] bytes=decodeBase64(data);
+      Uri u=saveToDownloads(filename, mime, bytes);
+      call.resolve(new JSObject().put("uri",u.toString()).put("filename",filename).put("ok",true));
     }catch(Exception e){ call.reject("save_download_failed",e); }
+  }
+
+  @com.getcapacitor.PluginMethod public void shareBase64File(PluginCall call){
+    try{
+      String filename=call.getString("filename","share.bin");
+      String mime=call.getString("mimeType","application/octet-stream");
+      String data=call.getString("data","");
+      String title=call.getString("title","اشتراک‌گذاری");
+      boolean alsoDownload = true;
+      try { Boolean b = call.getBoolean("saveToDownloads", true); if(b!=null) alsoDownload=b; } catch(Exception ignored){}
+      byte[] bytes=decodeBase64(data);
+
+      Uri downloadUri=null;
+      if(alsoDownload){
+        try{ downloadUri=saveToDownloads(filename, mime, bytes); }catch(Exception e){ /* continue to share */ }
+      }
+
+      File cacheFile=writeCacheFile(filename, bytes);
+      String authority=getContext().getPackageName()+".fileprovider";
+      Uri contentUri=FileProvider.getUriForFile(getContext(), authority, cacheFile);
+
+      Intent send=new Intent(Intent.ACTION_SEND);
+      send.setType(mime==null?"application/octet-stream":mime);
+      send.putExtra(Intent.EXTRA_STREAM, contentUri);
+      send.putExtra(Intent.EXTRA_SUBJECT, title);
+      send.putExtra(Intent.EXTRA_TEXT, title);
+      send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+      Intent chooser=Intent.createChooser(send, title);
+      chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getActivity().startActivity(chooser);
+
+      JSObject r=new JSObject();
+      r.put("ok", true);
+      r.put("shared", true);
+      r.put("uri", contentUri.toString());
+      if(downloadUri!=null) r.put("downloadUri", downloadUri.toString());
+      r.put("filename", filename);
+      call.resolve(r);
+    }catch(Exception e){ call.reject("share_failed",e); }
   }
 
   @com.getcapacitor.PluginMethod public void exportHtmlToPdf(final PluginCall call){
@@ -241,43 +306,35 @@ public class NativeFileExportPlugin extends Plugin {
 
     getActivity().runOnUiThread(new Runnable(){
       @Override public void run(){
-        final android.widget.FrameLayout root=(android.widget.FrameLayout)getActivity().getWindow().getDecorView();
-        final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
+        final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
+        final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        // عرض بزرگ‌تر برای رندر بهتر جداول RTL
         final int viewW = 1800;
-        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 2400);
-        hp.leftMargin=0; hp.topMargin=0;
+        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2400);
         root.addView(host,hp);
 
         final WebView web=new WebView(getContext());
         web.setBackgroundColor(android.graphics.Color.WHITE);
-        // HARDWARE بهتر برای رندر متن و جدول است؛ SOFTWARE گاهی صفحه سفید می‌دهد
         web.setLayerType(android.view.View.LAYER_TYPE_HARDWARE,null);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDefaultTextEncodingName("UTF-8");
         web.getSettings().setLoadWithOverviewMode(false);
         web.getSettings().setUseWideViewPort(false);
         web.getSettings().setDomStorageEnabled(true);
-        web.getSettings().setBuiltInZoomControls(false);
-        web.getSettings().setDisplayZoomControls(false);
-        web.getSettings().setSupportZoom(false);
         web.setInitialScale(100);
-        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 2400));
+        host.addView(web,new FrameLayout.LayoutParams(viewW, 2400));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
           private int attempts=0;
           @Override public void onPageFinished(final WebView view,String url){
             if(started) return;
-            // آرایه یک‌عضوی برای جلوگیری از خطای "might not have been initialized"
             final Runnable[] holder = new Runnable[1];
             holder[0] = new Runnable(){
               @Override public void run(){
                 if(started) return;
                 attempts++;
                 try{
-                  // اندازه‌گیری دقیق‌تر ارتفاع واقعی محتوا با جاوااسکریپت
                   view.evaluateJavascript(
                     "(function(){var b=document.body,h=document.documentElement;return Math.max(b.scrollHeight,b.offsetHeight,h.clientHeight,h.scrollHeight,h.offsetHeight);})()",
                     new android.webkit.ValueCallback<String>(){
@@ -288,17 +345,13 @@ public class NativeFileExportPlugin extends Plugin {
                           if(value!=null && !value.equals("null")) measured = (int)Math.ceil(Double.parseDouble(value));
                         }catch(Exception ignored){}
                         if(measured < 80){
-                          // fallback به contentHeight
-                          int ch = view.getContentHeight();
-                          float sc = view.getScale();
-                          measured = (int)Math.ceil(ch * sc);
+                          measured = (int)Math.ceil(view.getContentHeight() * view.getScale());
                         }
                         if(measured < 80 && attempts < 8){
                           new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                           return;
                         }
                         if(measured < 200) measured = 400;
-                        // کمی حاشیه اضافه تا آخرین خطوط بریده نشوند
                         measured = (int)(measured * 1.05) + 40;
                         started=true;
                         createPdf(view,filename,call,host,root,measured, viewW);
@@ -306,11 +359,8 @@ public class NativeFileExportPlugin extends Plugin {
                     }
                   );
                 }catch(Exception e){
-                  // اگر evaluateJavascript کار نکرد
                   try{
-                    int contentH = view.getContentHeight();
-                    float scale = view.getScale();
-                    int measured = (int)Math.ceil(contentH * scale);
+                    int measured = (int)Math.ceil(view.getContentHeight() * view.getScale());
                     if(measured < 80 && attempts < 8){
                       new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                       return;
@@ -331,35 +381,30 @@ public class NativeFileExportPlugin extends Plugin {
             new Handler(Looper.getMainLooper()).postDelayed(holder[0], 1000L);
           }
         });
-        // baseURL کمک می‌کند فونت و استایل‌ها بهتر لود شوند
         web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
       }
     });
   }
 
-  private void createPdf(WebView web,String filename,PluginCall call,android.widget.FrameLayout host,android.widget.FrameLayout root,int contentH, int viewW){
+  private void createPdf(WebView web,String filename,PluginCall call,FrameLayout host,FrameLayout root,int contentH, int viewW){
     PdfDocument doc=null;
     Uri uri=null;
     try{
       final int viewH=Math.max(contentH, 200);
       web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       web.layout(0,0,viewW,viewH);
-      host.updateViewLayout(web,new android.widget.FrameLayout.LayoutParams(viewW,viewH));
+      host.updateViewLayout(web,new FrameLayout.LayoutParams(viewW,viewH));
       host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       host.layout(0,0,viewW,viewH);
-
-      // صبر برای paint کامل
       try{ Thread.sleep(450); }catch(InterruptedException ignored){}
 
-      // A4 landscape با حاشیه کوچک برای کیفیت بهتر
       final int pageW=842;
       final int pageH=595;
-      final int margin=18; // حاشیه سفید دور صفحه
-      final float usableW = pageW - 2*margin;
+      final int margin=18;
+      final float usableW = pageW - 2f*margin;
       final float scale = usableW / (float)viewW;
       final int pageContentH = Math.max(1, (int)Math.floor((pageH - 2*margin) / scale));
       int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
-      // جلوگیری از صفحه سفید اضافی در انتها (آستانه‌ی بالاتر)
       int remainder = viewH % pageContentH;
       if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.22))) {
         pageCount = Math.max(1, pageCount - 1);
@@ -372,7 +417,6 @@ public class NativeFileExportPlugin extends Plugin {
         android.graphics.Canvas c=page.getCanvas();
         c.drawColor(android.graphics.Color.WHITE);
         c.save();
-        // حاشیه
         c.translate(margin, margin);
         c.clipRect(0, 0, usableW, pageH - 2*margin);
         c.scale(scale, scale);
@@ -382,13 +426,11 @@ public class NativeFileExportPlugin extends Plugin {
         doc.finishPage(page);
       }
 
-      uri=insertPending(filename,"application/pdf");
-      try(OutputStream out=getContext().getContentResolver().openOutputStream(uri)){
-        if(out==null) throw new Exception("open output failed");
-        doc.writeTo(out); out.flush();
-      }
-      finishPending(uri);
-      call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename));
+      ByteArrayOutputStream bos=new ByteArrayOutputStream();
+      doc.writeTo(bos);
+      byte[] pdfBytes=bos.toByteArray();
+      uri=saveToDownloads(filename,"application/pdf",pdfBytes);
+      call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename).put("ok",true));
     }catch(Exception e){
       if(uri!=null) try{ getContext().getContentResolver().delete(uri,null,null); }catch(Exception ignored){}
       call.reject("pdf_export_failed",e);
@@ -441,6 +483,37 @@ if(fs.existsSync(manifest)){
   }
   const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
+  // FileProvider for Sharesheet
+  if(!s.includes('.fileprovider')){
+    const providerTag =
+      '        <provider\n' +
+      '            android:name="androidx.core.content.FileProvider"\n' +
+      '            android:authorities="${applicationId}.fileprovider"\n' +
+      '            android:exported="false"\n' +
+      '            android:grantUriPermissions="true">\n' +
+      '            <meta-data\n' +
+      '                android:name="android.support.FILE_PROVIDER_PATHS"\n' +
+      '                android:resource="@xml/file_paths" />\n' +
+      '        </provider>';
+    s=s.replace('</application>', providerTag+'\n    </application>');
+  }
   fs.writeFileSync(manifest,s);
 }
-console.log('Android SMS + native Downloads/PDF bridge patched');
+
+// res/xml/file_paths.xml for FileProvider
+const xmlDir=path.join(base,'app/src/main/res/xml');
+fs.mkdirSync(xmlDir,{recursive:true});
+const filePaths=path.join(xmlDir,'file_paths.xml');
+if(!fs.existsSync(filePaths)){
+  fs.writeFileSync(filePaths,
+`<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="share_cache" path="share/" />
+    <cache-path name="cache_root" path="." />
+    <files-path name="files_root" path="." />
+    <external-files-path name="external_files" path="." />
+</paths>
+`);
+}
+
+console.log('Android SMS + Downloads/PDF + FileProvider Share bridge patched');
