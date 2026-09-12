@@ -245,8 +245,8 @@ public class NativeFileExportPlugin extends Plugin {
         final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
         // عرض بزرگ‌تر برای رندر بهتر جداول RTL
-        final int viewW = 1600;
-        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 2200);
+        final int viewW = 1800;
+        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 2400);
         hp.leftMargin=0; hp.topMargin=0;
         root.addView(host,hp);
 
@@ -263,7 +263,7 @@ public class NativeFileExportPlugin extends Plugin {
         web.getSettings().setDisplayZoomControls(false);
         web.getSettings().setSupportZoom(false);
         web.setInitialScale(100);
-        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 2200));
+        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 2400));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
@@ -361,7 +361,7 @@ public class NativeFileExportPlugin extends Plugin {
       int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
       // جلوگیری از صفحه سفید اضافی در انتها (آستانه‌ی بالاتر)
       int remainder = viewH % pageContentH;
-      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.18))) {
+      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.22))) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
