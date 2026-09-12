@@ -2558,6 +2558,26 @@
       border: 5px solid transparent;
       border-top-color: var(--muted);
     }
+    /* نشانگر اسکرول باریک */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(140,140,140,0.55) transparent;
+    }
+    *::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: rgba(140,140,140,0.55);
+      border-radius: 3px;
+    }
+    [data-theme="light"] *::-webkit-scrollbar-thumb {
+      background: rgba(100,100,100,0.4);
+    }
+
     .dark-select-list {
       display: none;
       position: fixed;
@@ -3559,8 +3579,8 @@
         می‌توانید چند حساب از یک بانک داشته باشید و برای هر کدام نام دلخواه بگذارید (مثلاً ملی حقوق، ملی پس‌انداز).
       </p>
       <div id="bankAccountsList" style="margin-bottom:12px;">
-        <div id="bankSelectedScroll" style="max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;"></div>
-        <div id="bankBanksScroll" style="max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
+        <div id="bankSelectedScroll" style="max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;"></div>
+        <div id="bankBanksScroll" style="max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;"></div>
       </div>
       <button class="modal-btn no" style="width:100%;" type="button" onclick="closeBankAccountsModal()">بستن</button>
     </div>
@@ -8469,7 +8489,7 @@
       document.body.appendChild(holder);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       await new Promise(r=>setTimeout(r,120));
-      const width=2400;
+      const width=3600;
       let height=Math.max(holder.scrollHeight, holder.offsetHeight, 300);
       // کمی حاشیه پایین
       height = Math.ceil(height * 1.02) + 20;
@@ -8502,7 +8522,7 @@
       }
 
       // مقیاس بالاتر برای کیفیت متن بهتر
-      const scale = 3.5;
+      const scale = 4.5;
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(width * scale);
       canvas.height = Math.ceil(height * scale);
@@ -8559,7 +8579,7 @@
         }
 
         // کیفیت بالاتر با JPEG 0.95 (یا تقریباً lossless)
-        const data = atob(pc.toDataURL('image/jpeg', 0.995).split(',')[1]);
+        const data = atob(pc.toDataURL('image/jpeg', 1.0).split(',')[1]);
         const jpg = new Uint8Array(data.length);
         for (let i = 0; i < data.length; i++) jpg[i] = data.charCodeAt(i);
         pages.push({jpg, w: pc.width, h: pc.height});
@@ -10664,7 +10684,13 @@
       loadTrash();
       renderTrashList();
       const m = document.getElementById('trashModal');
-      if (m) m.classList.add('open');
+      if (m) {
+        m.classList.add('open');
+        // لمس بیرون باکس = مثل دکمه بک → صفحه اصلی
+        m.onclick = (e) => {
+          if (e.target === m) closeTrashModal();
+        };
+      }
     }
     function closeTrashModal() {
       const m = document.getElementById('trashModal');
@@ -11039,10 +11065,10 @@ if (item.type === 'recurring') {
         box.innerHTML = '';
         selectedWrap = document.createElement('div');
         selectedWrap.id = 'bankSelectedScroll';
-        selectedWrap.style.cssText = 'max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;';
+        selectedWrap.style.cssText = 'max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;';
         banksWrap = document.createElement('div');
         banksWrap.id = 'bankBanksScroll';
-        banksWrap.style.cssText = 'max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+        banksWrap.style.cssText = 'max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;';
         box.appendChild(selectedWrap);
         box.appendChild(banksWrap);
       }
@@ -11810,7 +11836,7 @@ if (item.type === 'recurring') {
       const inpName = document.createElement('input');
       inpName.type = 'text';
       inpName.value = existing.name || '';
-      inpName.placeholder = 'اسم را وارد کنید';
+      inpName.placeholder = 'نام را وارد کنید';
       inpName.style.cssText = inpStyle;
       field('نام درآمد ثابت', inpName);
 
@@ -11843,7 +11869,7 @@ if (item.type === 'recurring') {
       field('روز ماه (۱–۳۱)', inpDay);
 
       const incomeSecs = (periodData.income && periodData.income.sections) || [];
-      const secOptionsRec = [{ value: '', label: 'بخش را انتخاب کنید (اختیاری)' }].concat(
+      const secOptionsRec = [{ value: '', label: 'کاربر بخش مقصد را انتخاب کنید' }].concat(
         incomeSecs.map(s => ({ value: s.id, label: (s.title || '').trim() || 'بدون عنوان' }))
       );
       const secSelRec = createDarkSelect({
@@ -13388,6 +13414,7 @@ if (item.type === 'recurring') {
           if (!ov) continue;
           if (ov.id === 'textInputBackdrop' || ov.id === 'darkSelectBackdrop') { ov.classList.remove('open'); continue; }
           if (ov.id === 'confirmModal') continue;
+          if (ov.id === 'trashModal' && typeof closeTrashModal === 'function') { closeTrashModal(); return true; }
           if (ov.id === 'bankAccountsModal' && typeof closeBankAccountsModal === 'function') { _bankModalFromMenu=false; closeBankAccountsModal(); return true; }
           if (ov.id === 'familyModal' && typeof closeFamilyModal === 'function') { closeFamilyModal(); return true; }
           if (ov.id === 'smsImportModal' && typeof closeSmsImportModal === 'function') { closeSmsImportModal(); return true; }
