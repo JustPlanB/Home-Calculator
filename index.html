@@ -7370,6 +7370,46 @@
       return rows;
     }
 
+    async function blobToBase64(blob) {
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+      }
+      return btoa(binary);
+    }
+    function utf8ToBase64(text) {
+      return btoa(unescape(encodeURIComponent(text)));
+    }
+    function getNativeFileExport() {
+      try {
+        const C = window.Capacitor, P = C && C.Plugins;
+        return P && P.NativeFileExport ? P.NativeFileExport : null;
+      } catch (e) { return null; }
+    }
+    async function nativeSaveBase64(filename, mime, base64) {
+      const native = getNativeFileExport();
+      if (!native || typeof native.saveBase64ToDownloads !== 'function') return null;
+      const res = await native.saveBase64ToDownloads({ filename: filename, mimeType: mime, data: base64 });
+      if (res && (res.uri || res.ok)) return res;
+      return null;
+    }
+    async function nativeShareBase64(filename, mime, base64, title) {
+      const native = getNativeFileExport();
+      if (!native || typeof native.shareBase64File !== 'function') return null;
+      const res = await native.shareBase64File({
+        filename: filename,
+        mimeType: mime,
+        data: base64,
+        title: title || 'اشتراک‌گذاری',
+        saveToDownloads: true
+      });
+      if (res && (res.shared || res.ok || res.uri)) return res;
+      return null;
+    }
+
     /** ذخیره/اشتراک فایل — سازگار با مرورگر و WebView اندروید */
     async function saveOrShareBlob(blob, filename, mime) {
       if (!blob) throw new Error('empty blob');
@@ -7505,45 +7545,6 @@
           familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
           theme: document.documentElement.getAttribute('data-theme') || 'dark'
         };
-        let meta = null;
-        try { meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null'); } catch (e) {}
-        if (meta) payload.meta = meta;
-        // حساب‌های بانکی انتخاب‌شده و نقشه پیامک
-        try {
-          payload.selectedBankAccounts = selectedBankAccounts;
-          payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
-          payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
-        } catch (e) {}
-        const textOut = JSON.stringify(payload);
-        const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json'; // پسوند عمداً ثابت و آخرین بخش نام است
-        showToast('در حال ساخت پشتیبان…');
-        const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
-        const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
-        if (mode === 'abort') showToast('لغو شد');
-        else showToast('پشتیبان آماده شد');
-      } catch (e) {
-        console.error(e);
-        showToast('پشتیبان‌گیری ناموفق بود');
-      }
-    }
-
-    async function shareFullBackup() {
-      closeSideMenu();
-      try {
-        persistCurrent();
-        saveArchive();
-        const payload = {
-          version: 1,
-          app: 'hesab-ketab',
-          exportedAt: new Date().toISOString(),
-          archive: archive,
-          plans: plans,
-          recurringIncomes: recurringIncomes,
-          currentYear: currentYear,
-          currentMonth: currentMonth,
-          familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
-          theme: document.documentElement.getAttribute('data-theme') || 'dark'
-        };
         try {
           let meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null');
           if (meta) payload.meta = meta;
@@ -7555,68 +7556,59 @@
         } catch (e) {}
         const textOut = JSON.stringify(payload);
         const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
-        const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
-        showToast('در حال آماده‌سازی اشتراک…');
+        showToast('در حال ساخت پشتیبان…');
+        const b64 = utf8ToBase64(textOut);
 
-        // 1) Capacitor Share plugin
+        // اندروید: ذخیره واقعی + Sharesheet فوری
         try {
-          const C = window.Capacitor, P = C && C.Plugins;
-          const Share = P && (P.Share || P.CapacitorShare);
-          const FS = P && P.Filesystem;
-          if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform() && Share && FS) {
-            const b64 = btoa(unescape(encodeURIComponent(textOut)));
-            const dir = (FS.Directory && FS.Directory.Cache) || 'CACHE';
-            await FS.writeFile({ path: name, data: b64, directory: dir, recursive: true });
-            let url = name;
-            try {
-              const uriRes = await FS.getUri({ path: name, directory: dir });
-              url = (uriRes && (uriRes.uri || uriRes)) || name;
-            } catch (e) {}
-            await Share.share({ title: 'پشتیبان حساب‌کتاب', text: 'فایل پشتیبان', url: String(url), dialogTitle: 'اشتراک‌گذاری پشتیبان' });
-            showToast('پنجره اشتراک باز شد');
-            return;
-          }
-        } catch (e) {
-          if (e && e.name === 'AbortError') { showToast('لغو شد'); return; }
-          console.warn('cap share', e);
-        }
-
-        // 2) Web Share API با فایل
-        try {
-          if (navigator.share) {
-            if (typeof File !== 'undefined') {
-              const file = new File([blob], name, { type: 'application/json' });
-              if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: 'پشتیبان حساب‌کتاب' });
-                showToast('به اشتراک گذاشته شد');
-                return;
-              }
+          const C = window.Capacitor;
+          if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) {
+            const shared = await nativeShareBase64(name, 'application/json', b64, 'پشتیبان حساب‌کتاب');
+            if (shared) {
+              showToast(shared.downloadUri ? 'ذخیره شد و پنجره اشتراک باز شد' : 'پنجره اشتراک باز شد');
+              return;
             }
-            // بدون فایل — حداقل لینک/متن
-            const dataUrl = await new Promise((res, rej) => {
-              const r = new FileReader();
-              r.onload = () => res(r.result);
-              r.onerror = rej;
-              r.readAsDataURL(blob);
-            });
-            await navigator.share({ title: 'پشتیبان حساب‌کتاب', text: 'فایل پشتیبان حساب‌کتاب', url: dataUrl });
-            showToast('به اشتراک گذاشته شد');
+            const saved = await nativeSaveBase64(name, 'application/json', b64);
+            if (saved && saved.uri) {
+              showToast('پشتیبان در Downloads ذخیره شد');
+              return;
+            }
+            throw new Error('native backup failed');
+          }
+        } catch (ne) {
+          console.warn('native backup', ne);
+          if (String(ne && ne.message || ne).indexOf('native backup') >= 0) {
+            showToast('ذخیره پشتیبان ناموفق بود');
             return;
+          }
+        }
+
+        // مرورگر
+        const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
+        try {
+          if (navigator.share && typeof File !== 'undefined') {
+            const file = new File([blob], name, { type: 'application/json' });
+            if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: 'پشتیبان حساب‌کتاب' });
+              showToast('به اشتراک گذاشته شد');
+              return;
+            }
           }
         } catch (e) {
           if (e && e.name === 'AbortError') { showToast('لغو شد'); return; }
-          console.warn('web share', e);
         }
-
-        // 3) fallback ذخیره
-        showToast('اشتراک در دسترس نیست — ذخیره می‌شود');
         const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
         if (mode === 'abort') showToast('لغو شد');
-        else showToast('پشتیبان ذخیره شد');
+        else showToast('پشتیبان آماده شد');
       } catch (e) {
         console.error(e);
-        showToast('اشتراک‌گذاری ناموفق بود');
+        showToast('پشتیبان‌گیری ناموفق بود');
       }
+    }
+
+    async function shareFullBackup() {
+      // همان مسیر پشتیبان‌گیری: ذخیره واقعی + Sharesheet
+      return exportFullBackup();
     }
 
     function triggerImportBackup() {
@@ -8571,30 +8563,42 @@
       if (pages.length === 0) throw new Error('no pages generated');
       return buildSimpleImagePdf(pages, 841.89, 595.28);
     }
-async function exportPdf(){
+    async function exportPdf(){
       try{
         persistCurrent();
         const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf';
         showToast('در حال ساخت PDF...');
         const C=window.Capacitor, plugins=C&&C.Plugins, native=plugins&&plugins.NativeFileExport;
+
+        // 1) نیتیو: HTML → PDF واقعی → Downloads
         if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform() && native && typeof native.exportHtmlToPdf==='function'){
           try {
             const result=await native.exportHtmlToPdf({html:buildPdfFullDocument(),filename:name});
-            if(result && result.uri){ showToast('PDF در پوشه Download ذخیره شد'); return; }
+            if(result && result.uri){ showToast('PDF در Downloads ذخیره شد'); return; }
           } catch(ne) {
-            console.warn('native PDF failed, trying offline', ne);
+            console.warn('native PDF failed', ne);
           }
         }
+
+        // 2) آفلاین: ساخت PDF در JS سپس ذخیره نیتیو
         try {
           const blob=await renderPdfPagesOffline();
+          if(!blob || !blob.size) throw new Error('empty pdf blob');
+          if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform()){
+            const b64=await blobToBase64(blob);
+            const saved=await nativeSaveBase64(name,'application/pdf',b64);
+            if(saved && saved.uri){ showToast('PDF در Downloads ذخیره شد'); return; }
+            throw new Error('native save pdf failed');
+          }
           const saved=await shareExportFile(blob,name,'application/pdf');
           if(!saved) downloadBlob(blob,name);
           showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
           return;
         } catch(oe) {
-          console.warn('offline PDF failed, falling back to print', oe);
+          console.warn('offline PDF failed', oe);
         }
-        // آخرین راه: پنجره چاپ مرورگر / WebView
+
+        // 3) آخرین راه: چاپ
         openPdfPrintWindow();
         showToast('پیش‌نمایش چاپ باز شد — Save as PDF را انتخاب کنید');
       }catch(e){
