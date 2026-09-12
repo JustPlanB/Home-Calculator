@@ -398,8 +398,8 @@ public class NativeFileExportPlugin extends Plugin {
       host.layout(0,0,viewW,viewH);
       try{ Thread.sleep(450); }catch(InterruptedException ignored){}
 
-      final int pageW=842;
-      final int pageH=595;
+      final int pageW=595;
+      final int pageH=842;
       final int margin=18;
       final float usableW = pageW - 2f*margin;
       final float scale = usableW / (float)viewW;
