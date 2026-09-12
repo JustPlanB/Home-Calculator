@@ -2561,7 +2561,7 @@
     .dark-select-list {
       display: none;
       position: fixed;
-      z-index: 350;
+      z-index: 500;
       background: #1c1c1e;
       border: 1px solid #3a3a3c;
       border-radius: 10px;
@@ -3558,7 +3558,10 @@
       <p class="family-help">
         می‌توانید چند حساب از یک بانک داشته باشید و برای هر کدام نام دلخواه بگذارید (مثلاً ملی حقوق، ملی پس‌انداز).
       </p>
-      <div id="bankAccountsList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;"></div>
+      <div id="bankAccountsList" style="margin-bottom:12px;">
+        <div id="bankSelectedScroll" style="max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;"></div>
+        <div id="bankBanksScroll" style="max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
+      </div>
       <button class="modal-btn no" style="width:100%;" type="button" onclick="closeBankAccountsModal()">بستن</button>
     </div>
   </div>
@@ -8466,7 +8469,7 @@
       document.body.appendChild(holder);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       await new Promise(r=>setTimeout(r,120));
-      const width=1600;
+      const width=2400;
       let height=Math.max(holder.scrollHeight, holder.offsetHeight, 300);
       // کمی حاشیه پایین
       height = Math.ceil(height * 1.02) + 20;
@@ -8499,7 +8502,7 @@
       }
 
       // مقیاس بالاتر برای کیفیت متن بهتر
-      const scale = 2.8;
+      const scale = 3.5;
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(width * scale);
       canvas.height = Math.ceil(height * scale);
@@ -8556,7 +8559,7 @@
         }
 
         // کیفیت بالاتر با JPEG 0.95 (یا تقریباً lossless)
-        const data = atob(pc.toDataURL('image/jpeg', 0.98).split(',')[1]);
+        const data = atob(pc.toDataURL('image/jpeg', 0.995).split(',')[1]);
         const jpg = new Uint8Array(data.length);
         for (let i = 0; i < data.length; i++) jpg[i] = data.charCodeAt(i);
         pages.push({jpg, w: pc.width, h: pc.height});
@@ -8762,30 +8765,51 @@
 
     function askResetCurrentMonth() {
       closeSideMenu();
-      askConfirm('مخارج و درآمد این ماه پاک شود؟', () => {
+      askConfirm('اطلاعات این ماه حذف شود؟', () => {
+        try {
+          // کل ماه جاری به سطل
+          pushToTrash('period_month', 'ماه ' + currentYear + '/' + currentMonth, {
+            periodKey: periodKey(currentYear, currentMonth),
+            periodData: JSON.parse(JSON.stringify(periodData)),
+            year: currentYear,
+            month: currentMonth
+          });
+        } catch (e) { console.warn(e); }
         periodData = emptyPeriodData();
         persistCurrent();
         saveArchive();
         renderAll();
-        showToast('این ماه پاک شد');
+        showToast('این ماه به سطل زباله منتقل شد');
       });
     }
 
     function askResetAllData() {
       closeSideMenu();
-      askConfirm('همه آرشیو و اقساط پاک شود؟', () => {
+      askConfirm('تمامی اطلاعات حذف شود؟', () => {
+        try {
+          pushToTrash('full_backup', 'کل اطلاعات', {
+            archive: JSON.parse(JSON.stringify(archive || {})),
+            plans: JSON.parse(JSON.stringify(plans || [])),
+            periodData: JSON.parse(JSON.stringify(periodData || emptyPeriodData())),
+            recurringIncomes: JSON.parse(JSON.stringify(recurringIncomes || [])),
+            year: currentYear,
+            month: currentMonth
+          });
+        } catch (e) { console.warn(e); }
         archive = {};
         plans = [];
         periodData = emptyPeriodData();
+        try { recurringIncomes = []; saveRecurring(); } catch (e) {}
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_KEY + '_meta');
-        localStorage.removeItem(familyStorageKey(familyCode));
+        try { localStorage.removeItem(familyStorageKey(familyCode)); } catch (e) {}
         localStorage.removeItem('hesabKetabArchive_v4');
         localStorage.removeItem('hesabKetabArchive_v3');
         localStorage.removeItem('hesabKetabArchive_v2');
         localStorage.removeItem('hesabKetabArchive_v1');
         renderAll();
-        showToast('همه آرشیو پاک شد');
+        try { renderPlans(); renderRecurringBar(); renderLedgerTab(); } catch (e) {}
+        showToast('همه اطلاعات به سطل زباله منتقل شد');
       });
     }
 
@@ -10654,7 +10678,7 @@
         box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.9rem;">سطل زباله خالی است</div>';
         return;
       }
-      const typeFa = { row: 'ردیف', section: 'بخش', plan: 'قسط', ledger_row: 'بده‌بستان', ledger_section: 'بخش بده‌بستان', recurring: 'درآمد ثابت' };
+      const typeFa = { row: 'ردیف', section: 'بخش', plan: 'قسط', ledger_row: 'ردیف بده‌بستان', ledger_section: 'بده‌بستان', recurring: 'درآمد ثابت', period_month: 'ماه کامل', full_backup: 'کل اطلاعات' };
 
       const toolbar = document.createElement('div');
       toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;';
@@ -10752,21 +10776,42 @@
         '<div class="modal-box" style="max-width:320px;text-align:right;">' +
         '<div class="modal-msg" style="margin-bottom:8px;">نام تکراری</div>' +
         '<p class="family-help" style="margin-bottom:12px;">«' + escapeHtml(conf.name) + '» از قبل وجود دارد. چه کار کنیم؟</p>' +
-        '<button type="button" class="modal-btn yes" id="rcSkip" style="width:100%;margin-bottom:8px;background:var(--bg3);color:var(--text);">رد کردن (اسکیپ)</button>' +
-        '<button type="button" class="modal-btn yes" id="rcReplace" style="width:100%;margin-bottom:8px;background:#c0392b;">جایگزینی (ریپلیس)</button>' +
-        '<button type="button" class="modal-btn yes" id="rcRename" style="width:100%;margin-bottom:8px;background:#0a84ff;">تغییر نام (رینیم)</button>' +
+        '<button type="button" class="modal-btn yes" id="rcSkip" style="width:100%;margin-bottom:8px;background:var(--bg3);color:var(--text);">رد کردن</button>' +
+        '<button type="button" class="modal-btn yes" id="rcReplace" style="width:100%;margin-bottom:8px;background:#c0392b;">جایگزینی</button>' +
+        '<button type="button" class="modal-btn yes" id="rcRename" style="width:100%;margin-bottom:8px;background:#0a84ff;">تغییر نام</button>' +
         '</div>';
       document.body.appendChild(ov);
       const close = () => { try { ov.remove(); } catch (e) {} };
       ov.querySelector('#rcSkip').onclick = () => { close(); onDone('skip'); };
       ov.querySelector('#rcReplace').onclick = () => { close(); onDone('replace'); };
       ov.querySelector('#rcRename').onclick = () => {
-        close();
-        askTextInput('نام جدید', conf.name + ' ۲', (v) => {
-          const n = (v || '').trim();
-          if (!n) { onDone('skip'); return; }
+        const box = ov.querySelector('.modal-box');
+        if (!box) return;
+        box.innerHTML =
+          '<div class="modal-msg" style="margin-bottom:8px;">تغییر نام</div>' +
+          '<input id="rcRenameInput" type="text" value="' + escapeHtml(conf.name) + ' ۲" ' +
+          'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:10px;">' +
+          '<div style="display:flex;gap:8px;">' +
+          '<button type="button" class="modal-btn yes" id="rcRenameOk" style="flex:1;">ثبت</button>' +
+          '<button type="button" class="modal-btn no" id="rcRenameCancel" style="flex:1;">انصراف</button>' +
+          '</div>';
+        const inp = box.querySelector('#rcRenameInput');
+        try { inp.focus(); inp.select(); } catch (e) {}
+        box.querySelector('#rcRenameCancel').onclick = () => { close(); onDone('skip'); };
+        box.querySelector('#rcRenameOk').onclick = () => {
+          const n = (inp.value || '').trim();
+          if (!n) { showToast('نام را وارد کنید'); return; }
+          if (n === conf.name) { showToast('نام تکراریست'); return; }
+          // بررسی وجود نام جدید
+          const probe = JSON.parse(JSON.stringify(item));
+          if (probe.type === 'section' && probe.data && probe.data.section) probe.data.section.title = n;
+          else if (probe.type === 'plan' && probe.data) probe.data.name = n;
+          else if (probe.type === 'recurring' && probe.data) probe.data.name = n;
+          probe.title = n;
+          if (findRestoreNameConflict(probe)) { showToast('نام تکراریست'); return; }
+          close();
           onDone('rename', n);
-        }, 'نام جدید را وارد کنید');
+        };
       };
     }
     function restoreSelectedTrash() {
@@ -10782,15 +10827,23 @@
           return;
         }
         const item = list.shift();
-        // حذف از trashItems
         const idx = trashItems.indexOf(item);
-        if (idx >= 0) { trashItems.splice(idx, 1); saveTrash(); }
         askRestoreConflict(item, (mode, newName) => {
           let ok = false;
           try {
-            if (mode === 'ok') ok = restoreTrashData(item);
-            else if (mode === 'skip') ok = false;
-            else ok = applyRestoreConflict(item, mode, newName);
+            if (mode === 'skip') {
+              // هیچ اقدامی — آیتم در سطل می‌ماند
+              ok = false;
+            } else {
+              if (idx >= 0) { trashItems.splice(idx, 1); saveTrash(); }
+              if (mode === 'ok') ok = restoreTrashData(item);
+              else ok = applyRestoreConflict(item, mode, newName);
+              if (!ok && idx >= 0) {
+                // اگر بازگردانی شکست خورد برگردان به سطل
+                trashItems.splice(idx, 0, item);
+                saveTrash();
+              }
+            }
           } catch (e) { console.error(e); }
           runNext(list, okCount + (ok ? 1 : 0));
         });
@@ -10864,7 +10917,49 @@
         try { syncPlansToExpenseAll(); } catch (e) {}
         return true;
       }
-      if (item.type === 'recurring') {
+      if (item.type === 'period_month') {
+        const d = item.data || {};
+        const pk = d.periodKey || periodKey(d.year || currentYear, d.month || currentMonth);
+        if (d.periodData) {
+          if (pk === periodKey(currentYear, currentMonth)) {
+            periodData = JSON.parse(JSON.stringify(d.periodData));
+          } else {
+            archive[pk] = JSON.parse(JSON.stringify(d.periodData));
+          }
+          return true;
+        }
+        return false;
+      }
+      if (item.type === 'full_backup') {
+        const d = item.data || {};
+        if (d.archive) archive = JSON.parse(JSON.stringify(d.archive));
+        if (d.plans) plans = JSON.parse(JSON.stringify(d.plans));
+        if (d.periodData) periodData = JSON.parse(JSON.stringify(d.periodData));
+        if (d.recurringIncomes) {
+          recurringIncomes = JSON.parse(JSON.stringify(d.recurringIncomes));
+          try { saveRecurring(); } catch (e) {}
+        }
+        return true;
+      }
+            if (item.type === 'ledger_section') {
+        const d = item.data || {};
+        const sec = d.section;
+        if (!sec) return false;
+        const led = ensureLedger();
+        led.sections = led.sections || [];
+        led.sections.push(sec);
+        return true;
+      }
+      if (item.type === 'ledger_row') {
+        const d = item.data || {};
+        const led = ensureLedger();
+        const sec = (led.sections || []).find(s => s.id === d.sectionId);
+        if (!sec) return false;
+        sec.rows = sec.rows || [];
+        sec.rows.push(d.row || {});
+        return true;
+      }
+if (item.type === 'recurring') {
         const r = item.data;
         if (!r) return false;
         recurringIncomes = recurringIncomes || [];
@@ -10877,23 +10972,26 @@
     function restoreTrashItem(idx) {
       const item = trashItems[idx];
       if (!item || !item.data) return;
-      // بدون تأییدیه — فوری
-      trashItems.splice(idx, 1);
-      saveTrash();
       askRestoreConflict(item, (mode, newName) => {
         try {
+          if (mode === 'skip') {
+            renderTrashList();
+            return;
+          }
           let ok = false;
           if (mode === 'ok') ok = restoreTrashData(item);
-          else if (mode === 'skip') ok = false;
           else ok = applyRestoreConflict(item, mode, newName);
           if (ok) {
+            const i = trashItems.indexOf(item);
+            if (i >= 0) trashItems.splice(i, 1);
+            saveTrash();
             persistCurrent();
             saveArchive();
             renderAll();
             try { renderPlans(); } catch (e) {}
             showToast('بازگردانی شد');
           } else {
-            showToast(mode === 'skip' ? 'رد شد' : 'بازگردانی ممکن نشد');
+            showToast('بازگردانی ممکن نشد');
           }
         } catch (e) {
           console.error(e);
@@ -10935,11 +11033,23 @@
       const box = document.getElementById('bankAccountsList');
       if (!box) return;
       normalizeSelectedBanks();
-      box.innerHTML = '';
+      let selectedWrap = document.getElementById('bankSelectedScroll');
+      let banksWrap = document.getElementById('bankBanksScroll');
+      if (!selectedWrap || !banksWrap) {
+        box.innerHTML = '';
+        selectedWrap = document.createElement('div');
+        selectedWrap.id = 'bankSelectedScroll';
+        selectedWrap.style.cssText = 'max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;';
+        banksWrap = document.createElement('div');
+        banksWrap.id = 'bankBanksScroll';
+        banksWrap.style.cssText = 'max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+        box.appendChild(selectedWrap);
+        box.appendChild(banksWrap);
+      }
+      selectedWrap.innerHTML = '';
+      banksWrap.innerHTML = '';
 
-      // لیست حساب‌های انتخاب‌شده با نام قابل ویرایش
-      const selectedWrap = document.createElement('div');
-      selectedWrap.style.cssText = 'margin-bottom:12px;';
+      // لیست حساب‌های ساخته‌شده
       if (!selectedBankAccounts.length) {
         selectedWrap.innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85rem;">هنوز حسابی اضافه نشده</div>';
       } else {
@@ -10952,47 +11062,24 @@
             '<div style="font-size:0.75rem;color:var(--muted);">' + escapeHtml(acc.bank) + '</div>';
           const editBtn = document.createElement('button');
           editBtn.type = 'button';
-          editBtn.textContent = 'نام';
-          editBtn.style.cssText = 'padding:6px 10px;border:none;border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;font-size:0.78rem;';
+          editBtn.title = 'ویرایش نام';
+          editBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+          editBtn.style.cssText = 'padding:6px 8px;border:none;border-radius:8px;background:var(--bg3);color:var(--text);display:flex;align-items:center;justify-content:center;';
           editBtn.onclick = (e) => {
             e.stopPropagation();
-            let editor = document.getElementById('bankAddEditor');
-            if (editor) editor.remove();
-            editor = document.createElement('div');
-            editor.id = 'bankAddEditor';
-            editor.style.cssText = 'margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);';
-            editor.innerHTML =
-              '<div style="font-weight:700;font-size:0.88rem;margin-bottom:6px;">ویرایش نام</div>' +
-              '<input id="bankAddNameInput" type="text" value="' + escapeHtml(acc.label) + '" ' +
-              'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:8px;">' +
-              '<div style="display:flex;gap:8px;">' +
-              '<button type="button" id="bankAddOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">ثبت</button>' +
-              '<button type="button" id="bankAddCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
-              '</div>';
-            row.parentNode.insertBefore(editor, row.nextSibling);
-            const inp = editor.querySelector('#bankAddNameInput');
-            try { inp.focus(); inp.select(); } catch (e2) {}
-            editor.querySelector('#bankAddCancel').onclick = (ev) => { ev.stopPropagation(); editor.remove(); };
-            editor.querySelector('#bankAddOk').onclick = (ev) => {
-              ev.stopPropagation();
-              const name = (inp.value || '').trim();
-              if (!name) return;
-              const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
-              if (exists) { showToast('این نام قبلاً استفاده شده'); return; }
-              acc.label = name;
-              saveBankAccountsSelection();
-              renderBankAccountsList();
-            };
+            openBankNameEditor(acc, idx, row);
           };
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
           delBtn.textContent = '×';
-          delBtn.style.cssText = 'padding:6px 12px;border:none;border-radius:8px;background:#c0392b;color:#fff;font-family:inherit;font-weight:800;font-size:1rem;line-height:1;';
+          delBtn.style.cssText = 'padding:4px 10px;border:none;border-radius:8px;background:transparent;color:#ff453a;font-family:inherit;font-weight:800;font-size:1.25rem;line-height:1;';
           delBtn.onclick = (e) => {
             e.stopPropagation();
-            selectedBankAccounts.splice(idx, 1);
-            saveBankAccountsSelection();
-            renderBankAccountsList();
+            askConfirm('این حساب حذف شود؟', () => {
+              selectedBankAccounts.splice(idx, 1);
+              saveBankAccountsSelection();
+              renderBankAccountsList();
+            });
           };
           row.appendChild(info);
           row.appendChild(editBtn);
@@ -11000,17 +11087,15 @@
           selectedWrap.appendChild(row);
         });
       }
-      box.appendChild(selectedWrap);
 
-      // افزودن حساب جدید
+      // لیست بانک‌ها برای افزودن
       const addTitle = document.createElement('div');
-      addTitle.style.cssText = 'font-weight:800;font-size:0.88rem;margin:10px 0 6px;color:var(--text);';
       addTitle.textContent = 'افزودن حساب بانکی';
-      box.appendChild(addTitle);
-
-      ALL_IRAN_BANKS.forEach(name => {
+      addTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin:4px 0 8px;color:var(--muted);';
+      banksWrap.appendChild(addTitle);
+      (ALL_IRAN_BANKS || []).forEach((name) => {
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.9rem;color:var(--text);font-weight:600;';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
         const span = document.createElement('span');
         span.textContent = name;
         span.style.flex = '1';
@@ -11020,50 +11105,76 @@
         addBtn.style.cssText = 'padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;font-size:0.78rem;';
         const doAdd = () => {
           const defaultLabel = bankShortLabel(name) || name;
-          // ویرایشگر داخل همان مودال — بدون پرش و بدون text-input-sheet
-          let editor = document.getElementById('bankAddEditor');
-          if (editor) editor.remove();
-          editor = document.createElement('div');
-          editor.id = 'bankAddEditor';
-          editor.style.cssText = 'margin:10px 0 12px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);';
-          editor.innerHTML =
-            '<div style="font-weight:700;font-size:0.88rem;margin-bottom:6px;">نام حساب — ' + escapeHtml(name) + '</div>' +
-            '<input id="bankAddNameInput" type="text" value="' + escapeHtml(defaultLabel) + '" placeholder="نام دلخواه حساب" ' +
-            'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:8px;">' +
-            '<div style="display:flex;gap:8px;">' +
-            '<button type="button" id="bankAddOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">ثبت</button>' +
-            '<button type="button" id="bankAddCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
-            '</div>';
-          // بالای لیست بانک‌ها درج کن
-          const listBox = document.getElementById('bankAccountsList');
-          if (listBox) listBox.insertBefore(editor, listBox.firstChild);
-          const inp = editor.querySelector('#bankAddNameInput');
-          try { inp.focus(); inp.select(); } catch (e) {}
-          editor.querySelector('#bankAddCancel').onclick = (e) => { e.stopPropagation(); editor.remove(); };
-          editor.querySelector('#bankAddOk').onclick = (e) => {
-            e.stopPropagation();
-            let label = (inp.value || '').trim() || defaultLabel;
-            let base = label, n = 2;
-            while (selectedBankAccounts.some(a => accountLabel(a) === label)) {
-              label = base + ' ' + n;
-              n++;
-            }
-            selectedBankAccounts.push({
-              id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-              bank: name,
-              label: label
-            });
-            saveBankAccountsSelection();
-            renderBankAccountsList();
-            showToast('حساب اضافه شد');
-          };
+          openBankNameEditor(null, -1, null, name, defaultLabel);
         };
         addBtn.onclick = (e) => { e.stopPropagation(); doAdd(); };
         row.onclick = (e) => { e.preventDefault(); doAdd(); };
         row.appendChild(span);
         row.appendChild(addBtn);
-        box.appendChild(row);
+        banksWrap.appendChild(row);
       });
+    }
+    function openBankNameEditor(acc, idx, anchorRow, bankName, defaultLabel) {
+      // مات پشت باکس
+      let dim = document.getElementById('bankEditorDim');
+      if (!dim) {
+        dim = document.createElement('div');
+        dim.id = 'bankEditorDim';
+        dim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:470;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);';
+        document.body.appendChild(dim);
+      }
+      dim.style.display = 'block';
+      let editor = document.getElementById('bankAddEditor');
+      if (editor) editor.remove();
+      editor = document.createElement('div');
+      editor.id = 'bankAddEditor';
+      editor.style.cssText = 'position:fixed;left:16px;right:16px;top:30%;z-index:480;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
+      const isEdit = !!acc;
+      const initial = isEdit ? acc.label : (defaultLabel || '');
+      editor.innerHTML =
+        '<div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">' + (isEdit ? 'ویرایش نام حساب' : ('نام حساب — ' + escapeHtml(bankName || ''))) + '</div>' +
+        '<input id="bankAddNameInput" type="text" value="' + escapeHtml(initial) + '" placeholder="نام حساب را وارد کنید" ' +
+        'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:8px;">' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button type="button" id="bankAddOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">ثبت</button>' +
+        '<button type="button" id="bankAddCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
+        '</div>';
+      document.body.appendChild(editor);
+      const inp = editor.querySelector('#bankAddNameInput');
+      try { inp.focus(); inp.select(); } catch (e) {}
+      const closeEd = () => {
+        try { editor.remove(); } catch (e) {}
+        const d = document.getElementById('bankEditorDim');
+        if (d) d.style.display = 'none';
+      };
+      dim.onclick = closeEd;
+      editor.querySelector('#bankAddCancel').onclick = (e) => { e.stopPropagation(); closeEd(); };
+      editor.querySelector('#bankAddOk').onclick = (e) => {
+        e.stopPropagation();
+        const name = (inp.value || '').trim();
+        if (!name) { showToast('نام حساب را وارد کنید'); return; }
+        if (isEdit) {
+          const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
+          if (exists) { showToast('این نام قبلاً استفاده شده'); return; }
+          acc.label = name;
+        } else {
+          let label = name;
+          let base = label, n = 2;
+          while (selectedBankAccounts.some(a => accountLabel(a) === label)) {
+            label = base + ' ' + n;
+            n++;
+          }
+          selectedBankAccounts.push({
+            id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+            bank: bankName,
+            label: label
+          });
+        }
+        saveBankAccountsSelection();
+        closeEd();
+        renderBankAccountsList();
+        if (!isEdit) showToast('حساب اضافه شد');
+      };
     }
 
     /* —— درآمدهای ثابت —— */
@@ -11504,6 +11615,7 @@
           const item = recurringIncomes[i];
           if (item && !canEditRow(item)) { showToast(OWNERSHIP_LOCK_MSG); return; }
           askConfirm('این درآمد ثابت حذف شود؟', () => {
+            try { if (item) pushToTrash('recurring', item.name || 'درآمد ثابت', JSON.parse(JSON.stringify(item))); } catch (e) {}
             if (item && item.id && sharedAccountId) {
               item.deletedAt = Date.now();
               item.updatedAt = Date.now();
@@ -11586,7 +11698,7 @@
 
       const title = document.createElement('div');
       title.style.cssText = 'text-align:center;font-weight:bold;font-size:1rem;margin-bottom:12px;color:var(--text);font-family:Vazirmatn,B Nazanin,Tahoma,sans-serif;';
-      title.textContent = 'افزودن به کدام بخش؟';
+      title.textContent = 'نام کاربر را انتخاب کنید';
       box.appendChild(title);
 
       if (!secs || !secs.length) {
@@ -11677,9 +11789,10 @@
         const vv2 = window.visualViewport;
         const vh = vv2 ? vv2.height : window.innerHeight;
         const vTop = vv2 ? vv2.offsetTop : 0;
-        const margin = 10;
-        sheet.style.top = (vTop + margin) + 'px';
-        sheet.style.maxHeight = Math.max(160, vh - margin * 2) + 'px';
+        // پایین‌تر از لبه بالا تا زیر هدر شلوغ نباشد
+        const topPad = Math.max(56, Math.floor(vh * 0.12));
+        sheet.style.top = (vTop + topPad) + 'px';
+        sheet.style.maxHeight = Math.max(160, vh - topPad - 16) + 'px';
       }
       repositionSheet();
       const vv = window.visualViewport;
@@ -12826,7 +12939,7 @@
       };
       const save = () => {
         const v = (inp.value || '').trim();
-        if (!v) { showToast('نام بخش را وارد کنید'); return; }
+        if (!v) { showToast('نام کاربر را وارد کنید'); return; }
         const tab = currentTab;
         if (tab === 'income' || tab === 'expense') {
           const dup = (periodData[tab].sections || []).some(
@@ -13440,7 +13553,12 @@
       const led0 = ensureLedger();
       const sec0 = (led0.sections || []).find(s => s.id === secId);
       if (sec0 && !canEditRow(sec0)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-      askConfirm('این رابطه و همه ردیف‌هایش حذف شود؟', () => {
+      askConfirm('این بده‌بستان حذف شود؟', () => {
+        try {
+          const ledT = ensureLedger();
+          const secT = ledT.sections.find(s => s.id === secId);
+          if (secT) pushToTrash('ledger_section', secT.title || 'بده‌بستان', { section: JSON.parse(JSON.stringify(secT)) });
+        } catch (e) {}
         const led = ensureLedger();
         led.sections = led.sections.filter(s => s.id !== secId);
         renderLedgerTab();
@@ -13526,7 +13644,13 @@
       const sec0 = led0.sections.find(s => s.id === secId);
       const row0 = sec0 && sec0.rows && sec0.rows[idx];
       if (row0 && !canEditRow(row0)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-      askConfirm('این بخش حذف شود؟', () => {
+      askConfirm('این ردیف حذف شود؟', () => {
+        try {
+          const ledT = ensureLedger();
+          const secT = ledT.sections.find(s => s.id === secId);
+          const rowT = secT && secT.rows && secT.rows[idx];
+          if (rowT) pushToTrash('ledger_row', rowT.desc || 'ردیف بده‌بستان', { sectionId: secId, row: JSON.parse(JSON.stringify(rowT)) });
+        } catch (e) {}
         const led = ensureLedger();
         const sec = led.sections.find(s => s.id === secId);
         if (!sec) return;
