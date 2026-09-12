@@ -3312,8 +3312,10 @@
         <button class="menu-item" onclick="openSmsImportModal()">ثبت از پیامک بانکی</button>
         <button class="menu-item" onclick="askExport()">خروجی (اکسل / PDF)</button>
         <button class="menu-item" onclick="exportFullBackup()">پشتیبان‌گیری کامل</button>
+        <button class="menu-item" onclick="shareFullBackup()">اشتراک‌گذاری پشتیبان</button>
         <button class="menu-item" onclick="triggerImportBackup()">بازیابی از پشتیبان</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></span>حذف</div>
+        <button class="menu-item" onclick="openTrashModal()">سطل زباله</button>
         <button class="menu-item danger" onclick="askResetCurrentMonth()">پاک کردن این ماه</button>
         <button class="menu-item danger" onclick="askResetAllData()">پاک کردن همه آرشیو</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>درباره</div>
@@ -3534,10 +3536,22 @@
     <div class="modal-box family-modal-box" style="max-width:340px; text-align:right;">
       <div class="modal-msg" style="margin-bottom:12px;">حساب‌های من</div>
       <p class="family-help">
-        بانک‌هایی که حساب دارید را تیک بزنید تا در فهرست انتخاب حساب برای درآمد و مخارج نمایش داده شوند.
+        می‌توانید چند حساب از یک بانک داشته باشید و برای هر کدام نام دلخواه بگذارید (مثلاً ملی حقوق، ملی پس‌انداز).
       </p>
       <div id="bankAccountsList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;"></div>
       <button class="modal-btn no" style="width:100%;" type="button" onclick="closeBankAccountsModal()">بستن</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="trashModal">
+    <div class="modal-box family-modal-box" style="max-width:360px; text-align:right;">
+      <div class="modal-msg" style="margin-bottom:10px;">سطل زباله</div>
+      <p class="family-help" style="margin-bottom:8px;">آیتم‌های حذف‌شده اینجا نگه داشته می‌شوند. می‌توانید بازگردانی یا برای همیشه پاک کنید.</p>
+      <div id="trashList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-btn no" style="flex:1;" type="button" onclick="closeTrashModal()">بستن</button>
+        <button class="modal-btn yes" style="flex:1;background:#c0392b;" type="button" onclick="emptyTrashConfirm()">خالی کردن سطل</button>
+      </div>
     </div>
   </div>
 <div id="supabaseDebugDetail" style="word-break:break-all;opacity:.95;"></div>
@@ -7479,6 +7493,7 @@
         try {
           payload.selectedBankAccounts = selectedBankAccounts;
           payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+          payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
         } catch (e) {}
         const textOut = JSON.stringify(payload);
         const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json'; // پسوند عمداً ثابت و آخرین بخش نام است
@@ -7490,6 +7505,59 @@
       } catch (e) {
         console.error(e);
         showToast('پشتیبان‌گیری ناموفق بود');
+      }
+    }
+
+    async function shareFullBackup() {
+      closeSideMenu();
+      try {
+        persistCurrent();
+        saveArchive();
+        const payload = {
+          version: 1,
+          app: 'hesab-ketab',
+          exportedAt: new Date().toISOString(),
+          archive: archive,
+          plans: plans,
+          recurringIncomes: recurringIncomes,
+          currentYear: currentYear,
+          currentMonth: currentMonth,
+          familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
+          theme: document.documentElement.getAttribute('data-theme') || 'dark'
+        };
+        try {
+          let meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null');
+          if (meta) payload.meta = meta;
+        } catch (e) {}
+        try {
+          payload.selectedBankAccounts = selectedBankAccounts;
+          payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+          payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
+        } catch (e) {}
+        const textOut = JSON.stringify(payload);
+        const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
+        const blob = new Blob([textOut], { type: 'application/json;charset=utf-8' });
+        showToast('در حال آماده‌سازی اشتراک…');
+        // ترجیح Web Share API
+        try {
+          if (navigator.canShare && typeof File !== 'undefined') {
+            const file = new File([blob], name, { type: 'application/json' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: name });
+              showToast('پشتیبان به اشتراک گذاشته شد');
+              return;
+            }
+          }
+        } catch (e) {
+          if (e && e.name === 'AbortError') { showToast('لغو شد'); return; }
+        }
+        // fallback: همان مسیر ذخیره/اشتراک
+        const mode = await saveOrShareBlob(blob, name, 'application/json;charset=utf-8');
+        if (mode === 'abort') showToast('لغو شد');
+        else showToast('پشتیبان آماده شد');
+      } catch (e) {
+        console.error(e);
+        showToast('اشتراک‌گذاری ناموفق بود');
       }
     }
 
@@ -7705,8 +7773,16 @@
       }
       if (Array.isArray(data.selectedBankAccounts)) {
         try {
-          selectedBankAccounts = Array.from(new Set([].concat(selectedBankAccounts || [], data.selectedBankAccounts)));
+          selectedBankAccounts = [].concat(selectedBankAccounts || [], data.selectedBankAccounts);
+          normalizeSelectedBanks();
           saveBankAccountsSelection();
+        } catch (e) {}
+      }
+      if (Array.isArray(data.trash)) {
+        try {
+          loadTrash();
+          trashItems = [].concat(data.trash, trashItems || []);
+          saveTrash();
         } catch (e) {}
       }
       if (data.smsAccountBankMap && typeof data.smsAccountBankMap === 'object') {
@@ -8746,7 +8822,7 @@ async function exportPdf(){
     }
 
     function deletePlan(id) {
-      askConfirm('این قسط حذف شود؟', () => {
+      askConfirm('این قسط به سطل زباله منتقل شود؟', () => {
         const plan = (plans || []).find(p => p && p.id === id);
         if (plan && !canEditRow(plan)) { showToast('فقط ثبت‌کننده می‌تواند حذف کند'); return; }
         if (plan && plan.id && sharedAccountId) {
@@ -8762,12 +8838,17 @@ async function exportPdf(){
             });
           } catch (e) {}
         }
+        try {
+          const _p = (plans || []).find(p => p && p.id === id);
+          if (_p) pushToTrash('plan', _p.name || 'قسط', JSON.parse(JSON.stringify(_p)));
+        } catch (e) {}
         plans = (plans || []).filter(p => p.id !== id);
         syncPlansToExpenseAll();
         renderPlans();
         checkInstallReminders();
         scheduleSave();
         if (currentTab === 'expense') renderAll();
+        showToast('به سطل زباله منتقل شد');
       });
     }
 
@@ -9869,7 +9950,7 @@ async function exportPdf(){
       }
       const acc = extractAccountFromSms(text);
       if (acc && smsAccountBankMap[acc]) return smsAccountBankMap[acc];
-      if (selectedBankAccounts && selectedBankAccounts.length === 1) return selectedBankAccounts[0];
+      if (selectedBankAccounts && selectedBankAccounts.length === 1) return accountLabel(selectedBankAccounts[0]);
       return '';
     }
 
@@ -10027,12 +10108,18 @@ async function exportPdf(){
       if (!bankName) return '';
       const list = selectedBankAccounts || [];
       if (!list.length) return bankName;
-      // تطبیق دقیق یا جزئی
-      const exact = list.find(n => n === bankName);
-      if (exact) return exact;
+      const labels = selectedAccountLabels();
+      // تطبیق با برچسب سفارشی یا نام بانک
+      const exactLabel = labels.find(n => n === bankName);
+      if (exactLabel) return exactLabel;
       const short = bankShortLabel(bankName);
-      const soft = list.find(n => bankShortLabel(n) === short || n.indexOf(short) >= 0 || short.indexOf(bankShortLabel(n)) >= 0);
-      return soft || bankName;
+      const byBank = list.find(a => {
+        const b = accountBank(a);
+        const l = accountLabel(a);
+        return b === bankName || l === bankName || bankShortLabel(b) === short || bankShortLabel(l) === short
+          || (b && b.indexOf(short) >= 0) || (short && short.indexOf(bankShortLabel(b)) >= 0);
+      });
+      return byBank ? accountLabel(byBank) : bankName;
     }
 
     function ensureSmsSection(tab, preferredTitle) {
@@ -10158,7 +10245,7 @@ async function exportPdf(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          const opts = [''].concat(selectedBankAccounts && selectedBankAccounts.length ? selectedBankAccounts.slice() : ALL_IRAN_BANKS.slice(0, 12));
+          const opts = [''].concat(selectedAccountLabels().length ? selectedAccountLabels() : ALL_IRAN_BANKS.slice(0, 12).map(b => bankShortLabel(b) || b));
           if (parsed.bank && opts.indexOf(parsed.bank) < 0) opts.unshift(parsed.bank);
           opts.forEach(n => {
             const o = document.createElement('option');
@@ -10273,9 +10360,10 @@ async function exportPdf(){
           saveSmsAccountBankMap();
         }
       }
-      if (row.account && selectedBankAccounts && selectedBankAccounts.indexOf(row.account) < 0) {
-        if (ALL_IRAN_BANKS.indexOf(row.account) >= 0) {
-          selectedBankAccounts.push(row.account);
+      if (row.account && selectedBankAccounts) {
+        const labels = selectedAccountLabels();
+        if (labels.indexOf(row.account) < 0 && ALL_IRAN_BANKS.indexOf(row.account) >= 0) {
+          selectedBankAccounts.push({ id: 'ba_auto_' + Date.now().toString(36), bank: row.account, label: bankShortLabel(row.account) || row.account });
           try { saveBankAccountsSelection(); } catch (e) {}
         }
       }
@@ -10377,8 +10465,44 @@ async function exportPdf(){
       s = s.replace(/\s*ایران\s*/g, ' ').replace(/\s+/g, ' ').trim();
       return s;
     }
-    let selectedBankAccounts = [];
+    let selectedBankAccounts = []; // آرایه رشته یا آبجکت {id,bank,label}
     let smsAccountBankMap = {};
+    let trashItems = []; // {id, type, title, data, deletedAt}
+
+    function accountLabel(acc) {
+      if (!acc) return '';
+      if (typeof acc === 'string') return acc;
+      return (acc.label || acc.bank || '').trim();
+    }
+    function accountBank(acc) {
+      if (!acc) return '';
+      if (typeof acc === 'string') return acc;
+      return (acc.bank || acc.label || '').trim();
+    }
+    function normalizeSelectedBanks() {
+      // مهاجرت: رشته‌های قدیمی → آبجکت؛ اجازه چند حساب از یک بانک
+      const out = [];
+      const seenIds = new Set();
+      (selectedBankAccounts || []).forEach((item, idx) => {
+        if (!item) return;
+        if (typeof item === 'string') {
+          const label = migrateBankName(item);
+          out.push({ id: 'ba_' + idx + '_' + Date.now().toString(36), bank: label, label: bankShortLabel(label) || label });
+        } else if (typeof item === 'object') {
+          const id = item.id || ('ba_' + idx + '_' + Math.random().toString(36).slice(2, 8));
+          if (seenIds.has(id)) return;
+          seenIds.add(id);
+          const bank = migrateBankName(item.bank || item.label || '');
+          const label = (item.label || bankShortLabel(bank) || bank).trim();
+          if (!label) return;
+          out.push({ id: id, bank: bank, label: label });
+        }
+      });
+      selectedBankAccounts = out;
+    }
+    function selectedAccountLabels() {
+      return (selectedBankAccounts || []).map(accountLabel).filter(Boolean);
+    }
     function extractAccountFromSms(text) {
       const t = normalizeSmsText(text);
       const m = t.match(/حساب\s*[:：]?\s*([0-9]{3,})/i) || t.match(/کارت\s*[:：]?\s*([0-9]{4,})/i);
@@ -10420,12 +10544,176 @@ async function exportPdf(){
         const raw = localStorage.getItem(STORAGE_KEY + '_bankAccounts');
         if (raw) selectedBankAccounts = JSON.parse(raw) || [];
       } catch (e) { selectedBankAccounts = []; }
-      // مهاجرت نام‌های قدیمی (بدون کلمه ایران)
-      selectedBankAccounts = selectedBankAccounts.map(migrateBankName);
-      selectedBankAccounts = Array.from(new Set(selectedBankAccounts));
+      normalizeSelectedBanks();
     }
     function saveBankAccountsSelection() {
       try { localStorage.setItem(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts)); } catch (e) {}
+    }
+    function loadTrash() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY + '_trash');
+        trashItems = raw ? (JSON.parse(raw) || []) : [];
+        if (!Array.isArray(trashItems)) trashItems = [];
+      } catch (e) { trashItems = []; }
+    }
+    function saveTrash() {
+      try { localStorage.setItem(STORAGE_KEY + '_trash', JSON.stringify(trashItems)); } catch (e) {}
+    }
+    function pushToTrash(type, title, data) {
+      loadTrash();
+      trashItems.unshift({
+        id: 'tr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+        type: type,
+        title: title || type,
+        data: data,
+        deletedAt: Date.now()
+      });
+      // سقف ۵۰۰ آیتم
+      if (trashItems.length > 500) trashItems = trashItems.slice(0, 500);
+      saveTrash();
+    }
+    function openTrashModal() {
+      try { closeSideMenu(); } catch (e) {}
+      loadTrash();
+      renderTrashList();
+      const m = document.getElementById('trashModal');
+      if (m) m.classList.add('open');
+    }
+    function closeTrashModal() {
+      const m = document.getElementById('trashModal');
+      if (m) m.classList.remove('open');
+      try { openSideMenu(); } catch (e) {}
+    }
+    function renderTrashList() {
+      const box = document.getElementById('trashList');
+      if (!box) return;
+      box.innerHTML = '';
+      if (!trashItems.length) {
+        box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.9rem;">سطل زباله خالی است</div>';
+        return;
+      }
+      const typeFa = { row: 'ردیف', section: 'بخش', plan: 'قسط', ledger_row: 'بده‌بستان', ledger_section: 'بخش بده‌بستان', recurring: 'درآمد ثابت' };
+      trashItems.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:10px 6px;border-bottom:1px solid var(--border);font-size:0.88rem;';
+        const when = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('fa-IR') : '';
+        row.innerHTML =
+          '<div style="font-weight:700;margin-bottom:4px;">' + escapeHtml(item.title || '—') + '</div>' +
+          '<div style="color:var(--muted);font-size:0.78rem;margin-bottom:8px;">' +
+          escapeHtml(typeFa[item.type] || item.type) + (when ? ' · ' + when : '') + '</div>' +
+          '<div style="display:flex;gap:6px;">' +
+          '<button type="button" data-act="restore" data-idx="' + idx + '" style="flex:1;padding:7px;border:none;border-radius:8px;background:#0a84ff;color:#fff;font-family:inherit;font-weight:700;font-size:0.82rem;">بازگردانی</button>' +
+          '<button type="button" data-act="purge" data-idx="' + idx + '" style="flex:1;padding:7px;border:none;border-radius:8px;background:#c0392b;color:#fff;font-family:inherit;font-weight:700;font-size:0.82rem;">حذف دائم</button>' +
+          '</div>';
+        box.appendChild(row);
+      });
+      box.querySelectorAll('button[data-act]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-idx'), 10);
+          const act = btn.getAttribute('data-act');
+          if (act === 'restore') restoreTrashItem(idx);
+          else if (act === 'purge') purgeTrashItem(idx);
+        });
+      });
+    }
+    function purgeTrashItem(idx) {
+      askConfirm('این مورد برای همیشه حذف شود؟', () => {
+        trashItems.splice(idx, 1);
+        saveTrash();
+        renderTrashList();
+        showToast('حذف دائم شد');
+      });
+    }
+    function emptyTrashConfirm() {
+      if (!trashItems.length) { showToast('سطل خالی است'); return; }
+      askConfirm('همه محتویات سطل زباله برای همیشه حذف شود؟', () => {
+        trashItems = [];
+        saveTrash();
+        renderTrashList();
+        showToast('سطل زباله خالی شد');
+      });
+    }
+    function restoreTrashItem(idx) {
+      const item = trashItems[idx];
+      if (!item || !item.data) return;
+      try {
+        if (item.type === 'row') {
+          const d = item.data;
+          const tab = d.tab || 'expense';
+          const pk = d.periodKey || periodKey(currentYear, currentMonth);
+          // اطمینان از بار بودن دوره
+          if (pk === periodKey(currentYear, currentMonth)) {
+            let sec = (periodData[tab].sections || []).find(s => s.id === d.sectionId);
+            if (!sec && d.sectionTitle) {
+              sec = (periodData[tab].sections || []).find(s => (s.title || '') === d.sectionTitle);
+            }
+            if (sec) {
+              const row = d.row || {};
+              row.deletedAt = null;
+              sec.rows = sec.rows || [];
+              sec.rows.push(row);
+            } else {
+              showToast('بخش مربوطه پیدا نشد');
+              return;
+            }
+          } else {
+            // بازگردانی به آرشیو
+            if (!archive[pk]) {
+              showToast('ماه مربوطه در آرشیو نیست');
+              return;
+            }
+            const pd = archive[pk];
+            let sec = (pd[tab] && pd[tab].sections || []).find(s => s.id === d.sectionId);
+            if (!sec && d.sectionTitle) sec = (pd[tab].sections || []).find(s => (s.title || '') === d.sectionTitle);
+            if (sec) {
+              const row = d.row || {};
+              row.deletedAt = null;
+              sec.rows = sec.rows || [];
+              sec.rows.push(row);
+            } else {
+              showToast('بخش مربوطه پیدا نشد');
+              return;
+            }
+          }
+        } else if (item.type === 'section') {
+          const d = item.data;
+          const tab = d.tab || currentTab;
+          const sec = d.section;
+          if (sec) {
+            sec.deletedAt = null;
+            periodData[tab].sections = periodData[tab].sections || [];
+            periodData[tab].sections.push(sec);
+          }
+        } else if (item.type === 'plan') {
+          const plan = item.data;
+          if (plan) {
+            plan.deletedAt = null;
+            plans = plans || [];
+            plans.push(plan);
+            try { syncPlansToExpenseAll(); } catch (e) {}
+          }
+        } else if (item.type === 'recurring') {
+          const r = item.data;
+          if (r) {
+            recurringIncomes = recurringIncomes || [];
+            recurringIncomes.push(r);
+            try { saveRecurring(); } catch (e) {}
+          }
+        } else if (item.type === 'ledger_row' || item.type === 'ledger_section') {
+          showToast('بازگردانی بده‌بستان به‌صورت دستی انجام شود');
+        }
+        trashItems.splice(idx, 1);
+        saveTrash();
+        persistCurrent();
+        saveArchive();
+        renderAll();
+        try { renderPlans(); } catch (e) {}
+        renderTrashList();
+        showToast('بازگردانی شد');
+      } catch (e) {
+        console.error(e);
+        showToast('بازگردانی ناموفق بود');
+      }
     }
     function openBankAccountsModal(fromMenu) {
       _bankModalFromMenu = fromMenu !== false;
@@ -10441,7 +10729,6 @@ async function exportPdf(){
           return;
         }
       } catch (e) {}
-      // بعد از مجوزها، انتخاب حساب‌ها را نشان بده
       setTimeout(() => {
         try { openBankAccountsModal(false); } catch (e) {}
       }, 600);
@@ -10449,11 +10736,8 @@ async function exportPdf(){
     let _bankModalFromMenu = true;
     function closeBankAccountsModal() {
       document.getElementById('bankAccountsModal').classList.remove('open');
-      // فهرست حساب‌های موجود در همه ردیف‌های صفحه را به‌روز کن
       try { renderAll(); } catch (e) {}
-      try {
-        localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1');
-      } catch (e) {}
+      try { localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1'); } catch (e) {}
       if (_bankModalFromMenu) {
         try { openSideMenu(); } catch (e) {}
       }
@@ -10462,31 +10746,97 @@ async function exportPdf(){
     function renderBankAccountsList() {
       const box = document.getElementById('bankAccountsList');
       if (!box) return;
+      normalizeSelectedBanks();
       box.innerHTML = '';
+
+      // لیست حساب‌های انتخاب‌شده با نام قابل ویرایش
+      const selectedWrap = document.createElement('div');
+      selectedWrap.style.cssText = 'margin-bottom:12px;';
+      if (!selectedBankAccounts.length) {
+        selectedWrap.innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85rem;">هنوز حسابی اضافه نشده</div>';
+      } else {
+        selectedBankAccounts.forEach((acc, idx) => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--border);';
+          const info = document.createElement('div');
+          info.style.cssText = 'flex:1;min-width:0;';
+          info.innerHTML = '<div style="font-weight:700;font-size:0.9rem;">' + escapeHtml(acc.label) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--muted);">' + escapeHtml(acc.bank) + '</div>';
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.textContent = 'نام';
+          editBtn.style.cssText = 'padding:6px 10px;border:none;border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;font-size:0.78rem;';
+          editBtn.onclick = (e) => {
+            e.stopPropagation();
+            askTextInput('نام نمایشی حساب', acc.label, (v) => {
+              const name = (v || '').trim();
+              if (!name) return;
+              // یکتا بودن برچسب
+              const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
+              if (exists) { showToast('این نام قبلاً استفاده شده'); return; }
+              acc.label = name;
+              saveBankAccountsSelection();
+              renderBankAccountsList();
+            });
+          };
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.textContent = '×';
+          delBtn.style.cssText = 'padding:6px 12px;border:none;border-radius:8px;background:#c0392b;color:#fff;font-family:inherit;font-weight:800;font-size:1rem;line-height:1;';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            selectedBankAccounts.splice(idx, 1);
+            saveBankAccountsSelection();
+            renderBankAccountsList();
+          };
+          row.appendChild(info);
+          row.appendChild(editBtn);
+          row.appendChild(delBtn);
+          selectedWrap.appendChild(row);
+        });
+      }
+      box.appendChild(selectedWrap);
+
+      // افزودن حساب جدید
+      const addTitle = document.createElement('div');
+      addTitle.style.cssText = 'font-weight:800;font-size:0.88rem;margin:10px 0 6px;color:var(--text);';
+      addTitle.textContent = 'افزودن حساب بانکی';
+      box.appendChild(addTitle);
+
       ALL_IRAN_BANKS.forEach(name => {
         const row = document.createElement('div');
-        row.style.cssText = "display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.92rem;color:var(--text);font-family:Vazirmatn,B Nazanin,Tahoma,sans-serif;font-weight:600;-webkit-tap-highlight-color:transparent;";
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = selectedBankAccounts.includes(name);
-        cb.tabIndex = -1;
-        cb.style.cssText = 'width:18px;height:18px;flex-shrink:0;accent-color:var(--accent);pointer-events:none;';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.9rem;color:var(--text);font-weight:600;';
         const span = document.createElement('span');
         span.textContent = name;
         span.style.flex = '1';
-        row.appendChild(cb);
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.textContent = '+ افزودن';
+        addBtn.style.cssText = 'padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;font-size:0.78rem;';
+        const doAdd = () => {
+          const defaultLabel = bankShortLabel(name) || name;
+          askTextInput('نام این حساب (مثلاً ' + defaultLabel + ' حقوق)', defaultLabel, (v) => {
+            let label = (v || '').trim() || defaultLabel;
+            // اگر تکراری بود عدد اضافه کن
+            let base = label, n = 2;
+            while (selectedBankAccounts.some(a => accountLabel(a) === label)) {
+              label = base + ' ' + n;
+              n++;
+            }
+            selectedBankAccounts.push({
+              id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+              bank: name,
+              label: label
+            });
+            saveBankAccountsSelection();
+            renderBankAccountsList();
+            showToast('حساب اضافه شد');
+          });
+        };
+        addBtn.onclick = (e) => { e.stopPropagation(); doAdd(); };
+        row.onclick = (e) => { e.preventDefault(); doAdd(); };
         row.appendChild(span);
-        // فقط تیک عوض شود؛ فوکوس/اسکرول ناخواسته مرورگر رخ ندهد و منو ثابت بماند
-        row.addEventListener('click', (e) => {
-          e.preventDefault();
-          cb.checked = !cb.checked;
-          if (cb.checked) {
-            if (!selectedBankAccounts.includes(name)) selectedBankAccounts.push(name);
-          } else {
-            selectedBankAccounts = selectedBankAccounts.filter(n => n !== name);
-          }
-          saveBankAccountsSelection();
-        });
+        row.appendChild(addBtn);
         box.appendChild(row);
       });
     }
@@ -11165,7 +11515,7 @@ async function exportPdf(){
       secSelRec.style.marginBottom = '7px';
       field('بخش مقصد', secSelRec);
 
-      const accOptionsRec = [{ value: '', label: 'نام حساب را انتخاب کنید' }].concat(selectedBankAccounts.map(n => ({ value: n, label: bankShortLabel(n) })));
+      const accOptionsRec = [{ value: '', label: 'نام حساب را انتخاب کنید' }].concat(selectedAccountLabels().map(n => ({ value: n, label: n })));
       const accSelRec = createDarkSelect({
         options: accOptionsRec,
         value: existing.account || ''
@@ -11963,7 +12313,7 @@ async function exportPdf(){
 
       const tdAcc = document.createElement('td');
       tdAcc.className = 'col-acc';
-      const accOptions = [{ value: '', label: '' }].concat(selectedBankAccounts.map(n => ({ value: n, label: bankShortLabel(n) })));
+      const accOptions = [{ value: '', label: '' }].concat(selectedAccountLabels().map(n => ({ value: n, label: n })));
       const accSel = createDarkSelect({
         options: accOptions,
         value: row.account || '',
@@ -12065,10 +12415,21 @@ async function exportPdf(){
       const sec0 = findSection(secId);
       const row0 = sec0 && sec0.rows && sec0.rows[idx];
       if (row0 && !canEditRow(row0)) { showToast('فقط ثبت‌کننده می‌تواند حذف کند'); return; }
-      askConfirm('این ردیف حذف شود؟', () => {
+      askConfirm('این ردیف به سطل زباله منتقل شود؟', () => {
         const sec = findSection(secId);
         if (!sec) return;
         const row = sec.rows[idx];
+        if (row) {
+          try {
+            pushToTrash('row', (row.desc || sec.title || 'ردیف') + (row.amount ? ' · ' + formatNum(row.amount) : ''), {
+              tab: currentTab,
+              periodKey: periodKey(currentYear, currentMonth),
+              sectionId: sec.id || secId,
+              sectionTitle: sec.title || '',
+              row: JSON.parse(JSON.stringify(row))
+            });
+          } catch (e) {}
+        }
         if (row && row.id && sharedAccountId) {
           row.deletedAt = Date.now();
           row.updatedAt = Date.now();
@@ -12093,6 +12454,7 @@ async function exportPdf(){
         }
         renderAll();
         scheduleSave();
+        showToast('به سطل زباله منتقل شد');
       });
     }
     function nextNewSectionTitle() {
@@ -12303,10 +12665,21 @@ async function exportPdf(){
       }, 60);
     }
     function askDeleteSection(secId) {
-      askConfirm('این بخش حذف شود؟', () => {
+      askConfirm('این بخش به سطل زباله منتقل شود؟', () => {
+        const sec = (periodData[currentTab].sections || []).find(s => s.id === secId);
+        if (sec) {
+          try {
+            pushToTrash('section', sec.title || 'بخش', {
+              tab: currentTab,
+              periodKey: periodKey(currentYear, currentMonth),
+              section: JSON.parse(JSON.stringify(sec))
+            });
+          } catch (e) {}
+        }
         periodData[currentTab].sections = periodData[currentTab].sections.filter(s => s.id !== secId);
         renderAll();
         scheduleSave();
+        showToast('به سطل زباله منتقل شد');
       });
     }
     function cycleColor(secId) {
@@ -13595,7 +13968,7 @@ async function exportPdf(){
       if (!wrap) return;
       wrap.innerHTML = '';
       const opts = [{ value: '', label: 'همه حساب‌ها' }].concat(
-        (selectedBankAccounts || []).map(n => ({ value: n, label: bankShortLabel(n) || n }))
+        selectedAccountLabels().map(n => ({ value: n, label: n }))
       );
       const sel = createDarkSelect({
         options: opts,
@@ -13755,6 +14128,7 @@ async function exportPdf(){
 
 
     loadBankAccounts();
+    try { loadTrash(); } catch (e) {}
     loadSmsAccountBankMap();
     loadRecurring();
     loadArchive();
