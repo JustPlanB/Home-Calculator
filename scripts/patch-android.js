@@ -309,7 +309,7 @@ public class NativeFileExportPlugin extends Plugin {
         final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
         final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        final int viewW = 1800;
+        final int viewW = 2400;
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2400);
         root.addView(host,hp);
 
