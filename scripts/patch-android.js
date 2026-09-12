@@ -62,12 +62,28 @@ public class BankSmsReceiver extends BroadcastReceiver {
 
   static boolean looksLikeBankTransaction(String s, String sender){
     String t=normFa(s), sd=normFa(sender);
-    boolean tx=t.contains("واریز")||t.contains("برداشت")||t.contains("کسر")||t.contains("خرید")||t.contains("انتقال")||t.contains("پرداخت")||t.contains("تراکنش")||t.contains("وجه")||t.contains("اعلامیه")||t.contains("رمز")||t.contains("deposit")||t.contains("withdraw")||t.contains("transfer")||t.contains("purchase")||t.contains("payment");
-    boolean bankWord=t.contains("بانک")||t.contains("موجودی")||t.contains("مانده")||t.contains("کارت")||t.contains("حساب")||t.contains("atm")||t.contains("pos");
-    boolean bankName=t.contains("ملی")||t.contains("ملت")||t.contains("سپه")||t.contains("صادرات")||t.contains("تجارت")||t.contains("کشاورزی")||t.contains("مسکن")||t.contains("رفاه")||t.contains("پارسیان")||t.contains("پاسارگاد")||t.contains("سامان")||t.contains("سینا")||t.contains("شهر")||t.contains("انصار")||t.contains("کارافرین")||t.contains("گردشگری")||t.contains("پستبانک")||t.contains("مهر")||t.contains("رسالت")||t.contains("mellat")||t.contains("melli")||t.contains("sepah")||t.contains("saderat")||t.contains("tejarat")||t.contains("keshavarzi")||t.contains("maskan")||t.contains("refah")||t.contains("parsian")||t.contains("pasargad")||t.contains("saman");
-    boolean senderBank=sd.contains("بانک")||sd.contains("ملی")||sd.contains("ملت")||sd.contains("سپه")||sd.contains("صادرات")||sd.contains("تجارت")||sd.contains("کشاورزی")||sd.contains("مسکن")||sd.contains("رفاه")||sd.contains("پارسیان")||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
-    boolean money=t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
-    return money && (tx || bankWord || bankName || senderBank);
+    // فقط پیامک‌های واقعی بانکی — تبلیغات رد شوند
+    boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
+        || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
+    boolean weakTx = t.contains("خرید") || t.contains("پرداخت") || t.contains("انتقال") || t.contains("تراکنش");
+    boolean hasBalance = t.contains("موجودی") || t.contains("مانده") || t.contains("موجودي");
+    boolean bankHint = t.contains("بانک") || t.contains("کارت") || t.contains("حساب") || t.contains("atm") || t.contains("pos");
+    boolean bankName = t.contains("ملی")||t.contains("ملت")||t.contains("سپه")||t.contains("صادرات")||t.contains("تجارت")
+        ||t.contains("کشاورزی")||t.contains("مسکن")||t.contains("رفاه")||t.contains("پارسیان")||t.contains("پاسارگاد")
+        ||t.contains("سامان")||t.contains("سینا")||t.contains("شهر")||t.contains("انصار")||t.contains("کارافرین")
+        ||t.contains("گردشگری")||t.contains("پستبانک")||t.contains("مهر")||t.contains("رسالت")
+        ||t.contains("mellat")||t.contains("melli")||t.contains("sepah")||t.contains("saderat")||t.contains("tejarat")
+        ||t.contains("keshavarzi")||t.contains("maskan")||t.contains("refah")||t.contains("parsian")||t.contains("pasargad")||t.contains("saman");
+    boolean senderBank = sd.contains("بانک")||sd.contains("ملی")||sd.contains("ملت")||sd.contains("سپه")||sd.contains("صادرات")
+        ||sd.contains("تجارت")||sd.contains("کشاورزی")||sd.contains("مسکن")||sd.contains("رفاه")||sd.contains("پارسیان")
+        ||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
+    boolean money = t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
+    if(!money) return false;
+    // سخت‌گیرانه‌تر: تبلیغات که فقط یک کلمه مشترک دارند رد می‌شوند
+    if(strongTx && (hasBalance || bankHint || bankName || senderBank)) return true;
+    if(weakTx && hasBalance) return true;
+    if(senderBank && (strongTx || weakTx || hasBalance)) return true;
+    return false;
   }
 
   static void postNotification(Context c,String text){
