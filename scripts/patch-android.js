@@ -62,7 +62,16 @@ public class BankSmsReceiver extends BroadcastReceiver {
 
   static boolean looksLikeBankTransaction(String s, String sender){
     String t=normFa(s), sd=normFa(sender);
-    // فقط پیامک‌های واقعی بانکی — تبلیغات رد شوند
+    // رد فوری پیام‌های شارژ، تبلیغاتی و غیرتراکنشی
+    if(t.contains("شارژ") || t.contains("شگفت انگیز") || t.contains("شگفت\u200cانگیز")
+        || t.contains("بسته اینترنت") || t.contains("بسته اينترنت") || t.contains("بسته ")
+        || t.contains("هدیه") || t.contains("جایزه") || t.contains("قرعه") || t.contains("تخفیف")
+        || t.contains("کد تخفیف") || t.contains("فروشگاه") || t.contains("اپلیکیشن")
+        || t.contains("دانلود") || t.contains("لینک") || t.contains("کلیک")
+        || t.contains("مشترک گرامی") || t.contains("مشترک عزيز") || t.contains("مشترک عزیز")) {
+      return false;
+    }
+    // فقط پیامک‌های واقعی بانکی
     boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
         || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
     boolean weakTx = t.contains("خرید") || t.contains("پرداخت") || t.contains("انتقال") || t.contains("تراکنش");
@@ -79,10 +88,10 @@ public class BankSmsReceiver extends BroadcastReceiver {
         ||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
     boolean money = t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
     if(!money) return false;
-    // سخت‌گیرانه‌تر: تبلیغات که فقط یک کلمه مشترک دارند رد می‌شوند
+    // سخت‌گیرانه‌تر
     if(strongTx && (hasBalance || bankHint || bankName || senderBank)) return true;
-    if(weakTx && hasBalance) return true;
-    if(senderBank && (strongTx || weakTx || hasBalance)) return true;
+    if(weakTx && hasBalance && (bankHint || bankName || senderBank)) return true;
+    if(senderBank && strongTx) return true;
     return false;
   }
 
@@ -236,8 +245,8 @@ public class NativeFileExportPlugin extends Plugin {
         final android.widget.FrameLayout host=new android.widget.FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
         // عرض بزرگ‌تر برای رندر بهتر جداول RTL
-        final int viewW = 1200;
-        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 1800);
+        final int viewW = 1600;
+        android.widget.FrameLayout.LayoutParams hp=new android.widget.FrameLayout.LayoutParams(viewW, 2200);
         hp.leftMargin=0; hp.topMargin=0;
         root.addView(host,hp);
 
@@ -254,7 +263,7 @@ public class NativeFileExportPlugin extends Plugin {
         web.getSettings().setDisplayZoomControls(false);
         web.getSettings().setSupportZoom(false);
         web.setInitialScale(100);
-        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 1800));
+        host.addView(web,new android.widget.FrameLayout.LayoutParams(viewW, 2200));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
@@ -350,8 +359,9 @@ public class NativeFileExportPlugin extends Plugin {
       final float scale = usableW / (float)viewW;
       final int pageContentH = Math.max(1, (int)Math.floor((pageH - 2*margin) / scale));
       int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
-      // جلوگیری از صفحه سفید اضافی در انتها
-      if(pageCount > 1 && (viewH % pageContentH) < (pageContentH * 0.08)) {
+      // جلوگیری از صفحه سفید اضافی در انتها (آستانه‌ی بالاتر)
+      int remainder = viewH % pageContentH;
+      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.18))) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
