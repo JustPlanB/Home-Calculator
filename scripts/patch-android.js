@@ -309,7 +309,7 @@ public class NativeFileExportPlugin extends Plugin {
         final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
         final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        final int viewW = 1200;
+        final int viewW = 1400;
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2000);
         root.addView(host,hp);
 
@@ -406,7 +406,7 @@ public class NativeFileExportPlugin extends Plugin {
       final int pageContentH = Math.max(1, (int)Math.floor((pageH - 2*margin) / scale));
       int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
       int remainder = viewH % pageContentH;
-      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.22))) {
+      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.35))) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
