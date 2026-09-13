@@ -365,7 +365,7 @@ public class NativeFileExportPlugin extends Plugin {
                         }
                         measured = (int)(measured * 1.08) + 48;
                         started=true;
-                        createPdf(view,filename,call,host,root,measured, viewW);
+                        createPdfByPages(view,filename,call,host,root, viewW);
                       }
                     }
                   );
@@ -389,7 +389,7 @@ public class NativeFileExportPlugin extends Plugin {
                     }
                     measured = (int)(measured * 1.08) + 48;
                     started=true;
-                    createPdf(view,filename,call,host,root,measured, viewW);
+                    createPdfByPages(view,filename,call,host,root, viewW);
                   }catch(Exception e2){
                     started=true;
                     call.reject("pdf_measure_failed",e2);
@@ -408,108 +408,185 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   private void createPdf(WebView web,String filename,PluginCall call,FrameLayout host,FrameLayout root,int contentH, int viewW){
-    android.graphics.pdf.PdfDocument doc=null;
-    Uri uri=null;
-    android.graphics.Bitmap fullBmp=null;
-    try{
-      // viewW باید عرض منطقی HTML باشد (794 CSS px ≈ عرض A4 در 96dpi)
-      final int layoutW = viewW > 0 ? viewW : 794;
-      final int scaleCap = 4; // ~384 DPI مؤثر
-      final int viewH = Math.max(contentH, 200);
+    // سازگاری با فراخوانی قدیمی — به مسیر صفحه به صفحه هدایت می‌شود
+    createPdfByPages(web, filename, call, host, root, viewW);
+  }
 
-      web.measure(
-        android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
-        android.view.View.MeasureSpec.makeMeasureSpec(viewH, android.view.View.MeasureSpec.EXACTLY));
-      web.layout(0, 0, layoutW, viewH);
-      host.updateViewLayout(web, new FrameLayout.LayoutParams(layoutW, viewH));
-      host.measure(
-        android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
-        android.view.View.MeasureSpec.makeMeasureSpec(viewH, android.view.View.MeasureSpec.EXACTLY));
-      host.layout(0, 0, layoutW, viewH);
-      try { Thread.sleep(900); } catch (InterruptedException ignored) {}
-
-      final int bmpW = layoutW * scaleCap;
-      final int bmpH = viewH * scaleCap;
-      fullBmp = android.graphics.Bitmap.createBitmap(bmpW, bmpH, android.graphics.Bitmap.Config.ARGB_8888);
-      android.graphics.Canvas bmpCanvas = new android.graphics.Canvas(fullBmp);
-      bmpCanvas.drawColor(android.graphics.Color.WHITE);
-      bmpCanvas.scale(scaleCap, scaleCap);
-      web.draw(bmpCanvas);
-
-      // بررسی سفید نبودن
-      try {
-        int step = Math.max(8, Math.min(bmpW, bmpH) / 40);
-        int dark = 0, n = 0;
-        for (int yy = 0; yy < bmpH; yy += step) {
-          for (int xx = 0; xx < bmpW; xx += step) {
-            int p = fullBmp.getPixel(Math.min(xx, bmpW-1), Math.min(yy, bmpH-1));
-            int r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
-            n++;
-            if (r < 250 || g < 250 || b < 250) dark++;
+  /** رندر هر .pdf-page جداگانه — JS تنها مرجع مرز صفحات است */
+  private void createPdfByPages(final WebView web, final String filename, final PluginCall call,
+                                final FrameLayout host, final FrameLayout root, final int viewW){
+    web.evaluateJavascript(
+      "(function(){var ps=document.querySelectorAll('.pdf-page');return ps?ps.length:0;})()",
+      new android.webkit.ValueCallback<String>(){
+        @Override public void onReceiveValue(String value){
+          int pageCount = 0;
+          try {
+            if (value != null && !value.equals("null")) pageCount = (int)Double.parseDouble(value);
+          } catch (Exception ignored) {}
+          if (pageCount < 1) {
+            // fallback: یک صفحه از کل body
+            pageCount = 1;
           }
+          final int total = pageCount;
+          final android.graphics.pdf.PdfDocument doc = new android.graphics.pdf.PdfDocument();
+          final int[] index = new int[]{0};
+          final int scaleCap = 4; // کیفیت فعلی را حفظ کن
+          final int layoutW = viewW > 0 ? viewW : 794;
+
+          final Runnable[] step = new Runnable[1];
+          step[0] = new Runnable(){
+            @Override public void run(){
+              if (index[0] >= total) {
+                // تمام — ذخیره
+                Uri uri = null;
+                try {
+                  java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                  doc.writeTo(bos);
+                  doc.close();
+                  byte[] pdfBytes = bos.toByteArray();
+                  if (pdfBytes == null || pdfBytes.length < 100) {
+                    call.reject("pdf_empty");
+                    cleanupWeb(web, host, root);
+                    return;
+                  }
+                  uri = saveToDownloads(filename, "application/pdf", pdfBytes);
+                  call.resolve(new JSObject().put("uri", uri.toString()).put("filename", filename).put("ok", true).put("pages", total));
+                } catch (Exception e) {
+                  try { doc.close(); } catch (Exception ignored) {}
+                  call.reject("pdf_export_failed", e);
+                } finally {
+                  cleanupWeb(web, host, root);
+                }
+                return;
+              }
+
+              final int pageIndex = index[0];
+              // فقط این صفحه را نمایش بده
+              String js =
+                "(function(){" +
+                "var ps=document.querySelectorAll('.pdf-page');" +
+                "for(var i=0;i<ps.length;i++){ps[i].style.display=(i===" + pageIndex + "?'block':'none');}" +
+                "var p=ps[" + pageIndex + "];" +
+                "if(!p)return JSON.stringify({h:0,empty:true});" +
+                "var h=Math.max(p.scrollHeight,p.offsetHeight,1);" +
+                "var text=(p.innerText||'').replace(/\\s+/g,'');" +
+                "return JSON.stringify({h:h,empty:text.length<3});" +
+                "})()";
+
+              web.evaluateJavascript(js, new android.webkit.ValueCallback<String>(){
+                @Override public void onReceiveValue(String jsonRaw){
+                  try {
+                    String raw = jsonRaw;
+                    if (raw != null && raw.length() >= 2 && raw.charAt(0) == '\"') {
+                      // evaluateJavascript returns JSON-quoted string
+                      raw = new org.json.JSONArray("[" + raw + "]").getString(0);
+                    }
+                    org.json.JSONObject info = new org.json.JSONObject(raw != null ? raw : "{\"h\":400,\"empty\":false}");
+                    boolean empty = info.optBoolean("empty", false);
+                    int cssH = Math.max(1, info.optInt("h", 400));
+                    if (empty) {
+                      // صفحه خالی را رد کن
+                      index[0]++;
+                      new android.os.Handler(android.os.Looper.getMainLooper()).post(step[0]);
+                      return;
+                    }
+
+                    // layout WebView به اندازه همین صفحه
+                    final int layoutH = cssH + 8;
+                    web.measure(
+                      android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
+                      android.view.View.MeasureSpec.makeMeasureSpec(layoutH, android.view.View.MeasureSpec.EXACTLY));
+                    web.layout(0, 0, layoutW, layoutH);
+                    host.updateViewLayout(web, new FrameLayout.LayoutParams(layoutW, layoutH));
+                    host.measure(
+                      android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
+                      android.view.View.MeasureSpec.makeMeasureSpec(layoutH, android.view.View.MeasureSpec.EXACTLY));
+                    host.layout(0, 0, layoutW, layoutH);
+
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable(){
+                      @Override public void run(){
+                        android.graphics.Bitmap bmp = null;
+                        try {
+                          int bmpW = layoutW * scaleCap;
+                          int bmpH = layoutH * scaleCap;
+                          bmp = android.graphics.Bitmap.createBitmap(bmpW, bmpH, android.graphics.Bitmap.Config.ARGB_8888);
+                          android.graphics.Canvas bmpCanvas = new android.graphics.Canvas(bmp);
+                          bmpCanvas.drawColor(android.graphics.Color.WHITE);
+                          bmpCanvas.scale(scaleCap, scaleCap);
+                          web.draw(bmpCanvas);
+
+                          // رد bitmap تقریباً سفید
+                          int stepPx = Math.max(8, Math.min(bmpW, bmpH) / 40);
+                          int dark = 0, n = 0;
+                          for (int yy = 0; yy < bmpH; yy += stepPx) {
+                            for (int xx = 0; xx < bmpW; xx += stepPx) {
+                              int p = bmp.getPixel(Math.min(xx, bmpW - 1), Math.min(yy, bmpH - 1));
+                              int r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
+                              n++;
+                              if (r < 250 || g < 250 || b < 250) dark++;
+                            }
+                          }
+                          if (n > 0 && (dark * 100) / n < 2) {
+                            // سفید — رد
+                            if (bmp != null && !bmp.isRecycled()) bmp.recycle();
+                            index[0]++;
+                            new android.os.Handler(android.os.Looper.getMainLooper()).post(step[0]);
+                            return;
+                          }
+
+                          final int pageW = 595;
+                          final int pageH = 842;
+                          final int margin = 18;
+                          final float usableW = pageW - 2f * margin;
+                          float pxPerPt = bmpW / usableW;
+                          float dstH = Math.min(pageH - 2f * margin, bmpH / pxPerPt);
+
+                          android.graphics.pdf.PdfDocument.PageInfo pinfo =
+                            new android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW, pageH, index[0] + 1).create();
+                          android.graphics.pdf.PdfDocument.Page page = doc.startPage(pinfo);
+                          android.graphics.Canvas c = page.getCanvas();
+                          c.drawColor(android.graphics.Color.WHITE);
+                          android.graphics.Paint paint = new android.graphics.Paint(
+                            android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
+                          android.graphics.Rect src = new android.graphics.Rect(0, 0, bmpW, bmpH);
+                          android.graphics.RectF dst = new android.graphics.RectF(margin, margin, margin + usableW, margin + dstH);
+                          c.drawBitmap(bmp, src, dst, paint);
+                          doc.finishPage(page);
+                        } catch (Exception e) {
+                          try { doc.close(); } catch (Exception ignored) {}
+                          call.reject("pdf_page_failed", e);
+                          cleanupWeb(web, host, root);
+                          return;
+                        } finally {
+                          if (bmp != null && !bmp.isRecycled()) try { bmp.recycle(); } catch (Exception ignored) {}
+                        }
+                        index[0]++;
+                        new android.os.Handler(android.os.Looper.getMainLooper()).post(step[0]);
+                      }
+                    }, 120);
+                  } catch (Exception e) {
+                    try { doc.close(); } catch (Exception ignored) {}
+                    call.reject("pdf_page_meta_failed", e);
+                    cleanupWeb(web, host, root);
+                  }
+                }
+              });
+            }
+          };
+          new android.os.Handler(android.os.Looper.getMainLooper()).post(step[0]);
         }
-        if (n > 0 && (dark * 100) / n < 2) throw new Exception("webview_bitmap_blank");
-      } catch (Exception inkEx) {
-        if ("webview_bitmap_blank".equals(inkEx.getMessage())) throw inkEx;
       }
+    );
+  }
 
-      // A4 استاندارد (point)
-      final int pageW = 595;
-      final int pageH = 842;
-      final int margin = 18;
-      final float usableW = pageW - 2f * margin;
-      final float usableH = pageH - 2f * margin;
-
-      // برش صفحه دقیقاً برابر ارتفاع CSS صفحه (1080px * scaleCap)
-      // تا جداول از پیش‌صفحه‌بندی‌شده وسط صفحه قطع نشوند و صفحه آخر خالی نماند
-      final float pxPerPt = bmpW / usableW;
-      final int cssPageH = 1080;
-      final int pageContentPx = Math.max(1, cssPageH * scaleCap);
-
-      int pageCount = Math.max(1, (int)Math.ceil((double)bmpH / (double)pageContentPx));
-      int remainder = bmpH - (pageCount - 1) * pageContentPx;
-      // اگر باقیمانده تقریباً خالی است صفحه آخر را نساز
-      if (pageCount > 1 && remainder < pageContentPx * 0.12) {
-        pageCount = Math.max(1, pageCount - 1);
-      }
-
-      doc = new android.graphics.pdf.PdfDocument();
-      android.graphics.Paint paint = new android.graphics.Paint(
-        android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
-      for (int i = 0; i < pageCount; i++) {
-        android.graphics.pdf.PdfDocument.PageInfo info =
-          new android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW, pageH, i + 1).create();
-        android.graphics.pdf.PdfDocument.Page page = doc.startPage(info);
-        android.graphics.Canvas c = page.getCanvas();
-        c.drawColor(android.graphics.Color.WHITE);
-        int srcTop = i * pageContentPx;
-        int srcH = Math.min(pageContentPx, bmpH - srcTop);
-        if (srcH <= 0) { doc.finishPage(page); continue; }
-        android.graphics.Rect src = new android.graphics.Rect(0, srcTop, bmpW, srcTop + srcH);
-        // ارتفاع مقصد متناسب با عرض — جمع نمی‌شود در 1/6 مگر محتوا واقعاً کوتاه باشد
-        float dstH = srcH / pxPerPt;
-        android.graphics.RectF dst = new android.graphics.RectF(margin, margin, margin + usableW, margin + dstH);
-        c.drawBitmap(fullBmp, src, dst, paint);
-        doc.finishPage(page);
-      }
-
-      java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-      doc.writeTo(bos);
-      byte[] pdfBytes = bos.toByteArray();
-      uri = saveToDownloads(filename, "application/pdf", pdfBytes);
-      call.resolve(new JSObject().put("uri", uri.toString()).put("filename", filename).put("ok", true));
-    }catch(Exception e){
-      if(uri!=null) try{ getContext().getContentResolver().delete(uri,null,null); }catch(Exception ignored){}
-      call.reject("pdf_export_failed",e);
-    }finally{
-      if(fullBmp!=null && !fullBmp.isRecycled()) try{ fullBmp.recycle(); }catch(Exception ignored){}
-      if(doc!=null) try{ doc.close(); }catch(Exception ignored){}
-      try{ host.removeView(web); root.removeView(host); }catch(Exception ignored){}
-      web.destroy();
-    }
+  private void cleanupWeb(WebView web, FrameLayout host, FrameLayout root){
+    try { host.removeView(web); } catch (Exception ignored) {}
+    try { root.removeView(host); } catch (Exception ignored) {}
+    try { web.destroy(); } catch (Exception ignored) {}
   }
 }
 `;
+
 
 const main=`package ${pkg};
 
