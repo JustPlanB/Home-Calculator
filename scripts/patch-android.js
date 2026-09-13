@@ -481,7 +481,13 @@ public class NativeFileExportPlugin extends Plugin {
                       // evaluateJavascript returns JSON-quoted string
                       raw = new org.json.JSONArray("[" + raw + "]").getString(0);
                     }
-                    org.json.JSONObject info = new org.json.JSONObject(raw != null ? raw : "{\"h\":400,\"empty\":false}");
+                    org.json.JSONObject info;
+                    try {
+                      String jsonSrc = (raw != null && raw.length() > 0) ? raw : "{}";
+                      info = new org.json.JSONObject(jsonSrc);
+                    } catch (Exception parseEx) {
+                      info = new org.json.JSONObject();
+                    }
                     boolean empty = info.optBoolean("empty", false);
                     int cssH = Math.max(1, info.optInt("h", 400));
                     if (empty) {
