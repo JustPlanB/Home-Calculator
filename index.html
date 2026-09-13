@@ -8575,11 +8575,151 @@
     }
 
     function buildPdfFullDocument(){
-      const periodLabel=MONTHS[currentMonth-1]+' '+toPersianDigits(currentYear);
-      return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=794"><title>حساب کتاب — '+escapeHtml(periodLabel)+'</title><style>@page{size:A4 portrait;margin:12mm;}html,body{margin:0;padding:0;width:794px;background:#fff!important;color:#000!important;}*{box-sizing:border-box;}body{font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;direction:rtl;padding:16px;line-height:1.45;}</style></head><body>'+buildPdfContent()+'</body></html>';
+      const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
+      // صفحه‌بندی جدول‌محور — بدون تغییر کیفیت رندر نیتیو
+      // هر صفحه ارتفاع ثابت CSS نزدیک محتوای قابل‌چاپ A4
+      const PAGE_W = 794;
+      const PAGE_H = 1080; // ≈ ارتفاع قابل استفاده A4 در 96dpi با حاشیه
+
+      // بخش‌ها را جدا بساز (همان buildPdfContent منطق)
+      const raw = buildPdfContent();
+      // raw را به بخش‌های .pdf-section + عنوان اصلی بشکاف
+      const wrap = document.createElement('div');
+      wrap.innerHTML = raw;
+      const blocks = [];
+      const titleEl = wrap.querySelector('.pdf-keep');
+      // اولین بلوک عنوان ماه
+      const mainTitle = '<div class="pdf-keep" style="text-align:center;font-weight:bold;font-size:16px;color:#000;margin:0 0 12px 0;">حساب کتاب — ' +
+        escapeHtml(periodLabel) + '</div>';
+
+      const sections = Array.from(wrap.querySelectorAll('.pdf-section'));
+      if (!sections.length) {
+        // fallback: کل raw یک بلوک
+        blocks.push({ html: raw, minH: 200 });
+      } else {
+        sections.forEach((sec, idx) => {
+          blocks.push({ html: sec.outerHTML, minH: 80 });
+        });
+      }
+
+      // اندازه‌گیری ارتفاع واقعی هر بلوک
+      const measureBox = document.createElement('div');
+      measureBox.style.cssText = 'position:fixed;left:0;top:0;width:' + PAGE_W + 'px;padding:12px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;opacity:0.01;pointer-events:none;z-index:0;';
+      document.body.appendChild(measureBox);
+
+      function measureHtml(html) {
+        measureBox.innerHTML = html;
+        const h = Math.ceil(Math.max(measureBox.scrollHeight, measureBox.offsetHeight, 1));
+        measureBox.innerHTML = '';
+        return h;
+      }
+
+      // عنوان اصلی
+      const titleH = measureHtml(mainTitle);
+
+      // برای جداول خیلی بزرگ: شکستن فقط روی مرز ردیف
+      function splitLargeSection(secHtml, maxH) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = secHtml;
+        const sec = tmp.firstElementChild;
+        if (!sec) return [secHtml];
+        const titleNode = sec.querySelector('.pdf-section-title');
+        const table = sec.querySelector('table');
+        if (!table) return [secHtml];
+        const thead = table.querySelector('thead');
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        if (!rows.length) return [secHtml];
+
+        const titleHtml = titleNode ? titleNode.outerHTML : '';
+        const theadHtml = thead ? thead.outerHTML : '';
+        const parts = [];
+        let i = 0;
+        while (i < rows.length) {
+          // حداقل یک ردیف در هر تکه
+          let chunkRows = [];
+          let j = i;
+          while (j < rows.length) {
+            chunkRows.push(rows[j]);
+            const trial = '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
+              titleHtml +
+              '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
+              theadHtml + '<tbody>' + chunkRows.map(r => r.outerHTML).join('') + '</tbody></table></div>';
+            const hh = measureHtml(trial);
+            if (hh > maxH && chunkRows.length > 1) {
+              chunkRows.pop();
+              break;
+            }
+            j++;
+            if (hh > maxH) break;
+          }
+          if (!chunkRows.length) {
+            chunkRows = [rows[i]];
+            j = i + 1;
+          }
+          const piece = '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
+            titleHtml +
+            '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
+            theadHtml + '<tbody>' + chunkRows.map(r => r.outerHTML).join('') + '</tbody></table></div>';
+          parts.push(piece);
+          i = j;
+        }
+        return parts.length ? parts : [secHtml];
+      }
+
+      // بسته‌بندی بلوک‌ها در صفحات
+      const pages = [];
+      let current = [];
+      let used = 0;
+      const pad = 24; // padding صفحه
+
+      function flush() {
+        if (!current.length) return;
+        pages.push(current.join(''));
+        current = [];
+        used = 0;
+      }
+
+      // عنوان فقط صفحه اول
+      current.push(mainTitle);
+      used = titleH;
+
+      const available = PAGE_H - pad;
+
+      blocks.forEach(block => {
+        let pieces = [block.html];
+        const h0 = measureHtml(block.html);
+        if (h0 > available - 20) {
+          pieces = splitLargeSection(block.html, available - 20);
+        }
+        pieces.forEach(piece => {
+          const h = measureHtml(piece);
+          // اگر در صفحه جاری جا نمی‌شود → صفحه جدید (کل جدول/تکه)
+          if (used > 0 && used + h > available) {
+            flush();
+          }
+          current.push(piece);
+          used += h + 8;
+        });
+      });
+      flush();
+      try { measureBox.remove(); } catch (e) {}
+
+      // حذف صفحات خالی
+      const nonEmpty = pages.filter(p => p && p.replace(/<[^>]+>/g, '').trim().length > 5);
+      const pageHtml = nonEmpty.map(p =>
+        '<div class="pdf-page" style="width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;box-sizing:border-box;padding:12px 16px;background:#fff;color:#000;overflow:hidden;page-break-after:always;">' +
+        p + '</div>'
+      ).join('');
+
+      return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">' +
+        '<meta name="viewport" content="width=' + PAGE_W + '">' +
+        '<title>حساب کتاب — ' + escapeHtml(periodLabel) + '</title>' +
+        '<style>html,body{margin:0;padding:0;width:' + PAGE_W + 'px;background:#fff!important;color:#000!important;}' +
+        '*{box-sizing:border-box;}body{font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;direction:rtl;}' +
+        '.pdf-page{page-break-after:always;}</style></head><body>' + pageHtml + '</body></html>';
     }
 
-        async function renderPdfPagesOffline(){
+async function renderPdfPagesOffline(){
       // ساده و قابل‌اعتماد: یک DOM واقعی با opacity کم ولی قابل paint
       // اگر capture سفید بود خطا می‌دهیم تا native اجرا شود
       const layoutW = 794;
