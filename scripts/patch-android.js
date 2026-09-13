@@ -337,7 +337,7 @@ public class NativeFileExportPlugin extends Plugin {
                 attempts++;
                 try{
                   view.evaluateJavascript(
-                    "(function(){var b=document.body,h=document.documentElement;return Math.max(b.scrollHeight,b.offsetHeight,h.clientHeight,h.scrollHeight,h.offsetHeight);})()",
+                    "(function(){var b=document.body,h=document.documentElement;var pages=document.querySelectorAll('.pdf-page');var ph=0;if(pages&&pages.length){for(var i=0;i<pages.length;i++){ph+=Math.max(pages[i].offsetHeight,pages[i].scrollHeight,1080);}return Math.max(ph,b.scrollHeight,b.offsetHeight,h.scrollHeight);}return Math.max(b.scrollHeight,b.offsetHeight,h.clientHeight,h.scrollHeight,h.offsetHeight);})()",
                     new android.webkit.ValueCallback<String>(){
                       @Override public void onReceiveValue(String value){
                         if(started) return;
@@ -460,14 +460,16 @@ public class NativeFileExportPlugin extends Plugin {
       final float usableW = pageW - 2f * margin;
       final float usableH = pageH - 2f * margin;
 
-      // هر پیکسل bitmap چند point؟ عرض bitmap = تمام usableW
-      // ارتفاع صفحه به پیکسل bitmap:
+      // برش صفحه دقیقاً برابر ارتفاع CSS صفحه (1080px * scaleCap)
+      // تا جداول از پیش‌صفحه‌بندی‌شده وسط صفحه قطع نشوند و صفحه آخر خالی نماند
       final float pxPerPt = bmpW / usableW;
-      final int pageContentPx = Math.max(1, (int)Math.floor(usableH * pxPerPt));
+      final int cssPageH = 1080;
+      final int pageContentPx = Math.max(1, cssPageH * scaleCap);
 
       int pageCount = Math.max(1, (int)Math.ceil((double)bmpH / (double)pageContentPx));
-      int remainder = bmpH % pageContentPx;
-      if (pageCount > 1 && remainder > 0 && remainder < pageContentPx * 0.08) {
+      int remainder = bmpH - (pageCount - 1) * pageContentPx;
+      // اگر باقیمانده تقریباً خالی است صفحه آخر را نساز
+      if (pageCount > 1 && remainder < pageContentPx * 0.12) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
