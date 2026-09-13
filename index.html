@@ -2585,7 +2585,11 @@
     #sections-income,
     #sections-expense,
     .section-body,
-    .section {
+    .section,
+    .tab-viewport,
+    .tab-panel,
+    .container,
+    body {
       scrollbar-width: none !important;
     }
     .menu-scroll::-webkit-scrollbar,
@@ -2595,10 +2599,15 @@
     #sections-income::-webkit-scrollbar,
     #sections-expense::-webkit-scrollbar,
     .section-body::-webkit-scrollbar,
-    .section::-webkit-scrollbar {
+    .section::-webkit-scrollbar,
+    .tab-viewport::-webkit-scrollbar,
+    .tab-panel::-webkit-scrollbar,
+    .container::-webkit-scrollbar,
+    body::-webkit-scrollbar {
       width: 0 !important;
       height: 0 !important;
       display: none !important;
+      background: transparent !important;
     }
 
     .dark-select-list {
@@ -4826,20 +4835,23 @@
         closeDarkSelects();
         if (wasOpen) return;
         const r = btn.getBoundingClientRect();
-        // همیشه رو به پایین
+        // همیشه رو به پایین با ارتفاع کافی برای دیدن گزینه‌ها
         const top = r.bottom + 4;
-        const spaceBelow = Math.max(80, window.innerHeight - top - 8);
+        const spaceBelow = Math.max(120, window.innerHeight - top - 8);
+        list.style.zIndex = '520';
         list.style.top = top + 'px';
         list.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 140)) + 'px';
-        list.style.maxHeight = Math.min(spaceBelow, window.innerHeight * 0.42) + 'px';
+        list.style.maxHeight = Math.max(160, Math.min(spaceBelow, 280)) + 'px';
+        list.style.overflowY = 'auto';
         const minW = (listMinWidth === undefined || listMinWidth === null) ? 120 : listMinWidth;
         list.style.width = Math.max(r.width, minW) + 'px';
         list.classList.add('open');
         openDarkList = list;
         const bd = ensureDarkSelectBackdrop();
         bd.style.display = 'block';
+        bd.style.zIndex = '510';
         const sel = list.querySelector('.selected');
-        if (sel) try { sel.scrollIntoView({ block: 'center' }); } catch (err) {}
+        if (sel) try { sel.scrollIntoView({ block: 'nearest' }); } catch (err) {}
       };
       wrap.appendChild(btn);
       wrap.getValue = () => wrap.dataset.value;
@@ -8509,17 +8521,17 @@
     }
 
         async function renderPdfPagesOffline(){
-      // چیدمان فشرده روی عرض منطقی + رندر با DPR بالا برای زوم/پرینت شفاف
-      const layoutW = 1000;   // عرض منطقی محتوا (فشرده، بدون حاشیه زیاد)
-      const dpr = 3;          // تراکم پیکسل برای کیفیت زوم
+      // عرض منطقی فشرده + DPR بالا = متن واضح هنگام زوم، بدون حاشیه سفید زیاد
+      const layoutW = 900;
+      const dpr = 4;
       const holder=document.createElement('div');
-      holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;box-sizing:border-box;padding:10px;line-height:1.4;';
+      holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:8px;line-height:1.35;';
       holder.innerHTML=buildPdfContent();
       document.body.appendChild(holder);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      await new Promise(r=>setTimeout(r,100));
-      let layoutH=Math.max(holder.scrollHeight, holder.offsetHeight, 300);
-      layoutH = Math.ceil(layoutH * 1.01) + 12;
+      await new Promise(r=>setTimeout(r,80));
+      let layoutH=Math.max(holder.scrollHeight, holder.offsetHeight, 200);
+      layoutH = Math.ceil(layoutH) + 8;
       holder.style.height=layoutH+'px';
 
       const pixelW = Math.round(layoutW * dpr);
@@ -8534,11 +8546,10 @@
       ctx.imageSmoothingQuality='high';
       ctx.scale(dpr, dpr);
 
-      // رندر HTML از طریق SVG foreignObject در عرض layout
       const svg=
         '<svg xmlns="http://www.w3.org/2000/svg" width="'+layoutW+'" height="'+layoutH+'">' +
         '<foreignObject width="100%" height="100%">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;box-sizing:border-box;padding:10px;line-height:1.4;">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:8px;line-height:1.35;">' +
         holder.innerHTML +
         '</div></foreignObject></svg>';
       const img=new Image();
@@ -8551,11 +8562,13 @@
       ctx.drawImage(img,0,0,layoutW,layoutH);
       try{ holder.remove(); }catch(e){}
 
-      // برش صفحات A4 عمودی بر اساس نسبت واقعی صفحه
+      // ارتفاع صفحه A4 به پیکسل
       const pageHpx = Math.floor(pixelW * (841.89 / 595.28));
       const pages=[];
       for(let y=0;y<pixelH;y+=pageHpx){
         const h=Math.min(pageHpx, pixelH-y);
+        // اگر باقیمانده خیلی کم است (کمتر از ۸٪ ارتفاع صفحه) و صفحه قبلی داریم، رد کن
+        if (pages.length > 0 && h < pageHpx * 0.08) break;
         const pc=document.createElement('canvas');
         pc.width=pixelW;
         pc.height=h;
@@ -8563,19 +8576,24 @@
         pctx.fillStyle='#ffffff';
         pctx.fillRect(0,0,pc.width,h);
         pctx.drawImage(canvas,0,y,pixelW,h,0,0,pixelW,h);
-        // رد صفحه تقریباً سفید
-        let hasContent=true;
+        // تشخیص صفحه سفید: نمونه‌گیری از چند نوار
+        let hasContent=false;
         try{
-          const checkH=Math.min(h,100);
-          const sample=pctx.getImageData(40,10,Math.min(300,pc.width-80),checkH).data;
-          let nonW=0;
-          for(let i=0;i<sample.length;i+=4){
-            if(sample[i]<245||sample[i+1]<245||sample[i+2]<245) nonW++;
-          }
-          if(nonW<(sample.length/4)*0.015) hasContent=false;
-        }catch(e){}
-        if(!hasContent && pages.length>0) continue;
-        const data=atob(pc.toDataURL('image/jpeg',0.95).split(',')[1]);
+          const bands = [0.1, 0.35, 0.6, 0.85];
+          let nonW=0, total=0;
+          bands.forEach(frac => {
+            const sy = Math.min(h-2, Math.floor(h * frac));
+            const sample=pctx.getImageData(20, sy, Math.min(pixelW-40, 400), Math.min(24, h-sy)).data;
+            for(let i=0;i<sample.length;i+=4){
+              total++;
+              if(sample[i]<250||sample[i+1]<250||sample[i+2]<250) nonW++;
+            }
+          });
+          hasContent = total > 0 && (nonW / total) > 0.008;
+        }catch(e){ hasContent = true; }
+        if(!hasContent) continue;
+        // JPEG با کیفیت بالا
+        const data=atob(pc.toDataURL('image/jpeg',0.97).split(',')[1]);
         const jpg=new Uint8Array(data.length);
         for(let i=0;i<data.length;i++) jpg[i]=data.charCodeAt(i);
         pages.push({jpg,w:pc.width,h:pc.height});
@@ -8751,6 +8769,11 @@ async function exportPdf(){
       if (menu) menu.classList.add('open');
       if (bd) bd.classList.add('open');
       document.body.classList.add('menu-open');
+      // همیشه از بالای منو شروع شود
+      try {
+        const sc = document.querySelector('.menu-scroll');
+        if (sc) sc.scrollTop = 0;
+      } catch (e) {}
       bindMenuBlockers();
     }
     function closeSideMenu() {
@@ -11091,7 +11114,7 @@ if (item.type === 'recurring') {
       } else {
         selectedBankAccounts.forEach((acc, idx) => {
           const row = document.createElement('div');
-          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;';
+          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--border);';
           const info = document.createElement('div');
           info.style.cssText = 'flex:1;min-width:0;';
           info.innerHTML = '<div style="font-weight:700;font-size:0.9rem;">' + escapeHtml(acc.label) + '</div>' +
@@ -11830,13 +11853,35 @@ if (item.type === 'recurring') {
       };
       field('روز ماه (۱–۳۱)', inpDay);
 
-      const incomeSecs = (periodData.income && periodData.income.sections) || [];
-      const secOptionsRec = [{ value: '', label: 'کاربر بخش مقصد را انتخاب کنید' }].concat(
-        incomeSecs.map(s => ({ value: s.id, label: (s.title || '').trim() || 'بدون عنوان' }))
-      );
+      // بخش‌های درآمد ماه جاری (اولویت) + عناوین یکتای آرشیو
+      const secOpts = [];
+      const seenTitles = new Set();
+      const pushSec = (s, preferId) => {
+        if (!s) return;
+        const title = (s.title || '').trim();
+        const key = title || s.id || '';
+        if (!key || seenTitles.has(key)) return;
+        seenTitles.add(key);
+        // value = id ماه جاری اگر باشد، وگرنه title
+        secOpts.push({
+          value: preferId && s.id ? s.id : (s.id || title),
+          label: title || 'بدون عنوان'
+        });
+      };
+      ((periodData.income && periodData.income.sections) || []).forEach(s => pushSec(s, true));
+      try {
+        Object.keys(archive || {}).forEach(k => {
+          const pd = archive[k];
+          ((pd && pd.income && pd.income.sections) || []).forEach(s => pushSec(s, false));
+        });
+      } catch (e) {}
+      const secOptionsRec = [{ value: '', label: 'کاربر بخش مقصد را انتخاب کنید' }].concat(secOpts);
+      if (secOpts.length === 0) {
+        secOptionsRec.push({ value: '__none__', label: 'ابتدا در تب درآمد یک بخش بسازید' });
+      }
       const secSelRec = createDarkSelect({
         options: secOptionsRec,
-        value: ''
+        value: existing.sectionId || ''
       });
       secSelRec.style.marginBottom = '7px';
       field('بخش مقصد', secSelRec);
