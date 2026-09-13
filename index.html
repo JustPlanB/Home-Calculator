@@ -953,41 +953,50 @@
     /* بهبود رندر — بدون content-visibility (روی موبایل باعث لگ تایپ می‌شود) */
     .section { contain: layout style; }
     .section-body { contain: layout style; }
-    /* اسکرول نرم ردیف‌ها — مثل لیست بانک‌ها با نوار باریک */
-    .section-rows-scroll {
-      max-height: calc(var(--sec-row-h, 44px) * 5.15);
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      scroll-behavior: smooth;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(140,140,140,0.65) transparent;
+    .section-rows-wrap {
       position: relative;
     }
-    .section-rows-scroll::-webkit-scrollbar {
-      width: 3px !important;
-      height: 0 !important;
-      display: block !important;
-      background: transparent !important;
-    }
-    .section-rows-scroll::-webkit-scrollbar-thumb {
-      background: rgba(140,140,140,0.65) !important;
-      border-radius: 3px;
-    }
-    [data-theme="light"] .section-rows-scroll::-webkit-scrollbar-thumb {
-      background: rgba(100,100,100,0.45) !important;
-    }
-    .section-rows-scroll table {
+    .section-rows-wrap table {
       width: 100%;
       border-collapse: collapse;
     }
-    .section-rows-scroll thead th {
+    .section-rows-wrap thead th {
       position: sticky;
       top: 0;
       z-index: 3;
       background: var(--card, var(--bg2, #1c1c1e));
       box-shadow: 0 1px 0 var(--border);
+    }
+    tr.row-window-fade {
+      opacity: 0.28;
+      pointer-events: none;
+      filter: saturate(0.7);
+    }
+    tr.row-window-fade td {
+      border-color: transparent !important;
+    }
+    .section-row-scroll-track {
+      position: absolute;
+      top: 28px;
+      bottom: 4px;
+      left: 2px;
+      width: 3px;
+      border-radius: 3px;
+      background: rgba(120,120,120,0.15);
+      pointer-events: none;
+      z-index: 4;
+      display: none;
+    }
+    .section-row-scroll-thumb {
+      position: absolute;
+      left: 0;
+      width: 3px;
+      border-radius: 3px;
+      background: rgba(140,140,140,0.7);
+      min-height: 16px;
+    }
+    [data-theme="light"] .section-row-scroll-thumb {
+      background: rgba(100,100,100,0.5);
     }
 
     tr.row-readonly input.cell,
@@ -4227,11 +4236,13 @@
         sortSectionRows(secId);
         // فقط تب مربوطه را رندر کن — نه کل اپ — برای جلوگیری از لگ
         try {
+          const sy = window.scrollY || window.pageYOffset || 0;
           if (currentTab === 'income' || currentTab === 'expense') {
             renderSectionsForTab(currentTab);
           } else {
             renderAll();
           }
+          try { window.scrollTo(0, sy); } catch (e3) {}
         } catch (e) { try { renderAll(); } catch (e2) {} }
         scheduleSave();
       };
@@ -12908,104 +12919,126 @@ if (item.type === 'recurring') {
         </thead>
       `;
       const tbody = document.createElement('tbody');
-      (sec.rows || []).forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
       table.appendChild(tbody);
 
-      const rowsScroll = document.createElement('div');
-      rowsScroll.className = 'section-rows-scroll';
-      rowsScroll.appendChild(table);
-      body.appendChild(rowsScroll);
+      const rowsWrap = document.createElement('div');
+      rowsWrap.className = 'section-rows-wrap';
+      rowsWrap.appendChild(table);
+      // نشانگر اسکرول باریک
+      const track = document.createElement('div');
+      track.className = 'section-row-scroll-track';
+      const thumb = document.createElement('div');
+      thumb.className = 'section-row-scroll-thumb';
+      track.appendChild(thumb);
+      rowsWrap.appendChild(track);
+      body.appendChild(rowsWrap);
 
-      // ارتفاع ≈ ۵ ردیف؛ اسکرول نرم با snap هر ۵ ردیف
       const ROW_PAGE = 5;
-      function measureRowH() {
-        const tr = tbody.querySelector('tr');
-        const h = tr ? tr.getBoundingClientRect().height : 0;
-        return (h > 8 ? h : 44);
+      if (sec._rowWin == null || sec._rowWin < 0) sec._rowWin = 0;
+
+      function maxRowWinStart() {
+        const n = (sec.rows || []).length;
+        if (n <= ROW_PAGE) return 0;
+        // صفحات: 0,5,10,... و آخرین شروع روی مضرب ۵ تا باقی‌مانده دیده شود
+        return Math.floor((n - 1) / ROW_PAGE) * ROW_PAGE;
       }
-      function setupRowPageScroll() {
+      function clampRowWin() {
+        const n = (sec.rows || []).length;
+        if (n <= ROW_PAGE) { sec._rowWin = 0; return; }
+        const maxStart = maxRowWinStart();
+        // _rowWin را روی نزدیک‌ترین مضرب ۵ نگه دار
+        let w = sec._rowWin || 0;
+        w = Math.round(w / ROW_PAGE) * ROW_PAGE;
+        sec._rowWin = Math.max(0, Math.min(w, maxStart));
+      }
+      function updateScrollThumb() {
         const n = (sec.rows || []).length;
         if (n <= ROW_PAGE) {
-          rowsScroll.style.maxHeight = '';
-          rowsScroll.style.overflowY = 'visible';
+          track.style.display = 'none';
           return;
         }
-        const rh = measureRowH();
-        document.documentElement.style.setProperty('--sec-row-h', rh + 'px');
-        rowsScroll.style.maxHeight = (rh * ROW_PAGE + 4) + 'px';
-        rowsScroll.style.overflowY = 'auto';
-
-        let snapTimer = null;
-        let wheelLock = false;
-
-        function pageHeight() {
-          return measureRowH() * ROW_PAGE;
-        }
-        function snapToNearest(smooth) {
-          const ph = pageHeight();
-          if (ph < 8) return;
-          const maxTop = Math.max(0, rowsScroll.scrollHeight - rowsScroll.clientHeight);
-          let page = Math.round(rowsScroll.scrollTop / ph);
-          const maxPage = Math.round(maxTop / ph);
-          page = Math.max(0, Math.min(page, maxPage));
-          const target = Math.min(maxTop, page * ph);
-          rowsScroll.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' });
-        }
-        function scrollByPage(dir) {
-          const ph = pageHeight();
-          const maxTop = Math.max(0, rowsScroll.scrollHeight - rowsScroll.clientHeight);
-          const curPage = Math.round(rowsScroll.scrollTop / ph);
-          const next = Math.max(0, Math.min(Math.round(maxTop / ph), curPage + dir));
-          rowsScroll.scrollTo({ top: Math.min(maxTop, next * ph), behavior: 'smooth' });
-        }
-
-        rowsScroll.addEventListener('scroll', () => {
-          if (snapTimer) clearTimeout(snapTimer);
-          snapTimer = setTimeout(() => snapToNearest(true), 80);
-        }, { passive: true });
-
-        // یک حرکت چرخ = یک صفحه ۵تایی نرم
-        rowsScroll.addEventListener('wheel', (e) => {
-          if ((sec.rows || []).length <= ROW_PAGE) return;
-          e.preventDefault();
-          if (wheelLock) return;
-          wheelLock = true;
-          scrollByPage(e.deltaY > 0 ? 1 : -1);
-          setTimeout(() => { wheelLock = false; }, 320);
-        }, { passive: false });
-
-        // سوایپ: یک صفحه نرم
-        let tY = 0, tT = 0;
-        rowsScroll.addEventListener('touchstart', (e) => {
-          if (!e.touches || !e.touches[0]) return;
-          tY = e.touches[0].clientY;
-          tT = Date.now();
-        }, { passive: true });
-        rowsScroll.addEventListener('touchend', (e) => {
-          const t = e.changedTouches && e.changedTouches[0];
-          if (!t) return;
-          const dy = t.clientY - tY;
-          const dt = Date.now() - tT;
-          if (Math.abs(dy) < 36 || dt > 850) {
-            snapToNearest(true);
-            return;
-          }
-          // جلوگیری از اسکرول آزاد خرد — صفحه کامل
-          scrollByPage(dy < 0 ? 1 : -1);
-        }, { passive: true });
-
-        // بعد از رندر، اگر _rowWin ذخیره شده بود به همان صفحه برو
-        if (sec._rowWin && sec._rowWin > 0) {
-          const ph = pageHeight();
-          const page = Math.floor(sec._rowWin / ROW_PAGE);
-          rowsScroll.scrollTop = page * ph;
-        }
-        body._rowsScroll = rowsScroll;
-        body._scrollRowPage = scrollByPage;
+        track.style.display = 'block';
+        const maxStart = maxRowWinStart();
+        const ratio = maxStart <= 0 ? 0 : (sec._rowWin || 0) / maxStart;
+        const trackH = track.clientHeight || 80;
+        const thumbH = Math.max(16, trackH * (ROW_PAGE / n));
+        const maxTop = Math.max(0, trackH - thumbH);
+        thumb.style.height = thumbH + 'px';
+        thumb.style.top = (ratio * maxTop) + 'px';
       }
-      // اندازه‌گیری بعد از قرارگیری در DOM
-      requestAnimationFrame(() => { try { setupRowPageScroll(); } catch (e) {} });
-      setTimeout(() => { try { setupRowPageScroll(); } catch (e) {} }, 50);
+      function renderRowWindow() {
+        clampRowWin();
+        tbody.innerHTML = '';
+        const rows = sec.rows || [];
+        const n = rows.length;
+        const start = sec._rowWin || 0;
+        if (n <= ROW_PAGE) {
+          rows.forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
+          track.style.display = 'none';
+          return;
+        }
+        const end = Math.min(n, start + ROW_PAGE);
+        for (let i = start; i < end; i++) {
+          tbody.appendChild(buildRowEl(sec.id, rows[i], i, paidLabel, unpaidLabel));
+        }
+        // ردیف بعدی محو (فید) اگر هنوز ردیفی مانده
+        if (end < n) {
+          const peek = buildRowEl(sec.id, rows[end], end, paidLabel, unpaidLabel);
+          peek.classList.add('row-window-fade');
+          tbody.appendChild(peek);
+        }
+        updateScrollThumb();
+      }
+      function shiftRowWin(dir) {
+        if (sec.collapsed) return;
+        const n = (sec.rows || []).length;
+        if (n <= ROW_PAGE) return;
+        const maxStart = maxRowWinStart();
+        let next = (sec._rowWin || 0) + (dir > 0 ? ROW_PAGE : -ROW_PAGE);
+        if (dir > 0) next = Math.min(next, maxStart);
+        else next = Math.max(0, next);
+        next = Math.round(next / ROW_PAGE) * ROW_PAGE;
+        next = Math.max(0, Math.min(next, maxStart));
+        if (next === (sec._rowWin || 0)) return;
+        sec._rowWin = next;
+        renderRowWindow();
+      }
+      renderRowWindow();
+      body._renderRowWindow = renderRowWindow;
+      body._shiftRowWin = shiftRowWin;
+
+      let wheelLock = false;
+      const onWheel = (e) => {
+        if (sec.collapsed) return;
+        if ((sec.rows || []).length <= ROW_PAGE) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (wheelLock) return;
+        wheelLock = true;
+        shiftRowWin(e.deltaY > 0 ? 1 : -1);
+        setTimeout(() => { wheelLock = false; }, 280);
+      };
+      rowsWrap.addEventListener('wheel', onWheel, { passive: false });
+
+      let tY = 0, tT = 0;
+      const onTs = (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        tY = e.touches[0].clientY;
+        tT = Date.now();
+      };
+      const onTe = (e) => {
+        if (sec.collapsed) return;
+        if ((sec.rows || []).length <= ROW_PAGE) return;
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        const dy = t.clientY - tY;
+        const dt = Date.now() - tT;
+        if (Math.abs(dy) < 36 || dt > 900) return;
+        e.preventDefault && e.preventDefault();
+        shiftRowWin(dy < 0 ? 1 : -1);
+      };
+      rowsWrap.addEventListener('touchstart', onTs, { passive: true });
+      rowsWrap.addEventListener('touchend', onTe, { passive: false });
 
       const addRowWrap = document.createElement('div');
       addRowWrap.className = 'add-row-wrap';
@@ -13416,12 +13449,12 @@ if (item.type === 'recurring') {
       dayInp.classList.add('unlocked');
       if (dayInp.tagName !== 'SELECT') dayInp.readOnly = false;
       dayInp.dataset.locked = '0';
-      try { dayInp.focus({ preventScroll: false }); } catch (e) {
-        try { dayInp.focus(); } catch (e2) {}
+      try { dayInp.focus({ preventScroll: true }); } catch (e) {
+        try { dayInp.focus({ preventScroll: true }); } catch (e2) {}
       }
-      try { dayInp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-      setTimeout(() => { try { dayInp.focus(); } catch (e) {} }, 100);
-      setTimeout(() => { try { dayInp.focus(); } catch (e) {} }, 250);
+      // صفحه جابه‌جا نشود
+      setTimeout(() => { try { dayInp.focus({ preventScroll: true }); } catch (e) {} }, 100);
+      setTimeout(() => { try { dayInp.focus({ preventScroll: true }); } catch (e) {} }, 250);
       return true;
     }
 
@@ -13433,7 +13466,10 @@ if (item.type === 'recurring') {
       for (let i = 0; i < n; i++) sec.rows.push(emptyRow());
       sec.collapsed = false;
       // پنجره را روی آخرین ردیف‌ها بگذار تا ردیف جدید دیده شود
-      try { sec._rowWin = Math.max(0, (sec.rows || []).length - 5); } catch (e) {}
+      try {
+        const n = (sec.rows || []).length;
+        sec._rowWin = n <= 5 ? 0 : Math.floor((n - 1) / 5) * 5;
+      } catch (e) {}
       // مثل قبل: رندر کامل تا ردیف حتماً دیده شود (هر دو تب)
       renderAll();
       scheduleSave();
@@ -13483,7 +13519,16 @@ if (item.type === 'recurring') {
         } else {
           sec.rows.splice(idx, 1);
         }
+        // پنجره ردیف را حفظ کن تا صفحه نپرد
+        try {
+          const n = (sec.rows || []).length;
+          const maxStart = n <= 5 ? 0 : Math.floor((n - 1) / 5) * 5;
+          if (sec._rowWin == null) sec._rowWin = 0;
+          sec._rowWin = Math.min(Math.max(0, Math.round((sec._rowWin || 0) / 5) * 5), maxStart);
+        } catch (e) {}
+        const sy = window.scrollY || window.pageYOffset || 0;
         renderAll();
+        try { window.scrollTo(0, sy); } catch (e) {}
         scheduleSave();
         showToast('به سطل زباله منتقل شد');
       });
@@ -14310,12 +14355,12 @@ if (item.type === 'recurring') {
         dayInp.classList.add('unlocked');
         if (dayInp.tagName !== 'SELECT') dayInp.readOnly = false;
       }
-      try { dayInp.focus({ preventScroll: false }); } catch (e) {
-        try { dayInp.focus(); } catch (e2) {}
+      try { dayInp.focus({ preventScroll: true }); } catch (e) {
+        try { dayInp.focus({ preventScroll: true }); } catch (e2) {}
       }
-      try { dayInp.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-      setTimeout(() => { try { dayInp.focus(); } catch (e) {} }, 100);
-      setTimeout(() => { try { dayInp.focus(); } catch (e) {} }, 250);
+      // صفحه جابه‌جا نشود
+      setTimeout(() => { try { dayInp.focus({ preventScroll: true }); } catch (e) {} }, 100);
+      setTimeout(() => { try { dayInp.focus({ preventScroll: true }); } catch (e) {} }, 250);
       return true;
     }
 
