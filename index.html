@@ -953,6 +953,37 @@
     /* بهبود رندر — بدون content-visibility (روی موبایل باعث لگ تایپ می‌شود) */
     .section { contain: layout style; }
     .section-body { contain: layout style; }
+    .section-body.row-windowed {
+      position: relative;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
+    }
+    .section-body.row-windowed.has-more-above {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 100%);
+    }
+    .section-body.row-windowed.has-more-below {
+      -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 20px), transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 20px), transparent 100%);
+    }
+    .section-body.row-windowed.has-more-above.has-more-below {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
+    }
+    tr.row-window-fade {
+      opacity: 0.32;
+      pointer-events: none;
+      filter: grayscale(0.15);
+    }
+    .section-row-win-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 4px 0 2px;
+      user-select: none;
+    }
+
     tr.row-readonly input.cell,
     tr.row-readonly textarea.cell {
       opacity: 0.85;
@@ -12845,6 +12876,9 @@ if (item.type === 'recurring') {
         sec.collapsed = !sec.collapsed;
         div.classList.toggle('collapsed', sec.collapsed);
         arrow.textContent = sec.collapsed ? '▼' : '▲';
+        if (!sec.collapsed && body._renderRowWindow) {
+          try { body._renderRowWindow(); } catch (err) {}
+        }
         persistCurrent();
         scheduleSave();
       };
@@ -12871,9 +12905,103 @@ if (item.type === 'recurring') {
         </thead>
       `;
       const tbody = document.createElement('tbody');
-      sec.rows.forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
       table.appendChild(tbody);
       body.appendChild(table);
+
+      // پنجره ۵ ردیفی — فقط وقتی بخش باز است و ردیف‌ها زیادند
+      const ROW_WIN = 5;
+      if (sec._rowWin == null) sec._rowWin = 0;
+      const winHint = document.createElement('div');
+      winHint.className = 'section-row-win-hint';
+      winHint.style.display = 'none';
+
+      function clampRowWin() {
+        const n = (sec.rows || []).length;
+        const maxStart = Math.max(0, n - ROW_WIN);
+        sec._rowWin = Math.max(0, Math.min(sec._rowWin || 0, maxStart));
+      }
+      function renderRowWindow() {
+        clampRowWin();
+        tbody.innerHTML = '';
+        const rows = sec.rows || [];
+        const n = rows.length;
+        const start = sec._rowWin || 0;
+        // اگر ≤۵ ردیف: همه را بدون پنجره نشان بده
+        if (n <= ROW_WIN) {
+          body.classList.remove('row-windowed', 'has-more-above', 'has-more-below');
+          rows.forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
+          winHint.style.display = 'none';
+          return;
+        }
+        body.classList.add('row-windowed');
+        const end = Math.min(n, start + ROW_WIN);
+        for (let i = start; i < end; i++) {
+          tbody.appendChild(buildRowEl(sec.id, rows[i], i, paidLabel, unpaidLabel));
+        }
+        // ردیف بعدی را محو نشان بده (فید)
+        if (end < n) {
+          const peek = buildRowEl(sec.id, rows[end], end, paidLabel, unpaidLabel);
+          peek.classList.add('row-window-fade');
+          tbody.appendChild(peek);
+        }
+        body.classList.toggle('has-more-above', start > 0);
+        body.classList.toggle('has-more-below', end < n);
+        const page = Math.floor(start / ROW_WIN) + 1;
+        const pages = Math.max(1, Math.ceil(n / ROW_WIN));
+        winHint.style.display = 'block';
+        winHint.textContent = toPersianDigits(page) + ' / ' + toPersianDigits(pages) + ' · ' + toPersianDigits(n) + ' ردیف';
+      }
+      function shiftRowWin(dir) {
+        if (sec.collapsed) return;
+        const n = (sec.rows || []).length;
+        if (n <= ROW_WIN) return;
+        const maxStart = Math.max(0, n - ROW_WIN);
+        const next = (sec._rowWin || 0) + (dir > 0 ? ROW_WIN : -ROW_WIN);
+        const clamped = Math.max(0, Math.min(maxStart, next));
+        if (clamped === (sec._rowWin || 0)) return;
+        sec._rowWin = clamped;
+        renderRowWindow();
+      }
+      renderRowWindow();
+      body._renderRowWindow = renderRowWindow;
+      body._shiftRowWin = shiftRowWin;
+
+      // اسکرول چرخ‌ماوس روی بدنه و هدر بخش
+      const onWheel = (e) => {
+        if (sec.collapsed) return;
+        if ((sec.rows || []).length <= ROW_WIN) return;
+        e.preventDefault();
+        if (e.deltaY > 8) shiftRowWin(1);
+        else if (e.deltaY < -8) shiftRowWin(-1);
+      };
+      body.addEventListener('wheel', onWheel, { passive: false });
+      header.addEventListener('wheel', onWheel, { passive: false });
+
+      // سوایپ لمسی روی بدنه و هدر
+      let touchY0 = 0;
+      let touchT0 = 0;
+      const onTouchStart = (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        touchY0 = e.touches[0].clientY;
+        touchT0 = Date.now();
+      };
+      const onTouchEnd = (e) => {
+        if (sec.collapsed) return;
+        if ((sec.rows || []).length <= ROW_WIN) return;
+        const t = (e.changedTouches && e.changedTouches[0]) || null;
+        if (!t) return;
+        const dy = t.clientY - touchY0;
+        const dt = Date.now() - touchT0;
+        if (Math.abs(dy) < 40 || dt > 900) return;
+        // انگشت به بالا → محتوا به پایین (ردیف‌های بعدی)
+        if (dy < 0) shiftRowWin(1);
+        else shiftRowWin(-1);
+      };
+      body.addEventListener('touchstart', onTouchStart, { passive: true });
+      body.addEventListener('touchend', onTouchEnd, { passive: true });
+      header.addEventListener('touchstart', onTouchStart, { passive: true });
+      header.addEventListener('touchend', onTouchEnd, { passive: true });
+      body.appendChild(winHint);
       const addRowWrap = document.createElement('div');
       addRowWrap.className = 'add-row-wrap';
       const btnAddRow = document.createElement('button');
@@ -13299,6 +13427,8 @@ if (item.type === 'recurring') {
       const n = Math.max(1, Math.min(5, parseInt(count, 10) || 1));
       for (let i = 0; i < n; i++) sec.rows.push(emptyRow());
       sec.collapsed = false;
+      // پنجره را روی آخرین ردیف‌ها بگذار تا ردیف جدید دیده شود
+      try { sec._rowWin = Math.max(0, (sec.rows || []).length - 5); } catch (e) {}
       // مثل قبل: رندر کامل تا ردیف حتماً دیده شود (هر دو تب)
       renderAll();
       scheduleSave();
