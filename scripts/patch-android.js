@@ -315,7 +315,8 @@ public class NativeFileExportPlugin extends Plugin {
 
         final WebView web=new WebView(getContext());
         web.setBackgroundColor(android.graphics.Color.WHITE);
-        web.setLayerType(android.view.View.LAYER_TYPE_HARDWARE,null);
+        // SOFTWARE: capture با web.draw قابل‌اعتمادتر از HARDWARE است
+        web.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDefaultTextEncodingName("UTF-8");
         web.getSettings().setLoadWithOverviewMode(false);
@@ -378,7 +379,7 @@ public class NativeFileExportPlugin extends Plugin {
                 }
               }
             };
-            new Handler(Looper.getMainLooper()).postDelayed(holder[0], 1000L);
+            new Handler(Looper.getMainLooper()).postDelayed(holder[0], 1400L);
           }
         });
         web.loadDataWithBaseURL("https://hesabketab.local/",html,"text/html","UTF-8",null);
@@ -404,6 +405,25 @@ public class NativeFileExportPlugin extends Plugin {
       android.graphics.Canvas bmpCanvas = new android.graphics.Canvas(fullBmp);
       bmpCanvas.drawColor(android.graphics.Color.WHITE);
       web.draw(bmpCanvas);
+
+      // اگر Bitmap تقریباً سفید بود، خطا بده تا مسیر fallback اجرا شود
+      try {
+        int step = Math.max(8, Math.min(viewW, viewH) / 50);
+        int dark = 0, n = 0;
+        for (int yy = 0; yy < viewH; yy += step) {
+          for (int xx = 0; xx < viewW; xx += step) {
+            int p = fullBmp.getPixel(xx, yy);
+            int r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
+            n++;
+            if (r < 250 || g < 250 || b < 250) dark++;
+          }
+        }
+        if (n > 0 && (dark * 100) / n < 1) {
+          throw new Exception("webview_bitmap_blank");
+        }
+      } catch (Exception inkEx) {
+        if ("webview_bitmap_blank".equals(inkEx.getMessage())) throw inkEx;
+      }
 
       // صفحه استاندارد A4 بر حسب point (1/72 inch)
       final int pageW=595;
