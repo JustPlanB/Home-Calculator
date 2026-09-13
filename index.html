@@ -2558,24 +2558,15 @@
       border: 5px solid transparent;
       border-top-color: var(--muted);
     }
-    /* نشانگر اسکرول باریک */
+    /* اسکرول بدون نمایش نوار */
     * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(140,140,140,0.55) transparent;
+      scrollbar-width: none;
     }
     *::-webkit-scrollbar {
-      width: 3px;
-      height: 3px;
-    }
-    *::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    *::-webkit-scrollbar-thumb {
-      background: rgba(140,140,140,0.55);
-      border-radius: 3px;
-    }
-    [data-theme="light"] *::-webkit-scrollbar-thumb {
-      background: rgba(100,100,100,0.4);
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
+      background: transparent !important;
     }
     /* بدون نوار اسکرول در منوی همبرگری و لیست تب درآمد/مخارج */
     .menu-scroll,
@@ -3591,7 +3582,7 @@
           <thead>
             <tr>
               <th style="text-align:right;padding-right:12px;">رابطه</th>
-              <th style="width:36%;">مانده</th>
+              <th style="width:36%;">مبلغ</th>
             </tr>
           </thead>
           <tbody id="ledger-summary-body"></tbody>
@@ -8561,7 +8552,7 @@
         try { pairs = typeof ledgerPairNets === 'function' ? ledgerPairNets() : []; } catch (e) { pairs = []; }
         let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
           '<th style="' + th + '">رابطه</th>' +
-          '<th style="' + th + 'width:36%;">مانده</th></tr></thead><tbody>';
+          '<th style="' + th + 'width:36%;">مبلغ</th></tr></thead><tbody>';
         if (!pairs.length) {
           html += '<tr class="pdf-keep"><td colspan="2" style="' + td + 'text-align:center;">موردی نیست</td></tr>';
         } else {
@@ -9171,6 +9162,7 @@ function openPdfPrintWindow(){
       askConfirm('تمامی اطلاعات حذف شود؟', () => {
         try {
           pushToTrash('full_backup', 'کل اطلاعات', {
+            sourceLabel: 'پاک کردن همه آرشیو',
             archive: JSON.parse(JSON.stringify(archive || {})),
             plans: JSON.parse(JSON.stringify(plans || [])),
             periodData: JSON.parse(JSON.stringify(periodData || emptyPeriodData())),
@@ -9310,7 +9302,7 @@ function openPdfPrintWindow(){
         }
         try {
           const _p = (plans || []).find(p => p && p.id === id);
-          if (_p) pushToTrash('plan', _p.name || 'قسط', JSON.parse(JSON.stringify(_p)));
+          if (_p) pushToTrash('plan', _p.name || 'قسط', Object.assign(JSON.parse(JSON.stringify(_p)), { sourceLabel: 'اقساط' }));
         } catch (e) {}
         plans = (plans || []).filter(p => p.id !== id);
         syncPlansToExpenseAll();
@@ -10574,6 +10566,31 @@ function openPdfPrintWindow(){
       };
     }
 
+
+    function smsBankPrefKey(raw) {
+      const t = String(raw || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+        .replace(/\d{6,}/g, '#NUM#').replace(/\s+/g, ' ').trim().slice(0, 160);
+      return t;
+    }
+    function loadSmsBankMap() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY + '_smsBankMap') || '{}') || {}; } catch (e) { return {}; }
+    }
+    function getSmsBankPref(raw) {
+      const map = loadSmsBankMap();
+      const k = smsBankPrefKey(raw);
+      return (map[k] || '').trim();
+    }
+    function saveSmsBankPref(raw, bank) {
+      if (!raw || !bank) return;
+      try {
+        const map = loadSmsBankMap();
+        map[smsBankPrefKey(raw)] = bank;
+        // سقف ۲۰۰ ورودی
+        const keys = Object.keys(map);
+        if (keys.length > 200) keys.slice(0, keys.length - 200).forEach(k => { delete map[k]; });
+        localStorage.setItem(STORAGE_KEY + '_smsBankMap', JSON.stringify(map));
+      } catch (e) {}
+    }
     function matchSelectedBank(bankName) {
       if (!bankName) return '';
       const list = selectedBankAccounts || [];
@@ -10715,16 +10732,31 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          const opts = [''].concat(selectedAccountLabels().length ? selectedAccountLabels() : ALL_IRAN_BANKS.slice(0, 12).map(b => bankShortLabel(b) || b));
-          if (parsed.bank && opts.indexOf(parsed.bank) < 0) opts.unshift(parsed.bank);
+          // همه بانک‌ها + ترجیح ذخیره‌شده برای این الگوی پیامک
+          const allBanks = (ALL_IRAN_BANKS || []).map(b => bankShortLabel(b) || b);
+          const preferred = (typeof getSmsBankPref === 'function' ? getSmsBankPref(parsed.raw || '') : '') || parsed.bank || '';
+          const opts = [''].concat(allBanks);
+          // اگر مقدار تشخیص‌داده‌شده در لیست نبود اضافه کن
+          if (preferred && opts.indexOf(preferred) < 0) opts.splice(1, 0, preferred);
           opts.forEach(n => {
             const o = document.createElement('option');
             o.value = n;
             o.textContent = n || '— انتخاب بانک —';
-            if (n && n === parsed.bank) o.selected = true;
+            if (n && preferred && (n === preferred || n === bankShortLabel(preferred))) o.selected = true;
             bankSel.appendChild(o);
           });
           enhanceSelectFont(bankSel);
+          // منوی کشویی را باز کن
+          try {
+            setTimeout(() => {
+              const wrap = bankSel.closest('.fancy-select-wrap');
+              const list = wrap && wrap.querySelector('.fancy-select-list');
+              if (list) {
+                document.querySelectorAll('.fancy-select-list.open').forEach(l => l.classList.remove('open'));
+                list.classList.add('open');
+              }
+            }, 120);
+          } catch (e) {}
         }
         const typeSelEl = meta.querySelector('#smsConfirmType');
         if (typeSelEl) enhanceSelectFont(typeSelEl);
@@ -10800,6 +10832,7 @@ function openPdfPrintWindow(){
       const amount = parseAmount(amtEl ? amtEl.value : pendingSmsEntry.amount);
       if (!amount) { showToast('مبلغ را وارد کنید'); return; }
       const bank = (bankEl && bankEl.value) || pendingSmsEntry.bank || '';
+      if (bank && pendingSmsEntry && pendingSmsEntry.raw) { try { saveSmsBankPref(pendingSmsEntry.raw, bank); } catch (e) {} }
       let day = '';
       if (dayEl && dayEl.value) {
         const d = parseInt(toEnglishDigits(dayEl.value).replace(/[^0-9]/g, '') || '0', 10) || 0;
@@ -11031,11 +11064,13 @@ function openPdfPrintWindow(){
     }
     function pushToTrash(type, title, data) {
       loadTrash();
+      const src = (data && data.sourceLabel) ? data.sourceLabel : '';
       trashItems.unshift({
         id: 'tr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
         type: type,
         title: title || type,
         data: data,
+        sourceLabel: src,
         deletedAt: Date.now()
       });
       // سقف ۵۰۰ آیتم
@@ -11068,6 +11103,28 @@ function openPdfPrintWindow(){
         return;
       }
       const typeFa = { row: 'ردیف', section: 'بخش', plan: 'قسط', ledger_row: 'ردیف بده‌بستان', ledger_section: 'بده‌بستان', recurring: 'درآمد ثابت', period_month: 'ماه کامل', full_backup: 'کل اطلاعات' };
+      function trashSourceLabel(item) {
+        if (item.sourceLabel) return item.sourceLabel;
+        const d = item.data || {};
+        if (item.type === 'row') {
+          const tab = d.tab === 'income' ? 'درآمد' : (d.tab === 'expense' ? 'مخارج' : (d.tab || ''));
+          const sec = (d.sectionTitle || '').trim();
+          if (tab && sec) return 'بخش ' + tab + ' / ' + sec;
+          if (tab) return 'بخش ' + tab;
+          if (sec) return 'بخش ' + sec;
+          return 'ردیف جدول';
+        }
+        if (item.type === 'section') {
+          const tab = d.tab === 'income' ? 'درآمد' : (d.tab === 'expense' ? 'مخارج' : (d.tab || ''));
+          return tab ? ('بخش ' + tab) : 'بخش';
+        }
+        if (item.type === 'plan') return 'اقساط';
+        if (item.type === 'recurring') return 'درآمد ثابت';
+        if (item.type === 'ledger_row' || item.type === 'ledger_section') return 'بده‌بستان';
+        if (item.type === 'period_month') return 'پاک کردن ماه';
+        if (item.type === 'full_backup') return 'پاک کردن همه آرشیو';
+        return typeFa[item.type] || item.type || '';
+      }
 
       const toolbar = document.createElement('div');
       toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;';
@@ -11091,7 +11148,9 @@ function openPdfPrintWindow(){
           '<div style="flex:1;min-width:0;">' +
           '<div style="font-weight:700;margin-bottom:2px;">' + escapeHtml(item.title || '—') + '</div>' +
           '<div style="color:var(--muted);font-size:0.78rem;">' +
-          escapeHtml(typeFa[item.type] || item.type) + (when ? ' · ' + when : '') + '</div></div>';
+          escapeHtml(trashSourceLabel(item)) +
+          (typeFa[item.type] ? (' · ' + escapeHtml(typeFa[item.type])) : '') +
+          (when ? ' · ' + when : '') + '</div></div>';
         box.appendChild(row);
       });
     }
@@ -11257,10 +11316,7 @@ function openPdfPrintWindow(){
         showToast('موردی برای پاک کردن انتخاب نشده');
         return;
       }
-      const allSelected = indices.length >= trashItems.length;
-      const msg = allSelected
-        ? 'همه محتویات سطل زباله برای همیشه حذف شود؟'
-        : (toPersianDigits(indices.length) + ' مورد انتخاب‌شده برای همیشه حذف شود؟');
+      const msg = 'اطلاعات برای همیشه پاک شوند؟';
       askConfirm(msg, () => {
         // نزولی تا splice خراب نشود
         indices.sort((a, b) => b - a).forEach(i => {
@@ -11976,7 +12032,7 @@ if (item.type === 'recurring') {
           const item = recurringIncomes[i];
           if (item && !canEditRow(item)) { showToast(OWNERSHIP_LOCK_MSG); return; }
           askConfirm('این درآمد ثابت حذف شود؟', () => {
-            try { if (item) pushToTrash('recurring', item.name || 'درآمد ثابت', JSON.parse(JSON.stringify(item))); } catch (e) {}
+            try { if (item) pushToTrash('recurring', item.name || 'درآمد ثابت', Object.assign(JSON.parse(JSON.stringify(item)), { sourceLabel: 'درآمد ثابت' })); } catch (e) {}
             if (item && item.id && sharedAccountId) {
               item.deletedAt = Date.now();
               item.updatedAt = Date.now();
@@ -12958,15 +13014,40 @@ if (item.type === 'recurring') {
           }
         }
       }
+
+    function positionStatusMenu(menu, anchorEl, e) {
+      const r = anchorEl.getBoundingClientRect();
+      const menuW = 160;
+      const menuH = 110;
+      let top = r.bottom + 4;
+      let left = r.left;
+      // اگر rect نامعتبر بود از مختصات لمس/کلیک استفاده کن
+      if ((r.width < 2 || r.height < 2) && e && typeof e.clientX === 'number') {
+        left = e.clientX - 40;
+        top = e.clientY + 8;
+      }
+      if (top + menuH > window.innerHeight - 8) {
+        top = Math.max(8, r.top - menuH - 4);
+      }
+      // در RTL ترجیح: منو زیر سلول و داخل صفحه
+      if (left + menuW > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - menuW - 8);
+      }
+      if (left < 8) left = 8;
+      if (top < 8) top = 8;
+      menu.style.position = 'fixed';
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+      menu.style.right = 'auto';
+      menu.style.zIndex = '520';
+    }
       function openStatusMenu(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         if (!canEditRow(row)) { showToast(OWNERSHIP_LOCK_MSG); return; }
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        const r = tdAmt.getBoundingClientRect();
-        menu.style.top = Math.min(r.bottom + 4, window.innerHeight - 120) + 'px';
-        menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 160)) + 'px';
+        positionStatusMenu(menu, tdAmt, e);
         [
           { v: 'paid', label: paidLabel },
           { v: 'unpaid', label: unpaidLabel }
@@ -13143,6 +13224,7 @@ if (item.type === 'recurring') {
               periodKey: periodKey(currentYear, currentMonth),
               sectionId: sec.id || secId,
               sectionTitle: sec.title || '',
+              sourceLabel: (currentTab === 'income' ? 'بخش درآمد' : 'بخش مخارج') + (sec.title ? (' / ' + sec.title) : ''),
               row: JSON.parse(JSON.stringify(row))
             });
           } catch (e) {}
@@ -13389,6 +13471,7 @@ if (item.type === 'recurring') {
             pushToTrash('section', sec.title || 'بخش', {
               tab: currentTab,
               periodKey: periodKey(currentYear, currentMonth),
+              sourceLabel: (currentTab === 'income' ? 'بخش درآمد' : 'بخش مخارج') + (sec.title ? (' / ' + sec.title) : ''),
               section: JSON.parse(JSON.stringify(sec))
             });
           } catch (e) {}
@@ -13937,7 +14020,7 @@ if (item.type === 'recurring') {
         try {
           const ledT = ensureLedger();
           const secT = ledT.sections.find(s => s.id === secId);
-          if (secT) pushToTrash('ledger_section', secT.title || 'بده‌بستان', { section: JSON.parse(JSON.stringify(secT)) });
+          if (secT) pushToTrash('ledger_section', secT.title || 'بده‌بستان', { sourceLabel: 'بده‌بستان', section: JSON.parse(JSON.stringify(secT)) });
         } catch (e) {}
         const led = ensureLedger();
         led.sections = led.sections.filter(s => s.id !== secId);
@@ -14029,7 +14112,7 @@ if (item.type === 'recurring') {
           const ledT = ensureLedger();
           const secT = ledT.sections.find(s => s.id === secId);
           const rowT = secT && secT.rows && secT.rows[idx];
-          if (rowT) pushToTrash('ledger_row', rowT.desc || 'ردیف بده‌بستان', { sectionId: secId, row: JSON.parse(JSON.stringify(rowT)) });
+          if (rowT) pushToTrash('ledger_row', rowT.desc || 'ردیف بده‌بستان', { sourceLabel: 'بده‌بستان', sectionId: secId, row: JSON.parse(JSON.stringify(rowT)) });
         } catch (e) {}
         const led = ensureLedger();
         const sec = led.sections.find(s => s.id === secId);
@@ -14356,9 +14439,7 @@ if (item.type === 'recurring') {
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        const rct = tdAmt.getBoundingClientRect();
-        menu.style.top = Math.min(rct.bottom + 4, window.innerHeight - 120) + 'px';
-        menu.style.left = Math.max(8, Math.min(rct.left, window.innerWidth - 160)) + 'px';
+        positionStatusMenu(menu, tdAmt, e);
         [
           { v: 'debt', label: 'بدهکار', cls: 'unpaid' },
           { v: 'credit', label: 'بستانکار', cls: 'paid' }
