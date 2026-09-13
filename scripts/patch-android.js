@@ -394,7 +394,7 @@ public class NativeFileExportPlugin extends Plugin {
     try{
       // viewW باید عرض منطقی HTML باشد (794 CSS px ≈ عرض A4 در 96dpi)
       final int layoutW = viewW > 0 ? viewW : 794;
-      final int scaleCap = 3; // 288 DPI مؤثر
+      final int scaleCap = 4; // ~384 DPI مؤثر
       final int viewH = Math.max(contentH, 200);
 
       web.measure(
