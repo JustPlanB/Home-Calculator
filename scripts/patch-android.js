@@ -352,8 +352,18 @@ public class NativeFileExportPlugin extends Plugin {
                           new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                           return;
                         }
-                        if(measured < 200) measured = 400;
-                        measured = (int)(measured * 1.05) + 40;
+                        if(measured < 100 && attempts < 10){
+                          new Handler(Looper.getMainLooper()).postDelayed(holder[0], 400L);
+                          return;
+                        }
+                        if(measured < 100){
+                          started=true;
+                          call.reject("pdf_content_too_short");
+                          try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
+                          view.destroy();
+                          return;
+                        }
+                        measured = (int)(measured * 1.08) + 48;
                         started=true;
                         createPdf(view,filename,call,host,root,measured, viewW);
                       }
@@ -366,8 +376,18 @@ public class NativeFileExportPlugin extends Plugin {
                       new Handler(Looper.getMainLooper()).postDelayed(holder[0], 500L);
                       return;
                     }
-                    if(measured < 200) measured = 400;
-                    measured = (int)(measured * 1.05) + 40;
+                    if(measured < 100 && attempts < 10){
+                      new Handler(Looper.getMainLooper()).postDelayed(holder[0], 400L);
+                      return;
+                    }
+                    if(measured < 100){
+                      started=true;
+                      call.reject("pdf_content_too_short");
+                      try{ host.removeView(view); root.removeView(host); }catch(Exception ignored){}
+                      view.destroy();
+                      return;
+                    }
+                    measured = (int)(measured * 1.08) + 48;
                     started=true;
                     createPdf(view,filename,call,host,root,measured, viewW);
                   }catch(Exception e2){
@@ -428,7 +448,7 @@ public class NativeFileExportPlugin extends Plugin {
             if (r < 250 || g < 250 || b < 250) dark++;
           }
         }
-        if (n > 0 && (dark * 100) / n < 1) throw new Exception("webview_bitmap_blank");
+        if (n > 0 && (dark * 100) / n < 2) throw new Exception("webview_bitmap_blank");
       } catch (Exception inkEx) {
         if ("webview_bitmap_blank".equals(inkEx.getMessage())) throw inkEx;
       }
