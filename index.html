@@ -8580,126 +8580,128 @@
     }
 
         async function renderPdfPagesOffline(){
-      // عرض منطقی A4 @96dpi + SCALE بالا + صفحه‌بندی روی مرز ردیف‌ها
-      const CSS_A4_W = 794;
-      const CSS_A4_H = 1123;
-      const SCALE = 3.5; // ~336 DPI
-      const layoutW = CSS_A4_W;
-      const pageInnerH = CSS_A4_H - 24;
+      // ساده و قابل‌اعتماد: یک DOM واقعی با opacity کم ولی قابل paint
+      // اگر capture سفید بود خطا می‌دهیم تا native اجرا شود
+      const layoutW = 794;
+      const SCALE = 2; // اول محتوا؛ بعداً کیفیت
 
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
 
       const htmlBody = buildPdfContent();
-      if (!htmlBody || htmlBody.length < 40) throw new Error('pdf content empty');
+      if (!htmlBody || htmlBody.length < 80) throw new Error('pdf content empty: ' + (htmlBody || '').length);
 
       const holder = document.createElement('div');
       holder.id = 'pdfRenderHolder';
+      // مهم: display:none / visibility:hidden ممنوع
       holder.style.cssText = [
-        'position:fixed', 'left:0', 'top:0',
+        'position:fixed',
+        'left:0',
+        'top:0',
         'width:' + layoutW + 'px',
-        'min-height:80px',
-        'background:#fff', 'color:#000',
+        'background:#ffffff',
+        'color:#000000',
         'direction:rtl',
-        'font-family:Tahoma,Vazirmatn,Arial,sans-serif',
-        'font-size:12px', 'line-height:1.4',
-        'box-sizing:border-box', 'padding:12px',
-        'z-index:0', 'opacity:0.02', 'pointer-events:none',
-        'overflow:visible', 'transform:none', 'zoom:1'
+        'font-family:Tahoma,Arial,sans-serif',
+        'font-size:12px',
+        'line-height:1.4',
+        'box-sizing:border-box',
+        'padding:12px',
+        'z-index:99999',
+        'opacity:0.01',
+        'pointer-events:none',
+        'overflow:visible',
+        'transform:none',
+        'zoom:1'
       ].join(';');
       holder.innerHTML = htmlBody;
       document.body.appendChild(holder);
 
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      await new Promise(r => setTimeout(r, 140));
-      let layoutH = Math.max(holder.scrollHeight, holder.offsetHeight, 80);
+      await new Promise(r => setTimeout(r, 100));
+
+      const sw = holder.scrollWidth, sh = holder.scrollHeight;
+      const cw = holder.clientWidth, ch = holder.clientHeight;
+      const br = holder.getBoundingClientRect();
+      console.log('[PDF-DEBUG] holder dims', { sw, sh, cw, ch, brW: br.width, brH: br.height, htmlLen: htmlBody.length });
+
+      if (sh < 40 || br.height < 20) {
+        try { holder.remove(); } catch (e) {}
+        throw new Error('pdf holder zero height');
+      }
+
+      const layoutH = Math.ceil(Math.max(sh, ch, br.height)) + 8;
       holder.style.height = layoutH + 'px';
-      await new Promise(r => setTimeout(r, 30));
-      layoutH = Math.max(holder.scrollHeight, holder.offsetHeight, 80);
 
-      // نقاط شکست صفحه روی مرز ردیف/بلوک — نه وسط ردیف
-      const breakYs = [0];
-      const units = Array.from(holder.querySelectorAll('.pdf-keep'));
-      let pageStart = 0;
-      units.forEach(el => {
-        const top = el.offsetTop;
-        const bottom = top + Math.max(el.offsetHeight, 1);
-        if (bottom - pageStart > pageInnerH && top > pageStart + 8) {
-          // ردیف کامل به صفحه بعد
-          if (breakYs[breakYs.length - 1] !== top) breakYs.push(top);
-          pageStart = top;
-        }
-      });
-      if (breakYs[breakYs.length - 1] !== layoutH) breakYs.push(layoutH);
-
-      // رندر کل محتوا روی canvas
       const pixelW = Math.round(layoutW * SCALE);
       const pixelH = Math.round(layoutH * SCALE);
       const canvas = document.createElement('canvas');
       canvas.width = pixelW;
-      canvas.height = Math.min(pixelH, 20000);
+      canvas.height = Math.min(pixelH, 8000);
       const ctx = canvas.getContext('2d', { alpha: false });
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
 
-      const svg =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="' + layoutW + '" height="' + layoutH + '">' +
-        '<foreignObject x="0" y="0" width="' + layoutW + '" height="' + layoutH + '">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + layoutW + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;line-height:1.4;box-sizing:border-box;padding:12px;">' +
-        htmlBody +
-        '</div></foreignObject></svg>';
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('svg load failed'));
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      });
-      ctx.drawImage(img, 0, 0, layoutW, layoutH);
+      // تلاش foreignObject
+      let painted = false;
+      try {
+        const svg =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="' + layoutW + '" height="' + layoutH + '">' +
+          '<foreignObject width="100%" height="100%">' +
+          '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + layoutW + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;padding:12px;box-sizing:border-box;">' +
+          htmlBody +
+          '</div></foreignObject></svg>';
+        const img = new Image();
+        await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('svg')); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+        ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+        ctx.drawImage(img, 0, 0);
+        painted = true;
+      } catch (e) {
+        console.warn('[PDF-DEBUG] foreignObject failed', e);
+      }
+
+      // شمارش پیکسل غیرسفید — سختگیرانه
+      function inkRatio(c2d, w, h) {
+        const sampleW = Math.min(w, 400);
+        const sampleH = Math.min(h, 400);
+        const data = c2d.getImageData(0, 0, sampleW, sampleH).data;
+        let dark = 0, n = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          n++;
+          if (data[i] < 245 || data[i+1] < 245 || data[i+2] < 245) dark++;
+        }
+        return n ? dark / n : 0;
+      }
+      const ratio = inkRatio(ctx, canvas.width, canvas.height);
+      console.log('[PDF-DEBUG] ink ratio', ratio, 'painted', painted);
+
       try { holder.remove(); } catch (e) {}
 
-      function hasInk(c2d, w, h) {
-        try {
-          const step = Math.max(2, Math.floor(Math.min(w, h) / 45));
-          let dark = 0, n = 0;
-          for (let y = 0; y < h; y += step) {
-            for (let x = 0; x < w; x += step) {
-              const d = c2d.getImageData(x, y, 1, 1).data;
-              n++;
-              if (d[0] < 250 || d[1] < 250 || d[2] < 250) dark++;
-            }
-          }
-          return n > 0 && dark / n > 0.01;
-        } catch (e) { return false; }
-      }
-      if (!hasInk(ctx, Math.min(pixelW, 900), Math.min(canvas.height, 900))) {
-        throw new Error('pdf canvas blank');
+      if (!painted || ratio < 0.02) {
+        throw new Error('pdf capture blank ink=' + ratio.toFixed(4));
       }
 
+      // یک تصویر بلند — برش ساده A4 بدون صفحه سفید
+      const pageHpx = Math.round(pixelW * (841.89 / 595.28));
       const pages = [];
-      for (let i = 0; i < breakYs.length - 1; i++) {
-        const y0 = breakYs[i];
-        const y1 = breakYs[i + 1];
-        const hCss = Math.max(1, y1 - y0);
-        const sy = Math.round(y0 * SCALE);
-        const sh = Math.round(hCss * SCALE);
-        if (sh < 8) continue;
+      const totalH = canvas.height;
+      for (let y = 0; y < totalH; y += pageHpx) {
+        const h = Math.min(pageHpx, totalH - y);
+        if (pages.length && h < pageHpx * 0.1) break;
         const pc = document.createElement('canvas');
         pc.width = pixelW;
-        pc.height = sh;
+        pc.height = h;
         const pctx = pc.getContext('2d', { alpha: false });
-        pctx.fillStyle = '#ffffff';
-        pctx.fillRect(0, 0, pc.width, pc.height);
-        pctx.drawImage(canvas, 0, sy, pixelW, Math.min(sh, canvas.height - sy), 0, 0, pixelW, sh);
-        if (!hasInk(pctx, Math.min(pc.width, 700), Math.min(pc.height, 700))) continue;
-        const dataUrl = pc.toDataURL('image/jpeg', 0.96);
-        const bin = atob(dataUrl.split(',')[1]);
+        pctx.fillStyle = '#fff';
+        pctx.fillRect(0, 0, pc.width, h);
+        pctx.drawImage(canvas, 0, y, pixelW, h, 0, 0, pixelW, h);
+        const r2 = inkRatio(pctx, pc.width, pc.height);
+        if (r2 < 0.015) continue;
+        const bin = atob(pc.toDataURL('image/jpeg', 0.92).split(',')[1]);
         const jpg = new Uint8Array(bin.length);
-        for (let j = 0; j < bin.length; j++) jpg[j] = bin.charCodeAt(j);
-        pages.push({ jpg: jpg, w: pc.width, h: pc.height });
+        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+        pages.push({ jpg, w: pc.width, h: pc.height });
       }
-      if (!pages.length) throw new Error('no pdf pages');
+      if (!pages.length) throw new Error('no ink pages');
       return buildSimpleImagePdf(pages, 595.28, 841.89);
     }
 
@@ -8711,43 +8713,43 @@ async function exportPdf(){
         const C = window.Capacitor, plugins = C && C.Plugins, native = plugins && plugins.NativeFileExport;
         const isNative = C && typeof C.isNativePlatform === 'function' && C.isNativePlatform();
 
-        // 1) آفلاین با صفحه‌بندی ردیف‌محور و کیفیت بالا
+        // اولویت روی اندروید: Native WebView.draw (محتوای واقعی)
+        if (isNative && native && typeof native.exportHtmlToPdf === 'function') {
+          try {
+            const html = buildPdfFullDocument();
+            console.log('[PDF-DEBUG] native html length', html.length);
+            if (html.length < 200) throw new Error('html too short');
+            const result = await native.exportHtmlToPdf({ html: html, filename: name });
+            if (result && result.uri) {
+              showToast('PDF در Downloads ذخیره شد');
+              return;
+            }
+            throw new Error('no uri');
+          } catch (ne) {
+            console.warn('[PDF-DEBUG] native failed', ne);
+          }
+        }
+
+        // fallback آفلاین (مرورگر / اگر native شکست)
         try {
           const blob = await renderPdfPagesOffline();
-          if (!blob || !blob.size) throw new Error('empty blob');
+          if (!blob || !blob.size) throw new Error('empty');
           if (isNative) {
             const b64 = await blobToBase64(blob);
             const saved = await nativeSaveBase64(name, 'application/pdf', b64);
-            if (saved && saved.uri) {
-              showToast('PDF ذخیره شد (' + Math.max(1, Math.round(blob.size / 1024)) + 'KB)');
-              return;
-            }
-            throw new Error('save failed');
+            if (saved && saved.uri) { showToast('PDF ذخیره شد'); return; }
+            throw new Error('save fail');
           }
           const saved = await shareExportFile(blob, name, 'application/pdf');
           if (!saved) downloadBlob(blob, name);
           showToast(saved ? 'PDF آماده است' : 'دانلود PDF شروع شد');
           return;
         } catch (oe) {
-          console.warn('offline PDF failed', oe);
-        }
-
-        // 2) نیتیو
-        if (isNative && native && typeof native.exportHtmlToPdf === 'function') {
-          try {
-            const html = buildPdfFullDocument();
-            const result = await native.exportHtmlToPdf({ html: html, filename: name });
-            if (result && result.uri) {
-              showToast('PDF در Downloads ذخیره شد');
-              return;
-            }
-          } catch (ne) {
-            console.warn('native PDF failed', ne);
-          }
+          console.warn('[PDF-DEBUG] offline failed', oe);
         }
 
         openPdfPrintWindow();
-        showToast('پیش‌نمایش چاپ — Save as PDF را انتخاب کنید');
+        showToast('پیش‌نمایش چاپ — Save as PDF');
       } catch (e) {
         console.error(e);
         showToast('ساخت PDF ناموفق بود');
