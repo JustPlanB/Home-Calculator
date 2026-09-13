@@ -8346,18 +8346,31 @@
     }
     function buildPdfContent() {
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
-      // استایل اینلاین تا html2canvas رنگ را از تم نگیرد
-      const th = 'border:1px solid #000;padding:4px 5px;background:#e8e8e8;color:#000;font-size:10px;text-align:center;font-weight:bold;';
-      const td = 'border:1px solid #000;padding:4px 5px;background:#fff;color:#000;font-size:10px;vertical-align:top;';
+      // تمام‌عرض A4 — بدون چیدمان دو ستونه که محتوا را کوچک می‌کند
+      const th = 'border:1px solid #222;padding:6px 5px;background:#ececec;color:#000;font-size:11px;text-align:center;font-weight:bold;';
+      const tdBase = 'border:1px solid #222;padding:6px 5px;color:#000;font-size:11px;vertical-align:middle;';
+      const td = tdBase + 'background:#fff;';
       const tdN = td + 'text-align:center;direction:ltr;white-space:nowrap;';
       const tdR = td + 'text-align:right;word-break:break-word;white-space:normal;';
-      const tbl = 'width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;margin:0;';
+      // سایه خیلی ملایم ~10% برای ردیف‌های منفی/پرداخت‌نشده
+      const tdShade = tdBase + 'background:#e8e8e8;'; // ~10% gray on white feel
+      const tdNsh = tdShade + 'text-align:center;direction:ltr;white-space:nowrap;';
+      const tdRsh = tdShade + 'text-align:right;word-break:break-word;white-space:normal;';
+      const tbl = 'width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;margin:0 0 4px 0;';
+      const keep = 'page-break-inside:avoid;break-inside:avoid;';
+
+      function isNegativeStatus(st, kind) {
+        // kind: income | expense | ledger
+        if (kind === 'ledger') return st === 'debt' || st === 'بدهکار';
+        // paid = مثبت، unpaid = منفی
+        return st !== 'paid' && st !== 'credit';
+      }
 
       function detailTable(tab) {
         const isIncome = tab === 'income';
         const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
         const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
-        let html = '<table style="' + tbl + '"><thead><tr>' +
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
           '<th style="' + th + 'width:16%;">بخش</th>' +
           '<th style="' + th + 'width:8%;">روز</th>' +
           '<th style="' + th + 'width:38%;">شرح</th>' +
@@ -8369,16 +8382,19 @@
           (sec.rows || []).forEach(r => {
             if (!r.desc && !r.amount && !r.day) return;
             any = true;
+            const neg = isNegativeStatus(r.status, tab);
             const st = r.status === 'paid' ? paidL : unpaidL;
-            html += '<tr>' +
-              '<td style="' + tdR + '">' + escapeHtml(title) + '</td>' +
-              '<td style="' + tdN + '">' + (r.day ? toPersianPad2(r.day) : '') + '</td>' +
-              '<td style="' + tdR + '">' + escapeHtml(r.desc || '') + '</td>' +
-              '<td style="' + tdN + '">' + (r.amount ? formatNum(r.amount) : '۰') + '</td>' +
-              '<td style="' + tdN + '">' + escapeHtml(st) + '</td></tr>';
+            const a = neg ? tdRsh : tdR;
+            const b = neg ? tdNsh : tdN;
+            html += '<tr class="pdf-keep" style="' + keep + '">' +
+              '<td style="' + a + '">' + escapeHtml(title) + '</td>' +
+              '<td style="' + b + '">' + (r.day ? toPersianPad2(r.day) : '') + '</td>' +
+              '<td style="' + a + '">' + escapeHtml(r.desc || '') + '</td>' +
+              '<td style="' + b + '">' + (r.amount ? formatNum(r.amount) : '۰') + '</td>' +
+              '<td style="' + b + '">' + escapeHtml(st) + '</td></tr>';
           });
         });
-        if (!any) html += '<tr><td colspan="5" style="' + td + 'text-align:center;">بدون ردیف</td></tr>';
+        if (!any) html += '<tr class="pdf-keep"><td colspan="5" style="' + td + 'text-align:center;">بدون ردیف</td></tr>';
         html += '</tbody></table>';
         return html;
       }
@@ -8387,139 +8403,174 @@
         const isIncome = tab === 'income';
         const paidH = isIncome ? 'دریافت شده' : 'پرداخت شده';
         const unpaidH = isIncome ? 'دریافت نشده' : 'پرداخت نشده';
-        let html = '<table style="' + tbl + '"><thead><tr>' +
+        let rows = '';
+        let tPaid = 0, tUnpaid = 0;
+        (periodData[tab].sections || []).forEach(sec => {
+          let p = 0, u = 0;
+          (sec.rows || []).forEach(r => {
+            const amt = Number(r.amount) || 0;
+            if (r.status === 'paid') p += amt; else u += amt;
+          });
+          tPaid += p; tUnpaid += u;
+          if (!p && !u && !(sec.title || '').trim()) return;
+          rows += '<tr class="pdf-keep" style="' + keep + '">' +
+            '<td style="' + tdR + '">' + escapeHtml((sec.title || '').trim() || '—') + '</td>' +
+            '<td style="' + tdN + '">' + formatNum(p) + '</td>' +
+            '<td style="' + tdN + '">' + formatNum(u) + '</td>' +
+            '<td style="' + tdN + '">' + formatNum(p + u) + '</td></tr>';
+        });
+        if (!rows) rows = '<tr class="pdf-keep"><td colspan="4" style="' + td + 'text-align:center;">—</td></tr>';
+        rows += '<tr class="pdf-keep" style="' + keep + '">' +
+          '<td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tPaid) + '</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tUnpaid) + '</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tPaid + tUnpaid) + '</td></tr>';
+        return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
           '<th style="' + th + '">بخش</th>' +
           '<th style="' + th + '">' + paidH + '</th>' +
           '<th style="' + th + '">' + unpaidH + '</th>' +
-          '<th style="' + th + '">جمع</th></tr></thead><tbody>';
-        let gPaid = 0, gUnpaid = 0;
-        (periodData[tab].sections || []).forEach(sec => {
-          let paid = 0, unpaid = 0;
-          (sec.rows || []).forEach(r => {
-            const a = Number(r.amount) || 0;
-            if (r.status === 'paid') paid += a; else unpaid += a;
-          });
-          gPaid += paid; gUnpaid += unpaid;
-          html += '<tr>' +
-            '<td style="' + tdR + '">' + escapeHtml((sec.title || '').trim() || '—') + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(paid) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(unpaid) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(paid + unpaid) + '</td></tr>';
-        });
-        html += '<tr>' +
-          '<td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gPaid) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gUnpaid) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gPaid + gUnpaid) + '</td></tr>';
-        html += '</tbody></table>';
-        return html;
+          '<th style="' + th + '">جمع کل</th></tr></thead><tbody>' + rows + '</tbody></table>';
       }
 
       function balanceSection() {
-        const expMap = {}, incMap = {}, order = [];
-        (periodData.expense.sections || []).forEach(sec => {
-          const t = (sec.title || '').trim() || '—';
-          expMap[t] = (expMap[t] || 0) + sectionTotal(sec);
-          if (!order.includes(t)) order.push(t);
-        });
-        (periodData.income.sections || []).forEach(sec => {
-          const t = (sec.title || '').trim() || '—';
-          incMap[t] = (incMap[t] || 0) + sectionTotal(sec);
-          if (!order.includes(t)) order.push(t);
-        });
-        let html = '<table style="' + tbl + '"><thead><tr>' +
-          '<th style="' + th + '">بخش</th><th style="' + th + '">درآمد</th>' +
-          '<th style="' + th + '">مخارج</th><th style="' + th + '">مانده</th></tr></thead><tbody>';
-        let gInc = 0, gExp = 0;
-        order.forEach(title => {
-          const inc = incMap[title] || 0;
-          const exp = expMap[title] || 0;
-          gInc += inc; gExp += exp;
-          html += '<tr>' +
-            '<td style="' + tdR + '">' + escapeHtml(title) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(inc) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(exp) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(inc - exp) + '</td></tr>';
-        });
-        html += '<tr>' +
-          '<td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gInc) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gExp) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gInc - gExp) + '</td></tr>';
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + '">بخش</th>' +
+          '<th style="' + th + '">درآمد</th>' +
+          '<th style="' + th + '">مخارج</th>' +
+          '<th style="' + th + '">مانده</th></tr></thead><tbody>';
+        const incSecs = periodData.income.sections || [];
+        const expSecs = periodData.expense.sections || [];
+        const names = new Set();
+        incSecs.forEach(s => { if ((s.title || '').trim()) names.add((s.title || '').trim()); });
+        expSecs.forEach(s => { if ((s.title || '').trim()) names.add((s.title || '').trim()); });
+        let tI = 0, tE = 0;
+        if (!names.size) {
+          html += '<tr class="pdf-keep"><td colspan="4" style="' + td + 'text-align:center;">—</td></tr>';
+        } else {
+          names.forEach(name => {
+            let iSum = 0, eSum = 0;
+            incSecs.filter(s => (s.title || '').trim() === name).forEach(s => {
+              (s.rows || []).forEach(r => { iSum += Number(r.amount) || 0; });
+            });
+            expSecs.filter(s => (s.title || '').trim() === name).forEach(s => {
+              (s.rows || []).forEach(r => { eSum += Number(r.amount) || 0; });
+            });
+            tI += iSum; tE += eSum;
+            html += '<tr class="pdf-keep" style="' + keep + '">' +
+              '<td style="' + tdR + '">' + escapeHtml(name) + '</td>' +
+              '<td style="' + tdN + '">' + formatNum(iSum) + '</td>' +
+              '<td style="' + tdN + '">' + formatNum(eSum) + '</td>' +
+              '<td style="' + tdN + '">' + formatNum(iSum - eSum) + '</td></tr>';
+          });
+        }
+        html += '<tr class="pdf-keep" style="' + keep + '">' +
+          '<td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tI) + '</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tE) + '</td>' +
+          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(tI - tE) + '</td></tr>';
         html += '</tbody></table>';
         return html;
       }
 
       function installDetail() {
-        let html = '<table style="' + tbl + '"><thead><tr>' +
-          '<th style="' + th + '">شرح</th><th style="' + th + '">پرداخت‌شده</th>' +
-          '<th style="' + th + '">باقی‌مانده</th><th style="' + th + '">جمع کل</th></tr></thead><tbody>';
-        let gPaid = 0, gRemain = 0, gTotal = 0, any = false;
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + '">نام قسط</th>' +
+          '<th style="' + th + '">مبلغ قسط</th>' +
+          '<th style="' + th + '">تعداد</th>' +
+          '<th style="' + th + '">پرداخت‌شده</th>' +
+          '<th style="' + th + '">باقی</th></tr></thead><tbody>';
+        let any = false;
         (plans || []).forEach(plan => {
+          if (!plan || plan.deletedAt) return;
           any = true;
           const count = Math.max(0, parseInt(plan.count, 10) || 0);
           const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
-          const amt = planInstallmentAmount(plan);
-          const total = planTotalPayable(plan);
-          const paidSum = paid * amt;
-          const remainSum = total - paidSum;
-          gPaid += paidSum; gRemain += remainSum; gTotal += total;
-          html += '<tr>' +
+          const amt = typeof planInstallmentAmount === 'function' ? planInstallmentAmount(plan) : (Number(plan.amount) || 0);
+          const total = typeof planTotalPayable === 'function' ? planTotalPayable(plan) : amt * count;
+          const remain = total - paid * amt;
+          html += '<tr class="pdf-keep" style="' + keep + '">' +
             '<td style="' + tdR + '">' + escapeHtml(plan.name || '—') + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(paidSum) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(remainSum) + '</td>' +
-            '<td style="' + tdN + '">' + formatNum(total) + '</td></tr>';
+            '<td style="' + tdN + '">' + formatNum(amt) + '</td>' +
+            '<td style="' + tdN + '">' + toPersianDigits(count) + '</td>' +
+            '<td style="' + tdN + '">' + toPersianDigits(paid) + '</td>' +
+            '<td style="' + tdN + '">' + formatNum(remain) + '</td></tr>';
         });
-        if (!any) html += '<tr><td colspan="4" style="' + td + 'text-align:center;">بدون قسط</td></tr>';
-        html += '<tr>' +
-          '<td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gPaid) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gRemain) + '</td>' +
-          '<td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gTotal) + '</td></tr>';
+        if (!any) html += '<tr class="pdf-keep"><td colspan="5" style="' + td + 'text-align:center;">بدون قسط</td></tr>';
         html += '</tbody></table>';
         return html;
       }
 
-      function installSummary() {
-        let gPaid = 0, gRemain = 0, gTotal = 0;
-        (plans || []).forEach(plan => {
-          const count = Math.max(0, parseInt(plan.count, 10) || 0);
-          const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
-          const amt = planInstallmentAmount(plan);
-          const total = planTotalPayable(plan);
-          gPaid += paid * amt;
-          gRemain += total - paid * amt;
-          gTotal += total;
+      function recurringTable() {
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + 'width:36%;">نام</th>' +
+          '<th style="' + th + 'width:22%;">مبلغ</th>' +
+          '<th style="' + th + 'width:14%;">روز</th>' +
+          '<th style="' + th + 'width:28%;">حساب / بخش</th></tr></thead><tbody>';
+        let any = false;
+        (recurringIncomes || []).forEach(r => {
+          if (!r || (!r.name && !r.amount)) return;
+          any = true;
+          html += '<tr class="pdf-keep" style="' + keep + '">' +
+            '<td style="' + tdR + '">' + escapeHtml(r.name || '—') + '</td>' +
+            '<td style="' + tdN + '">' + formatNum(r.amount || 0) + '</td>' +
+            '<td style="' + tdN + '">' + (r.day ? toPersianDigits(r.day) : '—') + '</td>' +
+            '<td style="' + tdR + '">' + escapeHtml((r.account || r.sectionTitle || '') || '—') + '</td></tr>';
         });
-        return '<table style="' + tbl + '"><thead><tr>' +
-          '<th style="' + th + '">شرح</th><th style="' + th + '">مبلغ</th></tr></thead><tbody>' +
-          '<tr><td style="' + tdR + '">پرداخت‌شده</td><td style="' + tdN + '">' + formatNum(gPaid) + '</td></tr>' +
-          '<tr><td style="' + tdR + '">باقی‌مانده</td><td style="' + tdN + '">' + formatNum(gRemain) + '</td></tr>' +
-          '<tr><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gTotal) + '</td></tr>' +
-          '</tbody></table>';
+        if (!any) html += '<tr class="pdf-keep"><td colspan="4" style="' + td + 'text-align:center;">بدون درآمد ثابت</td></tr>';
+        html += '</tbody></table>';
+        return html;
       }
 
-      function pair(title, left, right) {
-        return '<div style="margin:0 0 14px 0;background:#fff;">' +
-          '<div style="text-align:center;font-weight:bold;font-size:13px;color:#000;margin:0 0 6px 0;">' + escapeHtml(title) + '</div>' +
-          '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;background:#fff;"><tr>' +
-          '<td style="width:62%;vertical-align:top;background:#fff;padding:0;">' +
-          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 4px 0;">جزئیات</div>' + left +
-          '</td>' +
-          '<td style="width:38%;vertical-align:top;background:#fff;padding:0;">' +
-          '<div style="text-align:center;font-size:11px;font-weight:bold;color:#000;margin:0 0 4px 0;">خلاصه</div>' + right +
-          '</td></tr></table></div>';
+      function ledgerTable() {
+        let led;
+        try { led = ensureLedger(); } catch (e) { led = { sections: [] }; }
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + 'width:22%;">طرفین</th>' +
+          '<th style="' + th + 'width:10%;">روز</th>' +
+          '<th style="' + th + 'width:30%;">شرح</th>' +
+          '<th style="' + th + 'width:18%;">مبلغ</th>' +
+          '<th style="' + th + 'width:20%;">وضعیت</th></tr></thead><tbody>';
+        let any = false;
+        (led.sections || []).forEach(sec => {
+          const rel = (typeof ledgerSectionTitle === 'function')
+            ? ledgerSectionTitle(sec)
+            : (((sec.personA || '') + ' ↔ ' + (sec.personB || '')) || '—');
+          (sec.rows || []).forEach(r => {
+            if (!r.desc && !r.amount && !r.day) return;
+            any = true;
+            const neg = isNegativeStatus(r.status, 'ledger');
+            const stLabel = (r.status === 'credit' || r.status === 'paid') ? 'بستانکار' : 'بدهکار';
+            const a = neg ? tdRsh : tdR;
+            const b = neg ? tdNsh : tdN;
+            html += '<tr class="pdf-keep" style="' + keep + '">' +
+              '<td style="' + a + '">' + escapeHtml(rel) + '</td>' +
+              '<td style="' + b + '">' + (r.day ? toPersianPad2(r.day) : '') + '</td>' +
+              '<td style="' + a + '">' + escapeHtml(r.desc || '') + '</td>' +
+              '<td style="' + b + '">' + formatNum(r.amount || 0) + '</td>' +
+              '<td style="' + b + '">' + escapeHtml(stLabel) + '</td></tr>';
+          });
+        });
+        if (!any) html += '<tr class="pdf-keep"><td colspan="5" style="' + td + 'text-align:center;">بدون بده‌بستان</td></tr>';
+        html += '</tbody></table>';
+        return html;
       }
 
-      // ترتیب: درآمد → مخارج → مانده → اقساط
-      let body = '<div style="text-align:center;font-weight:bold;font-size:15px;color:#000;margin:0 0 12px 0;background:#fff;">حساب کتاب — ' +
+      function section(title, content) {
+        return '<div class="pdf-section" style="margin:0 0 16px 0;background:#fff;">' +
+          '<div class="pdf-keep pdf-section-title" style="' + keep + 'text-align:center;font-weight:bold;font-size:14px;color:#000;margin:0 0 8px 0;padding:4px 0;border-bottom:2px solid #333;">' +
+          escapeHtml(title) + '</div>' + content + '</div>';
+      }
+
+      let body = '<div class="pdf-keep" style="' + keep + 'text-align:center;font-weight:bold;font-size:16px;color:#000;margin:0 0 14px 0;background:#fff;">حساب کتاب — ' +
         escapeHtml(periodLabel) + '</div>';
-      body += pair('درآمد', detailTable('income'), summaryTable('income'));
-      body += pair('مخارج', detailTable('expense'), summaryTable('expense'));
-      body += '<div style="margin:0 0 14px 0;background:#fff;">' +
-        '<div style="text-align:center;font-weight:bold;font-size:13px;color:#000;margin:0 0 6px 0;">مانده</div>' +
-        balanceSection() + '</div>';
-      body += pair('اقساط', installDetail(), installSummary());
+      body += section('درآمد — جزئیات', detailTable('income'));
+      body += section('درآمد — خلاصه', summaryTable('income'));
+      body += section('مخارج — جزئیات', detailTable('expense'));
+      body += section('مخارج — خلاصه', summaryTable('expense'));
+      body += section('مانده', balanceSection());
+      body += section('درآمد ثابت', recurringTable());
+      body += section('بده‌بستان', ledgerTable());
+      body += section('اقساط', installDetail());
       return body;
     }
 
@@ -8529,16 +8580,12 @@
     }
 
         async function renderPdfPagesOffline(){
-      // هندسه صحیح A4:
-      // HTML را در عرض منطقی ~794 CSS px (عرض A4 در 96DPI) می‌چینیم
-      // سپس با scale=3 رندر می‌کنیم → ~288 DPI مؤثر
-      // هر برش صفحه فقط به‌اندازه محتوای همان صفحه ارتفاع دارد (نه A4 خالی)
-      // در PDF تصویر تمام‌عرض صفحه می‌شود و ارتفاع متناسب — جمع‌شدن در 1/6 صفحه رخ نمی‌دهد
-      const CSS_A4_W = 794;   // 210mm در 96dpi
-      const CSS_A4_H = 1123;  // 297mm در 96dpi
-      const SCALE = 3;        // 96*3 = 288 DPI
+      // عرض منطقی A4 @96dpi + SCALE بالا + صفحه‌بندی روی مرز ردیف‌ها
+      const CSS_A4_W = 794;
+      const CSS_A4_H = 1123;
+      const SCALE = 3.5; // ~336 DPI
       const layoutW = CSS_A4_W;
-      const pageSliceH = CSS_A4_H; // ارتفاع هر صفحه بر حسب CSS px
+      const pageInnerH = CSS_A4_H - 24;
 
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
 
@@ -8550,35 +8597,46 @@
       holder.style.cssText = [
         'position:fixed', 'left:0', 'top:0',
         'width:' + layoutW + 'px',
-        'min-height:100px',
+        'min-height:80px',
         'background:#fff', 'color:#000',
         'direction:rtl',
         'font-family:Tahoma,Vazirmatn,Arial,sans-serif',
-        'font-size:12px', 'line-height:1.45',
-        'box-sizing:border-box', 'padding:16px',
-        'z-index:0', 'opacity:0.015', 'pointer-events:none',
+        'font-size:12px', 'line-height:1.4',
+        'box-sizing:border-box', 'padding:12px',
+        'z-index:0', 'opacity:0.02', 'pointer-events:none',
         'overflow:visible', 'transform:none', 'zoom:1'
       ].join(';');
       holder.innerHTML = htmlBody;
       document.body.appendChild(holder);
 
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      await new Promise(r => setTimeout(r, 120));
-      let layoutH = Math.max(
-        holder.scrollHeight,
-        holder.offsetHeight,
-        Math.ceil(holder.getBoundingClientRect().height) || 0,
-        120
-      );
+      await new Promise(r => setTimeout(r, 140));
+      let layoutH = Math.max(holder.scrollHeight, holder.offsetHeight, 80);
       holder.style.height = layoutH + 'px';
-      await new Promise(r => setTimeout(r, 40));
+      await new Promise(r => setTimeout(r, 30));
+      layoutH = Math.max(holder.scrollHeight, holder.offsetHeight, 80);
 
-      // capture با SVG foreignObject در عرض layoutW
+      // نقاط شکست صفحه روی مرز ردیف/بلوک — نه وسط ردیف
+      const breakYs = [0];
+      const units = Array.from(holder.querySelectorAll('.pdf-keep'));
+      let pageStart = 0;
+      units.forEach(el => {
+        const top = el.offsetTop;
+        const bottom = top + Math.max(el.offsetHeight, 1);
+        if (bottom - pageStart > pageInnerH && top > pageStart + 8) {
+          // ردیف کامل به صفحه بعد
+          if (breakYs[breakYs.length - 1] !== top) breakYs.push(top);
+          pageStart = top;
+        }
+      });
+      if (breakYs[breakYs.length - 1] !== layoutH) breakYs.push(layoutH);
+
+      // رندر کل محتوا روی canvas
       const pixelW = Math.round(layoutW * SCALE);
       const pixelH = Math.round(layoutH * SCALE);
       const canvas = document.createElement('canvas');
       canvas.width = pixelW;
-      canvas.height = Math.min(pixelH, 16000);
+      canvas.height = Math.min(pixelH, 20000);
       const ctx = canvas.getContext('2d', { alpha: false });
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -8589,7 +8647,7 @@
       const svg =
         '<svg xmlns="http://www.w3.org/2000/svg" width="' + layoutW + '" height="' + layoutH + '">' +
         '<foreignObject x="0" y="0" width="' + layoutW + '" height="' + layoutH + '">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + layoutW + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;line-height:1.45;box-sizing:border-box;padding:16px;">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + layoutW + 'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;line-height:1.4;box-sizing:border-box;padding:12px;">' +
         htmlBody +
         '</div></foreignObject></svg>';
       const img = new Image();
@@ -8601,10 +8659,9 @@
       ctx.drawImage(img, 0, 0, layoutW, layoutH);
       try { holder.remove(); } catch (e) {}
 
-      // بررسی جوهر
       function hasInk(c2d, w, h) {
         try {
-          const step = Math.max(2, Math.floor(Math.min(w, h) / 50));
+          const step = Math.max(2, Math.floor(Math.min(w, h) / 45));
           let dark = 0, n = 0;
           for (let y = 0; y < h; y += step) {
             for (let x = 0; x < w; x += step) {
@@ -8613,36 +8670,33 @@
               if (d[0] < 250 || d[1] < 250 || d[2] < 250) dark++;
             }
           }
-          return n > 0 && dark / n > 0.012;
+          return n > 0 && dark / n > 0.01;
         } catch (e) { return false; }
       }
       if (!hasInk(ctx, Math.min(pixelW, 900), Math.min(canvas.height, 900))) {
         throw new Error('pdf canvas blank');
       }
 
-      // برش صفحات: هر تکه فقط ارتفاع همان صفحه (نه canvas پر از سفید)
-      const slicePx = Math.round(pageSliceH * SCALE);
       const pages = [];
-      const totalH = canvas.height;
-      for (let y = 0; y < totalH; y += slicePx) {
-        const h = Math.min(slicePx, totalH - y);
-        if (pages.length > 0 && h < slicePx * 0.06) break;
+      for (let i = 0; i < breakYs.length - 1; i++) {
+        const y0 = breakYs[i];
+        const y1 = breakYs[i + 1];
+        const hCss = Math.max(1, y1 - y0);
+        const sy = Math.round(y0 * SCALE);
+        const sh = Math.round(hCss * SCALE);
+        if (sh < 8) continue;
         const pc = document.createElement('canvas');
         pc.width = pixelW;
-        pc.height = h; // فقط محتوای این صفحه
+        pc.height = sh;
         const pctx = pc.getContext('2d', { alpha: false });
         pctx.fillStyle = '#ffffff';
         pctx.fillRect(0, 0, pc.width, pc.height);
-        pctx.drawImage(canvas, 0, y, pixelW, h, 0, 0, pixelW, h);
-        if (!hasInk(pctx, Math.min(pc.width, 700), Math.min(pc.height, 700))) {
-          if (pages.length) break;
-          continue;
-        }
-        // JPEG با کیفیت بالا (متن جدول)
-        const dataUrl = pc.toDataURL('image/jpeg', 0.95);
+        pctx.drawImage(canvas, 0, sy, pixelW, Math.min(sh, canvas.height - sy), 0, 0, pixelW, sh);
+        if (!hasInk(pctx, Math.min(pc.width, 700), Math.min(pc.height, 700))) continue;
+        const dataUrl = pc.toDataURL('image/jpeg', 0.96);
         const bin = atob(dataUrl.split(',')[1]);
         const jpg = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+        for (let j = 0; j < bin.length; j++) jpg[j] = bin.charCodeAt(j);
         pages.push({ jpg: jpg, w: pc.width, h: pc.height });
       }
       if (!pages.length) throw new Error('no pdf pages');
@@ -8657,29 +8711,17 @@ async function exportPdf(){
         const C = window.Capacitor, plugins = C && C.Plugins, native = plugins && plugins.NativeFileExport;
         const isNative = C && typeof C.isNativePlatform === 'function' && C.isNativePlatform();
 
-        // اول native با هندسه اصلاح‌شده
-        if (isNative && native && typeof native.exportHtmlToPdf === 'function') {
-          try {
-            const html = buildPdfFullDocument();
-            if (!html || html.length < 80) throw new Error('empty html');
-            const result = await native.exportHtmlToPdf({ html: html, filename: name });
-            if (result && result.uri) {
-              showToast('PDF در Downloads ذخیره شد');
-              return;
-            }
-          } catch (ne) {
-            console.warn('native PDF failed', ne);
-          }
-        }
-
-        // fallback آفلاین
+        // 1) آفلاین با صفحه‌بندی ردیف‌محور و کیفیت بالا
         try {
           const blob = await renderPdfPagesOffline();
           if (!blob || !blob.size) throw new Error('empty blob');
           if (isNative) {
             const b64 = await blobToBase64(blob);
             const saved = await nativeSaveBase64(name, 'application/pdf', b64);
-            if (saved && saved.uri) { showToast('PDF ذخیره شد'); return; }
+            if (saved && saved.uri) {
+              showToast('PDF ذخیره شد (' + Math.max(1, Math.round(blob.size / 1024)) + 'KB)');
+              return;
+            }
             throw new Error('save failed');
           }
           const saved = await shareExportFile(blob, name, 'application/pdf');
@@ -8688,6 +8730,20 @@ async function exportPdf(){
           return;
         } catch (oe) {
           console.warn('offline PDF failed', oe);
+        }
+
+        // 2) نیتیو
+        if (isNative && native && typeof native.exportHtmlToPdf === 'function') {
+          try {
+            const html = buildPdfFullDocument();
+            const result = await native.exportHtmlToPdf({ html: html, filename: name });
+            if (result && result.uri) {
+              showToast('PDF در Downloads ذخیره شد');
+              return;
+            }
+          } catch (ne) {
+            console.warn('native PDF failed', ne);
+          }
         }
 
         openPdfPrintWindow();
