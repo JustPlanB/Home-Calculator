@@ -7842,6 +7842,57 @@
       return out;
     }
 
+
+    function claimBackupOwnership(dataRoot) {
+      // داده‌های بازیابی‌شده مثل داده خود کاربر قابل ویرایش/حذف باشند
+      // (اقساط همچنان فقط از منوی اقساط ویرایش می‌شوند چون fromPlanId قفل دارد)
+      const uid = (typeof ownerAuthUid === 'function') ? ownerAuthUid() : (typeof currentUserId === 'function' ? currentUserId() : '');
+      const nm = (memberName || '').trim();
+      const h = (typeof normalizeHandle === 'function')
+        ? (normalizeHandle(memberHandle) || normalizeHandle(memberName))
+        : '';
+      function claim(row) {
+        if (!row || typeof row !== 'object') return;
+        if (row.deletedAt) return;
+        row.createdBy = uid || row.createdBy || '';
+        if (nm) row.createdByName = nm;
+        if (h) row.ownerHandle = h;
+        row.updatedAt = Date.now();
+        if (!row.createdAt) row.createdAt = Date.now();
+      }
+      function claimSide(side) {
+        if (!side || !Array.isArray(side.sections)) return;
+        side.sections.forEach(sec => {
+          claim(sec);
+          (sec.rows || []).forEach(claim);
+        });
+      }
+      try {
+        Object.keys(archive || {}).forEach(k => {
+          const pd = archive[k];
+          if (!pd) return;
+          claimSide(pd.income);
+          claimSide(pd.expense);
+          if (pd.ledger && Array.isArray(pd.ledger.sections)) {
+            pd.ledger.sections.forEach(sec => {
+              claim(sec);
+              (sec.rows || []).forEach(claim);
+            });
+          }
+        });
+        (plans || []).forEach(claim);
+        (recurringIncomes || []).forEach(claim);
+        // periodData جاری
+        claimSide(periodData && periodData.income);
+        claimSide(periodData && periodData.expense);
+        if (periodData && periodData.ledger && Array.isArray(periodData.ledger.sections)) {
+          periodData.ledger.sections.forEach(sec => {
+            claim(sec);
+            (sec.rows || []).forEach(claim);
+          });
+        }
+      } catch (e) {}
+    }
     function applyBackupData(data, mode) {
       // mode: 'replace' | 'merge'
       if (mode === 'replace') {
@@ -7886,7 +7937,9 @@
       const key = periodKey(currentYear, currentMonth);
       if (archive[key]) periodData = archive[key];
       else periodData = emptyPeriodData();
+      try { claimBackupOwnership(); } catch (e) {}
       saveArchive();
+      try { if (typeof saveRecurring === 'function') saveRecurring(); } catch (e) {}
       initSelectors();
       updateTabUI();
       renderAll();
@@ -8446,7 +8499,7 @@
           '<th style="' + th + '">مبلغ قسط</th>' +
           '<th style="' + th + '">تعداد</th>' +
           '<th style="' + th + '">پرداخت‌شده</th>' +
-          '<th style="' + th + '">باقی</th></tr></thead><tbody>';
+          '<th style="' + th + '">باقیمانده</th></tr></thead><tbody>';
         let any = false;
         (plans || []).forEach(plan => {
           if (!plan || plan.deletedAt) return;
@@ -8562,9 +8615,9 @@
         return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
           '<th style="' + th + '">شرح</th><th style="' + th + '">مقدار</th></tr></thead><tbody>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد طرح اقساط</td><td style="' + tdN + '">' + toPersianDigits(nPlans) + '</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد اقساط (پرداخت‌شده / کل)</td><td style="' + tdN + '">' + toPersianDigits(nPaidInst) + ' / ' + toPersianDigits(nTotalInst) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد اقساط کل/پرداخت‌شده</td><td style="' + tdN + '">' + toPersianDigits(nTotalInst) + ' / ' + toPersianDigits(nPaidInst) + '</td></tr>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع پرداخت‌شده</td><td style="' + tdN + '">' + formatNum(gPaid) + '</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">باقی‌مانده</td><td style="' + tdN + '">' + formatNum(gRemain) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">باقیمانده</td><td style="' + tdN + '">' + formatNum(gRemain) + '</td></tr>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل قابل پرداخت</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gTotal) + '</td></tr>' +
           '</tbody></table>';
       }
@@ -10709,17 +10762,27 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          // همه بانک‌ها + ترجیح ذخیره‌شده برای این الگوی پیامک
+          // حساب‌های شخصی‌سازی‌شده + همه بانک‌ها
+          const personalized = selectedAccountLabels();
           const allBanks = (ALL_IRAN_BANKS || []).map(b => bankShortLabel(b) || b);
           const preferred = (typeof getSmsBankPref === 'function' ? getSmsBankPref(parsed.raw || '') : '') || parsed.bank || '';
-          const opts = [''].concat(allBanks);
-          // اگر مقدار تشخیص‌داده‌شده در لیست نبود اضافه کن
-          if (preferred && opts.indexOf(preferred) < 0) opts.splice(1, 0, preferred);
+          const opts = [''];
+          const seen = new Set(['']);
+          personalized.forEach(n => {
+            if (n && !seen.has(n)) { seen.add(n); opts.push(n); }
+          });
+          allBanks.forEach(n => {
+            if (n && !seen.has(n)) { seen.add(n); opts.push(n); }
+          });
+          if (preferred && !seen.has(preferred)) {
+            opts.splice(1, 0, preferred);
+            seen.add(preferred);
+          }
           opts.forEach(n => {
             const o = document.createElement('option');
             o.value = n;
             o.textContent = n || '— انتخاب بانک —';
-            if (n && preferred && (n === preferred || n === bankShortLabel(preferred))) o.selected = true;
+            if (n && preferred && (n === preferred || n === bankShortLabel(preferred) || preferred.indexOf(n) >= 0)) o.selected = true;
             bankSel.appendChild(o);
           });
           enhanceSelectFont(bankSel);
@@ -10830,12 +10893,19 @@ function openPdfPrintWindow(){
           saveSmsAccountBankMap();
         }
       }
-      if (row.account && selectedBankAccounts) {
-        const labels = selectedAccountLabels();
-        if (labels.indexOf(row.account) < 0 && ALL_IRAN_BANKS.indexOf(row.account) >= 0) {
-          selectedBankAccounts.push({ id: 'ba_auto_' + Date.now().toString(36), bank: row.account, label: bankShortLabel(row.account) || row.account });
-          try { saveBankAccountsSelection(); } catch (e) {}
-        }
+      if (row.account) {
+        try {
+          if (typeof ensureBankAccountSelected === 'function') ensureBankAccountSelected(row.account);
+          else {
+            if (!selectedBankAccounts) selectedBankAccounts = [];
+            const labels = selectedAccountLabels();
+            if (labels.indexOf(row.account) < 0) {
+              const full = (ALL_IRAN_BANKS || []).find(b => (bankShortLabel(b) || b) === row.account || b === row.account) || row.account;
+              selectedBankAccounts.push({ id: 'ba_auto_' + Date.now().toString(36), bank: full, label: bankShortLabel(full) || row.account });
+              try { saveBankAccountsSelection(); } catch (e) {}
+            }
+          }
+        } catch (e) {}
       }
       const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
       if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
@@ -10973,6 +11043,30 @@ function openPdfPrintWindow(){
     function selectedAccountLabels() {
       return (selectedBankAccounts || []).map(accountLabel).filter(Boolean);
     }
+
+    function ensureBankAccountSelected(nameOrLabel) {
+      const label = (nameOrLabel || '').trim();
+      if (!label) return label;
+      if (!Array.isArray(selectedBankAccounts)) selectedBankAccounts = [];
+      normalizeSelectedBanks();
+      const labels = selectedAccountLabels();
+      if (labels.indexOf(label) >= 0) return label;
+      // تطبیق با نام کامل بانک
+      const full = (ALL_IRAN_BANKS || []).find(b =>
+        b === label || (bankShortLabel(b) || b) === label || b.indexOf(label) >= 0 || label.indexOf(bankShortLabel(b) || b) >= 0
+      ) || label;
+      const short = bankShortLabel(full) || label;
+      // اگر short یا full از قبل هست
+      if (labels.indexOf(short) >= 0 || labels.indexOf(full) >= 0) return labels.indexOf(short) >= 0 ? short : full;
+      selectedBankAccounts.push({
+        id: 'ba_auto_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        bank: full,
+        label: short
+      });
+      try { saveBankAccountsSelection(); } catch (e) {}
+      return short;
+    }
+
     function extractAccountFromSms(text) {
       const t = normalizeSmsText(text);
       const m = t.match(/حساب\s*[:：]?\s*([0-9]{3,})/i) || t.match(/کارت\s*[:：]?\s*([0-9]{4,})/i);
