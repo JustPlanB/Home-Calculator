@@ -309,8 +309,8 @@ public class NativeFileExportPlugin extends Plugin {
         final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
         final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        final int viewW = 3600;
-        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 4800);
+        final int viewW = 1200;
+        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2000);
         root.addView(host,hp);
 
         final WebView web=new WebView(getContext());
@@ -322,7 +322,7 @@ public class NativeFileExportPlugin extends Plugin {
         web.getSettings().setUseWideViewPort(false);
         web.getSettings().setDomStorageEnabled(true);
         web.setInitialScale(100);
-        host.addView(web,new FrameLayout.LayoutParams(viewW, 4800));
+        host.addView(web,new FrameLayout.LayoutParams(viewW, 2000));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
@@ -398,8 +398,8 @@ public class NativeFileExportPlugin extends Plugin {
       host.layout(0,0,viewW,viewH);
       try{ Thread.sleep(700); }catch(InterruptedException ignored){}
 
-      final int pageW=595;
-      final int pageH=842;
+      final int pageW=1190;
+      final int pageH=1684; // 2× A4 points for sharp zoom
       final int margin=18;
       final float usableW = pageW - 2f*margin;
       final float scale = usableW / (float)viewW;
