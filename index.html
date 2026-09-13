@@ -8335,7 +8335,7 @@
       objs[1]='<< /Type /Catalog /Pages 2 0 R >>';
       objs[2]='<< /Type /Pages /Count '+pages.length+' /Kids ['+kids+'] >>';
       pages.forEach(p=>{ objs[p.imgObj]='<< /Type /XObject /Subtype /Image /Width '+p.w+' /Height '+p.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+p.jpg.length+' >>\nSTREAM\n'+pdfByteString(p.jpg)+'\nENDSTREAM';
-        const sx=(pageW-24)/p.w, sy=(pageH-24)/p.h, sc=Math.min(sx,sy), dw=p.w*sc, dh=p.h*sc, x=(pageW-dw)/2, y=(pageH-dh)/2;
+        const margin=12; const sx=(pageW-2*margin)/p.w, sy=(pageH-2*margin)/p.h, sc=Math.min(sx,sy), dw=p.w*sc, dh=p.h*sc, x=margin+(pageW-2*margin-dw)/2, y=pageH-margin-dh;
         const content='q\n'+dw.toFixed(2)+' 0 0 '+dh.toFixed(2)+' '+x.toFixed(2)+' '+y.toFixed(2)+' cm\n/Im'+p.imgObj+' Do\nQ\n';
         const cb=new TextEncoder().encode(content); objs[p.contObj]='<< /Length '+cb.length+' >>\nSTREAM\n'+content+'ENDSTREAM';
         objs[p.pageObj]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /XObject << /Im'+p.imgObj+' '+p.imgObj+' 0 R >> >> /Contents '+p.contObj+' 0 R >>';
@@ -8529,35 +8529,50 @@
     }
 
         async function renderPdfPagesOffline(){
-      // عرض منطقی فشرده + DPR بالا = متن واضح هنگام زوم، بدون حاشیه سفید زیاد
-      const layoutW = 1200;
-      const dpr = 8; // کیفیت بسیار بالا (حجم چند مگابایتی)
+      // هدف: ~300 DPI روی A4 — تصویر بزرگ + JPEG حداکثر کیفیت (متن/جدول شارپ هنگام زوم)
+      // A4 = 8.27 × 11.69 in → در 300 DPI ≈ 2480 × 3508 px
+      const TARGET_DPI = 300;
+      const A4_W_IN = 8.27, A4_H_IN = 11.69;
+      const pagePixelW = Math.round(A4_W_IN * TARGET_DPI); // ~2480
+      const pagePixelH = Math.round(A4_H_IN * TARGET_DPI); // ~3508
+      const layoutW = 1000; // عرض منطقی HTML
+      const dpr = pagePixelW / layoutW; // ~2.48 برای پر کردن عرض صفحه در 300DPI
+
+      // صبر برای فونت
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+
       const holder=document.createElement('div');
-      holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:8px;line-height:1.35;';
+      holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,"Vazirmatn",Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:10px;line-height:1.4;';
       holder.innerHTML=buildPdfContent();
       document.body.appendChild(holder);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      await new Promise(r=>setTimeout(r,80));
+      await new Promise(r=>setTimeout(r,100));
       let layoutH=Math.max(holder.scrollHeight, holder.offsetHeight, 200);
-      layoutH = Math.ceil(layoutH) + 8;
+      layoutH = Math.ceil(layoutH) + 6;
       holder.style.height=layoutH+'px';
 
       const pixelW = Math.round(layoutW * dpr);
       const pixelH = Math.round(layoutH * dpr);
+      // محدودیت حافظه: سقف ارتفاع تک‌بوم
+      const MAX_CANVAS_H = 16384;
+      if (pixelH > MAX_CANVAS_H) {
+        // در این حالت با DPR کمتر ادامه بده
+        console.warn('PDF canvas tall, reducing DPR');
+      }
       const canvas=document.createElement('canvas');
       canvas.width=pixelW;
-      canvas.height=pixelH;
+      canvas.height=Math.min(pixelH, MAX_CANVAS_H);
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#ffffff';
-      ctx.fillRect(0,0,pixelW,pixelH);
+      ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.imageSmoothingEnabled=true;
       ctx.imageSmoothingQuality='high';
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
 
       const svg=
         '<svg xmlns="http://www.w3.org/2000/svg" width="'+layoutW+'" height="'+layoutH+'">' +
         '<foreignObject width="100%" height="100%">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:8px;line-height:1.35;">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:10px;line-height:1.4;">' +
         holder.innerHTML +
         '</div></foreignObject></svg>';
       const img=new Image();
@@ -8570,43 +8585,46 @@
       ctx.drawImage(img,0,0,layoutW,layoutH);
       try{ holder.remove(); }catch(e){}
 
-      // ارتفاع صفحه A4 به پیکسل
-      const pageHpx = Math.floor(pixelW * (841.89 / 595.28));
+      // برش صفحات — هر صفحه یک تصویر ~2480×3508
       const pages=[];
-      for(let y=0;y<pixelH;y+=pageHpx){
-        const h=Math.min(pageHpx, pixelH-y);
-        // اگر باقیمانده خیلی کم است (کمتر از ۸٪ ارتفاع صفحه) و صفحه قبلی داریم، رد کن
-        if (pages.length > 0 && h < pageHpx * 0.08) break;
+      const totalH = Math.min(pixelH, canvas.height);
+      for(let y=0;y<totalH;y+=pagePixelH){
+        const h=Math.min(pagePixelH, totalH-y);
+        if (pages.length > 0 && h < pagePixelH * 0.06) break;
         const pc=document.createElement('canvas');
-        pc.width=pixelW;
-        pc.height=h;
+        // صفحه کامل A4 حتی اگر محتوا کوتاه باشد (پس‌زمینه سفید)
+        pc.width=pagePixelW;
+        pc.height=pagePixelH;
         const pctx=pc.getContext('2d');
         pctx.fillStyle='#ffffff';
-        pctx.fillRect(0,0,pc.width,h);
-        pctx.drawImage(canvas,0,y,pixelW,h,0,0,pixelW,h);
-        // تشخیص صفحه سفید: نمونه‌گیری از چند نوار
+        pctx.fillRect(0,0,pc.width,pc.height);
+        // محتوا را تمام‌عرض روی صفحه بکش
+        pctx.drawImage(canvas,0,y,pixelW,h,0,0,pagePixelW, Math.round(h * (pagePixelW/pixelW)));
+        // تشخیص سفید بودن
         let hasContent=false;
         try{
-          const bands = [0.1, 0.35, 0.6, 0.85];
-          let nonW=0, total=0;
-          bands.forEach(frac => {
-            const sy = Math.min(h-2, Math.floor(h * frac));
-            const sample=pctx.getImageData(20, sy, Math.min(pixelW-40, 400), Math.min(24, h-sy)).data;
+          const bands=[0.08,0.25,0.5,0.75];
+          let nonW=0,total=0;
+          bands.forEach(frac=>{
+            const sy=Math.min(pagePixelH-4, Math.floor(pagePixelH*frac));
+            const sample=pctx.getImageData(30,sy,Math.min(pagePixelW-60,500),20).data;
             for(let i=0;i<sample.length;i+=4){
               total++;
-              if(sample[i]<250||sample[i+1]<250||sample[i+2]<250) nonW++;
+              if(sample[i]<248||sample[i+1]<248||sample[i+2]<248) nonW++;
             }
           });
-          hasContent = total > 0 && (nonW / total) > 0.008;
-        }catch(e){ hasContent = true; }
+          hasContent = total>0 && (nonW/total)>0.006;
+        }catch(e){ hasContent=true; }
         if(!hasContent) continue;
-        // JPEG با کیفیت بالا
-        const data=atob(pc.toDataURL('image/jpeg',0.995).split(',')[1]);
+        // JPEG حداکثر کیفیت — برای سند متنی هنوز قابل قبول و حجم چند مگابایت
+        const dataUrl=pc.toDataURL('image/jpeg',1.0);
+        const data=atob(dataUrl.split(',')[1]);
         const jpg=new Uint8Array(data.length);
         for(let i=0;i<data.length;i++) jpg[i]=data.charCodeAt(i);
         pages.push({jpg,w:pc.width,h:pc.height});
       }
       if(!pages.length) throw new Error('no pages generated');
+      // MediaBox بر حسب point استاندارد A4
       return buildSimpleImagePdf(pages,595.28,841.89);
     }
 
@@ -8614,10 +8632,31 @@ async function exportPdf(){
       try{
         persistCurrent();
         const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.pdf';
-        showToast('در حال ساخت PDF...');
+        showToast('در حال ساخت PDF با کیفیت بالا...');
         const C=window.Capacitor, plugins=C&&C.Plugins, native=plugins&&plugins.NativeFileExport;
 
-        // 1) نیتیو: HTML → PDF واقعی → Downloads
+        // مسیر اصلی: رندر آفلاین ~300DPI → ذخیره واقعی روی Downloads
+        try {
+          const blob=await renderPdfPagesOffline();
+          if(!blob || !blob.size) throw new Error('empty pdf blob');
+          if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform()){
+            const b64=await blobToBase64(blob);
+            const saved=await nativeSaveBase64(name,'application/pdf',b64);
+            if(saved && saved.uri){
+              showToast('PDF ذخیره شد ('+Math.max(1,Math.round(blob.size/1024))+'KB)');
+              return;
+            }
+            throw new Error('native save pdf failed');
+          }
+          const saved=await shareExportFile(blob,name,'application/pdf');
+          if(!saved) downloadBlob(blob,name);
+          showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
+          return;
+        } catch(oe) {
+          console.warn('high-res offline PDF failed', oe);
+        }
+
+        // پشتیبان: نیتیو WebView → PdfDocument
         if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform() && native && typeof native.exportHtmlToPdf==='function'){
           try {
             const result=await native.exportHtmlToPdf({html:buildPdfFullDocument(),filename:name});
@@ -8627,25 +8666,6 @@ async function exportPdf(){
           }
         }
 
-        // 2) آفلاین: ساخت PDF در JS سپس ذخیره نیتیو
-        try {
-          const blob=await renderPdfPagesOffline();
-          if(!blob || !blob.size) throw new Error('empty pdf blob');
-          if(C && typeof C.isNativePlatform==='function' && C.isNativePlatform()){
-            const b64=await blobToBase64(blob);
-            const saved=await nativeSaveBase64(name,'application/pdf',b64);
-            if(saved && saved.uri){ showToast('PDF در Downloads ذخیره شد'); return; }
-            throw new Error('native save pdf failed');
-          }
-          const saved=await shareExportFile(blob,name,'application/pdf');
-          if(!saved) downloadBlob(blob,name);
-          showToast(saved?'PDF آماده است':'دانلود PDF شروع شد');
-          return;
-        } catch(oe) {
-          console.warn('offline PDF failed', oe);
-        }
-
-        // 3) آخرین راه: چاپ
         openPdfPrintWindow();
         showToast('پیش‌نمایش چاپ باز شد — Save as PDF را انتخاب کنید');
       }catch(e){
@@ -8653,7 +8673,7 @@ async function exportPdf(){
         showToast('ساخت PDF ناموفق بود');
       }
     }
-    function openPdfPrintWindow(){
+function openPdfPrintWindow(){
       // Android WebView/Print Preview ممکن است afterprint را خیلی زود، درست هنگام
       // باز شدن پیش‌نمایش، اجرا کند. اگر همان لحظه اپ را برگردانیم، سرویس چاپ
       // به‌جای سند چاپی، صفحه اصلی را ذخیره می‌کند. بنابراین تا وقتی کاربر از
