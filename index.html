@@ -8347,8 +8347,8 @@
     function buildPdfContent() {
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       // تمام‌عرض A4 — بدون چیدمان دو ستونه که محتوا را کوچک می‌کند
-      const th = 'border:1px solid #000;padding:6px 5px;background:#000;color:#fff;font-size:11px;text-align:center;font-weight:bold;';
-      const tdBase = 'border:1px solid #222;padding:6px 5px;color:#000;font-size:11px;vertical-align:middle;';
+      const th = 'border:1px solid #fff;padding:6px 5px;background:#000;color:#fff;font-size:11px;text-align:center;font-weight:bold;';
+      const tdBase = 'border:1px solid #000;padding:6px 5px;color:#000;font-size:11px;vertical-align:middle;';
       const td = tdBase + 'background:#fff;';
       const tdN = td + 'text-align:center;direction:ltr;white-space:nowrap;';
       const tdR = td + 'text-align:right;word-break:break-word;white-space:normal;';
@@ -8556,27 +8556,24 @@
       }
 
       function ledgerSummary() {
-        let led;
-        try { led = ensureLedger(); } catch (e) { led = { sections: [] }; }
-        let debt = 0, credit = 0, nDebt = 0, nCredit = 0, nSec = 0;
-        (led.sections || []).forEach(sec => {
-          let has = false;
-          (sec.rows || []).forEach(r => {
-            if (!r.desc && !r.amount && !r.day) return;
-            has = true;
-            const amt = Number(r.amount) || 0;
-            if (r.status === 'credit' || r.status === 'paid') { credit += amt; nCredit++; }
-            else { debt += amt; nDebt++; }
+        // دقیقاً مطابق UI اپ: دو ستون «رابطه» و «مانده» از ledgerPairNets()
+        let pairs = [];
+        try { pairs = typeof ledgerPairNets === 'function' ? ledgerPairNets() : []; } catch (e) { pairs = []; }
+        let html = '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + '">رابطه</th>' +
+          '<th style="' + th + 'width:36%;">مانده</th></tr></thead><tbody>';
+        if (!pairs.length) {
+          html += '<tr class="pdf-keep"><td colspan="2" style="' + td + 'text-align:center;">موردی نیست</td></tr>';
+        } else {
+          pairs.forEach(p => {
+            const relation = (p.debtor || '') + ' به ' + (p.creditor || '') + ' بدهکار است';
+            html += '<tr class="pdf-keep" style="' + keep + '">' +
+              '<td style="' + tdR + '">' + escapeHtml(relation) + '</td>' +
+              '<td style="' + tdN + '">' + formatNum(p.amount || 0) + '</td></tr>';
           });
-          if (has) nSec++;
-        });
-        return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
-          '<th style="' + th + '">شرح</th><th style="' + th + '">مقدار</th></tr></thead><tbody>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد طرفین</td><td style="' + tdN + '">' + toPersianDigits(nSec) + '</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع بدهکار</td><td style="' + tdN + '">' + formatNum(debt) + ' (' + toPersianDigits(nDebt) + ')</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع بستانکار</td><td style="' + tdN + '">' + formatNum(credit) + ' (' + toPersianDigits(nCredit) + ')</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">مانده (بستانکار − بدهکار)</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(credit - debt) + '</td></tr>' +
-          '</tbody></table>';
+        }
+        html += '</tbody></table>';
+        return html;
       }
 
       function installSummary() {
