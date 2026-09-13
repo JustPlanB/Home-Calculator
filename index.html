@@ -8576,48 +8576,57 @@
 
     function buildPdfFullDocument(){
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
-      // صفحه‌بندی جدول‌محور — بدون تغییر کیفیت رندر نیتیو
-      // هر صفحه ارتفاع ثابت CSS نزدیک محتوای قابل‌چاپ A4
+      // صفحه‌بندی مقتدر فقط در JS — Native باید دقیقاً همین صفحات را رندر کند
       const PAGE_W = 794;
-      const PAGE_H = 1080; // ≈ ارتفاع قابل استفاده A4 در 96dpi با حاشیه
+      // ارتفاع محتوای قابل‌چاپ A4 (بدون تکیه بر overflow:hidden)
+      const PAGE_H = 1040;
 
-      // بخش‌ها را جدا بساز (همان buildPdfContent منطق)
+      // CSS مشترک برای اندازه‌گیری و رندر نهایی
+      const pageCSS =
+        'width:' + PAGE_W + 'px;' +
+        'box-sizing:border-box;' +
+        'padding:14px 16px;' +
+        'background:#ffffff;' +
+        'color:#000000;' +
+        'direction:rtl;' +
+        'font-family:Tahoma,Vazirmatn,Arial,sans-serif;' +
+        'font-size:12px;' +
+        'line-height:1.4;';
+
       const raw = buildPdfContent();
-      // raw را به بخش‌های .pdf-section + عنوان اصلی بشکاف
       const wrap = document.createElement('div');
       wrap.innerHTML = raw;
-      const blocks = [];
-      const titleEl = wrap.querySelector('.pdf-keep');
-      // اولین بلوک عنوان ماه
-      const mainTitle = '<div class="pdf-keep" style="text-align:center;font-weight:bold;font-size:16px;color:#000;margin:0 0 12px 0;">حساب کتاب — ' +
+
+      // بلوک‌های منطقی = هر .pdf-section (عنوان + جدول)
+      const sections = Array.from(wrap.querySelectorAll('.pdf-section'));
+      const mainTitle =
+        '<div data-pdf-block="title" style="text-align:center;font-weight:bold;font-size:16px;color:#000;margin:0 0 12px 0;">حساب کتاب — ' +
         escapeHtml(periodLabel) + '</div>';
 
-      const sections = Array.from(wrap.querySelectorAll('.pdf-section'));
-      if (!sections.length) {
-        // fallback: کل raw یک بلوک
-        blocks.push({ html: raw, minH: 200 });
-      } else {
-        sections.forEach((sec, idx) => {
-          blocks.push({ html: sec.outerHTML, minH: 80 });
-        });
-      }
-
-      // اندازه‌گیری ارتفاع واقعی هر بلوک
+      // ظرف اندازه‌گیری با همان CSS صفحه نهایی
       const measureBox = document.createElement('div');
-      measureBox.style.cssText = 'position:fixed;left:0;top:0;width:' + PAGE_W + 'px;padding:12px;box-sizing:border-box;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:12px;opacity:0.01;pointer-events:none;z-index:0;';
+      measureBox.setAttribute('data-pdf-measure', '1');
+      measureBox.style.cssText = 'position:fixed;left:0;top:0;' + pageCSS + 'opacity:0.01;pointer-events:none;z-index:0;overflow:visible;';
       document.body.appendChild(measureBox);
 
       function measureHtml(html) {
         measureBox.innerHTML = html;
+        // اجبار layout
+        void measureBox.offsetHeight;
         const h = Math.ceil(Math.max(measureBox.scrollHeight, measureBox.offsetHeight, 1));
         measureBox.innerHTML = '';
         return h;
       }
 
-      // عنوان اصلی
-      const titleH = measureHtml(mainTitle);
+      function logBlock(name, html, h) {
+        try {
+          const text = (html || '').replace(/<[^>]+>/g, ' ');
+          const hasRows = /<tr[\s>]/i.test(html || '') && !/بدون/.test(html || '');
+          console.log('[PDF-BLOCK]', name, 'height=' + h, 'htmlLen=' + (html || '').length, 'hasRows=' + hasRows);
+        } catch (e) {}
+      }
 
-      // برای جداول خیلی بزرگ: شکستن فقط روی مرز ردیف
+      // شکستن جدول خیلی بزرگ فقط روی مرز ردیف + تکرار thead
       function splitLargeSection(secHtml, maxH) {
         const tmp = document.createElement('div');
         tmp.innerHTML = secHtml;
@@ -8632,91 +8641,126 @@
 
         const titleHtml = titleNode ? titleNode.outerHTML : '';
         const theadHtml = thead ? thead.outerHTML : '';
+        const tableStyle = table.getAttribute('style') || 'width:100%;border-collapse:collapse;table-layout:fixed;';
         const parts = [];
         let i = 0;
         while (i < rows.length) {
-          // حداقل یک ردیف در هر تکه
-          let chunkRows = [];
+          let chunk = [];
           let j = i;
           while (j < rows.length) {
-            chunkRows.push(rows[j]);
-            const trial = '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
+            chunk.push(rows[j]);
+            const trial =
+              '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
               titleHtml +
-              '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
-              theadHtml + '<tbody>' + chunkRows.map(r => r.outerHTML).join('') + '</tbody></table></div>';
+              '<table style="' + tableStyle + '">' + theadHtml +
+              '<tbody>' + chunk.map(r => r.outerHTML).join('') + '</tbody></table></div>';
             const hh = measureHtml(trial);
-            if (hh > maxH && chunkRows.length > 1) {
-              chunkRows.pop();
+            if (hh > maxH && chunk.length > 1) {
+              chunk.pop();
               break;
             }
             j++;
             if (hh > maxH) break;
           }
-          if (!chunkRows.length) {
-            chunkRows = [rows[i]];
+          if (!chunk.length) {
+            chunk = [rows[i]];
             j = i + 1;
           }
-          const piece = '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
+          parts.push(
+            '<div class="pdf-section" style="margin:0 0 12px 0;background:#fff;">' +
             titleHtml +
-            '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
-            theadHtml + '<tbody>' + chunkRows.map(r => r.outerHTML).join('') + '</tbody></table></div>';
-          parts.push(piece);
+            '<table style="' + tableStyle + '">' + theadHtml +
+            '<tbody>' + chunk.map(r => r.outerHTML).join('') + '</tbody></table></div>'
+          );
           i = j;
         }
         return parts.length ? parts : [secHtml];
       }
 
-      // بسته‌بندی بلوک‌ها در صفحات
+      // ساخت لیست بلوک‌های نهایی
+      const blocks = [];
+      // عنوان
+      const titleH = measureHtml(mainTitle);
+      logBlock('TITLE', mainTitle, titleH);
+      blocks.push({ name: 'TITLE', html: mainTitle, height: titleH });
+
+      sections.forEach((sec, idx) => {
+        const nameEl = sec.querySelector('.pdf-section-title');
+        const name = nameEl ? (nameEl.textContent || '').trim() : ('section-' + idx);
+        const html = sec.outerHTML;
+        let h = measureHtml(html);
+        logBlock(name, html, h);
+        if (h > PAGE_H - 8) {
+          const pieces = splitLargeSection(html, PAGE_H - 8);
+          pieces.forEach((p, pi) => {
+            const ph = measureHtml(p);
+            logBlock(name + '#part' + pi, p, ph);
+            blocks.push({ name: name + '#part' + pi, html: p, height: ph });
+          });
+        } else {
+          blocks.push({ name: name, html: html, height: h });
+        }
+      });
+
+      // بسته‌بندی حریصانه — بدون overflow:hidden
       const pages = [];
-      let current = [];
+      let cur = [];
       let used = 0;
-      const pad = 24; // padding صفحه
+      const gap = 6;
 
       function flush() {
-        if (!current.length) return;
-        pages.push(current.join(''));
-        current = [];
+        if (!cur.length) return;
+        pages.push(cur.slice());
+        cur = [];
         used = 0;
       }
 
-      // عنوان فقط صفحه اول
-      current.push(mainTitle);
-      used = titleH;
-
-      const available = PAGE_H - pad;
-
-      blocks.forEach(block => {
-        let pieces = [block.html];
-        const h0 = measureHtml(block.html);
-        if (h0 > available - 20) {
-          pieces = splitLargeSection(block.html, available - 20);
+      blocks.forEach(b => {
+        const h = b.height || measureHtml(b.html);
+        // اگر بلوک در صفحه جاری جا نمی‌شود → صفحه جدید (کل بلوک)
+        if (cur.length && used + h + gap > PAGE_H) {
+          flush();
         }
-        pieces.forEach(piece => {
-          const h = measureHtml(piece);
-          // اگر در صفحه جاری جا نمی‌شود → صفحه جدید (کل جدول/تکه)
-          if (used > 0 && used + h > available) {
-            flush();
-          }
-          current.push(piece);
-          used += h + 8;
-        });
+        cur.push(b);
+        used += h + gap;
       });
       flush();
+
       try { measureBox.remove(); } catch (e) {}
 
-      // حذف صفحات خالی
-      const nonEmpty = pages.filter(p => p && p.replace(/<[^>]+>/g, '').trim().length > 5);
-      const pageHtml = nonEmpty.map(p =>
-        '<div class="pdf-page" style="width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;box-sizing:border-box;padding:12px 16px;background:#fff;color:#000;overflow:hidden;page-break-after:always;">' +
-        p + '</div>'
-      ).join('');
+      // فقط صفحات دارای محتوا
+      const pageHtmls = pages.map((blocksOnPage, pageIndex) => {
+        const inner = blocksOnPage.map(b => b.html).join('');
+        // ارتفاع = محتوا (نه fixed + overflow hidden)
+        return (
+          '<div class="pdf-page" data-page="' + pageIndex + '" style="' + pageCSS +
+          'min-height:200px;overflow:visible;">' + inner + '</div>'
+        );
+      }).filter(html => {
+        const t = html.replace(/<[^>]+>/g, '').replace(/\s+/g, '');
+        return t.length > 10;
+      });
 
-      return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">' +
+      console.log('[PDF-PAGES] count=' + pageHtmls.length);
+
+      // meta برای native: تعداد صفحات
+      const meta =
+        '<scr'+'ipt>window.__PDF_PAGE_COUNT__=' + pageHtmls.length + ';</scr'+'ipt>';
+
+      return (
+        '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">' +
         '<meta name="viewport" content="width=' + PAGE_W + '">' +
         '<title>حساب کتاب — ' + escapeHtml(periodLabel) + '</title>' +
-        '<style>html,body{margin:0;padding:0;width:' + PAGE_W + 'px;background:#fff!important;color:#000!important;}' +
-        '*{box-sizing:border-box;}body{font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;direction:rtl;}' +
-        '.pdf-page{page-break-after:always;}</style></head><body>' + pageHtml + '</body></html>';
+        '<style>' +
+        'html,body{margin:0;padding:0;background:#fff!important;color:#000!important;}' +
+        '*{box-sizing:border-box;}' +
+        'body{width:' + PAGE_W + 'px;font-family:Tahoma,Vazirmatn,Arial,sans-serif;font-size:12px;direction:rtl;}' +
+        '.pdf-page{display:block;}' +
+        '</style></head><body>' +
+        meta +
+        pageHtmls.join('') +
+        '</body></html>'
+      );
     }
 
 async function renderPdfPagesOffline(){
