@@ -2603,11 +2603,15 @@
     .tab-viewport::-webkit-scrollbar,
     .tab-panel::-webkit-scrollbar,
     .container::-webkit-scrollbar,
-    body::-webkit-scrollbar {
+    body::-webkit-scrollbar,
+    html::-webkit-scrollbar {
       width: 0 !important;
       height: 0 !important;
       display: none !important;
       background: transparent !important;
+    }
+    html {
+      scrollbar-width: none !important;
     }
 
     .dark-select-list {
@@ -3011,6 +3015,10 @@
 
     /* فید بالا و پایین صفحه هنگام اسکرول */
     .edge-fade {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+
       position: fixed;
       left: 0;
       right: 0;
@@ -8522,8 +8530,8 @@
 
         async function renderPdfPagesOffline(){
       // عرض منطقی فشرده + DPR بالا = متن واضح هنگام زوم، بدون حاشیه سفید زیاد
-      const layoutW = 900;
-      const dpr = 4;
+      const layoutW = 1200;
+      const dpr = 8; // کیفیت بسیار بالا (حجم چند مگابایتی)
       const holder=document.createElement('div');
       holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+layoutW+'px;background:#fff;color:#000;direction:rtl;font-family:Tahoma,Arial,sans-serif;font-size:13px;box-sizing:border-box;padding:8px;line-height:1.35;';
       holder.innerHTML=buildPdfContent();
@@ -8593,7 +8601,7 @@
         }catch(e){ hasContent = true; }
         if(!hasContent) continue;
         // JPEG با کیفیت بالا
-        const data=atob(pc.toDataURL('image/jpeg',0.97).split(',')[1]);
+        const data=atob(pc.toDataURL('image/jpeg',0.995).split(',')[1]);
         const jpg=new Uint8Array(data.length);
         for(let i=0;i<data.length;i++) jpg[i]=data.charCodeAt(i);
         pages.push({jpg,w:pc.width,h:pc.height});
@@ -11114,7 +11122,9 @@ if (item.type === 'recurring') {
       } else {
         selectedBankAccounts.forEach((acc, idx) => {
           const row = document.createElement('div');
-          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--border);';
+          const isLast = idx === selectedBankAccounts.length - 1;
+          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;' +
+            (isLast ? '' : 'border-bottom:1px solid var(--border);');
           const info = document.createElement('div');
           info.style.cssText = 'flex:1;min-width:0;';
           info.innerHTML = '<div style="font-weight:700;font-size:0.9rem;">' + escapeHtml(acc.label) + '</div>' +
@@ -11169,7 +11179,8 @@ if (item.type === 'recurring') {
           openBankNameEditor(null, -1, null, name, defaultLabel);
         };
         addBtn.onclick = (e) => { e.stopPropagation(); doAdd(); };
-        row.onclick = (e) => { e.preventDefault(); doAdd(); };
+        // فقط با زدن بعلاوه — نه با لمس نام بانک
+        row.style.cursor = 'default';
         row.appendChild(span);
         row.appendChild(addBtn);
         banksWrap.appendChild(row);
@@ -11935,7 +11946,7 @@ if (item.type === 'recurring') {
           return;
         }
         const name = (inpName.value || '').trim();
-        if (!name) { showToast('اسم را وارد کنید'); try { inpName.focus(); } catch (e) {} return; }
+        if (!name) { showToast('نام را وارد کنید'); try { inpName.focus(); } catch (e) {} return; }
         const amtDigits = toEnglishDigits(inpAmt.value || '').replace(/[^0-9]/g, '');
         const amount = amtDigits ? (parseInt(amtDigits, 10) || 0) : 0;
         let day = parseInt(toEnglishDigits(String(inpDay.value || '')).replace(/[^0-9]/g, '') || '0', 10) || 0;
