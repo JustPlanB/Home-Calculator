@@ -8615,7 +8615,7 @@
         return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
           '<th style="' + th + '">شرح</th><th style="' + th + '">مقدار</th></tr></thead><tbody>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد طرح اقساط</td><td style="' + tdN + '">' + toPersianDigits(nPlans) + '</td></tr>' +
-          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد اقساط کل/پرداخت‌شده</td><td style="' + tdN + '">' + toPersianDigits(nTotalInst) + ' / ' + toPersianDigits(nPaidInst) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد اقساط (کل/پرداخت‌شده)</td><td style="' + tdN + '">' + toPersianDigits(nTotalInst) + ' / ' + toPersianDigits(nPaidInst) + '</td></tr>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع پرداخت‌شده</td><td style="' + tdN + '">' + formatNum(gPaid) + '</td></tr>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">باقیمانده</td><td style="' + tdN + '">' + formatNum(gRemain) + '</td></tr>' +
           '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل قابل پرداخت</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gTotal) + '</td></tr>' +
@@ -10301,6 +10301,7 @@ function openPdfPrintWindow(){
 
     /* —— ثبت از پیامک بانکی —— */
     let pendingSmsEntry = null;
+    let smsPendingQueue = [];
 
     const BANK_SMS_ALIASES = [
       { keys: ['ملی', 'bmi', 'bam'], name: 'بانک ملی' },
@@ -10361,6 +10362,7 @@ function openPdfPrintWindow(){
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
       pendingSmsEntry = null;
+      setTimeout(function () { try { processNextSmsInQueue(); } catch (e) {} }, 150);
     }
     async function pasteSmsFromClipboard() {
       try {
@@ -10812,13 +10814,13 @@ function openPdfPrintWindow(){
         const autoTitle = tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
         const optAuto = document.createElement('option');
         optAuto.value = '__auto__';
-        optAuto.textContent = 'خودکار: «' + autoTitle + '»';
+        optAuto.textContent = 'خودکار: ' + autoTitle;
+        optAuto.selected = true;
         sel.appendChild(optAuto);
-        sections.forEach((s, idx) => {
+        sections.forEach((s) => {
           const o = document.createElement('option');
           o.value = s.id;
           o.textContent = (s.title || '').trim() || 'بدون نام';
-          if (idx === 0) o.selected = true;
           sel.appendChild(o);
         });
         wrap.appendChild(sel);
@@ -10832,13 +10834,13 @@ function openPdfPrintWindow(){
             const at = t === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
             const oa = document.createElement('option');
             oa.value = '__auto__';
-            oa.textContent = 'خودکار: «' + at + '»';
+            oa.textContent = 'خودکار: ' + at;
+            oa.selected = true;
             sel.appendChild(oa);
-            secs.forEach((s, idx) => {
+            secs.forEach((s) => {
               const o = document.createElement('option');
               o.value = s.id;
               o.textContent = (s.title || '').trim() || 'بدون نام';
-              if (idx === 0) o.selected = true;
               sel.appendChild(o);
             });
             if (sel._fancyRender) sel._fancyRender();
@@ -10931,28 +10933,57 @@ function openPdfPrintWindow(){
 
     // اگر اپ داخل WebView با پل نیتیو باشد (مثلاً Capacitor)، از بیرون قابل فراخوانی است:
     // window.onBankSmsReceived(smsText)
-    window.onBankSmsReceived = function (smsText) {
+    function isSmsConfirmOpen() {
+      const m = document.getElementById('smsConfirmModal');
+      return !!(m && m.classList.contains('open'));
+    }
+    function enqueueBankSms(smsText, opts) {
+      opts = opts || {};
       const parsed = parseBankSms(smsText);
       if (!parsed || !parsed.amount) {
-        showToast('پیامک بانکی قابل تشخیص نبود');
-        return;
+        if (!opts.silent) showToast('پیامک بانکی قابل تشخیص نبود');
+        return false;
       }
       parsed.bank = matchSelectedBank(parsed.bank);
-      pendingSmsEntry = parsed;
-      openSmsConfirmModal(parsed);
+      parsed.raw = parsed.raw || String(smsText || '');
+      const rawKey = String(smsText || '').trim();
+      if (rawKey) {
+        if (pendingSmsEntry && String(pendingSmsEntry.raw || '').trim() === rawKey) return false;
+        if (smsPendingQueue.some(x => x && String(x.raw || '').trim() === rawKey)) return false;
+      }
+      smsPendingQueue.push(parsed);
       try {
+        const total = smsPendingQueue.length + (isSmsConfirmOpen() ? 1 : 0);
         if ('Notification' in window && Notification.permission === 'granted') {
           const kind = parsed.type === 'income' ? 'واریز' : 'برداشت';
-          new Notification('تراکنش بانکی — ' + kind, {
+          new Notification('تراکنش بانکی — ' + kind + (total > 1 ? (' (' + toPersianDigits(total) + ')') : ''), {
             body: (parsed.bank ? parsed.bank + ' · ' : '') + formatNum(parsed.amount) + ' تومان',
             dir: 'rtl'
           });
-        } else {
-          showToast('پیامک بانکی تشخیص داده شد');
+        } else if (!opts.silent) {
+          showToast(total > 1 ? (toPersianDigits(total) + ' پیامک بانکی در صف') : 'پیامک بانکی تشخیص داده شد');
         }
       } catch (e) {
-        showToast('پیامک بانکی تشخیص داده شد');
+        if (!opts.silent) showToast('پیامک بانکی تشخیص داده شد');
       }
+      processNextSmsInQueue();
+      return true;
+    }
+    function processNextSmsInQueue() {
+      if (isSmsConfirmOpen()) return;
+      if (!smsPendingQueue.length) {
+        pendingSmsEntry = null;
+        return;
+      }
+      const next = smsPendingQueue.shift();
+      pendingSmsEntry = next;
+      openSmsConfirmModal(next);
+      if (smsPendingQueue.length) {
+        try { showToast(toPersianDigits(smsPendingQueue.length) + ' پیامک دیگر در صف'); } catch (e) {}
+      }
+    }
+    window.onBankSmsReceived = function (smsText) {
+      enqueueBankSms(smsText);
     };
 
     // --- اتصال به پلاگین بومی BankSms (Capacitor) برای خواندن خودکار پیامک‌های بانکی ---
@@ -10965,12 +10996,17 @@ function openPdfPrintWindow(){
       function pollPendingSms() {
         const BankSms = getPlugin();
         if (!BankSms) return;
-        BankSms.getPendingSms().then(function (res) {
-          if (res && res.has && res.text) {
-            try { window.onBankSmsReceived(res.text); } catch (e) {}
-            BankSms.markHandled().catch(function () {});
-          }
-        }).catch(function () {});
+        // تا چند پیامک پشت‌سرهم از صف نیتیو بخوان (حداکثر ۸ تا در هر دور)
+        function pullOne(left) {
+          if (left <= 0) return;
+          BankSms.getPendingSms().then(function (res) {
+            if (res && res.has && res.text) {
+              try { window.onBankSmsReceived(res.text); } catch (e) {}
+              BankSms.markHandled().then(function () { pullOne(left - 1); }).catch(function () { pullOne(left - 1); });
+            }
+          }).catch(function () {});
+        }
+        pullOne(8);
       }
       function startSmsBridge() {
         const BankSms = getPlugin();
