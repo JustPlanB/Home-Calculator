@@ -953,35 +953,41 @@
     /* بهبود رندر — بدون content-visibility (روی موبایل باعث لگ تایپ می‌شود) */
     .section { contain: layout style; }
     .section-body { contain: layout style; }
-    .section-body.row-windowed {
+    /* اسکرول نرم ردیف‌ها — مثل لیست بانک‌ها با نوار باریک */
+    .section-rows-scroll {
+      max-height: calc(var(--sec-row-h, 44px) * 5.15);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(140,140,140,0.65) transparent;
       position: relative;
-      overflow: hidden;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
     }
-    .section-body.row-windowed.has-more-above {
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 100%);
+    .section-rows-scroll::-webkit-scrollbar {
+      width: 3px !important;
+      height: 0 !important;
+      display: block !important;
+      background: transparent !important;
     }
-    .section-body.row-windowed.has-more-below {
-      -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 20px), transparent 100%);
-      mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 20px), transparent 100%);
+    .section-rows-scroll::-webkit-scrollbar-thumb {
+      background: rgba(140,140,140,0.65) !important;
+      border-radius: 3px;
     }
-    .section-body.row-windowed.has-more-above.has-more-below {
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
+    [data-theme="light"] .section-rows-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100,100,100,0.45) !important;
     }
-    tr.row-window-fade {
-      opacity: 0.32;
-      pointer-events: none;
-      filter: grayscale(0.15);
+    .section-rows-scroll table {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .section-row-win-hint {
-      text-align: center;
-      font-size: 0.72rem;
-      color: var(--muted);
-      padding: 4px 0 2px;
-      user-select: none;
+    .section-rows-scroll thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--card, var(--bg2, #1c1c1e));
+      box-shadow: 0 1px 0 var(--border);
     }
 
     tr.row-readonly input.cell,
@@ -12876,9 +12882,6 @@ if (item.type === 'recurring') {
         sec.collapsed = !sec.collapsed;
         div.classList.toggle('collapsed', sec.collapsed);
         arrow.textContent = sec.collapsed ? '▼' : '▲';
-        if (!sec.collapsed && body._renderRowWindow) {
-          try { body._renderRowWindow(); } catch (err) {}
-        }
         persistCurrent();
         scheduleSave();
       };
@@ -12905,103 +12908,105 @@ if (item.type === 'recurring') {
         </thead>
       `;
       const tbody = document.createElement('tbody');
+      (sec.rows || []).forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
       table.appendChild(tbody);
-      body.appendChild(table);
 
-      // پنجره ۵ ردیفی — فقط وقتی بخش باز است و ردیف‌ها زیادند
-      const ROW_WIN = 5;
-      if (sec._rowWin == null) sec._rowWin = 0;
-      const winHint = document.createElement('div');
-      winHint.className = 'section-row-win-hint';
-      winHint.style.display = 'none';
+      const rowsScroll = document.createElement('div');
+      rowsScroll.className = 'section-rows-scroll';
+      rowsScroll.appendChild(table);
+      body.appendChild(rowsScroll);
 
-      function clampRowWin() {
-        const n = (sec.rows || []).length;
-        const maxStart = Math.max(0, n - ROW_WIN);
-        sec._rowWin = Math.max(0, Math.min(sec._rowWin || 0, maxStart));
+      // ارتفاع ≈ ۵ ردیف؛ اسکرول نرم با snap هر ۵ ردیف
+      const ROW_PAGE = 5;
+      function measureRowH() {
+        const tr = tbody.querySelector('tr');
+        const h = tr ? tr.getBoundingClientRect().height : 0;
+        return (h > 8 ? h : 44);
       }
-      function renderRowWindow() {
-        clampRowWin();
-        tbody.innerHTML = '';
-        const rows = sec.rows || [];
-        const n = rows.length;
-        const start = sec._rowWin || 0;
-        // اگر ≤۵ ردیف: همه را بدون پنجره نشان بده
-        if (n <= ROW_WIN) {
-          body.classList.remove('row-windowed', 'has-more-above', 'has-more-below');
-          rows.forEach((row, idx) => tbody.appendChild(buildRowEl(sec.id, row, idx, paidLabel, unpaidLabel)));
-          winHint.style.display = 'none';
+      function setupRowPageScroll() {
+        const n = (sec.rows || []).length;
+        if (n <= ROW_PAGE) {
+          rowsScroll.style.maxHeight = '';
+          rowsScroll.style.overflowY = 'visible';
           return;
         }
-        body.classList.add('row-windowed');
-        const end = Math.min(n, start + ROW_WIN);
-        for (let i = start; i < end; i++) {
-          tbody.appendChild(buildRowEl(sec.id, rows[i], i, paidLabel, unpaidLabel));
-        }
-        // ردیف بعدی را محو نشان بده (فید)
-        if (end < n) {
-          const peek = buildRowEl(sec.id, rows[end], end, paidLabel, unpaidLabel);
-          peek.classList.add('row-window-fade');
-          tbody.appendChild(peek);
-        }
-        body.classList.toggle('has-more-above', start > 0);
-        body.classList.toggle('has-more-below', end < n);
-        const page = Math.floor(start / ROW_WIN) + 1;
-        const pages = Math.max(1, Math.ceil(n / ROW_WIN));
-        winHint.style.display = 'block';
-        winHint.textContent = toPersianDigits(page) + ' / ' + toPersianDigits(pages) + ' · ' + toPersianDigits(n) + ' ردیف';
-      }
-      function shiftRowWin(dir) {
-        if (sec.collapsed) return;
-        const n = (sec.rows || []).length;
-        if (n <= ROW_WIN) return;
-        const maxStart = Math.max(0, n - ROW_WIN);
-        const next = (sec._rowWin || 0) + (dir > 0 ? ROW_WIN : -ROW_WIN);
-        const clamped = Math.max(0, Math.min(maxStart, next));
-        if (clamped === (sec._rowWin || 0)) return;
-        sec._rowWin = clamped;
-        renderRowWindow();
-      }
-      renderRowWindow();
-      body._renderRowWindow = renderRowWindow;
-      body._shiftRowWin = shiftRowWin;
+        const rh = measureRowH();
+        document.documentElement.style.setProperty('--sec-row-h', rh + 'px');
+        rowsScroll.style.maxHeight = (rh * ROW_PAGE + 4) + 'px';
+        rowsScroll.style.overflowY = 'auto';
 
-      // اسکرول چرخ‌ماوس روی بدنه و هدر بخش
-      const onWheel = (e) => {
-        if (sec.collapsed) return;
-        if ((sec.rows || []).length <= ROW_WIN) return;
-        e.preventDefault();
-        if (e.deltaY > 8) shiftRowWin(1);
-        else if (e.deltaY < -8) shiftRowWin(-1);
-      };
-      body.addEventListener('wheel', onWheel, { passive: false });
-      header.addEventListener('wheel', onWheel, { passive: false });
+        let snapTimer = null;
+        let wheelLock = false;
 
-      // سوایپ لمسی روی بدنه و هدر
-      let touchY0 = 0;
-      let touchT0 = 0;
-      const onTouchStart = (e) => {
-        if (!e.touches || !e.touches[0]) return;
-        touchY0 = e.touches[0].clientY;
-        touchT0 = Date.now();
-      };
-      const onTouchEnd = (e) => {
-        if (sec.collapsed) return;
-        if ((sec.rows || []).length <= ROW_WIN) return;
-        const t = (e.changedTouches && e.changedTouches[0]) || null;
-        if (!t) return;
-        const dy = t.clientY - touchY0;
-        const dt = Date.now() - touchT0;
-        if (Math.abs(dy) < 40 || dt > 900) return;
-        // انگشت به بالا → محتوا به پایین (ردیف‌های بعدی)
-        if (dy < 0) shiftRowWin(1);
-        else shiftRowWin(-1);
-      };
-      body.addEventListener('touchstart', onTouchStart, { passive: true });
-      body.addEventListener('touchend', onTouchEnd, { passive: true });
-      header.addEventListener('touchstart', onTouchStart, { passive: true });
-      header.addEventListener('touchend', onTouchEnd, { passive: true });
-      body.appendChild(winHint);
+        function pageHeight() {
+          return measureRowH() * ROW_PAGE;
+        }
+        function snapToNearest(smooth) {
+          const ph = pageHeight();
+          if (ph < 8) return;
+          const maxTop = Math.max(0, rowsScroll.scrollHeight - rowsScroll.clientHeight);
+          let page = Math.round(rowsScroll.scrollTop / ph);
+          const maxPage = Math.round(maxTop / ph);
+          page = Math.max(0, Math.min(page, maxPage));
+          const target = Math.min(maxTop, page * ph);
+          rowsScroll.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' });
+        }
+        function scrollByPage(dir) {
+          const ph = pageHeight();
+          const maxTop = Math.max(0, rowsScroll.scrollHeight - rowsScroll.clientHeight);
+          const curPage = Math.round(rowsScroll.scrollTop / ph);
+          const next = Math.max(0, Math.min(Math.round(maxTop / ph), curPage + dir));
+          rowsScroll.scrollTo({ top: Math.min(maxTop, next * ph), behavior: 'smooth' });
+        }
+
+        rowsScroll.addEventListener('scroll', () => {
+          if (snapTimer) clearTimeout(snapTimer);
+          snapTimer = setTimeout(() => snapToNearest(true), 80);
+        }, { passive: true });
+
+        // یک حرکت چرخ = یک صفحه ۵تایی نرم
+        rowsScroll.addEventListener('wheel', (e) => {
+          if ((sec.rows || []).length <= ROW_PAGE) return;
+          e.preventDefault();
+          if (wheelLock) return;
+          wheelLock = true;
+          scrollByPage(e.deltaY > 0 ? 1 : -1);
+          setTimeout(() => { wheelLock = false; }, 320);
+        }, { passive: false });
+
+        // سوایپ: یک صفحه نرم
+        let tY = 0, tT = 0;
+        rowsScroll.addEventListener('touchstart', (e) => {
+          if (!e.touches || !e.touches[0]) return;
+          tY = e.touches[0].clientY;
+          tT = Date.now();
+        }, { passive: true });
+        rowsScroll.addEventListener('touchend', (e) => {
+          const t = e.changedTouches && e.changedTouches[0];
+          if (!t) return;
+          const dy = t.clientY - tY;
+          const dt = Date.now() - tT;
+          if (Math.abs(dy) < 36 || dt > 850) {
+            snapToNearest(true);
+            return;
+          }
+          // جلوگیری از اسکرول آزاد خرد — صفحه کامل
+          scrollByPage(dy < 0 ? 1 : -1);
+        }, { passive: true });
+
+        // بعد از رندر، اگر _rowWin ذخیره شده بود به همان صفحه برو
+        if (sec._rowWin && sec._rowWin > 0) {
+          const ph = pageHeight();
+          const page = Math.floor(sec._rowWin / ROW_PAGE);
+          rowsScroll.scrollTop = page * ph;
+        }
+        body._rowsScroll = rowsScroll;
+        body._scrollRowPage = scrollByPage;
+      }
+      // اندازه‌گیری بعد از قرارگیری در DOM
+      requestAnimationFrame(() => { try { setupRowPageScroll(); } catch (e) {} });
+      setTimeout(() => { try { setupRowPageScroll(); } catch (e) {} }, 50);
+
       const addRowWrap = document.createElement('div');
       addRowWrap.className = 'add-row-wrap';
       const btnAddRow = document.createElement('button');
