@@ -309,8 +309,8 @@ public class NativeFileExportPlugin extends Plugin {
         final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
         final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        final int viewW = 2480; // ~300 DPI A4 width
-        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2000);
+        final int viewW = 794; // A4 width at 96dpi CSS px
+        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 1600);
         root.addView(host,hp);
 
         final WebView web=new WebView(getContext());
@@ -323,7 +323,7 @@ public class NativeFileExportPlugin extends Plugin {
         web.getSettings().setUseWideViewPort(false);
         web.getSettings().setDomStorageEnabled(true);
         web.setInitialScale(100);
-        host.addView(web,new FrameLayout.LayoutParams(viewW, 2000));
+        host.addView(web,new FrameLayout.LayoutParams(viewW, 1600));
 
         web.setWebViewClient(new WebViewClient(){
           private boolean started=false;
@@ -392,76 +392,90 @@ public class NativeFileExportPlugin extends Plugin {
     Uri uri=null;
     android.graphics.Bitmap fullBmp=null;
     try{
-      final int viewH=Math.max(contentH, 200);
-      web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
-      web.layout(0,0,viewW,viewH);
-      host.updateViewLayout(web,new FrameLayout.LayoutParams(viewW,viewH));
-      host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
-      host.layout(0,0,viewW,viewH);
-      try{ Thread.sleep(800); }catch(InterruptedException ignored){}
+      // viewW باید عرض منطقی HTML باشد (794 CSS px ≈ عرض A4 در 96dpi)
+      final int layoutW = viewW > 0 ? viewW : 794;
+      final int scaleCap = 3; // 288 DPI مؤثر
+      final int viewH = Math.max(contentH, 200);
 
-      // رندر WebView روی Bitmap با رزولوشن بالا
-      fullBmp = android.graphics.Bitmap.createBitmap(viewW, viewH, android.graphics.Bitmap.Config.ARGB_8888);
+      web.measure(
+        android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
+        android.view.View.MeasureSpec.makeMeasureSpec(viewH, android.view.View.MeasureSpec.EXACTLY));
+      web.layout(0, 0, layoutW, viewH);
+      host.updateViewLayout(web, new FrameLayout.LayoutParams(layoutW, viewH));
+      host.measure(
+        android.view.View.MeasureSpec.makeMeasureSpec(layoutW, android.view.View.MeasureSpec.EXACTLY),
+        android.view.View.MeasureSpec.makeMeasureSpec(viewH, android.view.View.MeasureSpec.EXACTLY));
+      host.layout(0, 0, layoutW, viewH);
+      try { Thread.sleep(900); } catch (InterruptedException ignored) {}
+
+      final int bmpW = layoutW * scaleCap;
+      final int bmpH = viewH * scaleCap;
+      fullBmp = android.graphics.Bitmap.createBitmap(bmpW, bmpH, android.graphics.Bitmap.Config.ARGB_8888);
       android.graphics.Canvas bmpCanvas = new android.graphics.Canvas(fullBmp);
       bmpCanvas.drawColor(android.graphics.Color.WHITE);
+      bmpCanvas.scale(scaleCap, scaleCap);
       web.draw(bmpCanvas);
 
-      // اگر Bitmap تقریباً سفید بود، خطا بده تا مسیر fallback اجرا شود
+      // بررسی سفید نبودن
       try {
-        int step = Math.max(8, Math.min(viewW, viewH) / 50);
+        int step = Math.max(8, Math.min(bmpW, bmpH) / 40);
         int dark = 0, n = 0;
-        for (int yy = 0; yy < viewH; yy += step) {
-          for (int xx = 0; xx < viewW; xx += step) {
-            int p = fullBmp.getPixel(xx, yy);
+        for (int yy = 0; yy < bmpH; yy += step) {
+          for (int xx = 0; xx < bmpW; xx += step) {
+            int p = fullBmp.getPixel(Math.min(xx, bmpW-1), Math.min(yy, bmpH-1));
             int r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
             n++;
             if (r < 250 || g < 250 || b < 250) dark++;
           }
         }
-        if (n > 0 && (dark * 100) / n < 1) {
-          throw new Exception("webview_bitmap_blank");
-        }
+        if (n > 0 && (dark * 100) / n < 1) throw new Exception("webview_bitmap_blank");
       } catch (Exception inkEx) {
         if ("webview_bitmap_blank".equals(inkEx.getMessage())) throw inkEx;
       }
 
-      // صفحه استاندارد A4 بر حسب point (1/72 inch)
-      final int pageW=595;
-      final int pageH=842;
-      final int margin=14;
-      final float usableW = pageW - 2f*margin;
-      final float usableH = pageH - 2f*margin;
-      // چند پیکسل WebView در هر صفحه
-      final float pxPerPt = viewW / usableW; // ≈ 2480/567 ≈ 4.37 → ~315 DPI
-      final int pageContentH = Math.max(1, (int)Math.floor(usableH * pxPerPt));
-      int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
-      int remainder = viewH % pageContentH;
-      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.12))) {
+      // A4 استاندارد (point)
+      final int pageW = 595;
+      final int pageH = 842;
+      final int margin = 18;
+      final float usableW = pageW - 2f * margin;
+      final float usableH = pageH - 2f * margin;
+
+      // هر پیکسل bitmap چند point؟ عرض bitmap = تمام usableW
+      // ارتفاع صفحه به پیکسل bitmap:
+      final float pxPerPt = bmpW / usableW;
+      final int pageContentPx = Math.max(1, (int)Math.floor(usableH * pxPerPt));
+
+      int pageCount = Math.max(1, (int)Math.ceil((double)bmpH / (double)pageContentPx));
+      int remainder = bmpH % pageContentPx;
+      if (pageCount > 1 && remainder > 0 && remainder < pageContentPx * 0.08) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
-      doc=new android.graphics.pdf.PdfDocument();
-      android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
-      for(int i=0;i<pageCount;i++){
-        android.graphics.pdf.PdfDocument.PageInfo info=new android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
-        android.graphics.pdf.PdfDocument.Page page=doc.startPage(info);
-        android.graphics.Canvas c=page.getCanvas();
+      doc = new android.graphics.pdf.PdfDocument();
+      android.graphics.Paint paint = new android.graphics.Paint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
+      for (int i = 0; i < pageCount; i++) {
+        android.graphics.pdf.PdfDocument.PageInfo info =
+          new android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW, pageH, i + 1).create();
+        android.graphics.pdf.PdfDocument.Page page = doc.startPage(info);
+        android.graphics.Canvas c = page.getCanvas();
         c.drawColor(android.graphics.Color.WHITE);
-        int srcTop = i * pageContentH;
-        int srcH = Math.min(pageContentH, viewH - srcTop);
-        if(srcH <= 0) { doc.finishPage(page); continue; }
-        android.graphics.Rect src = new android.graphics.Rect(0, srcTop, viewW, srcTop + srcH);
+        int srcTop = i * pageContentPx;
+        int srcH = Math.min(pageContentPx, bmpH - srcTop);
+        if (srcH <= 0) { doc.finishPage(page); continue; }
+        android.graphics.Rect src = new android.graphics.Rect(0, srcTop, bmpW, srcTop + srcH);
+        // ارتفاع مقصد متناسب با عرض — جمع نمی‌شود در 1/6 مگر محتوا واقعاً کوتاه باشد
         float dstH = srcH / pxPerPt;
         android.graphics.RectF dst = new android.graphics.RectF(margin, margin, margin + usableW, margin + dstH);
         c.drawBitmap(fullBmp, src, dst, paint);
         doc.finishPage(page);
       }
 
-      java.io.ByteArrayOutputStream bos=new java.io.ByteArrayOutputStream();
+      java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
       doc.writeTo(bos);
-      byte[] pdfBytes=bos.toByteArray();
-      uri=saveToDownloads(filename,"application/pdf",pdfBytes);
-      call.resolve(new JSObject().put("uri",uri.toString()).put("filename",filename).put("ok",true));
+      byte[] pdfBytes = bos.toByteArray();
+      uri = saveToDownloads(filename, "application/pdf", pdfBytes);
+      call.resolve(new JSObject().put("uri", uri.toString()).put("filename", filename).put("ok", true));
     }catch(Exception e){
       if(uri!=null) try{ getContext().getContentResolver().delete(uri,null,null); }catch(Exception ignored){}
       call.reject("pdf_export_failed",e);
@@ -474,8 +488,6 @@ public class NativeFileExportPlugin extends Plugin {
   }
 }
 `;
-
-
 
 const main=`package ${pkg};
 
