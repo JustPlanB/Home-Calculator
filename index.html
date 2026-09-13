@@ -8347,7 +8347,7 @@
     function buildPdfContent() {
       const periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       // تمام‌عرض A4 — بدون چیدمان دو ستونه که محتوا را کوچک می‌کند
-      const th = 'border:1px solid #222;padding:6px 5px;background:#ececec;color:#000;font-size:11px;text-align:center;font-weight:bold;';
+      const th = 'border:1px solid #000;padding:6px 5px;background:#000;color:#fff;font-size:11px;text-align:center;font-weight:bold;';
       const tdBase = 'border:1px solid #222;padding:6px 5px;color:#000;font-size:11px;vertical-align:middle;';
       const td = tdBase + 'background:#fff;';
       const tdN = td + 'text-align:center;direction:ltr;white-space:nowrap;';
@@ -8555,6 +8555,55 @@
         return html;
       }
 
+      function ledgerSummary() {
+        let led;
+        try { led = ensureLedger(); } catch (e) { led = { sections: [] }; }
+        let debt = 0, credit = 0, nDebt = 0, nCredit = 0, nSec = 0;
+        (led.sections || []).forEach(sec => {
+          let has = false;
+          (sec.rows || []).forEach(r => {
+            if (!r.desc && !r.amount && !r.day) return;
+            has = true;
+            const amt = Number(r.amount) || 0;
+            if (r.status === 'credit' || r.status === 'paid') { credit += amt; nCredit++; }
+            else { debt += amt; nDebt++; }
+          });
+          if (has) nSec++;
+        });
+        return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + '">شرح</th><th style="' + th + '">مقدار</th></tr></thead><tbody>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد طرفین</td><td style="' + tdN + '">' + toPersianDigits(nSec) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع بدهکار</td><td style="' + tdN + '">' + formatNum(debt) + ' (' + toPersianDigits(nDebt) + ')</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع بستانکار</td><td style="' + tdN + '">' + formatNum(credit) + ' (' + toPersianDigits(nCredit) + ')</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">مانده (بستانکار − بدهکار)</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(credit - debt) + '</td></tr>' +
+          '</tbody></table>';
+      }
+
+      function installSummary() {
+        let nPlans = 0, gPaid = 0, gRemain = 0, gTotal = 0, nPaidInst = 0, nTotalInst = 0;
+        (plans || []).forEach(plan => {
+          if (!plan || plan.deletedAt) return;
+          nPlans++;
+          const count = Math.max(0, parseInt(plan.count, 10) || 0);
+          const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
+          const amt = typeof planInstallmentAmount === 'function' ? planInstallmentAmount(plan) : (Number(plan.amount) || 0);
+          const total = typeof planTotalPayable === 'function' ? planTotalPayable(plan) : amt * count;
+          gPaid += paid * amt;
+          gRemain += total - paid * amt;
+          gTotal += total;
+          nPaidInst += paid;
+          nTotalInst += count;
+        });
+        return '<table class="pdf-table" style="' + tbl + '"><thead><tr class="pdf-keep" style="' + keep + '">' +
+          '<th style="' + th + '">شرح</th><th style="' + th + '">مقدار</th></tr></thead><tbody>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد طرح اقساط</td><td style="' + tdN + '">' + toPersianDigits(nPlans) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">تعداد اقساط (پرداخت‌شده / کل)</td><td style="' + tdN + '">' + toPersianDigits(nPaidInst) + ' / ' + toPersianDigits(nTotalInst) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">جمع پرداخت‌شده</td><td style="' + tdN + '">' + formatNum(gPaid) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + '">باقی‌مانده</td><td style="' + tdN + '">' + formatNum(gRemain) + '</td></tr>' +
+          '<tr class="pdf-keep" style="' + keep + '"><td style="' + tdR + 'font-weight:bold;background:#f0f0f0;">جمع کل قابل پرداخت</td><td style="' + tdN + 'font-weight:bold;background:#f0f0f0;">' + formatNum(gTotal) + '</td></tr>' +
+          '</tbody></table>';
+      }
+
       function section(title, content) {
         return '<div class="pdf-section" style="margin:0 0 16px 0;background:#fff;">' +
           '<div class="pdf-keep pdf-section-title" style="' + keep + 'text-align:center;font-weight:bold;font-size:14px;color:#000;margin:0 0 8px 0;padding:4px 0;border-bottom:2px solid #333;">' +
@@ -8569,8 +8618,10 @@
       body += section('مخارج — خلاصه', summaryTable('expense'));
       body += section('مانده', balanceSection());
       body += section('درآمد ثابت', recurringTable());
-      body += section('بده‌بستان', ledgerTable());
-      body += section('اقساط', installDetail());
+      body += section('بده‌بستان — جزئیات', ledgerTable());
+      body += section('بده‌بستان — خلاصه', ledgerSummary());
+      body += section('اقساط — جزئیات', installDetail());
+      body += section('اقساط — خلاصه', installSummary());
       return body;
     }
 
