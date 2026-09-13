@@ -100,7 +100,7 @@
       text-rendering: optimizeLegibility;
       /* فاصله از بالای صفحه = ارتفاع هدر ثابت (با JS هم به‌روز می‌شود) */
       padding-top: calc(var(--chrome-h, 140px) + env(safe-area-inset-top, 0px));
-      padding-bottom: max(80px, calc(28px + env(safe-area-inset-bottom, 0px)));
+      padding-bottom: max(96px, calc(48px + env(safe-area-inset-bottom, 0px)));
       padding-left: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
       padding-right: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
       direction: rtl;
@@ -320,10 +320,22 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
-      /* فاصله محتوا از لبه پایین + ناحیه safe-area بدون فید گرادیان */
-      padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+      /* محتوا از پایین زیر ناحیه دکمه بک/ناوبری سیستم فید می‌شود */
+      padding-bottom: max(96px, calc(56px + env(safe-area-inset-bottom, 0px)));
       position: relative;
       background: var(--card);
+    }
+    /* فید پایین داخل منوی همبرگری */
+    .menu-dropdown::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: max(72px, calc(40px + env(safe-area-inset-bottom, 0px)));
+      background: linear-gradient(to top, var(--card) 0%, var(--card) 35%, transparent 100%);
+      pointer-events: none;
+      z-index: 5;
     }
     /* بدون فید بالا/پایین منو — پوشش یکدست تا انتهای صفحه */
     /* با منوی باز: فقط منو فعال — تاچ بیرون منو کاملاً بی‌اثر */
@@ -2558,7 +2570,7 @@
       border: 5px solid transparent;
       border-top-color: var(--muted);
     }
-    /* اسکرول بدون نمایش نوار */
+    /* نوار اسکرول مخفی — اسکرول فعال می‌ماند */
     * {
       scrollbar-width: none;
     }
@@ -2568,40 +2580,7 @@
       display: none !important;
       background: transparent !important;
     }
-    /* بدون نوار اسکرول در منوی همبرگری و لیست تب درآمد/مخارج */
-    .menu-scroll,
-    .menu-dropdown,
-    #panel-income,
-    #panel-expense,
-    #sections-income,
-    #sections-expense,
-    .section-body,
-    .section,
-    .tab-viewport,
-    .tab-panel,
-    .container,
-    body {
-      scrollbar-width: none !important;
-    }
-    .menu-scroll::-webkit-scrollbar,
-    .menu-dropdown::-webkit-scrollbar,
-    #panel-income::-webkit-scrollbar,
-    #panel-expense::-webkit-scrollbar,
-    #sections-income::-webkit-scrollbar,
-    #sections-expense::-webkit-scrollbar,
-    .section-body::-webkit-scrollbar,
-    .section::-webkit-scrollbar,
-    .tab-viewport::-webkit-scrollbar,
-    .tab-panel::-webkit-scrollbar,
-    .container::-webkit-scrollbar,
-    body::-webkit-scrollbar,
-    html::-webkit-scrollbar {
-      width: 0 !important;
-      height: 0 !important;
-      display: none !important;
-      background: transparent !important;
-    }
-    html {
+    html, body {
       scrollbar-width: none !important;
     }
 
@@ -3004,12 +2983,10 @@
     }
 
 
-    /* فید بالا و پایین صفحه هنگام اسکرول */
+    /* فید بالا و پایین — محتوا زیر هدر ثابت و ناحیه دکمه‌های پایین محو می‌شود */
     .edge-fade {
-      display: none !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-
+      display: block;
+      opacity: 1;
       position: fixed;
       left: 0;
       right: 0;
@@ -3018,21 +2995,21 @@
     }
     .edge-fade-top {
       top: 0;
-      /* فقط روی ناحیه هدر ثابت — بدون کشیدن سایه روی هدر بخش‌ها */
       height: calc(var(--chrome-h, 120px) + env(safe-area-inset-top, 0px));
       background: linear-gradient(to bottom,
         var(--bg) 0%,
-        var(--bg) 92%,
-        transparent 100%);
+        var(--bg) 78%,
+        rgba(0,0,0,0) 100%);
       z-index: 54;
     }
     .edge-fade-bottom {
       bottom: 0;
-      height: max(72px, calc(env(safe-area-inset-bottom, 0px) + 36px));
+      height: max(80px, calc(env(safe-area-inset-bottom, 0px) + 48px));
       background: linear-gradient(to top,
         var(--bg) 0%,
-        var(--bg) 40%,
-        transparent 100%);
+        var(--bg) 45%,
+        rgba(0,0,0,0) 100%);
+      z-index: 54;
     }
 
 
@@ -10746,17 +10723,7 @@ function openPdfPrintWindow(){
             bankSel.appendChild(o);
           });
           enhanceSelectFont(bankSel);
-          // منوی کشویی را باز کن
-          try {
-            setTimeout(() => {
-              const wrap = bankSel.closest('.fancy-select-wrap');
-              const list = wrap && wrap.querySelector('.fancy-select-list');
-              if (list) {
-                document.querySelectorAll('.fancy-select-list.open').forEach(l => l.classList.remove('open'));
-                list.classList.add('open');
-              }
-            }, 120);
-          } catch (e) {}
+          // منوی کشویی بسته بماند تا کاربر خودش باز کند
         }
         const typeSelEl = meta.querySelector('#smsConfirmType');
         if (typeSelEl) enhanceSelectFont(typeSelEl);
