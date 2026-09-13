@@ -309,7 +309,7 @@ public class NativeFileExportPlugin extends Plugin {
         final FrameLayout root=(FrameLayout)getActivity().getWindow().getDecorView();
         final FrameLayout host=new FrameLayout(getContext());
         host.setBackgroundColor(android.graphics.Color.WHITE);
-        final int viewW = 2000;
+        final int viewW = 2480; // ~300 DPI A4 width
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 2000);
         root.addView(host,hp);
 
@@ -387,8 +387,9 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   private void createPdf(WebView web,String filename,PluginCall call,FrameLayout host,FrameLayout root,int contentH, int viewW){
-    PdfDocument doc=null;
+    android.graphics.pdf.PdfDocument doc=null;
     Uri uri=null;
+    android.graphics.Bitmap fullBmp=null;
     try{
       final int viewH=Math.max(contentH, 200);
       web.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
@@ -396,37 +397,47 @@ public class NativeFileExportPlugin extends Plugin {
       host.updateViewLayout(web,new FrameLayout.LayoutParams(viewW,viewH));
       host.measure(android.view.View.MeasureSpec.makeMeasureSpec(viewW,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(viewH,android.view.View.MeasureSpec.EXACTLY));
       host.layout(0,0,viewW,viewH);
-      try{ Thread.sleep(700); }catch(InterruptedException ignored){}
+      try{ Thread.sleep(800); }catch(InterruptedException ignored){}
 
-      final int pageW=2380;
-      final int pageH=3368; // 4× A4 points for print/zoom quality
-      final int margin=18;
+      // رندر WebView روی Bitmap با رزولوشن بالا
+      fullBmp = android.graphics.Bitmap.createBitmap(viewW, viewH, android.graphics.Bitmap.Config.ARGB_8888);
+      android.graphics.Canvas bmpCanvas = new android.graphics.Canvas(fullBmp);
+      bmpCanvas.drawColor(android.graphics.Color.WHITE);
+      web.draw(bmpCanvas);
+
+      // صفحه استاندارد A4 بر حسب point (1/72 inch)
+      final int pageW=595;
+      final int pageH=842;
+      final int margin=14;
       final float usableW = pageW - 2f*margin;
-      final float scale = usableW / (float)viewW;
-      final int pageContentH = Math.max(1, (int)Math.floor((pageH - 2*margin) / scale));
+      final float usableH = pageH - 2f*margin;
+      // چند پیکسل WebView در هر صفحه
+      final float pxPerPt = viewW / usableW; // ≈ 2480/567 ≈ 4.37 → ~315 DPI
+      final int pageContentH = Math.max(1, (int)Math.floor(usableH * pxPerPt));
       int pageCount = Math.max(1, (int)Math.ceil((double)viewH / (double)pageContentH));
       int remainder = viewH % pageContentH;
-      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.35))) {
+      if(pageCount > 1 && (remainder == 0 || remainder < (pageContentH * 0.12))) {
         pageCount = Math.max(1, pageCount - 1);
       }
 
-      doc=new PdfDocument();
+      doc=new android.graphics.pdf.PdfDocument();
+      android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
       for(int i=0;i<pageCount;i++){
-        PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
-        PdfDocument.Page page=doc.startPage(info);
+        android.graphics.pdf.PdfDocument.PageInfo info=new android.graphics.pdf.PdfDocument.PageInfo.Builder(pageW,pageH,i+1).create();
+        android.graphics.pdf.PdfDocument.Page page=doc.startPage(info);
         android.graphics.Canvas c=page.getCanvas();
         c.drawColor(android.graphics.Color.WHITE);
-        c.save();
-        c.translate(margin, margin);
-        c.clipRect(0, 0, usableW, pageH - 2*margin);
-        c.scale(scale, scale);
-        c.translate(0, -i * pageContentH);
-        web.draw(c);
-        c.restore();
+        int srcTop = i * pageContentH;
+        int srcH = Math.min(pageContentH, viewH - srcTop);
+        if(srcH <= 0) { doc.finishPage(page); continue; }
+        android.graphics.Rect src = new android.graphics.Rect(0, srcTop, viewW, srcTop + srcH);
+        float dstH = srcH / pxPerPt;
+        android.graphics.RectF dst = new android.graphics.RectF(margin, margin, margin + usableW, margin + dstH);
+        c.drawBitmap(fullBmp, src, dst, paint);
         doc.finishPage(page);
       }
 
-      ByteArrayOutputStream bos=new ByteArrayOutputStream();
+      java.io.ByteArrayOutputStream bos=new java.io.ByteArrayOutputStream();
       doc.writeTo(bos);
       byte[] pdfBytes=bos.toByteArray();
       uri=saveToDownloads(filename,"application/pdf",pdfBytes);
@@ -435,6 +446,7 @@ public class NativeFileExportPlugin extends Plugin {
       if(uri!=null) try{ getContext().getContentResolver().delete(uri,null,null); }catch(Exception ignored){}
       call.reject("pdf_export_failed",e);
     }finally{
+      if(fullBmp!=null && !fullBmp.isRecycled()) try{ fullBmp.recycle(); }catch(Exception ignored){}
       if(doc!=null) try{ doc.close(); }catch(Exception ignored){}
       try{ host.removeView(web); root.removeView(host); }catch(Exception ignored){}
       web.destroy();
@@ -442,6 +454,8 @@ public class NativeFileExportPlugin extends Plugin {
   }
 }
 `;
+
+
 
 const main=`package ${pkg};
 
