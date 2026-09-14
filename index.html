@@ -48,7 +48,7 @@
       --green-tx: #9ee858;
       --red-bg: #3a0b12;
       --red-bd: #7a1424;
-      --red-tx: #bc2402;
+      --red-tx: #950606;
       --warn-bg: #2c2c2e;
       --warn-bd: #48484a;
       --warn-tx: #ffffff;
@@ -1160,8 +1160,8 @@
       flex: 1;
       min-width: 0;
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.28);
-      padding: 8px 8px;
+      border: 1px solid rgba(255,255,255,0.85);
+      padding: 10px 10px;
       background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
@@ -1169,23 +1169,23 @@
     .person-stat-box:active { transform: scale(0.98); filter: brightness(1.05); }
     .person-stat-line {
       font-weight: 700;
-      font-size: 0.72rem;
-      line-height: 1.4;
+      font-size: 0.8rem;
+      line-height: 1.45;
       color: rgba(255,255,255,0.95);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .person-stat-line.em { font-size: 0.78rem; }
-    .person-stat-line.paid { color: #9ee858; font-size: 0.68rem; }
-    .person-stat-line.unpaid { color: #ff6b4a; font-size: 0.68rem; }
+    .person-stat-line.em { font-size: 0.88rem; }
+    .person-stat-line.paid { color: #9ee858; font-size: 0.78rem; }
+    .person-stat-line.unpaid { color: #950606; font-size: 0.78rem; }
     .person-remain-box {
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.28);
-      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.85);
+      padding: 10px 12px;
       text-align: center;
       font-weight: 800;
-      font-size: 0.9rem;
+      font-size: 1rem;
       background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
@@ -1429,10 +1429,10 @@
       box-shadow: none !important;
     }
     .person-remain-box.remain-pos { color: #9ee858 !important; }
-    .person-remain-box.remain-neg { color: #ff6b4a !important; }
-    .person-stat-line.em { font-size: 0.86rem !important; }
-    .person-stat-line.paid { font-size: 0.76rem !important; }
-    .person-stat-line.unpaid { font-size: 0.76rem !important; }
+    .person-remain-box.remain-neg { color: #950606 !important; }
+    .person-stat-line.em { font-size: 0.9rem !important; }
+    .person-stat-line.paid { font-size: 0.8rem !important; }
+    .person-stat-line.unpaid { font-size: 0.8rem !important; }
 
 
 
@@ -1443,6 +1443,11 @@
       padding-left: 0 !important;
       padding-right: 0 !important;
       box-sizing: border-box;
+    }
+    /* person-detail-overscroll */
+    body.detail-open {
+      overflow: hidden !important;
+      overscroll-behavior: none;
     }
     .person-detail-page {
       padding: 0;
@@ -1460,12 +1465,14 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      max-height: calc(100vh - 160px);
+      max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
+      overscroll-behavior: contain;
     }
     .person-detail-sticky {
       flex-shrink: 0;
       z-index: 6;
       background: #1a1a1c;
+      position: relative;
     }
     .person-detail-title {
       text-align: center;
@@ -1481,6 +1488,8 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      overscroll-behavior-y: contain;
       -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
       mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
     }
@@ -1502,46 +1511,52 @@
     .person-detail-table tbody td {
       background: transparent;
       border: 1px solid #3a3a3e;
-      padding: 5px 4px;
+      padding: 4px 3px;
       vertical-align: middle;
       text-align: center;
-      height: 40px;
+      height: 36px;
       box-sizing: border-box;
     }
-    .person-detail-table tbody tr { height: 40px; }
-    /* استروک داخلی — مستطیل کشیده، فاصله از خط‌کشی */
+    .person-detail-table tbody tr { height: 36px; }
+    .person-detail-table tbody td.pd-num-cell {
+      border: 1px solid #3a3a3e !important;
+      padding: 2px !important;
+    }
+    /* استروک داخلی کوتاه‌تر */
     .person-detail-table tbody input,
     .person-detail-table tbody textarea,
     .person-detail-table tbody .pd-cell {
-      width: 100%;
+      width: 92%;
+      max-width: 92%;
       box-sizing: border-box;
       background: transparent;
       border: 1px solid #3a3a3e;
-      border-radius: 5px;
+      border-radius: 4px;
       color: #fff;
       font-family: inherit;
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       text-align: center;
-      padding: 0 6px;
+      padding: 0 4px;
       outline: none;
-      height: 24px;
-      min-height: 24px;
-      max-height: 24px;
-      line-height: 24px;
+      height: 20px;
+      min-height: 20px;
+      max-height: 20px;
+      line-height: 20px;
       margin: 0 auto;
       vertical-align: middle;
+      display: block;
     }
     .person-detail-table tbody textarea.pd-desc {
-      line-height: 1.25;
-      padding: 2px 6px;
+      line-height: 1.2;
+      padding: 1px 4px;
       resize: none;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
       text-align: right;
-      height: 24px;
-      min-height: 24px;
-      max-height: 24px;
+      height: 20px;
+      min-height: 20px;
+      max-height: 20px;
     }
     .person-detail-table tbody textarea.pd-desc.pd-expanded {
       white-space: pre-wrap;
@@ -1578,33 +1593,36 @@
       -webkit-text-fill-color: #9ee858 !important;
     }
     .person-detail-table .pd-amt.status-unpaid {
-      color: #ff6b4a !important;
-      -webkit-text-fill-color: #ff6b4a !important;
+      color: #950606 !important;
+      -webkit-text-fill-color: #950606 !important;
     }
     .person-detail-table .pd-num {
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       border: none !important;
       height: auto;
       line-height: 1;
       padding: 0 !important;
+      width: auto;
+      max-width: none;
+      display: inline;
     }
     .person-detail-table td.pd-del-cell {
-      width: 28px;
-      max-width: 32px;
-      padding: 2px !important;
+      width: 1.6em;
+      max-width: 1.8em;
+      padding: 1px !important;
     }
     .person-detail-table .pd-del {
       background: none;
       border: none;
-      color: #ff1744;
-      font-size: 1.2rem;
+      color: #950606;
+      font-size: 1.35rem;
       font-weight: 900;
       cursor: pointer;
       line-height: 1;
       padding: 0;
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1619,11 +1637,11 @@
       font-family: inherit;
       font-size: 0.72rem;
       padding: 0 4px;
-      height: 24px;
-      min-height: 24px;
+      height: 20px;
+      min-height: 20px;
       cursor: pointer;
       text-align: center;
-      line-height: 24px;
+      line-height: 20px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1707,8 +1725,8 @@
     td.unpaid-cell,
     .unpaid-cell,
     .status-unpaid {
-      color: #bc2402 !important;
-      -webkit-text-fill-color: #bc2402 !important;
+      color: #950606 !important;
+      -webkit-text-fill-color: #950606 !important;
     }
     .section.bank-card {
       --card-solid: #03055b;
@@ -1886,7 +1904,7 @@
     }
     .bank-card-stat.unpaid {
       font-size: 0.8rem;
-      color: #bc2402;
+      color: #950606;
     }
     .bank-card-header .btn-edit-title,
     .bank-card-header .btn-del-row {
@@ -1951,8 +1969,8 @@
     }
     .section.bank-card .section-rows-scroll tbody input.amount-input.status-unpaid,
     .section.bank-card .section-rows-scroll tbody .status-unpaid {
-      color: #bc2402 !important;
-      -webkit-text-fill-color: #bc2402 !important;
+      color: #950606 !important;
+      -webkit-text-fill-color: #950606 !important;
     }
     .section.bank-card .section-rows-scroll thead th {
       background: rgba(0,0,0,0.35) !important;
@@ -2333,8 +2351,8 @@
       border: none;
       font-weight: 700;
     }
-    .btn-del-row { color: #bc2402 !important; text-shadow: 0 0 6px rgba(255,23,68,0.5); }
-    .btn-del-sec { color: #bc2402 !important; }
+    .btn-del-row { color: #950606 !important; text-shadow: 0 0 6px rgba(255,23,68,0.5); }
+    .btn-del-sec { color: #950606 !important; }
     .btn-del-row:hover { color: #ff5252 !important; opacity: 0.95; }
     .btn-add-sec {
       background: var(--card);
@@ -2455,6 +2473,8 @@
     }
     .feature-sheet-bar .fs-close:active { opacity: 0.85; }
     .feature-sheet-body {
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 72px), transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 72px), transparent 100%);
       flex: 1;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -2683,9 +2703,9 @@
     input.amount-input.status-unpaid.unlocked,
     input.cell.amount-input.status-unpaid:focus,
     input.cell.amount-input.status-unpaid.unlocked {
-      color: #bc2402 !important;
-      -webkit-text-fill-color: #bc2402 !important;
-      caret-color: #bc2402 !important;
+      color: #950606 !important;
+      -webkit-text-fill-color: #950606 !important;
+      caret-color: #950606 !important;
     }
     [data-theme="light"] input.amount-input.status-paid:focus,
     [data-theme="light"] input.amount-input.status-paid.unlocked,
@@ -2839,9 +2859,9 @@
     input.cell.amount-input.locked.status-unpaid,
     input.amount-input.unlocked.status-unpaid,
     input.cell.amount-input.unlocked.status-unpaid {
-      color: #bc2402 !important;
-      -webkit-text-fill-color: #bc2402 !important;
-      caret-color: #bc2402 !important;
+      color: #950606 !important;
+      -webkit-text-fill-color: #950606 !important;
+      caret-color: #950606 !important;
       font-weight: 800 !important;
     }
     [data-theme="light"] input.amount-input.status-paid,
@@ -2911,7 +2931,7 @@
     .status-menu-item:last-child { border-bottom: none; }
     .status-menu-item:active { background: #2c2c2e; }
     .status-menu-item.paid { color: #9ee858; }
-    .status-menu-item.unpaid { color: #bc2402; }
+    .status-menu-item.unpaid { color: #950606; }
 
     .actions-cell { text-align: center; }
 
@@ -4060,7 +4080,7 @@
       text-shadow: 0 0 8px rgba(57,255,20,0.65), 0 0 16px rgba(57,255,20,0.35);
     }
     .tab-btn.expense.active, .tab-btn.expense.near {
-      color: #bc2402 !important;
+      color: #950606 !important;
       text-shadow: 0 0 10px rgba(255,23,68,0.85), 0 0 20px rgba(255,23,68,0.45);
     }
     .tab-btn.balance.active, .tab-btn.balance.near {
@@ -4212,7 +4232,7 @@
     select.status-select.debt,
     button.status-select.debt {
       background: #2f1a1c !important;
-      color: #bc2402 !important;
+      color: #950606 !important;
       border-color: transparent !important;
     }
     select.status-select.credit,
@@ -11621,6 +11641,7 @@ function openPdfPrintWindow(){
 
     function openPersonDetail(title, kind) {
       _detailContext = { title: title, kind: kind };
+      try { document.body.classList.add('detail-open'); } catch (e) {}
       ensurePersonSections(title);
       if (kind === 'balance') {
         // پیش‌فرض: فقط همین کاربر؛ فیلتر مقایسه همچنان در دسترس است
@@ -11668,6 +11689,7 @@ function openPdfPrintWindow(){
 
     function closePersonDetail() {
       _detailContext = null;
+      try { document.body.classList.remove('detail-open'); } catch (e) {}
       const bar = document.getElementById('detailPageBar');
       if (bar) bar.style.display = 'none';
       currentTab = 'home';
@@ -11758,8 +11780,8 @@ function openPdfPrintWindow(){
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.8em"><col style="width:2.6em"><col style="width:28%">' +
-        '<col style="width:22%"><col style="width:20%"><col style="width:2.2em">' +
+        '<col style="width:2.4em"><col style="width:2.5em"><col style="width:28%">' +
+        '<col style="width:22%"><col style="width:20%"><col style="width:1.6em">' +
         '</colgroup>' +
         '<thead><tr>' +
         '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th></th>' +
@@ -11773,8 +11795,8 @@ function openPdfPrintWindow(){
       table.className = 'person-detail-table';
       table.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.8em"><col style="width:2.6em"><col style="width:28%">' +
-        '<col style="width:22%"><col style="width:20%"><col style="width:2.2em">' +
+        '<col style="width:2.4em"><col style="width:2.5em"><col style="width:28%">' +
+        '<col style="width:22%"><col style="width:20%"><col style="width:1.6em">' +
         '</colgroup>';
       const tbody = document.createElement('tbody');
 
@@ -11808,8 +11830,11 @@ function openPdfPrintWindow(){
         const fromPlan = !!(row.fromPlanId);
 
         const tdN = document.createElement('td');
-        tdN.className = 'pd-num';
-        tdN.textContent = toPersianDigits(String(idx + 1));
+        tdN.className = 'pd-num-cell';
+        const numSpan = document.createElement('span');
+        numSpan.className = 'pd-num';
+        numSpan.textContent = toPersianDigits(String(idx + 1));
+        tdN.appendChild(numSpan);
         tr.appendChild(tdN);
 
         // روز — یک کلیک برای تایپ
@@ -11818,6 +11843,7 @@ function openPdfPrintWindow(){
         dayInp.type = 'text';
         dayInp.inputMode = 'numeric';
         dayInp.pattern = '[0-9]*';
+        dayInp.setAttribute('enterkeyhint', 'next');
         dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
         dayInp.readOnly = isFilledVal(row.day);
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
@@ -11861,16 +11887,16 @@ function openPdfPrintWindow(){
           desc.style.opacity = '0.85';
         }
         desc.onclick = (e) => {
-          if (fromPlan) {
-            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
-            return;
-          }
           if (!isFilledVal(row.desc)) {
+            if (fromPlan) {
+              showToast('برای ویرایش، از بخش اقساط اقدام کنید');
+              return;
+            }
             desc.readOnly = false;
             try { desc.focus(); } catch (err) {}
             return;
           }
-          // پر: باکس یک‌خطی با کل متن
+          // پر (حتی اقساط): باکس یک‌خطی با کل متن
           document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           const pop = document.createElement('div');
           pop.className = 'pd-desc-popup';
@@ -11950,7 +11976,7 @@ function openPdfPrintWindow(){
           menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;';
           [
             { v: 'paid', label: paidLabel, color: '#9ee858' },
-            { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
+            { v: 'unpaid', label: unpaidLabel, color: '#950606' }
           ].forEach(opt => {
             const it = document.createElement('div');
             it.textContent = opt.label;
@@ -11978,16 +12004,12 @@ function openPdfPrintWindow(){
           setTimeout(() => document.addEventListener('mousedown', close), 30);
         }
         amt.onclick = (e) => {
-          if (fromPlan) {
-            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
-            return;
-          }
+          if (fromPlan) return; // فقط دبل‌کلیک نوتیف
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
             try { amt.focus(); } catch (err) {}
             return;
           }
-          // پر: منوی دریافت/پرداخت
           if (amt.readOnly || document.activeElement !== amt) {
             e.preventDefault();
             openAmountStatusMenu();
@@ -12136,6 +12158,26 @@ function openPdfPrintWindow(){
 
       page.appendChild(box);
       container.appendChild(page);
+      // جلوگیری از اسکرول صفحه وقتی انتهای جدول رسید
+      try {
+        const sc = page.querySelector('.person-detail-scroll');
+        if (sc && !sc._pdScrollContain) {
+          sc._pdScrollContain = true;
+          sc.addEventListener('touchstart', function(e) {
+            this._tsY = e.touches[0].clientY;
+            this._tsTop = this.scrollTop;
+          }, { passive: true });
+          sc.addEventListener('touchmove', function(e) {
+            const y = e.touches[0].clientY;
+            const dy = y - (this._tsY || y);
+            const top = this.scrollTop;
+            const max = this.scrollHeight - this.clientHeight;
+            if ((top <= 0 && dy > 0) || (top >= max - 1 && dy < 0)) {
+              e.preventDefault();
+            }
+          }, { passive: false });
+        }
+      } catch (e) {}
     }
 
 
