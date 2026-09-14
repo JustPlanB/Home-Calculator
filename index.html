@@ -1427,7 +1427,14 @@
 
 
 
+
     /* —— جدول جزئیات کاربر (درآمد/مخارج) —— */
+    #panel-income,
+    #panel-expense {
+      padding-left: max(16px, calc(12px + env(safe-area-inset-left, 0px))) !important;
+      padding-right: max(16px, calc(12px + env(safe-area-inset-right, 0px))) !important;
+      box-sizing: border-box;
+    }
     .person-detail-page {
       padding: 0;
       direction: rtl;
@@ -1441,10 +1448,12 @@
       border: 1px solid rgba(255,255,255,0.08);
       width: 100%;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 160px);
     }
     .person-detail-sticky {
-      position: sticky;
-      top: 0;
+      flex-shrink: 0;
       z-index: 6;
       background: #1a1a1c;
     }
@@ -1457,11 +1466,13 @@
       background: #1a1a1c;
     }
     .person-detail-scroll {
-      max-height: calc(100vh - 220px);
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
     }
     .person-detail-table {
       width: 100%;
@@ -1472,26 +1483,23 @@
       background: #0a1628;
       color: #fff;
       font-weight: 700;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       text-align: center;
-      padding: 8px 2px;
+      padding: 8px 1px;
       border: 1px solid #3a3a3e;
-      position: sticky;
-      top: 0;
-      z-index: 5;
+      box-sizing: border-box;
     }
     .person-detail-table tbody td {
       background: transparent;
       border: 1px solid #3a3a3e;
-      border-top: 1px solid #3a3a3e;
-      padding: 3px 2px;
+      padding: 5px 4px;
       vertical-align: middle;
       text-align: center;
-      height: 42px;
+      height: 40px;
+      box-sizing: border-box;
     }
-    .person-detail-table tbody tr {
-      height: 42px;
-    }
+    .person-detail-table tbody tr { height: 40px; }
+    /* استروک داخلی — مستطیل کشیده، فاصله از خط‌کشی */
     .person-detail-table tbody input,
     .person-detail-table tbody textarea,
     .person-detail-table tbody .pd-cell {
@@ -1499,45 +1507,47 @@
       box-sizing: border-box;
       background: transparent;
       border: 1px solid #3a3a3e;
-      border-radius: 6px;
+      border-radius: 5px;
       color: #fff;
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       text-align: center;
-      padding: 0 4px;
+      padding: 0 6px;
       outline: none;
-      height: 34px;
-      min-height: 34px;
-      max-height: 34px;
-      line-height: 34px;
+      height: 26px;
+      min-height: 26px;
+      max-height: 26px;
+      line-height: 26px;
+      margin: 0;
       vertical-align: middle;
     }
     .person-detail-table tbody textarea.pd-desc {
       line-height: 1.25;
-      padding: 4px;
+      padding: 3px 6px;
       resize: none;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
       text-align: right;
-      height: 34px;
-      min-height: 34px;
-      max-height: 34px;
-    }
-    .person-detail-table tbody textarea.pd-desc.pd-editing {
-      white-space: pre-wrap;
-      overflow-y: auto;
-      height: 56px;
-      min-height: 56px;
-      max-height: 56px;
-      line-height: 1.3;
+      height: 26px;
+      min-height: 26px;
+      max-height: 26px;
     }
     .person-detail-table tbody textarea.pd-desc.pd-expanded {
       white-space: pre-wrap;
       overflow-y: auto;
       height: auto;
-      max-height: 120px;
-      min-height: 34px;
+      max-height: 110px;
+      min-height: 26px;
+      line-height: 1.35;
+    }
+    .person-detail-table tbody textarea.pd-desc.pd-editing {
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: 52px;
+      min-height: 52px;
+      max-height: 52px;
+      line-height: 1.3;
     }
     .person-detail-table tbody input.pd-filled,
     .person-detail-table tbody textarea.pd-filled,
@@ -1550,7 +1560,7 @@
       border-color: #3a3a3e !important;
     }
     .person-detail-table .pd-amt {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 800;
     }
     .person-detail-table .pd-amt.status-paid {
@@ -1563,37 +1573,47 @@
     }
     .person-detail-table .pd-num {
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       border: none !important;
       height: auto;
       line-height: 1;
+      padding: 0 !important;
+    }
+    .person-detail-table td.pd-del-cell {
+      width: 28px;
+      max-width: 32px;
+      padding: 2px !important;
     }
     .person-detail-table .pd-del {
       background: none;
       border: none;
       color: #ff1744;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 900;
       cursor: pointer;
       line-height: 1;
-      padding: 2px;
-      width: 22px;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .person-detail-table .pd-acc-btn {
       width: 100%;
       box-sizing: border-box;
       background: transparent;
       border: 1px solid #3a3a3e;
-      border-radius: 6px;
+      border-radius: 5px;
       color: #fff;
       font-family: inherit;
-      font-size: 0.75rem;
-      padding: 0 2px;
-      height: 34px;
-      min-height: 34px;
+      font-size: 0.72rem;
+      padding: 0 4px;
+      height: 26px;
+      min-height: 26px;
       cursor: pointer;
       text-align: center;
-      line-height: 34px;
+      line-height: 26px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1602,43 +1622,28 @@
       display: flex;
       justify-content: flex-start;
       direction: ltr;
-      padding: 8px 12px 4px;
+      padding: 6px 10px 2px;
+      flex-shrink: 0;
     }
     .person-detail-add .btn-circle-plus {
-      width: 42px;
-      height: 42px;
+      width: 40px;
+      height: 40px;
     }
     .person-detail-add .btn-circle-plus svg {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
     }
     .person-detail-hint {
       text-align: center;
       color: var(--muted);
-      font-size: 0.75rem;
-      padding: 2px 12px 10px;
+      font-size: 0.74rem;
+      padding: 0 10px 8px;
       margin: 0;
+      flex-shrink: 0;
     }
     .person-detail-box-bottom {
-      height: 10px;
-      border-radius: 0 0 16px 16px;
-    }
-    /* عرض هم‌تراز با نوار بالا */
-    #panel-home,
-    #panel-income,
-    #panel-expense {
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-    }
-    .home-cards {
-      width: 100%;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    .person-card {
-      width: 100%;
-      margin: 0 0 14px 0;
-      border-radius: 16px;
+      height: 8px;
+      flex-shrink: 0;
     }
     .detail-page-bar { display: none !important; }
 
@@ -11721,13 +11726,12 @@ function openPdfPrintWindow(){
       const headTable = document.createElement('table');
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
+        '<colgroup>' +
+        '<col style="width:7%"><col style="width:8%"><col style="width:30%">' +
+        '<col style="width:32%"><col style="width:16%"><col style="width:7%">' +
+        '</colgroup>' +
         '<thead><tr>' +
-        '<th style="width:8%">ردیف</th>' +
-        '<th style="width:9%">روز</th>' +
-        '<th style="width:34%">شرح</th>' +
-        '<th style="width:26%">مبلغ</th>' +
-        '<th style="width:15%">حساب</th>' +
-        '<th style="width:8%"></th>' +
+        '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th></th>' +
         '</tr></thead>';
       sticky.appendChild(headTable);
       box.appendChild(sticky);
@@ -11736,6 +11740,11 @@ function openPdfPrintWindow(){
       scroll.className = 'person-detail-scroll';
       const table = document.createElement('table');
       table.className = 'person-detail-table';
+      table.innerHTML =
+        '<colgroup>' +
+        '<col style="width:7%"><col style="width:8%"><col style="width:30%">' +
+        '<col style="width:32%"><col style="width:16%"><col style="width:7%">' +
+        '</colgroup>';
       const tbody = document.createElement('tbody');
 
       function markFilled(el, filled) {
@@ -11779,16 +11788,27 @@ function openPdfPrintWindow(){
         dayInp.inputMode = 'numeric';
         dayInp.pattern = '[0-9]*';
         dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
-        dayInp.readOnly = false;
+        dayInp.readOnly = isFilledVal(row.day);
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
-        dayInp.onfocus = () => {
-          dayInp.value = row.day ? String(row.day) : '';
-          // English for input then convert
+        dayInp.oninput = () => {
+          const eng = toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '');
+          dayInp.value = eng ? toPersianDigits(eng) : '';
+        };
+        dayInp.onclick = () => {
+          if (!isFilledVal(row.day)) {
+            dayInp.readOnly = false;
+            try { dayInp.focus(); } catch (e) {}
+          }
+        };
+        dayInp.ondblclick = () => {
+          dayInp.readOnly = false;
+          try { dayInp.focus(); } catch (e) {}
         };
         dayInp.onblur = () => {
           const d = parseInt(toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '') || '0', 10) || '';
           row.day = d || '';
           dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
+          dayInp.readOnly = isFilledVal(row.day);
           markFilled(dayInp, isFilledVal(row.day));
           sortAndRebuild();
         };
@@ -11801,29 +11821,39 @@ function openPdfPrintWindow(){
         desc.className = 'pd-desc' + (isFilledVal(row.desc) ? ' pd-filled' : '');
         desc.rows = 1;
         desc.value = row.desc || '';
-        desc.readOnly = false;
+        desc.readOnly = isFilledVal(row.desc) || fromPlan;
         if (fromPlan) {
-          desc.readOnly = true;
           desc.title = 'از اقساط — قابل ویرایش نیست';
           desc.style.opacity = '0.85';
         }
+        desc.onclick = () => {
+          if (fromPlan) return;
+          if (!isFilledVal(row.desc)) {
+            desc.readOnly = false;
+            try { desc.focus(); } catch (e) {}
+          } else {
+            // پر است: نمایش کامل بدون ادیت
+            desc.classList.toggle('pd-expanded');
+          }
+        };
+        desc.ondblclick = (e) => {
+          if (fromPlan) return;
+          e.preventDefault();
+          desc.readOnly = false;
+          desc.classList.add('pd-editing');
+          try { desc.focus(); } catch (err) {}
+        };
         desc.onfocus = () => {
           if (fromPlan) return;
-          desc.classList.add('pd-editing');
-          if ((row.desc || '').length > 20) desc.classList.add('pd-expanded');
+          if (!desc.readOnly) desc.classList.add('pd-editing');
         };
         desc.onblur = () => {
           if (fromPlan) return;
           row.desc = desc.value || '';
           desc.classList.remove('pd-editing', 'pd-expanded');
+          desc.readOnly = isFilledVal(row.desc);
           markFilled(desc, isFilledVal(row.desc));
           scheduleSave();
-        };
-        desc.onclick = () => {
-          if (fromPlan) return;
-          if ((row.desc || '').length > 12) {
-            desc.classList.add('pd-expanded');
-          }
         };
         tdDesc.appendChild(desc);
         tr.appendChild(tdDesc);
@@ -11835,9 +11865,8 @@ function openPdfPrintWindow(){
         amt.inputMode = 'numeric';
         amt.pattern = '[0-9]*';
         amt.value = row.amount ? formatNum(row.amount) : '';
-        amt.readOnly = false;
+        amt.readOnly = isFilledVal(row.amount) || fromPlan;
         if (fromPlan) {
-          amt.readOnly = true;
           amt.title = 'مبلغ اقساط قابل ویرایش نیست';
         }
         function applyAmtColor() {
@@ -11846,11 +11875,23 @@ function openPdfPrintWindow(){
           amt.classList.toggle('status-unpaid', !paid);
         }
         applyAmtColor();
-        let statusTapTimer = null;
-        amt.onclick = (e) => {
+        amt.ondblclick = () => {
           if (fromPlan) return;
-          // اگر پر است و کلیک کوتاه برای وضعیت
-          if (isFilledVal(row.amount) && document.activeElement !== amt) {
+          amt.readOnly = false;
+          try { amt.focus(); } catch (e) {}
+        };
+        amt.onclick = () => {
+          if (fromPlan) return;
+          if (!isFilledVal(row.amount)) {
+            amt.readOnly = false;
+            try { amt.focus(); } catch (e) {}
+          }
+        };
+        let statusTapTimer = null;
+        amt.addEventListener('click', (e) => {
+          if (fromPlan) return;
+          // اگر پر است و در حالت فقط‌خواندنی → منوی وضعیت
+          if (isFilledVal(row.amount) && amt.readOnly && document.activeElement !== amt) {
             clearTimeout(statusTapTimer);
             statusTapTimer = setTimeout(() => {
               if (document.activeElement === amt) return;
@@ -11885,7 +11926,7 @@ function openPdfPrintWindow(){
               setTimeout(() => document.addEventListener('mousedown', close), 10);
             }, 280);
           }
-        };
+        });
         amt.onfocus = () => { clearTimeout(statusTapTimer); };
         amt.oninput = () => {
           if (fromPlan) return;
@@ -11899,6 +11940,7 @@ function openPdfPrintWindow(){
           row.amount = n;
           if (n && !row.status) row.status = 'paid';
           amt.value = n ? formatNum(n) : '';
+          amt.readOnly = !!n;
           markFilled(amt, !!n);
           applyAmtColor();
           scheduleSave();
@@ -11958,6 +12000,7 @@ function openPdfPrintWindow(){
 
         // حذف — کوچک
         const tdDel = document.createElement('td');
+        tdDel.className = 'pd-del-cell';
         if (fromPlan) {
           tdDel.innerHTML = '<span style="opacity:0.3">—</span>';
         } else {
@@ -12008,7 +12051,7 @@ function openPdfPrintWindow(){
 
       const hint = document.createElement('div');
       hint.className = 'person-detail-hint';
-      hint.textContent = 'برای ویرایش، یک‌بار روی فیلد بزنید';
+      hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
       box.appendChild(hint);
 
       const bottom = document.createElement('div');
