@@ -48,7 +48,7 @@
       --green-tx: #9ee858;
       --red-bg: #3a0b12;
       --red-bd: #7a1424;
-      --red-tx: #950606;
+      --red-tx: #ff6b4a;
       --warn-bg: #2c2c2e;
       --warn-bd: #48484a;
       --warn-tx: #ffffff;
@@ -1075,8 +1075,9 @@
     /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
-      width: 100%;
-      margin: 0 0 14px 0;
+      width: var(--match-card-w, 100%);
+      max-width: 100%;
+      margin: 0 auto 14px auto;
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
       overflow: hidden;
@@ -1178,7 +1179,7 @@
     }
     .person-stat-line.em { font-size: 0.88rem; }
     .person-stat-line.paid { color: #9ee858; font-size: 0.78rem; }
-    .person-stat-line.unpaid { color: #950606; font-size: 0.78rem; }
+    .person-stat-line.unpaid { color: #ff6b4a; font-size: 0.78rem; }
     .person-remain-box {
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.85);
@@ -1226,6 +1227,10 @@
       direction: rtl;
     }
     .bg-pick {
+      flex: 0 0 auto;
+      width: 48px;
+      height: 48px;
+      box-sizing: border-box;
       width: 56px;
       height: 36px;
       border-radius: 8px;
@@ -1429,7 +1434,7 @@
       box-shadow: none !important;
     }
     .person-remain-box.remain-pos { color: #9ee858 !important; }
-    .person-remain-box.remain-neg { color: #950606 !important; }
+    .person-remain-box.remain-neg { color: #ff6b4a !important; }
     .person-stat-line.em { font-size: 0.9rem !important; }
     .person-stat-line.paid { font-size: 0.8rem !important; }
     .person-stat-line.unpaid { font-size: 0.8rem !important; }
@@ -1460,8 +1465,9 @@
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.08);
-      width: 100%;
+      width: var(--match-card-w, 100%);
       max-width: 100%;
+      margin: 0 auto;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -1483,15 +1489,16 @@
       background: #1a1a1c;
     }
     .person-detail-scroll {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-height: 0;
+      max-height: calc(10 * 36px);
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       overscroll-behavior-y: contain;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
-      mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 100%);
     }
     .person-detail-table {
       width: 100%;
@@ -1593,8 +1600,8 @@
       -webkit-text-fill-color: #9ee858 !important;
     }
     .person-detail-table .pd-amt.status-unpaid {
-      color: #950606 !important;
-      -webkit-text-fill-color: #950606 !important;
+      color: #ff6b4a !important;
+      -webkit-text-fill-color: #ff6b4a !important;
     }
     .person-detail-table .pd-num {
       color: var(--muted);
@@ -1615,8 +1622,8 @@
     .person-detail-table .pd-del {
       background: none;
       border: none;
-      color: #950606;
-      font-size: 1.35rem;
+      color: #ff1744;
+      font-size: 1.4rem;
       font-weight: 900;
       cursor: pointer;
       line-height: 1;
@@ -1626,6 +1633,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      text-shadow: 0 0 4px rgba(255,23,68,0.55);
+      -webkit-text-stroke: 0.3px #ff1744;
     }
     .person-detail-table .pd-acc-btn {
       width: 100%;
@@ -1686,6 +1695,48 @@
       direction: rtl;
       text-align: right;
     }
+    /* ledger-match-detail */
+    #panel-ledger .section .section-body table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    #panel-ledger .section .section-body thead th {
+      background: #0a1628 !important;
+      color: #fff !important;
+      border: 1px solid #3a3a3e !important;
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 8px 2px;
+    }
+    #panel-ledger .section .section-body tbody td {
+      border: 1px solid #3a3a3e !important;
+      background: transparent !important;
+      padding: 4px 3px !important;
+      vertical-align: middle;
+    }
+    #panel-ledger .section .section-body tbody input,
+    #panel-ledger .section .section-body tbody textarea {
+      width: 92%;
+      max-width: 92%;
+      height: 20px;
+      min-height: 20px;
+      border: 1px solid #3a3a3e;
+      border-radius: 4px;
+      background: transparent;
+      color: #fff;
+      margin: 0 auto;
+      display: block;
+      box-sizing: border-box;
+      font-size: 0.82rem;
+    }
+    #panel-ledger .section {
+      width: var(--match-card-w, 100%);
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
+    }
     .person-detail-box-bottom {
       height: 8px;
       flex-shrink: 0;
@@ -1725,8 +1776,8 @@
     td.unpaid-cell,
     .unpaid-cell,
     .status-unpaid {
-      color: #950606 !important;
-      -webkit-text-fill-color: #950606 !important;
+      color: #ff6b4a !important;
+      -webkit-text-fill-color: #ff6b4a !important;
     }
     .section.bank-card {
       --card-solid: #03055b;
@@ -1904,7 +1955,7 @@
     }
     .bank-card-stat.unpaid {
       font-size: 0.8rem;
-      color: #950606;
+      color: #ff6b4a;
     }
     .bank-card-header .btn-edit-title,
     .bank-card-header .btn-del-row {
@@ -1969,8 +2020,8 @@
     }
     .section.bank-card .section-rows-scroll tbody input.amount-input.status-unpaid,
     .section.bank-card .section-rows-scroll tbody .status-unpaid {
-      color: #950606 !important;
-      -webkit-text-fill-color: #950606 !important;
+      color: #ff6b4a !important;
+      -webkit-text-fill-color: #ff6b4a !important;
     }
     .section.bank-card .section-rows-scroll thead th {
       background: rgba(0,0,0,0.35) !important;
@@ -2351,8 +2402,8 @@
       border: none;
       font-weight: 700;
     }
-    .btn-del-row { color: #950606 !important; text-shadow: 0 0 6px rgba(255,23,68,0.5); }
-    .btn-del-sec { color: #950606 !important; }
+    .btn-del-row { color: #ff6b4a !important; text-shadow: 0 0 6px rgba(255,23,68,0.5); }
+    .btn-del-sec { color: #ff6b4a !important; }
     .btn-del-row:hover { color: #ff5252 !important; opacity: 0.95; }
     .btn-add-sec {
       background: var(--card);
@@ -2703,9 +2754,9 @@
     input.amount-input.status-unpaid.unlocked,
     input.cell.amount-input.status-unpaid:focus,
     input.cell.amount-input.status-unpaid.unlocked {
-      color: #950606 !important;
-      -webkit-text-fill-color: #950606 !important;
-      caret-color: #950606 !important;
+      color: #ff6b4a !important;
+      -webkit-text-fill-color: #ff6b4a !important;
+      caret-color: #ff6b4a !important;
     }
     [data-theme="light"] input.amount-input.status-paid:focus,
     [data-theme="light"] input.amount-input.status-paid.unlocked,
@@ -2859,9 +2910,9 @@
     input.cell.amount-input.locked.status-unpaid,
     input.amount-input.unlocked.status-unpaid,
     input.cell.amount-input.unlocked.status-unpaid {
-      color: #950606 !important;
-      -webkit-text-fill-color: #950606 !important;
-      caret-color: #950606 !important;
+      color: #ff6b4a !important;
+      -webkit-text-fill-color: #ff6b4a !important;
+      caret-color: #ff6b4a !important;
       font-weight: 800 !important;
     }
     [data-theme="light"] input.amount-input.status-paid,
@@ -2931,7 +2982,7 @@
     .status-menu-item:last-child { border-bottom: none; }
     .status-menu-item:active { background: #2c2c2e; }
     .status-menu-item.paid { color: #9ee858; }
-    .status-menu-item.unpaid { color: #950606; }
+    .status-menu-item.unpaid { color: #ff6b4a; }
 
     .actions-cell { text-align: center; }
 
@@ -3243,26 +3294,43 @@
     .remind-banner.show { display: block; }
     .remind-dot {
       display: none;
-      width: 16px;
-      height: 16px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background: #d500f9;
-      box-shadow: 0 0 10px rgba(213, 0, 249, 0.95), 0 0 18px rgba(213, 0, 249, 0.55);
+      background: radial-gradient(circle at 35% 35%, #e9a8ff 0%, #c026ff 45%, #7b1fa2 100%);
+      box-shadow: 0 0 6px rgba(208, 80, 255, 0.55), 0 0 12px rgba(176, 38, 255, 0.28);
       flex-shrink: 0;
+      animation: remindDotPulse 2.8s ease-in-out infinite;
+    }
+    @keyframes remindDotPulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.88; box-shadow: 0 0 5px rgba(208,80,255,0.4), 0 0 10px rgba(176,38,255,0.2); }
+      50% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 8px rgba(208,80,255,0.6), 0 0 14px rgba(176,38,255,0.32); }
     }
     .remind-bar {
-      background: #0a1f33;
-      border: 1px solid #0d2a45;
+      background: linear-gradient(135deg, rgba(40, 18, 55, 0.55) 0%, rgba(18, 22, 40, 0.45) 50%, rgba(48, 20, 70, 0.5) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(180, 120, 255, 0.22);
       border-radius: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       overflow: hidden;
       position: relative;
       z-index: 5;
       flex-shrink: 0;
+      box-shadow: inset 0 1px 0 rgba(220, 180, 255, 0.12), 0 4px 16px rgba(80, 20, 120, 0.12);
     }
+    .remind-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(180, 100, 255, 0.08) 40%, rgba(220, 160, 255, 0.14) 50%, rgba(180, 100, 255, 0.06) 60%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .remind-bar > * { position: relative; z-index: 1; }
     [data-theme="light"] .remind-bar {
-      background: #0a1f33;
-      border: 1px solid #0d2a45;
+      background: linear-gradient(135deg, rgba(40, 18, 55, 0.55) 0%, rgba(18, 22, 40, 0.45) 50%, rgba(48, 20, 70, 0.5) 100%);
+      border: 1px solid rgba(180, 120, 255, 0.22);
     }
     .remind-bar[style*="display: block"],
     .remind-bar[style*="display:block"] {
@@ -3275,15 +3343,15 @@
       padding: 10px 12px;
       cursor: pointer;
       user-select: none;
-      color: #e8f1fa;
+      color: #f0e8ff;
       font-weight: bold;
       font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
-      background: #0a2a4a;
+      background: rgba(30, 16, 48, 0.35);
       border-bottom: 1px solid transparent;
     }
     [data-theme="light"] .remind-bar-head {
-      color: #e8f1fa;
-      background: #0a2a4a;
+      color: #f0e8ff;
+      background: rgba(30, 16, 48, 0.35);
     }
     .remind-bar.open .remind-bar-head {
       border-bottom-color: var(--border);
@@ -4080,7 +4148,7 @@
       text-shadow: 0 0 8px rgba(57,255,20,0.65), 0 0 16px rgba(57,255,20,0.35);
     }
     .tab-btn.expense.active, .tab-btn.expense.near {
-      color: #950606 !important;
+      color: #ff6b4a !important;
       text-shadow: 0 0 10px rgba(255,23,68,0.85), 0 0 20px rgba(255,23,68,0.45);
     }
     .tab-btn.balance.active, .tab-btn.balance.near {
@@ -4232,7 +4300,7 @@
     select.status-select.debt,
     button.status-select.debt {
       background: #2f1a1c !important;
-      color: #950606 !important;
+      color: #ff6b4a !important;
       border-color: transparent !important;
     }
     select.status-select.credit,
@@ -5719,6 +5787,37 @@
       if (!chrome) return;
       const h = Math.ceil(chrome.getBoundingClientRect().height);
       document.documentElement.style.setProperty('--chrome-h', h + 'px');
+      try { syncMatchCardWidth(); } catch (e) {}
+    }
+    function syncMatchCardWidth() {
+      let w = 0;
+      const bar = document.getElementById('remindBar');
+      if (bar) {
+        const st = window.getComputedStyle(bar);
+        if (st.display !== 'none' && st.visibility !== 'hidden') {
+          const r = bar.getBoundingClientRect();
+          if (r.width > 40) w = r.width;
+        }
+      }
+      if (!w) {
+        const top = document.querySelector('.top-bar');
+        if (top) {
+          const r = top.getBoundingClientRect();
+          if (r.width > 40) w = r.width;
+        }
+      }
+      if (!w) {
+        const chrome = document.getElementById('stickyChrome');
+        if (chrome) {
+          const cs = window.getComputedStyle(chrome);
+          const pl = parseFloat(cs.paddingLeft) || 0;
+          const pr = parseFloat(cs.paddingRight) || 0;
+          w = chrome.clientWidth - pl - pr;
+        }
+      }
+      if (w > 40) {
+        document.documentElement.style.setProperty('--match-card-w', Math.round(w) + 'px');
+      }
     }
     function moveTabIndicator() {
       setIndicatorAtIndex(tabIndexOf(currentTab), false);
@@ -11427,6 +11526,7 @@ function openPdfPrintWindow(){
     let _detailContext = null;
 
     function renderHomeCards() {
+      try { syncMatchCardWidth(); } catch (e) {}
       const box = document.getElementById('homeCards');
       if (!box) return;
       box.innerHTML = '';
@@ -11516,13 +11616,24 @@ function openPdfPrintWindow(){
 
     function openPersonEditSheet(title, isNew) {
       const _sy = window.scrollY || window.pageYOffset || 0;
+      try {
+        document.body.dataset.editScrollY = String(_sy);
+        document.body.style.position = 'fixed';
+        document.body.style.top = (-_sy) + 'px';
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+      } catch (e) {}
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay open';
       overlay.style.zIndex = '600';
       overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.overflow = 'hidden';
       const box = document.createElement('div');
       box.className = 'modal-box';
-      box.style.cssText = 'max-width:360px;text-align:right;padding:16px;';
+      box.style.cssText = 'max-width:360px;text-align:right;padding:16px;position:relative;transform:translateZ(0);';
       const lab = document.createElement('div');
       lab.style.cssText = 'font-weight:800;margin-bottom:8px;';
       lab.textContent = isNew ? 'کاربر جدید' : 'ویرایش کاربر';
@@ -11542,9 +11653,14 @@ function openPdfPrintWindow(){
         p.type = 'button';
         p.className = 'bg-pick' + (idx === selected ? ' selected' : '');
         p.style.backgroundImage = 'url("' + src + '")';
-        p.onclick = () => {
+        p.onclick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
           selected = idx;
-          row.querySelectorAll('.bg-pick').forEach((el, i) => el.classList.toggle('selected', i === selected));
+          row.querySelectorAll('.bg-pick').forEach((el, i) => {
+            el.classList.toggle('selected', i === selected);
+          });
+          try { window.scrollTo(0, 0); } catch (e) {}
         };
         row.appendChild(p);
       });
@@ -11581,6 +11697,17 @@ function openPdfPrintWindow(){
         persistCurrent();
         scheduleSave();
         try { overlay.remove(); } catch (e) {}
+        try {
+          const sy = parseInt(document.body.dataset.editScrollY || '0', 10) || 0;
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.left = '';
+          document.body.style.right = '';
+          document.body.style.width = '';
+          document.body.style.overflow = '';
+          delete document.body.dataset.editScrollY;
+          window.scrollTo(0, sy);
+        } catch (e) {}
         renderHomeCards();
         showToast(isNew ? 'کارت ایجاد شد' : 'ذخیره شد');
       };
@@ -11589,7 +11716,20 @@ function openPdfPrintWindow(){
       cancel.className = 'modal-btn no';
       cancel.textContent = 'انصراف';
       cancel.style.flex = '1';
-      cancel.onclick = () => { try { overlay.remove(); } catch (e) {} };
+      cancel.onclick = () => {
+        try { overlay.remove(); } catch (e) {}
+        try {
+          const sy = parseInt(document.body.dataset.editScrollY || '0', 10) || 0;
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.left = '';
+          document.body.style.right = '';
+          document.body.style.width = '';
+          document.body.style.overflow = '';
+          delete document.body.dataset.editScrollY;
+          window.scrollTo(0, sy);
+        } catch (e) {}
+      };
       actions.appendChild(ok);
       actions.appendChild(cancel);
       box.appendChild(lab);
@@ -11600,13 +11740,9 @@ function openPdfPrintWindow(){
       overlay.appendChild(box);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) try { overlay.remove(); } catch (err) {} });
       document.body.appendChild(overlay);
-      try { window.scrollTo(0, _sy); } catch (e) {}
       setTimeout(() => {
-        try { window.scrollTo(0, _sy); } catch (e) {}
-        try { inp.focus({ preventScroll: true }); } catch (e) {
-          try { inp.focus(); window.scrollTo(0, _sy); } catch (e2) {}
-        }
-      }, 30);
+        try { inp.focus({ preventScroll: true }); } catch (e) {}
+      }, 40);
     }
 
     function askDeletePerson(title) {
@@ -11780,8 +11916,8 @@ function openPdfPrintWindow(){
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.4em"><col style="width:2.5em"><col style="width:28%">' +
-        '<col style="width:22%"><col style="width:20%"><col style="width:1.6em">' +
+        '<col style="width:2.1em"><col style="width:2.2em"><col style="width:26%">' +
+        '<col style="width:28%"><col style="width:18%"><col style="width:1.5em">' +
         '</colgroup>' +
         '<thead><tr>' +
         '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th></th>' +
@@ -11795,8 +11931,8 @@ function openPdfPrintWindow(){
       table.className = 'person-detail-table';
       table.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.4em"><col style="width:2.5em"><col style="width:28%">' +
-        '<col style="width:22%"><col style="width:20%"><col style="width:1.6em">' +
+        '<col style="width:2.1em"><col style="width:2.2em"><col style="width:26%">' +
+        '<col style="width:28%"><col style="width:18%"><col style="width:1.5em">' +
         '</colgroup>';
       const tbody = document.createElement('tbody');
 
@@ -11881,6 +12017,7 @@ function openPdfPrintWindow(){
         desc.className = 'pd-desc' + (isFilledVal(row.desc) ? ' pd-filled' : '');
         desc.rows = 1;
         desc.value = row.desc || '';
+        desc.setAttribute('enterkeyhint', 'next');
         desc.readOnly = isFilledVal(row.desc) || fromPlan;
         if (fromPlan) {
           desc.title = 'از اقساط — قابل ویرایش نیست';
@@ -11931,6 +12068,14 @@ function openPdfPrintWindow(){
           if (fromPlan) return;
           if (!desc.readOnly) desc.classList.add('pd-editing');
         };
+        desc._goNext = false;
+        desc.onkeydown = (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            desc._goNext = true;
+            desc.blur();
+          }
+        };
         desc.onblur = () => {
           if (fromPlan) return;
           row.desc = desc.value || '';
@@ -11938,6 +12083,17 @@ function openPdfPrintWindow(){
           desc.readOnly = isFilledVal(row.desc);
           markFilled(desc, isFilledVal(row.desc));
           scheduleSave();
+          if (desc._goNext) {
+            desc._goNext = false;
+            setTimeout(() => {
+              try {
+                const a = tr.querySelector('.pd-amt');
+                if (!a || fromPlan) return;
+                a.readOnly = false;
+                a.focus({ preventScroll: true });
+              } catch (err) {}
+            }, 30);
+          }
         };
         tdDesc.appendChild(desc);
         tr.appendChild(tdDesc);
@@ -11976,7 +12132,7 @@ function openPdfPrintWindow(){
           menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;';
           [
             { v: 'paid', label: paidLabel, color: '#9ee858' },
-            { v: 'unpaid', label: unpaidLabel, color: '#950606' }
+            { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
           ].forEach(opt => {
             const it = document.createElement('div');
             it.textContent = opt.label;
@@ -17281,6 +17437,7 @@ if (item.type === 'recurring') {
       renderHomeCards();
       /* home-scroll-stable */
       try { window.scrollTo(0, 0); } catch (e) {}
+      try { syncMatchCardWidth(); } catch (e2) {}
     } catch (e) { console.error('home boot', e); }
     renderAll();
     requestNotifPermission();
