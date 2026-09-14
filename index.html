@@ -91,6 +91,11 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --content-inline: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
+      --content-inline-end: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
+    }
+
     body {
       font-family: 'Vazirmatn', 'B Nazanin', 'IRANSansX', 'IRANSans', Tahoma, 'Segoe UI', sans-serif;
       background: var(--bg);
@@ -101,8 +106,8 @@
       /* فاصله از بالای صفحه = ارتفاع هدر ثابت (با JS هم به‌روز می‌شود) */
       padding-top: calc(var(--chrome-h, 140px) + env(safe-area-inset-top, 0px));
       padding-bottom: max(96px, calc(48px + env(safe-area-inset-bottom, 0px)));
-      padding-left: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
-      padding-right: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
+      padding-left: var(--content-inline);
+      padding-right: var(--content-inline-end);
       direction: rtl;
       font-size: 15px;
       overflow-x: hidden;
@@ -127,8 +132,8 @@
       background: var(--bg);
       padding-top: 8px;
       padding-bottom: 6px;
-      padding-left: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
-      padding-right: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
+      padding-left: var(--content-inline);
+      padding-right: var(--content-inline-end);
       margin-bottom: 0;
       box-sizing: border-box;
     }
@@ -1049,7 +1054,11 @@
     }
     #panel-home {
       display: none;
-      padding: 8px 6px 24px;
+      padding-top: 8px;
+      padding-bottom: 24px;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      box-sizing: border-box;
     }
     /* home-only-hide-legacy */
     body.tabs-main-hidden #panel-income .add-sec-wrap,
@@ -1062,12 +1071,12 @@
       display: block !important;
       visibility: visible !important;
     }
-    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
-    #panel-home { padding-left: 0 !important; padding-right: 0 !important; }
+    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; padding: 0; margin: 0; }
+    /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
       width: 100%;
-      margin: 0;
+      margin: 0 0 14px 0;
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
       overflow: hidden;
@@ -1431,8 +1440,8 @@
     /* —— جدول جزئیات کاربر (درآمد/مخارج) —— */
     #panel-income,
     #panel-expense {
-      padding-left: max(16px, calc(12px + env(safe-area-inset-left, 0px))) !important;
-      padding-right: max(16px, calc(12px + env(safe-area-inset-right, 0px))) !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
       box-sizing: border-box;
     }
     .person-detail-page {
@@ -1447,6 +1456,7 @@
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.08);
       width: 100%;
+      max-width: 100%;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -1514,24 +1524,24 @@
       text-align: center;
       padding: 0 6px;
       outline: none;
-      height: 26px;
-      min-height: 26px;
-      max-height: 26px;
-      line-height: 26px;
-      margin: 0;
+      height: 24px;
+      min-height: 24px;
+      max-height: 24px;
+      line-height: 24px;
+      margin: 0 auto;
       vertical-align: middle;
     }
     .person-detail-table tbody textarea.pd-desc {
       line-height: 1.25;
-      padding: 3px 6px;
+      padding: 2px 6px;
       resize: none;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
       text-align: right;
-      height: 26px;
-      min-height: 26px;
-      max-height: 26px;
+      height: 24px;
+      min-height: 24px;
+      max-height: 24px;
     }
     .person-detail-table tbody textarea.pd-desc.pd-expanded {
       white-space: pre-wrap;
@@ -1588,13 +1598,13 @@
       background: none;
       border: none;
       color: #ff1744;
-      font-size: 1rem;
+      font-size: 1.2rem;
       font-weight: 900;
       cursor: pointer;
       line-height: 1;
       padding: 0;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1609,11 +1619,11 @@
       font-family: inherit;
       font-size: 0.72rem;
       padding: 0 4px;
-      height: 26px;
-      min-height: 26px;
+      height: 24px;
+      min-height: 24px;
       cursor: pointer;
       text-align: center;
-      line-height: 26px;
+      line-height: 24px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1622,16 +1632,16 @@
       display: flex;
       justify-content: flex-start;
       direction: ltr;
-      padding: 6px 10px 2px;
+      padding: 14px 10px 6px;
       flex-shrink: 0;
     }
     .person-detail-add .btn-circle-plus {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
     }
     .person-detail-add .btn-circle-plus svg {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
     }
     .person-detail-hint {
       text-align: center;
@@ -1640,6 +1650,23 @@
       padding: 0 10px 8px;
       margin: 0;
       flex-shrink: 0;
+    }
+    .pd-desc-popup {
+      position: fixed;
+      z-index: 600;
+      background: #2c2c2e;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      white-space: nowrap;
+      max-width: calc(100vw - 24px);
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      direction: rtl;
+      text-align: right;
     }
     .person-detail-box-bottom {
       height: 8px;
@@ -3479,7 +3506,11 @@
         padding-right: max(14px, calc(10px + env(safe-area-inset-right, 0px)));
         font-size: 14px;
       }
-      .sticky-chrome {
+      :root {
+      --content-inline: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
+      --content-inline-end: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
+    }
+    .sticky-chrome {
         padding-left: max(14px, calc(10px + env(safe-area-inset-left, 0px)));
         padding-right: max(14px, calc(10px + env(safe-area-inset-right, 0px)));
       }
@@ -11727,8 +11758,8 @@ function openPdfPrintWindow(){
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
         '<colgroup>' +
-        '<col style="width:7%"><col style="width:8%"><col style="width:30%">' +
-        '<col style="width:32%"><col style="width:16%"><col style="width:7%">' +
+        '<col style="width:2.8em"><col style="width:2.6em"><col style="width:28%">' +
+        '<col style="width:22%"><col style="width:20%"><col style="width:2.2em">' +
         '</colgroup>' +
         '<thead><tr>' +
         '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th></th>' +
@@ -11742,8 +11773,8 @@ function openPdfPrintWindow(){
       table.className = 'person-detail-table';
       table.innerHTML =
         '<colgroup>' +
-        '<col style="width:7%"><col style="width:8%"><col style="width:30%">' +
-        '<col style="width:32%"><col style="width:16%"><col style="width:7%">' +
+        '<col style="width:2.8em"><col style="width:2.6em"><col style="width:28%">' +
+        '<col style="width:22%"><col style="width:20%"><col style="width:2.2em">' +
         '</colgroup>';
       const tbody = document.createElement('tbody');
 
@@ -11801,6 +11832,9 @@ function openPdfPrintWindow(){
           }
         };
         dayInp.ondblclick = () => {
+          if (fromPlan) {
+            // روز اقساط قابل ویرایش است طبق قبل
+          }
           dayInp.readOnly = false;
           try { dayInp.focus(); } catch (e) {}
         };
@@ -11826,19 +11860,43 @@ function openPdfPrintWindow(){
           desc.title = 'از اقساط — قابل ویرایش نیست';
           desc.style.opacity = '0.85';
         }
-        desc.onclick = () => {
-          if (fromPlan) return;
+        desc.onclick = (e) => {
+          if (fromPlan) {
+            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
+            return;
+          }
           if (!isFilledVal(row.desc)) {
             desc.readOnly = false;
-            try { desc.focus(); } catch (e) {}
-          } else {
-            // پر است: نمایش کامل بدون ادیت
-            desc.classList.toggle('pd-expanded');
+            try { desc.focus(); } catch (err) {}
+            return;
           }
+          // پر: باکس یک‌خطی با کل متن
+          document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
+          const pop = document.createElement('div');
+          pop.className = 'pd-desc-popup';
+          pop.textContent = row.desc || '';
+          document.body.appendChild(pop);
+          const r = desc.getBoundingClientRect();
+          const pw = Math.min(window.innerWidth - 16, Math.max(r.width, pop.scrollWidth + 24));
+          pop.style.width = 'auto';
+          pop.style.maxWidth = (window.innerWidth - 16) + 'px';
+          let left = r.right - pw;
+          if (left < 8) left = 8;
+          pop.style.left = left + 'px';
+          pop.style.top = Math.min(window.innerHeight - 48, r.bottom + 4) + 'px';
+          const close = (ev) => {
+            if (ev.target !== pop) { try { pop.remove(); } catch (e2) {} document.removeEventListener('mousedown', close); }
+          };
+          setTimeout(() => document.addEventListener('mousedown', close), 20);
         };
         desc.ondblclick = (e) => {
-          if (fromPlan) return;
+          if (fromPlan) {
+            e.preventDefault();
+            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
+            return;
+          }
           e.preventDefault();
+          document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           desc.readOnly = false;
           desc.classList.add('pd-editing');
           try { desc.focus(); } catch (err) {}
@@ -11875,64 +11933,82 @@ function openPdfPrintWindow(){
           amt.classList.toggle('status-unpaid', !paid);
         }
         applyAmtColor();
-        amt.ondblclick = () => {
-          if (fromPlan) return;
+        amt.setAttribute('enterkeyhint', 'next');
+        amt.ondblclick = (e) => {
+          if (fromPlan) {
+            e.preventDefault();
+            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
+            return;
+          }
           amt.readOnly = false;
-          try { amt.focus(); } catch (e) {}
+          try { amt.focus(); } catch (err) {}
         };
-        amt.onclick = () => {
-          if (fromPlan) return;
+        function openAmountStatusMenu() {
+          document.querySelectorAll('.status-menu').forEach(m => m.remove());
+          const menu = document.createElement('div');
+          menu.className = 'status-menu';
+          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;';
+          [
+            { v: 'paid', label: paidLabel, color: '#9ee858' },
+            { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
+          ].forEach(opt => {
+            const it = document.createElement('div');
+            it.textContent = opt.label;
+            it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;';
+            it.onclick = (ev) => {
+              ev.stopPropagation();
+              row.status = opt.v;
+              applyAmtColor();
+              menu.remove();
+              scheduleSave();
+              try { renderHomeCards(); } catch (err) {}
+            };
+            menu.appendChild(it);
+          });
+          document.body.appendChild(menu);
+          const r = amt.getBoundingClientRect();
+          menu.style.top = Math.min(window.innerHeight - 120, r.bottom + 4) + 'px';
+          menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 160)) + 'px';
+          const close = (ev) => {
+            if (!menu.contains(ev.target) && ev.target !== amt) {
+              try { menu.remove(); } catch (e2) {}
+              document.removeEventListener('mousedown', close);
+            }
+          };
+          setTimeout(() => document.addEventListener('mousedown', close), 30);
+        }
+        amt.onclick = (e) => {
+          if (fromPlan) {
+            showToast('برای ویرایش، از بخش اقساط اقدام کنید');
+            return;
+          }
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
-            try { amt.focus(); } catch (e) {}
+            try { amt.focus(); } catch (err) {}
+            return;
+          }
+          // پر: منوی دریافت/پرداخت
+          if (amt.readOnly || document.activeElement !== amt) {
+            e.preventDefault();
+            openAmountStatusMenu();
           }
         };
-        let statusTapTimer = null;
-        amt.addEventListener('click', (e) => {
-          if (fromPlan) return;
-          // اگر پر است و در حالت فقط‌خواندنی → منوی وضعیت
-          if (isFilledVal(row.amount) && amt.readOnly && document.activeElement !== amt) {
-            clearTimeout(statusTapTimer);
-            statusTapTimer = setTimeout(() => {
-              if (document.activeElement === amt) return;
-              document.querySelectorAll('.status-menu').forEach(m => m.remove());
-              const menu = document.createElement('div');
-              menu.className = 'status-menu';
-              menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:140px;';
-              [
-                { v: 'paid', label: paidLabel },
-                { v: 'unpaid', label: unpaidLabel }
-              ].forEach(opt => {
-                const it = document.createElement('div');
-                it.textContent = opt.label;
-                it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + (opt.v === 'paid' ? '#9ee858' : '#ff6b4a');
-                it.onclick = (ev) => {
-                  ev.stopPropagation();
-                  row.status = opt.v;
-                  applyAmtColor();
-                  menu.remove();
-                  scheduleSave();
-                  try { renderHomeCards(); } catch (err) {}
-                };
-                menu.appendChild(it);
-              });
-              document.body.appendChild(menu);
-              const r = amt.getBoundingClientRect();
-              menu.style.top = Math.min(window.innerHeight - 120, r.bottom + 4) + 'px';
-              menu.style.left = Math.max(8, r.left) + 'px';
-              const close = (ev) => {
-                if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', close); }
-              };
-              setTimeout(() => document.addEventListener('mousedown', close), 10);
-            }, 280);
-          }
-        });
-        amt.onfocus = () => { clearTimeout(statusTapTimer); };
+        amt.onfocus = () => {};
         amt.oninput = () => {
           if (fromPlan) return;
           const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');
           const n = digits ? parseInt(digits, 10) : 0;
           amt.value = n ? formatNum(n) : '';
+        };
+        amt.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            amt.blur();
+            try {
+              const btn = tr.querySelector('.pd-acc-btn');
+              if (btn) btn.click();
+            } catch (err) {}
+          }
         };
         amt.onblur = () => {
           if (fromPlan) return;
@@ -12002,7 +12078,7 @@ function openPdfPrintWindow(){
         const tdDel = document.createElement('td');
         tdDel.className = 'pd-del-cell';
         if (fromPlan) {
-          tdDel.innerHTML = '<span style="opacity:0.3">—</span>';
+          tdDel.innerHTML = '';
         } else {
           const del = document.createElement('button');
           del.type = 'button';
