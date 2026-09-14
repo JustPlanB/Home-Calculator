@@ -1426,16 +1426,27 @@
     .person-stat-line.unpaid { font-size: 0.76rem !important; }
 
 
+
     /* —— جدول جزئیات کاربر (درآمد/مخارج) —— */
     .person-detail-page {
-      padding: 8px 8px 28px;
+      padding: 0;
       direction: rtl;
+      width: 100%;
+      box-sizing: border-box;
     }
     .person-detail-box {
       background: #1a1a1c;
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.08);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .person-detail-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 6;
+      background: #1a1a1c;
     }
     .person-detail-title {
       text-align: center;
@@ -1443,6 +1454,14 @@
       font-size: 1.15rem;
       color: #fff;
       padding: 14px 12px 10px;
+      background: #1a1a1c;
+    }
+    .person-detail-scroll {
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 100%);
     }
     .person-detail-table {
       width: 100%;
@@ -1455,15 +1474,23 @@
       font-weight: 700;
       font-size: 0.78rem;
       text-align: center;
-      padding: 8px 4px;
+      padding: 8px 2px;
       border: 1px solid #3a3a3e;
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
     .person-detail-table tbody td {
       background: transparent;
       border: 1px solid #3a3a3e;
-      padding: 4px;
+      border-top: 1px solid #3a3a3e;
+      padding: 3px 2px;
       vertical-align: middle;
       text-align: center;
+      height: 42px;
+    }
+    .person-detail-table tbody tr {
+      height: 42px;
     }
     .person-detail-table tbody input,
     .person-detail-table tbody textarea,
@@ -1477,51 +1504,80 @@
       font-family: inherit;
       font-size: 0.85rem;
       text-align: center;
-      padding: 6px 4px;
+      padding: 0 4px;
       outline: none;
+      height: 34px;
+      min-height: 34px;
+      max-height: 34px;
+      line-height: 34px;
+      vertical-align: middle;
+    }
+    .person-detail-table tbody textarea.pd-desc {
+      line-height: 1.25;
+      padding: 4px;
+      resize: none;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-align: right;
+      height: 34px;
+      min-height: 34px;
+      max-height: 34px;
+    }
+    .person-detail-table tbody textarea.pd-desc.pd-editing {
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: 56px;
+      min-height: 56px;
+      max-height: 56px;
+      line-height: 1.3;
+    }
+    .person-detail-table tbody textarea.pd-desc.pd-expanded {
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: auto;
+      max-height: 120px;
       min-height: 34px;
     }
     .person-detail-table tbody input.pd-filled,
     .person-detail-table tbody textarea.pd-filled,
-    .person-detail-table tbody .pd-cell.pd-filled {
+    .person-detail-table tbody .pd-cell.pd-filled,
+    .person-detail-table tbody .pd-acc-btn.pd-filled {
       border-color: transparent !important;
     }
     .person-detail-table tbody input:focus,
     .person-detail-table tbody textarea:focus {
       border-color: #3a3a3e !important;
     }
-    .person-detail-table .pd-desc {
-      text-align: right;
-      white-space: pre-wrap;
-      word-break: break-word;
-      resize: none;
-      min-height: 34px;
-      line-height: 1.35;
+    .person-detail-table .pd-amt {
+      font-size: 0.9rem;
+      font-weight: 800;
     }
     .person-detail-table .pd-amt.status-paid {
       color: #9ee858 !important;
       -webkit-text-fill-color: #9ee858 !important;
-      font-weight: 800;
     }
     .person-detail-table .pd-amt.status-unpaid {
       color: #ff6b4a !important;
       -webkit-text-fill-color: #ff6b4a !important;
-      font-weight: 800;
     }
     .person-detail-table .pd-num {
       color: var(--muted);
       font-size: 0.8rem;
       border: none !important;
+      height: auto;
+      line-height: 1;
     }
     .person-detail-table .pd-del {
       background: none;
       border: none;
       color: #ff1744;
-      font-size: 1.3rem;
+      font-size: 1.05rem;
       font-weight: 900;
       cursor: pointer;
       line-height: 1;
-      padding: 4px;
+      padding: 2px;
+      width: 22px;
     }
     .person-detail-table .pd-acc-btn {
       width: 100%;
@@ -1531,35 +1587,59 @@
       border-radius: 6px;
       color: #fff;
       font-family: inherit;
-      font-size: 0.8rem;
-      padding: 6px 4px;
+      font-size: 0.75rem;
+      padding: 0 2px;
+      height: 34px;
       min-height: 34px;
       cursor: pointer;
       text-align: center;
-    }
-    .person-detail-table .pd-acc-btn.pd-filled {
-      border-color: transparent !important;
+      line-height: 34px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .person-detail-add {
       display: flex;
-      justify-content: center;
-      padding: 12px;
+      justify-content: flex-start;
+      direction: ltr;
+      padding: 8px 12px 4px;
     }
     .person-detail-add .btn-circle-plus {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
+    }
+    .person-detail-add .btn-circle-plus svg {
+      width: 26px;
+      height: 26px;
     }
     .person-detail-hint {
       text-align: center;
       color: var(--muted);
-      font-size: 0.78rem;
-      padding: 0 12px 14px;
+      font-size: 0.75rem;
+      padding: 2px 12px 10px;
+      margin: 0;
     }
     .person-detail-box-bottom {
-      height: 12px;
+      height: 10px;
       border-radius: 0 0 16px 16px;
     }
-
+    /* عرض هم‌تراز با نوار بالا */
+    #panel-home,
+    #panel-income,
+    #panel-expense {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+    .home-cards {
+      width: 100%;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .person-card {
+      width: 100%;
+      margin: 0 0 14px 0;
+      border-radius: 16px;
+    }
     .detail-page-bar { display: none !important; }
 
     .section.detail-section.bank-card {
@@ -11560,10 +11640,10 @@ function openPdfPrintWindow(){
     }
 
 
+
     function renderPersonDetailPanel(tab, title) {
       const container = document.getElementById(tab === 'income' ? 'sections-income' : 'sections-expense');
       if (!container) return;
-      // مخفی کردن خلاصه‌های قدیمی
       try {
         const sum = document.getElementById(tab === 'income' ? 'summaryBox-income' : 'summaryBox-expense');
         if (sum) sum.style.display = 'none';
@@ -11574,7 +11654,6 @@ function openPdfPrintWindow(){
       const sec = findSectionByTitle(tab, title);
       if (!sec) return;
       sec.rows = sec.rows || [];
-      // مرتب‌سازی بر اساس روز
       try {
         sec.rows.sort((a, b) => {
           const da = dayNum(a), db = dayNum(b);
@@ -11590,28 +11669,73 @@ function openPdfPrintWindow(){
       const unpaidLabel = isIncome ? 'دریافت نشده' : 'پرداخت نشده';
       const sectionLabel = isIncome ? 'درآمد' : 'مخارج';
 
+      function shortBankDisplay(name) {
+        let s = (name || '').trim();
+        if (!s) return '';
+        try { s = bankShortLabel(s) || s; } catch (e) {}
+        s = s.replace(/^بانک\s+/u, '').replace(/^بانک/u, '').trim();
+        return s;
+      }
+      function listSelectableBanks() {
+        const banks = [];
+        const seen = new Set();
+        function add(n) {
+          const disp = shortBankDisplay(n);
+          if (!disp || seen.has(disp)) return;
+          seen.add(disp);
+          banks.push({ raw: n, disp: disp });
+        }
+        try {
+          (selectedBankAccounts || []).forEach(b => {
+            const n = typeof b === 'string' ? b : (b.label || b.bank || b.name || '');
+            add(n);
+          });
+        } catch (e) {}
+        try {
+          const map = (typeof loadSmsBankMap === 'function') ? (function(){
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY + '_smsBankMap') || '{}') || {}; } catch (e2) { return {}; }
+          })() : {};
+          Object.keys(map || {}).forEach(k => add(map[k]));
+          Object.values(map || {}).forEach(v => add(v));
+        } catch (e) {}
+        try {
+          Object.keys(smsAccountBankMap || {}).forEach(k => add(smsAccountBankMap[k]));
+        } catch (e) {}
+        return banks;
+      }
+
       container.innerHTML = '';
       const page = document.createElement('div');
       page.className = 'person-detail-page';
       const box = document.createElement('div');
       box.className = 'person-detail-box';
 
+      const sticky = document.createElement('div');
+      sticky.className = 'person-detail-sticky';
       const head = document.createElement('div');
       head.className = 'person-detail-title';
       head.textContent = (title || '') + ' — ' + sectionLabel;
-      box.appendChild(head);
+      sticky.appendChild(head);
 
+      // thead table in sticky
+      const headTable = document.createElement('table');
+      headTable.className = 'person-detail-table';
+      headTable.innerHTML =
+        '<thead><tr>' +
+        '<th style="width:8%">ردیف</th>' +
+        '<th style="width:9%">روز</th>' +
+        '<th style="width:34%">شرح</th>' +
+        '<th style="width:26%">مبلغ</th>' +
+        '<th style="width:15%">حساب</th>' +
+        '<th style="width:8%"></th>' +
+        '</tr></thead>';
+      sticky.appendChild(headTable);
+      box.appendChild(sticky);
+
+      const scroll = document.createElement('div');
+      scroll.className = 'person-detail-scroll';
       const table = document.createElement('table');
       table.className = 'person-detail-table';
-      table.innerHTML =
-        '<thead><tr>' +
-        '<th style="width:11%">ردیف</th>' +
-        '<th style="width:12%">روز</th>' +
-        '<th style="width:30%">شرح</th>' +
-        '<th style="width:20%">مبلغ</th>' +
-        '<th style="width:18%">حساب</th>' +
-        '<th style="width:9%"></th>' +
-        '</tr></thead>';
       const tbody = document.createElement('tbody');
 
       function markFilled(el, filled) {
@@ -11621,14 +11745,11 @@ function openPdfPrintWindow(){
       function isFilledVal(v) {
         return v !== undefined && v !== null && String(v).trim() !== '' && String(v) !== '0';
       }
-
       function rebuild() {
-        // فقط ردیف‌ها را دوباره نساز — از renderPersonDetailPanel کامل استفاده کن
         renderPersonDetailPanel(tab, title);
         scheduleSave();
         try { renderHomeCards(); } catch (e) {}
       }
-
       function sortAndRebuild() {
         try {
           sec.rows.sort((a, b) => {
@@ -11646,30 +11767,28 @@ function openPdfPrintWindow(){
         const tr = document.createElement('tr');
         const fromPlan = !!(row.fromPlanId);
 
-        // ردیف شماره
         const tdN = document.createElement('td');
         tdN.className = 'pd-num';
-        tdN.textContent = String(idx + 1);
+        tdN.textContent = toPersianDigits(String(idx + 1));
         tr.appendChild(tdN);
 
-        // روز
+        // روز — یک کلیک برای تایپ
         const tdDay = document.createElement('td');
         const dayInp = document.createElement('input');
         dayInp.type = 'text';
         dayInp.inputMode = 'numeric';
         dayInp.pattern = '[0-9]*';
-        dayInp.value = row.day ? String(row.day) : '';
-        dayInp.readOnly = true;
-        dayInp.className = isFilledVal(row.day) ? 'pd-filled' : '';
-        dayInp.ondblclick = () => {
-          dayInp.readOnly = false;
-          dayInp.focus();
+        dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
+        dayInp.readOnly = false;
+        if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
+        dayInp.onfocus = () => {
+          dayInp.value = row.day ? String(row.day) : '';
+          // English for input then convert
         };
         dayInp.onblur = () => {
           const d = parseInt(toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '') || '0', 10) || '';
           row.day = d || '';
-          dayInp.value = row.day ? String(row.day) : '';
-          dayInp.readOnly = true;
+          dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
           markFilled(dayInp, isFilledVal(row.day));
           sortAndRebuild();
         };
@@ -11682,26 +11801,29 @@ function openPdfPrintWindow(){
         desc.className = 'pd-desc' + (isFilledVal(row.desc) ? ' pd-filled' : '');
         desc.rows = 1;
         desc.value = row.desc || '';
-        desc.readOnly = fromPlan ? true : true;
+        desc.readOnly = false;
         if (fromPlan) {
+          desc.readOnly = true;
           desc.title = 'از اقساط — قابل ویرایش نیست';
           desc.style.opacity = '0.85';
         }
-        desc.ondblclick = () => {
-          if (fromPlan) { showToast('شرح اقساط قابل ویرایش نیست'); return; }
-          desc.readOnly = false;
-          desc.focus();
-        };
-        desc.oninput = () => {
-          desc.style.height = 'auto';
-          desc.style.height = Math.min(120, desc.scrollHeight) + 'px';
+        desc.onfocus = () => {
+          if (fromPlan) return;
+          desc.classList.add('pd-editing');
+          if ((row.desc || '').length > 20) desc.classList.add('pd-expanded');
         };
         desc.onblur = () => {
           if (fromPlan) return;
           row.desc = desc.value || '';
-          desc.readOnly = true;
+          desc.classList.remove('pd-editing', 'pd-expanded');
           markFilled(desc, isFilledVal(row.desc));
           scheduleSave();
+        };
+        desc.onclick = () => {
+          if (fromPlan) return;
+          if ((row.desc || '').length > 12) {
+            desc.classList.add('pd-expanded');
+          }
         };
         tdDesc.appendChild(desc);
         tr.appendChild(tdDesc);
@@ -11713,59 +11835,63 @@ function openPdfPrintWindow(){
         amt.inputMode = 'numeric';
         amt.pattern = '[0-9]*';
         amt.value = row.amount ? formatNum(row.amount) : '';
-        amt.readOnly = fromPlan ? true : true;
-        if (fromPlan) amt.title = 'مبلغ اقساط قابل ویرایش نیست';
+        amt.readOnly = false;
+        if (fromPlan) {
+          amt.readOnly = true;
+          amt.title = 'مبلغ اقساط قابل ویرایش نیست';
+        }
         function applyAmtColor() {
           const paid = (row.status || 'paid') === 'paid';
           amt.classList.toggle('status-paid', paid);
           amt.classList.toggle('status-unpaid', !paid);
         }
         applyAmtColor();
-        amt.ondblclick = () => {
-          if (fromPlan) { showToast('مبلغ اقساط قابل ویرایش نیست'); return; }
-          amt.readOnly = false;
-          amt.focus();
-        };
-        // کلیک برای منوی وضعیت
-        let lastTap = 0;
+        let statusTapTimer = null;
         amt.onclick = (e) => {
-          const now = Date.now();
-          if (now - lastTap < 320) return; // dbl handled separately
-          lastTap = now;
-          if (amt.readOnly && isFilledVal(row.amount)) {
-            // منوی وضعیت
-            e.preventDefault();
-            document.querySelectorAll('.status-menu').forEach(m => m.remove());
-            const menu = document.createElement('div');
-            menu.className = 'status-menu';
-            menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:140px;';
-            [
-              { v: 'paid', label: paidLabel },
-              { v: 'unpaid', label: unpaidLabel }
-            ].forEach(opt => {
-              const it = document.createElement('div');
-              it.className = 'status-menu-item ' + opt.v;
-              it.textContent = opt.label;
-              it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + (opt.v === 'paid' ? '#9ee858' : '#ff6b4a');
-              it.onclick = (ev) => {
-                ev.stopPropagation();
-                row.status = opt.v;
-                applyAmtColor();
-                menu.remove();
-                scheduleSave();
-                try { renderHomeCards(); } catch (err) {}
+          if (fromPlan) return;
+          // اگر پر است و کلیک کوتاه برای وضعیت
+          if (isFilledVal(row.amount) && document.activeElement !== amt) {
+            clearTimeout(statusTapTimer);
+            statusTapTimer = setTimeout(() => {
+              if (document.activeElement === amt) return;
+              document.querySelectorAll('.status-menu').forEach(m => m.remove());
+              const menu = document.createElement('div');
+              menu.className = 'status-menu';
+              menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:140px;';
+              [
+                { v: 'paid', label: paidLabel },
+                { v: 'unpaid', label: unpaidLabel }
+              ].forEach(opt => {
+                const it = document.createElement('div');
+                it.textContent = opt.label;
+                it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + (opt.v === 'paid' ? '#9ee858' : '#ff6b4a');
+                it.onclick = (ev) => {
+                  ev.stopPropagation();
+                  row.status = opt.v;
+                  applyAmtColor();
+                  menu.remove();
+                  scheduleSave();
+                  try { renderHomeCards(); } catch (err) {}
+                };
+                menu.appendChild(it);
+              });
+              document.body.appendChild(menu);
+              const r = amt.getBoundingClientRect();
+              menu.style.top = Math.min(window.innerHeight - 120, r.bottom + 4) + 'px';
+              menu.style.left = Math.max(8, r.left) + 'px';
+              const close = (ev) => {
+                if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', close); }
               };
-              menu.appendChild(it);
-            });
-            document.body.appendChild(menu);
-            const r = amt.getBoundingClientRect();
-            menu.style.top = Math.min(window.innerHeight - 120, r.bottom + 4) + 'px';
-            menu.style.left = Math.max(8, r.left) + 'px';
-            const close = (ev) => {
-              if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', close); }
-            };
-            setTimeout(() => document.addEventListener('mousedown', close), 10);
+              setTimeout(() => document.addEventListener('mousedown', close), 10);
+            }, 280);
           }
+        };
+        amt.onfocus = () => { clearTimeout(statusTapTimer); };
+        amt.oninput = () => {
+          if (fromPlan) return;
+          const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');
+          const n = digits ? parseInt(digits, 10) : 0;
+          amt.value = n ? formatNum(n) : '';
         };
         amt.onblur = () => {
           if (fromPlan) return;
@@ -11773,54 +11899,42 @@ function openPdfPrintWindow(){
           row.amount = n;
           if (n && !row.status) row.status = 'paid';
           amt.value = n ? formatNum(n) : '';
-          amt.readOnly = true;
           markFilled(amt, !!n);
           applyAmtColor();
           scheduleSave();
           try { renderHomeCards(); } catch (e) {}
         };
-        amt.oninput = () => {
-          if (fromPlan) return;
-          const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');
-          const n = digits ? parseInt(digits, 10) : 0;
-          amt.value = n ? formatNum(n) : '';
-        };
         tdAmt.appendChild(amt);
         tr.appendChild(tdAmt);
 
-        // حساب
+        // حساب — فقط شخصی‌سازی‌شده و پیامکی
         const tdAcc = document.createElement('td');
         const accBtn = document.createElement('button');
         accBtn.type = 'button';
         accBtn.className = 'pd-acc-btn' + (isFilledVal(row.account) ? ' pd-filled' : '');
-        accBtn.textContent = row.account || 'انتخاب';
+        accBtn.textContent = row.account ? shortBankDisplay(row.account) : 'انتخاب';
         accBtn.onclick = (e) => {
           e.stopPropagation();
-          // لیست بانک‌ها
-          document.querySelectorAll('.dark-select-list.open').forEach(l => l.classList.remove('open'));
-          let list = document.createElement('div');
+          document.querySelectorAll('.dark-select-list.open').forEach(l => { try { l.remove(); } catch (e2) {} });
+          const list = document.createElement('div');
           list.className = 'dark-select-list open';
-          list.style.cssText = 'position:fixed;z-index:530;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:160px;';
-          const banks = [];
-          try {
-            (selectedBankAccounts || []).forEach(b => {
-              const n = typeof b === 'string' ? b : (b.name || b.title || '');
-              if (n && !banks.includes(n)) banks.push(n);
-            });
-          } catch (err) {}
-          try {
-            (ALL_IRAN_BANKS || []).forEach(n => { if (n && !banks.includes(n)) banks.push(n); });
-          } catch (err) {}
-          if (!banks.length) banks.push('نقد', 'کارت');
-          banks.forEach(name => {
+          list.style.cssText = 'position:fixed;z-index:530;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:140px;';
+          const banks = listSelectableBanks();
+          if (!banks.length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:12px;color:var(--muted);font-size:0.85rem;text-align:center;';
+            empty.textContent = 'حسابی ثبت نشده';
+            list.appendChild(empty);
+          }
+          banks.forEach(b => {
             const opt = document.createElement('div');
             opt.className = 'dark-select-option';
-            opt.textContent = name;
+            opt.textContent = b.disp;
             opt.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;';
             opt.onclick = (ev) => {
               ev.stopPropagation();
-              row.account = name;
-              accBtn.textContent = name;
+              row.account = b.disp;
+              accBtn.textContent = b.disp;
               markFilled(accBtn, true);
               list.remove();
               scheduleSave();
@@ -11830,7 +11944,7 @@ function openPdfPrintWindow(){
           document.body.appendChild(list);
           const r = accBtn.getBoundingClientRect();
           list.style.top = Math.min(window.innerHeight - 200, r.bottom + 4) + 'px';
-          list.style.left = Math.max(8, r.left - 40) + 'px';
+          list.style.left = Math.max(8, r.left - 20) + 'px';
           const close = (ev) => {
             if (!list.contains(ev.target) && ev.target !== accBtn) {
               try { list.remove(); } catch (e2) {}
@@ -11842,10 +11956,10 @@ function openPdfPrintWindow(){
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
 
-        // حذف
+        // حذف — کوچک
         const tdDel = document.createElement('td');
         if (fromPlan) {
-          tdDel.innerHTML = '<span style="opacity:0.35;font-size:0.75rem">—</span>';
+          tdDel.innerHTML = '<span style="opacity:0.3">—</span>';
         } else {
           const del = document.createElement('button');
           del.type = 'button';
@@ -11871,18 +11985,12 @@ function openPdfPrintWindow(){
           tdDel.appendChild(del);
         }
         tr.appendChild(tdDel);
-
         tbody.appendChild(tr);
-        setTimeout(() => {
-          try {
-            desc.style.height = 'auto';
-            desc.style.height = Math.min(120, Math.max(34, desc.scrollHeight)) + 'px';
-          } catch (e) {}
-        }, 0);
       });
 
       table.appendChild(tbody);
-      box.appendChild(table);
+      scroll.appendChild(table);
+      box.appendChild(scroll);
 
       const addWrap = document.createElement('div');
       addWrap.className = 'person-detail-add';
@@ -11890,7 +11998,7 @@ function openPdfPrintWindow(){
       addBtn.type = 'button';
       addBtn.className = 'btn-circle-plus';
       addBtn.title = 'ردیف جدید';
-      addBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+      addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
       addBtn.onclick = () => {
         sec.rows.push(emptyRow(tab));
         rebuild();
@@ -11900,7 +12008,7 @@ function openPdfPrintWindow(){
 
       const hint = document.createElement('div');
       hint.className = 'person-detail-hint';
-      hint.textContent = 'برای ویرایش فیلد پرشده دو بار روی آن بزنید';
+      hint.textContent = 'برای ویرایش، یک‌بار روی فیلد بزنید';
       box.appendChild(hint);
 
       const bottom = document.createElement('div');
