@@ -1031,17 +1031,37 @@
     }
     
     /* —— خانه: فقط کارت‌ها —— */
+    .tabs-main-hidden .tabs,
+    .tabs-main-hidden #tabsBar,
+    .tabs-main-hidden .tab-indicator {
+      display: none !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
     .tabs-main-hidden .tab-btn.income,
     .tabs-main-hidden .tab-btn.expense,
     .tabs-main-hidden .tab-btn.balance {
       display: none !important;
     }
-    .tabs-main-hidden .tab-indicator { display: none !important; }
     #panel-home {
       display: none;
       padding: 8px 6px 24px;
     }
-    #panel-home.active { display: block; }
+    /* home-only-hide-legacy */
+    body.tabs-main-hidden #panel-income .add-sec-wrap,
+    body.tabs-main-hidden #panel-expense .add-sec-wrap,
+    body.tabs-main-hidden #summaryBox-income,
+    body.tabs-main-hidden #summaryBox-expense {
+      display: none !important;
+    }
+    #panel-home.active {
+      display: block !important;
+      visibility: visible !important;
+    }
     .home-cards { display: flex; flex-direction: column; gap: 14px; }
     .person-card {
       position: relative;
@@ -5016,11 +5036,15 @@
     }
     function switchTab(tab, force) {
       if (!force && tab === currentTab) return;
+      // تب‌های اصلی حذف شده‌اند — به خانه برگرد مگر جزئیات کارت
+      if ((tab === 'income' || tab === 'expense' || tab === 'balance') && !(typeof _detailContext !== 'undefined' && _detailContext)) {
+        tab = 'home';
+      }
       try { persistCurrent(); } catch (e) {}
       const prevY = window.scrollY || 0;
       currentTab = tab;
       activatePanel(tab);
-      updateTabUI();
+      try { updateTabUI(); } catch (e) {}
       renderAll();
       try { saveArchive(); } catch (e) {}
       requestAnimationFrame(() => {
@@ -5137,6 +5161,11 @@
     function setTrackAtIndex(indexFloat, dragging) {
       // فقط نمایش یک تب — بدون سُر خوردن محتوا
       if (dragging) return;
+      if (currentTab === 'home') { activatePanel('home'); return; }
+      if (typeof _detailContext !== 'undefined' && _detailContext) {
+        activatePanel(_detailContext.kind === 'balance' ? 'balance' : _detailContext.kind);
+        return;
+      }
       // تب‌های منو (اقساط / بده‌بستان / درآمد ثابت)
       if (currentTab === 'install' || currentTab === 'ledger' || currentTab === 'recurring') {
         activatePanel(currentTab);
@@ -5258,6 +5287,11 @@
       }
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+      // در حالت خانه یا جزئیات کارت، سوایپ تب‌ها غیرفعال
+      if (currentTab === 'home' || (typeof _detailContext !== 'undefined' && _detailContext)) {
+        swipeActive = false;
+        return;
+      }
       swipeActive = true;
       swipeLocked = false;
       swipeStartIdx = tabIndexOf(currentTab);
@@ -11250,9 +11284,14 @@ function openPdfPrintWindow(){
       } else if (currentTab === 'recurring') {
         renderRecurringBar();
       }
-      activatePanel(currentTab);
+      if (currentTab === 'home') {
+        activatePanel('home');
+        try { renderHomeCards(); } catch (e) {}
+      } else {
+        activatePanel(currentTab);
+      }
       checkInstallReminders();
-      moveTabIndicator();
+      try { moveTabIndicator(); } catch (e) {}
     }
 
     /* —— حساب‌های بانکی —— */
@@ -16209,6 +16248,12 @@ if (item.type === 'recurring') {
       try { showSupabaseAuthDebug(false, (e && e.message) ? e.message : String(e)); } catch (e2) {}
     }
     updateFamilyUI();
+    try {
+      currentTab = 'home';
+      _detailContext = null;
+      activatePanel('home');
+      renderHomeCards();
+    } catch (e) { console.error('home boot', e); }
     renderAll();
     requestNotifPermission();
     try {
