@@ -1008,11 +1008,11 @@
       display: none !important;
     }
 
-    /* منوی کشویی حساب — شفاف، فقط متن */
+    /* منوی کشویی حساب — مشکی ۴۰٪ */
     .dark-select-list {
-      background: transparent !important;
-      background-color: transparent !important;
-      border: none !important;
+      background: rgba(0,0,0,0.4) !important;
+      background-color: rgba(0,0,0,0.4) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
       box-shadow: none !important;
       backdrop-filter: none !important;
     }
@@ -1062,20 +1062,24 @@
       display: block !important;
       visibility: visible !important;
     }
-    .home-cards { display: flex; flex-direction: column; gap: 14px; }
+    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; }
+    #panel-home { padding-left: 0 !important; padding-right: 0 !important; }
     .person-card {
       position: relative;
-      width: calc(100% - 4px);
-      margin: 0 2px;
+      width: 100%;
+      margin: 0;
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 8px 22px rgba(0,0,0,0.28);
       background-size: cover;
-      background-position: center;
+      background-position: center center;
+      background-repeat: no-repeat;
       color: #fff;
       user-select: none;
+      box-sizing: border-box;
     }
+    .home-cards { padding: 0; }
     .person-card-inner {
       position: relative;
       z-index: 1;
@@ -1145,30 +1149,36 @@
     }
     .person-stat-box {
       flex: 1;
+      min-width: 0;
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.35);
-      padding: 8px 10px;
-      background: linear-gradient(145deg, rgba(255,255,255,0.18) 0%, rgba(0,0,0,0.12) 100%);
+      border: 1px solid rgba(255,255,255,0.28);
+      padding: 8px 8px;
+      background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
     }
     .person-stat-box:active { transform: scale(0.98); filter: brightness(1.05); }
     .person-stat-line {
       font-weight: 700;
-      font-size: 0.82rem;
-      line-height: 1.45;
+      font-size: 0.72rem;
+      line-height: 1.4;
       color: rgba(255,255,255,0.95);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .person-stat-line.em { font-size: 0.9rem; }
-    .person-stat-line.paid { color: #9ee858; font-size: 0.78rem; }
-    .person-stat-line.unpaid { color: #bc2402; font-size: 0.78rem; }
+    .person-stat-line.em { font-size: 0.78rem; }
+    .person-stat-line.paid { color: #9ee858; font-size: 0.68rem; }
+    .person-stat-line.unpaid { color: #ff6b4a; font-size: 0.68rem; }
     .person-remain-box {
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.4);
-      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.28);
+      padding: 8px 10px;
       text-align: center;
       font-weight: 800;
-      font-size: 1rem;
-      background: linear-gradient(145deg, rgba(255,255,255,0.16) 0%, rgba(0,0,0,0.14) 100%);
+      font-size: 0.9rem;
+      background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
     }
     .detail-page-bar {
@@ -1213,12 +1223,122 @@
       border: 2px solid transparent;
       background-size: cover;
       background-position: center;
+      background-color: transparent;
+      box-shadow: none;
+      outline: none;
+      padding: 0;
       cursor: pointer;
+      overflow: hidden;
     }
     .bg-pick.selected {
-      border-color: #fff;
-      box-shadow: 0 0 0 2px var(--accent);
+      border-color: #0a84ff;
+      box-shadow: none;
     }
+
+    /* —— صفحه جزئیات درآمد/مخارج —— */
+    .section.detail-section {
+      background: #1a1a1c !important;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin: 8px 6px 16px;
+      box-shadow: none !important;
+    }
+    .section.detail-section::after { display: none !important; }
+    .section.detail-section .section-header,
+    .section.detail-section .section-header.bank-card-header {
+      aspect-ratio: auto !important;
+      min-height: 0 !important;
+      padding: 14px 12px 10px !important;
+      background: #1a1a1c !important;
+      border: none !important;
+      border-radius: 0 !important;
+      justify-content: center !important;
+      align-items: center !important;
+    }
+    .section.detail-section .bank-card-top {
+      width: 100%;
+      justify-content: center;
+    }
+    .section.detail-section .bank-card-title-side {
+      justify-content: center;
+      flex: 1;
+    }
+    .section.detail-section .bank-card-actions,
+    .section.detail-section .collapse-arrow-box,
+    .section.detail-section .btn-edit-title,
+    .section.detail-section .btn-del-row,
+    .section.detail-section .drag-handle {
+      display: none !important;
+    }
+    .section.detail-section .title-display,
+    .section.detail-section .bank-card-header .title-display {
+      font-size: 1.15rem !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      width: 100%;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+    }
+    .section.detail-section .bank-card-stats { display: none !important; }
+    .section.detail-section .section-body {
+      max-height: none !important;
+      opacity: 1 !important;
+      display: block !important;
+      background: #1a1a1c !important;
+      padding: 0 !important;
+    }
+    .section.detail-section .section-rows-scroll {
+      max-height: none !important;
+      background: #1a1a1c !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    .section.detail-section .section-rows-scroll table {
+      background: transparent !important;
+    }
+    .section.detail-section .section-rows-scroll thead th {
+      background: #0b1c2c !important;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      text-align: center !important;
+      border: 1px solid #3a3a3e !important;
+    }
+    .section.detail-section .section-rows-scroll tbody td {
+      background: transparent !important;
+      border: 1px solid #3a3a3e !important;
+      color: #fff !important;
+    }
+    .section.detail-section .section-rows-scroll tbody tr {
+      background: transparent !important;
+    }
+    .section.detail-section .section-rows-scroll tbody input.cell,
+    .section.detail-section .section-rows-scroll tbody textarea.cell,
+    .section.detail-section .section-rows-scroll tbody .cell,
+    .section.detail-section .section-rows-scroll tbody .dark-select,
+    .section.detail-section .section-rows-scroll tbody .dark-select-btn {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 1px solid #3a3a3e !important;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      box-shadow: none !important;
+    }
+    .section.detail-section .section-rows-scroll tbody .dark-select-btn {
+      background: transparent !important;
+    }
+    body.tabs-main-hidden .dark-select-list,
+    body.tabs-main-hidden .dark-select-list.open {
+      background: rgba(0,0,0,0.4) !important;
+      background-color: rgba(0,0,0,0.4) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      backdrop-filter: none !important;
+    }
+    .detail-page-bar { display: none !important; }
+
     .section.detail-section.bank-card {
       aspect-ratio: auto !important;
       max-height: none !important;
@@ -10981,8 +11101,8 @@ function openPdfPrintWindow(){
         btnDel.textContent = '×';
         btnDel.title = 'حذف';
         btnDel.onclick = (e) => { e.stopPropagation(); askDeletePerson(title); };
-        actions.appendChild(btnEdit);
         actions.appendChild(btnDel);
+        actions.appendChild(btnEdit);
         top.appendChild(name);
         top.appendChild(actions);
 
@@ -11136,6 +11256,8 @@ function openPdfPrintWindow(){
       _detailContext = { title: title, kind: kind };
       ensurePersonSections(title);
       if (kind === 'balance') {
+        // پیش‌فرض: فقط همین کاربر؛ فیلتر مقایسه همچنان در دسترس است
+        try { balanceSelectedTitles = [title]; } catch (e) {}
         currentTab = 'balance';
         activatePanel('balance');
         try { renderBalanceTab(); } catch (e) {}
@@ -11144,7 +11266,12 @@ function openPdfPrintWindow(){
         activatePanel(kind);
         renderPersonDetailPanel(kind, title);
       }
-      showDetailBar(title, kind);
+      // دکمه بازگشت UI حذف — با Back سخت‌افزاری برمی‌گردد
+      try {
+        const bar = document.getElementById('detailPageBar');
+        if (bar) bar.style.display = 'none';
+      } catch (e) {}
+      try { history.pushState({hesabDetail:true, title:title, kind:kind}, '', location.href); } catch (e) {}
     }
 
     function showDetailBar(title, kind) {
@@ -11194,6 +11321,13 @@ function openPdfPrintWindow(){
         const el = buildSectionEl(sec);
         el.classList.remove('collapsed');
         el.classList.add('detail-section');
+        const labels = { income: 'درآمد', expense: 'مخارج' };
+        const td = el.querySelector('.title-display');
+        if (td) td.textContent = (title || '') + ' — ' + (labels[tab] || '');
+        // مخفی کردن اکشن‌های هدر کارت قدیمی
+        el.querySelectorAll('.bank-card-actions, .collapse-arrow-box, .btn-edit-title, .btn-del-row').forEach(n => {
+          try { n.style.display = 'none'; } catch (e) {}
+        });
         container.appendChild(el);
       } catch (e) { console.error(e); }
       currentTab = saved;
@@ -15126,6 +15260,13 @@ if (item.type === 'recurring') {
       _backHandling=true;
       setTimeout(()=>{_backHandling=false;},250);
       if(closeTopOverlayOrMenu()) return;
+      // از صفحه درآمد/مخارج/مانده کارت به خانه
+      try {
+        if (typeof _detailContext !== 'undefined' && _detailContext) {
+          closePersonDetail();
+          return;
+        }
+      } catch (e) {}
       const now=Date.now();
       if(now-_lastBackAt <= BACK_EXIT_WINDOW){
         _lastBackAt=0;
