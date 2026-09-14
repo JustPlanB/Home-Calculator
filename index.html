@@ -1010,8 +1010,8 @@
 
     /* منوی کشویی حساب — مشکی ۴۰٪ */
     .dark-select-list {
-      background: rgba(0,0,0,0.4) !important;
-      background-color: rgba(0,0,0,0.4) !important;
+      background: #1c1c1e !important;
+      background-color: #1c1c1e !important;
       border: 1px solid rgba(255,255,255,0.12) !important;
       box-shadow: none !important;
       backdrop-filter: none !important;
@@ -1266,10 +1266,18 @@
     }
     .section.detail-section .bank-card-actions,
     .section.detail-section .collapse-arrow-box,
-    .section.detail-section .btn-edit-title,
-    .section.detail-section .btn-del-row,
+    .section.detail-section .section-header .btn-edit-title,
+    .section.detail-section .section-header .btn-del-row,
     .section.detail-section .drag-handle {
       display: none !important;
+    }
+    .section.detail-section tbody .btn-del-row,
+    .section.detail-section .actions-cell .btn-del-row {
+      display: inline-flex !important;
+      visibility: visible !important;
+      color: #ff1744 !important;
+      font-size: 1.25rem !important;
+      font-weight: 900 !important;
     }
     .section.detail-section .title-display,
     .section.detail-section .bank-card-header .title-display {
@@ -1332,11 +1340,91 @@
     }
     body.tabs-main-hidden .dark-select-list,
     body.tabs-main-hidden .dark-select-list.open {
-      background: rgba(0,0,0,0.4) !important;
-      background-color: rgba(0,0,0,0.4) !important;
+      background: #1c1c1e !important;
+      background-color: #1c1c1e !important;
       border: 1px solid rgba(255,255,255,0.12) !important;
       backdrop-filter: none !important;
     }
+
+    /* جزئیات پایدار — بدون پترن قدیمی */
+    .section.detail-section,
+    .section.detail-section.bank-card {
+      background: #1a1a1c !important;
+      background-image: none !important;
+      background-color: #1a1a1c !important;
+    }
+    .section.detail-section::after,
+    .section.detail-section.bank-card::after {
+      display: none !important;
+      content: none !important;
+      background: none !important;
+    }
+    .section.detail-section .section-rows-scroll thead th {
+      background: #0a1628 !important;
+      color: #fff !important;
+      border-color: #3a3a3e !important;
+    }
+    .section.detail-section .section-rows-scroll tbody td,
+    .section.detail-section .section-rows-scroll tbody input.cell,
+    .section.detail-section .section-rows-scroll tbody textarea.cell,
+    .section.detail-section .section-rows-scroll tbody .cell,
+    .section.detail-section .section-rows-scroll tbody .dark-select,
+    .section.detail-section .section-rows-scroll tbody .dark-select-btn,
+    .section.detail-section .dark-select-btn {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 1px solid #3a3a3e !important;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      box-shadow: none !important;
+    }
+    .section.detail-section .dark-select {
+      background: transparent !important;
+      border: 1px solid #3a3a3e !important;
+    }
+    .section.detail-section .dark-select-btn {
+      min-height: 36px;
+      border-radius: 0 !important;
+    }
+    /* منوهای کشویی ۱۰۰٪ تیره */
+    .dark-select-list,
+    .dark-select-list.open,
+    body.tabs-main-hidden .dark-select-list,
+    body.tabs-main-hidden .dark-select-list.open {
+      background: #1c1c1e !important;
+      background-color: #1c1c1e !important;
+      opacity: 1 !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      backdrop-filter: none !important;
+    }
+    /* انتخابگر ماه/سال */
+    .month-dropdown,
+    .year-dropdown,
+    .period-dropdown,
+    .period-menu,
+    .top-bar .dark-select-list,
+    #monthSelect + .dark-select-list,
+    #yearSelect + .dark-select-list,
+    .top-bar .dark-select-list.open {
+      background: #1c1c1e !important;
+      background-color: #1c1c1e !important;
+      opacity: 1 !important;
+    }
+    .bg-pick, .bg-pick * {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .bg-pick.selected {
+      border: 2px solid #0a84ff !important;
+      box-shadow: none !important;
+    }
+    .person-remain-box.remain-pos { color: #9ee858 !important; }
+    .person-remain-box.remain-neg { color: #ff6b4a !important; }
+    .person-stat-line.em { font-size: 0.86rem !important; }
+    .person-stat-line.paid { font-size: 0.76rem !important; }
+    .person-stat-line.unpaid { font-size: 0.76rem !important; }
+
     .detail-page-bar { display: none !important; }
 
     .section.detail-section.bank-card {
@@ -4511,8 +4599,8 @@
 
     function emptyRow(forTab) {
       const tab = (forTab === 'income' || forTab === 'expense') ? forTab : (typeof currentTab !== 'undefined' ? currentTab : 'expense');
-      // درآمد جدید: دریافت‌نشده؛ مخارج: پرداخت‌شده (پیش‌فرض قبلی)
-      const st = (tab === 'income') ? 'unpaid' : 'paid';
+      // درآمد: دریافت‌شده؛ مخارج: پرداخت‌شده
+      const st = 'paid';
       return { id: '', day: '', desc: '', amount: 0, status: st, account: '', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
     }
     function emptySections() {
@@ -11132,7 +11220,14 @@ function openPdfPrintWindow(){
 
         const rem = document.createElement('div');
         rem.className = 'person-remain-box';
-        rem.textContent = 'مانده: ' + formatNum(tot.remain);
+        const rv = Number(tot.remain) || 0;
+        if (rv < 0) {
+          rem.classList.add('remain-neg');
+          rem.textContent = 'مانده: -' + formatNum(Math.abs(rv));
+        } else {
+          rem.classList.add('remain-pos');
+          rem.textContent = 'مانده: ' + formatNum(rv);
+        }
         rem.onclick = (e) => { e.stopPropagation(); openPersonDetail(title, 'balance'); };
 
         stats.appendChild(cols);
@@ -11236,20 +11331,33 @@ function openPdfPrintWindow(){
     }
 
     function askDeletePerson(title) {
-      if (!confirm('کارت «' + title + '» و اطلاعات درآمد/مخارج آن حذف شود؟')) return;
-      ['income', 'expense'].forEach(tab => {
-        const list = periodData[tab] && periodData[tab].sections;
-        if (!list) return;
-        const i = list.findIndex(s => (s.title || '').trim() === title);
-        if (i >= 0) list.splice(i, 1);
+      askConfirm('کاربر مورد نظر حذف شود؟', () => {
+        const payload = {
+          sourceLabel: 'کارت کاربر',
+          title: title,
+          income: findSectionByTitle('income', title),
+          expense: findSectionByTitle('expense', title),
+          cardMeta: (getCardMetaMap()[title] || null)
+        };
+        try {
+          pushToTrash('person_card', title, JSON.parse(JSON.stringify(payload)));
+        } catch (e) {
+          try { pushToTrash('person_card', title, payload); } catch (e2) {}
+        }
+        ['income', 'expense'].forEach(tab => {
+          const list = periodData[tab] && periodData[tab].sections;
+          if (!list) return;
+          const i = list.findIndex(s => (s.title || '').trim() === title);
+          if (i >= 0) list.splice(i, 1);
+        });
+        const m = getCardMetaMap();
+        delete m[title];
+        periodData.cardMeta = m;
+        persistCurrent();
+        scheduleSave();
+        renderHomeCards();
+        showToast('به سطل زباله منتقل شد');
       });
-      const m = getCardMetaMap();
-      delete m[title];
-      periodData.cardMeta = m;
-      persistCurrent();
-      scheduleSave();
-      renderHomeCards();
-      showToast('حذف شد');
     }
 
     function openPersonDetail(title, kind) {
@@ -11320,13 +11428,19 @@ function openPdfPrintWindow(){
       try {
         const el = buildSectionEl(sec);
         el.classList.remove('collapsed');
+        el.classList.remove('bank-card');
         el.classList.add('detail-section');
+        el.style.background = '#1a1a1c';
+        el.style.backgroundImage = 'none';
         const labels = { income: 'درآمد', expense: 'مخارج' };
         const td = el.querySelector('.title-display');
         if (td) td.textContent = (title || '') + ' — ' + (labels[tab] || '');
-        // مخفی کردن اکشن‌های هدر کارت قدیمی
-        el.querySelectorAll('.bank-card-actions, .collapse-arrow-box, .btn-edit-title, .btn-del-row').forEach(n => {
+        el.querySelectorAll('.section-header .bank-card-actions, .collapse-arrow-box, .section-header .btn-edit-title, .section-header .btn-del-row').forEach(n => {
           try { n.style.display = 'none'; } catch (e) {}
+        });
+        // ضربدر ردیف‌ها را نگه دار
+        el.querySelectorAll('tbody .btn-del-row, .actions-cell .btn-del-row').forEach(n => {
+          try { n.style.display = 'inline-flex'; n.style.visibility = 'visible'; } catch (e) {}
         });
         container.appendChild(el);
       } catch (e) { console.error(e); }
@@ -11376,25 +11490,31 @@ function openPdfPrintWindow(){
       }
     }
     function renderAll() {
-      try { if (typeof renderHomeCards === 'function' && (currentTab === 'home' || !_detailContext)) renderHomeCards(); } catch (e) {}
-      try { if (_detailContext && (_detailContext.kind === 'income' || _detailContext.kind === 'expense') && typeof renderPersonDetailPanel === 'function') renderPersonDetailPanel(_detailContext.kind, _detailContext.title); } catch (e) {}
-      // رندر تب جاری بلافاصله؛ تب مجاور را با تأخیر کوتاه بساز تا فریم فعلی گیر نکند
+      // اگر داخل جزئیات کارت هستیم فقط همان را رندر کن — نه لیست قدیمی bank-card
+      try {
+        if (typeof _detailContext !== 'undefined' && _detailContext) {
+          if (_detailContext.kind === 'income' || _detailContext.kind === 'expense') {
+            try { renderPersonDetailPanel(_detailContext.kind, _detailContext.title); } catch (e) {}
+          } else if (_detailContext.kind === 'balance') {
+            try { renderBalanceTab(); } catch (e) {}
+          }
+          // از رندر sections قدیمی خارج شو
+          document.querySelectorAll('body > .dark-select-list').forEach(el => {
+            const wraps = document.querySelectorAll('.dark-select');
+            let used = false;
+            wraps.forEach(w => { if (w._list === el) used = true; });
+            if (!used) el.remove();
+          });
+          return;
+        }
+      } catch (e) {}
+      try { if (typeof renderHomeCards === 'function' && currentTab === 'home') renderHomeCards(); } catch (e) {}
       try {
         if (currentTab === 'income' || currentTab === 'expense') {
-          renderSectionsForTab(currentTab);
-          const other = currentTab === 'income' ? 'expense' : 'income';
-          // تعویق رندر تب دیگر به فریم بعدی برای روان‌تر شدن تایپ/اسکرول
-          requestAnimationFrame(() => {
-            try { renderSectionsForTab(other); } catch (e) {}
-          });
-        } else {
-          // برای تب‌های دیگر هم پنل‌های درآمد/مخارج را سبک نگه دار
-          requestAnimationFrame(() => {
-            try {
-              renderSectionsForTab('income');
-              renderSectionsForTab('expense');
-            } catch (e) {}
-          });
+          // فقط اگر نه در حالت خانه هستیم (نباید برسد)
+          if (currentTab !== 'home') {
+            /* no full section list in home-ui */
+          }
         }
       } catch (e) {}
       // حذف لیست‌های کشویی رهاشده (مثلاً از ردیف‌هایی که دیگر وجود ندارند)
