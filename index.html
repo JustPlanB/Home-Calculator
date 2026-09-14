@@ -1075,7 +1075,7 @@
     /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
-      width: var(--match-card-w, 100%);
+      width: var(--match-card-w, 100%) !important;
       max-width: 100%;
       margin: 0 auto 14px auto;
       aspect-ratio: 1.62 / 1;
@@ -1491,7 +1491,7 @@
     .person-detail-scroll {
       flex: 0 1 auto;
       min-height: 0;
-      max-height: calc(10 * 36px);
+      max-height: calc(13 * 36px);
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
@@ -1694,6 +1694,46 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       direction: rtl;
       text-align: right;
+    }
+    /* ledger-summary-navy */
+    #panel-ledger .ledger-summary,
+    #panel-ledger .summary-box,
+    #ledgerSummary,
+    #ledgerSummaryBox {
+      background: #0a1628 !important;
+      border-color: #1a2a40 !important;
+    }
+    #panel-ledger .section {
+      background: #1a1a1c !important;
+      border: 1px solid #3a3a3e !important;
+      border-color: #3a3a3e !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    #panel-ledger .section.collapsed .section-header,
+    #panel-ledger .section .section-header {
+      border: none !important;
+      box-shadow: none !important;
+      background: #1a1a1c !important;
+    }
+    #panel-ledger .section.collapsed,
+    #panel-ledger .section:not(.collapsed) {
+      border: 1px solid #3a3a3e !important;
+      outline: none !important;
+    }
+    #panel-ledger .section-header {
+      border-color: #3a3a3e !important;
+      box-shadow: none !important;
+    }
+    #panel-ledger .section {
+      /* جلوگیری از پرش هنگام افزودن ردیف */
+      overflow-anchor: none;
+    }
+    #panel-ledger .section-body {
+      overflow-anchor: none;
+      max-height: calc(13 * 36px + 48px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     /* ledger-match-detail */
     #panel-ledger .section .section-body table {
@@ -3294,17 +3334,21 @@
     .remind-banner.show { display: block; }
     .remind-dot {
       display: none;
-      width: 12px;
-      height: 12px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #e9a8ff 0%, #c026ff 45%, #7b1fa2 100%);
-      box-shadow: 0 0 6px rgba(208, 80, 255, 0.55), 0 0 12px rgba(176, 38, 255, 0.28);
+      background: #d946ff;
+      box-shadow:
+        0 0 4px #ff4dff,
+        0 0 10px #d946ff,
+        0 0 18px rgba(217, 70, 255, 0.7),
+        0 0 28px rgba(180, 40, 255, 0.35);
       flex-shrink: 0;
-      animation: remindDotPulse 2.8s ease-in-out infinite;
+      animation: remindDotPulse 2.6s ease-in-out infinite;
     }
     @keyframes remindDotPulse {
-      0%, 100% { transform: scale(0.92); opacity: 0.88; box-shadow: 0 0 5px rgba(208,80,255,0.4), 0 0 10px rgba(176,38,255,0.2); }
-      50% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 8px rgba(208,80,255,0.6), 0 0 14px rgba(176,38,255,0.32); }
+      0%, 100% { transform: scale(0.94); opacity: 0.9; filter: brightness(0.95); }
+      50% { transform: scale(1.06); opacity: 1; filter: brightness(1.15); }
     }
     .remind-bar {
       background: linear-gradient(135deg, rgba(40, 18, 55, 0.55) 0%, rgba(18, 22, 40, 0.45) 50%, rgba(48, 20, 70, 0.5) 100%);
@@ -3312,6 +3356,7 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(180, 120, 255, 0.22);
       border-radius: 10px;
+      margin-top: 10px;
       margin-bottom: 4px;
       overflow: hidden;
       position: relative;
@@ -3323,9 +3368,15 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(120deg, transparent 0%, rgba(180, 100, 255, 0.08) 40%, rgba(220, 160, 255, 0.14) 50%, rgba(180, 100, 255, 0.06) 60%, transparent 100%);
+      background: linear-gradient(105deg, transparent 0%, transparent 40%, rgba(255,255,255,0.14) 50%, transparent 60%, transparent 100%);
+      background-size: 220% 100%;
+      animation: remindShineMove 3.8s ease-in-out infinite;
       pointer-events: none;
       z-index: 0;
+    }
+    @keyframes remindShineMove {
+      0% { background-position: 120% 0; }
+      100% { background-position: -120% 0; }
     }
     .remind-bar > * { position: relative; z-index: 1; }
     [data-theme="light"] .remind-bar {
@@ -3358,7 +3409,15 @@
     }
     .remind-bar-body { display: none; padding: 0; }
     .remind-bar.open .remind-bar-body { display: block; }
-    .remind-bar .collapse-arrow { color: var(--muted); }
+    .remind-bar .collapse-arrow {
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+    .remind-bar .collapse-arrow svg { display: block; }
     .remind-bar .remind-table-wrap { margin: 0; }
     .remind-bar .remind-table th {
       background: #0a2a4a;
@@ -4509,7 +4568,7 @@
 
     <div class="remind-bar" id="remindBar" style="display:none;">
       <div class="remind-bar-head" onclick="toggleRemindBar()">
-        <span class="collapse-arrow" id="remindArrow">▼</span>
+        <span class="collapse-arrow" id="remindArrow" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
         <span id="remindDot" class="remind-dot" style="display:none;"></span>
         <span style="flex:1;">یادآوری اقساط</span>
       </div>
@@ -5790,34 +5849,24 @@
       try { syncMatchCardWidth(); } catch (e) {}
     }
     function syncMatchCardWidth() {
+      // عرض کامل ناحیه محتوا (هم‌تراز نوار بالا) — بدون کوچک‌سازی اضافه
       let w = 0;
-      const bar = document.getElementById('remindBar');
-      if (bar) {
-        const st = window.getComputedStyle(bar);
-        if (st.display !== 'none' && st.visibility !== 'hidden') {
-          const r = bar.getBoundingClientRect();
-          if (r.width > 40) w = r.width;
-        }
+      const chrome = document.getElementById('stickyChrome');
+      if (chrome) {
+        const cs = window.getComputedStyle(chrome);
+        const pl = parseFloat(cs.paddingLeft) || 0;
+        const pr = parseFloat(cs.paddingRight) || 0;
+        w = chrome.clientWidth - pl - pr;
       }
-      if (!w) {
+      if (!w || w < 40) {
         const top = document.querySelector('.top-bar');
-        if (top) {
-          const r = top.getBoundingClientRect();
-          if (r.width > 40) w = r.width;
-        }
+        if (top) w = top.getBoundingClientRect().width;
       }
-      if (!w) {
-        const chrome = document.getElementById('stickyChrome');
-        if (chrome) {
-          const cs = window.getComputedStyle(chrome);
-          const pl = parseFloat(cs.paddingLeft) || 0;
-          const pr = parseFloat(cs.paddingRight) || 0;
-          w = chrome.clientWidth - pl - pr;
-        }
+      if (!w || w < 40) {
+        w = document.documentElement.clientWidth - 24;
       }
-      if (w > 40) {
-        document.documentElement.style.setProperty('--match-card-w', Math.round(w) + 'px');
-      }
+      // کمی پهن‌تر از قبل: حداقل برابر عرض قابل‌لمس نوار بالا
+      document.documentElement.style.setProperty('--match-card-w', Math.round(w) + 'px');
     }
     function moveTabIndicator() {
       setIndicatorAtIndex(tabIndexOf(currentTab), false);
@@ -8559,7 +8608,11 @@
       const arrow = document.getElementById('remindArrow');
       if (!bar) return;
       bar.classList.toggle('open');
-      if (arrow) arrow.textContent = bar.classList.contains('open') ? '▲' : '▼';
+      if (arrow) {
+        arrow.innerHTML = bar.classList.contains('open')
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      }
       requestAnimationFrame(() => {
         syncChromeHeight();
         moveTabIndicator();
@@ -8572,7 +8625,7 @@
       if (!bar || !bar.classList.contains('open')) return;
       bar.classList.remove('open');
       const arrow = document.getElementById('remindArrow');
-      if (arrow) arrow.textContent = '▼';
+      if (arrow) arrow.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
       requestAnimationFrame(() => {
         syncChromeHeight();
         moveTabIndicator();
@@ -8812,6 +8865,14 @@
           payload.selectedBankAccounts = selectedBankAccounts;
           payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
           payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
+          // پس‌زمینه کارت‌ها
+          payload.cardMeta = (periodData && periodData.cardMeta) ? periodData.cardMeta : {};
+          try {
+            const cm = localStorage.getItem(STORAGE_KEY + '_cardMeta');
+            if (cm && (!payload.cardMeta || !Object.keys(payload.cardMeta).length)) {
+              payload.cardMeta = JSON.parse(cm) || {};
+            }
+          } catch (e2) {}
         } catch (e) {}
         const textOut = JSON.stringify(payload);
         const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
@@ -9130,6 +9191,15 @@
           recurringIncomes = mergeRecurringList(recurringIncomes, data.recurringIncomes);
           saveRecurring();
         }
+      }
+      if (data.cardMeta && typeof data.cardMeta === 'object') {
+        try {
+          if (!periodData.cardMeta) periodData.cardMeta = {};
+          Object.keys(data.cardMeta).forEach(k => {
+            periodData.cardMeta[k] = data.cardMeta[k];
+          });
+          try { localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(periodData.cardMeta)); } catch (e) {}
+        } catch (e) {}
       }
       if (Array.isArray(data.selectedBankAccounts)) {
         try {
@@ -11614,6 +11684,25 @@ function openPdfPrintWindow(){
       openPersonEditSheet('', true);
     }
 
+    function attachKeyboardLift(box) {
+      if (!box || !window.visualViewport) return function(){};
+      const vv = window.visualViewport;
+      const apply = () => {
+        try {
+          const occluded = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop));
+          const lift = Math.min(occluded * 0.55, occluded > 0 ? occluded - 20 : 0);
+          box.style.transition = 'transform 0.22s ease-out';
+          box.style.transform = lift > 0 ? ('translateY(' + (-lift) + 'px)') : 'translateY(0)';
+        } catch (e) {}
+      };
+      vv.addEventListener('resize', apply);
+      vv.addEventListener('scroll', apply);
+      apply();
+      return function() {
+        try { vv.removeEventListener('resize', apply); vv.removeEventListener('scroll', apply); } catch (e) {}
+        try { box.style.transform = ''; } catch (e) {}
+      };
+    }
     function openPersonEditSheet(title, isNew) {
       const _sy = window.scrollY || window.pageYOffset || 0;
       try {
@@ -11740,6 +11829,16 @@ function openPdfPrintWindow(){
       overlay.appendChild(box);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) try { overlay.remove(); } catch (err) {} });
       document.body.appendChild(overlay);
+      const detachLift = attachKeyboardLift(box);
+      overlay._detachLift = detachLift;
+      const prevRemove = overlay.remove.bind(overlay);
+      // wrap cleanup when removed
+      const cleanup = () => {
+        try { if (overlay._detachLift) overlay._detachLift(); } catch (e) {}
+      };
+      ok.addEventListener('click', cleanup, { once: true });
+      cancel.addEventListener('click', cleanup, { once: true });
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(); });
       setTimeout(() => {
         try { inp.focus({ preventScroll: true }); } catch (e) {}
       }, 40);
@@ -11980,6 +12079,7 @@ function openPdfPrintWindow(){
         dayInp.inputMode = 'numeric';
         dayInp.pattern = '[0-9]*';
         dayInp.setAttribute('enterkeyhint', 'next');
+        dayInp.setAttribute('inputmode', 'numeric');
         dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
         dayInp.readOnly = isFilledVal(row.day);
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
@@ -11990,24 +12090,38 @@ function openPdfPrintWindow(){
         dayInp.onclick = () => {
           if (!isFilledVal(row.day)) {
             dayInp.readOnly = false;
-            try { dayInp.focus(); } catch (e) {}
+            try { dayInp.focus({ preventScroll: true }); } catch (e) { try { dayInp.focus(); } catch (e2) {} }
           }
         };
         dayInp.ondblclick = () => {
-          if (fromPlan) {
-            // روز اقساط قابل ویرایش است طبق قبل
-          }
           dayInp.readOnly = false;
-          try { dayInp.focus(); } catch (e) {}
+          try { dayInp.focus({ preventScroll: true }); } catch (e) {}
         };
-        dayInp.onblur = () => {
+        function commitDay() {
           const d = parseInt(toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '') || '0', 10) || '';
           row.day = d || '';
           dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
           dayInp.readOnly = isFilledVal(row.day);
           markFilled(dayInp, isFilledVal(row.day));
-          sortAndRebuild();
+          scheduleSave();
+        }
+        dayInp.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            e.stopPropagation();
+            commitDay();
+            setTimeout(() => {
+              try {
+                const dEl = tr.querySelector('textarea.pd-desc');
+                if (!dEl) return;
+                if (fromPlan) return;
+                dEl.readOnly = false;
+                dEl.focus({ preventScroll: true });
+              } catch (err) {}
+            }, 50);
+          }
         };
+        dayInp.onblur = () => { commitDay(); };
         tdDay.appendChild(dayInp);
         tr.appendChild(tdDay);
 
@@ -12155,9 +12269,13 @@ function openPdfPrintWindow(){
             if (!menu.contains(ev.target) && ev.target !== amt) {
               try { menu.remove(); } catch (e2) {}
               document.removeEventListener('mousedown', close);
+              document.removeEventListener('touchstart', close);
             }
           };
-          setTimeout(() => document.addEventListener('mousedown', close), 30);
+          setTimeout(() => {
+            document.addEventListener('mousedown', close);
+            document.addEventListener('touchstart', close, { passive: true });
+          }, 30);
         }
         amt.onclick = (e) => {
           if (fromPlan) return; // فقط دبل‌کلیک نوتیف
@@ -12245,9 +12363,13 @@ function openPdfPrintWindow(){
             if (!list.contains(ev.target) && ev.target !== accBtn) {
               try { list.remove(); } catch (e2) {}
               document.removeEventListener('mousedown', close);
+              document.removeEventListener('touchstart', close);
             }
           };
-          setTimeout(() => document.addEventListener('mousedown', close), 10);
+          setTimeout(() => {
+            document.addEventListener('mousedown', close);
+            document.addEventListener('touchstart', close, { passive: true });
+          }, 10);
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
@@ -13665,11 +13787,17 @@ function openPdfPrintWindow(){
         return true;
       }
 if (item.type === 'recurring') {
-        const r = item.data;
+        let r = item.data;
         if (!r) return false;
+        try { r = JSON.parse(JSON.stringify(r)); } catch (e) { r = item.data; }
+        if (!r.id) r.id = 'rec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+        r.deletedAt = null;
         recurringIncomes = recurringIncomes || [];
+        // جلوگیری از تکراری
+        recurringIncomes = recurringIncomes.filter(x => x && x.id !== r.id);
         recurringIncomes.push(r);
         try { saveRecurring(); } catch (e) {}
+        try { if (typeof renderRecurringBar === 'function') renderRecurringBar(); } catch (e) {}
         return true;
       }
       if (item.type === 'person_card') {
@@ -16841,7 +16969,7 @@ if (item.type === 'recurring') {
         const credit = v === 'credit';
         const theme = document.documentElement.getAttribute('data-theme') || 'dark';
         const green = theme === 'light' ? '#15803d' : '#9ee858';
-        const red = theme === 'light' ? '#dc2626' : '#bc2402';
+        const red = theme === 'light' ? '#dc2626' : '#ff6b4a';
         const c = credit ? green : red;
         amtInp.style.setProperty('color', c, 'important');
         amtInp.style.setProperty('-webkit-text-fill-color', c, 'important');
@@ -17171,7 +17299,15 @@ if (item.type === 'recurring') {
         btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
         btnAddRow.onclick = (e) => {
           e.stopPropagation();
+          const bodyEl = div.querySelector('.section-body');
+          const prevScroll = bodyEl ? bodyEl.scrollTop : 0;
           addLedgerRow(thisSecId, 1);
+          requestAnimationFrame(() => {
+            try {
+              const b2 = div.querySelector('.section-body');
+              if (b2) b2.scrollTop = prevScroll;
+            } catch (err) {}
+          });
         };
         addRowWrap.appendChild(btnAddRow);
         body.appendChild(addRowWrap);
