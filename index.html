@@ -1142,9 +1142,10 @@
     /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
-      width: var(--match-card-w, 100%) !important;
-      max-width: min(100vw - 4px, var(--match-card-w, 100%));
+      width: min(100%, var(--match-card-w, 100%)) !important;
+      max-width: 100% !important;
       margin: 0 auto 14px auto;
+      box-sizing: border-box !important;
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
       overflow: hidden;
@@ -1532,7 +1533,9 @@
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.08);
-      width: var(--match-card-w, 100%);
+      width: min(100%, var(--match-card-w, 100%));
+      max-width: 100%;
+      box-sizing: border-box;
       max-width: 100%;
       margin: 0 auto;
       box-sizing: border-box;
@@ -1782,6 +1785,23 @@
       mask-image: none !important;
     }
 
+    /* install-bottom-fade */
+    #panel-install {
+      padding-bottom: max(110px, calc(72px + env(safe-area-inset-bottom, 0px))) !important;
+    }
+    #featureSheet.open .feature-sheet-body {
+      padding-bottom: max(100px, calc(64px + env(safe-area-inset-bottom, 0px)));
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 72px), transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 72px), transparent 100%);
+    }
+    #panel-install .btn-del-row,
+    #panel-install .actions-cell .btn-del-row,
+    #plans-container .btn-del-row {
+      color: #ff1744 !important;
+      text-shadow: 0 0 6px rgba(255, 23, 68, 0.55) !important;
+      opacity: 1 !important;
+      font-weight: 900 !important;
+    }
     /* install-summary-navy */
     #panel-install .summary-box,
     #panel-install .install-summary,
@@ -1860,12 +1880,12 @@
     }
     /* ledger-plus-gap */
     #panel-ledger .section .section-body {
-      padding-bottom: 28px !important;
+      padding-bottom: 12px !important;
     }
     #panel-ledger .section .add-row-wrap,
     #panel-ledger .section .section-body .btn-circle-plus {
-      margin-bottom: 18px !important;
-      margin-top: 8px !important;
+      margin-bottom: 10px !important;
+      margin-top: 6px !important;
     }
     #panel-ledger .section .btn-del-row,
     #panel-ledger .section .actions-cell .btn-del-row {
@@ -1910,7 +1930,9 @@
       font-size: 0.82rem;
     }
     #panel-ledger .section {
-      width: var(--match-card-w, 100%);
+      width: min(100%, var(--match-card-w, 100%));
+      max-width: 100%;
+      box-sizing: border-box;
       max-width: 100%;
       margin-left: auto;
       margin-right: auto;
@@ -4360,6 +4382,7 @@
       z-index: 54;
     }
     .edge-fade-bottom {
+      z-index: 180 !important;
       bottom: 0;
       height: max(80px, calc(env(safe-area-inset-bottom, 0px) + 48px));
       background: linear-gradient(to top,
@@ -6034,8 +6057,11 @@
       if (!w || w < 40) {
         w = document.documentElement.clientWidth - 24;
       }
-      // پایه ×۱.۲۵ + حدود ۱mm از هر طرف (~۴px×۲)
-      const wider = Math.min(document.documentElement.clientWidth - 2, Math.round(w * 1.25) + 8);
+      // حداکثر عرض قابل‌لمس بدون بیرون‌زدن از صفحه
+      const maxW = Math.max(0, document.documentElement.clientWidth - 16);
+      let wider = Math.round(w);
+      if (wider > maxW) wider = maxW;
+      if (wider < 40) wider = maxW;
       document.documentElement.style.setProperty('--match-card-w', wider + 'px');
     }
     function moveTabIndicator() {
@@ -12570,6 +12596,7 @@ function openPdfPrintWindow(){
         }
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
+        amt._clickTimer = null;
         amt.ondblclick = (e) => {
           if (fromPlan) {
             e.preventDefault();
@@ -12578,14 +12605,13 @@ function openPdfPrintWindow(){
           }
           e.preventDefault();
           e.stopPropagation();
-          amt._blockStatus = true;
-          setTimeout(() => { amt._blockStatus = false; }, 400);
+          if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           amt.readOnly = false;
           try { amt.focus(); } catch (err) {}
         };
         function openAmountStatusMenu() {
-          if (amt._blockStatus) return;
+          if (amt._clickTimer === 'blocked') return;
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
@@ -12625,13 +12651,23 @@ function openPdfPrintWindow(){
         }
         amt.onclick = (e) => {
           if (fromPlan) return;
-          if (amt._blockStatus) return;
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
             try { amt.focus(); } catch (err) {}
             return;
           }
-          if (e.detail && e.detail >= 2) return;
+          if (e.detail && e.detail >= 2) {
+            if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
+            document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
+            return;
+          }
+          // تأخیر کوتاه تا دبل‌کلیک منوی وضعیت را نشان ندهد
+          if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
+          amt._clickTimer = setTimeout(() => {
+            amt._clickTimer = null;
+            if (document.activeElement === amt && !amt.readOnly) return;
+            openAmountStatusMenu();
+          }, 300);
           if (amt.readOnly || document.activeElement !== amt) {
             e.preventDefault();
             openAmountStatusMenu();
@@ -14416,7 +14452,7 @@ if (item.type === 'recurring') {
         let cand = defaultLabel;
         let n = 1;
         while (selectedBankAccounts.some(a => accountLabel(a) === cand)) {
-          cand = defaultLabel + ' ' + n;
+          cand = defaultLabel + ' ' + toPersianDigits(String(n));
           n++;
         }
         inp.value = cand;
@@ -14425,7 +14461,7 @@ if (item.type === 'recurring') {
         let cand = base0;
         let n = 1;
         while (selectedBankAccounts.some(a => accountLabel(a) === cand)) {
-          cand = base0 + ' ' + n;
+          cand = base0 + ' ' + toPersianDigits(String(n));
           n++;
         }
         inp.value = cand;
@@ -14493,8 +14529,48 @@ if (item.type === 'recurring') {
 
     function sectionHasRecurringIncome(sec, rec) {
       const name = ((rec && rec.name) || '').trim();
-      if (!name) return false;
-      return (sec.rows || []).some(row => ((row.desc || '').trim() === name));
+      const rid = rec && rec.id;
+      if (!name && !rid) return false;
+      return (sec.rows || []).some(row => {
+        if (rid && row.fromRecurringId && row.fromRecurringId === rid) return true;
+        return name && ((row.desc || '').trim() === name);
+      });
+    }
+    function updateRecurringRowsEverywhere(prevItem, item) {
+      if (!item) return;
+      const oldName = ((prevItem && prevItem.name) || (item.name) || '').trim();
+      const rid = (prevItem && prevItem.id) || item.id || '';
+      const patchRow = (row) => {
+        const matchId = rid && row.fromRecurringId === rid;
+        const matchName = oldName && ((row.desc || '').trim() === oldName);
+        if (!matchId && !matchName) return false;
+        row.desc = item.name || item.desc || row.desc || '';
+        row.day = item.day ? String(item.day) : (row.day || '');
+        row.amount = Number(item.amount) || 0;
+        if (item.account !== undefined) row.account = item.account || '';
+        if (rid) row.fromRecurringId = rid;
+        return true;
+      };
+      const walk = (sections) => {
+        (sections || []).forEach(sec => {
+          (sec.rows || []).forEach(patchRow);
+        });
+      };
+      try { walk((periodData.income && periodData.income.sections) || []); } catch (e) {}
+      try {
+        Object.keys(archive || {}).forEach(k => {
+          const pd = archive[k];
+          if (pd && pd.income) walk(pd.income.sections || []);
+        });
+      } catch (e) {}
+      try { scheduleSave(); } catch (e) {}
+      try { saveArchive(); } catch (e) {}
+      try { renderHomeCards(); } catch (e) {}
+      try {
+        if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
+          renderPersonDetailPanel('income', _detailContext.title);
+        }
+      } catch (e) {}
     }
 
 
@@ -14506,7 +14582,8 @@ if (item.type === 'recurring') {
         desc: item.name || item.desc || '',
         amount: Number(item.amount) || 0,
         status: 'unpaid',
-        account: item.account || ''
+        account: item.account || '',
+        fromRecurringId: item.id || ''
       };
       function applyToSections(sections) {
         if (!sections || !sections.length) return 0;
@@ -15210,6 +15287,7 @@ field('حساب بانکی', accSelRec);
           item.createdAt = prev.createdAt;
           item.deletedAt = prev.deletedAt || null;
           item.updatedAt = Date.now();
+          try { updateRecurringRowsEverywhere(prev, item); } catch (e) {}
           recurringIncomes[index] = item;
         } else {
           stampRowOwner(item);
