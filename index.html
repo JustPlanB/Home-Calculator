@@ -3284,11 +3284,10 @@
     }
     .status-menu {
       position: fixed !important;
-      z-index: 520 !important;
-      top: auto;
-      left: auto;
-      right: auto;
-      bottom: auto;
+      z-index: 99999 !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
       margin: 0 !important;
       background: #1c1c1e;
       border: 1px solid #3a3a3c;
@@ -12787,46 +12786,92 @@ function openPdfPrintWindow(){
           beginAmountEdit();
         };
         function openAmountStatusMenu(anchorCell, savedRect) {
-          document.querySelectorAll('.status-menu').forEach(m => m.remove());
+          try {
+            document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e0) {} });
+          } catch (e1) {}
           const menu = document.createElement('div');
           menu.className = 'status-menu';
-          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
+          // استایل کامل و صریح — بدون وابستگی به CSS که ممکن است top/left را auto بگذارد
+          menu.setAttribute('style',
+            'position:fixed!important;z-index:99999!important;display:block!important;visibility:visible!important;opacity:1!important;' +
+            'background:#1c1c1e;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:6px 0;' +
+            'min-width:150px;max-width:90vw;box-sizing:border-box;margin:0;transform:none;' +
+            'box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:auto;'
+          );
           [
             { v: 'paid', label: paidLabel, color: '#9ee858' },
             { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
           ].forEach(opt => {
             const it = document.createElement('div');
             it.textContent = opt.label;
-            it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;';
+            it.setAttribute('style', 'padding:12px 16px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;font-family:Vazirmatn,Tahoma,sans-serif;font-size:0.95rem;');
             it.onclick = (ev) => {
+              ev.preventDefault();
               ev.stopPropagation();
               row.status = opt.v;
               applyAmtColor();
-              menu.remove();
+              try { menu.remove(); } catch (e2) {}
               scheduleSave();
               try { renderHomeCards(); } catch (err) {}
             };
             menu.appendChild(it);
           });
+          // اول به body بچسبان تا visible شود
           document.body.appendChild(menu);
-          const anchor = anchorCell || tdAmt || amt;
-          try {
-            positionStatusMenu(menu, anchor, null, savedRect);
-            requestAnimationFrame(() => {
-              try { positionStatusMenu(menu, anchor, null, savedRect); } catch (e3) {}
-            });
-          } catch (e2) {}
-          const close = (ev) => {
-            if (!menu.contains(ev.target) && ev.target !== amt && ev.target !== tdAmt) {
-              try { menu.remove(); } catch (e2) {}
-              document.removeEventListener('mousedown', close);
-              document.removeEventListener('touchstart', close);
+
+          // محاسبه موقعیت کنار سلول
+          function placeMenu() {
+            let r = null;
+            try {
+              const el = (anchorCell && anchorCell.isConnected) ? anchorCell : (tdAmt && tdAmt.isConnected ? tdAmt : amt);
+              if (el && el.getBoundingClientRect) {
+                const live = el.getBoundingClientRect();
+                if (live && live.width >= 1 && live.height >= 1) r = live;
+              }
+            } catch (e3) {}
+            if (!r && savedRect && savedRect.width >= 1) r = savedRect;
+            const menuW = Math.max(menu.offsetWidth || 0, 150);
+            const menuH = Math.max(menu.offsetHeight || 0, 90);
+            let top = 100, left = 20;
+            if (r) {
+              top = r.bottom + 6;
+              left = r.right - menuW;
+              if (top + menuH > window.innerHeight - 8) top = Math.max(8, r.top - menuH - 6);
             }
+            if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+            if (left < 8) left = 8;
+            if (top < 8) top = 8;
+            menu.style.setProperty('top', Math.round(top) + 'px', 'important');
+            menu.style.setProperty('left', Math.round(left) + 'px', 'important');
+            menu.style.setProperty('right', 'auto', 'important');
+            menu.style.setProperty('bottom', 'auto', 'important');
+            menu.style.setProperty('position', 'fixed', 'important');
+            menu.style.setProperty('z-index', '99999', 'important');
+            menu.style.setProperty('display', 'block', 'important');
+            menu.style.setProperty('visibility', 'visible', 'important');
+            menu.style.setProperty('opacity', '1', 'important');
+          }
+          placeMenu();
+          requestAnimationFrame(placeMenu);
+          setTimeout(placeMenu, 0);
+
+          const close = (ev) => {
+            if (!menu.parentNode) {
+              document.removeEventListener('mousedown', close, true);
+              document.removeEventListener('touchstart', close, true);
+              return;
+            }
+            if (menu.contains(ev.target)) return;
+            if (ev.target === amt || ev.target === tdAmt || (tdAmt && tdAmt.contains && tdAmt.contains(ev.target))) return;
+            try { menu.remove(); } catch (e4) {}
+            document.removeEventListener('mousedown', close, true);
+            document.removeEventListener('touchstart', close, true);
           };
+          // تأخیر بیشتر تا کلیک/لمس فعلی منو را نبندد
           setTimeout(() => {
-            document.addEventListener('mousedown', close);
-            document.addEventListener('touchstart', close, { passive: true });
-          }, 30);
+            document.addEventListener('mousedown', close, true);
+            document.addEventListener('touchstart', close, true);
+          }, 350);
         }
         amt.onclick = (e) => {
           if (fromPlan) return;
@@ -12843,9 +12888,18 @@ function openPdfPrintWindow(){
             beginAmountEdit();
             return;
           }
-          // ذخیره reference + مختصات واقعی سلول در لحظه کلیک اول
+          // ذخیره reference + مختصات سلول در لحظه کلیک اول (بدون وابستگی به توابع بیرونی)
           const clickedCell = tdAmt;
-          const savedRect = snapshotRect(clickedCell) || snapshotRect(amt);
+          let savedRect = null;
+          try {
+            const el = clickedCell || amt;
+            if (el && el.getBoundingClientRect) {
+              const rr = el.getBoundingClientRect();
+              if (rr && rr.width >= 1) {
+                savedRect = { top: rr.top, left: rr.left, right: rr.right, bottom: rr.bottom, width: rr.width, height: rr.height };
+              }
+            }
+          } catch (eR) {}
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           amt._pendingCell = clickedCell;
           amt._savedRect = savedRect;
@@ -12853,7 +12907,11 @@ function openPdfPrintWindow(){
             amt._clickTimer = null;
             if (document.activeElement === amt && !amt.readOnly) return;
             if (amt._pendingCell !== clickedCell) return;
-            openAmountStatusMenu(clickedCell, amt._savedRect || savedRect);
+            try {
+              openAmountStatusMenu(clickedCell, amt._savedRect || savedRect);
+            } catch (eOpen) {
+              console.warn('status menu open failed', eOpen);
+            }
             amt._pendingCell = null;
             amt._savedRect = null;
           }, 500);
