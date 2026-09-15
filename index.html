@@ -1172,13 +1172,25 @@
       outline: none !important;
       box-shadow: 0 8px 22px rgba(0,0,0,0.22);
       background-color: transparent !important;
-      background-size: cover !important;
-      background-position: center center !important;
-      background-repeat: no-repeat !important;
-      background-clip: border-box !important;
       color: #fff;
       user-select: none;
       isolation: isolate;
+    }
+    /* لایه تصویر: scale متناسب + crop تا کل کارت پر شود */
+    .person-card-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      border: none;
+      margin: 0;
+      padding: 0;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+      background: transparent;
     }
     .person-card::before,
     .person-card::after {
@@ -1198,6 +1210,7 @@
       padding: 12px 14px 12px;
       display: flex;
       flex-direction: column;
+      background: transparent !important;
     }
     .person-card-top {
       display: flex;
@@ -1327,6 +1340,9 @@
       direction: rtl;
     }
     .bg-pick {
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
       flex: 0 0 auto;
       width: 48px;
       height: 48px;
@@ -12062,14 +12078,16 @@ function openPdfPrintWindow(){
         const bg = (typeof CARD_BACKGROUNDS !== 'undefined' && CARD_BACKGROUNDS[getCardBgIndex(title)]) || '';
         const card = document.createElement('div');
         card.className = 'person-card';
-        if (bg) {
-          card.style.backgroundImage = 'url("' + bg + '")';
-          card.style.backgroundSize = 'cover';
-          card.style.backgroundPosition = 'center center';
-          card.style.backgroundRepeat = 'no-repeat';
-          card.style.backgroundColor = 'transparent';
-        }
         card.dataset.title = title;
+        if (bg) {
+          const bgImg = document.createElement('img');
+          bgImg.className = 'person-card-bg';
+          bgImg.src = bg;
+          bgImg.alt = '';
+          bgImg.decoding = 'async';
+          bgImg.draggable = false;
+          card.appendChild(bgImg);
+        }
 
         const inner = document.createElement('div');
         inner.className = 'person-card-inner';
