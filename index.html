@@ -1152,7 +1152,7 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 8px 22px rgba(0,0,0,0.28);
-      background-size: cover;
+      background-size: 100% 100%;
       background-position: center center;
       background-repeat: no-repeat;
       color: #fff;
@@ -1877,12 +1877,30 @@
       /* جلوگیری از پرش هنگام افزودن ردیف */
       overflow-anchor: none;
     }
+    #panel-ledger .section {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #panel-ledger .section > .section-header {
+      flex-shrink: 0;
+    }
     #panel-ledger .section-body {
       overflow-anchor: none;
-      max-height: calc(5 * 36px + 40px);
+      max-height: calc(5 * 36px + 36px);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
+      flex: 0 1 auto;
+    }
+    #panel-ledger .ledger-add-fixed,
+    #panel-ledger .section > .add-row-wrap {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px 0 10px;
+      background: #1a1a1c;
+      border-top: 1px solid #3a3a3e;
     }
     /* ledger-plus-gap */
     #panel-ledger .section .section-body {
@@ -3572,6 +3590,31 @@
       }
     }
     .remind-bar > * { position: relative; z-index: 1; }
+    /* light-text-fix */
+    [data-theme="light"] .remind-bar,
+    [data-theme="light"] .remind-bar-head,
+    [data-theme="light"] .remind-bar-head *,
+    [data-theme="light"] #remindBar,
+    [data-theme="light"] #remindBar * {
+      color: #111111 !important;
+      -webkit-text-fill-color: #111111 !important;
+    }
+    [data-theme="light"] .top-bar,
+    [data-theme="light"] .top-bar *,
+    [data-theme="light"] .period-select,
+    [data-theme="light"] .menu-btn {
+      color: #111111 !important;
+    }
+    [data-theme="light"] .feature-sheet-bar .fs-title,
+    [data-theme="light"] .feature-sheet-bar .fs-close {
+      color: #111111 !important;
+    }
+    [data-theme="light"] .section-header,
+    [data-theme="light"] .section-header .title-display,
+    [data-theme="light"] .title-display {
+      color: #111111 !important;
+      -webkit-text-fill-color: #111111 !important;
+    }
     [data-theme="light"] .remind-bar {
       background: transparent;
       border: 2px solid #d946ff;
@@ -5944,6 +5987,7 @@
         _detailContext = null;
         activatePanel('home');
         renderHomeCards();
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e3) {}
       } catch (e) {
         try { switchTab('home', true); } catch (e2) {}
       }
@@ -11837,6 +11881,7 @@ function openPdfPrintWindow(){
     let _detailContext = null;
 
     function enableHomeCardReorder(container) {
+      return; // قابلیت سواپ کارت حذف شد
       if (!container || container._homeDragBound) return;
       container._homeDragBound = true;
       let active = null;
@@ -12043,7 +12088,7 @@ function openPdfPrintWindow(){
         card.appendChild(inner);
         box.appendChild(card);
       });
-      try { enableHomeCardReorder(box); } catch (e) {}
+      // سواپ کارت‌ها حذف شد
     }
 
     function addPersonCard() {
@@ -12289,6 +12334,7 @@ function openPdfPrintWindow(){
     }
 
     function closePersonDetail() {
+      try { setTimeout(() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }, 30); } catch (e) {}
       _detailContext = null;
       try { document.body.classList.remove('detail-open'); } catch (e) {}
       const bar = document.getElementById('detailPageBar');
@@ -12645,11 +12691,13 @@ function openPdfPrintWindow(){
             menu.appendChild(it);
           });
           document.body.appendChild(menu);
-          const r = amt.getBoundingClientRect();
-          menu.style.top = Math.min(window.innerHeight - 120, r.bottom + 4) + 'px';
-          menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 160)) + 'px';
+          try {
+            const anchor = tdAmt || amt;
+            positionStatusMenu(menu, anchor, null);
+            requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null); } catch (e3) {} });
+          } catch (e2) {}
           const close = (ev) => {
-            if (!menu.contains(ev.target) && ev.target !== amt) {
+            if (!menu.contains(ev.target) && ev.target !== amt && ev.target !== tdAmt) {
               try { menu.remove(); } catch (e2) {}
               document.removeEventListener('mousedown', close);
               document.removeEventListener('touchstart', close);
@@ -14488,11 +14536,11 @@ if (item.type === 'recurring') {
         if (!name) { showToast('نام حساب را وارد کنید'); return; }
         if (isEdit) {
           const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
-          if (exists) { showToast('نام حساب تکراریست'); return; }
+          if (exists) { showToast('نام تکراریست'); return; }
           acc.label = name;
         } else {
           const exists = selectedBankAccounts.some(a => accountLabel(a) === name);
-          if (exists) { showToast('نام حساب تکراریست'); return; }
+          if (exists) { showToast('نام تکراریست'); return; }
           selectedBankAccounts.push({
             id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             bank: bankName,
@@ -14550,6 +14598,37 @@ if (item.type === 'recurring') {
         if (rid && row.fromRecurringId && row.fromRecurringId === rid) return true;
         return name && ((row.desc || '').trim() === name);
       });
+    }
+    function removeRecurringRowsEverywhere(rec) {
+      if (!rec) return;
+      const name = ((rec.name) || '').trim();
+      const rid = rec.id || '';
+      const kill = (row) => {
+        if (rid && row.fromRecurringId === rid) return true;
+        if (name && ((row.desc || '').trim() === name)) return true;
+        return false;
+      };
+      const clean = (sections) => {
+        (sections || []).forEach(sec => {
+          if (!sec.rows) return;
+          sec.rows = sec.rows.filter(r => !kill(r));
+          if (!sec.rows.length) sec.rows = [typeof emptyRow === 'function' ? emptyRow('income') : { day:'', desc:'', amount:0, status:'paid' }];
+        });
+      };
+      try { clean((periodData.income && periodData.income.sections) || []); } catch (e) {}
+      try {
+        Object.keys(archive || {}).forEach(k => {
+          const pd = archive[k];
+          if (pd && pd.income) clean(pd.income.sections || []);
+        });
+      } catch (e) {}
+      try { scheduleSave(); saveArchive(); } catch (e) {}
+      try { renderHomeCards(); } catch (e) {}
+      try {
+        if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
+          renderPersonDetailPanel('income', _detailContext.title);
+        }
+      } catch (e) {}
     }
     function updateRecurringRowsEverywhere(prevItem, item) {
       if (!item) return;
@@ -14942,6 +15021,7 @@ if (item.type === 'recurring') {
           if (item && !canEditRow(item)) { showToast(OWNERSHIP_LOCK_MSG); return; }
           askConfirm('این درآمد ثابت حذف شود؟', () => {
             try { if (item) pushToTrash('recurring', item.name || 'درآمد ثابت', Object.assign(JSON.parse(JSON.stringify(item)), { sourceLabel: 'درآمد ثابت' })); } catch (e) {}
+            try { if (item) removeRecurringRowsEverywhere(item); } catch (e) {}
             if (item && item.id && sharedAccountId) {
               item.deletedAt = Date.now();
               item.updatedAt = Date.now();
@@ -16082,28 +16162,31 @@ field('حساب بانکی', accSelRec);
       }
 
     function positionStatusMenu(menu, anchorEl, e) {
-      const r = anchorEl.getBoundingClientRect();
-      const menuW = 160;
-      const menuH = 110;
-      let top = r.bottom + 4;
-      let left = r.left;
-      // اگر rect نامعتبر بود از مختصات لمس/کلیک استفاده کن
-      if ((r.width < 2 || r.height < 2) && e && typeof e.clientX === 'number') {
-        left = e.clientX - 40;
+      const el = anchorEl || (e && e.currentTarget) || null;
+      let r = el ? el.getBoundingClientRect() : null;
+      const menuW = Math.max(150, menu.offsetWidth || 160);
+      const menuH = Math.max(90, menu.offsetHeight || 110);
+      let top, left;
+      if (r && r.width >= 2 && r.height >= 2) {
+        // دقیقاً زیر/کنار سلول مبلغ
+        top = r.bottom + 6;
+        left = r.left + (r.width / 2) - (menuW / 2);
+        if (top + menuH > window.innerHeight - 8) {
+          top = Math.max(8, r.top - menuH - 6);
+        }
+      } else if (e && typeof e.clientX === 'number') {
         top = e.clientY + 8;
+        left = e.clientX - menuW / 2;
+      } else {
+        top = window.innerHeight / 2 - menuH / 2;
+        left = window.innerWidth / 2 - menuW / 2;
       }
-      if (top + menuH > window.innerHeight - 8) {
-        top = Math.max(8, r.top - menuH - 4);
-      }
-      // در RTL ترجیح: منو زیر سلول و داخل صفحه
-      if (left + menuW > window.innerWidth - 8) {
-        left = Math.max(8, window.innerWidth - menuW - 8);
-      }
+      if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
       if (left < 8) left = 8;
       if (top < 8) top = 8;
       menu.style.position = 'fixed';
-      menu.style.top = top + 'px';
-      menu.style.left = left + 'px';
+      menu.style.top = Math.round(top) + 'px';
+      menu.style.left = Math.round(left) + 'px';
       menu.style.right = 'auto';
       menu.style.zIndex = '520';
     }
@@ -17862,8 +17945,9 @@ field('حساب بانکی', accSelRec);
         (secRef.rows || []).forEach((_, i) => tbody.appendChild(buildLedgerRowEl(secRef, i)));
         table.appendChild(tbody);
         body.appendChild(table);
+        // ＋ خارج از ناحیه اسکرول — پایین جدول ثابت
         const addRowWrap = document.createElement('div');
-        addRowWrap.className = 'add-row-wrap';
+        addRowWrap.className = 'add-row-wrap ledger-add-fixed';
         const btnAddRow = document.createElement('button');
         btnAddRow.type = 'button';
         btnAddRow.className = 'btn-circle-plus';
@@ -17883,10 +17967,10 @@ field('حساب بانکی', accSelRec);
           });
         };
         addRowWrap.appendChild(btnAddRow);
-        body.appendChild(addRowWrap);
 
         div.appendChild(header);
         div.appendChild(body);
+        div.appendChild(addRowWrap);
         container.appendChild(div);
 
         if (pendingRenameLedgerId && pendingRenameLedgerId === sec.id) {
