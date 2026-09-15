@@ -1072,22 +1072,26 @@
       display: none !important;
     }
     /* balance-filters-sticky */
+    /* فیلترهای مانده ثابت؛ جداول اسکرول */
     #panel-balance .filter-bar,
     #panel-balance #balanceFilters {
       position: sticky;
       top: 0;
-      z-index: 25;
+      z-index: 30;
       background: var(--bg);
       padding-top: 4px;
       padding-bottom: 6px;
     }
-    #panel-balance .filter-acc-wrap,
-    #panel-balance #balanceAccountFilterWrap {
+    #panel-balance .balance-filter-block {
       position: sticky;
       top: 42px;
-      z-index: 24;
+      z-index: 29;
       background: var(--bg);
-      padding-bottom: 8px;
+      padding-bottom: 10px;
+    }
+    #panel-balance .filter-acc-wrap,
+    #panel-balance #balanceAccountFilterWrap {
+      background: var(--bg);
     }
     #panel-balance .summary-section,
     #panel-balance table {
@@ -5343,7 +5347,7 @@
       };
     }
     function emptyLedgerRow() {
-      return { id: '', day: '', desc: '', amount: 0, status: 'credit', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
+      return { id: '', day: '', desc: '', amount: 0, status: 'debt', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
     }
     function emptyLedgerSection() {
       return {
@@ -9609,8 +9613,7 @@
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--card);color:var(--text);border-radius:14px;padding:16px;max-width:360px;width:100%;border:1px solid var(--border);box-shadow:0 12px 32px rgba(0,0,0,0.35);font-family:Vazirmatn,Tahoma,sans-serif;';
       card.innerHTML =
-        '<div style="font-weight:800;font-size:1.05rem;margin-bottom:8px;text-align:center;">بازیابی پشتیبان</div>' +
-        '<div style="font-size:0.88rem;color:var(--muted);margin-bottom:14px;line-height:1.6;text-align:center;">چگونه بازیابی شود؟</div>' +
+        '<div style="font-weight:800;font-size:1.05rem;margin-bottom:14px;text-align:center;">بازیابی پشتیبان</div>' +
         '<button type="button" id="backupReplaceBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#ff3b30;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">جایگزین کردن اطلاعات فعلی</button>' +
         '<button type="button" id="backupMergeBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">افزودن به اطلاعات فعلی</button>' +
         '<button type="button" id="backupCancelBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--bg3);color:var(--text);font-weight:700;font-size:0.9rem;font-family:inherit;">انصراف</button>' +
@@ -12566,17 +12569,11 @@ function openPdfPrintWindow(){
         return v !== undefined && v !== null && String(v).trim() !== '' && String(v) !== '0';
       }
       function rebuild() {
-        const saved = saveScrollContainers();
         renderPersonDetailPanel(tab, title);
         scheduleSave();
         try { renderHomeCards(); } catch (e) {}
-        requestAnimationFrame(() => {
-          restoreScrollContainers(saved);
-          requestAnimationFrame(() => restoreScrollContainers(saved));
-        });
       }
       function sortAndRebuild() {
-        const saved = saveScrollContainers();
         try {
           sec.rows.sort((a, b) => {
             const da = dayNum(a), db = dayNum(b);
@@ -12586,13 +12583,7 @@ function openPdfPrintWindow(){
             return da - db;
           });
         } catch (e) {}
-        renderPersonDetailPanel(tab, title);
-        scheduleSave();
-        try { renderHomeCards(); } catch (e) {}
-        requestAnimationFrame(() => {
-          restoreScrollContainers(saved);
-          requestAnimationFrame(() => restoreScrollContainers(saved));
-        });
+        rebuild();
       }
 
       sec.rows.forEach((row, idx) => {
@@ -12624,7 +12615,6 @@ function openPdfPrintWindow(){
         };
         dayInp.onclick = () => {
           if (!isFilledVal(row.day)) {
-            if (shouldSuppressEmptyCellEdit()) return;
             dayInp.readOnly = false;
             try { dayInp.focus({ preventScroll: true }); } catch (e) { try { dayInp.focus(); } catch (e2) {} }
           }
@@ -12666,7 +12656,7 @@ function openPdfPrintWindow(){
             }, 50);
           }
         };
-        dayInp.onblur = () => { suppressEmptyCellEditBriefly(450); commitDay(); };
+        dayInp.onblur = () => { commitDay(); };
         tdDay.appendChild(dayInp);
         tr.appendChild(tdDay);
 
@@ -12684,13 +12674,12 @@ function openPdfPrintWindow(){
         }
         desc.onclick = (e) => {
           if (!isFilledVal(row.desc)) {
-            if (shouldSuppressEmptyCellEdit()) return;
             if (fromPlan) {
               showToast('برای ویرایش، از بخش اقساط اقدام کنید');
               return;
             }
             desc.readOnly = false;
-            try { desc.focus({ preventScroll: true }); } catch (err) {}
+            try { desc.focus(); } catch (err) {}
             return;
           }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
@@ -12737,7 +12726,6 @@ function openPdfPrintWindow(){
           }
         };
         desc.onblur = () => {
-          suppressEmptyCellEditBriefly(450);
           if (fromPlan) return;
           row.desc = desc.value || '';
           desc.classList.remove('pd-editing', 'pd-expanded');
@@ -12891,9 +12879,8 @@ function openPdfPrintWindow(){
         amt.onclick = (e) => {
           if (fromPlan) return;
           if (!isFilledVal(row.amount)) {
-            if (shouldSuppressEmptyCellEdit()) return;
             amt.readOnly = false;
-            try { amt.focus({ preventScroll: true }); } catch (err) {}
+            try { amt.focus(); } catch (err) {}
             return;
           }
           if (document.activeElement === amt && !amt.readOnly) return;
@@ -12943,17 +12930,13 @@ function openPdfPrintWindow(){
           if (e.key === 'Enter') {
             e.preventDefault();
             amt.blur();
-            // کمی صبر تا کیبورد جمع شود و rect سلول حساب درست باشد
-            setTimeout(() => {
-              try {
-                const btn = tr.querySelector('.pd-acc-btn');
-                if (btn) btn.click();
-              } catch (err) {}
-            }, 120);
+            try {
+              const btn = tr.querySelector('.pd-acc-btn');
+              if (btn) btn.click();
+            } catch (err) {}
           }
         };
         amt.onblur = () => {
-          suppressEmptyCellEditBriefly(450);
           if (fromPlan) return;
           const n = parseAmount(amt.value);
           row.amount = n;
@@ -13013,34 +12996,9 @@ function openPdfPrintWindow(){
             list.appendChild(opt);
           });
           document.body.appendChild(list);
-          function placeAccList() {
-            try {
-              const r = accBtn.getBoundingClientRect();
-              const vv = window.visualViewport;
-              const vh = (vv && vv.height) ? vv.height : window.innerHeight;
-              const menuH = Math.min(240, list.scrollHeight || 200);
-              let top = r.bottom + 4;
-              if (top + menuH > vh - 8) top = Math.max(8, r.top - menuH - 4);
-              let left = r.left;
-              const mw = Math.max(r.width, 140);
-              if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
-              if (left < 8) left = 8;
-              list.style.setProperty('position', 'fixed', 'important');
-              list.style.setProperty('z-index', '99999', 'important');
-              list.style.setProperty('top', Math.round(top) + 'px', 'important');
-              list.style.setProperty('left', Math.round(left) + 'px', 'important');
-              list.style.setProperty('right', 'auto', 'important');
-              list.style.setProperty('bottom', 'auto', 'important');
-              list.style.setProperty('width', Math.round(mw) + 'px', 'important');
-              list.style.setProperty('max-height', Math.min(240, Math.max(120, vh - top - 12)) + 'px', 'important');
-              list.style.setProperty('display', 'block', 'important');
-              list.style.setProperty('visibility', 'visible', 'important');
-            } catch (eP) {}
-          }
-          placeAccList();
-          requestAnimationFrame(placeAccList);
-          setTimeout(placeAccList, 50);
-          setTimeout(placeAccList, 200);
+          const r = accBtn.getBoundingClientRect();
+          list.style.top = Math.min(window.innerHeight - 200, r.bottom + 4) + 'px';
+          list.style.left = Math.max(8, r.left - 20) + 'px';
           const close = (ev) => {
             if (!list.contains(ev.target) && ev.target !== accBtn) {
               try { list.remove(); } catch (e2) {}
@@ -13051,7 +13009,7 @@ function openPdfPrintWindow(){
           setTimeout(() => {
             document.addEventListener('mousedown', close);
             document.addEventListener('touchstart', close, { passive: true });
-          }, 80);
+          }, 10);
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
@@ -16388,45 +16346,6 @@ field('حساب بانکی', accSelRec);
         }
       }
 
-    function isElementFullyVisibleInScroller(el, scroller) {
-      if (!el) return true;
-      try {
-        const er = el.getBoundingClientRect();
-        if (!scroller) {
-          return er.top >= 0 && er.bottom <= window.innerHeight && er.left >= 0 && er.right <= window.innerWidth;
-        }
-        const sr = scroller.getBoundingClientRect();
-        return er.top >= sr.top - 1 && er.bottom <= sr.bottom + 1;
-      } catch (e) { return true; }
-    }
-    function saveScrollContainers() {
-      const out = [];
-      try {
-        document.querySelectorAll('.person-detail-scroll, #panel-ledger .section-body, .section-rows-scroll').forEach(el => {
-          out.push({ el: el, top: el.scrollTop, left: el.scrollLeft });
-        });
-      } catch (e) {}
-      return out;
-    }
-    function restoreScrollContainers(saved) {
-      if (!saved) return;
-      try {
-        saved.forEach(s => {
-          if (s.el && s.el.isConnected) {
-            s.el.scrollTop = s.top;
-            s.el.scrollLeft = s.left || 0;
-          }
-        });
-      } catch (e) {}
-    }
-    // وقتی blur از edit باعث کلیک روی سلول خالی می‌شود، آن کلیک را نادیده بگیر
-    let _suppressEmptyCellEditUntil = 0;
-    function suppressEmptyCellEditBriefly(ms) {
-      _suppressEmptyCellEditUntil = Date.now() + (ms || 400);
-    }
-    function shouldSuppressEmptyCellEdit() {
-      return Date.now() < _suppressEmptyCellEditUntil;
-    }
     function snapshotRect(el) {
       try {
         if (!el || !el.getBoundingClientRect) return null;
@@ -17063,23 +16982,10 @@ field('حساب بانکی', accSelRec);
       if (!el) return;
       setTimeout(() => {
         try {
-          // container اسکرول واقعی جدول
-          const scroller = el.closest('.person-detail-scroll, .section-body, .section-rows-scroll, .feature-sheet-body');
-          // اگر همین الان کاملاً دیده می‌شود، هیچ اسکرولی نکن (جلوگیری از پرش‌های ۱mm)
-          if (isElementFullyVisibleInScroller(el, scroller)) return;
-          if (scroller) {
-            const er = el.getBoundingClientRect();
-            const sr = scroller.getBoundingClientRect();
-            // فقط به اندازه‌ای که لبه سلول داخل محدوده بیاید
-            if (er.bottom > sr.bottom) {
-              scroller.scrollTop += (er.bottom - sr.bottom + 8);
-            } else if (er.top < sr.top) {
-              scroller.scrollTop -= (sr.top - er.top + 8);
-            }
-          } else {
-            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        } catch (e) {}
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+          el.scrollIntoView(true);
+        }
       }, 350);
     }
     document.addEventListener('focusin', (e) => {
@@ -17965,9 +17871,9 @@ field('حساب بانکی', accSelRec);
           document.addEventListener('touchstart', closer, { passive: true });
         }, 10);
       }
-      // پیش‌فرض بستانکار (سبز) برای تایپ اول
+      // فقط سلول مبلغ بده‌بستان: پیش‌فرض قرمز (بدهکار) + Done + منوی یک‌کلیکی
       if (!r.status || (r.status !== 'credit' && r.status !== 'debt')) {
-        r.status = 'credit';
+        r.status = 'debt';
       }
       applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
       try {
@@ -17975,7 +17881,7 @@ field('حساب بانکی', accSelRec);
         amtInp.setAttribute('inputmode', 'numeric');
       } catch (e) {}
       tdAmt.style.cursor = 'pointer';
-      tdAmt.title = 'یک‌بار: بستانکار/بدهکار — دوبار: ویرایش مبلغ';
+      tdAmt.title = 'یک‌بار: بستانکار/بدهکار';
       function beginLedgerAmountEdit() {
         if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
         if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
@@ -17985,23 +17891,22 @@ field('حساب بانکی', accSelRec);
           amtInp.readOnly = false;
           amtInp.classList.remove('locked');
           amtInp.classList.add('unlocked');
-          if (!r.status) r.status = 'credit';
+          // تایپ با رنگ قرمز مگر قبلاً بستانکار انتخاب شده باشد
+          if (r.status !== 'credit') r.status = 'debt';
           applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
           amtInp.focus();
-          amtInp.select();
+          if (r.amount) try { amtInp.select(); } catch (eS) {}
         } catch (err) {}
       }
-      // بازنویسی openLedgerStatusMenu تا فقط با cell کار کند
       function openLedgerStatusMenuForCell(cellEl, savedRect) {
         if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-        try { document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e0) {} }); } catch (e1) {}
+        document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
         menu.setAttribute('style',
           'position:fixed!important;z-index:99999!important;display:block!important;visibility:visible!important;opacity:1!important;' +
           'background:#1c1c1e;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:6px 0;' +
-          'min-width:150px;max-width:90vw;box-sizing:border-box;margin:0;transform:none;' +
-          'box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:auto;'
+          'min-width:150px;box-sizing:border-box;margin:0;transform:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);'
         );
         [
           { v: 'credit', label: 'بستانکار', color: '#9ee858' },
@@ -18013,16 +17918,18 @@ field('حساب بانکی', accSelRec);
           it.onclick = (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
+            r.status = opt.v;
             applyLedgerStatusVisual(opt.v);
+            applyLedgerAmountColor(opt.v);
             try { menu.remove(); } catch (e2) {}
           };
           menu.appendChild(it);
         });
         document.body.appendChild(menu);
-        function placeLedMenu() {
+        function place() {
           let rect = null;
           try {
-            const el = (cellEl && cellEl.isConnected) ? cellEl : (tdAmt && tdAmt.isConnected ? tdAmt : amtInp);
+            const el = (cellEl && cellEl.isConnected) ? cellEl : tdAmt;
             if (el && el.getBoundingClientRect) {
               const live = el.getBoundingClientRect();
               if (live && live.width >= 1) rect = live;
@@ -18044,12 +17951,9 @@ field('حساب بانکی', accSelRec);
           menu.style.setProperty('left', Math.round(left) + 'px', 'important');
           menu.style.setProperty('position', 'fixed', 'important');
           menu.style.setProperty('z-index', '99999', 'important');
-          menu.style.setProperty('display', 'block', 'important');
-          menu.style.setProperty('visibility', 'visible', 'important');
         }
-        placeLedMenu();
-        requestAnimationFrame(placeLedMenu);
-        setTimeout(placeLedMenu, 0);
+        place();
+        requestAnimationFrame(place);
         const closer = (ev) => {
           if (!menu.parentNode) {
             document.removeEventListener('mousedown', closer, true);
@@ -18065,57 +17969,42 @@ field('حساب بانکی', accSelRec);
         setTimeout(() => {
           document.addEventListener('mousedown', closer, true);
           document.addEventListener('touchstart', closer, true);
-        }, 350);
+        }, 200);
       }
-      tdAmt.addEventListener('pointerup', (e) => {
+      // یک کلیک: اگر خالی → تایپ قرمز؛ اگر پر → منوی بستانکار/بدهکار کنار سلول
+      tdAmt.addEventListener('click', (e) => {
         if (e.button != null && e.button !== 0) return;
         if (document.activeElement === amtInp && !amtInp.readOnly) return;
-        if (e.detail && e.detail >= 2) {
-          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-          tdAmt._pendingCell = null;
-          beginLedgerAmountEdit();
-          return;
-        }
-        // اگر مبلغ خالی است → ویرایش/تایپ سبز (مگر suppress بعد از blur سلول دیگر)
+        if (e.detail && e.detail >= 2) return;
         if (!(r.amount)) {
-          if (typeof shouldSuppressEmptyCellEdit === 'function' && shouldSuppressEmptyCellEdit()) return;
           beginLedgerAmountEdit();
           return;
         }
-        const clickedCell = tdAmt;
-        const savedRect = snapshotRect(clickedCell) || snapshotRect(amtInp);
-        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._pendingCell = clickedCell;
-        tdAmt._savedRect = savedRect;
-        tdAmt._ledTimer = setTimeout(() => {
-          tdAmt._ledTimer = null;
-          if (tdAmt._pendingCell !== clickedCell) return;
-          if (document.activeElement === amtInp && !amtInp.readOnly) return;
-          openLedgerStatusMenuForCell(clickedCell, tdAmt._savedRect || savedRect);
-          tdAmt._pendingCell = null;
-          tdAmt._savedRect = null;
-        }, 500);
+        let savedRect = null;
+        try {
+          const rr = tdAmt.getBoundingClientRect();
+          if (rr && rr.width >= 1) savedRect = { top: rr.top, left: rr.left, right: rr.right, bottom: rr.bottom, width: rr.width, height: rr.height };
+        } catch (eR) {}
+        openLedgerStatusMenuForCell(tdAmt, savedRect);
       });
       tdAmt.addEventListener('dblclick', (e) => {
         e.preventDefault();
-        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._pendingCell = null;
         beginLedgerAmountEdit();
       }, true);
       amtInp.addEventListener('dblclick', (e) => {
         e.preventDefault();
-        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._pendingCell = null;
         beginLedgerAmountEdit();
       }, true);
+      // Done روی کیبورد → بستن کیبورد
       amtInp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
           try { amtInp.blur(); } catch (err) {}
         }
       });
-      amtInp.addEventListener('blur', () => {
-        try { suppressEmptyCellEditBriefly(450); } catch (e) {}
+      // هنگام تایپ رنگ وضعیت فعلی (پیش‌فرض قرمز) حفظ شود
+      amtInp.addEventListener('input', () => {
+        applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
       });
 
       const tdAct = document.createElement('td');
