@@ -1189,23 +1189,23 @@
     .person-stat-box:active { transform: scale(0.98); filter: brightness(1.05); }
     .person-stat-line {
       font-weight: 700;
-      font-size: 0.72rem;
+      font-size: 0.78rem;
       line-height: 1.4;
       color: rgba(255,255,255,0.95);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .person-stat-line.em { font-size: 0.78rem; }
-    .person-stat-line.paid { color: #9ee858; font-size: 0.7rem; }
-    .person-stat-line.unpaid { color: #ff6b4a; font-size: 0.7rem; }
+    .person-stat-line.em { font-size: 0.84rem; }
+    .person-stat-line.paid { color: #9ee858; font-size: 0.76rem; }
+    .person-stat-line.unpaid { color: #ff6b4a; font-size: 0.76rem; }
     .person-remain-box {
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.85);
       padding: 8px 10px;
       text-align: center;
       font-weight: 800;
-      font-size: 0.88rem;
+      font-size: 0.94rem;
       background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
@@ -1454,9 +1454,9 @@
     }
     .person-remain-box.remain-pos { color: #9ee858 !important; }
     .person-remain-box.remain-neg { color: #ff6b4a !important; }
-    .person-stat-line.em { font-size: 0.78rem !important; }
-    .person-stat-line.paid { font-size: 0.7rem !important; }
-    .person-stat-line.unpaid { font-size: 0.7rem !important; }
+    .person-stat-line.em { font-size: 0.84rem !important; }
+    .person-stat-line.paid { font-size: 0.76rem !important; }
+    .person-stat-line.unpaid { font-size: 0.76rem !important; }
 
 
 
@@ -1714,6 +1714,26 @@
       direction: rtl;
       text-align: right;
     }
+
+    /* ledger-zero-pattern: هیچ پترن/پس‌زمینه تزئینی در هیچ حالت */
+    #panel-ledger .section,
+    #panel-ledger .section *,
+    #panel-ledger .section::before,
+    #panel-ledger .section::after,
+    #panel-ledger .section *::before,
+    #panel-ledger .section *::after,
+    #panel-ledger .section.collapsed,
+    #panel-ledger .section:not(.collapsed),
+    #panel-ledger .section.bank-card,
+    #panel-ledger .section.bank-card::after,
+    #panel-ledger .section .section-header,
+    #panel-ledger .section .section-header::before,
+    #panel-ledger .section .section-body {
+      background-image: none !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+    }
+
     /* install-summary-navy */
     #panel-install .summary-box,
     #panel-install .install-summary,
@@ -3443,30 +3463,37 @@
     .remind-bar::before {
       content: '';
       position: absolute;
-      top: 0;
-      bottom: 0;
+      top: -20%;
+      bottom: -20%;
       left: 0;
       right: 0;
-      background: linear-gradient(90deg,
+      /* برق شیشه‌ای مورب */
+      background: linear-gradient(
+        115deg,
         transparent 0%,
-        rgba(255,255,255,0.0) 35%,
-        rgba(255,255,255,0.28) 50%,
-        rgba(255,255,255,0.0) 65%,
-        transparent 100%);
+        transparent 42%,
+        rgba(255,255,255,0.05) 46%,
+        rgba(255,255,255,0.22) 50%,
+        rgba(255,255,255,0.05) 54%,
+        transparent 58%,
+        transparent 100%
+      );
       background-repeat: no-repeat;
-      background-size: 55% 100%;
-      background-position: -55% 0;
-      animation: remindShineMove 9s linear infinite;
+      background-size: 70% 140%;
+      background-position: -80% 0;
+      animation: remindShineMove 8s linear infinite;
       pointer-events: none;
       z-index: 0;
+      mix-blend-mode: screen;
+      opacity: 0.95;
     }
-    /* چپ→راست و خروج | ۱ث مکث | راست→چپ و خروج | ۵ث سکون */
+    /* ورود از چپ→خروج از راست | ورود از راست→خروج از چپ | ۵ث سکون */
     @keyframes remindShineMove {
-      0%   { background-position: -55% 0; }
-      16.5% { background-position: 155% 0; }   /* ~1.5s حرکت LTR */
-      27.5% { background-position: 155% 0; }   /* ~1s مکث */
-      44%  { background-position: -55% 0; }   /* ~1.5s حرکت RTL */
-      100% { background-position: -55% 0; }   /* ~5s سکون */
+      0%    { background-position: -80% 0; }
+      18%   { background-position: 180% 0; }  /* LTR کامل */
+      18.01%{ background-position: 180% 0; }
+      36%   { background-position: -80% 0; }  /* RTL کامل */
+      100%  { background-position: -80% 0; }  /* ~۵ث سکون */
     }
     .remind-bar > * { position: relative; z-index: 1; }
     [data-theme="light"] .remind-bar {
@@ -5962,8 +5989,8 @@
       if (!w || w < 40) {
         w = document.documentElement.clientWidth - 24;
       }
-      // ضلع افقی حدود ۲۵٪ بلندتر (مثل ۴→۵ سانت، نیم‌سانت از هر طرف)
-      const wider = Math.min(document.documentElement.clientWidth - 4, Math.round(w * 1.25));
+      // پایه ×۱.۲۵ + حدود ۱mm از هر طرف (~۴px×۲)
+      const wider = Math.min(document.documentElement.clientWidth - 2, Math.round(w * 1.25) + 8);
       document.documentElement.style.setProperty('--match-card-w', wider + 'px');
     }
     function moveTabIndicator() {
@@ -14285,19 +14312,15 @@ if (item.type === 'recurring') {
         if (!name) { showToast('نام حساب را وارد کنید'); return; }
         if (isEdit) {
           const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
-          if (exists) { showToast('این نام قبلاً استفاده شده'); return; }
+          if (exists) { showToast('نام حساب تکراریست'); return; }
           acc.label = name;
         } else {
-          let label = name;
-          let base = label, n = 2;
-          while (selectedBankAccounts.some(a => accountLabel(a) === label)) {
-            label = base + ' ' + n;
-            n++;
-          }
+          const exists = selectedBankAccounts.some(a => accountLabel(a) === name);
+          if (exists) { showToast('نام حساب تکراریست'); return; }
           selectedBankAccounts.push({
             id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             bank: bankName,
-            label: label
+            label: name
           });
         }
         saveBankAccountsSelection();
