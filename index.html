@@ -1091,6 +1091,23 @@
       font-size: 0.72rem !important;
       letter-spacing: -0.03em;
     }
+    /* home-scroll-always */
+    html, body {
+      overflow-y: auto !important;
+      height: auto !important;
+      min-height: 100%;
+      overscroll-behavior-y: auto;
+      touch-action: pan-y !important;
+    }
+    body.menu-open,
+    body.modal-scroll-lock {
+      touch-action: none;
+    }
+    #panel-home.active,
+    #panel-home.active .home-cards {
+      touch-action: pan-y !important;
+      pointer-events: auto !important;
+    }
     /* home-scroll-fix */
     html, body {
       overflow-x: hidden !important;
@@ -1151,13 +1168,26 @@
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.28);
-      background-size: 100% 100%;
-      background-position: center center;
-      background-repeat: no-repeat;
+      border: none !important;
+      outline: none !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.22);
+      background-color: transparent !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+      background-clip: border-box !important;
       color: #fff;
       user-select: none;
-      box-sizing: border-box;
+      isolation: isolate;
+    }
+    .person-card::before,
+    .person-card::after {
+      display: none !important;
+      content: none !important;
+    }
+    [data-theme="light"] .person-card {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      background-color: transparent !important;
     }
     .home-cards { padding: 0; }
     .person-card-inner {
@@ -1896,11 +1926,13 @@
     #panel-ledger .section > .add-row-wrap {
       flex-shrink: 0;
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
-      padding: 8px 0 10px;
-      background: #1a1a1c;
-      border-top: 1px solid #3a3a3e;
+      direction: ltr;
+      padding: 8px 10px 10px;
+      background: transparent;
+      border-top: none !important;
+      border: none !important;
     }
     /* ledger-plus-gap */
     #panel-ledger .section .section-body {
@@ -12004,7 +12036,21 @@ function openPdfPrintWindow(){
         window.addEventListener('pointercancel', onUp, true);
       }, { passive: true });
     }
+    function unlockPageScroll() {
+      try {
+        document.body.classList.remove('modal-scroll-lock');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.style.touchAction = '';
+      } catch (e) {}
+    }
     function renderHomeCards() {
+      try { unlockPageScroll(); } catch (e) {}
       try { ensureDefaultPersonCard(); } catch (e) {}
       try { syncMatchCardWidth(); } catch (e) {}
       const box = document.getElementById('homeCards');
@@ -12016,7 +12062,13 @@ function openPdfPrintWindow(){
         const bg = (typeof CARD_BACKGROUNDS !== 'undefined' && CARD_BACKGROUNDS[getCardBgIndex(title)]) || '';
         const card = document.createElement('div');
         card.className = 'person-card';
-        if (bg) card.style.backgroundImage = 'url("' + bg + '")';
+        if (bg) {
+          card.style.backgroundImage = 'url("' + bg + '")';
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center center';
+          card.style.backgroundRepeat = 'no-repeat';
+          card.style.backgroundColor = 'transparent';
+        }
         card.dataset.title = title;
 
         const inner = document.createElement('div');
@@ -12672,7 +12724,7 @@ function openPdfPrintWindow(){
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
-          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;';
+          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;';
           [
             { v: 'paid', label: paidLabel, color: '#9ee858' },
             { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
@@ -12691,10 +12743,12 @@ function openPdfPrintWindow(){
             menu.appendChild(it);
           });
           document.body.appendChild(menu);
+          const anchor = tdAmt || amt;
           try {
-            const anchor = tdAmt || amt;
             positionStatusMenu(menu, anchor, null);
-            requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null); } catch (e3) {} });
+            requestAnimationFrame(() => {
+              try { positionStatusMenu(menu, anchor, null); } catch (e3) {}
+            });
           } catch (e2) {}
           const close = (ev) => {
             if (!menu.contains(ev.target) && ev.target !== amt && ev.target !== tdAmt) {
@@ -14769,7 +14823,7 @@ if (item.type === 'recurring') {
         renderAll();
         scheduleSave();
         if (!n && skipped) {
-          showToast(skipped === 1 ? 'این درآمد قبلاً اضافه شده است' : 'این درآمدها قبلاً اضافه شده‌اند');
+          showToast(skipped === 1 ? 'تغییرات اعمال شد' : 'تغییرات اعمال شد');
         } else if (n && skipped) {
           showToast(toPersianDigits(n) + ' مورد اضافه شد؛ ' + toPersianDigits(skipped) + ' مورد قبلاً بود');
         } else {
@@ -14992,7 +15046,7 @@ if (item.type === 'recurring') {
           openSectionPicker(secs, (secId) => {
             const sec = secs.find(s => s.id === secId) || secs[0];
             if (sectionHasRecurringIncome(sec, r)) {
-              showToast('این درآمد قبلاً اضافه شده است');
+              showToast('تغییرات اعمال شد');
               return;
             }
             const titleKey = (sec.title || '').trim() || sec.id;
@@ -15394,8 +15448,10 @@ field('حساب بانکی', accSelRec);
           const secs = (periodData.income && periodData.income.sections) || [];
           const sec = secs.find(s => s.id === destSecId);
           if (sec) {
-            if (sectionHasRecurringIncome(sec, item)) {
-              showToast('این درآمد قبلاً در این بخش اضافه شده است');
+            if (sectionHasRecurringIncome(sec, item) && index >= 0) {
+              showToast('تغییرات اعمال شد');
+            } else if (sectionHasRecurringIncome(sec, item)) {
+              showToast('تغییرات اعمال شد');
             } else {
               // اگر ردیف خالی پیش‌فرض هست، جایش بگذار؛ وگرنه اضافه کن
               const titleKey = (sec.title || '').trim() || sec.id;
@@ -16164,19 +16220,20 @@ field('حساب بانکی', accSelRec);
     function positionStatusMenu(menu, anchorEl, e) {
       const el = anchorEl || (e && e.currentTarget) || null;
       let r = el ? el.getBoundingClientRect() : null;
-      const menuW = Math.max(150, menu.offsetWidth || 160);
-      const menuH = Math.max(90, menu.offsetHeight || 110);
+      // بعد از append اندازه واقعی منو
+      const menuW = Math.max(140, menu.offsetWidth || 160);
+      const menuH = Math.max(80, menu.offsetHeight || 100);
       let top, left;
       if (r && r.width >= 2 && r.height >= 2) {
-        // دقیقاً زیر/کنار سلول مبلغ
-        top = r.bottom + 6;
-        left = r.left + (r.width / 2) - (menuW / 2);
+        // پائین سمت راست سلول مبلغ
+        top = r.bottom + 4;
+        left = r.right - menuW;
         if (top + menuH > window.innerHeight - 8) {
-          top = Math.max(8, r.top - menuH - 6);
+          top = Math.max(8, r.top - menuH - 4);
         }
       } else if (e && typeof e.clientX === 'number') {
         top = e.clientY + 8;
-        left = e.clientX - menuW / 2;
+        left = e.clientX - menuW;
       } else {
         top = window.innerHeight / 2 - menuH / 2;
         left = window.innerWidth / 2 - menuW / 2;
@@ -16188,6 +16245,7 @@ field('حساب بانکی', accSelRec);
       menu.style.top = Math.round(top) + 'px';
       menu.style.left = Math.round(left) + 'px';
       menu.style.right = 'auto';
+      menu.style.bottom = 'auto';
       menu.style.zIndex = '520';
     }
       function openStatusMenu(e) {
