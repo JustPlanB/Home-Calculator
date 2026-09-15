@@ -3283,14 +3283,22 @@
       border-radius: 0;
     }
     .status-menu {
-      position: fixed;
-      z-index: 320;
+      position: fixed !important;
+      z-index: 520 !important;
+      top: auto;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      margin: 0 !important;
       background: #1c1c1e;
       border: 1px solid #3a3a3c;
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       overflow: hidden;
       min-width: 140px;
+      max-width: min(220px, 90vw);
+      box-sizing: border-box;
+      pointer-events: auto;
     }
     [data-theme="light"] .status-menu {
       background: #fff;
@@ -12778,11 +12786,11 @@ function openPdfPrintWindow(){
           e.stopPropagation();
           beginAmountEdit();
         };
-        function openAmountStatusMenu(anchorCell) {
+        function openAmountStatusMenu(anchorCell, savedRect) {
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
-          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;';
+          menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
           [
             { v: 'paid', label: paidLabel, color: '#9ee858' },
             { v: 'unpaid', label: unpaidLabel, color: '#ff6b4a' }
@@ -12801,12 +12809,11 @@ function openPdfPrintWindow(){
             menu.appendChild(it);
           });
           document.body.appendChild(menu);
-          // فقط از reference ذخیره‌شده سلول کلیک‌شده
           const anchor = anchorCell || tdAmt || amt;
           try {
-            positionStatusMenu(menu, anchor, null);
+            positionStatusMenu(menu, anchor, null, savedRect);
             requestAnimationFrame(() => {
-              try { positionStatusMenu(menu, anchor, null); } catch (e3) {}
+              try { positionStatusMenu(menu, anchor, null, savedRect); } catch (e3) {}
             });
           } catch (e2) {}
           const close = (ev) => {
@@ -12836,16 +12843,19 @@ function openPdfPrintWindow(){
             beginAmountEdit();
             return;
           }
-          // ذخیره reference سلول در لحظه کلیک اول
+          // ذخیره reference + مختصات واقعی سلول در لحظه کلیک اول
           const clickedCell = tdAmt;
+          const savedRect = snapshotRect(clickedCell) || snapshotRect(amt);
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           amt._pendingCell = clickedCell;
+          amt._savedRect = savedRect;
           amt._clickTimer = setTimeout(() => {
             amt._clickTimer = null;
             if (document.activeElement === amt && !amt.readOnly) return;
             if (amt._pendingCell !== clickedCell) return;
-            openAmountStatusMenu(clickedCell);
+            openAmountStatusMenu(clickedCell, amt._savedRect || savedRect);
             amt._pendingCell = null;
+            amt._savedRect = null;
           }, 500);
         };
         amt.onfocus = () => {};
@@ -16275,34 +16285,66 @@ field('حساب بانکی', accSelRec);
         }
       }
 
-    function positionStatusMenu(menu, anchorEl, e) {
-      // فقط element ذخیره‌شده — نه event کهنه بعد از timeout
-      const el = anchorEl || null;
+    function snapshotRect(el) {
+      try {
+        if (!el || !el.getBoundingClientRect) return null;
+        const r = el.getBoundingClientRect();
+        if (!r || r.width < 2 || r.height < 2) return null;
+        return { top: r.top, left: r.left, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      } catch (err) { return null; }
+    }
+    function positionStatusMenu(menu, anchorEl, e, savedRect) {
+      // اولویت: 1) element زنده متصل  2) snapshot لحظه کلیک  3) fallback
       let r = null;
-      try { if (el && el.getBoundingClientRect) r = el.getBoundingClientRect(); } catch (err) {}
-      const menuW = Math.max(140, menu.offsetWidth || 160);
-      const menuH = Math.max(80, menu.offsetHeight || 100);
-      let top, left;
-      if (r && r.width >= 2 && r.height >= 2) {
-        // پائین سمت راست همان سلول
+      try {
+        if (anchorEl && anchorEl.isConnected && anchorEl.getBoundingClientRect) {
+          const live = anchorEl.getBoundingClientRect();
+          if (live && live.width >= 2 && live.height >= 2) {
+            r = { top: live.top, left: live.left, right: live.right, bottom: live.bottom, width: live.width, height: live.height };
+          }
+        }
+      } catch (err) {}
+      if (!r && savedRect && savedRect.width >= 2) r = savedRect;
+      if (!r) {
+        try {
+          if (anchorEl && anchorEl.getBoundingClientRect) {
+            const live2 = anchorEl.getBoundingClientRect();
+            if (live2 && live2.width >= 2) r = live2;
+          }
+        } catch (err2) {}
+      }
+      // اندازه منو بعد از قرار گرفتن در DOM
+      let menuW = 160, menuH = 100;
+      try {
+        const mw = menu.offsetWidth || menu.getBoundingClientRect().width;
+        const mh = menu.offsetHeight || menu.getBoundingClientRect().height;
+        if (mw > 10) menuW = mw;
+        if (mh > 10) menuH = mh;
+      } catch (err3) {}
+      let top = 80, left = 16;
+      if (r && r.width >= 2) {
+        // پائین سمت راست همان سلول مبلغ
         top = r.bottom + 4;
         left = r.right - menuW;
         if (top + menuH > window.innerHeight - 8) {
           top = Math.max(8, r.top - menuH - 4);
         }
-      } else {
-        top = 80;
-        left = 16;
       }
       if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
       if (left < 8) left = 8;
       if (top < 8) top = 8;
-      menu.style.position = 'fixed';
-      menu.style.top = Math.round(top) + 'px';
-      menu.style.left = Math.round(left) + 'px';
-      menu.style.right = 'auto';
-      menu.style.bottom = 'auto';
-      menu.style.zIndex = '520';
+      // همیشه fixed روی body — مختصات viewport
+      if (menu.parentNode !== document.body) {
+        try { document.body.appendChild(menu); } catch (err4) {}
+      }
+      menu.style.setProperty('position', 'fixed', 'important');
+      menu.style.setProperty('top', Math.round(top) + 'px', 'important');
+      menu.style.setProperty('left', Math.round(left) + 'px', 'important');
+      menu.style.setProperty('right', 'auto', 'important');
+      menu.style.setProperty('bottom', 'auto', 'important');
+      menu.style.setProperty('z-index', '520', 'important');
+      menu.style.setProperty('margin', '0', 'important');
+      menu.style.setProperty('transform', 'none', 'important');
     }
       function openStatusMenu(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -16310,7 +16352,7 @@ field('حساب بانکی', accSelRec);
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        positionStatusMenu(menu, tdAmt, e);
+        menu.style.cssText = 'position:fixed;z-index:520;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
         [
           { v: 'paid', label: paidLabel },
           { v: 'unpaid', label: unpaidLabel }
@@ -16329,6 +16371,9 @@ field('حساب بانکی', accSelRec);
           menu.appendChild(it);
         });
         document.body.appendChild(menu);
+        const _sr = snapshotRect(tdAmt);
+        positionStatusMenu(menu, tdAmt, null, _sr);
+        requestAnimationFrame(() => { try { positionStatusMenu(menu, tdAmt, null, _sr); } catch (e3) {} });
         const closer = (ev) => {
           if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
             menu.remove();
@@ -17733,7 +17778,7 @@ field('حساب بانکی', accSelRec);
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        positionStatusMenu(menu, tdAmt, e);
+        menu.style.cssText = 'position:fixed;z-index:520;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
         [
           { v: 'debt', label: 'بدهکار', cls: 'unpaid' },
           { v: 'credit', label: 'بستانکار', cls: 'paid' }
@@ -17750,6 +17795,9 @@ field('حساب بانکی', accSelRec);
           menu.appendChild(it);
         });
         document.body.appendChild(menu);
+        const _sr2 = snapshotRect(tdAmt);
+        positionStatusMenu(menu, tdAmt, null, _sr2);
+        requestAnimationFrame(() => { try { positionStatusMenu(menu, tdAmt, null, _sr2); } catch (e3) {} });
         const closer = (ev) => {
           if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
             menu.remove();
@@ -17789,12 +17837,12 @@ field('حساب بانکی', accSelRec);
         } catch (err) {}
       }
       // بازنویسی openLedgerStatusMenu تا فقط با cell کار کند
-      function openLedgerStatusMenuForCell(cellEl) {
+      function openLedgerStatusMenuForCell(cellEl, savedRect) {
         if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
         document.querySelectorAll('.status-menu').forEach(m => m.remove());
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;';
+        menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
         [
           { v: 'credit', label: 'بستانکار', color: '#9ee858' },
           { v: 'debt', label: 'بدهکار', color: '#ff6b4a' }
@@ -17812,8 +17860,8 @@ field('حساب بانکی', accSelRec);
         document.body.appendChild(menu);
         const anchor = cellEl || tdAmt;
         try {
-          positionStatusMenu(menu, anchor, null);
-          requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null); } catch (e3) {} });
+          positionStatusMenu(menu, anchor, null, savedRect);
+          requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null, savedRect); } catch (e3) {} });
         } catch (e2) {}
         const closer = (ev) => {
           if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
@@ -17842,14 +17890,17 @@ field('حساب بانکی', accSelRec);
           return;
         }
         const clickedCell = tdAmt;
+        const savedRect = snapshotRect(clickedCell) || snapshotRect(amtInp);
         if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
         tdAmt._pendingCell = clickedCell;
+        tdAmt._savedRect = savedRect;
         tdAmt._ledTimer = setTimeout(() => {
           tdAmt._ledTimer = null;
           if (tdAmt._pendingCell !== clickedCell) return;
           if (document.activeElement === amtInp && !amtInp.readOnly) return;
-          openLedgerStatusMenuForCell(clickedCell);
+          openLedgerStatusMenuForCell(clickedCell, tdAmt._savedRect || savedRect);
           tdAmt._pendingCell = null;
+          tdAmt._savedRect = null;
         }, 500);
       });
       tdAmt.addEventListener('dblclick', (e) => {
