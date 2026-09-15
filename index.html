@@ -1085,9 +1085,11 @@
       text-overflow: ellipsis;
     }
     #panel-balance table td.val,
-    #panel-balance .summary-table td.val {
-      font-size: 0.82rem !important;
-      letter-spacing: -0.02em;
+    #panel-balance .summary-table td.val,
+    #panel-balance table td:not(:first-child),
+    #panel-balance .summary-table td:not(:first-child) {
+      font-size: 0.72rem !important;
+      letter-spacing: -0.03em;
     }
     /* home-scroll-fix */
     html, body {
@@ -1836,6 +1838,9 @@
       background-color: #1a1a1c !important;
     }
     #panel-ledger .section .section-body thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       background: #0a1628 !important;
     }
     /* ledger-summary-navy */
@@ -1874,9 +1879,10 @@
     }
     #panel-ledger .section-body {
       overflow-anchor: none;
-      max-height: calc(11 * 36px + 48px);
+      max-height: calc(5 * 36px + 40px);
       overflow-y: auto;
       overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
     /* ledger-plus-gap */
     #panel-ledger .section .section-body {
@@ -1901,6 +1907,9 @@
       table-layout: fixed;
     }
     #panel-ledger .section .section-body thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       background: #0a1628 !important;
       color: #fff !important;
       border: 1px solid #3a3a3e !important;
@@ -12597,21 +12606,23 @@ function openPdfPrintWindow(){
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
         amt._clickTimer = null;
-        amt.ondblclick = (e) => {
+        function beginAmountEdit() {
           if (fromPlan) {
-            e.preventDefault();
             showToast('برای ویرایش، از بخش اقساط اقدام کنید');
             return;
           }
-          e.preventDefault();
-          e.stopPropagation();
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           amt.readOnly = false;
           try { amt.focus(); } catch (err) {}
+        }
+        amt.ondblclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          beginAmountEdit();
         };
         function openAmountStatusMenu() {
-          if (amt._clickTimer === 'blocked') return;
+          if (amt._clickTimer) return;
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
@@ -12656,18 +12667,22 @@ function openPdfPrintWindow(){
             try { amt.focus(); } catch (err) {}
             return;
           }
+          // اگر در حال ویرایش است منو باز نکن
+          if (document.activeElement === amt && !amt.readOnly) return;
+          // دبل‌کلیک: کلیک دوم داخل ۵۰۰ms
           if (e.detail && e.detail >= 2) {
             if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
             document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
+            beginAmountEdit();
             return;
           }
-          // تأخیر کوتاه تا دبل‌کلیک منوی وضعیت را نشان ندهد
+          // یک کلیک: نیم‌ثانیه صبر؛ اگر کلیک دوم نیامد منوی حالات
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           amt._clickTimer = setTimeout(() => {
             amt._clickTimer = null;
             if (document.activeElement === amt && !amt.readOnly) return;
             openAmountStatusMenu();
-          }, 300);
+          }, 500);
           if (amt.readOnly || document.activeElement !== amt) {
             e.preventDefault();
             openAmountStatusMenu();
@@ -15289,6 +15304,7 @@ field('حساب بانکی', accSelRec);
           item.updatedAt = Date.now();
           try { updateRecurringRowsEverywhere(prev, item); } catch (e) {}
           recurringIncomes[index] = item;
+          try { showToast('تغییرات اعمال شد'); } catch (e) {}
         } else {
           stampRowOwner(item);
           recurringIncomes.push(item);
@@ -17550,31 +17566,58 @@ field('حساب بانکی', accSelRec);
         }, 10);
       }
       tdAmt.style.cursor = 'pointer';
-      tdAmt.title = 'برای تغییر وضعیت یک‌بار بزنید';
+      tdAmt.title = 'یک‌بار: بدهکار/بستانکار — دوبار: ویرایش مبلغ';
       const isLedAmtEditing = () => (
         document.activeElement === amtInp &&
-        !amtInp.readOnly &&
-        amtInp.classList.contains('unlocked')
+        !amtInp.readOnly
       );
       const shouldOpenLedStatus = () => {
         if (isLedAmtEditing()) return false;
-        if (amtInp.classList.contains('is-empty') && !(r.amount)) return false;
+        if (!(r.amount)) return false;
         return true;
       };
+      function beginLedgerAmountEdit() {
+        if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._statusToken = null;
+        document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
+        try {
+          amtInp.readOnly = false;
+          amtInp.classList.remove('locked');
+          amtInp.classList.add('unlocked');
+          amtInp.focus();
+          amtInp.select();
+        } catch (err) {}
+      }
       tdAmt.addEventListener('pointerup', (e) => {
         if (e.button != null && e.button !== 0) return;
+        if (e.target && e.target.tagName === 'INPUT' && isLedAmtEditing()) return;
+        if (!(r.amount) && !isFilledVal(r.amount)) return;
+        // دبل
+        if (e.detail && e.detail >= 2) {
+          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+          beginLedgerAmountEdit();
+          return;
+        }
         if (!shouldOpenLedStatus()) return;
-        if (e.detail && e.detail >= 2) return;
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
         const token = {};
         tdAmt._statusToken = token;
-        setTimeout(() => {
+        tdAmt._ledTimer = setTimeout(() => {
+          tdAmt._ledTimer = null;
           if (tdAmt._statusToken !== token) return;
           if (!shouldOpenLedStatus()) return;
           openLedgerStatusMenu(e);
-        }, 250);
+        }, 500);
       });
-      tdAmt.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
-      amtInp.addEventListener('dblclick', () => { tdAmt._statusToken = null; }, true);
+      tdAmt.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        beginLedgerAmountEdit();
+      }, true);
+      amtInp.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        beginLedgerAmountEdit();
+      }, true);
 
       const tdAct = document.createElement('td');
       tdAct.className = 'col-actions actions-cell';
