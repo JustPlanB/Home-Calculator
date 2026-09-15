@@ -12566,11 +12566,17 @@ function openPdfPrintWindow(){
         return v !== undefined && v !== null && String(v).trim() !== '' && String(v) !== '0';
       }
       function rebuild() {
+        const saved = saveScrollContainers();
         renderPersonDetailPanel(tab, title);
         scheduleSave();
         try { renderHomeCards(); } catch (e) {}
+        requestAnimationFrame(() => {
+          restoreScrollContainers(saved);
+          requestAnimationFrame(() => restoreScrollContainers(saved));
+        });
       }
       function sortAndRebuild() {
+        const saved = saveScrollContainers();
         try {
           sec.rows.sort((a, b) => {
             const da = dayNum(a), db = dayNum(b);
@@ -12580,7 +12586,13 @@ function openPdfPrintWindow(){
             return da - db;
           });
         } catch (e) {}
-        rebuild();
+        renderPersonDetailPanel(tab, title);
+        scheduleSave();
+        try { renderHomeCards(); } catch (e) {}
+        requestAnimationFrame(() => {
+          restoreScrollContainers(saved);
+          requestAnimationFrame(() => restoreScrollContainers(saved));
+        });
       }
 
       sec.rows.forEach((row, idx) => {
@@ -12612,6 +12624,7 @@ function openPdfPrintWindow(){
         };
         dayInp.onclick = () => {
           if (!isFilledVal(row.day)) {
+            if (shouldSuppressEmptyCellEdit()) return;
             dayInp.readOnly = false;
             try { dayInp.focus({ preventScroll: true }); } catch (e) { try { dayInp.focus(); } catch (e2) {} }
           }
@@ -12653,7 +12666,7 @@ function openPdfPrintWindow(){
             }, 50);
           }
         };
-        dayInp.onblur = () => { commitDay(); };
+        dayInp.onblur = () => { suppressEmptyCellEditBriefly(450); commitDay(); };
         tdDay.appendChild(dayInp);
         tr.appendChild(tdDay);
 
@@ -12671,12 +12684,13 @@ function openPdfPrintWindow(){
         }
         desc.onclick = (e) => {
           if (!isFilledVal(row.desc)) {
+            if (shouldSuppressEmptyCellEdit()) return;
             if (fromPlan) {
               showToast('برای ویرایش، از بخش اقساط اقدام کنید');
               return;
             }
             desc.readOnly = false;
-            try { desc.focus(); } catch (err) {}
+            try { desc.focus({ preventScroll: true }); } catch (err) {}
             return;
           }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
@@ -12723,6 +12737,7 @@ function openPdfPrintWindow(){
           }
         };
         desc.onblur = () => {
+          suppressEmptyCellEditBriefly(450);
           if (fromPlan) return;
           row.desc = desc.value || '';
           desc.classList.remove('pd-editing', 'pd-expanded');
@@ -12876,8 +12891,9 @@ function openPdfPrintWindow(){
         amt.onclick = (e) => {
           if (fromPlan) return;
           if (!isFilledVal(row.amount)) {
+            if (shouldSuppressEmptyCellEdit()) return;
             amt.readOnly = false;
-            try { amt.focus(); } catch (err) {}
+            try { amt.focus({ preventScroll: true }); } catch (err) {}
             return;
           }
           if (document.activeElement === amt && !amt.readOnly) return;
@@ -12927,13 +12943,17 @@ function openPdfPrintWindow(){
           if (e.key === 'Enter') {
             e.preventDefault();
             amt.blur();
-            try {
-              const btn = tr.querySelector('.pd-acc-btn');
-              if (btn) btn.click();
-            } catch (err) {}
+            // کمی صبر تا کیبورد جمع شود و rect سلول حساب درست باشد
+            setTimeout(() => {
+              try {
+                const btn = tr.querySelector('.pd-acc-btn');
+                if (btn) btn.click();
+              } catch (err) {}
+            }, 120);
           }
         };
         amt.onblur = () => {
+          suppressEmptyCellEditBriefly(450);
           if (fromPlan) return;
           const n = parseAmount(amt.value);
           row.amount = n;
@@ -12993,9 +13013,34 @@ function openPdfPrintWindow(){
             list.appendChild(opt);
           });
           document.body.appendChild(list);
-          const r = accBtn.getBoundingClientRect();
-          list.style.top = Math.min(window.innerHeight - 200, r.bottom + 4) + 'px';
-          list.style.left = Math.max(8, r.left - 20) + 'px';
+          function placeAccList() {
+            try {
+              const r = accBtn.getBoundingClientRect();
+              const vv = window.visualViewport;
+              const vh = (vv && vv.height) ? vv.height : window.innerHeight;
+              const menuH = Math.min(240, list.scrollHeight || 200);
+              let top = r.bottom + 4;
+              if (top + menuH > vh - 8) top = Math.max(8, r.top - menuH - 4);
+              let left = r.left;
+              const mw = Math.max(r.width, 140);
+              if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+              if (left < 8) left = 8;
+              list.style.setProperty('position', 'fixed', 'important');
+              list.style.setProperty('z-index', '99999', 'important');
+              list.style.setProperty('top', Math.round(top) + 'px', 'important');
+              list.style.setProperty('left', Math.round(left) + 'px', 'important');
+              list.style.setProperty('right', 'auto', 'important');
+              list.style.setProperty('bottom', 'auto', 'important');
+              list.style.setProperty('width', Math.round(mw) + 'px', 'important');
+              list.style.setProperty('max-height', Math.min(240, Math.max(120, vh - top - 12)) + 'px', 'important');
+              list.style.setProperty('display', 'block', 'important');
+              list.style.setProperty('visibility', 'visible', 'important');
+            } catch (eP) {}
+          }
+          placeAccList();
+          requestAnimationFrame(placeAccList);
+          setTimeout(placeAccList, 50);
+          setTimeout(placeAccList, 200);
           const close = (ev) => {
             if (!list.contains(ev.target) && ev.target !== accBtn) {
               try { list.remove(); } catch (e2) {}
@@ -13006,7 +13051,7 @@ function openPdfPrintWindow(){
           setTimeout(() => {
             document.addEventListener('mousedown', close);
             document.addEventListener('touchstart', close, { passive: true });
-          }, 10);
+          }, 80);
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
@@ -16343,6 +16388,45 @@ field('حساب بانکی', accSelRec);
         }
       }
 
+    function isElementFullyVisibleInScroller(el, scroller) {
+      if (!el) return true;
+      try {
+        const er = el.getBoundingClientRect();
+        if (!scroller) {
+          return er.top >= 0 && er.bottom <= window.innerHeight && er.left >= 0 && er.right <= window.innerWidth;
+        }
+        const sr = scroller.getBoundingClientRect();
+        return er.top >= sr.top - 1 && er.bottom <= sr.bottom + 1;
+      } catch (e) { return true; }
+    }
+    function saveScrollContainers() {
+      const out = [];
+      try {
+        document.querySelectorAll('.person-detail-scroll, #panel-ledger .section-body, .section-rows-scroll').forEach(el => {
+          out.push({ el: el, top: el.scrollTop, left: el.scrollLeft });
+        });
+      } catch (e) {}
+      return out;
+    }
+    function restoreScrollContainers(saved) {
+      if (!saved) return;
+      try {
+        saved.forEach(s => {
+          if (s.el && s.el.isConnected) {
+            s.el.scrollTop = s.top;
+            s.el.scrollLeft = s.left || 0;
+          }
+        });
+      } catch (e) {}
+    }
+    // وقتی blur از edit باعث کلیک روی سلول خالی می‌شود، آن کلیک را نادیده بگیر
+    let _suppressEmptyCellEditUntil = 0;
+    function suppressEmptyCellEditBriefly(ms) {
+      _suppressEmptyCellEditUntil = Date.now() + (ms || 400);
+    }
+    function shouldSuppressEmptyCellEdit() {
+      return Date.now() < _suppressEmptyCellEditUntil;
+    }
     function snapshotRect(el) {
       try {
         if (!el || !el.getBoundingClientRect) return null;
@@ -16979,10 +17063,23 @@ field('حساب بانکی', accSelRec);
       if (!el) return;
       setTimeout(() => {
         try {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch (e) {
-          el.scrollIntoView(true);
-        }
+          // container اسکرول واقعی جدول
+          const scroller = el.closest('.person-detail-scroll, .section-body, .section-rows-scroll, .feature-sheet-body');
+          // اگر همین الان کاملاً دیده می‌شود، هیچ اسکرولی نکن (جلوگیری از پرش‌های ۱mm)
+          if (isElementFullyVisibleInScroller(el, scroller)) return;
+          if (scroller) {
+            const er = el.getBoundingClientRect();
+            const sr = scroller.getBoundingClientRect();
+            // فقط به اندازه‌ای که لبه سلول داخل محدوده بیاید
+            if (er.bottom > sr.bottom) {
+              scroller.scrollTop += (er.bottom - sr.bottom + 8);
+            } else if (er.top < sr.top) {
+              scroller.scrollTop -= (sr.top - er.top + 8);
+            }
+          } else {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        } catch (e) {}
       }, 350);
     }
     document.addEventListener('focusin', (e) => {
@@ -17897,41 +17994,78 @@ field('حساب بانکی', accSelRec);
       // بازنویسی openLedgerStatusMenu تا فقط با cell کار کند
       function openLedgerStatusMenuForCell(cellEl, savedRect) {
         if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-        document.querySelectorAll('.status-menu').forEach(m => m.remove());
+        try { document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e0) {} }); } catch (e1) {}
         const menu = document.createElement('div');
         menu.className = 'status-menu';
-        menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;margin:0;transform:none;';
+        menu.setAttribute('style',
+          'position:fixed!important;z-index:99999!important;display:block!important;visibility:visible!important;opacity:1!important;' +
+          'background:#1c1c1e;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:6px 0;' +
+          'min-width:150px;max-width:90vw;box-sizing:border-box;margin:0;transform:none;' +
+          'box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:auto;'
+        );
         [
           { v: 'credit', label: 'بستانکار', color: '#9ee858' },
           { v: 'debt', label: 'بدهکار', color: '#ff6b4a' }
         ].forEach(opt => {
           const it = document.createElement('div');
           it.textContent = opt.label;
-          it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;';
+          it.setAttribute('style', 'padding:12px 16px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;font-family:Vazirmatn,Tahoma,sans-serif;font-size:0.95rem;');
           it.onclick = (ev) => {
+            ev.preventDefault();
             ev.stopPropagation();
             applyLedgerStatusVisual(opt.v);
-            menu.remove();
+            try { menu.remove(); } catch (e2) {}
           };
           menu.appendChild(it);
         });
         document.body.appendChild(menu);
-        const anchor = cellEl || tdAmt;
-        try {
-          positionStatusMenu(menu, anchor, null, savedRect);
-          requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null, savedRect); } catch (e3) {} });
-        } catch (e2) {}
-        const closer = (ev) => {
-          if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
-            try { menu.remove(); } catch (e2) {}
-            document.removeEventListener('mousedown', closer);
-            document.removeEventListener('touchstart', closer);
+        function placeLedMenu() {
+          let rect = null;
+          try {
+            const el = (cellEl && cellEl.isConnected) ? cellEl : (tdAmt && tdAmt.isConnected ? tdAmt : amtInp);
+            if (el && el.getBoundingClientRect) {
+              const live = el.getBoundingClientRect();
+              if (live && live.width >= 1) rect = live;
+            }
+          } catch (e3) {}
+          if (!rect && savedRect && savedRect.width >= 1) rect = savedRect;
+          const menuW = Math.max(menu.offsetWidth || 0, 150);
+          const menuH = Math.max(menu.offsetHeight || 0, 90);
+          let top = 100, left = 20;
+          if (rect) {
+            top = rect.bottom + 6;
+            left = rect.right - menuW;
+            if (top + menuH > window.innerHeight - 8) top = Math.max(8, rect.top - menuH - 6);
           }
+          if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+          if (left < 8) left = 8;
+          if (top < 8) top = 8;
+          menu.style.setProperty('top', Math.round(top) + 'px', 'important');
+          menu.style.setProperty('left', Math.round(left) + 'px', 'important');
+          menu.style.setProperty('position', 'fixed', 'important');
+          menu.style.setProperty('z-index', '99999', 'important');
+          menu.style.setProperty('display', 'block', 'important');
+          menu.style.setProperty('visibility', 'visible', 'important');
+        }
+        placeLedMenu();
+        requestAnimationFrame(placeLedMenu);
+        setTimeout(placeLedMenu, 0);
+        const closer = (ev) => {
+          if (!menu.parentNode) {
+            document.removeEventListener('mousedown', closer, true);
+            document.removeEventListener('touchstart', closer, true);
+            return;
+          }
+          if (menu.contains(ev.target)) return;
+          if (ev.target === amtInp || ev.target === tdAmt || (tdAmt && tdAmt.contains && tdAmt.contains(ev.target))) return;
+          try { menu.remove(); } catch (e4) {}
+          document.removeEventListener('mousedown', closer, true);
+          document.removeEventListener('touchstart', closer, true);
         };
         setTimeout(() => {
-          document.addEventListener('mousedown', closer);
-          document.addEventListener('touchstart', closer, { passive: true });
-        }, 30);
+          document.addEventListener('mousedown', closer, true);
+          document.addEventListener('touchstart', closer, true);
+        }, 350);
       }
       tdAmt.addEventListener('pointerup', (e) => {
         if (e.button != null && e.button !== 0) return;
@@ -17942,8 +18076,9 @@ field('حساب بانکی', accSelRec);
           beginLedgerAmountEdit();
           return;
         }
-        // اگر مبلغ خالی است → ویرایش/تایپ سبز
+        // اگر مبلغ خالی است → ویرایش/تایپ سبز (مگر suppress بعد از blur سلول دیگر)
         if (!(r.amount)) {
+          if (typeof shouldSuppressEmptyCellEdit === 'function' && shouldSuppressEmptyCellEdit()) return;
           beginLedgerAmountEdit();
           return;
         }
@@ -17978,6 +18113,9 @@ field('حساب بانکی', accSelRec);
           e.preventDefault();
           try { amtInp.blur(); } catch (err) {}
         }
+      });
+      amtInp.addEventListener('blur', () => {
+        try { suppressEmptyCellEditBriefly(450); } catch (e) {}
       });
 
       const tdAct = document.createElement('td');
