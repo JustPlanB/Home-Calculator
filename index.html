@@ -1071,6 +1071,29 @@
     .tabs-main-hidden .tab-btn.balance {
       display: none !important;
     }
+    /* balance-filters-sticky */
+    #panel-balance .filter-bar,
+    #panel-balance #balanceFilters {
+      position: sticky;
+      top: 0;
+      z-index: 25;
+      background: var(--bg);
+      padding-top: 4px;
+      padding-bottom: 6px;
+    }
+    #panel-balance .filter-acc-wrap,
+    #panel-balance #balanceAccountFilterWrap {
+      position: sticky;
+      top: 42px;
+      z-index: 24;
+      background: var(--bg);
+      padding-bottom: 8px;
+    }
+    #panel-balance .summary-section,
+    #panel-balance table {
+      position: relative;
+      z-index: 1;
+    }
     /* balance-col-compact */
     #panel-balance table th:first-child,
     #panel-balance table td:first-child,
@@ -2565,6 +2588,17 @@
       border-bottom: 1px solid rgba(255,255,255,0.22) !important;
     }
     .section.collapsed .section-body { display: none; }
+    #panel-ledger .section.collapsed .section-body {
+      display: block !important;
+      max-height: 48px !important;
+      opacity: 1 !important;
+      overflow: hidden !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    #panel-ledger .section.collapsed .section-body tbody { display: none !important; }
+    #panel-ledger .section.collapsed .section-body thead { display: table-header-group !important; }
+    #panel-ledger .section.collapsed .section-body table { margin: 0 !important; }
     .section.bank-card.collapsed .section-body {
       display: block !important;
     }
@@ -5302,7 +5336,7 @@
       };
     }
     function emptyLedgerRow() {
-      return { id: '', day: '', desc: '', amount: 0, status: 'debt', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
+      return { id: '', day: '', desc: '', amount: 0, status: 'credit', createdBy: '', createdByName: '', createdAt: 0, updatedAt: 0, deletedAt: null };
     }
     function emptyLedgerSection() {
       return {
@@ -12716,8 +12750,15 @@ function openPdfPrintWindow(){
         }
         function applyAmtColor() {
           const paid = (row.status || 'paid') === 'paid';
+          const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+          const green = theme === 'light' ? '#15803d' : '#9ee858';
+          const red = theme === 'light' ? '#dc2626' : '#ff6b4a';
+          const col = paid ? green : red;
           amt.classList.toggle('status-paid', paid);
           amt.classList.toggle('status-unpaid', !paid);
+          amt.style.setProperty('color', col, 'important');
+          amt.style.setProperty('-webkit-text-fill-color', col, 'important');
+          amt.style.setProperty('caret-color', col, 'important');
         }
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
@@ -12737,8 +12778,7 @@ function openPdfPrintWindow(){
           e.stopPropagation();
           beginAmountEdit();
         };
-        function openAmountStatusMenu() {
-          if (amt._clickTimer) return;
+        function openAmountStatusMenu(anchorCell) {
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
@@ -12761,7 +12801,8 @@ function openPdfPrintWindow(){
             menu.appendChild(it);
           });
           document.body.appendChild(menu);
-          const anchor = tdAmt || amt;
+          // فقط از reference ذخیره‌شده سلول کلیک‌شده
+          const anchor = anchorCell || tdAmt || amt;
           try {
             positionStatusMenu(menu, anchor, null);
             requestAnimationFrame(() => {
@@ -12787,26 +12828,25 @@ function openPdfPrintWindow(){
             try { amt.focus(); } catch (err) {}
             return;
           }
-          // اگر در حال ویرایش است منو باز نکن
           if (document.activeElement === amt && !amt.readOnly) return;
-          // دبل‌کلیک: کلیک دوم داخل ۵۰۰ms
           if (e.detail && e.detail >= 2) {
             if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
+            amt._pendingCell = null;
             document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
             beginAmountEdit();
             return;
           }
-          // یک کلیک: نیم‌ثانیه صبر؛ اگر کلیک دوم نیامد منوی حالات
+          // ذخیره reference سلول در لحظه کلیک اول
+          const clickedCell = tdAmt;
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
+          amt._pendingCell = clickedCell;
           amt._clickTimer = setTimeout(() => {
             amt._clickTimer = null;
             if (document.activeElement === amt && !amt.readOnly) return;
-            openAmountStatusMenu();
+            if (amt._pendingCell !== clickedCell) return;
+            openAmountStatusMenu(clickedCell);
+            amt._pendingCell = null;
           }, 500);
-          if (amt.readOnly || document.activeElement !== amt) {
-            e.preventDefault();
-            openAmountStatusMenu();
-          }
         };
         amt.onfocus = () => {};
         amt.oninput = () => {
@@ -16236,25 +16276,23 @@ field('حساب بانکی', accSelRec);
       }
 
     function positionStatusMenu(menu, anchorEl, e) {
-      const el = anchorEl || (e && e.currentTarget) || null;
-      let r = el ? el.getBoundingClientRect() : null;
-      // بعد از append اندازه واقعی منو
+      // فقط element ذخیره‌شده — نه event کهنه بعد از timeout
+      const el = anchorEl || null;
+      let r = null;
+      try { if (el && el.getBoundingClientRect) r = el.getBoundingClientRect(); } catch (err) {}
       const menuW = Math.max(140, menu.offsetWidth || 160);
       const menuH = Math.max(80, menu.offsetHeight || 100);
       let top, left;
       if (r && r.width >= 2 && r.height >= 2) {
-        // پائین سمت راست سلول مبلغ
+        // پائین سمت راست همان سلول
         top = r.bottom + 4;
         left = r.right - menuW;
         if (top + menuH > window.innerHeight - 8) {
           top = Math.max(8, r.top - menuH - 4);
         }
-      } else if (e && typeof e.clientX === 'number') {
-        top = e.clientY + 8;
-        left = e.clientX - menuW;
       } else {
-        top = window.innerHeight / 2 - menuH / 2;
-        left = window.innerWidth / 2 - menuW / 2;
+        top = 80;
+        left = 16;
       }
       if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
       if (left < 8) left = 8;
@@ -17724,59 +17762,114 @@ field('حساب بانکی', accSelRec);
           document.addEventListener('touchstart', closer, { passive: true });
         }, 10);
       }
+      // پیش‌فرض بستانکار (سبز) برای تایپ اول
+      if (!r.status || (r.status !== 'credit' && r.status !== 'debt')) {
+        r.status = 'credit';
+      }
+      applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
+      try {
+        amtInp.setAttribute('enterkeyhint', 'done');
+        amtInp.setAttribute('inputmode', 'numeric');
+      } catch (e) {}
       tdAmt.style.cursor = 'pointer';
-      tdAmt.title = 'یک‌بار: بدهکار/بستانکار — دوبار: ویرایش مبلغ';
-      const isLedAmtEditing = () => (
-        document.activeElement === amtInp &&
-        !amtInp.readOnly
-      );
-      const shouldOpenLedStatus = () => {
-        if (isLedAmtEditing()) return false;
-        if (!(r.amount)) return false;
-        return true;
-      };
+      tdAmt.title = 'یک‌بار: بستانکار/بدهکار — دوبار: ویرایش مبلغ';
       function beginLedgerAmountEdit() {
         if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
         if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._statusToken = null;
+        tdAmt._pendingCell = null;
         document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
         try {
           amtInp.readOnly = false;
           amtInp.classList.remove('locked');
           amtInp.classList.add('unlocked');
+          if (!r.status) r.status = 'credit';
+          applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
           amtInp.focus();
           amtInp.select();
         } catch (err) {}
       }
+      // بازنویسی openLedgerStatusMenu تا فقط با cell کار کند
+      function openLedgerStatusMenuForCell(cellEl) {
+        if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+        document.querySelectorAll('.status-menu').forEach(m => m.remove());
+        const menu = document.createElement('div');
+        menu.className = 'status-menu';
+        menu.style.cssText = 'position:fixed;z-index:520;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px;min-width:150px;box-sizing:border-box;';
+        [
+          { v: 'credit', label: 'بستانکار', color: '#9ee858' },
+          { v: 'debt', label: 'بدهکار', color: '#ff6b4a' }
+        ].forEach(opt => {
+          const it = document.createElement('div');
+          it.textContent = opt.label;
+          it.style.cssText = 'padding:10px 12px;cursor:pointer;font-weight:700;color:' + opt.color + ';text-align:right;';
+          it.onclick = (ev) => {
+            ev.stopPropagation();
+            applyLedgerStatusVisual(opt.v);
+            menu.remove();
+          };
+          menu.appendChild(it);
+        });
+        document.body.appendChild(menu);
+        const anchor = cellEl || tdAmt;
+        try {
+          positionStatusMenu(menu, anchor, null);
+          requestAnimationFrame(() => { try { positionStatusMenu(menu, anchor, null); } catch (e3) {} });
+        } catch (e2) {}
+        const closer = (ev) => {
+          if (!menu.contains(ev.target) && ev.target !== amtInp && ev.target !== tdAmt) {
+            try { menu.remove(); } catch (e2) {}
+            document.removeEventListener('mousedown', closer);
+            document.removeEventListener('touchstart', closer);
+          }
+        };
+        setTimeout(() => {
+          document.addEventListener('mousedown', closer);
+          document.addEventListener('touchstart', closer, { passive: true });
+        }, 30);
+      }
       tdAmt.addEventListener('pointerup', (e) => {
         if (e.button != null && e.button !== 0) return;
-        if (e.target && e.target.tagName === 'INPUT' && isLedAmtEditing()) return;
-        if (!(r.amount) && !isFilledVal(r.amount)) return;
-        // دبل
+        if (document.activeElement === amtInp && !amtInp.readOnly) return;
         if (e.detail && e.detail >= 2) {
           if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+          tdAmt._pendingCell = null;
           beginLedgerAmountEdit();
           return;
         }
-        if (!shouldOpenLedStatus()) return;
+        // اگر مبلغ خالی است → ویرایش/تایپ سبز
+        if (!(r.amount)) {
+          beginLedgerAmountEdit();
+          return;
+        }
+        const clickedCell = tdAmt;
         if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        const token = {};
-        tdAmt._statusToken = token;
+        tdAmt._pendingCell = clickedCell;
         tdAmt._ledTimer = setTimeout(() => {
           tdAmt._ledTimer = null;
-          if (tdAmt._statusToken !== token) return;
-          if (!shouldOpenLedStatus()) return;
-          openLedgerStatusMenu(e);
+          if (tdAmt._pendingCell !== clickedCell) return;
+          if (document.activeElement === amtInp && !amtInp.readOnly) return;
+          openLedgerStatusMenuForCell(clickedCell);
+          tdAmt._pendingCell = null;
         }, 500);
       });
       tdAmt.addEventListener('dblclick', (e) => {
         e.preventDefault();
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._pendingCell = null;
         beginLedgerAmountEdit();
       }, true);
       amtInp.addEventListener('dblclick', (e) => {
         e.preventDefault();
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._pendingCell = null;
         beginLedgerAmountEdit();
       }, true);
+      amtInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+          e.preventDefault();
+          try { amtInp.blur(); } catch (err) {}
+        }
+      });
 
       const tdAct = document.createElement('td');
       tdAct.className = 'col-actions actions-cell';
