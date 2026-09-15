@@ -18007,21 +18007,27 @@ field('حساب بانکی', accSelRec);
         if (e.button != null && e.button !== 0) return;
         // در حال ویرایش: کاری نکن
         if (document.activeElement === amtInp && !amtInp.readOnly && amtInp.classList.contains('unlocked')) return;
-        // دبل‌کلیک
-        if (e.detail && e.detail >= 2) {
+        // خالی → تایپ قرمز (بدون نیاز به منطق دو کلیک)
+        if (!(r.amount)) {
+          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+          tdAmt._lastClickAt = 0;
+          beginLedgerAmountEdit();
+          return;
+        }
+        // تشخیص کلیک دوم با فاصله زمانی واقعی (کمتر از ۵۰۰ms)، مستقل از آستانه دبل‌کلیک مرورگر/وب‌ویو
+        const now = Date.now();
+        const isSecondClickWithin500ms = (now - (tdAmt._lastClickAt || 0)) < 500;
+        tdAmt._lastClickAt = now;
+        if (isSecondClickWithin500ms) {
+          // دو کلیک زیر ۵۰۰ms → مستقیم حالت ادیت، بدون نمایش منو
           if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
           tdAmt._pendingToken = null;
+          tdAmt._lastClickAt = 0;
           document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           beginLedgerAmountEdit();
           return;
         }
-        // خالی → تایپ قرمز
-        if (!(r.amount)) {
-          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-          beginLedgerAmountEdit();
-          return;
-        }
-        // پر → تایمر ۵۰۰ms برای منو
+        // پر → تایمر ۵۰۰ms برای منو (اگر تا آن‌موقع کلیک دومی نیاید)
         const token = {};
         tdAmt._pendingToken = token;
         const savedRect = snapshotLedRect();
