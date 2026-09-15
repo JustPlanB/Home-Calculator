@@ -1071,32 +1071,49 @@
     .tabs-main-hidden .tab-btn.balance {
       display: none !important;
     }
-    /* balance-filters-sticky */
-    /* فیلترهای مانده ثابت؛ جداول اسکرول */
-    #panel-balance .filter-bar,
+    /* balance-filters-sticky: فیلترها ثابت؛ جداول زیر منوی حساب فید/اسکرول */
+    #panel-balance.active {
+      padding-bottom: 48px !important;
+    }
+    #panel-balance > .filter-bar,
     #panel-balance #balanceFilters {
       position: sticky;
       top: 0;
-      z-index: 30;
+      z-index: 40;
       background: var(--bg);
       padding-top: 4px;
       padding-bottom: 6px;
     }
-    #panel-balance .balance-filter-block {
+    #panel-balance > .balance-filter-block {
       position: sticky;
-      top: 42px;
-      z-index: 29;
+      top: 40px;
+      z-index: 39;
       background: var(--bg);
       padding-bottom: 10px;
+      margin-bottom: 4px;
+      /* لبه نرم تا جدول زیرش فید شود */
+      box-shadow: 0 10px 14px -10px rgba(0,0,0,0.45);
     }
     #panel-balance .filter-acc-wrap,
     #panel-balance #balanceAccountFilterWrap {
       background: var(--bg);
     }
-    #panel-balance .summary-section,
-    #panel-balance table {
+    #panel-balance .summary-section {
       position: relative;
       z-index: 1;
+      margin-top: 4px;
+    }
+    #panel-balance .summary-section table {
+      position: relative;
+      z-index: 1;
+    }
+    /* وقتی داخل feature-sheet است sticky نسبت به بدنه اسکرول */
+    .feature-sheet-body #panel-balance > .filter-bar,
+    .feature-sheet-body #panel-balance #balanceFilters {
+      top: 0;
+    }
+    .feature-sheet-body #panel-balance > .balance-filter-block {
+      top: 40px;
     }
     /* balance-col-compact */
     #panel-balance table th:first-child,
@@ -17830,8 +17847,10 @@ field('حساب بانکی', accSelRec);
       applyLedgerAmountColor(isCredit ? 'credit' : 'debt');
       function applyLedgerStatusVisual(v) {
         const credit = v === 'credit';
+        r.status = credit ? 'credit' : 'debt';
         updateLedgerRowField(sec.id, idx, 'status', credit ? 'credit' : 'debt');
         applyLedgerAmountColor(credit ? 'credit' : 'debt');
+        try { renderLedgerSummaryOnly(); } catch (e) {}
       }
       function openLedgerStatusMenu(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -17971,38 +17990,76 @@ field('حساب بانکی', accSelRec);
           document.addEventListener('touchstart', closer, true);
         }, 200);
       }
-      // یک کلیک: اگر خالی → تایپ قرمز؛ اگر پر → منوی بستانکار/بدهکار کنار سلول
-      tdAmt.addEventListener('click', (e) => {
+      // منطق ۵۰۰ms فقط برای مبلغ بده‌بستان:
+      // یک کلیک → صبر ۵۰۰ms → منوی بستانکار/بدهکار کنار سلول
+      // دو کلیک زیر ۵۰۰ms → ویرایش مبلغ، بدون منو
+      function snapshotLedRect() {
+        try {
+          const el = tdAmt || amtInp;
+          const rr = el.getBoundingClientRect();
+          if (rr && rr.width >= 1) {
+            return { top: rr.top, left: rr.left, right: rr.right, bottom: rr.bottom, width: rr.width, height: rr.height };
+          }
+        } catch (e) {}
+        return null;
+      }
+      function onLedgerAmountPointer(e) {
         if (e.button != null && e.button !== 0) return;
-        if (document.activeElement === amtInp && !amtInp.readOnly) return;
-        if (e.detail && e.detail >= 2) return;
-        if (!(r.amount)) {
+        // در حال ویرایش: کاری نکن
+        if (document.activeElement === amtInp && !amtInp.readOnly && amtInp.classList.contains('unlocked')) return;
+        // دبل‌کلیک
+        if (e.detail && e.detail >= 2) {
+          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+          tdAmt._pendingToken = null;
+          document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           beginLedgerAmountEdit();
           return;
         }
-        let savedRect = null;
-        try {
-          const rr = tdAmt.getBoundingClientRect();
-          if (rr && rr.width >= 1) savedRect = { top: rr.top, left: rr.left, right: rr.right, bottom: rr.bottom, width: rr.width, height: rr.height };
-        } catch (eR) {}
-        openLedgerStatusMenuForCell(tdAmt, savedRect);
+        // خالی → تایپ قرمز
+        if (!(r.amount)) {
+          if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+          beginLedgerAmountEdit();
+          return;
+        }
+        // پر → تایمر ۵۰۰ms برای منو
+        const token = {};
+        tdAmt._pendingToken = token;
+        const savedRect = snapshotLedRect();
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._ledTimer = setTimeout(() => {
+          tdAmt._ledTimer = null;
+          if (tdAmt._pendingToken !== token) return;
+          if (document.activeElement === amtInp && !amtInp.readOnly && amtInp.classList.contains('unlocked')) return;
+          openLedgerStatusMenuForCell(tdAmt, savedRect);
+          tdAmt._pendingToken = null;
+        }, 500);
+      }
+      // capture روی input تا قبل از setupLockable هم کار کند
+      amtInp.addEventListener('click', onLedgerAmountPointer, true);
+      tdAmt.addEventListener('click', (e) => {
+        if (e.target === amtInp || (amtInp.contains && amtInp.contains(e.target))) return;
+        onLedgerAmountPointer(e);
       });
-      tdAmt.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        beginLedgerAmountEdit();
-      }, true);
       amtInp.addEventListener('dblclick', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._pendingToken = null;
         beginLedgerAmountEdit();
       }, true);
-      // Done روی کیبورد → بستن کیبورد
+      tdAmt.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
+        tdAmt._pendingToken = null;
+        beginLedgerAmountEdit();
+      }, true);
+      // Done روی کیبورد
       amtInp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
           try { amtInp.blur(); } catch (err) {}
         }
       });
-      // هنگام تایپ رنگ وضعیت فعلی (پیش‌فرض قرمز) حفظ شود
       amtInp.addEventListener('input', () => {
         applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
       });
