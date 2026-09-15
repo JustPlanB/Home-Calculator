@@ -344,6 +344,25 @@
     }
     /* بدون فید بالا/پایین منو — پوشش یکدست تا انتهای صفحه */
     /* با منوی باز: فقط منو فعال — تاچ بیرون منو کاملاً بی‌اثر */
+    body.modal-scroll-lock {
+      overflow: hidden !important;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    body.modal-scroll-lock .container,
+    body.modal-scroll-lock .tab-viewport {
+      pointer-events: none;
+    }
+    body.modal-scroll-lock .modal-overlay.open,
+    body.modal-scroll-lock .modal-overlay.open * {
+      pointer-events: auto;
+      touch-action: pan-y;
+    }
+    .modal-overlay.open {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
     body.menu-open {
       overflow: hidden !important;
       touch-action: none !important;
@@ -1076,7 +1095,7 @@
     .person-card {
       position: relative;
       width: var(--match-card-w, 100%) !important;
-      max-width: 100%;
+      max-width: min(100vw - 4px, var(--match-card-w, 100%));
       margin: 0 auto 14px auto;
       aspect-ratio: 1.62 / 1;
       border-radius: 16px;
@@ -1712,10 +1731,20 @@
       color: #fff !important;
     }
     /* remove pattern on ledger rows */
+    #panel-ledger .section,
+    #panel-ledger .section.collapsed,
+    #panel-ledger .section:not(.collapsed),
+    #panel-ledger .section .section-header,
+    #panel-ledger .section .section-body,
+    #panel-ledger .section .section-body table,
+    #panel-ledger .section .section-body tbody,
+    #panel-ledger .section .section-body tbody td,
+    #panel-ledger .section .section-body thead th {
+      background-image: none !important;
+    }
     #panel-ledger .section .section-body,
     #panel-ledger .section .section-body table,
     #panel-ledger .section .section-body tbody td {
-      background-image: none !important;
       background-color: #1a1a1c !important;
     }
     #panel-ledger .section .section-body thead th {
@@ -3414,20 +3443,30 @@
     .remind-bar::before {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%, transparent 100%);
-      background-size: 200% 100%;
-      animation: remindShineMove 6s ease-in-out infinite;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,0.0) 35%,
+        rgba(255,255,255,0.28) 50%,
+        rgba(255,255,255,0.0) 65%,
+        transparent 100%);
+      background-repeat: no-repeat;
+      background-size: 55% 100%;
+      background-position: -55% 0;
+      animation: remindShineMove 9s linear infinite;
       pointer-events: none;
       z-index: 0;
     }
-    /* هر ۵ثانیه چپ→راست، ۱ثانیه مکث مفهومی، برگشت راست→چپ در سیکل ۶ثانیه‌ای */
+    /* چپ→راست و خروج | ۱ث مکث | راست→چپ و خروج | ۵ث سکون */
     @keyframes remindShineMove {
-      0% { background-position: 100% 0; }
-      42% { background-position: -100% 0; }
-      50% { background-position: -100% 0; }
-      92% { background-position: 100% 0; }
-      100% { background-position: 100% 0; }
+      0%   { background-position: -55% 0; }
+      16.5% { background-position: 155% 0; }   /* ~1.5s حرکت LTR */
+      27.5% { background-position: 155% 0; }   /* ~1s مکث */
+      44%  { background-position: -55% 0; }   /* ~1.5s حرکت RTL */
+      100% { background-position: -55% 0; }   /* ~5s سکون */
     }
     .remind-bar > * { position: relative; z-index: 1; }
     [data-theme="light"] .remind-bar {
@@ -5923,8 +5962,8 @@
       if (!w || w < 40) {
         w = document.documentElement.clientWidth - 24;
       }
-      // پهن‌تر: عرض محتوا + کاهش حاشیه بصری
-      const wider = Math.min(document.documentElement.clientWidth - 8, Math.round(w + 12));
+      // ضلع افقی حدود ۲۵٪ بلندتر (مثل ۴→۵ سانت، نیم‌سانت از هر طرف)
+      const wider = Math.min(document.documentElement.clientWidth - 4, Math.round(w * 1.25));
       document.documentElement.style.setProperty('--match-card-w', wider + 'px');
     }
     function moveTabIndicator() {
@@ -11657,79 +11696,125 @@ function openPdfPrintWindow(){
     function enableHomeCardReorder(container) {
       if (!container || container._homeDragBound) return;
       container._homeDragBound = true;
-      let active = null, startY = 0, startTop = 0, placeholder = null;
+      let active = null;
+      let placeholder = null;
+      let startY = 0;
+      let grabOffsetY = 0;
+      let longTimer = null;
+      let pointerId = null;
+
+      function clearDragStyles(card) {
+        if (!card) return;
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.zIndex = '';
+        card.style.opacity = '';
+        card.style.transition = '';
+        card.style.pointerEvents = '';
+        card.style.transform = '';
+        card.classList.remove('dragging-card');
+      }
+
+      function finishDrag(commit) {
+        if (longTimer) { clearTimeout(longTimer); longTimer = null; }
+        if (!active) return;
+        const card = active;
+        active = null;
+        if (placeholder && placeholder.parentNode) {
+          if (commit) {
+            placeholder.parentNode.insertBefore(card, placeholder);
+          }
+          placeholder.parentNode.removeChild(placeholder);
+        }
+        placeholder = null;
+        clearDragStyles(card);
+        if (commit) {
+          try {
+            const order = Array.from(container.querySelectorAll('.person-card')).map(el => el.dataset.title).filter(Boolean);
+            ['income', 'expense'].forEach(tab => {
+              const list = periodData[tab] && periodData[tab].sections;
+              if (!list) return;
+              const map = {};
+              list.forEach(s => { map[(s.title || '').trim()] = s; });
+              const ordered = order.map(t => map[t]).filter(Boolean);
+              list.forEach(s => { if (ordered.indexOf(s) < 0) ordered.push(s); });
+              periodData[tab].sections = ordered;
+            });
+            scheduleSave();
+          } catch (err) {}
+        }
+        try { renderHomeCards(); } catch (e) {}
+      }
+
       container.addEventListener('pointerdown', (e) => {
         if (e.button != null && e.button !== 0) return;
         if (e.target.closest && e.target.closest('button, input, a, .person-stat-box, .person-remain-box')) return;
         const card = e.target.closest && e.target.closest('.person-card');
         if (!card || !container.contains(card)) return;
-        let moved = false;
+        if (active) return;
         const y0 = e.clientY;
-        const t0 = Date.now();
-        let timer = setTimeout(() => {
+        const x0 = e.clientX;
+        pointerId = e.pointerId;
+        longTimer = setTimeout(() => {
+          longTimer = null;
           active = card;
-          startY = y0;
           const rect = card.getBoundingClientRect();
-          startTop = rect.top;
+          grabOffsetY = y0 - rect.top;
+          startY = y0;
+          placeholder = document.createElement('div');
+          placeholder.className = 'person-card-placeholder';
+          placeholder.style.cssText = 'height:' + rect.height + 'px;margin:0 auto 14px auto;width:' + rect.width + 'px;border-radius:16px;border:1px dashed rgba(255,255,255,0.28);box-sizing:border-box;';
+          card.parentNode.insertBefore(placeholder, card);
+          card.classList.add('dragging-card');
+          card.style.position = 'fixed';
+          card.style.left = rect.left + 'px';
+          card.style.width = rect.width + 'px';
+          card.style.top = rect.top + 'px';
+          card.style.zIndex = '2000';
+          card.style.margin = '0';
+          card.style.pointerEvents = 'none';
+          card.style.opacity = '0.95';
           card.style.transition = 'none';
-          card.style.zIndex = '20';
-          card.style.opacity = '0.92';
-          try { card.setPointerCapture(e.pointerId); } catch (err) {}
-          try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
-        }, 420);
+          try { card.setPointerCapture(pointerId); } catch (err) {}
+          try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
+        }, 450);
+
         const onMove = (ev) => {
-          if (!active) {
-            if (Math.abs(ev.clientY - y0) > 12 || Math.abs(ev.clientX - (e.clientX||0)) > 12) {
-              clearTimeout(timer);
-            }
-            return;
+          if (longTimer && (Math.abs(ev.clientY - y0) > 10 || Math.abs(ev.clientX - x0) > 10)) {
+            clearTimeout(longTimer);
+            longTimer = null;
           }
-          moved = true;
-          const dy = ev.clientY - startY;
-          active.style.transform = 'translateY(' + dy + 'px)';
-          const cards = Array.from(container.querySelectorAll('.person-card'));
-          const mid = active.getBoundingClientRect().top + active.offsetHeight / 2;
-          for (const other of cards) {
-            if (other === active) continue;
+          if (!active || !placeholder) return;
+          ev.preventDefault();
+          const top = ev.clientY - grabOffsetY;
+          active.style.top = top + 'px';
+          const mid = top + active.offsetHeight / 2;
+          const others = Array.from(container.querySelectorAll('.person-card, .person-card-placeholder')).filter(el => el !== active);
+          for (const other of others) {
             const r = other.getBoundingClientRect();
             const om = r.top + r.height / 2;
-            if (mid < om && active.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) {
-              container.insertBefore(active, other);
+            if (mid < om) {
+              container.insertBefore(placeholder, other);
               break;
-            } else if (mid > om && active.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_PRECEDING) {
-              container.insertBefore(other, active);
+            } else {
+              if (other.nextSibling) container.insertBefore(placeholder, other.nextSibling);
+              else container.appendChild(placeholder);
             }
           }
         };
         const onUp = () => {
-          clearTimeout(timer);
-          window.removeEventListener('pointermove', onMove);
-          window.removeEventListener('pointerup', onUp);
-          if (active) {
-            active.style.transform = '';
-            active.style.zIndex = '';
-            active.style.opacity = '';
-            active.style.transition = '';
-            // persist order into periodData sections order
-            try {
-              const order = Array.from(container.querySelectorAll('.person-card')).map(el => el.dataset.title);
-              ['income', 'expense'].forEach(tab => {
-                const list = periodData[tab] && periodData[tab].sections;
-                if (!list) return;
-                const map = {};
-                list.forEach(s => { map[(s.title || '').trim()] = s; });
-                const ordered = order.map(t => map[t]).filter(Boolean);
-                list.forEach(s => { if (ordered.indexOf(s) < 0) ordered.push(s); });
-                periodData[tab].sections = ordered;
-              });
-              scheduleSave();
-            } catch (err) {}
-          }
-          active = null;
+          window.removeEventListener('pointermove', onMove, true);
+          window.removeEventListener('pointerup', onUp, true);
+          window.removeEventListener('pointercancel', onUp, true);
+          if (longTimer) { clearTimeout(longTimer); longTimer = null; return; }
+          finishDrag(true);
         };
-        window.addEventListener('pointermove', onMove);
-        window.addEventListener('pointerup', onUp);
-      });
+        window.addEventListener('pointermove', onMove, true);
+        window.addEventListener('pointerup', onUp, true);
+        window.addEventListener('pointercancel', onUp, true);
+      }, { passive: true });
     }
     function renderHomeCards() {
       try { syncMatchCardWidth(); } catch (e) {}
@@ -12463,6 +12548,15 @@ function openPdfPrintWindow(){
           applyAmtColor();
           scheduleSave();
           try { renderHomeCards(); } catch (e) {}
+          // اگر فوکوس از ردیف خارج شد مرتب کن
+          setTimeout(() => {
+            try {
+              const a = document.activeElement;
+              if (a && tr.contains(a)) return;
+              if (document.querySelector('.dark-select-list.open, .status-menu')) return;
+              sortAndRebuild();
+            } catch (err) {}
+          }, 180);
         };
         tdAmt.appendChild(amt);
         tr.appendChild(tdAmt);
@@ -12498,6 +12592,7 @@ function openPdfPrintWindow(){
               markFilled(accBtn, true);
               list.remove();
               scheduleSave();
+              setTimeout(() => { try { sortAndRebuild(); } catch (e) {} }, 50);
             };
             list.appendChild(opt);
           });
@@ -12600,6 +12695,25 @@ function openPdfPrintWindow(){
               e.preventDefault();
             }
           }, { passive: false });
+        }
+      } catch (e) {}
+      // تاچ بیرون ردیف → مرتب‌سازی بر اساس روز
+      try {
+        if (!page._rowSortOutside) {
+          page._rowSortOutside = true;
+          page.addEventListener('pointerdown', (ev) => {
+            const trEl = ev.target.closest && ev.target.closest('tbody tr');
+            if (trEl) return;
+            if (ev.target.closest && ev.target.closest('.dark-select-list, .status-menu, .pd-desc-popup')) return;
+            setTimeout(() => {
+              try {
+                if (document.querySelector('.dark-select-list.open, .status-menu')) return;
+                const a = document.activeElement;
+                if (a && a.closest && a.closest('.person-detail-table tbody')) return;
+                sortAndRebuild();
+              } catch (err) {}
+            }, 120);
+          }, true);
         }
       } catch (e) {}
     }
@@ -13599,7 +13713,7 @@ function openPdfPrintWindow(){
       const m = document.getElementById('trashModal');
       if (m) {
         m.classList.add('open');
-        // لمس بیرون باکس = مثل دکمه بک → صفحه اصلی
+        try { document.body.classList.add('modal-scroll-lock'); } catch (e) {}
         m.onclick = (e) => {
           if (e.target === m) closeTrashModal();
         };
@@ -13608,6 +13722,7 @@ function openPdfPrintWindow(){
     function closeTrashModal() {
       const m = document.getElementById('trashModal');
       if (m) m.classList.remove('open');
+      try { document.body.classList.remove('modal-scroll-lock'); } catch (e) {}
     }
     function renderTrashList() {
       const box = document.getElementById('trashList');
