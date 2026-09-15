@@ -1071,6 +1071,54 @@
     .tabs-main-hidden .tab-btn.balance {
       display: none !important;
     }
+    /* balance-col-compact */
+    #panel-balance table th:first-child,
+    #panel-balance table td:first-child,
+    #balanceTable th:first-child,
+    #balanceTable td:first-child,
+    #panel-balance .summary-table th:first-child,
+    #panel-balance .summary-table td:first-child {
+      width: 18% !important;
+      max-width: 22% !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #panel-balance table td.val,
+    #panel-balance .summary-table td.val {
+      font-size: 0.82rem !important;
+      letter-spacing: -0.02em;
+    }
+    /* home-scroll-fix */
+    html, body {
+      overflow-x: hidden !important;
+      max-width: 100vw;
+    }
+    body {
+      scrollbar-width: none;
+    }
+    body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+    .container, .tab-viewport, #tabTrack, #panel-home, .home-cards {
+      overflow-x: hidden !important;
+      max-width: 100%;
+    }
+    #panel-home.active {
+      overflow-y: visible !important;
+      min-height: min-content;
+    }
+    .home-cards {
+      overflow: visible !important;
+      padding-bottom: 40px !important;
+    }
+    /* sticky chrome ثابت و روی همه */
+    .sticky-chrome {
+      position: fixed !important;
+      top: max(0px, env(safe-area-inset-top, 0px)) !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 200 !important;
+      transform: none !important;
+    }
     #panel-home {
       display: none;
       padding-top: 8px;
@@ -1090,7 +1138,7 @@
       display: block !important;
       visibility: visible !important;
     }
-    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; padding: 0; margin: 0; }
+    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; padding: 0 0 48px 0; margin: 0; min-height: min-content; overflow: visible !important; }
     /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
@@ -1780,8 +1828,8 @@
     }
     #panel-ledger .section {
       background: #1a1a1c !important;
-      border: 1px solid #3a3a3e !important;
-      border-color: #3a3a3e !important;
+      border: none !important;
+      border-color: transparent !important;
       box-shadow: none !important;
       outline: none !important;
     }
@@ -1793,7 +1841,7 @@
     }
     #panel-ledger .section.collapsed,
     #panel-ledger .section:not(.collapsed) {
-      border: 1px solid #3a3a3e !important;
+      border: none !important;
       outline: none !important;
     }
     #panel-ledger .section-header {
@@ -1809,6 +1857,22 @@
       max-height: calc(11 * 36px + 48px);
       overflow-y: auto;
       overscroll-behavior: contain;
+    }
+    /* ledger-plus-gap */
+    #panel-ledger .section .section-body {
+      padding-bottom: 28px !important;
+    }
+    #panel-ledger .section .add-row-wrap,
+    #panel-ledger .section .section-body .btn-circle-plus {
+      margin-bottom: 18px !important;
+      margin-top: 8px !important;
+    }
+    #panel-ledger .section .btn-del-row,
+    #panel-ledger .section .actions-cell .btn-del-row {
+      color: #ff1744 !important;
+      text-shadow: 0 0 6px rgba(255, 23, 68, 0.55) !important;
+      font-weight: 900 !important;
+      opacity: 1 !important;
     }
     /* ledger-match-detail */
     #panel-ledger .section .section-body table {
@@ -3450,7 +3514,7 @@
       background: transparent;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
-      border: 1px solid rgba(180, 100, 255, 0.65);
+      border: 2px solid #d946ff;
       border-radius: 10px;
       margin-top: 14px;
       margin-bottom: 4px;
@@ -3458,47 +3522,28 @@
       position: relative;
       z-index: 5;
       flex-shrink: 0;
-      box-shadow: none;
+      box-shadow: 0 0 6px rgba(217, 70, 255, 0.55), 0 0 14px rgba(180, 40, 255, 0.35);
+      animation: remindBorderNeon 2.6s ease-in-out infinite;
     }
     .remind-bar::before {
-      content: '';
-      position: absolute;
-      top: -20%;
-      bottom: -20%;
-      left: 0;
-      right: 0;
-      /* برق شیشه‌ای مورب */
-      background: linear-gradient(
-        115deg,
-        transparent 0%,
-        transparent 42%,
-        rgba(255,255,255,0.05) 46%,
-        rgba(255,255,255,0.22) 50%,
-        rgba(255,255,255,0.05) 54%,
-        transparent 58%,
-        transparent 100%
-      );
-      background-repeat: no-repeat;
-      background-size: 70% 140%;
-      background-position: -80% 0;
-      animation: remindShineMove 8s linear infinite;
-      pointer-events: none;
-      z-index: 0;
-      mix-blend-mode: screen;
-      opacity: 0.95;
+      display: none !important;
+      content: none !important;
+      animation: none !important;
     }
-    /* ورود از چپ→خروج از راست | ورود از راست→خروج از چپ | ۵ث سکون */
-    @keyframes remindShineMove {
-      0%    { background-position: -80% 0; }
-      18%   { background-position: 180% 0; }  /* LTR کامل */
-      18.01%{ background-position: 180% 0; }
-      36%   { background-position: -80% 0; }  /* RTL کامل */
-      100%  { background-position: -80% 0; }  /* ~۵ث سکون */
+    @keyframes remindBorderNeon {
+      0%, 100% {
+        border-color: #d946ff;
+        box-shadow: 0 0 4px rgba(217, 70, 255, 0.45), 0 0 10px rgba(180, 40, 255, 0.25);
+      }
+      50% {
+        border-color: #ff4dff;
+        box-shadow: 0 0 8px rgba(255, 77, 255, 0.7), 0 0 18px rgba(217, 70, 255, 0.45);
+      }
     }
     .remind-bar > * { position: relative; z-index: 1; }
     [data-theme="light"] .remind-bar {
       background: transparent;
-      border: 1px solid rgba(180, 100, 255, 0.65);
+      border: 2px solid #d946ff;
     }
     .remind-bar-head {
       background: transparent !important;
@@ -7007,7 +7052,15 @@
       });
       plans = (plans || []).filter(p => !p.deletedAt);
       recurringIncomes = (recurringIncomes || []).filter(r => !r.deletedAt);
-      try { saveRecurring(); } catch (e) {}
+      try { saveRecurring(); 
+        try { scheduleSave(); } catch (e) {}
+        try { renderHomeCards(); } catch (e) {}
+        try {
+          if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
+            renderPersonDetailPanel('income', _detailContext.title);
+          }
+        } catch (e) {}
+} catch (e) {}
 
       // مهم: اول archive را ذخیره کن، بعد periodData را از archive بخوان
       // (persistCurrent قبل از loadCurrent باعث overwrite merge با داده خالی حافظه می‌شد)
@@ -7759,7 +7812,15 @@
           if (!local || (Number(r.updatedAt) || 0) >= (Number(local.updatedAt) || 0)) map[r.id] = r;
         });
         recurringIncomes = Object.keys(map).map(k => map[k]);
-        try { saveRecurring(); } catch (e) {}
+        try { saveRecurring(); 
+        try { scheduleSave(); } catch (e) {}
+        try { renderHomeCards(); } catch (e) {}
+        try {
+          if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
+            renderPersonDetailPanel('income', _detailContext.title);
+          }
+        } catch (e) {}
+} catch (e) {}
       }
       if (obj.members && typeof obj.members === 'object') {
         familyMembers = Object.assign({}, familyMembers || {}, obj.members);
@@ -8759,7 +8820,9 @@
 
     function requestNotifPermission() {
       if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+        setTimeout(function () {
+          try { Notification.requestPermission(); } catch (e) {}
+        }, 1500);
       }
     }
 
@@ -9307,7 +9370,15 @@
         if (Array.isArray(data.recurringIncomes)) {
           recurringIncomes = data.recurringIncomes;
           saveRecurring();
-        }
+        
+        try { scheduleSave(); } catch (e) {}
+        try { renderHomeCards(); } catch (e) {}
+        try {
+          if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
+            renderPersonDetailPanel('income', _detailContext.title);
+          }
+        } catch (e) {}
+}
       } else {
         // merge
         archive = mergeArchives(archive, data.archive || {});
@@ -11707,6 +11778,16 @@ function openPdfPrintWindow(){
       });
       return Array.from(set);
     }
+    function ensureDefaultPersonCard() {
+      try {
+        if (allPersonTitles().length > 0) return;
+        // فقط یک‌بار برای نصب تازه
+        const flag = localStorage.getItem(STORAGE_KEY + '_defaultCard');
+        if (flag === '1' && allPersonTitles().length > 0) return;
+        ensurePersonSections('نام کاربر');
+        try { localStorage.setItem(STORAGE_KEY + '_defaultCard', '1'); } catch (e) {}
+      } catch (e) {}
+    }
     function personTotals(title) {
       const inc = findSectionByTitle('income', title);
       const exp = findSectionByTitle('expense', title);
@@ -11844,6 +11925,7 @@ function openPdfPrintWindow(){
       }, { passive: true });
     }
     function renderHomeCards() {
+      try { ensureDefaultPersonCard(); } catch (e) {}
       try { syncMatchCardWidth(); } catch (e) {}
       const box = document.getElementById('homeCards');
       if (!box) return;
@@ -12494,10 +12576,16 @@ function openPdfPrintWindow(){
             showToast('برای ویرایش، از بخش اقساط اقدام کنید');
             return;
           }
+          e.preventDefault();
+          e.stopPropagation();
+          amt._blockStatus = true;
+          setTimeout(() => { amt._blockStatus = false; }, 400);
+          document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           amt.readOnly = false;
           try { amt.focus(); } catch (err) {}
         };
         function openAmountStatusMenu() {
+          if (amt._blockStatus) return;
           document.querySelectorAll('.status-menu').forEach(m => m.remove());
           const menu = document.createElement('div');
           menu.className = 'status-menu';
@@ -12536,12 +12624,14 @@ function openPdfPrintWindow(){
           }, 30);
         }
         amt.onclick = (e) => {
-          if (fromPlan) return; // فقط دبل‌کلیک نوتیف
+          if (fromPlan) return;
+          if (amt._blockStatus) return;
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
             try { amt.focus(); } catch (err) {}
             return;
           }
+          if (e.detail && e.detail >= 2) return;
           if (amt.readOnly || document.activeElement !== amt) {
             e.preventDefault();
             openAmountStatusMenu();
@@ -13568,18 +13658,33 @@ function openPdfPrintWindow(){
         pullOne(8);
       }
       function startSmsBridge() {
-        const BankSms = getPlugin();
-        if (!BankSms) return;
-        BankSms.requestPermission().finally(function () {
-          if (smsPollTimer) clearInterval(smsPollTimer);
-          smsPollTimer = setInterval(pollPendingSms, 4000);
-          pollPendingSms();
-        });
+        try {
+          const BankSms = getPlugin();
+          if (!BankSms) return;
+          // غیرمسدود: اول polling، بعداً permission
+          try {
+            if (smsPollTimer) clearInterval(smsPollTimer);
+            smsPollTimer = setInterval(function () { try { pollPendingSms(); } catch (e) {} }, 4000);
+            setTimeout(function () { try { pollPendingSms(); } catch (e) {} }, 800);
+          } catch (e) {}
+          setTimeout(function () {
+            try {
+              const p = BankSms.requestPermission && BankSms.requestPermission();
+              if (p && typeof p.finally === 'function') {
+                p.finally(function () {
+                  try { pollPendingSms(); } catch (e) {}
+                });
+              } else if (p && typeof p.then === 'function') {
+                p.then(function () { try { pollPendingSms(); } catch (e) {} }, function () {});
+              }
+            } catch (e) {}
+          }, 1200);
+        } catch (e) {}
       }
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        startSmsBridge();
+        setTimeout(startSmsBridge, 300);
       } else {
-        document.addEventListener('DOMContentLoaded', startSmsBridge);
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(startSmsBridge, 300); });
       }
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') pollPendingSms();
@@ -14306,6 +14411,26 @@ if (item.type === 'recurring') {
       };
       dim.onclick = closeEd;
       editor.querySelector('#bankAddCancel').onclick = (e) => { e.stopPropagation(); closeEd(); };
+      // پیش‌فرض نام غیرتکراری در باکس (قابل ویرایش)
+      if (!isEdit && defaultLabel) {
+        let cand = defaultLabel;
+        let n = 1;
+        while (selectedBankAccounts.some(a => accountLabel(a) === cand)) {
+          cand = defaultLabel + ' ' + n;
+          n++;
+        }
+        inp.value = cand;
+      } else if (!isEdit) {
+        const base0 = (bankName || '').replace(/^بانک\s+/u, '') || 'حساب';
+        let cand = base0;
+        let n = 1;
+        while (selectedBankAccounts.some(a => accountLabel(a) === cand)) {
+          cand = base0 + ' ' + n;
+          n++;
+        }
+        inp.value = cand;
+      }
+      try { inp.focus(); inp.select(); } catch (e) {}
       editor.querySelector('#bankAddOk').onclick = (e) => {
         e.stopPropagation();
         const name = (inp.value || '').trim();
@@ -14503,7 +14628,9 @@ if (item.type === 'recurring') {
       const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
       const plusSvgRec = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (recurringCollapsed ? '0' : '10px') + ';cursor:pointer;" id="recurringHead">' +
-        '<span class="collapse-arrow">' + (recurringCollapsed ? '▼' : '▲') + '</span>' +
+        '<span class="collapse-arrow">' + (recurringCollapsed
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>') + '</span>' +
         '<h3 style="margin:0;flex:1;">درآمدهای ثابت</h3></div>';
       if (!recurringCollapsed) {
         // مرتب‌سازی بر اساس روز
@@ -16956,11 +17083,26 @@ field('حساب بانکی', accSelRec);
       const n = Math.max(1, Math.min(5, parseInt(count, 10) || 1));
       for (let i = 0; i < n; i++) sec.rows.push(emptyLedgerRow());
       sec.collapsed = false;
-      renderLedgerTab();
+      // بدون فوکوس خودکار روی روز — فقط ردیف اضافه شود، باکس ثابت بماند
+      try {
+        const wrap = document.getElementById('sections-ledger');
+        const prevScroll = wrap ? wrap.scrollTop : 0;
+        const bodyEl = document.querySelector('#sections-ledger .section[data-id="' + secId + '"] .section-body')
+          || document.querySelector('#sections-ledger .section .section-body');
+        const bodyScroll = bodyEl ? bodyEl.scrollTop : 0;
+        renderLedgerTab();
+        requestAnimationFrame(() => {
+          try {
+            const w2 = document.getElementById('sections-ledger');
+            if (w2) w2.scrollTop = prevScroll;
+            const b2 = document.querySelector('#sections-ledger .section[data-id="' + secId + '"] .section-body');
+            if (b2) b2.scrollTop = bodyScroll;
+          } catch (e) {}
+        });
+      } catch (e) {
+        renderLedgerTab();
+      }
       scheduleSave();
-      setTimeout(() => focusLedgerNewRowDay(secId, n), 60);
-      setTimeout(() => focusLedgerNewRowDay(secId, n), 180);
-      setTimeout(() => focusLedgerNewRowDay(secId, n), 350);
     }
 
     function deleteLedgerRow(secId, idx) {
