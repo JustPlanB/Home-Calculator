@@ -2922,14 +2922,20 @@
       justify-content: flex-start !important;
       align-items: flex-start !important;
       direction: ltr !important;
-      margin: -1px 0 10px !important;
+      margin: -1px 0 12px !important;
       padding: 0 0 0 14px !important;
       position: relative;
       z-index: 2;
       background: transparent !important;
       border: none !important;
+      width: min(100%, var(--match-card-w, 100%));
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-left: auto !important;
+      margin-right: auto !important;
     }
     .table-add-tab,
+    .person-detail-add .table-add-tab,
     .person-detail-add .btn-circle-plus,
     .add-row-wrap.ledger-add-fixed .btn-circle-plus,
     #recurringBox .table-add-tab,
@@ -2938,24 +2944,36 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 42px !important;
-      height: 26px !important;
-      min-width: 42px !important;
-      min-height: 26px !important;
+      width: 44px !important;
+      height: 28px !important;
+      min-width: 44px !important;
+      min-height: 28px !important;
       margin: 0 !important;
       padding: 0 !important;
-      border-radius: 0 0 10px 10px !important;
-      border: 1px solid var(--border) !important;
-      border-top: none !important;
-      background: var(--card) !important;
-      color: var(--accent, #0a84ff) !important;
+      /* هر چهار گوشه گرد */
+      border-radius: 10px !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      /* ضلع بالا خط نداشته باشد تا به فریم جدول بچسبد */
+      border-top-color: transparent !important;
+      background: #1a1a1c !important;
+      color: #0a84ff !important;
       box-shadow: none !important;
       cursor: pointer;
       line-height: 1 !important;
       flex-shrink: 0 !important;
       -webkit-tap-highlight-color: transparent;
     }
+    /* جداول با --card روشن‌تر */
+    #panel-install .table-add-tab,
+    #panel-ledger .table-add-tab,
+    #recurringBox .table-add-tab {
+      background: var(--card) !important;
+      border-color: var(--border) !important;
+      border-top-color: transparent !important;
+      color: var(--accent, #0a84ff) !important;
+    }
     .table-add-tab svg,
+    .person-detail-add .table-add-tab svg,
     .person-detail-add .btn-circle-plus svg,
     .add-row-wrap.ledger-add-fixed .btn-circle-plus svg,
     #recurringBox .table-add-tab svg,
@@ -2963,48 +2981,48 @@
     #panel-ledger .table-add-tab svg {
       width: 16px !important;
       height: 16px !important;
-      stroke: var(--accent, #0a84ff) !important;
+      stroke: #0a84ff !important;
       fill: none !important;
       stroke-width: 2.8 !important;
       stroke-linecap: round !important;
     }
     .table-add-tab:active,
+    .person-detail-add .table-add-tab:active,
     .person-detail-add .btn-circle-plus:active,
     .add-row-wrap.ledger-add-fixed .btn-circle-plus:active {
       filter: brightness(0.92);
       transform: none !important;
     }
-    /* person-detail: یکپارچگی با فریم تیره جدول */
-    .person-detail-box .person-detail-add {
-      padding-left: 10px !important;
+    /* فریم جزئیات: + بیرون از box است */
+    .person-detail-page > .person-detail-add {
       margin-top: -1px !important;
-    }
-    .person-detail-box .person-detail-add .btn-circle-plus {
-      background: #1a1a1c !important;
-      border-color: #3a3a3e !important;
-      border-top: none !important;
-    }
-    .person-detail-box .person-detail-add .btn-circle-plus svg {
-      stroke: #0a84ff !important;
+      padding-left: 12px !important;
     }
     /* درآمد ثابت: ضربدر حذف = همان قرمز بقیه */
+    /* ضربدر حذف درآمد ثابت — دقیقاً همان استایل سراسری .btn-del-row */
     #recurringBox .btn-del-row,
-    .recurring-box .btn-del-row {
+    .recurring-box .btn-del-row,
+    #recurringBox button[data-rd],
+    .recurring-box button[data-rd],
+    #panel-recurring .btn-del-row {
       color: #ff6b4a !important;
       text-shadow: 0 0 6px rgba(255, 23, 68, 0.5) !important;
       font-weight: 800 !important;
-      font-size: 1.25rem !important;
+      font-size: 1.35rem !important;
+      line-height: 1 !important;
       background: transparent !important;
       border: none !important;
+      opacity: 1 !important;
+      -webkit-text-fill-color: #ff6b4a !important;
     }
     /* فونت کمی کوچک‌تر روی کارت برای دریافت/پرداخت شده/نشده */
     .person-stat-line.paid,
     .person-stat-line.unpaid {
-      font-size: 0.68rem !important;
-      line-height: 1.25 !important;
-      letter-spacing: -0.02em;
-      padding-left: 2px;
-      padding-right: 2px;
+      font-size: 0.72rem !important;
+      line-height: 1.3 !important;
+      letter-spacing: -0.01em;
+      padding-left: 1px;
+      padding-right: 1px;
     }
 
     /* فقط وسط‌چین کردن آیکون بخش جدید — بدون باکس پشتی */
@@ -5436,7 +5454,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-ui-tab-plus-v11 */
+    /* build-stamp: 2026-09-16-ui-tab-fix-v12 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -13428,30 +13446,29 @@ function openPdfPrintWindow(){
       scroll.appendChild(table);
       box.appendChild(scroll);
 
-      const addWrap = document.createElement('div');
-      addWrap.className = 'person-detail-add';
-      const addBtn = document.createElement('button');
-      addBtn.type = 'button';
-      addBtn.className = 'btn-circle-plus';
-      addBtn.title = 'ردیف جدید';
-      addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
-      addBtn.onclick = () => {
-        sec.rows.push(emptyRow(tab));
-        rebuild();
-      };
-      addWrap.appendChild(addBtn);
-      box.appendChild(addWrap);
-
       const hint = document.createElement('div');
       hint.className = 'person-detail-hint';
       hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
       box.appendChild(hint);
 
-      const bottom = document.createElement('div');
-      bottom.className = 'person-detail-box-bottom';
-      box.appendChild(bottom);
-
       page.appendChild(box);
+
+      /* زبانه + بیرون از فریم جدول — متصل به لبه پایین سمت چپ */
+      const addWrap = document.createElement('div');
+      addWrap.className = 'person-detail-add table-add-tab-wrap';
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'table-add-tab';
+      addBtn.title = 'ردیف جدید';
+      addBtn.setAttribute('aria-label', 'ردیف جدید');
+      addBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+      addBtn.onclick = () => {
+        sec.rows.push(emptyRow(tab));
+        rebuild();
+      };
+      addWrap.appendChild(addBtn);
+      page.appendChild(addWrap);
+
       container.appendChild(page);
       // جلوگیری از اسکرول صفحه وقتی انتهای جدول رسید
       try {
@@ -15391,7 +15408,7 @@ if (item.type === 'recurring') {
             '</div>' +
             (recurringSelectMode ? '' : (
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
-              '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف">×</button>'
+              '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="color:#ff6b4a!important;-webkit-text-fill-color:#ff6b4a!important;text-shadow:0 0 6px rgba(255,23,68,0.5);font-weight:800;font-size:1.35rem;background:transparent;border:none;line-height:1;">×</button>'
             )) +
             '</div>';
         });
