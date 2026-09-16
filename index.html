@@ -1072,31 +1072,32 @@
       display: none !important;
     }
     /*
-      مانده: جریان طبیعی DOM — بدون sticky/fixed/top مصنوعی.
-      ماه/سال در stickyChrome است؛ فیلترها زیر آن ارتفاع واقعی می‌گیرند؛
-      جداول بعد از فیلترها می‌آیند و overlap نمی‌کنند.
+      مانده: چون body.detail-open اسکرول document را قفل می‌کند،
+      پنل مانده خودش flex + ناحیه اسکرول جدا دارد.
+      فیلترها خارج از scroll؛ جداول داخل balance-scroll-body.
     */
+    body.detail-open #panel-balance.active,
     #panel-balance.active {
-      display: block !important;
+      display: flex !important;
+      flex-direction: column !important;
       position: relative !important;
-      overflow: visible !important;
-      max-height: none !important;
-      top: auto !important;
-      padding-top: 0 !important;
-      padding-bottom: 48px !important;
-      margin-top: 0 !important;
+      overflow: hidden !important;
       box-sizing: border-box;
+      margin: 0 !important;
+      padding: 0 !important;
+      /* ارتفاع قابل استفاده زیر chrome */
+      height: calc(100vh - var(--sticky-chrome-h, 96px) - 8px) !important;
+      max-height: calc(100vh - var(--sticky-chrome-h, 96px) - 8px) !important;
     }
     #panel-balance .balance-fixed-header {
+      flex: 0 0 auto !important;
       position: relative !important;
       top: auto !important;
-      left: auto !important;
-      right: auto !important;
-      z-index: 2;
+      z-index: 3;
       background: var(--bg);
-      padding: 0 0 8px 0;
+      padding: 4px 0 8px;
       margin: 0;
-      box-shadow: none;
+      box-shadow: 0 6px 10px -8px rgba(0,0,0,0.35);
       transform: none !important;
     }
     #panel-balance .balance-fixed-header .filter-bar,
@@ -1104,7 +1105,7 @@
       position: relative !important;
       top: auto !important;
       background: var(--bg);
-      padding: 4px 0 6px;
+      padding: 2px 0 6px;
       margin: 0;
     }
     #panel-balance .balance-fixed-header .balance-filter-block {
@@ -1112,22 +1113,27 @@
       top: auto !important;
       background: var(--bg);
       margin: 0;
-      padding: 0 0 4px;
+      padding: 0 0 2px;
       box-shadow: none;
     }
     #panel-balance .balance-scroll-body {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       position: relative !important;
       z-index: 1;
-      overflow: visible !important;
-      margin-top: 4px;
-      padding-bottom: 24px;
+      margin: 0;
+      padding: 4px 0 40px;
     }
     #panel-balance .balance-scroll-body .summary-section {
       margin-top: 8px;
     }
     .feature-sheet-body #panel-balance.active {
-      display: block !important;
-      max-height: none !important;
+      height: 100% !important;
+      max-height: 100% !important;
     }
     /* balance-col-compact */
     #panel-balance table th:first-child,
@@ -5242,7 +5248,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-fix-balance-back-bg-v4 */
+    /* build-stamp: 2026-09-16-fix-scroll-dropdown-v5 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -12464,6 +12470,72 @@ function openPdfPrintWindow(){
       });
     }
 
+
+    function openPersonDetailAccountMenu(accBtn, row, onPicked) {
+      if (!accBtn) return;
+      try { document.querySelectorAll('.dark-select-list.open').forEach(l => { try { l.remove(); } catch (e2) {} }); } catch (e0) {}
+      const list = document.createElement('div');
+      list.className = 'dark-select-list open';
+      list.style.cssText = 'position:fixed;z-index:99999;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:140px;box-sizing:border-box;';
+      const banks = (typeof listSelectableBanks === 'function') ? listSelectableBanks() : [];
+      if (!banks.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:12px;color:var(--muted);font-size:0.85rem;text-align:center;';
+        empty.textContent = 'حسابی ثبت نشده';
+        list.appendChild(empty);
+      }
+      banks.forEach(b => {
+        const opt = document.createElement('div');
+        opt.className = 'dark-select-option';
+        opt.textContent = b.disp;
+        opt.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;';
+        opt.onclick = (ev) => {
+          try { ev.stopPropagation(); } catch (e) {}
+          if (row) row.account = b.disp;
+          accBtn.textContent = typeof shortBankDisplay === 'function' ? shortBankDisplay(b.disp) : b.disp;
+          try { if (typeof markFilled === 'function') markFilled(accBtn, true); } catch (eM) {}
+          try { list.remove(); } catch (eR) {}
+          try { scheduleSave(); } catch (eS) {}
+          if (typeof onPicked === 'function') {
+            setTimeout(() => { try { onPicked(); } catch (eP) {} }, 50);
+          }
+        };
+        list.appendChild(opt);
+      });
+      document.body.appendChild(list);
+      function place() {
+        try {
+          const r = accBtn.getBoundingClientRect();
+          if (!r || r.width < 1) return;
+          const menuH = Math.min(240, list.scrollHeight || 200);
+          let top = r.bottom + 4;
+          if (top + menuH > window.innerHeight - 8) top = Math.max(8, r.top - menuH - 4);
+          let left = r.left;
+          const mw = Math.max(r.width, 140);
+          if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+          if (left < 8) left = 8;
+          list.style.top = Math.round(top) + 'px';
+          list.style.left = Math.round(left) + 'px';
+          list.style.width = Math.round(mw) + 'px';
+        } catch (e) {}
+      }
+      place();
+      requestAnimationFrame(place);
+      setTimeout(place, 50);
+      setTimeout(place, 200);
+      const close = (ev) => {
+        if (!list.contains(ev.target) && ev.target !== accBtn) {
+          try { list.remove(); } catch (e2) {}
+          document.removeEventListener('mousedown', close);
+          document.removeEventListener('touchstart', close);
+        }
+      };
+      setTimeout(() => {
+        document.addEventListener('mousedown', close);
+        document.addEventListener('touchstart', close, { passive: true });
+      }, 30);
+    }
+
     function openPersonDetail(title, kind) {
       _detailContext = { title: title, kind: kind };
       try { document.body.classList.add('detail-open'); } catch (e) {}
@@ -12998,7 +13070,22 @@ function openPdfPrintWindow(){
             amt.blur();
             try {
               const btn = tr.querySelector('.pd-acc-btn');
-              if (btn) btn.click();
+              if (!btn) return;
+              // Focus → scroll settle → مختصات تازه → باز شدن dropdown
+              // (کلیک مستقیم btn را خراب نکن؛ مسیر Next جداست)
+              const openSettled = () => {
+                try {
+                  btn.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                } catch (eS) {}
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    try { openPersonDetailAccountMenu(btn, row, () => { try { sortAndRebuild(); } catch (eR) {} }); } catch (eO) {
+                      try { btn.click(); } catch (eC) {}
+                    }
+                  });
+                });
+              };
+              setTimeout(openSettled, 300);
             } catch (err) {}
           }
         };
@@ -13034,48 +13121,7 @@ function openPdfPrintWindow(){
         accBtn.textContent = row.account ? shortBankDisplay(row.account) : 'انتخاب';
         accBtn.onclick = (e) => {
           e.stopPropagation();
-          document.querySelectorAll('.dark-select-list.open').forEach(l => { try { l.remove(); } catch (e2) {} });
-          const list = document.createElement('div');
-          list.className = 'dark-select-list open';
-          list.style.cssText = 'position:fixed;z-index:530;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:140px;';
-          const banks = listSelectableBanks();
-          if (!banks.length) {
-            const empty = document.createElement('div');
-            empty.style.cssText = 'padding:12px;color:var(--muted);font-size:0.85rem;text-align:center;';
-            empty.textContent = 'حسابی ثبت نشده';
-            list.appendChild(empty);
-          }
-          banks.forEach(b => {
-            const opt = document.createElement('div');
-            opt.className = 'dark-select-option';
-            opt.textContent = b.disp;
-            opt.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;';
-            opt.onclick = (ev) => {
-              ev.stopPropagation();
-              row.account = b.disp;
-              accBtn.textContent = b.disp;
-              markFilled(accBtn, true);
-              list.remove();
-              scheduleSave();
-              setTimeout(() => { try { sortAndRebuild(); } catch (e) {} }, 50);
-            };
-            list.appendChild(opt);
-          });
-          document.body.appendChild(list);
-          const r = accBtn.getBoundingClientRect();
-          list.style.top = Math.min(window.innerHeight - 200, r.bottom + 4) + 'px';
-          list.style.left = Math.max(8, r.left - 20) + 'px';
-          const close = (ev) => {
-            if (!list.contains(ev.target) && ev.target !== accBtn) {
-              try { list.remove(); } catch (e2) {}
-              document.removeEventListener('mousedown', close);
-              document.removeEventListener('touchstart', close);
-            }
-          };
-          setTimeout(() => {
-            document.addEventListener('mousedown', close);
-            document.addEventListener('touchstart', close, { passive: true });
-          }, 10);
+          openPersonDetailAccountMenu(accBtn, row, () => { try { sortAndRebuild(); } catch (err) {} });
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
@@ -17048,11 +17094,16 @@ field('حساب بانکی', accSelRec);
       if (!el) return;
       setTimeout(() => {
         try {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const r = el.getBoundingClientRect();
+          const vh = window.innerHeight || 600;
+          // فقط اگر خارج از محدوده دید است، و فقط nearest — نه پرش به center
+          if (r.top < 80 || r.bottom > vh - 120) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
         } catch (e) {
-          el.scrollIntoView(true);
+          try { el.scrollIntoView({ block: 'nearest' }); } catch (e2) {}
         }
-      }, 350);
+      }, 280);
     }
     document.addEventListener('focusin', (e) => {
       const t = e.target;
@@ -18617,6 +18668,24 @@ field('حساب بانکی', accSelRec);
       } else {
         dayBox.style.display = 'none';
       }
+      // ارتفاع/اسکرول balance-scroll-body بعد از تغییر فیلتر تازه شود
+      try {
+        const sb = document.getElementById('balanceScrollBody');
+        if (sb) {
+          void sb.offsetHeight;
+          if (dayBox && dayBox.style.display !== 'none') {
+            requestAnimationFrame(() => {
+              try {
+                const sbR = sb.getBoundingClientRect();
+                const dR = dayBox.getBoundingClientRect();
+                if (dR.bottom > sbR.bottom - 4) {
+                  sb.scrollTop += Math.ceil(dR.bottom - sbR.bottom + 12);
+                }
+              } catch (e2) {}
+            });
+          }
+        }
+      } catch (e) {}
     }
 
 
