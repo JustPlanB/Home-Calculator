@@ -1693,33 +1693,32 @@
       width: 100%;
       box-sizing: border-box;
     }
-    /* ========== Unified table shape (income/expense/recurring/install/ledger) ========== */
+    /* ========== Unified table shape (shared component) ========== */
     .person-detail-box,
     .shaped-card {
       --frame-bg: #2a2a2a;
-      --frame-stroke: #4a4a4a;
+      --frame-stroke: #5a5a5a;
       --tab-w: 48px;
       --tab-h: 40px;
       --frame-r: 16px;
-      position: relative;
-      background: transparent !important;
+      position: relative !important;
+      background: var(--frame-bg) !important;
       border: none !important;
-      border-radius: 0 !important;
+      border-radius: var(--frame-r) var(--frame-r) 0 0 !important;
       width: min(100%, var(--match-card-w, 100%));
       max-width: 100%;
       box-sizing: border-box;
       margin: 0 auto;
-      margin-bottom: calc(var(--tab-h) + 10px);
+      margin-bottom: calc(var(--tab-h) + 12px) !important;
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
       overscroll-behavior: contain;
-      overflow: visible;
+      overflow: visible !important;
       z-index: 1;
+      isolation: isolate;
     }
     .shaped-card {
-      --frame-bg: var(--card, #2a2a2a);
-      --frame-stroke: var(--border, #4a4a4a);
       --frame-r: 14px;
       max-height: none;
       width: 100%;
@@ -1727,28 +1726,28 @@
     [data-theme="dark"] .person-detail-box,
     [data-theme="dark"] .shaped-card {
       --frame-bg: #2a2a2a;
-      --frame-stroke: #555555;
+      --frame-stroke: #5a5a5a;
     }
     [data-theme="light"] .person-detail-box {
       --frame-bg: #3a3a3a;
-      --frame-stroke: #5a5a5a;
+      --frame-stroke: #666;
     }
     .shaped-card.frame-step-sm {
       --tab-w: 40px;
       --tab-h: 34px;
       --frame-r: 12px;
     }
-    /* SVG: fill + continuous stroke for entire silhouette */
+    /* SVG فقط استروک یکپارچه؛ fill از background کانتینر + پس‌زمینه زائده */
     .person-detail-box > .shape-frame-svg,
     .shaped-card > .shape-frame-svg {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: calc(100% + var(--tab-h));
-      pointer-events: none;
-      overflow: visible;
-      z-index: 0;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: calc(100% + var(--tab-h)) !important;
+      pointer-events: none !important;
+      overflow: visible !important;
+      z-index: 3 !important;
     }
     .person-detail-box > .shape-frame-svg .shape-fill,
     .shaped-card > .shape-frame-svg .shape-fill {
@@ -1759,27 +1758,13 @@
     .shaped-card > .shape-frame-svg .shape-stroke {
       fill: none;
       stroke: var(--frame-stroke);
-      stroke-width: 1.5;
+      stroke-width: 1.5px;
       stroke-linejoin: round;
       stroke-linecap: round;
-      vector-effect: non-scaling-stroke;
-    }
-    /* content above fill */
-    .person-detail-box > .person-detail-sticky,
-    .person-detail-box > .person-detail-scroll,
-    .person-detail-box > .person-detail-hint,
-    .shaped-card > .summary-header,
-    .shaped-card > .summary-table,
-    .shaped-card > .section-header,
-    .shaped-card > .section-body,
-    .shaped-card > table {
-      position: relative;
-      z-index: 2;
-      background: transparent !important;
     }
     .person-detail-sticky {
       flex-shrink: 0;
-      z-index: 3;
+      z-index: 2;
       background: transparent !important;
       position: relative;
       border-radius: calc(var(--frame-r) - 1px) calc(var(--frame-r) - 1px) 0 0;
@@ -1787,18 +1772,19 @@
     }
     .person-detail-scroll {
       background: transparent !important;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      position: relative;
+      z-index: 2;
     }
     .person-detail-hint {
       background: transparent !important;
-      color: var(--muted, #888);
+      position: relative;
+      z-index: 2;
+      color: rgba(255,255,255,0.45);
       font-size: 0.75rem;
       text-align: center;
       padding: 6px 10px 10px;
     }
-    /* + button sits in the tab notch — no own border/bg */
+    /* زائده + : فقط آیکون؛ پس‌زمینه و استروک از SVG */
     .person-detail-box > .table-add-tab,
     .shaped-card > .table-add-tab {
       position: absolute !important;
@@ -1810,51 +1796,66 @@
       height: var(--tab-h) !important;
       min-width: var(--tab-w) !important;
       min-height: var(--tab-h) !important;
+      max-width: var(--tab-w) !important;
+      max-height: var(--tab-h) !important;
       margin: 0 !important;
       padding: 0 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: transparent !important;
+      background: var(--frame-bg) !important;
       border: none !important;
-      border-radius: 0 !important;
+      border-radius: 0 0 var(--frame-r) var(--frame-r) !important;
       box-shadow: none !important;
       outline: none !important;
-      z-index: 4;
+      z-index: 4 !important;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       overflow: visible !important;
+      transform: none !important;
     }
     .person-detail-box > .table-add-tab .tab-plus-icon,
-    .person-detail-box > .table-add-tab > svg:not(.shape-frame-svg):not(.tab-join-svg),
+    .person-detail-box > .table-add-tab > svg,
     .shaped-card > .table-add-tab .tab-plus-icon,
-    .shaped-card > .table-add-tab > svg:not(.shape-frame-svg):not(.tab-join-svg) {
+    .shaped-card > .table-add-tab > svg {
       width: 22px !important;
       height: 22px !important;
       stroke: #0a84ff !important;
       fill: none !important;
       stroke-width: 2.8 !important;
       stroke-linecap: round !important;
-      position: relative;
-      z-index: 5;
+      pointer-events: none !important;
+      display: block !important;
       margin: 0 !important;
-      pointer-events: none;
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
     }
     .shaped-card.frame-step-sm > .table-add-tab .tab-plus-icon,
-    .shaped-card.frame-step-sm > .table-add-tab > svg:not(.shape-frame-svg):not(.tab-join-svg) {
+    .shaped-card.frame-step-sm > .table-add-tab > svg {
       width: 16px !important;
       height: 16px !important;
     }
     .person-detail-box > .table-add-tab .tab-join-svg,
     .shaped-card > .table-add-tab .tab-join-svg,
     .person-detail-box > .table-add-tab .tab-gap-cover,
-    .shaped-card > .table-add-tab .tab-gap-cover,
+    .shaped-card > .table-add-tab .tab-gap-cover {
+      display: none !important;
+    }
     .person-detail-box > .table-add-tab::before,
     .person-detail-box > .table-add-tab::after,
     .shaped-card > .table-add-tab::before,
     .shaped-card > .table-add-tab::after {
       display: none !important;
       content: none !important;
+    }
+    .shaped-card.summary-section,
+    .shaped-card.ledger-summary,
+    .recurring-box.shaped-card {
+      border: none !important;
+      box-shadow: none !important;
+      background: var(--frame-bg, #2a2a2a) !important;
     }
     .person-detail-title {
       text-align: center;
@@ -3139,53 +3140,12 @@
       margin-left: auto !important;
       margin-right: auto !important;
     }
-    .table-add-tab,
-    .person-detail-add .table-add-tab,
-    .person-detail-add .btn-circle-plus,
-    .add-row-wrap.ledger-add-fixed .btn-circle-plus,
-    #recurringBox .table-add-tab,
-    .recurring-box + .table-add-tab-wrap .table-add-tab,
-    #panel-install .table-add-tab,
-    #panel-ledger .table-add-tab {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      /* ارتفاع ثابت، عرض بیشتر، عمودی */
-      width: 52px !important;
-      height: 48px !important;
-      min-width: 52px !important;
-      min-height: 48px !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      position: relative !important;
-      border: none !important;
-      border-radius: 0 !important;
-      background: transparent !important;
-      color: #0a84ff !important;
-      box-shadow: none !important;
-      outline: none !important;
-      cursor: pointer;
-      line-height: 1 !important;
-      flex-shrink: 0 !important;
-      -webkit-tap-highlight-color: transparent;
-      overflow: visible !important;
-    }
+    /* legacy .table-add-tab base — DO NOT force position:relative (breaks shape tab) */
+    .table-add-tab-wrap { display: none !important; }
+
     /* پوشش خط کف جدول — بدون خط سفید/اضافه در محل اتصال */
-    .table-add-tab-wrap::before,
-    .person-detail-add::before,
-    .add-row-wrap.ledger-add-fixed::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: 56px;
-      width: 52px;
-      height: 4px;
-      background: #1a1a1c;
-      z-index: 3;
-      pointer-events: none;
-      box-shadow: none;
-      border: none;
-    }
+    /* legacy cover removed */
+
     #panel-install .table-add-tab-wrap::before,
     #panel-ledger .table-add-tab-wrap::before,
     .recurring-box + .table-add-tab-wrap::before,
@@ -5810,7 +5770,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-tab-shape-v21 */
+    /* build-stamp: 2026-09-16-tab-shape-v22 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15726,7 +15686,7 @@ if (item.type === 'recurring') {
       if (!box) {
         box = document.createElement('div');
         box.id = 'recurringBox';
-        box.className = 'recurring-box';
+        box.className = 'recurring-box shaped-card';
         container.appendChild(box);
       } else if (box.parentNode !== container) {
         container.appendChild(box);
@@ -15775,6 +15735,7 @@ if (item.type === 'recurring') {
       box.innerHTML = html;
       box.classList.add('shaped-card');
       box.classList.remove('frame-with-step');
+      
       try {
         if (box.parentNode) {
           box.parentNode.querySelectorAll(':scope > .table-add-tab-wrap[data-rec-tab]').forEach(el => el.remove());
@@ -17976,76 +17937,85 @@ field('حساب بانکی', accSelRec);
 
 
     function shapeFramePath(w, h, tw, th, r) {
-      // یک مسیر بسته: مستطیل کِرو + زائده پایین‌راست (طبق تصویر مرجع)
-      // استروک روی همین مسیر یکپارچه است — بدون درز
-      w = Math.max(8, w);
-      h = Math.max(8, h);
-      tw = Math.min(Math.max(28, tw), w * 0.45);
+      // مسیر بسته یکپارچه مطابق تصویر مرجع:
+      // مستطیل کِرو + زائده پایین‌راست که ضلع راستش ادامه ضلع راست بدنه است
+      w = Math.max(40, w);
+      h = Math.max(40, h);
+      tw = Math.min(Math.max(32, tw), Math.floor(w * 0.35));
       th = Math.max(28, th);
-      r = Math.min(r, 16, tw / 2.5, th / 2.5, h / 4);
-      const n = Math.min(12, tw * 0.22); // شعاع خم مقعر بین کف بدنه و ضلع چپ زائده
-      // مختصات
-      // بدنه: (0,0)-(w,h) ؛ زائده: (w-tw,h)-(w,h+th)
-      const p = [];
-      p.push('M ' + r + ' 0');
-      p.push('H ' + (w - r));
-      p.push('A ' + r + ' ' + r + ' 0 0 1 ' + w + ' ' + r);           // بالا-راست
-      p.push('V ' + (h + th - r));                                    // ضلع راست تا پایین زائده
-      p.push('A ' + r + ' ' + r + ' 0 0 1 ' + (w - r) + ' ' + (h + th)); // پایین-راست زائده
-      p.push('H ' + (w - tw + r));
-      p.push('A ' + r + ' ' + r + ' 0 0 1 ' + (w - tw) + ' ' + (h + th - r)); // پایین-چپ زائده
-      p.push('V ' + (h + n));
-      // خم مقعر: از ضلع چپ زائده به کف بدنه (sweep=1 برای مقعر بیرونی)
-      p.push('A ' + n + ' ' + n + ' 0 0 1 ' + (w - tw - n) + ' ' + h);
-      p.push('H ' + r);
-      p.push('A ' + r + ' ' + r + ' 0 0 1 0 ' + (h - r));             // پایین-چپ بدنه
-      p.push('V ' + r);
-      p.push('A ' + r + ' ' + r + ' 0 0 1 ' + r + ' 0');              // بالا-چپ
-      p.push('Z');
-      return p.join(' ');
+      r = Math.min(r || 16, 16, Math.floor(tw / 2.2), Math.floor(th / 2.2), Math.floor(h / 5));
+      // notch: شعاع اتصال کف بدنه به ضلع چپ زائده
+      var n = Math.min(10, Math.floor(tw * 0.2));
+      var x0 = 0, y0 = 0;
+      var x1 = w, y1 = h;
+      var tx0 = w - tw; // چپ زائده
+      // Clockwise from top-left
+      return [
+        'M', r, 0,
+        'H', w - r,
+        'A', r, r, 0, 0, 1, w, r,                 // top-right corner
+        'V', h + th - r,                            // right edge down through tab
+        'A', r, r, 0, 0, 1, w - r, h + th,         // tab bottom-right
+        'H', tx0 + r,
+        'A', r, r, 0, 0, 1, tx0, h + th - r,       // tab bottom-left
+        'V', h + n,                                 // up left side of tab
+        // concave step into main floor (outward-round notch)
+        'A', n, n, 0, 0, 0, tx0 - n, h,
+        'H', r,
+        'A', r, r, 0, 0, 1, 0, h - r,              // body bottom-left
+        'V', r,
+        'A', r, r, 0, 0, 1, r, 0,                  // top-left
+        'Z'
+      ].join(' ');
     }
     function ensureShapeFrame(el) {
       try {
-        if (!el || !el.getBoundingClientRect) return;
-        const cs = getComputedStyle(el);
-        const tw = parseFloat(cs.getPropertyValue('--tab-w')) || 48;
-        const th = parseFloat(cs.getPropertyValue('--tab-h')) || 40;
-        const r = parseFloat(cs.getPropertyValue('--frame-r')) || 16;
-        // اندازه‌گیری بدون زائده
-        const w = Math.round(el.clientWidth || el.offsetWidth);
-        const h = Math.round(el.clientHeight || el.offsetHeight);
-        if (w < 16 || h < 16) return;
-        let svg = el.querySelector(':scope > .shape-frame-svg');
+        if (!el || !el.isConnected) return;
+        var cs = getComputedStyle(el);
+        var tw = parseFloat(cs.getPropertyValue('--tab-w')) || 48;
+        var th = parseFloat(cs.getPropertyValue('--tab-h')) || 40;
+        var r = parseFloat(cs.getPropertyValue('--frame-r')) || 16;
+        var w = Math.round(el.getBoundingClientRect().width || el.clientWidth || el.offsetWidth);
+        var h = Math.round(el.getBoundingClientRect().height || el.clientHeight || el.offsetHeight);
+        if (w < 24 || h < 24) return;
+
+        var svg = el.querySelector(':scope > .shape-frame-svg');
         if (!svg) {
           svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.setAttribute('class', 'shape-frame-svg');
           svg.setAttribute('aria-hidden', 'true');
-          const fill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          var fill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           fill.setAttribute('class', 'shape-fill');
-          const stroke = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          var stroke = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           stroke.setAttribute('class', 'shape-stroke');
           svg.appendChild(fill);
           svg.appendChild(stroke);
           el.insertBefore(svg, el.firstChild);
         }
-        const d = shapeFramePath(w, h, tw, th, r);
-        const totalH = h + th;
+        var totalH = h + th;
+        var d = shapeFramePath(w, h, tw, th, r);
         svg.setAttribute('viewBox', '0 0 ' + w + ' ' + totalH);
         svg.setAttribute('width', String(w));
         svg.setAttribute('height', String(totalH));
-        svg.style.width = w + 'px';
-        svg.style.height = totalH + 'px';
-        const fill = svg.querySelector('.shape-fill');
-        const stroke = svg.querySelector('.shape-stroke');
-        if (fill) fill.setAttribute('d', d);
-        if (stroke) stroke.setAttribute('d', d);
-        // دکمه‌ی + را روی زائده هم‌تراز کن
-        const btn = el.querySelector(':scope > .table-add-tab');
+        svg.style.cssText = 'position:absolute;left:0;top:0;width:' + w + 'px;height:' + totalH + 'px;pointer-events:none;z-index:3;overflow:visible;';
+        var fillEl = svg.querySelector('.shape-fill');
+        var strokeEl = svg.querySelector('.shape-stroke');
+        if (fillEl) fillEl.setAttribute('d', d);
+        if (strokeEl) strokeEl.setAttribute('d', d);
+
+        var btn = el.querySelector(':scope > .table-add-tab');
         if (btn) {
-          btn.style.right = '0px';
-          btn.style.bottom = (-th) + 'px';
-          btn.style.width = tw + 'px';
-          btn.style.height = th + 'px';
+          btn.style.cssText = 'position:absolute;right:0;bottom:-' + th + 'px;left:auto;top:auto;width:' + tw + 'px;height:' + th + 'px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;background:var(--frame-bg,#2a2a2a);border:none;border-radius:0;box-shadow:none;z-index:4;cursor:pointer;';
+          // remove any leftover join svg
+          btn.querySelectorAll('.tab-join-svg,.tab-gap-cover').forEach(function(n){ try{n.remove();}catch(e){} });
+        }
+
+        // ResizeObserver یک‌بار
+        if (!el._shapeRO && typeof ResizeObserver !== 'undefined') {
+          el._shapeRO = new ResizeObserver(function() {
+            try { ensureShapeFrame(el); } catch (e2) {}
+          });
+          el._shapeRO.observe(el);
         }
       } catch (e) {}
     }
