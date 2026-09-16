@@ -5248,7 +5248,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-fix-scroll-dropdown-v5 */
+    /* build-stamp: 2026-09-16-rollback-reg-v6 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -9604,44 +9604,37 @@
     }
     function applyBackupData(data, mode) {
       // mode: 'replace' | 'merge'
+      if (!data || typeof data !== 'object') return;
       if (mode === 'replace') {
         if (data.archive && typeof data.archive === 'object') archive = data.archive;
         if (Array.isArray(data.plans)) plans = data.plans;
         if (Array.isArray(data.recurringIncomes)) {
           recurringIncomes = data.recurringIncomes;
-          saveRecurring();
-        
-        try { scheduleSave(); } catch (e) {}
-        try { renderHomeCards(); } catch (e) {}
-        try {
-          if (typeof _detailContext !== 'undefined' && _detailContext && _detailContext.kind === 'income') {
-            renderPersonDetailPanel('income', _detailContext.title);
-          }
-        } catch (e) {}
-}
+          try { saveRecurring(); } catch (e) {}
+        }
       } else {
         // merge
         archive = mergeArchives(archive, data.archive || {});
         if (Array.isArray(data.plans)) plans = mergePlansList(plans, data.plans);
         if (Array.isArray(data.recurringIncomes)) {
           recurringIncomes = mergeRecurringList(recurringIncomes, data.recurringIncomes);
-          saveRecurring();
+          try { saveRecurring(); } catch (e) {}
         }
       }
+      // cardMeta: هم روی periodData هم mirror در localStorage و داخل archive ماه جاری
       if (data.cardMeta && typeof data.cardMeta === 'object') {
         try {
           if (!periodData.cardMeta) periodData.cardMeta = {};
           Object.keys(data.cardMeta).forEach(k => {
             periodData.cardMeta[k] = data.cardMeta[k];
           });
-          try { localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(periodData.cardMeta)); } catch (e) {}
-          try { persistCurrent(); } catch (e) {}
-          try { saveArchive(); } catch (e) {}
+          localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(periodData.cardMeta));
         } catch (e) {}
       }
       if (Array.isArray(data.selectedBankAccounts)) {
         try {
-          selectedBankAccounts = [].concat(selectedBankAccounts || [], data.selectedBankAccounts);
+          if (mode === 'replace') selectedBankAccounts = [].concat(data.selectedBankAccounts);
+          else selectedBankAccounts = [].concat(selectedBankAccounts || [], data.selectedBankAccounts);
           normalizeSelectedBanks();
           saveBankAccountsSelection();
         } catch (e) {}
@@ -9649,13 +9642,15 @@
       if (Array.isArray(data.trash)) {
         try {
           loadTrash();
-          trashItems = [].concat(data.trash, trashItems || []);
+          if (mode === 'replace') trashItems = [].concat(data.trash);
+          else trashItems = [].concat(data.trash, trashItems || []);
           saveTrash();
         } catch (e) {}
       }
       if (data.smsAccountBankMap && typeof data.smsAccountBankMap === 'object') {
         try {
-          Object.assign(smsAccountBankMap, data.smsAccountBankMap);
+          if (mode === 'replace') smsAccountBankMap = Object.assign({}, data.smsAccountBankMap);
+          else Object.assign(smsAccountBankMap, data.smsAccountBankMap);
           saveSmsAccountBankMap();
         } catch (e) {}
       }
@@ -9663,15 +9658,24 @@
       if (data.currentMonth) currentMonth = parseInt(data.currentMonth, 10) || currentMonth;
       if (mode === 'replace' && (data.theme === 'light' || data.theme === 'dark')) applyTheme(data.theme);
       const key = periodKey(currentYear, currentMonth);
-      if (archive[key]) periodData = archive[key];
-      else periodData = emptyPeriodData();
+      if (archive[key]) {
+        try { periodData = JSON.parse(JSON.stringify(archive[key])); } catch (e) { periodData = archive[key]; }
+      } else {
+        periodData = emptyPeriodData();
+      }
+      // اگر cardMeta فقط در root بکاپ بود و داخل ماه نبود
+      if (data.cardMeta && typeof data.cardMeta === 'object') {
+        if (!periodData.cardMeta) periodData.cardMeta = {};
+        Object.keys(data.cardMeta).forEach(k => { periodData.cardMeta[k] = data.cardMeta[k]; });
+      }
       try { claimBackupOwnership(); } catch (e) {}
-      saveArchive();
+      try { persistCurrent(); } catch (e) {}
+      try { saveArchive(); } catch (e) {}
       try { if (typeof saveRecurring === 'function') saveRecurring(); } catch (e) {}
-      initSelectors();
-      updateTabUI();
-      renderAll();
-      checkInstallReminders();
+      try { initSelectors(); } catch (e) {}
+      try { updateTabUI(); } catch (e) {}
+      try { renderAll(); } catch (e) {}
+      try { checkInstallReminders(); } catch (e) {}
     }
 
     function openBackupRestoreChoice(data) {
@@ -12477,7 +12481,32 @@ function openPdfPrintWindow(){
       const list = document.createElement('div');
       list.className = 'dark-select-list open';
       list.style.cssText = 'position:fixed;z-index:99999;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:140px;box-sizing:border-box;';
-      const banks = (typeof listSelectableBanks === 'function') ? listSelectableBanks() : [];
+      // لیست حساب‌های قابل انتخاب (global) — جدا از حسابِ انتخاب‌شده‌ی ردیف
+      const banks = [];
+      const seen = new Set();
+      function addBankName(n) {
+        let disp = n;
+        try { if (typeof shortBankDisplay === 'function') disp = shortBankDisplay(n); } catch (e) {}
+        disp = (disp || '').trim();
+        if (!disp || seen.has(disp)) return;
+        seen.add(disp);
+        banks.push({ raw: n, disp: disp });
+      }
+      try {
+        (selectedBankAccounts || []).forEach(b => {
+          const n = typeof b === 'string' ? b : (b && (b.label || b.bank || b.name)) || '';
+          addBankName(n);
+        });
+      } catch (e) {}
+      try {
+        Object.keys(smsAccountBankMap || {}).forEach(k => addBankName(smsAccountBankMap[k]));
+      } catch (e) {}
+      try {
+        const rawMap = localStorage.getItem(STORAGE_KEY + '_smsBankMap');
+        const map = rawMap ? (JSON.parse(rawMap) || {}) : {};
+        Object.keys(map).forEach(k => addBankName(map[k]));
+        Object.values(map).forEach(v => addBankName(v));
+      } catch (e) {}
       if (!banks.length) {
         const empty = document.createElement('div');
         empty.style.cssText = 'padding:12px;color:var(--muted);font-size:0.85rem;text-align:center;';
@@ -13070,22 +13099,7 @@ function openPdfPrintWindow(){
             amt.blur();
             try {
               const btn = tr.querySelector('.pd-acc-btn');
-              if (!btn) return;
-              // Focus → scroll settle → مختصات تازه → باز شدن dropdown
-              // (کلیک مستقیم btn را خراب نکن؛ مسیر Next جداست)
-              const openSettled = () => {
-                try {
-                  btn.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-                } catch (eS) {}
-                requestAnimationFrame(() => {
-                  requestAnimationFrame(() => {
-                    try { openPersonDetailAccountMenu(btn, row, () => { try { sortAndRebuild(); } catch (eR) {} }); } catch (eO) {
-                      try { btn.click(); } catch (eC) {}
-                    }
-                  });
-                });
-              };
-              setTimeout(openSettled, 300);
+              if (btn) btn.click();
             } catch (err) {}
           }
         };
