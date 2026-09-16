@@ -1374,11 +1374,16 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      /* فقط لبه‌های بیرونی کمی به سمت فریم کارت — فاصله بین درآمد/مخارج ثابت می‌ماند */
+      margin-left: -6px;
+      margin-right: -6px;
+      width: calc(100% + 12px);
+      box-sizing: border-box;
     }
     .person-card-cols {
       display: flex;
       flex-direction: row;
-      gap: 8px;
+      gap: 8px; /* فاصله بین درآمد و مخارج بدون تغییر */
       direction: rtl;
     }
     .person-stat-box {
@@ -1386,10 +1391,11 @@
       min-width: 0;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.85);
-      padding: 10px 10px;
+      padding: 10px 8px; /* کمی فضای افقی بیشتر برای اعداد */
       background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       cursor: pointer;
+      box-sizing: border-box;
     }
     .person-stat-box:active { transform: scale(0.98); filter: brightness(1.05); }
     .person-stat-line {
@@ -2908,7 +2914,17 @@
     #panel-install #installSummarySection,
     #panel-ledger .ledger-summary {
       margin-bottom: 0 !important;
-      border-bottom-left-radius: 0;
+      border-radius: 10px !important; /* هر چهار گوشه گرد */
+    }
+    #panel-install .summary-section + .table-add-tab-wrap,
+    #panel-ledger .ledger-summary + .table-add-tab-wrap {
+      margin-top: -1px !important;
+      padding-left: 22px !important;
+    }
+    #panel-install .table-add-tab,
+    #panel-ledger .ledger-summary + .table-add-tab-wrap .table-add-tab {
+      border-radius: 8px 8px 12px 12px !important;
+      border-top: none !important;
     }
 
     /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
@@ -2951,8 +2967,8 @@
       min-height: 34px !important;
       margin: 0 !important;
       padding: 0 !important;
-      /* بالا صاف (متصل به جدول)، پایین گرد */
-      border-radius: 0 0 12px 12px !important;
+      /* اتصال نرم به جدول + گوشه‌های پایین گرد */
+      border-radius: 8px 8px 12px 12px !important;
       border: 1px solid rgba(255,255,255,0.08) !important;
       border-top: none !important;
       background: #1a1a1c !important;
@@ -2993,12 +3009,46 @@
       filter: brightness(0.92);
       transform: none !important;
     }
-    /* فریم جزئیات: + بیرون از box است */
+    /* فریم جزئیات: + بیرون از box، کمی به راست، اتصال نرم */
     .person-detail-page > .person-detail-add {
       margin-top: -1px !important;
-      padding-left: 12px !important;
+      padding-left: 22px !important;
+    }
+    .person-detail-page > .person-detail-add .table-add-tab {
+      /* اتصال نرم به کف جدول (نه گوشه ۹۰ درجه) */
+      border-radius: 8px 8px 12px 12px !important;
+      border-top: none !important;
     }
     /* درآمد ثابت: ضربدر حذف = همان قرمز بقیه */
+
+    /* + بالای روابط بده‌بستان: همان طراحی، کمی کوچک‌تر */
+    #panel-ledger .add-row-wrap.ledger-add-fixed {
+      margin-top: -1px !important;
+      margin-bottom: 8px !important;
+      padding-left: 22px !important;
+      direction: ltr !important;
+      display: flex !important;
+      justify-content: flex-start !important;
+    }
+    #panel-ledger .add-row-wrap.ledger-add-fixed .btn-circle-plus,
+    #panel-ledger .add-row-wrap.ledger-add-fixed .table-add-tab {
+      width: 38px !important;
+      height: 26px !important;
+      min-width: 38px !important;
+      min-height: 26px !important;
+      border-radius: 6px 6px 10px 10px !important;
+      border: 1px solid var(--border) !important;
+      border-top: none !important;
+      background: var(--card) !important;
+      box-shadow: none !important;
+    }
+    #panel-ledger .add-row-wrap.ledger-add-fixed .btn-circle-plus svg,
+    #panel-ledger .add-row-wrap.ledger-add-fixed .table-add-tab svg {
+      width: 14px !important;
+      height: 14px !important;
+      stroke: #0a84ff !important;
+    }
+
     /* ضربدر حذف درآمد ثابت = همان قرمز پررنگ .pd-del */
     #recurringBox .btn-del-row,
     .recurring-box .btn-del-row,
@@ -4028,7 +4078,21 @@
     }
     .recurring-box {
       background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px; margin-bottom: 14px;
+      padding: 12px; margin-bottom: 0;
+    }
+    /* زبانه + چسبیده به لبه پایین درآمد ثابت */
+    .recurring-box + .table-add-tab-wrap,
+    #recurringPanelInner > .table-add-tab-wrap[data-rec-tab] {
+      margin-top: -1px !important;
+      margin-bottom: 14px !important;
+      padding-left: 22px !important;
+    }
+    .recurring-box + .table-add-tab-wrap .table-add-tab,
+    #recurringPanelInner > .table-add-tab-wrap[data-rec-tab] .table-add-tab {
+      border-radius: 8px 8px 12px 12px !important;
+      border-top: none !important;
+      background: var(--card) !important;
+      border-color: var(--border) !important;
     }
     .recurring-box h3 { font-size: 0.95rem; color: var(--accent); margin-bottom: 8px; }
     .plan-field input, .plan-field select {
@@ -5455,7 +5519,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-ui-polish-v13 */
+    /* build-stamp: 2026-09-16-ui-align-v14 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
