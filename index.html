@@ -1071,29 +1071,34 @@
     .tabs-main-hidden .tab-btn.balance {
       display: none !important;
     }
-    /* مانده: هدر فیلتر ثابت + بدنه اسکرول واقعی */
+    /*
+      ROOT CAUSE: صفحه با html/body اسکرول می‌شود؛ flex+max-height روی پنل
+      وقتی والد ارتفاع ثابت ندارد، فیلترها با صفحه حرکت می‌کنند.
+      راه‌حل سازگار: sticky روی هدر فیلتر نسبت به viewport (زیر chrome).
+    */
     #panel-balance.active {
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
-      max-height: calc(100vh - 130px);
-      padding-bottom: 0 !important;
+      display: block !important;
+      overflow: visible !important;
+      max-height: none !important;
+      padding-bottom: 56px !important;
       box-sizing: border-box;
     }
     #panel-balance .balance-fixed-header {
-      flex: 0 0 auto;
-      position: relative;
-      z-index: 40;
+      position: -webkit-sticky;
+      position: sticky;
+      top: var(--sticky-chrome-h, 96px);
+      z-index: 45;
       background: var(--bg);
-      padding-bottom: 8px;
-      box-shadow: 0 8px 12px -8px rgba(0,0,0,0.4);
+      padding: 4px 0 10px;
+      margin: 0;
+      box-shadow: 0 10px 14px -10px rgba(0,0,0,0.45);
     }
     #panel-balance .balance-fixed-header .filter-bar,
     #panel-balance .balance-fixed-header #balanceFilters {
       position: relative;
       top: auto;
       background: var(--bg);
-      padding-top: 4px;
+      padding-top: 2px;
       padding-bottom: 6px;
       margin: 0;
     }
@@ -1102,32 +1107,25 @@
       top: auto;
       background: var(--bg);
       margin: 0;
-      padding-bottom: 4px;
+      padding-bottom: 2px;
       box-shadow: none;
     }
     #panel-balance .balance-scroll-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      padding-bottom: 40px;
-    }
-    #panel-balance .balance-scroll-body .summary-section {
       position: relative;
       z-index: 1;
-      margin-top: 8px;
+      overflow: visible;
+      padding-bottom: 24px;
+    }
+    #panel-balance .balance-scroll-body .summary-section {
+      margin-top: 10px;
+    }
+    /* داخل feature-sheet: همان sticky نسبت به بدنه اسکرول sheet */
+    .feature-sheet-body #panel-balance .balance-fixed-header {
+      top: 0;
     }
     .feature-sheet-body #panel-balance.active {
-      max-height: 100%;
-      height: 100%;
-    }
-    .feature-sheet-body {
-      /* اجازه بده پنل مانده داخلش flex شود */
-    }
-    .feature-sheet-body #panel-balance.active {
-      display: flex !important;
+      display: block !important;
+      max-height: none !important;
     }
     /* balance-col-compact */
     #panel-balance table th:first-child,
@@ -5242,7 +5240,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-ledger-balance-v2 */
+    /* build-stamp: 2026-09-16-rootcause-v3 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17474,6 +17472,8 @@ field('حساب بانکی', accSelRec);
           if (tr && active && tr.contains(active)) { setTimeout(attempt, 280); return; }
           if (active && active.classList && active.classList.contains('unlocked')) { setTimeout(attempt, 280); return; }
           if (document.querySelector('.dark-select-list.open')) { setTimeout(attempt, 280); return; }
+          // منوی وضعیت باز است — rebuild نکن (event listener سلول از بین می‌رود)
+          if (document.querySelector('.status-menu')) { setTimeout(attempt, 280); return; }
         } catch (e) {}
         if (!(row && row.day && row.amount)) return;
         sortLedgerSectionRows(secId);
@@ -18015,10 +18015,7 @@ field('حساب بانکی', accSelRec);
           document.addEventListener('touchstart', closer, true);
         }, 200);
       }
-      // تشخیص single/double با timestamp (قابل‌اعتماد روی Android/Capacitor)
-      // خالی: ورود عدد قرمز + Done
-      // پر + یک tap: بعد از ۵۰۰ms منوی بستانکار/بدهکار (ذخیره در r.status)
-      // پر + دو tap زیر ۵۰۰ms: Edit مبلغ بدون نمایش منو
+      // Android WebView: touchend اصلی؛ جلوگیری از click تکراری بعد از touch
       function snapshotLedRect() {
         try {
           const el = tdAmt || amtInp;
@@ -18030,11 +18027,15 @@ field('حساب بانکی', accSelRec);
         return null;
       }
       function isLedEditing() {
-        return document.activeElement === amtInp && !amtInp.readOnly && amtInp.classList.contains('unlocked');
+        return !!(amtInp && document.activeElement === amtInp && !amtInp.readOnly && amtInp.classList.contains('unlocked'));
       }
       function onLedgerAmountTap(e) {
+        if (!e) return;
+        // جلوگیری از bubble به parentهای جدول
         try { e.stopPropagation(); } catch (err) {}
-        if (e.type === 'mousedown' && e.button != null && e.button !== 0) return;
+        if (e.cancelable) {
+          try { e.preventDefault(); } catch (err2) {}
+        }
         if (isLedEditing()) return;
 
         const now = Date.now();
@@ -18042,7 +18043,7 @@ field('حساب بانکی', accSelRec);
         const delta = now - last;
         tdAmt._lastTapTs = now;
 
-        // double tap
+        // double within 500ms
         if (delta > 0 && delta < 500) {
           if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
           tdAmt._pendingToken = null;
@@ -18051,56 +18052,59 @@ field('حساب بانکی', accSelRec);
           return;
         }
 
-        // empty → edit red
+        // empty → type red
         if (!(r.amount)) {
           if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
           beginLedgerAmountEdit();
           return;
         }
 
-        // filled → schedule menu after 500ms
+        // filled → wait 500ms then menu (token cancelled by second tap)
         const token = {};
         tdAmt._pendingToken = token;
         const savedRect = snapshotLedRect();
         if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._ledTimer = setTimeout(() => {
+        tdAmt._ledTimer = setTimeout(function() {
           tdAmt._ledTimer = null;
           if (tdAmt._pendingToken !== token) return;
           if (isLedEditing()) return;
-          // اگر در این فاصله double آمده lastTap تازه نیست — token باطل شده
+          if (document.querySelector('.status-menu')) return;
           openLedgerStatusMenuForCell(tdAmt, savedRect);
           tdAmt._pendingToken = null;
         }, 500);
       }
-      // pointerup روی موبایل پایدارتر از click است
-      amtInp.addEventListener('pointerup', onLedgerAmountTap, true);
-      tdAmt.addEventListener('pointerup', (e) => {
-        if (e.target === amtInp) return;
-        onLedgerAmountTap(e);
-      }, true);
-      // fallback desktop
-      amtInp.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (tdAmt._ledTimer) { clearTimeout(tdAmt._ledTimer); tdAmt._ledTimer = null; }
-        tdAmt._pendingToken = null;
-        beginLedgerAmountEdit();
-      }, true);
-      // Done → بستن کیبورد + ذخیره (oninput/onblur قبلاً amount را در data می‌نویسند)
-      amtInp.addEventListener('keydown', (e) => {
+      // فقط یک مسیر event — touchend برای Android، click برای دسکتاپ (با قفل ضد دوبار)
+      function bindLedTap(el) {
+        if (!el) return;
+        el.addEventListener('touchend', function(e) {
+          tdAmt._fromTouch = true;
+          onLedgerAmountTap(e);
+          // بلاک click مصنوعی بعدی
+          setTimeout(function() { tdAmt._fromTouch = false; }, 400);
+        }, { capture: true, passive: false });
+        el.addEventListener('click', function(e) {
+          if (tdAmt._fromTouch) {
+            try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+            return;
+          }
+          onLedgerAmountTap(e);
+        }, true);
+      }
+      bindLedTap(amtInp);
+      bindLedTap(tdAmt);
+      // Done
+      amtInp.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
           e.preventDefault();
           e.stopPropagation();
           try { amtInp.blur(); } catch (err) {}
         }
       });
-      amtInp.addEventListener('input', () => {
+      amtInp.addEventListener('input', function() {
         if (r.status !== 'credit') r.status = 'debt';
         applyLedgerAmountColor(r.status === 'credit' ? 'credit' : 'debt');
       });
-      // blur: اطمینان از ذخیره status + amount
-      const prevBlur = amtInp.onblur;
-      amtInp.addEventListener('blur', () => {
+      amtInp.addEventListener('blur', function() {
         try {
           const digits = toEnglishDigits(amtInp.value || '').replace(/[^0-9]/g, '');
           const n = digits ? parseInt(digits, 10) : 0;
