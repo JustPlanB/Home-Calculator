@@ -2903,6 +2903,110 @@
       height: 26px;
       stroke-width: 3.1;
     }
+
+    
+    #panel-install #installSummarySection,
+    #panel-ledger .ledger-summary {
+      margin-bottom: 0 !important;
+      border-bottom-left-radius: 0;
+    }
+
+    /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
+    .table-add-tab-wrap,
+    .person-detail-add,
+    .add-row-wrap.ledger-add-fixed,
+    #panel-install .summary-section + .table-add-tab-wrap,
+    #panel-ledger .ledger-summary + .table-add-tab-wrap,
+    #recurringBox .table-add-tab-wrap {
+      display: flex !important;
+      justify-content: flex-start !important;
+      align-items: flex-start !important;
+      direction: ltr !important;
+      margin: -1px 0 10px !important;
+      padding: 0 0 0 14px !important;
+      position: relative;
+      z-index: 2;
+      background: transparent !important;
+      border: none !important;
+    }
+    .table-add-tab,
+    .person-detail-add .btn-circle-plus,
+    .add-row-wrap.ledger-add-fixed .btn-circle-plus,
+    #recurringBox .table-add-tab,
+    #panel-install .table-add-tab,
+    #panel-ledger .table-add-tab {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 42px !important;
+      height: 26px !important;
+      min-width: 42px !important;
+      min-height: 26px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 0 10px 10px !important;
+      border: 1px solid var(--border) !important;
+      border-top: none !important;
+      background: var(--card) !important;
+      color: var(--accent, #0a84ff) !important;
+      box-shadow: none !important;
+      cursor: pointer;
+      line-height: 1 !important;
+      flex-shrink: 0 !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .table-add-tab svg,
+    .person-detail-add .btn-circle-plus svg,
+    .add-row-wrap.ledger-add-fixed .btn-circle-plus svg,
+    #recurringBox .table-add-tab svg,
+    #panel-install .table-add-tab svg,
+    #panel-ledger .table-add-tab svg {
+      width: 16px !important;
+      height: 16px !important;
+      stroke: var(--accent, #0a84ff) !important;
+      fill: none !important;
+      stroke-width: 2.8 !important;
+      stroke-linecap: round !important;
+    }
+    .table-add-tab:active,
+    .person-detail-add .btn-circle-plus:active,
+    .add-row-wrap.ledger-add-fixed .btn-circle-plus:active {
+      filter: brightness(0.92);
+      transform: none !important;
+    }
+    /* person-detail: یکپارچگی با فریم تیره جدول */
+    .person-detail-box .person-detail-add {
+      padding-left: 10px !important;
+      margin-top: -1px !important;
+    }
+    .person-detail-box .person-detail-add .btn-circle-plus {
+      background: #1a1a1c !important;
+      border-color: #3a3a3e !important;
+      border-top: none !important;
+    }
+    .person-detail-box .person-detail-add .btn-circle-plus svg {
+      stroke: #0a84ff !important;
+    }
+    /* درآمد ثابت: ضربدر حذف = همان قرمز بقیه */
+    #recurringBox .btn-del-row,
+    .recurring-box .btn-del-row {
+      color: #ff6b4a !important;
+      text-shadow: 0 0 6px rgba(255, 23, 68, 0.5) !important;
+      font-weight: 800 !important;
+      font-size: 1.25rem !important;
+      background: transparent !important;
+      border: none !important;
+    }
+    /* فونت کمی کوچک‌تر روی کارت برای دریافت/پرداخت شده/نشده */
+    .person-stat-line.paid,
+    .person-stat-line.unpaid {
+      font-size: 0.68rem !important;
+      line-height: 1.25 !important;
+      letter-spacing: -0.02em;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
+
     /* فقط وسط‌چین کردن آیکون بخش جدید — بدون باکس پشتی */
     .add-sec-wrap {
       display: flex;
@@ -5167,8 +5271,7 @@
     <!-- اقساط -->
     <div id="panel-install" class="tab-panel">
       <div id="plans-container"></div>
-      <div class="add-sec-wrap" style="padding-top:8px;"><button type="button" class="btn-circle-plus lg" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <div class="summary-section">
+      <div class="summary-section" id="installSummarySection">
         <div class="summary-header install-h">خلاصه اقساط</div>
         <table class="summary-table">
           <thead>
@@ -5190,12 +5293,12 @@
           </tfoot>
         </table>
       </div>
+      <div class="table-add-tab-wrap"><button type="button" class="table-add-tab" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     <!-- بده‌بستان -->
     <div id="panel-ledger" class="tab-panel">
       <div id="sections-ledger"></div>
-      <div class="add-sec-wrap" style="padding-top:8px;"><button type="button" class="btn-circle-plus lg" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
       <div class="filter-bar" id="ledgerFilters"></div>
 
       <div class="summary-section ledger-summary">
@@ -5210,6 +5313,7 @@
           <tbody id="ledger-summary-body"></tbody>
         </table>
       </div>
+      <div class="table-add-tab-wrap"><button type="button" class="table-add-tab" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     </div>
@@ -5332,7 +5436,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-text-popup-filter-v10 */
+    /* build-stamp: 2026-09-16-ui-tab-plus-v11 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15291,11 +15395,11 @@ if (item.type === 'recurring') {
             )) +
             '</div>';
         });
-        html += '<div class="add-sec-wrap" style="margin-top:10px;margin-bottom:2px;"><button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید">' + plusSvgRec + '</button></div>';
+        html += '<div class="table-add-tab-wrap" style="margin-top:-1px;"><button type="button" class="table-add-tab" id="addRecurringBtn" title="جدید" aria-label="جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>';
       } // end !recurringCollapsed
       else {
-        // جمع‌شده: فقط آیکون افزودن پایین باکس
-        html += '<div class="add-sec-wrap" style="margin-top:8px;margin-bottom:2px;"><button type="button" class="btn-circle-plus" id="addRecurringBtn" title="جدید" aria-label="جدید">' + plusSvgRec + '</button></div>';
+        // جمع‌شده: زبانه + پایین باکس
+        html += '<div class="table-add-tab-wrap" style="margin-top:-1px;"><button type="button" class="table-add-tab" id="addRecurringBtn" title="جدید" aria-label="جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>';
       }
       box.innerHTML = html;
 
