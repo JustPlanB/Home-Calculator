@@ -1142,21 +1142,39 @@
       padding: 6px 0 56px;
       background: transparent;
     }
-    #panel-balance .balance-scroll-body .summary-section,
+    /* جداول: ارتفاع آزاد؛ ولی فریم section باید clip کند تا خط‌ها از گوشه بیرون نزنند */
     #panel-balance .balance-scroll-body table,
     #panel-balance .balance-scroll-body .summary-table,
     #panel-balance .balance-scroll-body thead,
     #panel-balance .balance-scroll-body tbody,
     #panel-balance .balance-scroll-body tfoot {
-      overflow: visible !important;
       max-height: none !important;
       height: auto !important;
     }
     #panel-balance .balance-scroll-body .summary-section {
       margin-top: 10px;
+      /* ماسک فریم بیرونی — خطوط داخلی از گوشه بیرون نمی‌زنند */
+      overflow: hidden !important;
+      border-radius: 10px;
+      box-sizing: border-box;
+      isolation: isolate;
+      background: var(--card);
     }
     #panel-balance .balance-scroll-body .summary-section:first-child {
       margin-top: 0;
+    }
+    /* border سلول‌ها داخل فریم بماند؛ بدون تغییر ضخامت/رنگ ظاهری */
+    #panel-balance .balance-scroll-body .summary-table {
+      border-collapse: collapse;
+      border-spacing: 0;
+      width: 100%;
+      box-sizing: border-box;
+      /* outer edge با hidden تا با فریم section دوبل/بیرون‌زدگی نسازد */
+      border-style: hidden;
+    }
+    #panel-balance .balance-scroll-body .summary-table th,
+    #panel-balance .balance-scroll-body .summary-table td {
+      box-sizing: border-box;
     }
     .feature-sheet-body #panel-balance.active {
       position: relative !important;
@@ -5286,7 +5304,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-balance-layout-v8 */
+    /* build-stamp: 2026-09-16-balance-table-clip-v9 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
