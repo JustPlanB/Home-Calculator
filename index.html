@@ -1907,9 +1907,10 @@
       margin: 0;
       flex-shrink: 0;
     }
-    .pd-desc-popup {
+    .pd-desc-popup,
+    .cell-text-popup {
       position: fixed;
-      z-index: 600;
+      z-index: 100020;
       background: #2c2c2e;
       color: #fff;
       border: 1px solid rgba(255,255,255,0.18);
@@ -1923,6 +1924,33 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       direction: rtl;
       text-align: right;
+      pointer-events: auto;
+    }
+    /* فاصله پویا بین باکس اسامی و فیلتر روز در مانده */
+    #panel-balance .balance-fixed-header .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px !important;
+      min-height: 0;
+      height: auto !important;
+    }
+    #panel-balance .balance-fixed-header .balance-filter-block {
+      margin-top: 0 !important;
+      padding-top: 4px !important;
+      clear: both;
+    }
+    #panel-balance .balance-fixed-header .balance-day-row {
+      margin-top: 4px;
+    }
+    #panel-balance #balance-body td.sec-name,
+    #panel-balance #day-detail-body td.sec-name {
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 0; /* table-layout fixed: اجازه ellipsis */
     }
 
     /* ledger-zero-pattern: هیچ پترن/پس‌زمینه تزئینی در هیچ حالت */
@@ -5304,7 +5332,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-balance-table-clip-v9 */
+    /* build-stamp: 2026-09-16-text-popup-filter-v10 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -12488,6 +12516,23 @@ function openPdfPrintWindow(){
       overlay.appendChild(box);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) try { overlay.remove(); } catch (err) {} });
       document.body.appendChild(overlay);
+      // اولین ورود / نام پیش‌فرض: focus + select کامل برای پاک‌کردن با یک Backspace
+      try {
+        const defNames = ['نام کاربر', 'کاربر'];
+        const shouldSelect = isNew || defNames.indexOf((title || '').trim()) >= 0 || defNames.indexOf((inp.value || '').trim()) >= 0;
+        if (shouldSelect) {
+          setTimeout(() => {
+            try {
+              inp.focus({ preventScroll: true });
+              const len = (inp.value || '').length;
+              if (len > 0 && typeof inp.setSelectionRange === 'function') inp.setSelectionRange(0, len);
+              else if (len > 0) inp.select();
+            } catch (eF) {
+              try { inp.focus(); inp.select(); } catch (e2) {}
+            }
+          }, 60);
+        }
+      } catch (e) {}
       const detachLift = attachKeyboardLift(box);
       overlay._detachLift = detachLift;
       const prevRemove = overlay.remove.bind(overlay);
@@ -12967,23 +13012,7 @@ function openPdfPrintWindow(){
             return;
           }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
-          document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
-          const pop = document.createElement('div');
-          pop.className = 'pd-desc-popup';
-          pop.textContent = row.desc || '';
-          document.body.appendChild(pop);
-          const r = desc.getBoundingClientRect();
-          const pw = Math.min(window.innerWidth - 16, Math.max(r.width, pop.scrollWidth + 24));
-          pop.style.width = 'auto';
-          pop.style.maxWidth = (window.innerWidth - 16) + 'px';
-          let left = r.right - pw;
-          if (left < 8) left = 8;
-          pop.style.left = left + 'px';
-          pop.style.top = Math.min(window.innerHeight - 48, r.bottom + 4) + 'px';
-          const close = (ev) => {
-            if (ev.target !== pop) { try { pop.remove(); } catch (e2) {} document.removeEventListener('mousedown', close); }
-          };
-          setTimeout(() => document.addEventListener('mousedown', close), 20);
+          try { showCellTextPopup(desc, row.desc || ''); } catch (eP) {}
         };
         desc.ondblclick = (e) => {
           if (fromPlan) {
@@ -17443,8 +17472,73 @@ field('حساب بانکی', accSelRec);
     let _lastBackAt = 0;
     const BACK_EXIT_WINDOW = 1800;
 
+
+    function closeCellTextPopups() {
+      try {
+        document.querySelectorAll('.pd-desc-popup, .cell-text-popup').forEach(p => {
+          try { p.remove(); } catch (e) {}
+        });
+      } catch (e) {}
+    }
+    function showCellTextPopup(anchorEl, text) {
+      closeCellTextPopups();
+      const t = (text == null ? '' : String(text)).trim();
+      if (!t || !anchorEl) return null;
+      const pop = document.createElement('div');
+      pop.className = 'cell-text-popup pd-desc-popup';
+      pop.textContent = t;
+      document.body.appendChild(pop);
+      try {
+        const r = anchorEl.getBoundingClientRect();
+        const vv = window.visualViewport;
+        const viewW = vv ? vv.width : window.innerWidth;
+        const viewH = vv ? vv.height : window.innerHeight;
+        const viewTop = vv ? vv.offsetTop : 0;
+        const viewBottom = viewTop + viewH;
+        const pad = 8;
+        // اندازه واقعی بعد از insert
+        let pw = Math.min(viewW - pad * 2, Math.max(r.width, pop.scrollWidth + 24));
+        pop.style.maxWidth = (viewW - pad * 2) + 'px';
+        pop.style.width = 'auto';
+        const popH = Math.max(pop.offsetHeight || 36, 32);
+        let left = r.left;
+        if (left + pw > viewW - pad) left = viewW - pw - pad;
+        if (left < pad) left = pad;
+        let top = r.bottom + 4;
+        if (top + popH > viewBottom - pad) top = r.top - popH - 4;
+        if (top < viewTop + pad) top = viewTop + pad;
+        pop.style.left = Math.round(left) + 'px';
+        pop.style.top = Math.round(top) + 'px';
+      } catch (e) {}
+      const closer = (ev) => {
+        if (!pop.parentNode) {
+          document.removeEventListener('mousedown', closer, true);
+          document.removeEventListener('touchstart', closer, true);
+          return;
+        }
+        if (pop.contains(ev.target)) return;
+        if (anchorEl === ev.target || (anchorEl.contains && anchorEl.contains(ev.target))) return;
+        try { pop.remove(); } catch (e2) {}
+        document.removeEventListener('mousedown', closer, true);
+        document.removeEventListener('touchstart', closer, true);
+      };
+      setTimeout(() => {
+        document.addEventListener('mousedown', closer, true);
+        document.addEventListener('touchstart', closer, true);
+      }, 30);
+      return pop;
+    }
+
     function closeTopOverlayOrMenu() {
-      // اول منوی بستانکار/بدهکار یا دریافت/پرداخت (status-menu)
+      // 1) باکس متن کامل سلول
+      try {
+        const pops = document.querySelectorAll('.pd-desc-popup, .cell-text-popup');
+        if (pops && pops.length) {
+          pops.forEach(p => { try { p.remove(); } catch (e0) {} });
+          return true;
+        }
+      } catch (e) {}
+      // 2) منوی بستانکار/بدهکار یا دریافت/پرداخت (status-menu)
       try {
         const menus = document.querySelectorAll('.status-menu');
         if (menus && menus.length) {
@@ -18748,10 +18842,30 @@ field('حساب بانکی', accSelRec);
         gInc += inc; gExp += exp;
         const color = remain > 0 ? '#16a34a' : (remain < 0 ? '#dc2626' : 'var(--text)');
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td class="sec-name">' + escapeHtml(title) + '</td>' +
-          '<td class="val inc-cell" style="color:var(--text);">' + formatNum(inc) + '</td>' +
-          '<td class="val exp-cell" style="color:var(--text);">' + formatNum(exp) + '</td>' +
-          '<td class="val" style="color:' + color + ';">' + formatNum(remain) + '</td>';
+        const tdSec = document.createElement('td');
+        tdSec.className = 'sec-name';
+        tdSec.textContent = title;
+        tdSec.title = title;
+        tdSec.onclick = (e) => {
+          e.stopPropagation();
+          if ((title || '').trim()) try { showCellTextPopup(tdSec, title); } catch (err) {}
+        };
+        tr.appendChild(tdSec);
+        const tdInc = document.createElement('td');
+        tdInc.className = 'val inc-cell';
+        tdInc.style.color = 'var(--text)';
+        tdInc.textContent = formatNum(inc);
+        tr.appendChild(tdInc);
+        const tdExp = document.createElement('td');
+        tdExp.className = 'val exp-cell';
+        tdExp.style.color = 'var(--text)';
+        tdExp.textContent = formatNum(exp);
+        tr.appendChild(tdExp);
+        const tdRem = document.createElement('td');
+        tdRem.className = 'val';
+        tdRem.style.color = color;
+        tdRem.textContent = formatNum(remain);
+        tr.appendChild(tdRem);
         tbody.appendChild(tr);
       });
       const gRemain = gInc - gExp;
@@ -18794,8 +18908,23 @@ field('حساب بانکی', accSelRec);
         });
         function addRow(r, title, label) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td class="sec-name">' + escapeHtml(r.desc || '—') + ' <span style="color:var(--muted);font-size:0.8rem;">(' + escapeHtml(title) + ')</span></td>' +
-            '<td>' + label + '</td><td class="val">' + formatNum(r.amount || 0) + '</td>';
+          const td = document.createElement('td');
+          td.className = 'sec-name';
+          const full = (r.desc || '—') + (title ? (' (' + title + ')') : '');
+          td.textContent = full;
+          td.title = full;
+          td.onclick = (e) => {
+            e.stopPropagation();
+            try { showCellTextPopup(td, full); } catch (err) {}
+          };
+          tr.appendChild(td);
+          const tdL = document.createElement('td');
+          tdL.textContent = label;
+          tr.appendChild(tdL);
+          const tdV = document.createElement('td');
+          tdV.className = 'val';
+          tdV.textContent = formatNum(r.amount || 0);
+          tr.appendChild(tdV);
           dayBody.appendChild(tr);
           return tr;
         }
