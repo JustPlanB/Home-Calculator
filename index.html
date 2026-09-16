@@ -1072,56 +1072,58 @@
       display: none !important;
     }
     /*
-      ROOT CAUSE: صفحه با html/body اسکرول می‌شود؛ flex+max-height روی پنل
-      وقتی والد ارتفاع ثابت ندارد، فیلترها با صفحه حرکت می‌کنند.
-      راه‌حل سازگار: sticky روی هدر فیلتر نسبت به viewport (زیر chrome).
+      مانده: جریان طبیعی DOM — بدون sticky/fixed/top مصنوعی.
+      ماه/سال در stickyChrome است؛ فیلترها زیر آن ارتفاع واقعی می‌گیرند؛
+      جداول بعد از فیلترها می‌آیند و overlap نمی‌کنند.
     */
     #panel-balance.active {
       display: block !important;
+      position: relative !important;
       overflow: visible !important;
       max-height: none !important;
-      padding-bottom: 56px !important;
+      top: auto !important;
+      padding-top: 0 !important;
+      padding-bottom: 48px !important;
+      margin-top: 0 !important;
       box-sizing: border-box;
     }
     #panel-balance .balance-fixed-header {
-      position: -webkit-sticky;
-      position: sticky;
-      top: var(--sticky-chrome-h, 96px);
-      z-index: 45;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      z-index: 2;
       background: var(--bg);
-      padding: 4px 0 10px;
+      padding: 0 0 8px 0;
       margin: 0;
-      box-shadow: 0 10px 14px -10px rgba(0,0,0,0.45);
+      box-shadow: none;
+      transform: none !important;
     }
     #panel-balance .balance-fixed-header .filter-bar,
     #panel-balance .balance-fixed-header #balanceFilters {
-      position: relative;
-      top: auto;
+      position: relative !important;
+      top: auto !important;
       background: var(--bg);
-      padding-top: 2px;
-      padding-bottom: 6px;
+      padding: 4px 0 6px;
       margin: 0;
     }
     #panel-balance .balance-fixed-header .balance-filter-block {
-      position: relative;
-      top: auto;
+      position: relative !important;
+      top: auto !important;
       background: var(--bg);
       margin: 0;
-      padding-bottom: 2px;
+      padding: 0 0 4px;
       box-shadow: none;
     }
     #panel-balance .balance-scroll-body {
-      position: relative;
+      position: relative !important;
       z-index: 1;
-      overflow: visible;
+      overflow: visible !important;
+      margin-top: 4px;
       padding-bottom: 24px;
     }
     #panel-balance .balance-scroll-body .summary-section {
-      margin-top: 10px;
-    }
-    /* داخل feature-sheet: همان sticky نسبت به بدنه اسکرول sheet */
-    .feature-sheet-body #panel-balance .balance-fixed-header {
-      top: 0;
+      margin-top: 8px;
     }
     .feature-sheet-body #panel-balance.active {
       display: block !important;
@@ -5240,7 +5242,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-rootcause-v3 */
+    /* build-stamp: 2026-09-16-fix-balance-back-bg-v4 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -5377,7 +5379,8 @@
       return {
         expense: { sections: emptySections(), nextId: 1 },
         income: { sections: emptySections(), nextId: 1 },
-        ledger: { sections: [], nextId: 1 }
+        ledger: { sections: [], nextId: 1 },
+        cardMeta: {}
       };
     }
     function emptyLedgerRow() {
@@ -6644,27 +6647,52 @@
     }
     function loadCurrent() {
       const raw = archive[periodKey(currentYear, currentMonth)];
+      // cardMeta را از آرشیو ماه یا localStorage جداگانه نگه دار
+      let savedCardMeta = {};
+      try {
+        if (raw && raw.cardMeta && typeof raw.cardMeta === 'object') {
+          savedCardMeta = JSON.parse(JSON.stringify(raw.cardMeta));
+        }
+      } catch (e) {}
+      try {
+        if (!savedCardMeta || !Object.keys(savedCardMeta).length) {
+          const cm = localStorage.getItem(STORAGE_KEY + '_cardMeta');
+          if (cm) savedCardMeta = JSON.parse(cm) || {};
+        }
+      } catch (e) {}
       if (raw) {
         if (raw.sections && !raw.expense) {
           periodData = {
             expense: { sections: raw.sections, nextId: raw.nextId || 3 },
             income: { sections: emptySections(), nextId: 3 },
-            ledger: normalizeLedger(raw.ledger)
+            ledger: normalizeLedger(raw.ledger),
+            cardMeta: savedCardMeta || {}
           };
         } else {
           periodData = {
             expense: normalizeSide(raw.expense),
             income: normalizeSide(raw.income),
-            ledger: normalizeLedger(raw.ledger)
+            ledger: normalizeLedger(raw.ledger),
+            cardMeta: savedCardMeta || {}
           };
         }
       } else {
         // ماه جدید: فقط هدرها از ماه‌های قبل، بدون ردیف
         const tmpl = findHeaderTemplate();
         periodData = tmpl ? cloneHeadersOnly(tmpl) : emptyPeriodData();
+        if (savedCardMeta && Object.keys(savedCardMeta).length) {
+          periodData.cardMeta = savedCardMeta;
+        }
       }
       if (!periodData.ledger) periodData.ledger = { sections: [], nextId: 1 };
       else periodData.ledger = normalizeLedger(periodData.ledger);
+      if (!periodData.cardMeta || typeof periodData.cardMeta !== 'object') periodData.cardMeta = savedCardMeta || {};
+      // همگام‌سازی persistent mirror
+      try {
+        if (periodData.cardMeta && Object.keys(periodData.cardMeta).length) {
+          localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(periodData.cardMeta));
+        }
+      } catch (e) {}
       ['expense', 'income'].forEach(tab => {
         const prev = currentTab;
         currentTab = tab;
@@ -9601,6 +9629,8 @@
             periodData.cardMeta[k] = data.cardMeta[k];
           });
           try { localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(periodData.cardMeta)); } catch (e) {}
+          try { persistCurrent(); } catch (e) {}
+          try { saveArchive(); } catch (e) {}
         } catch (e) {}
       }
       if (Array.isArray(data.selectedBankAccounts)) {
@@ -11950,6 +11980,7 @@ function openPdfPrintWindow(){
       if (!m[t]) m[t] = {};
       m[t].bg = Math.max(0, Math.min(4, idx|0));
       periodData.cardMeta = m;
+      try { localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(m)); } catch (e) {}
       scheduleSave();
     }
     function findSectionByTitle(tab, title) {
@@ -12786,6 +12817,7 @@ function openPdfPrintWindow(){
         const amt = document.createElement('input');
         amt.className = 'pd-amt ' + ((row.status || 'paid') === 'paid' ? 'status-paid' : 'status-unpaid') + (isFilledVal(row.amount) ? ' pd-filled' : '');
         amt.inputMode = 'numeric';
+        try { amt.setAttribute('inputmode', 'numeric'); amt.setAttribute('enterkeyhint', 'done'); } catch (eAK) {}
         amt.pattern = '[0-9]*';
         amt.value = row.amount ? formatNum(row.amount) : '';
         amt.readOnly = isFilledVal(row.amount) || fromPlan;
@@ -17216,6 +17248,19 @@ field('حساب بانکی', accSelRec);
     const BACK_EXIT_WINDOW = 1800;
 
     function closeTopOverlayOrMenu() {
+      // اول منوی بستانکار/بدهکار یا دریافت/پرداخت (status-menu)
+      try {
+        const menus = document.querySelectorAll('.status-menu');
+        if (menus && menus.length) {
+          menus.forEach(m => { try { m.remove(); } catch (e0) {} });
+          try {
+            document.querySelectorAll('[data-amt-pending]').forEach(el => {
+              try { delete el.dataset.amtPending; } catch (e1) {}
+            });
+          } catch (e2) {}
+          return true;
+        }
+      } catch (e) {}
       try {
         const conf = document.getElementById('confirmModal');
         if (conf && conf.classList.contains('open')) {
