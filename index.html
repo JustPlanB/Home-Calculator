@@ -1693,56 +1693,103 @@
       width: 100%;
       box-sizing: border-box;
     }
-    .person-detail-box {
+    .person-detail-box,
+    .shaped-card {
       --frame-bg: #1a1a1c;
       --frame-stroke: #3a3a3e;
       --tab-w: 52px;
       --tab-h: 44px;
+      --frame-r: 16px;
       position: relative;
       background: var(--frame-bg);
-      border: 1px solid var(--frame-stroke);
-      border-radius: 16px;
-      /* گوشه پایین‌راست صاف می‌شود؛ پله خودش گوشه را می‌سازد */
-      border-bottom-right-radius: 0;
+      border: none !important;
+      border-radius: var(--frame-r) var(--frame-r) 0 0;
       width: min(100%, var(--match-card-w, 100%));
       max-width: 100%;
       box-sizing: border-box;
-      margin: 0 auto 8px;
+      margin: 0 auto;
+      margin-bottom: calc(var(--tab-h) + 8px);
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
       overscroll-behavior: contain;
+      overflow: visible; /* پله و SVG استروک بیرون بمانند */
+      z-index: 1;
+    }
+    /* گوشه‌های بالا: فرزندان از استروک بیرون نزنند */
+    .person-detail-box > .person-detail-sticky,
+    .person-detail-box > .person-detail-scroll,
+    .person-detail-box > .person-detail-hint {
+      overflow: hidden;
+    }
+    .person-detail-box > .person-detail-sticky {
+      border-radius: calc(var(--frame-r, 16px) - 1px) calc(var(--frame-r, 16px) - 1px) 0 0;
+    }
+    .shaped-card > *:not(.table-add-tab):not(.shape-frame-svg) {
+      /* محتوا داخل شعاع بالا */
+    }
+    .shaped-card {
+      --frame-bg: var(--card);
+      --frame-stroke: var(--border);
+      --frame-r: 12px;
+      max-height: none;
+      width: 100%;
+      overflow: visible !important;
+    }
+    .shaped-card > .summary-header:first-child,
+    .shaped-card > .section-header:first-child {
+      border-radius: calc(var(--frame-r, 12px) - 1px) calc(var(--frame-r, 12px) - 1px) 0 0;
+      overflow: hidden;
+    }
+    [data-theme="dark"] .shaped-card {
+      --frame-bg: #1a1a1c;
+      --frame-stroke: #3a3a3e;
+    }
+    .shaped-card.frame-step-sm {
+      --tab-w: 42px;
+      --tab-h: 36px;
+    }
+    /* لایه استروک یکپارچه SVG */
+    .person-detail-box > .shape-frame-svg,
+    .shaped-card > .shape-frame-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: calc(100% + var(--tab-h));
+      pointer-events: none;
       overflow: visible;
-      padding-bottom: 0;
-    }
-    .person-detail-sticky {
-      flex-shrink: 0;
       z-index: 6;
-      background: var(--frame-bg, #1a1a1c);
-      position: relative;
-      border-radius: 15px 15px 0 0;
     }
-    /* پله پایین‌راست — جزئی از همان شکل، چسبیده به لبه راست */
+    .person-detail-box > .shape-frame-svg path,
+    .shaped-card > .shape-frame-svg path {
+      fill: none;
+      stroke: var(--frame-stroke);
+      stroke-width: 1.25;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+    /* پله + پایین‌راست */
     .person-detail-box > .table-add-tab,
     .shaped-card > .table-add-tab {
       position: absolute !important;
-      right: -1px !important;
-      bottom: calc(-1 * var(--tab-h, 44px)) !important;
+      right: 0 !important;
+      bottom: calc(-1 * var(--tab-h)) !important;
       left: auto !important;
       top: auto !important;
-      width: var(--tab-w, 52px) !important;
-      height: var(--tab-h, 44px) !important;
-      min-width: var(--tab-w, 52px) !important;
-      min-height: var(--tab-h, 44px) !important;
+      width: var(--tab-w) !important;
+      height: var(--tab-h) !important;
+      min-width: var(--tab-w) !important;
+      min-height: var(--tab-h) !important;
       margin: 0 !important;
       padding: 0 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: var(--frame-bg, #1a1a1c) !important;
-      border: 1px solid var(--frame-stroke, #3a3a3e) !important;
-      border-top: none !important;
-      border-radius: 0 0 14px 14px !important;
+      background: var(--frame-bg) !important;
+      border: none !important;
+      border-radius: 0 !important;
       box-shadow: none !important;
       outline: none !important;
       z-index: 5;
@@ -1750,36 +1797,10 @@
       -webkit-tap-highlight-color: transparent;
       overflow: visible !important;
     }
-    /* خم مقعر سمت چپ پله (مثل تصویر مرجع) */
-    .person-detail-box > .table-add-tab::before,
-    .shaped-card > .table-add-tab::before {
-      content: '';
-      position: absolute;
-      left: calc(-1 * 16px);
-      top: -1px;
-      width: 16px;
-      height: 16px;
-      background: radial-gradient(circle at 0 100%, transparent 15.5px, var(--frame-bg, #1a1a1c) 16px);
-      pointer-events: none;
-      z-index: 1;
-    }
-    /* استروک خم */
-    .person-detail-box > .table-add-tab::after,
-    .shaped-card > .table-add-tab::after {
-      content: '';
-      position: absolute;
-      left: calc(-1 * 16px);
-      top: -1px;
-      width: 16px;
-      height: 16px;
-      background: radial-gradient(circle at 0 100%, transparent 14.5px, var(--frame-stroke, #3a3a3e) 15px, var(--frame-stroke, #3a3a3e) 15.8px, transparent 16px);
-      pointer-events: none;
-      z-index: 2;
-    }
     .person-detail-box > .table-add-tab .tab-plus-icon,
-    .person-detail-box > .table-add-tab svg,
+    .person-detail-box > .table-add-tab > svg:not(.shape-frame-svg),
     .shaped-card > .table-add-tab .tab-plus-icon,
-    .shaped-card > .table-add-tab svg {
+    .shaped-card > .table-add-tab > svg:not(.shape-frame-svg) {
       width: 22px !important;
       height: 22px !important;
       stroke: #0a84ff !important;
@@ -1789,22 +1810,33 @@
       position: relative;
       z-index: 3;
       margin: 0 !important;
+      pointer-events: none;
+    }
+    .shaped-card.frame-step-sm > .table-add-tab .tab-plus-icon,
+    .shaped-card.frame-step-sm > .table-add-tab > svg:not(.shape-frame-svg) {
+      width: 16px !important;
+      height: 16px !important;
     }
     .person-detail-box > .table-add-tab .tab-join-svg,
-    .shaped-card > .table-add-tab .tab-join-svg {
-      display: none !important;
-    }
-    /* پوشش خط کف جدول روی پله */
+    .shaped-card > .table-add-tab .tab-join-svg,
     .person-detail-box > .table-add-tab .tab-gap-cover,
-    .shaped-card > .table-add-tab .tab-gap-cover {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: -2px;
-      height: 4px;
+    .shaped-card > .table-add-tab .tab-gap-cover,
+    .person-detail-box > .table-add-tab::before,
+    .person-detail-box > .table-add-tab::after,
+    .shaped-card > .table-add-tab::before,
+    .shaped-card > .table-add-tab::after {
+      display: none !important;
+      content: none !important;
+    }
+    .person-detail-sticky {
+      flex-shrink: 0;
+      z-index: 4;
       background: var(--frame-bg, #1a1a1c);
-      z-index: 0;
-      pointer-events: none;
+      position: relative;
+      border-radius: calc(var(--frame-r, 16px) - 1px) calc(var(--frame-r, 16px) - 1px) 0 0;
+    }
+    .person-detail-scroll {
+      background: var(--frame-bg, #1a1a1c);
     }
     .person-detail-title {
       text-align: center;
@@ -3065,34 +3097,6 @@
       padding-left: 56px !important;
     }
 
-
-    /* —— شکل یکپارچه جدول + پله پایین‌راست (طبق تصویر مرجع) —— */
-    .shaped-card {
-      --frame-bg: var(--card);
-      --frame-stroke: var(--border);
-      --tab-w: 52px;
-      --tab-h: 44px;
-      position: relative;
-      background: var(--frame-bg);
-      border: 1px solid var(--frame-stroke);
-      border-radius: 12px;
-      border-bottom-right-radius: 0;
-      overflow: visible;
-      margin-bottom: 52px; /* جا برای پله بیرون‌زده */
-      box-sizing: border-box;
-    }
-    .shaped-card.frame-step-sm {
-      --tab-w: 42px;
-      --tab-h: 36px;
-      margin-bottom: 44px;
-    }
-    [data-theme="dark"] .shaped-card {
-      --frame-bg: #1a1a1c;
-      --frame-stroke: #3a3a3e;
-    }
-    .person-detail-box {
-      margin-bottom: 52px; /* جا برای پله */
-    }
 
     /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
     .table-add-tab-wrap,
@@ -5406,94 +5410,16 @@
     }
 
   
-    /* —— Override: پله پایین‌راست یکپارچه (تصویر مرجع) —— */
+    /* —— Override: استروک SVG یکپارچه —— */
     .person-detail-box > .table-step-floor,
     .shaped-card > .table-step-floor,
     .frame-with-step > .table-step-floor { display: none !important; }
     .person-detail-box > .table-tab-step,
     .shaped-card > .table-tab-step,
     .frame-with-step > .table-tab-step {
-      position: static !important;
       display: contents !important;
       border: none !important;
       background: transparent !important;
-      width: 0 !important; height: 0 !important;
-    }
-    .person-detail-box .table-add-tab,
-    .shaped-card .table-add-tab {
-      position: absolute !important;
-      right: -1px !important;
-      bottom: calc(-1 * var(--tab-h, 44px)) !important;
-      left: auto !important;
-      width: var(--tab-w, 52px) !important;
-      height: var(--tab-h, 44px) !important;
-      background: var(--frame-bg, #1a1a1c) !important;
-      border: 1px solid var(--frame-stroke, #3a3a3e) !important;
-      border-top: none !important;
-      border-radius: 0 0 14px 14px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      z-index: 5 !important;
-      box-shadow: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    .person-detail-box {
-      --frame-bg: #1a1a1c;
-      --frame-stroke: #3a3a3e;
-      --tab-w: 52px;
-      --tab-h: 44px;
-      margin-bottom: 52px !important;
-      border-bottom-right-radius: 0 !important;
-      overflow: visible !important;
-      position: relative !important;
-    }
-    .shaped-card {
-      --frame-bg: var(--card);
-      --frame-stroke: var(--border);
-      --tab-w: 52px;
-      --tab-h: 44px;
-      position: relative !important;
-      border-bottom-right-radius: 0 !important;
-      overflow: visible !important;
-      margin-bottom: 52px !important;
-    }
-    .shaped-card.frame-step-sm { --tab-w: 42px; --tab-h: 36px; margin-bottom: 44px !important; }
-    [data-theme="dark"] .shaped-card { --frame-bg: #1a1a1c; --frame-stroke: #3a3a3e; }
-    .person-detail-box > .table-add-tab::before,
-    .shaped-card > .table-add-tab::before {
-      content: '';
-      position: absolute;
-      left: -16px; top: -1px;
-      width: 16px; height: 16px;
-      background: radial-gradient(circle at 0 100%, transparent 15.5px, var(--frame-bg, #1a1a1c) 16px);
-      pointer-events: none; z-index: 1;
-    }
-    .person-detail-box > .table-add-tab::after,
-    .shaped-card > .table-add-tab::after {
-      content: '';
-      position: absolute;
-      left: -16px; top: -1px;
-      width: 16px; height: 16px;
-      background: radial-gradient(circle at 0 100%, transparent 14.5px, var(--frame-stroke, #3a3a3e) 15px, var(--frame-stroke, #3a3a3e) 15.8px, transparent 16px);
-      pointer-events: none; z-index: 2;
-    }
-    .person-detail-box .table-add-tab .tab-plus-icon,
-    .person-detail-box .table-add-tab svg,
-    .shaped-card .table-add-tab .tab-plus-icon,
-    .shaped-card .table-add-tab svg {
-      width: 22px !important; height: 22px !important;
-      stroke: #0a84ff !important; fill: none !important;
-      stroke-width: 2.8 !important; stroke-linecap: round !important;
-      position: relative; z-index: 3; margin: 0 !important;
-    }
-    .person-detail-box .table-add-tab .tab-join-svg,
-    .shaped-card .table-add-tab .tab-join-svg { display: none !important; }
-    .person-detail-box .table-add-tab .tab-gap-cover,
-    .shaped-card .table-add-tab .tab-gap-cover {
-      position: absolute; left: 0; right: 0; top: -2px; height: 4px;
-      background: var(--frame-bg, #1a1a1c); z-index: 0; pointer-events: none;
     }
 
   </style>
@@ -5720,7 +5646,7 @@
             </tr>
           </tfoot>
         </table>
-        <button type="button" class="table-add-tab" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><span class="tab-gap-cover"></span><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button type="button" class="table-add-tab" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
     </div>
 
@@ -5740,7 +5666,7 @@
           </thead>
           <tbody id="ledger-summary-body"></tbody>
         </table>
-        <button type="button" class="table-add-tab" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><span class="tab-gap-cover"></span><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button type="button" class="table-add-tab" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
     </div>
 
@@ -5857,7 +5783,7 @@
   <script>
     
     /* balance-layout-resize */
-    try { document.addEventListener('DOMContentLoaded', function(){ try { enhanceTableAddTabs(document); } catch(e){} }); } catch(e){}
+    try { document.addEventListener('DOMContentLoaded', function(){ try { enhanceTableAddTabs(document); refreshAllShapeFrames(); } catch(e){} }); setTimeout(function(){ try { refreshAllShapeFrames(); } catch(e){} }, 100); } catch(e){}
 
     try {
       window.addEventListener('resize', function(){ try { if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); } catch(e){} });
@@ -5866,7 +5792,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-tab-shape-v19 */
+    /* build-stamp: 2026-09-16-tab-shape-v20 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -13869,7 +13795,7 @@ function openPdfPrintWindow(){
       addBtn.className = 'table-add-tab';
       addBtn.title = 'ردیف جدید';
       addBtn.setAttribute('aria-label', 'ردیف جدید');
-      addBtn.innerHTML = '<span class="tab-gap-cover"></span><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+      addBtn.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       addBtn.onclick = () => {
         sec.rows.push(emptyRow(tab));
         rebuild();
@@ -13878,6 +13804,12 @@ function openPdfPrintWindow(){
 
       page.appendChild(box);
       container.appendChild(page);
+      try {
+        requestAnimationFrame(function() {
+          ensureShapeFrame(box);
+          setTimeout(function() { ensureShapeFrame(box); }, 50);
+        });
+      } catch (e) {}
       // جلوگیری از اسکرول صفحه وقتی انتهای جدول رسید
       try {
         const sc = page.querySelector('.person-detail-scroll');
@@ -15837,8 +15769,9 @@ if (item.type === 'recurring') {
         addBtn.id = 'addRecurringBtn';
         addBtn.title = 'جدید';
         addBtn.setAttribute('aria-label', 'جدید');
-        addBtn.innerHTML = '<span class="tab-gap-cover"></span><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+        addBtn.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
         box.appendChild(addBtn);
+        requestAnimationFrame(function() { ensureShapeFrame(box); });
       } catch (e) {}
 
       const head = document.getElementById('recurringHead');
@@ -18023,7 +17956,89 @@ field('حساب بانکی', accSelRec);
       } catch (e) {}
     }
 
-    function tabJoinSvgHtml(kind) {
+
+    function shapeFramePath(w, h, tw, th, r) {
+      // مسیر بیرونی یکپارچه: بدنه + پله پایین‌راست با خم مقعر
+      // مختصات از بالا-چپ؛ پله به پایین امتداد دارد
+      w = Math.max(w, tw + r * 2 + 8);
+      h = Math.max(h, r * 2 + 8);
+      tw = Math.min(tw, w * 0.4);
+      th = Math.max(th, 28);
+      r = Math.min(r, 16, tw / 3, th / 3);
+      const notch = Math.min(14, tw * 0.28); // شعاع خم مقعر سمت چپ پله
+      // نقاط کلیدی
+      // بدنه: 0..w × 0..h ؛ پله: (w-tw)..w × h..(h+th)
+      const parts = [];
+      // شروع بعد از گوشه بالا-چپ
+      parts.push('M ' + r + ' 0');
+      parts.push('H ' + (w - r));
+      parts.push('Q ' + w + ' 0 ' + w + ' ' + r);
+      // ضلع راست تا پایین پله
+      parts.push('V ' + (h + th - r));
+      // گوشه پایین-راست پله
+      parts.push('Q ' + w + ' ' + (h + th) + ' ' + (w - r) + ' ' + (h + th));
+      // کف پله به چپ
+      parts.push('H ' + (w - tw + r));
+      // گوشه پایین-چپ پله
+      parts.push('Q ' + (w - tw) + ' ' + (h + th) + ' ' + (w - tw) + ' ' + (h + th - r));
+      // ضلع چپ پله تا نزدیکی خط کف بدنه
+      parts.push('V ' + (h + notch));
+      // خم مقعر: از پله به کف بدنه (معکوس)
+      parts.push('A ' + notch + ' ' + notch + ' 0 0 1 ' + (w - tw - notch) + ' ' + h);
+      // کف بدنه تا چپ
+      parts.push('H ' + r);
+      // گوشه پایین-چپ بدنه
+      parts.push('Q 0 ' + h + ' 0 ' + (h - r));
+      // ضلع چپ بالا
+      parts.push('V ' + r);
+      // گوشه بالا-چپ
+      parts.push('Q 0 0 ' + r + ' 0');
+      parts.push('Z');
+      return parts.join(' ');
+    }
+    function ensureShapeFrame(el) {
+      try {
+        if (!el || !el.getBoundingClientRect) return;
+        const cs = getComputedStyle(el);
+        const tw = parseFloat(cs.getPropertyValue('--tab-w')) || 52;
+        const th = parseFloat(cs.getPropertyValue('--tab-h')) || 44;
+        const r = parseFloat(cs.getPropertyValue('--frame-r')) || 16;
+        const w = el.clientWidth || el.offsetWidth;
+        const h = el.clientHeight || el.offsetHeight;
+        if (w < 8 || h < 8) return;
+        let svg = el.querySelector(':scope > .shape-frame-svg');
+        if (!svg) {
+          svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'shape-frame-svg');
+          svg.setAttribute('aria-hidden', 'true');
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          svg.appendChild(path);
+          el.insertBefore(svg, el.firstChild);
+        }
+        const path = svg.querySelector('path');
+        const totalH = h + th;
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + totalH);
+        svg.setAttribute('width', String(w));
+        svg.setAttribute('height', String(totalH));
+        svg.style.width = w + 'px';
+        svg.style.height = totalH + 'px';
+        path.setAttribute('d', shapeFramePath(w, h, tw, th, r));
+      } catch (e) {}
+    }
+    function refreshAllShapeFrames() {
+      try {
+        document.querySelectorAll('.person-detail-box, .shaped-card').forEach(function(el) {
+          ensureShapeFrame(el);
+        });
+      } catch (e) {}
+    }
+    try {
+      window.addEventListener('resize', function() {
+        try { refreshAllShapeFrames(); } catch (e) {}
+      });
+    } catch (e) {}
+
+        function tabJoinSvgHtml(kind) {
       const sm = kind === 'sm';
       // عرض بیشتر، ارتفاع همان؛ خم‌های معکوس متقارن؛ fill تا خط جدول
       const stroke = sm
@@ -19302,6 +19317,7 @@ field('حساب بانکی', accSelRec);
         div.appendChild(header);
         div.appendChild(body);
         div.appendChild(btnAddRow);
+        try { requestAnimationFrame(function() { ensureShapeFrame(div); }); } catch (e) {}
         container.appendChild(div);
 
         if (pendingRenameLedgerId && pendingRenameLedgerId === sec.id) {
