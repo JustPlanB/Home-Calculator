@@ -1695,19 +1695,50 @@
     }
     .person-detail-box {
       background: #1a1a1c;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px 16px 0 0;
+      overflow: visible;
+      border: 1px solid #3a3a3e;
+      border-bottom: none;
       width: min(100%, var(--match-card-w, 100%));
       max-width: 100%;
       box-sizing: border-box;
-      max-width: 100%;
       margin: 0 auto;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
       overscroll-behavior: contain;
+      position: relative;
+    }
+    /* خط کف جدول با شکاف محل زبانه + — یک Stroke یکدست */
+    .person-detail-box::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #3a3a3e;
+      pointer-events: none;
+      z-index: 2;
+      /* شکاف دقیقاً روی زبانه (padding-left 56 + عرض ~52) */
+      -webkit-mask-image: linear-gradient(
+        to right,
+        #000 0,
+        #000 calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 100%
+      );
+      mask-image: linear-gradient(
+        to right,
+        #000 0,
+        #000 calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 100%
+      );
     }
     .person-detail-sticky {
       flex-shrink: 0;
@@ -2919,9 +2950,60 @@
     #panel-install .summary-section + .table-add-tab-wrap,
     #panel-ledger .ledger-summary + .table-add-tab-wrap {
       margin-top: -1px !important;
-      padding-left: 36px !important;
+      padding-left: 56px !important;
     }
 
+
+
+    /* جداول خلاصه + زبانه: کف بدون border جدا */
+    #panel-install #installSummarySection,
+    #panel-ledger .ledger-summary,
+    .recurring-box {
+      border-bottom: none !important;
+      border-bottom-left-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      overflow: visible !important;
+      position: relative;
+    }
+    #panel-install #installSummarySection::after,
+    #panel-ledger .ledger-summary::after,
+    .recurring-box::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 1px;
+      background: var(--border);
+      z-index: 2;
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(
+        to right,
+        #000 0, #000 calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px), #000 100%
+      );
+      mask-image: linear-gradient(
+        to right,
+        #000 0, #000 calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) - 1px),
+        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
+        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px), #000 100%
+      );
+    }
+    /* ledger section (روابط) */
+    #panel-ledger .section {
+      overflow: visible !important;
+      border-bottom: none !important;
+      position: relative;
+    }
+    #panel-ledger .section > .section-body {
+      border-bottom: none !important;
+      overflow: visible !important;
+    }
+    #panel-ledger .section > .add-row-wrap.ledger-add-fixed {
+      margin-top: -1px !important;
+      padding-left: 56px !important;
+    }
 
     /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
     .table-add-tab-wrap,
@@ -2935,7 +3017,7 @@
       align-items: flex-start !important;
       direction: ltr !important;
       margin: -1px 0 12px !important;
-      padding: 0 0 0 36px !important;
+      padding: 0 0 0 56px !important;
       position: relative;
       z-index: 2;
       background: transparent !important;
@@ -2957,10 +3039,10 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      /* کمی مستطیلی و عمودی‌تر */
-      width: 40px !important;
+      /* ارتفاع ثابت، عرض بیشتر، عمودی */
+      width: 52px !important;
       height: 48px !important;
-      min-width: 40px !important;
+      min-width: 52px !important;
       min-height: 48px !important;
       margin: 0 !important;
       padding: 0 !important;
@@ -2983,10 +3065,10 @@
     .add-row-wrap.ledger-add-fixed::before {
       content: '';
       position: absolute;
-      top: -3px;
-      left: 36px;
-      width: 40px;
-      height: 6px;
+      top: -2px;
+      left: 56px;
+      width: 52px;
+      height: 4px;
       background: #1a1a1c;
       z-index: 3;
       pointer-events: none;
@@ -2998,17 +3080,17 @@
     .recurring-box + .table-add-tab-wrap::before,
     #recurringPanelInner > .table-add-tab-wrap::before {
       background: var(--card);
-      left: 36px;
-      width: 40px;
+      left: 56px;
+      width: 52px;
     }
     .person-detail-page > .person-detail-add::before {
-      left: 36px;
-      width: 40px;
+      left: 56px;
+      width: 52px;
       background: #1a1a1c;
     }
     #panel-ledger .add-row-wrap.ledger-add-fixed::before {
-      left: 36px;
-      width: 32px;
+      left: 56px;
+      width: 40px;
       background: var(--card);
     }
     /* SVG: یک Stroke یکدست، بدون استروک سفید */
@@ -3017,7 +3099,7 @@
       position: absolute !important;
       left: 50% !important;
       top: -10px !important;
-      width: 56px !important;
+      width: 64px !important;
       height: 52px !important;
       transform: translateX(-50%);
       pointer-events: none !important;
@@ -3026,8 +3108,8 @@
     }
     .table-add-tab .tab-join-svg.tab-join-svg-sm,
     .btn-circle-plus .tab-join-svg.tab-join-svg-sm {
-      width: 44px !important;
-      height: 40px !important;
+      width: 48px !important;
+      height: 42px !important;
       top: -8px !important;
     }
     .table-add-tab .tab-join-fill {
@@ -3045,6 +3127,7 @@
     .table-add-tab .tab-join-stroke {
       stroke: #3a3a3e !important;
       fill: none !important;
+      vector-effect: non-scaling-stroke;
     }
     #panel-install .table-add-tab .tab-join-stroke,
     #panel-ledger .table-add-tab .tab-join-stroke,
@@ -3064,12 +3147,12 @@
     .table-add-tab > .tab-plus-icon {
       position: relative;
       z-index: 2;
-      width: 16px !important;
-      height: 16px !important;
-      margin-top: 6px;
+      width: 22px !important;
+      height: 22px !important;
+      margin-top: 8px;
       stroke: #0a84ff !important;
       fill: none !important;
-      stroke-width: 2.8 !important;
+      stroke-width: 2.6 !important;
       stroke-linecap: round !important;
     }
     .table-add-tab svg:not(.tab-join-svg),
@@ -3077,12 +3160,18 @@
     .add-row-wrap.ledger-add-fixed .btn-circle-plus svg:not(.tab-join-svg) {
       position: relative;
       z-index: 2;
-      width: 16px !important;
-      height: 16px !important;
+      width: 22px !important;
+      height: 22px !important;
       stroke: #0a84ff !important;
       fill: none !important;
-      stroke-width: 2.8 !important;
+      stroke-width: 2.6 !important;
       stroke-linecap: round !important;
+    }
+    #panel-ledger .add-row-wrap.ledger-add-fixed .tab-plus-icon,
+    #panel-ledger .add-row-wrap.ledger-add-fixed svg:not(.tab-join-svg) {
+      width: 16px !important;
+      height: 16px !important;
+      margin-top: 4px;
     }
     .table-add-tab:active,
     .person-detail-add .table-add-tab:active,
@@ -3094,7 +3183,7 @@
     /* فریم جزئیات: + بیرون از box، کمی به راست، اتصال نرم */
     .person-detail-page > .person-detail-add {
       margin-top: -1px !important;
-      padding-left: 36px !important;
+      padding-left: 56px !important;
     }
 
     /* درآمد ثابت: ضربدر حذف = همان قرمز بقیه */
@@ -3103,17 +3192,17 @@
     #panel-ledger .add-row-wrap.ledger-add-fixed {
       margin-top: -1px !important;
       margin-bottom: 8px !important;
-      padding-left: 36px !important;
+      padding-left: 56px !important;
       direction: ltr !important;
       display: flex !important;
       justify-content: flex-start !important;
     }
     #panel-ledger .add-row-wrap.ledger-add-fixed .btn-circle-plus,
     #panel-ledger .add-row-wrap.ledger-add-fixed .table-add-tab {
-      width: 32px !important;
-      height: 38px !important;
-      min-width: 32px !important;
-      min-height: 38px !important;
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      min-height: 40px !important;
       border: none !important;
       border-radius: 0 !important;
       background: transparent !important;
@@ -4164,7 +4253,7 @@
     #recurringPanelInner > .table-add-tab-wrap[data-rec-tab] {
       margin-top: -1px !important;
       margin-bottom: 14px !important;
-      padding-left: 36px !important;
+      padding-left: 56px !important;
     }
     .recurring-box + .table-add-tab-wrap .table-add-tab,
     #recurringPanelInner > .table-add-tab-wrap[data-rec-tab] .table-add-tab {
@@ -5597,7 +5686,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-tab-stroke-v16 */
+    /* build-stamp: 2026-09-16-tab-stroke-v17 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17761,19 +17850,17 @@ field('حساب بانکی', accSelRec);
     }
 
     function tabJoinSvgHtml(kind) {
-      // kind: 'std' | 'sm'
       const sm = kind === 'sm';
-      // مسیر یک Stroke: خم معکوس چپ → بدنه زبانه → خم معکوس راست
-      // fill تا زیر خط جدول می‌رود تا خط کف جدول در محل اتصال دیده نشود
+      // عرض بیشتر، ارتفاع همان؛ خم‌های معکوس متقارن؛ fill تا خط جدول
       const stroke = sm
-        ? 'M0,8 C3,8 5,8 6,12 L6,28 Q6,36 12,36 L32,36 Q38,36 38,28 L38,12 C39,8 41,8 44,8'
-        : 'M0,10 C4,10 6,10 8,15 L8,38 Q8,48 16,48 L40,48 Q48,48 48,38 L48,15 C50,10 52,10 56,10';
+        ? 'M0,8 C3,8 5,8 7,13 L7,30 Q7,38 14,38 L34,38 Q41,38 41,30 L41,13 C43,8 45,8 48,8'
+        : 'M0,10 C5,10 7,10 10,16 L10,38 Q10,48 18,48 L46,48 Q54,48 54,38 L54,16 C57,10 59,10 64,10';
       const fill = sm
-        ? 'M6,10 L6,28 Q6,36 12,36 L32,36 Q38,36 38,28 L38,10 Z'
-        : 'M8,12 L8,38 Q8,48 16,48 L40,48 Q48,48 48,38 L48,12 Z';
-      const vb = sm ? '0 0 44 40' : '0 0 56 52';
-      const w = sm ? '44' : '56';
-      const h = sm ? '40' : '52';
+        ? 'M7,10 L7,30 Q7,38 14,38 L34,38 Q41,38 41,30 L41,10 Z'
+        : 'M10,12 L10,38 Q10,48 18,48 L46,48 Q54,48 54,38 L54,12 Z';
+      const vb = sm ? '0 0 48 42' : '0 0 64 52';
+      const w = sm ? '48' : '64';
+      const h = sm ? '42' : '52';
       return '<svg class="tab-join-svg' + (sm ? ' tab-join-svg-sm' : '') + '" viewBox="' + vb + '" width="' + w + '" height="' + h + '" aria-hidden="true" focusable="false">' +
         '<path class="tab-join-fill" d="' + fill + '"/>' +
         '<path class="tab-join-stroke" fill="none" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" d="' + stroke + '"/>' +
