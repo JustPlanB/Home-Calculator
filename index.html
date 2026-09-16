@@ -2921,11 +2921,7 @@
       margin-top: -1px !important;
       padding-left: 22px !important;
     }
-    #panel-install .table-add-tab,
-    #panel-ledger .ledger-summary + .table-add-tab-wrap .table-add-tab {
-      border-radius: 8px 8px 12px 12px !important;
-      border-top: none !important;
-    }
+
 
     /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
     .table-add-tab-wrap,
@@ -2967,34 +2963,96 @@
       min-height: 34px !important;
       margin: 0 !important;
       padding: 0 !important;
-      /* اتصال نرم به جدول + گوشه‌های پایین گرد */
-      border-radius: 8px 8px 12px 12px !important;
-      border: 1px solid rgba(255,255,255,0.08) !important;
-      border-top: none !important;
-      background: #1a1a1c !important;
+      position: relative !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: #0a84ff !important;
       box-shadow: none !important;
       cursor: pointer;
       line-height: 1 !important;
       flex-shrink: 0 !important;
       -webkit-tap-highlight-color: transparent;
+      overflow: visible !important;
     }
-    #panel-install .table-add-tab,
-    #panel-ledger .table-add-tab,
-    #recurringBox .table-add-tab,
-    .recurring-box + .table-add-tab-wrap .table-add-tab {
-      background: var(--card) !important;
-      border-color: var(--border) !important;
-      border-top: none !important;
-      color: var(--accent, #0a84ff) !important;
+    /* پوشش خط کف جدول در محل اتصال زبانه */
+    .table-add-tab-wrap::before,
+    .person-detail-add::before,
+    .add-row-wrap.ledger-add-fixed::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: 22px;
+      width: 48px;
+      height: 4px;
+      background: #1a1a1c;
+      z-index: 1;
+      pointer-events: none;
     }
-    .table-add-tab svg,
-    .person-detail-add .table-add-tab svg,
-    .person-detail-add .btn-circle-plus svg,
-    .add-row-wrap.ledger-add-fixed .btn-circle-plus svg,
-    #recurringBox .table-add-tab svg,
-    #panel-install .table-add-tab svg,
-    #panel-ledger .table-add-tab svg {
+    #panel-install .table-add-tab-wrap::before,
+    #panel-ledger .table-add-tab-wrap::before,
+    .recurring-box + .table-add-tab-wrap::before,
+    #recurringPanelInner > .table-add-tab-wrap::before {
+      background: var(--card);
+      left: 22px;
+    }
+    .person-detail-page > .person-detail-add::before {
+      left: 22px;
+      background: #1a1a1c;
+    }
+    /* SVG مسیر Stroke یکپارچه با دو خم معکوس */
+    .table-add-tab .tab-join-svg,
+    .btn-circle-plus .tab-join-svg {
+      position: absolute !important;
+      left: 50% !important;
+      top: -8px !important;
+      width: 64px !important;
+      height: 44px !important;
+      transform: translateX(-50%);
+      pointer-events: none !important;
+      overflow: visible !important;
+      z-index: 0;
+    }
+    .table-add-tab .tab-join-fill {
+      fill: #1a1a1c;
+    }
+    #panel-install .table-add-tab .tab-join-fill,
+    #panel-ledger .table-add-tab .tab-join-fill,
+    .recurring-box + .table-add-tab-wrap .tab-join-fill,
+    #recurringPanelInner .table-add-tab .tab-join-fill,
+    #panel-ledger .add-row-wrap.ledger-add-fixed .tab-join-fill {
+      fill: var(--card);
+    }
+    .table-add-tab .tab-join-stroke {
+      stroke: rgba(255,255,255,0.14);
+    }
+    #panel-install .table-add-tab .tab-join-stroke,
+    #panel-ledger .table-add-tab .tab-join-stroke,
+    .recurring-box + .table-add-tab-wrap .tab-join-stroke,
+    #recurringPanelInner .table-add-tab .tab-join-stroke,
+    #panel-ledger .add-row-wrap.ledger-add-fixed .tab-join-stroke {
+      stroke: var(--border);
+    }
+    [data-theme="light"] .table-add-tab .tab-join-stroke {
+      stroke: var(--border);
+    }
+    /* آیکون + روی SVG */
+    .table-add-tab > svg.tab-plus-icon,
+    .table-add-tab > .tab-plus-icon {
+      position: relative;
+      z-index: 2;
+      width: 16px !important;
+      height: 16px !important;
+      stroke: #0a84ff !important;
+      fill: none !important;
+      stroke-width: 2.8 !important;
+      stroke-linecap: round !important;
+    }
+    .table-add-tab svg:not(.tab-join-svg),
+    .person-detail-add .btn-circle-plus svg:not(.tab-join-svg),
+    .add-row-wrap.ledger-add-fixed .btn-circle-plus svg:not(.tab-join-svg) {
+      position: relative;
+      z-index: 2;
       width: 16px !important;
       height: 16px !important;
       stroke: #0a84ff !important;
@@ -3014,11 +3072,7 @@
       margin-top: -1px !important;
       padding-left: 22px !important;
     }
-    .person-detail-page > .person-detail-add .table-add-tab {
-      /* اتصال نرم به کف جدول (نه گوشه ۹۰ درجه) */
-      border-radius: 8px 8px 12px 12px !important;
-      border-top: none !important;
-    }
+
     /* درآمد ثابت: ضربدر حذف = همان قرمز بقیه */
 
     /* + بالای روابط بده‌بستان: همان طراحی، کمی کوچک‌تر */
@@ -4089,10 +4143,7 @@
     }
     .recurring-box + .table-add-tab-wrap .table-add-tab,
     #recurringPanelInner > .table-add-tab-wrap[data-rec-tab] .table-add-tab {
-      border-radius: 8px 8px 12px 12px !important;
-      border-top: none !important;
-      background: var(--card) !important;
-      border-color: var(--border) !important;
+      background: transparent !important;
     }
     .recurring-box h3 { font-size: 0.95rem; color: var(--accent); margin-bottom: 8px; }
     .plan-field input, .plan-field select {
@@ -5512,6 +5563,8 @@
   <script>
     
     /* balance-layout-resize */
+    try { document.addEventListener('DOMContentLoaded', function(){ try { enhanceTableAddTabs(document); } catch(e){} }); } catch(e){}
+
     try {
       window.addEventListener('resize', function(){ try { if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); } catch(e){} });
       if (window.visualViewport) {
@@ -5519,7 +5572,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-ui-align-v14 */
+    /* build-stamp: 2026-09-16-tab-stroke-v15 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -13533,6 +13586,7 @@ function openPdfPrintWindow(){
       };
       addWrap.appendChild(addBtn);
       page.appendChild(addWrap);
+      try { enhanceTableAddTabs(addWrap); } catch (e) {}
 
       container.appendChild(page);
       // جلوگیری از اسکرول صفحه وقتی انتهای جدول رسید
@@ -15496,6 +15550,7 @@ if (item.type === 'recurring') {
           if (box.nextSibling) box.parentNode.insertBefore(tabWrap, box.nextSibling);
           else box.parentNode.appendChild(tabWrap);
         }
+        try { enhanceTableAddTabs(tabWrap); } catch (e2) {}
       } catch (e) {}
 
       const head = document.getElementById('recurringHead');
@@ -17679,7 +17734,36 @@ field('حساب بانکی', accSelRec);
         });
       } catch (e) {}
     }
-    function showCellTextPopup(anchorEl, text) {
+
+    function tabJoinSvgHtml() {
+      return '<svg class="tab-join-svg" viewBox="0 0 64 44" width="64" height="44" aria-hidden="true" focusable="false">' +
+        '<path class="tab-join-fill" d="M8,12 L8,32 Q8,40 16,40 L48,40 Q56,40 56,32 L56,12 L8,12 Z"/>' +
+        '<path class="tab-join-stroke" fill="none" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round" ' +
+        'd="M0,8 C3.5,8 6,8 8,14 L8,32 Q8,40 16,40 L48,40 Q56,40 56,32 L56,14 C58,8 60.5,8 64,8"/>' +
+        '</svg>';
+    }
+    function tabPlusIconHtml() {
+      return '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+    }
+    function enhanceTableAddTabs(root) {
+      try {
+        const scope = root || document;
+        scope.querySelectorAll('.table-add-tab, .person-detail-add .btn-circle-plus, .add-row-wrap.ledger-add-fixed .btn-circle-plus').forEach(btn => {
+          if (!btn || btn.querySelector('.tab-join-svg')) return;
+          const join = tabJoinSvgHtml();
+          // keep existing plus svg if any, else add
+          let plus = btn.querySelector('svg:not(.tab-join-svg)');
+          if (!plus) {
+            btn.insertAdjacentHTML('beforeend', tabPlusIconHtml());
+            plus = btn.querySelector('svg:not(.tab-join-svg)');
+          }
+          if (plus) plus.classList.add('tab-plus-icon');
+          btn.insertAdjacentHTML('afterbegin', join);
+        });
+      } catch (e) {}
+    }
+
+        function showCellTextPopup(anchorEl, text) {
       closeCellTextPopups();
       const t = (text == null ? '' : String(text)).trim();
       if (!t || !anchorEl) return null;
@@ -18915,6 +18999,7 @@ field('حساب بانکی', accSelRec);
           });
         };
         addRowWrap.appendChild(btnAddRow);
+        try { enhanceTableAddTabs(addRowWrap); } catch (e) {}
 
         div.appendChild(header);
         div.appendChild(body);
