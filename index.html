@@ -1072,8 +1072,10 @@
       display: none !important;
     }
     /*
-      مانده با detail-open: body اسکرول ندارد → پنل fixed زیر chrome
-      فیلترها ثابت؛ یک balance-scroll-body برای هر دو جدول.
+      مانده — دو لایه مستقل:
+      1) balance-fixed-header = فیلترها (ثابت، sibling اسکرول نیست)
+      2) balance-scroll-body = فقط دو جدول (یک اسکرول مشترک)
+      پنل fixed زیر chrome (+ یادآوری اگر باز باشد via JS --balance-panel-top)
     */
     body.detail-open #panel-balance.active {
       display: flex !important;
@@ -1081,7 +1083,7 @@
       position: fixed !important;
       left: 0 !important;
       right: 0 !important;
-      top: var(--sticky-chrome-h, 96px) !important;
+      top: var(--balance-panel-top, var(--sticky-chrome-h, 96px)) !important;
       bottom: 0 !important;
       height: auto !important;
       max-height: none !important;
@@ -1098,28 +1100,38 @@
       flex-direction: column !important;
       overflow: hidden !important;
       box-sizing: border-box;
+      background: var(--bg);
     }
+    /* لایه ۱: فیلترها — خارج از scroll، opaque تا جدول زیرش دیده نشود */
     #panel-balance .balance-fixed-header {
       flex: 0 0 auto !important;
       position: relative !important;
-      z-index: 3;
+      z-index: 30;
       background: var(--bg);
-      padding: 4px 0 8px;
+      padding: 6px 0 10px;
       margin: 0;
-      box-shadow: 0 6px 10px -8px rgba(0,0,0,0.35);
+      box-shadow: 0 8px 12px -10px rgba(0,0,0,0.5);
+      isolation: isolate;
     }
     #panel-balance .balance-fixed-header .filter-bar,
     #panel-balance .balance-fixed-header #balanceFilters,
     #panel-balance .balance-fixed-header .balance-filter-block {
       position: relative !important;
       top: auto !important;
+      z-index: 31;
       background: var(--bg);
       margin: 0;
     }
+    /* dropdown حساب فیلتر باید بالای جداول باشد */
+    #panel-balance .balance-fixed-header .dark-select-list,
+    #panel-balance .balance-fixed-header .dark-select-list.open {
+      z-index: 99990 !important;
+    }
+    /* لایه ۲: فقط جداول — یک scroll container */
     #panel-balance .balance-scroll-body {
       flex: 1 1 auto !important;
       min-height: 0 !important;
-      height: auto !important;
+      height: 0 !important; /* با flex:1 فضای باقیمانده را می‌گیرد */
       overflow-x: hidden !important;
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch;
@@ -1127,17 +1139,24 @@
       position: relative !important;
       z-index: 1;
       margin: 0;
-      padding: 4px 0 48px;
-      /* جداول داخل این ظرف اسکرول داخلی ندارند */
+      padding: 6px 0 56px;
+      background: transparent;
     }
     #panel-balance .balance-scroll-body .summary-section,
     #panel-balance .balance-scroll-body table,
-    #panel-balance .balance-scroll-body .summary-table {
+    #panel-balance .balance-scroll-body .summary-table,
+    #panel-balance .balance-scroll-body thead,
+    #panel-balance .balance-scroll-body tbody,
+    #panel-balance .balance-scroll-body tfoot {
       overflow: visible !important;
       max-height: none !important;
+      height: auto !important;
     }
     #panel-balance .balance-scroll-body .summary-section {
-      margin-top: 8px;
+      margin-top: 10px;
+    }
+    #panel-balance .balance-scroll-body .summary-section:first-child {
+      margin-top: 0;
     }
     .feature-sheet-body #panel-balance.active {
       position: relative !important;
@@ -5258,7 +5277,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-fix-nextscroll-acct-bal-v7 */
+    
+    /* balance-layout-resize */
+    try {
+      window.addEventListener('resize', function(){ try { if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); } catch(e){} });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function(){ try { if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); } catch(e){} });
+      }
+    } catch (e) {}
+
+    /* build-stamp: 2026-09-16-balance-layout-v8 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -9040,6 +9068,9 @@
       }
     }
     function toggleRemindBar() {
+      try { setTimeout(function(){ if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); }, 0); } catch (e) {}
+      try { setTimeout(function(){ if (typeof syncBalancePanelLayout === 'function') syncBalancePanelLayout(); }, 120); } catch (e) {}
+
       const bar = document.getElementById('remindBar');
       const arrow = document.getElementById('remindArrow');
       if (!bar) return;
@@ -12600,6 +12631,35 @@ function openPdfPrintWindow(){
       }, 30);
     }
 
+
+    function syncBalancePanelLayout() {
+      try {
+        const panel = document.getElementById('panel-balance');
+        if (!panel || !panel.classList.contains('active')) return;
+        let top = 0;
+        const chrome = document.getElementById('stickyChrome');
+        if (chrome) {
+          const cr = chrome.getBoundingClientRect();
+          top = Math.max(0, Math.round(cr.bottom));
+        } else {
+          top = 96;
+        }
+        const remind = document.getElementById('remindBar');
+        if (remind && remind.style.display !== 'none') {
+          const rr = remind.getBoundingClientRect();
+          // اگر یادآوری دیده می‌شود و پایین‌تر از chrome است
+          if (rr.height > 2 && rr.bottom > top) {
+            top = Math.round(rr.bottom);
+          }
+        }
+        document.documentElement.style.setProperty('--balance-panel-top', top + 'px');
+        panel.style.top = top + 'px';
+        try {
+          if (typeof syncStickyChromeHeight === 'function') syncStickyChromeHeight();
+        } catch (e0) {}
+      } catch (e) {}
+    }
+
     function openPersonDetail(title, kind) {
       _detailContext = { title: title, kind: kind };
       try { document.body.classList.add('detail-open'); } catch (e) {}
@@ -12610,8 +12670,11 @@ function openPdfPrintWindow(){
         currentTab = 'balance';
         activatePanel('balance');
         try { if (typeof syncStickyChromeHeight === 'function') syncStickyChromeHeight(); } catch (e) {}
+        try { syncBalancePanelLayout(); } catch (e) {}
         try { renderBalanceTab(); } catch (e) {}
         try { if (typeof updateBalance === 'function') updateBalance(); } catch (e) {}
+        requestAnimationFrame(() => { try { syncBalancePanelLayout(); } catch (e) {} });
+        setTimeout(() => { try { syncBalancePanelLayout(); } catch (e) {} }, 100);
       } else {
         currentTab = kind;
         activatePanel(kind);
