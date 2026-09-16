@@ -1072,53 +1072,54 @@
       display: none !important;
     }
     /*
-      مانده: چون body.detail-open اسکرول document را قفل می‌کند،
-      پنل مانده خودش flex + ناحیه اسکرول جدا دارد.
-      فیلترها خارج از scroll؛ جداول داخل balance-scroll-body.
+      مانده با detail-open: body اسکرول ندارد → پنل fixed زیر chrome
+      فیلترها ثابت؛ یک balance-scroll-body برای هر دو جدول.
     */
-    body.detail-open #panel-balance.active,
+    body.detail-open #panel-balance.active {
+      display: flex !important;
+      flex-direction: column !important;
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: var(--sticky-chrome-h, 96px) !important;
+      bottom: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 10px !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+      z-index: 18;
+      background: var(--bg);
+    }
     #panel-balance.active {
       display: flex !important;
       flex-direction: column !important;
-      position: relative !important;
       overflow: hidden !important;
       box-sizing: border-box;
-      margin: 0 !important;
-      padding: 0 !important;
-      /* ارتفاع قابل استفاده زیر chrome */
-      height: calc(100vh - var(--sticky-chrome-h, 96px) - 8px) !important;
-      max-height: calc(100vh - var(--sticky-chrome-h, 96px) - 8px) !important;
     }
     #panel-balance .balance-fixed-header {
       flex: 0 0 auto !important;
       position: relative !important;
-      top: auto !important;
       z-index: 3;
       background: var(--bg);
       padding: 4px 0 8px;
       margin: 0;
       box-shadow: 0 6px 10px -8px rgba(0,0,0,0.35);
-      transform: none !important;
     }
     #panel-balance .balance-fixed-header .filter-bar,
-    #panel-balance .balance-fixed-header #balanceFilters {
-      position: relative !important;
-      top: auto !important;
-      background: var(--bg);
-      padding: 2px 0 6px;
-      margin: 0;
-    }
+    #panel-balance .balance-fixed-header #balanceFilters,
     #panel-balance .balance-fixed-header .balance-filter-block {
       position: relative !important;
       top: auto !important;
       background: var(--bg);
       margin: 0;
-      padding: 0 0 2px;
-      box-shadow: none;
     }
     #panel-balance .balance-scroll-body {
       flex: 1 1 auto !important;
       min-height: 0 !important;
+      height: auto !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch;
@@ -1126,14 +1127,23 @@
       position: relative !important;
       z-index: 1;
       margin: 0;
-      padding: 4px 0 40px;
+      padding: 4px 0 48px;
+      /* جداول داخل این ظرف اسکرول داخلی ندارند */
+    }
+    #panel-balance .balance-scroll-body .summary-section,
+    #panel-balance .balance-scroll-body table,
+    #panel-balance .balance-scroll-body .summary-table {
+      overflow: visible !important;
+      max-height: none !important;
     }
     #panel-balance .balance-scroll-body .summary-section {
       margin-top: 8px;
     }
     .feature-sheet-body #panel-balance.active {
+      position: relative !important;
+      top: auto !important;
+      bottom: auto !important;
       height: 100% !important;
-      max-height: 100% !important;
     }
     /* balance-col-compact */
     #panel-balance table th:first-child,
@@ -5248,7 +5258,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /* build-stamp: 2026-09-16-rollback-reg-v6 */
+    /* build-stamp: 2026-09-16-fix-nextscroll-acct-bal-v7 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -12532,26 +12542,51 @@ function openPdfPrintWindow(){
         list.appendChild(opt);
       });
       document.body.appendChild(list);
-      function place() {
+      function placeAccountMenu() {
         try {
           const r = accBtn.getBoundingClientRect();
           if (!r || r.width < 1) return;
-          const menuH = Math.min(240, list.scrollHeight || 200);
-          let top = r.bottom + 4;
-          if (top + menuH > window.innerHeight - 8) top = Math.max(8, r.top - menuH - 4);
+          const vv = window.visualViewport;
+          const viewTop = vv ? vv.offsetTop : 0;
+          const viewH = vv ? vv.height : window.innerHeight;
+          const viewW = vv ? vv.width : window.innerWidth;
+          const viewBottom = viewTop + viewH;
+          // فاصله امن از نوار ناوبری اندروید
+          const safeBottom = 56;
+          const spaceBelow = viewBottom - r.bottom - safeBottom;
+          const spaceAbove = r.top - viewTop - 8;
+          let menuH = Math.min(240, list.scrollHeight || 200);
+          let top;
+          if (spaceBelow >= Math.min(menuH, 120) || spaceBelow >= spaceAbove) {
+            // باز شدن به پایین
+            menuH = Math.min(menuH, Math.max(100, spaceBelow - 4));
+            top = r.bottom + 4;
+          } else {
+            // باز شدن به بالا
+            menuH = Math.min(menuH, Math.max(100, spaceAbove - 4));
+            top = r.top - menuH - 4;
+          }
+          if (top < viewTop + 4) top = viewTop + 4;
+          if (top + menuH > viewBottom - safeBottom) {
+            top = Math.max(viewTop + 4, viewBottom - safeBottom - menuH);
+          }
           let left = r.left;
           const mw = Math.max(r.width, 140);
-          if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+          if (left + mw > viewW - 8) left = viewW - mw - 8;
           if (left < 8) left = 8;
+          list.style.position = 'fixed';
+          list.style.zIndex = '99999';
           list.style.top = Math.round(top) + 'px';
           list.style.left = Math.round(left) + 'px';
           list.style.width = Math.round(mw) + 'px';
+          list.style.maxHeight = Math.round(menuH) + 'px';
+          list.style.overflowY = 'auto';
         } catch (e) {}
       }
-      place();
-      requestAnimationFrame(place);
-      setTimeout(place, 50);
-      setTimeout(place, 200);
+      placeAccountMenu();
+      requestAnimationFrame(placeAccountMenu);
+      setTimeout(placeAccountMenu, 50);
+      setTimeout(placeAccountMenu, 280);
       const close = (ev) => {
         if (!list.contains(ev.target) && ev.target !== accBtn) {
           try { list.remove(); } catch (e2) {}
@@ -12574,7 +12609,9 @@ function openPdfPrintWindow(){
         try { balanceSelectedTitles = [title]; } catch (e) {}
         currentTab = 'balance';
         activatePanel('balance');
+        try { if (typeof syncStickyChromeHeight === 'function') syncStickyChromeHeight(); } catch (e) {}
         try { renderBalanceTab(); } catch (e) {}
+        try { if (typeof updateBalance === 'function') updateBalance(); } catch (e) {}
       } else {
         currentTab = kind;
         activatePanel(kind);
@@ -16308,7 +16345,7 @@ field('حساب بانکی', accSelRec);
             next.classList.remove('is-empty', 'locked');
             next.classList.add('unlocked');
             if (next.tagName !== 'SELECT') next.readOnly = false;
-            try { next.focus(); } catch (err) {}
+            try { next.focus({ preventScroll: true }); } catch (err) { try { next.focus(); } catch (e2) {} }
           } else dayInp.blur();
         }
       };
@@ -16349,7 +16386,7 @@ field('حساب بانکی', accSelRec);
             next.classList.remove('is-empty', 'locked');
             next.classList.add('unlocked');
             if (next.tagName !== 'SELECT') next.readOnly = false;
-            try { next.focus(); } catch (err) {}
+            try { next.focus({ preventScroll: true }); } catch (err) { try { next.focus(); } catch (e2) {} }
           } else descInp.blur();
         }
       };
@@ -17103,32 +17140,45 @@ field('حساب بانکی', accSelRec);
     });
 
 
-    // وقتی کیبورد باز می‌شود، فیلد فوکوس‌شده را بالای کیبورد نگه دار
+    // کیبورد: برای فیلدهای داخل جدول، scrollIntoView نکن (Next نباید جدول را بپراند)
     function scrollFieldAboveKeyboard(el) {
       if (!el) return;
+      // ناوبری داخل جدول درآمد/مخارج/بده‌بستان — بدون اسکرول خودکار
+      if (el.closest && el.closest('.person-detail-scroll, .person-detail-table, #sections-ledger, .ledger-rows, .section-rows-scroll')) {
+        return;
+      }
       setTimeout(() => {
         try {
           const r = el.getBoundingClientRect();
-          const vh = window.innerHeight || 600;
-          // فقط اگر خارج از محدوده دید است، و فقط nearest — نه پرش به center
+          const vv = window.visualViewport;
+          const vh = (vv && vv.height) ? vv.height : (window.innerHeight || 600);
           if (r.top < 80 || r.bottom > vh - 120) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
-        } catch (e) {
-          try { el.scrollIntoView({ block: 'nearest' }); } catch (e2) {}
-        }
+        } catch (e) {}
       }, 280);
     }
     document.addEventListener('focusin', (e) => {
       const t = e.target;
       if (!t || !t.tagName) return;
-      // هر جا کاربر شروع به تایپ/ورود داده کند — اگر یادآور باز است ببند
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) ||
           (t.isContentEditable) ||
           (t.closest && (t.closest('#textInputModal') || t.closest('.title-menu')))) {
         closeRemindBarIfOpen();
       }
       if (t.closest && (t.closest('.title-menu') || t.closest('#textInputModal'))) return;
+      // حفظ scrollTop ظرف جدول هنگام focus (ضد اسکرول مرورگر/اندروید)
+      if (t.closest && t.closest('.person-detail-scroll, #sections-ledger')) {
+        const sc = t.closest('.person-detail-scroll') || t.closest('#sections-ledger');
+        const y = sc ? sc.scrollTop : 0;
+        requestAnimationFrame(() => {
+          try { if (sc && Math.abs((sc.scrollTop || 0) - y) > 2) sc.scrollTop = y; } catch (e) {}
+        });
+        setTimeout(() => {
+          try { if (sc && Math.abs((sc.scrollTop || 0) - y) > 2) sc.scrollTop = y; } catch (e) {}
+        }, 50);
+        return; // بدون scrollIntoView
+      }
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) {
         scrollFieldAboveKeyboard(t);
       }
@@ -17877,7 +17927,7 @@ field('حساب بانکی', accSelRec);
               next.classList.add('unlocked');
               if (next.tagName !== 'SELECT') next.readOnly = false;
             }
-            try { next.focus(); } catch (err) {}
+            try { next.focus({ preventScroll: true }); } catch (err) { try { next.focus(); } catch (e2) {} }
           } else {
             try { dayInp.blur(); } catch (err) {}
           }
@@ -17913,7 +17963,7 @@ field('حساب بانکی', accSelRec);
               next.classList.add('unlocked');
               if (next.tagName !== 'SELECT') next.readOnly = false;
             }
-            try { next.focus(); } catch (err) {}
+            try { next.focus({ preventScroll: true }); } catch (err) { try { next.focus(); } catch (e2) {} }
           } else {
             try { descInp.blur(); } catch (err) {}
           }
