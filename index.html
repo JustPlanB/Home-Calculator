@@ -1694,51 +1694,104 @@
       box-sizing: border-box;
     }
     .person-detail-box {
+      --tab-w: 56px;
+      --tab-h: 48px;
+      --frame-stroke: #3a3a3e;
       background: #1a1a1c;
-      border-radius: 16px 16px 0 0;
+      border: none;
+      border-radius: 0;
       overflow: visible;
-      border: 1px solid #3a3a3e;
-      border-bottom: none;
       width: min(100%, var(--match-card-w, 100%));
       max-width: 100%;
       box-sizing: border-box;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr var(--tab-w);
+      grid-template-rows: auto auto auto var(--tab-h);
       max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
       overscroll-behavior: contain;
       position: relative;
     }
-    /* خط کف جدول با شکاف محل زبانه + — یک Stroke یکدست */
-    .person-detail-box::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 1px;
-      background: #3a3a3e;
-      pointer-events: none;
+    /* بدنه اصلی جدول — ستون‌ها را span می‌کند */
+    .person-detail-box > .person-detail-sticky {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      border: 1px solid var(--frame-stroke);
+      border-bottom: none;
+      border-radius: 16px 16px 0 0;
+      background: #1a1a1c;
+    }
+    .person-detail-box > .person-detail-scroll {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      border-left: 1px solid var(--frame-stroke);
+      border-right: 1px solid var(--frame-stroke);
+      background: #1a1a1c;
+      min-height: 0;
+    }
+    .person-detail-box > .person-detail-hint {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      border-left: 1px solid var(--frame-stroke);
+      border-right: 1px solid var(--frame-stroke);
+      background: #1a1a1c;
+      margin: 0;
+      padding: 6px 10px 8px;
+    }
+    /* کف چپ: فقط خط افقی — فریم اینجا پایین نمی‌آید */
+    .person-detail-box > .table-step-floor {
+      grid-column: 1;
+      grid-row: 4;
+      border-top: 1px solid var(--frame-stroke);
+      border-left: 1px solid var(--frame-stroke);
+      background: transparent;
+      border-bottom: none;
+      border-right: none;
+      border-bottom-left-radius: 16px;
+      /* ارتفاع صفرِ محتوا؛ فقط border-top دیده می‌شود */
+      height: 0;
+      min-height: 0;
+      position: relative;
+    }
+    /* پله راست: امتداد فریم جدول به پایین */
+    .person-detail-box > .table-tab-step {
+      grid-column: 2;
+      grid-row: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1c;
+      border: 1px solid var(--frame-stroke);
+      border-top: 1px solid var(--frame-stroke);
+      border-radius: 12px 0 16px 12px; /* curve اتصال به کف + گوشه بیرونی */
+      box-sizing: border-box;
+      position: relative;
       z-index: 2;
-      /* شکاف دقیقاً روی زبانه (padding-left 56 + عرض ~52) */
-      -webkit-mask-image: linear-gradient(
-        to right,
-        #000 0,
-        #000 calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 100%
-      );
-      mask-image: linear-gradient(
-        to right,
-        #000 0,
-        #000 calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 100%
-      );
+    }
+    .person-detail-box > .table-tab-step .table-add-tab {
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .person-detail-box > .table-tab-step .tab-join-svg {
+      display: none !important; /* دیگر زائده جدا نیست */
+    }
+    .person-detail-box > .table-tab-step .tab-plus-icon,
+    .person-detail-box > .table-tab-step svg:not(.tab-join-svg) {
+      width: 24px !important;
+      height: 24px !important;
+      margin-top: 0 !important;
+      stroke: #0a84ff !important;
+      position: relative;
+      z-index: 2;
     }
     .person-detail-sticky {
       flex-shrink: 0;
@@ -3003,6 +3056,82 @@
     #panel-ledger .section > .add-row-wrap.ledger-add-fixed {
       margin-top: -1px !important;
       padding-left: 56px !important;
+    }
+
+
+    /* —— پله + جزئی از فریم جدول (راست، پایین) —— */
+    .frame-with-step {
+      --tab-w: 56px;
+      --tab-h: 48px;
+      --frame-stroke: var(--border);
+      display: grid !important;
+      grid-template-columns: 1fr var(--tab-w);
+      grid-template-rows: auto var(--tab-h);
+      background: var(--card);
+      border: none !important;
+      border-radius: 0 !important;
+      overflow: visible !important;
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .frame-with-step > .frame-step-body {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      border: 1px solid var(--frame-stroke);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      background: var(--card);
+      overflow: hidden;
+    }
+    .frame-with-step > .table-step-floor {
+      grid-column: 1;
+      grid-row: 2;
+      height: 0;
+      min-height: 0;
+      border-top: 1px solid var(--frame-stroke);
+      border-left: 1px solid var(--frame-stroke);
+      border-bottom-left-radius: 10px;
+      background: transparent;
+    }
+    .frame-with-step > .table-tab-step {
+      grid-column: 2;
+      grid-row: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--card);
+      border: 1px solid var(--frame-stroke);
+      border-radius: 10px 0 10px 10px;
+      box-sizing: border-box;
+    }
+    .frame-with-step > .table-tab-step .table-add-tab {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .frame-with-step > .table-tab-step .tab-join-svg { display: none !important; }
+    .frame-with-step > .table-tab-step .tab-plus-icon,
+    .frame-with-step > .table-tab-step svg:not(.tab-join-svg) {
+      width: 22px !important;
+      height: 22px !important;
+      stroke: #0a84ff !important;
+      fill: none !important;
+      stroke-width: 2.6 !important;
+    }
+    /* کوچک برای روابط بده‌بستان */
+    .frame-with-step.frame-step-sm {
+      --tab-w: 44px;
+      --tab-h: 40px;
+    }
+    .frame-with-step.frame-step-sm > .table-tab-step .tab-plus-icon,
+    .frame-with-step.frame-step-sm > .table-tab-step svg:not(.tab-join-svg) {
+      width: 16px !important;
+      height: 16px !important;
     }
 
     /* —— زبانه + متصل به لبه پایین جدول (درآمد/مخارج/ثابت/اقساط/بده‌بستان) —— */
@@ -5519,29 +5648,34 @@
     <!-- اقساط -->
     <div id="panel-install" class="tab-panel">
       <div id="plans-container"></div>
-      <div class="summary-section" id="installSummarySection">
-        <div class="summary-header install-h">خلاصه اقساط</div>
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th style="text-align:right; padding-right:12px;">شرح</th>
-              <th>پرداخت‌شده</th>
-              <th>باقی‌مانده</th>
-              <th>جمع کل</th>
-            </tr>
-          </thead>
-          <tbody id="install-summary-body"></tbody>
-          <tfoot>
-            <tr>
-              <td class="sec-name">جمع</td>
-              <td class="val paid-cell" id="ins-paid">۰</td>
-              <td class="val unpaid-cell" id="ins-remain">۰</td>
-              <td class="val total-cell" id="ins-total">۰</td>
-            </tr>
-          </tfoot>
-        </table>
+      <div class="frame-with-step" id="installSummaryFrame">
+        <div class="frame-step-body summary-section" id="installSummarySection">
+          <div class="summary-header install-h">خلاصه اقساط</div>
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th style="text-align:right; padding-right:12px;">شرح</th>
+                <th>پرداخت‌شده</th>
+                <th>باقی‌مانده</th>
+                <th>جمع کل</th>
+              </tr>
+            </thead>
+            <tbody id="install-summary-body"></tbody>
+            <tfoot>
+              <tr>
+                <td class="sec-name">جمع</td>
+                <td class="val paid-cell" id="ins-paid">۰</td>
+                <td class="val unpaid-cell" id="ins-remain">۰</td>
+                <td class="val total-cell" id="ins-total">۰</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="table-step-floor" aria-hidden="true"></div>
+        <div class="table-tab-step">
+          <button type="button" class="table-add-tab" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        </div>
       </div>
-      <div class="table-add-tab-wrap"><button type="button" class="table-add-tab" onclick="addPlan()" title="قسط جدید" aria-label="قسط جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     <!-- بده‌بستان -->
@@ -5549,19 +5683,24 @@
       <div id="sections-ledger"></div>
       <div class="filter-bar" id="ledgerFilters"></div>
 
-      <div class="summary-section ledger-summary">
-        <div class="summary-header ledger-h">خلاصه بده‌بستان</div>
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th style="text-align:right;padding-right:12px;">رابطه</th>
-              <th style="width:36%;">مبلغ</th>
-            </tr>
-          </thead>
-          <tbody id="ledger-summary-body"></tbody>
-        </table>
+      <div class="frame-with-step" id="ledgerSummaryFrame">
+        <div class="frame-step-body summary-section ledger-summary">
+          <div class="summary-header ledger-h">خلاصه بده‌بستان</div>
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th style="text-align:right;padding-right:12px;">رابطه</th>
+                <th style="width:36%;">مبلغ</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-summary-body"></tbody>
+          </table>
+        </div>
+        <div class="table-step-floor" aria-hidden="true"></div>
+        <div class="table-tab-step">
+          <button type="button" class="table-add-tab" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        </div>
       </div>
-      <div class="table-add-tab-wrap"><button type="button" class="table-add-tab" onclick="addLedgerSection()" title="رابطه جدید" aria-label="رابطه جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </div>
 
     </div>
@@ -5686,7 +5825,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-tab-stroke-v17 */
+    /* build-stamp: 2026-09-16-tab-step-v18 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -13683,25 +13822,28 @@ function openPdfPrintWindow(){
       hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
       box.appendChild(hint);
 
-      page.appendChild(box);
+      /* پله راست فریم — امتداد خود جدول، نه زائده جدا */
+      const floor = document.createElement('div');
+      floor.className = 'table-step-floor';
+      floor.setAttribute('aria-hidden', 'true');
+      box.appendChild(floor);
 
-      /* زبانه + بیرون از فریم جدول — متصل به لبه پایین سمت چپ */
-      const addWrap = document.createElement('div');
-      addWrap.className = 'person-detail-add table-add-tab-wrap';
+      const step = document.createElement('div');
+      step.className = 'table-tab-step';
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'table-add-tab';
       addBtn.title = 'ردیف جدید';
       addBtn.setAttribute('aria-label', 'ردیف جدید');
-      addBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+      addBtn.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       addBtn.onclick = () => {
         sec.rows.push(emptyRow(tab));
         rebuild();
       };
-      addWrap.appendChild(addBtn);
-      page.appendChild(addWrap);
-      try { enhanceTableAddTabs(addWrap); } catch (e) {}
+      step.appendChild(addBtn);
+      box.appendChild(step);
 
+      page.appendChild(box);
       container.appendChild(page);
       // جلوگیری از اسکرول صفحه وقتی انتهای جدول رسید
       try {
@@ -15648,23 +15790,25 @@ if (item.type === 'recurring') {
         /* + بیرون از باکس — بعد از innerHTML اضافه می‌شود */
       } // end !recurringCollapsed
       box.innerHTML = html;
-      // حذف زبانه قبلی بیرون باکس
+      box.classList.add('frame-with-step');
+      // محتوای فعلی را در body بپیچ
       try {
-        const parent = box.parentNode;
-        if (parent) {
-          parent.querySelectorAll(':scope > .table-add-tab-wrap[data-rec-tab]').forEach(el => el.remove());
-        }
-      } catch (e) {}
-      try {
-        const tabWrap = document.createElement('div');
-        tabWrap.className = 'table-add-tab-wrap';
-        tabWrap.setAttribute('data-rec-tab', '1');
-        tabWrap.innerHTML = '<button type="button" class="table-add-tab" id="addRecurringBtn" title="جدید" aria-label="جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
+        const body = document.createElement('div');
+        body.className = 'frame-step-body';
+        while (box.firstChild) body.appendChild(box.firstChild);
+        box.appendChild(body);
+        const floor = document.createElement('div');
+        floor.className = 'table-step-floor';
+        floor.setAttribute('aria-hidden', 'true');
+        box.appendChild(floor);
+        const step = document.createElement('div');
+        step.className = 'table-tab-step';
+        step.innerHTML = '<button type="button" class="table-add-tab" id="addRecurringBtn" title="جدید" aria-label="جدید"><svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>';
+        box.appendChild(step);
+        // remove any external tab leftovers
         if (box.parentNode) {
-          if (box.nextSibling) box.parentNode.insertBefore(tabWrap, box.nextSibling);
-          else box.parentNode.appendChild(tabWrap);
+          box.parentNode.querySelectorAll(':scope > .table-add-tab-wrap[data-rec-tab]').forEach(el => el.remove());
         }
-        try { enhanceTableAddTabs(tabWrap); } catch (e2) {}
       } catch (e) {}
 
       const head = document.getElementById('recurringHead');
@@ -19104,14 +19248,13 @@ field('حساب بانکی', accSelRec);
         table.appendChild(tbody);
         body.appendChild(table);
         // ＋ خارج از ناحیه اسکرول — پایین جدول ثابت
-        const addRowWrap = document.createElement('div');
-        addRowWrap.className = 'add-row-wrap ledger-add-fixed';
+        div.classList.add('frame-with-step', 'frame-step-sm');
         const btnAddRow = document.createElement('button');
         btnAddRow.type = 'button';
-        btnAddRow.className = 'btn-circle-plus';
+        btnAddRow.className = 'table-add-tab';
         btnAddRow.title = 'ردیف جدید';
         btnAddRow.setAttribute('aria-label', 'ردیف جدید');
-        btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+        btnAddRow.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
         btnAddRow.onclick = (e) => {
           e.stopPropagation();
           const bodyEl = div.querySelector('.section-body');
@@ -19124,12 +19267,24 @@ field('حساب بانکی', accSelRec);
             } catch (err) {}
           });
         };
-        addRowWrap.appendChild(btnAddRow);
-        try { enhanceTableAddTabs(addRowWrap); } catch (e) {}
 
         div.appendChild(header);
         div.appendChild(body);
-        div.appendChild(addRowWrap);
+        // wrap header+body as frame body for grid
+        try {
+          const fb = document.createElement('div');
+          fb.className = 'frame-step-body';
+          while (div.firstChild) fb.appendChild(div.firstChild);
+          div.appendChild(fb);
+        } catch (e) {}
+        const floor = document.createElement('div');
+        floor.className = 'table-step-floor';
+        floor.setAttribute('aria-hidden', 'true');
+        div.appendChild(floor);
+        const step = document.createElement('div');
+        step.className = 'table-tab-step';
+        step.appendChild(btnAddRow);
+        div.appendChild(step);
         container.appendChild(div);
 
         if (pendingRenameLedgerId && pendingRenameLedgerId === sec.id) {
