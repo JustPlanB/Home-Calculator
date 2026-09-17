@@ -1432,23 +1432,24 @@
       min-width: 50px !important;
       min-height: 50px !important;
       background: var(--bg, #121214) !important;
-      border: none !important;
+      border: 1px solid rgba(80, 160, 255, 0.28) !important;
       box-shadow:
-        0 4px 12px rgba(0,0,0,0.55),
-        0 1px 3px rgba(0,0,0,0.4),
-        inset 0 1px 0 rgba(255,255,255,0.1),
-        inset 0 -2px 4px rgba(0,0,0,0.25) !important;
+        0 6px 18px rgba(0,0,0,0.7),
+        0 2px 6px rgba(0,0,0,0.5),
+        0 0 20px rgba(10, 132, 255, 0.28),
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        inset 0 -3px 6px rgba(0,0,0,0.35) !important;
     }
     .home-add-wrap .btn-circle-plus.lg svg {
       width: 24px !important;
       height: 24px !important;
-      stroke: #6ec0ff !important;
-      stroke-width: 3.1 !important;
-      animation: plusNeonPulse 2s ease-in-out infinite;
+      stroke: #9fd8ff !important;
+      stroke-width: 3.4 !important;
+      animation: plusNeonPulse 1.7s ease-in-out infinite;
       filter:
-        drop-shadow(0 0 4px #0a84ff)
-        drop-shadow(0 0 12px rgba(10, 132, 255, 0.85))
-        drop-shadow(0 0 20px rgba(80, 180, 255, 0.55));
+        drop-shadow(0 0 6px #0a84ff)
+        drop-shadow(0 0 16px rgba(10, 132, 255, 1))
+        drop-shadow(0 0 28px rgba(120, 200, 255, 0.75));
     }
     @keyframes plusNeonPulse {
       0%, 100% {
@@ -1460,6 +1461,62 @@
         opacity: 1;
       }
     }
+
+    /* خلاصه اقساط: مبلغ داخل سلول */
+    #install-summary-body td.val,
+    #installSummarySection .summary-table td.val,
+    #installSummarySection .summary-table tfoot td.val {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      max-width: 0;
+      cursor: pointer;
+    }
+    .remind-table th, .remind-table td,
+    .remind-bar .remind-table th, .remind-bar .remind-table td {
+      border-color: #3a3a3e !important;
+    }
+    .date-mask-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+      text-align: center;
+    }
+    .date-mask-wrap {
+      direction: rtl;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      padding: 8px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      margin-bottom: 7px;
+      box-sizing: border-box;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+    .date-mask-wrap input.date-seg {
+      width: 2.2em;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      text-align: center;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 2px 0;
+      outline: none;
+      direction: ltr;
+    }
+    .date-mask-wrap .date-sep {
+      color: var(--muted);
+      font-weight: 700;
+      user-select: none;
+    }
+
     /* موجودی آنی روی کارت */
     .person-instant-box {
       border-radius: 12px;
@@ -6241,7 +6298,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v34 */
+    /* build-stamp: 2026-09-16-theta-home-v35 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -12550,8 +12607,19 @@ function openPdfPrintWindow(){
 
     function updateInstallSummary() {
       const tbody = document.getElementById('install-summary-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
       let gPaid = 0, gRemain = 0, gTotal = 0;
+      function bindAmt(td, num) {
+        const full = formatNum(num);
+        td.textContent = full;
+        td.title = full;
+        td.style.cursor = 'pointer';
+        td.onclick = function(e) {
+          e.stopPropagation();
+          try { showCellTextPopup(td, full); } catch (err) {}
+        };
+      }
       plans.forEach(plan => {
         const count = Math.max(0, parseInt(plan.count, 10) || 0);
         const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
@@ -12559,21 +12627,23 @@ function openPdfPrintWindow(){
         const total = planTotalPayable(plan);
         const paidSum = paid * amt;
         const remainSum = total - paidSum;
-        gPaid += paidSum;
-        gRemain += remainSum;
-        gTotal += total;
+        gPaid += paidSum; gRemain += remainSum; gTotal += total;
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="sec-name">${escapeHtml(plan.name) || '—'}</td>
-          <td class="val paid-cell">${formatNum(paidSum)}</td>
-          <td class="val unpaid-cell">${formatNum(remainSum)}</td>
-          <td class="val total-cell">${formatNum(total)}</td>
-        `;
+        const tdN = document.createElement('td'); tdN.className = 'sec-name'; tdN.textContent = plan.name || '—';
+        const tdP = document.createElement('td'); tdP.className = 'val paid-cell'; bindAmt(tdP, paidSum);
+        const tdR = document.createElement('td'); tdR.className = 'val unpaid-cell'; bindAmt(tdR, remainSum);
+        const tdT = document.createElement('td'); tdT.className = 'val total-cell'; bindAmt(tdT, total);
+        tr.appendChild(tdN); tr.appendChild(tdP); tr.appendChild(tdR); tr.appendChild(tdT);
         tbody.appendChild(tr);
       });
-      document.getElementById('ins-paid').textContent = formatNum(gPaid);
-      document.getElementById('ins-remain').textContent = formatNum(gRemain);
-      document.getElementById('ins-total').textContent = formatNum(gTotal);
+      [['ins-paid', gPaid], ['ins-remain', gRemain], ['ins-total', gTotal]].forEach(function(pair) {
+        const el = document.getElementById(pair[0]);
+        if (!el) return;
+        const full = formatNum(pair[1]);
+        el.textContent = full;
+        el.style.cursor = 'pointer';
+        el.onclick = function() { try { showCellTextPopup(el, full); } catch (e) {} };
+      });
     }
 
 
@@ -16258,6 +16328,14 @@ if (item.type === 'recurring') {
 
 
     /** افزودن درآمد ثابت به یک بخش در همه ماه‌های آرشیو + ماه جاری */
+    function monthInContractRange(year, month, item) {
+      if (!item || !item.contractStart || !item.contractEnd) return true;
+      const a = (item.contractStart.y || 0) * 100 + (item.contractStart.m || 0);
+      const b = (item.contractEnd.y || 0) * 100 + (item.contractEnd.m || 0);
+      const cur = year * 100 + month;
+      if (!a || !b) return true;
+      return cur >= a && cur <= b;
+    }
     function addRecurringRowToAllMonths(secTitleOrId, item) {
       if (!item || !(item.name || item.desc)) return 0;
       const newRow = {
@@ -16302,14 +16380,36 @@ if (item.type === 'recurring') {
         return n;
       }
       let total = 0;
-      // ماه جاری
-      total += applyToSections((periodData.income && periodData.income.sections) || []);
-      // همه ماه‌های آرشیو + ۱۲ ماه سال جاری
+      // ماه جاری (فقط داخل بازه قرارداد)
+      if (monthInContractRange(currentYear, currentMonth, item)) {
+        total += applyToSections((periodData.income && periodData.income.sections) || []);
+      }
+      // همه ماه‌های آرشیو + ۱۲ ماه سال جاری در بازه قرارداد
       try { persistCurrent(); } catch (e) {}
       try { ensureYearMonthsInArchive(currentYear); } catch (e) {}
       const keys = new Set(Object.keys(archive || {}));
       for (let m = 1; m <= 12; m++) keys.add(periodKey(currentYear, m));
+      // ماه‌های سال‌های بین شروع و پایان قرارداد
+      try {
+        if (item.contractStart && item.contractEnd) {
+          let y = item.contractStart.y, m = item.contractStart.m;
+          const endY = item.contractEnd.y, endM = item.contractEnd.m;
+          let guard = 0;
+          while (y * 100 + m <= endY * 100 + endM && guard < 240) {
+            keys.add(periodKey(y, m));
+            m++; if (m > 12) { m = 1; y++; }
+            guard++;
+          }
+        }
+      } catch (eY) {}
       keys.forEach(k => {
+        // فقط ماه‌های داخل بازه قرارداد
+        try {
+          const parts = String(k).split(/[-_/]/);
+          const yy = parseInt(parts[0], 10) || 0;
+          const mm = parseInt(parts[1], 10) || 0;
+          if (yy && mm && !monthInContractRange(yy, mm, item)) return;
+        } catch (eR) {}
         let pd = archive[k];
         if (!pd) {
           pd = emptyPeriodData();
@@ -16321,6 +16421,12 @@ if (item.type === 'recurring') {
         const after = JSON.stringify(pd.income.sections || []);
         if (before !== after) total++;
       });
+      // ماه جاری فقط اگر در بازه باشد
+      try {
+        if (!monthInContractRange(currentYear, currentMonth, item)) {
+          /* skip current already applied only if in range - re-check */
+        }
+      } catch (eC) {}
       try { persistCurrent(); } catch (e) {}
       try { saveArchive(); } catch (e) {}
       return total;
@@ -16764,6 +16870,75 @@ if (item.type === 'recurring') {
       }
     }
 
+
+    function createDateMaskInput(initial) {
+      const wrap = document.createElement('div');
+      wrap.className = 'date-mask-wrap';
+      const d0 = initial && (initial.d || initial.day) ? String(initial.d || initial.day) : '';
+      const m0 = initial && (initial.m || initial.month) ? String(initial.m || initial.month) : '';
+      const y0 = initial && (initial.y || initial.year) ? String(initial.y || initial.year) : '';
+      function seg(val, ph) {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.inputMode = 'numeric';
+        inp.className = 'date-seg';
+        inp.maxLength = 2;
+        inp.placeholder = ph;
+        if (val) {
+          const en = String(val).replace(/\D/g, '');
+          const two = en.length >= 2 ? en.slice(-2) : en;
+          inp.value = toPersianDigits(two.padStart(two.length, '0'));
+        } else inp.value = '';
+        return inp;
+      }
+      // RTL: day (right), month, year (left)
+      const inpD = seg(d0, '––');
+      const inpM = seg(m0, '––');
+      let yShow = y0;
+      if (yShow && String(yShow).length === 4) yShow = String(yShow).slice(-2);
+      const inpY = seg(yShow, '––');
+      const s1 = document.createElement('span'); s1.className = 'date-sep'; s1.textContent = '،';
+      const s2 = document.createElement('span'); s2.className = 'date-sep'; s2.textContent = '،';
+      wrap.appendChild(inpD); wrap.appendChild(s1); wrap.appendChild(inpM); wrap.appendChild(s2); wrap.appendChild(inpY);
+      function bind(inp, next, maxN) {
+        inp.addEventListener('input', function() {
+          let v = toEnglishDigits(inp.value).replace(/[^0-9]/g, '');
+          if (v.length > 2) v = v.slice(0, 2);
+          if (v) {
+            let n = parseInt(v, 10);
+            if (maxN && n > maxN) n = maxN;
+            v = String(n);
+          }
+          inp.value = v ? toPersianDigits(v) : '';
+          if ((toEnglishDigits(inp.value).replace(/\D/g,'').length) >= 2 && next) {
+            try { next.focus(); if (next.select) next.select(); } catch (e) {}
+          }
+        });
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Backspace' && !(inp.value || '').length) {
+            var p = inp.previousElementSibling;
+            while (p && p.tagName !== 'INPUT') p = p.previousElementSibling;
+            if (p) try { p.focus(); } catch (e2) {}
+          }
+        });
+      }
+      bind(inpD, inpM, 31);
+      bind(inpM, inpY, 12);
+      bind(inpY, null, 99);
+      wrap.getDate = function() {
+        const d = parseInt(toEnglishDigits(inpD.value), 10) || 0;
+        const m = parseInt(toEnglishDigits(inpM.value), 10) || 0;
+        let y = parseInt(toEnglishDigits(inpY.value), 10) || 0;
+        if (y > 0 && y < 100) y += 1400;
+        return { d: d, m: m, y: y };
+      };
+      wrap.isComplete = function() {
+        const g = wrap.getDate();
+        return g.d >= 1 && g.d <= 31 && g.m >= 1 && g.m <= 12 && g.y >= 1300;
+      };
+      return wrap;
+    }
+
     function editRecurringItem(index) {
       const existing = index >= 0 ? recurringIncomes[index] : { name: '', amount: 0, day: '' };
       openRecurringSheet(index, existing);
@@ -16833,20 +17008,20 @@ if (item.type === 'recurring') {
       };
       field('مبلغ ماهانه (تومان)', inpAmt);
 
-      const inpDay = document.createElement('input');
-      inpDay.type = 'text';
-      inpDay.inputMode = 'numeric';
-      inpDay.value = existing.day ? toPersianDigits(existing.day) : '';
-      inpDay.placeholder = 'روز را وارد کنید';
-      inpDay.style.cssText = inpStyle;
-      inpDay.oninput = () => {
-        let v = toEnglishDigits(inpDay.value).replace(/[^0-9]/g, '');
-        if (v.length > 2) v = v.slice(0, 2);
-        let n = v ? parseInt(v, 10) : 0;
-        if (n > 31) n = 31;
-        inpDay.value = n ? toPersianDigits(n) : '';
-      };
-      field('روز ماه (۱–۳۱)', inpDay);
+      const startInit = existing.contractStart || (existing.day ? { d: existing.day, m: currentMonth, y: currentYear } : null);
+      const endInit = existing.contractEnd || null;
+      const labStart = document.createElement('div');
+      labStart.className = 'date-mask-label';
+      labStart.textContent = 'شروع قرارداد';
+      sheet.appendChild(labStart);
+      const maskStart = createDateMaskInput(startInit);
+      sheet.appendChild(maskStart);
+      const labEnd = document.createElement('div');
+      labEnd.className = 'date-mask-label';
+      labEnd.textContent = 'پایان قرارداد';
+      sheet.appendChild(labEnd);
+      const maskEnd = createDateMaskInput(endInit);
+      sheet.appendChild(maskEnd);
 
       // بخش‌های درآمد ماه جاری (اولویت) + عناوین یکتای آرشیو
       const secOpts = [];
@@ -16892,7 +17067,7 @@ if (item.type === 'recurring') {
       }
       accSelRec.style.marginBottom = '7px';
             try {
-        if (typeof inpDay !== 'undefined' && inpDay) {
+        if (false && typeof inpDay !== 'undefined' && inpDay) {
           inpDay.setAttribute('enterkeyhint', 'next');
           inpDay.setAttribute('inputmode', 'numeric');
           inpDay.onkeydown = (e) => {
@@ -16960,9 +17135,23 @@ field('حساب بانکی', accSelRec);
         if (!name) { showToast('نام را وارد کنید'); try { inpName.focus(); } catch (e) {} return; }
         const amtDigits = toEnglishDigits(inpAmt.value || '').replace(/[^0-9]/g, '');
         const amount = amtDigits ? (parseInt(amtDigits, 10) || 0) : 0;
-        let day = clampDayValue(inpDay.value);
+        const st = maskStart.getDate();
+        const en = maskEnd.getDate();
+        let day = st.d || 0;
         if (day > 31) day = 31;
-        const item = { name: name, amount: amount, day: day || '', account: accSelRec.getValue() || '' };
+        if (!maskStart.isComplete()) { showToast('شروع قرارداد را کامل وارد کنید'); return; }
+        if (!maskEnd.isComplete()) { showToast('پایان قرارداد را کامل وارد کنید'); return; }
+        const startKey = st.y * 100 + st.m;
+        const endKey = en.y * 100 + en.m;
+        if (endKey < startKey) { showToast('پایان قرارداد باید بعد از شروع باشد'); return; }
+        const item = {
+          name: name,
+          amount: amount,
+          day: day || '',
+          account: accSelRec.getValue() || '',
+          contractStart: { d: st.d, m: st.m, y: st.y },
+          contractEnd: { d: en.d, m: en.m, y: en.y }
+        };
         // اگر بخش مقصد انتخاب شده، نام بخش را روی رکورد نگه دار
         const destSecId = (secSelRec.getValue && secSelRec.getValue()) || '';
         if (destSecId) {
@@ -17040,11 +17229,7 @@ field('حساب بانکی', accSelRec);
         if (e.key === 'Escape') { e.preventDefault(); close(); }
       };
       inpAmt.onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); inpDay.focus(); }
-        if (e.key === 'Escape') { e.preventDefault(); close(); }
-      };
-      inpDay.onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Enter') { e.preventDefault(); try { maskStart.querySelector('input').focus(); } catch (e2) {} }
         if (e.key === 'Escape') { e.preventDefault(); close(); }
       };
 
