@@ -1232,6 +1232,7 @@
       overflow-x: hidden !important;
       max-width: 100%;
     }
+    #panel-home .add-sec-wrap { display: none !important; }
     #panel-home.active {
       overflow-y: visible !important;
       min-height: min-content;
@@ -1264,11 +1265,192 @@
     body.tabs-main-hidden #summaryBox-expense {
       display: none !important;
     }
+    #panel-home .add-sec-wrap { display: none !important; }
     #panel-home.active {
       display: block !important;
       visibility: visible !important;
     }
-    .home-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; box-sizing: border-box; padding: 0 0 48px 0; margin: 0; min-height: min-content; overflow: visible !important; }
+    /* ===== فاز تتا: صفحه اصلی افقی + باکس‌های میانبر ===== */
+    #panel-home .add-sec-wrap { display: none !important; }
+    #panel-home.active {
+      display: flex !important;
+      flex-direction: column !important;
+      height: calc(100vh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100vh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
+      overflow: hidden !important;
+      box-sizing: border-box;
+      padding-bottom: 0 !important;
+    }
+    .home-cards {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 0 8px 0;
+      margin: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      flex-shrink: 0;
+    }
+    .home-cards::-webkit-scrollbar { display: none; width: 0; height: 0; }
+    .home-cards .person-card {
+      flex: 0 0 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+    }
+    .home-tools {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 4px 0 8px 0;
+      box-sizing: border-box;
+    }
+    .home-box {
+      flex: 1 1 0;
+      min-height: 0;
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 16px;
+      box-sizing: border-box;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-around;
+      gap: 10px;
+      direction: rtl;
+    }
+    .home-tile {
+      flex: 1 1 0;
+      max-width: 110px;
+      aspect-ratio: 1;
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow:
+        0 3px 8px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      padding: 8px 4px;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    .home-tile:active { transform: scale(0.96); filter: brightness(1.06); }
+    .home-tile svg {
+      width: 28px;
+      height: 28px;
+      stroke: #0a84ff;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .home-tile span {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      text-align: center;
+      line-height: 1.25;
+    }
+    .home-box.box2 .home-tile {
+      max-width: 96px;
+      border-radius: 12px;
+    }
+    .home-box.box2 .home-tile svg { width: 24px; height: 24px; }
+    .home-box.box2 .home-tile span { font-size: 0.68rem; }
+    .home-add-wrap {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      padding: 6px 0 max(10px, env(safe-area-inset-bottom, 0px));
+    }
+    .home-add-wrap .btn-circle-plus.lg {
+      margin: 0 !important;
+    }
+    /* موجودی آنی روی کارت */
+    .person-instant-box {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.85);
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.94rem;
+      background: linear-gradient(145deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      cursor: pointer;
+      color: #fff;
+      margin-top: 0;
+    }
+    .person-instant-box:active { transform: scale(0.98); filter: brightness(1.05); }
+    .person-card-stats { gap: 6px; }
+    /* اورلی موجودی آنی */
+    .instant-bal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: calc(var(--chrome-h, 120px) + 8px) 12px 24px;
+      box-sizing: border-box;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    .instant-bal-overlay.open { display: flex; }
+    .instant-bal-panel {
+      width: min(100%, var(--match-card-w, 400px));
+      max-height: min(60vh, 420px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      direction: rtl;
+    }
+    .instant-bal-head {
+      padding: 12px 14px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      text-align: center;
+    }
+    .instant-bal-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.92);
+      gap: 10px;
+    }
+    .instant-bal-row:last-child { border-bottom: none; }
+    .instant-bal-row .ib-name { font-weight: 700; flex: 1; text-align: right; }
+    .instant-bal-row .ib-amt { font-weight: 800; font-variant-numeric: tabular-nums; direction: ltr; }
+    .instant-bal-row .ib-amt.pos { color: #9ee858; }
+    .instant-bal-row .ib-amt.neg { color: #ff6b4a; }
+    /* legacy vertical home-cards removed */
     /* panel-home inset via --content-inline */
     .person-card {
       position: relative;
@@ -5539,7 +5721,42 @@
     <div class="tab-viewport" id="tabViewport">
     <div id="panel-home" class="tab-panel active">
       <div class="home-cards" id="homeCards"></div>
-      <div class="add-sec-wrap"><button type="button" class="btn-circle-plus lg" onclick="addPersonCard()" title="کاربر جدید" aria-label="کاربر جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <div class="home-tools" id="homeTools">
+        <div class="home-box box1" id="homeBox1">
+          <button type="button" class="home-tile" onclick="openRecurringFromMenu()" title="درآمدهای ثابت">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="12" cy="12" r="9"/></svg>
+            <span>درآمد ثابت</span>
+          </button>
+          <button type="button" class="home-tile" onclick="switchTabFromMenu('install')" title="اقساط">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            <span>اقساط</span>
+          </button>
+          <button type="button" class="home-tile" onclick="switchTabFromMenu('ledger')" title="بده‌بستان">
+            <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            <span>بده‌بستان</span>
+          </button>
+        </div>
+        <div class="home-box box2" id="homeBox2">
+          <button type="button" class="home-tile" onclick="exportFullBackup()" title="پشتیبان‌گیری">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 19h16"/></svg>
+            <span>پشتیبان‌گیری</span>
+          </button>
+          <button type="button" class="home-tile" onclick="triggerImportBackup()" title="بازیابی از پشتیبان">
+            <svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M16 13l-4-4-4 4"/><path d="M4 5h16"/></svg>
+            <span>بازیابی</span>
+          </button>
+          <button type="button" class="home-tile" onclick="askExport()" title="خروجی اکسل / PDF">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+            <span>خروجی</span>
+          </button>
+        </div>
+      </div>
+      <div class="home-add-wrap">
+        <button type="button" class="btn-circle-plus lg" onclick="addPersonCard()" title="کاربر جدید" aria-label="کاربر جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+      <div class="instant-bal-overlay" id="instantBalOverlay" onclick="if(event.target===this)closeInstantBalance()">
+        <div class="instant-bal-panel" id="instantBalPanel" onclick="event.stopPropagation()"></div>
+      </div>
     </div>
 
       <div class="tab-track" id="tabTrack">
@@ -5837,7 +6054,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-ledger-ui-v27 */
+    /* build-stamp: 2026-09-16-theta-home-v28 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -12634,8 +12851,62 @@ function openPdfPrintWindow(){
       return {
         incomeTotal: ti.total, incomePaid: ti.paid, incomeUnpaid: ti.unpaid,
         expenseTotal: te.total, expensePaid: te.paid, expenseUnpaid: te.unpaid,
-        remain: ti.total - te.total
+        remain: ti.total - te.total,
+        instant: (ti.paid || 0) - (te.paid || 0)
       };
+    }
+    /** موجودی آنی به تفکیک حساب برای یک کاربر */
+    function personAccountBalances(title) {
+      const map = {};
+      function add(tab, sign) {
+        const sec = findSectionByTitle(tab, title);
+        (sec && sec.rows || []).forEach(function(r) {
+          if ((r.status || 'paid') !== 'paid') return;
+          const acc = (r.account || '').trim() || 'بدون حساب';
+          const amt = Number(r.amount) || 0;
+          map[acc] = (map[acc] || 0) + sign * amt;
+        });
+      }
+      add('income', 1);
+      add('expense', -1);
+      const labels = (typeof selectedAccountLabels === 'function') ? selectedAccountLabels() : [];
+      labels.forEach(function(lb) {
+        if (map[lb] === undefined) map[lb] = 0;
+      });
+      return map;
+    }
+    let _instantBalOpen = false;
+    function closeInstantBalance() {
+      _instantBalOpen = false;
+      try {
+        const ov = document.getElementById('instantBalOverlay');
+        if (ov) ov.classList.remove('open');
+      } catch (e) {}
+    }
+    function openInstantBalance(title) {
+      try {
+        const ov = document.getElementById('instantBalOverlay');
+        const panel = document.getElementById('instantBalPanel');
+        if (!ov || !panel) return;
+        const tot = personTotals(title);
+        const map = personAccountBalances(title);
+        const keys = Object.keys(map);
+        let html = '<div class="instant-bal-head">موجودی آنی — ' + escapeHtml(title) + '</div>';
+        html += '<div class="instant-bal-row"><span class="ib-name">کل</span><span class="ib-amt ' +
+          ((tot.instant || 0) >= 0 ? 'pos' : 'neg') + '">' + formatNum(tot.instant || 0) + '</span></div>';
+        keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
+        keys.forEach(function(k) {
+          const v = map[k] || 0;
+          html += '<div class="instant-bal-row"><span class="ib-name">' + escapeHtml(k) +
+            '</span><span class="ib-amt ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
+        });
+        if (!keys.length) {
+          html += '<div class="instant-bal-row"><span class="ib-name">حسابی ثبت نشده</span><span class="ib-amt">۰</span></div>';
+        }
+        panel.innerHTML = html;
+        ov.classList.add('open');
+        _instantBalOpen = true;
+      } catch (e) {}
     }
     let _detailContext = null;
 
@@ -12862,14 +13133,30 @@ function openPdfPrintWindow(){
         }
         rem.onclick = (e) => { e.stopPropagation(); openPersonDetail(title, 'balance'); };
 
+        const inst = document.createElement('div');
+        inst.className = 'person-instant-box';
+        const iv = Number(tot.instant) || 0;
+        if (iv < 0) {
+          inst.style.color = '#ff6b4a';
+          inst.textContent = 'موجودی آنی: ' + formatNum(Math.abs(iv)) + '-';
+        } else {
+          inst.style.color = '#9ee858';
+          inst.textContent = 'موجودی آنی: ' + formatNum(iv);
+        }
+        inst.onclick = (e) => { e.stopPropagation(); openInstantBalance(title); };
+
         stats.appendChild(cols);
         stats.appendChild(rem);
+        stats.appendChild(inst);
         inner.appendChild(top);
         inner.appendChild(stats);
         card.appendChild(inner);
         box.appendChild(card);
       });
-      // سواپ کارت‌ها حذف شد
+      // اسکرول افقی: کارت اول در نما
+      try {
+        box.scrollLeft = 0;
+      } catch (e) {}
     }
 
     function addPersonCard() {
@@ -18218,6 +18505,12 @@ field('حساب بانکی', accSelRec);
       if(_backHandling) return;
       _backHandling=true;
       setTimeout(()=>{_backHandling=false;},250);
+      try {
+        if (typeof _instantBalOpen !== 'undefined' && _instantBalOpen) {
+          closeInstantBalance();
+          return;
+        }
+      } catch (e) {}
       if(closeTopOverlayOrMenu()) return;
       // از صفحه درآمد/مخارج/مانده کارت به خانه
       try {
