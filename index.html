@@ -1271,17 +1271,29 @@
       display: block !important;
       visibility: visible !important;
     }
-    /* ===== فاز تتا: صفحه اصلی افقی + باکس‌های میانبر ===== */
+    /* ===== فاز تتا: کارت زیر یادآور + فاصله مساوی + باکس‌های جمع‌وجور ===== */
     #panel-home .add-sec-wrap { display: none !important; }
     #panel-home.active {
       display: flex !important;
       flex-direction: column !important;
-      height: calc(100vh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
-      max-height: calc(100vh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
+      /* ارتفاع ناحیه زیر sticky-chrome (شامل یادآور بسته) */
+      height: calc(100dvh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100dvh - var(--chrome-h, 120px) - env(safe-area-inset-bottom, 0px));
       overflow: hidden !important;
       box-sizing: border-box;
-      padding-bottom: 0 !important;
-      padding-top: 2px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      gap: 0;
+    }
+    /* ستون اصلی: کارت + باکس۱ + باکس۲ با فاصله مساوی */
+    .home-stack {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 4px 0 0 0;
     }
     .home-cards {
       display: flex;
@@ -1290,7 +1302,7 @@
       gap: 0;
       width: 100%;
       box-sizing: border-box;
-      padding: 0 0 2px 0;
+      padding: 0;
       margin: 0;
       overflow-x: auto !important;
       overflow-y: hidden !important;
@@ -1298,7 +1310,7 @@
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      flex-shrink: 0;
+      flex: 0 0 auto;
       touch-action: pan-x !important;
     }
     .home-cards::-webkit-scrollbar { display: none; width: 0; height: 0; }
@@ -1310,56 +1322,53 @@
       scroll-snap-align: center;
       scroll-snap-stop: always;
     }
+    /* باکس‌ها اندازه محتوا — دیگر کشیده نمی‌شوند */
     .home-tools {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 2px 0 4px 0;
-      margin-top: -2px;
-      box-sizing: border-box;
+      display: contents; /* فرزندان مستقیم home-stack می‌شوند از نظر flex */
     }
     .home-box {
-      flex: 1 1 0;
-      min-height: 0;
+      flex: 0 0 auto;
+      width: 100%;
       background: #2c2c2e;
       border: 1px solid rgba(255,255,255,0.55);
-      border-radius: 16px;
+      border-radius: 14px;
       box-sizing: border-box;
-      padding: 12px 10px;
+      padding: 8px 8px;
       display: flex;
       flex-direction: row;
       align-items: center;
       justify-content: space-around;
-      gap: 10px;
+      gap: 8px;
       direction: rtl;
+      min-height: 0;
     }
     .home-tile {
       flex: 1 1 0;
-      max-width: 110px;
+      max-width: 92px;
+      width: 92px;
+      height: 92px;
       aspect-ratio: 1;
       background: #2c2c2e;
       border: 1px solid rgba(255,255,255,0.55);
-      border-radius: 14px;
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       box-shadow:
-        0 3px 8px rgba(0,0,0,0.35),
+        0 2px 6px rgba(0,0,0,0.3),
         inset 0 1px 0 rgba(255,255,255,0.08);
-      padding: 8px 4px;
+      padding: 6px 4px;
       box-sizing: border-box;
       min-width: 0;
     }
     .home-tile:active { transform: scale(0.96); filter: brightness(1.06); }
     .home-tile svg {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       stroke: #0a84ff;
       fill: none;
       stroke-width: 1.8;
@@ -1375,17 +1384,19 @@
       line-height: 1.25;
     }
     .home-box.box2 .home-tile {
-      max-width: 96px;
+      max-width: 84px;
+      width: 84px;
+      height: 84px;
       border-radius: 12px;
     }
-    .home-box.box2 .home-tile svg { width: 24px; height: 24px; }
-    .home-box.box2 .home-tile span { font-size: 0.68rem; }
+    .home-box.box2 .home-tile svg { width: 22px; height: 22px; }
+    .home-box.box2 .home-tile span { font-size: 0.66rem; }
     .home-add-wrap {
-      flex-shrink: 0;
+      flex: 0 0 auto;
       display: flex;
       justify-content: flex-start;
       direction: ltr;
-      padding: 4px 0 max(10px, env(safe-area-inset-bottom, 0px)) 14px;
+      padding: 6px 0 max(8px, env(safe-area-inset-bottom, 0px)) 12px;
     }
     .home-add-wrap .btn-circle-plus.lg {
       margin: 0 !important;
@@ -5772,6 +5783,7 @@
 
     <div class="tab-viewport" id="tabViewport">
     <div id="panel-home" class="tab-panel active">
+      <div class="home-stack" id="homeStack">
       <div class="home-cards" id="homeCards"></div>
       <div class="home-tools" id="homeTools">
         <div class="home-box box1" id="homeBox1">
@@ -5803,6 +5815,7 @@
           </button>
         </div>
       </div>
+      </div><!-- /home-stack -->
       <div class="home-add-wrap">
         <button type="button" class="btn-circle-plus lg" onclick="addPersonCard()" title="کاربر جدید" aria-label="کاربر جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
@@ -6106,7 +6119,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v29 */
+    /* build-stamp: 2026-09-16-theta-home-v30 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
