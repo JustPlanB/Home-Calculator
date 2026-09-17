@@ -1693,22 +1693,34 @@
       width: 100%;
       box-sizing: border-box;
     }
-    /* ========== جداول ساده: باکس کِرو + دایره آبی بعلاوه سفید (چپ) ========== */
+    /* ========== جداول ۱–۵: برجسته، کِرو، استروک سفید، دارک‌گری ========== */
+    /* جدول۱ درآمد/مخارج | جدول۲ درآمدثابت | جدول۳ اقساط | جدول۴ روابط | جدول۵ خلاصه بده‌بستان */
     .person-detail-box,
     .shaped-card,
-    .recurring-box {
+    .recurring-box,
+    #panel-ledger .section.shaped-card,
+    #panel-ledger .section.frame-step-sm {
+      --tbl-bg: #2c2c2e;
+      --tbl-stroke: rgba(255, 255, 255, 0.55);
+      --tbl-radius: 16px;
+      --plus-size: 42px;
+      --plus-icon: 20px;
       position: relative;
-      background: var(--card, #1c1c1e) !important;
-      border: 1px solid var(--border, #3a3a3c) !important;
-      border-radius: 14px !important;
+      background: var(--tbl-bg) !important;
+      border: 1px solid var(--tbl-stroke) !important;
+      border-radius: var(--tbl-radius) !important;
       width: min(100%, var(--match-card-w, 100%));
       max-width: 100%;
       box-sizing: border-box;
-      margin: 0 auto 16px;
+      margin: 0 auto 18px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: none !important;
+      /* جدا از بکگراند سیاه اپ — برجسته */
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.45),
+        0 1px 3px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
     }
     .person-detail-box {
       max-height: calc(100vh - var(--chrome-h, 140px) - env(safe-area-inset-top, 0px) - 24px);
@@ -1718,10 +1730,13 @@
       max-height: none;
       width: 100%;
     }
+    /* جدول ۴ — روابط دو نفر: دایره + کوچک‌تر */
+    #panel-ledger .section.shaped-card,
+    #panel-ledger .section.frame-step-sm,
     .shaped-card.frame-step-sm {
-      /* همان باکس ساده */
+      --plus-size: 32px;
+      --plus-icon: 15px;
     }
-    /* مخفی کردن SVG شکل پیچیده */
     .shape-frame-svg,
     .tab-join-svg,
     .tab-gap-cover {
@@ -1743,33 +1758,42 @@
     }
     .person-detail-hint {
       background: transparent;
-      color: var(--muted, #888);
+      color: rgba(255,255,255,0.4);
       font-size: 0.75rem;
       text-align: center;
-      padding: 6px 10px 12px;
+      padding: 6px 10px 4px;
     }
-    /* دایره آبی + سفید — گوشه پایین چپ */
+    /*
+      ایکون +: دایره هم‌رنگ دارک‌گری جدول ولی برجسته‌تر
+      (مثل تنه قطع‌شده درخت) + بعلاوه آبی وسط
+    */
     .person-detail-box > .table-add-tab,
     .shaped-card > .table-add-tab,
     .recurring-box > .table-add-tab,
+    #panel-ledger .section > .table-add-tab,
     .table-add-tab {
       position: relative !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 40px !important;
-      height: 40px !important;
-      min-width: 40px !important;
-      min-height: 40px !important;
-      max-width: 40px !important;
-      max-height: 40px !important;
-      margin: 10px 0 12px 12px !important; /* چپ */
+      width: var(--plus-size, 42px) !important;
+      height: var(--plus-size, 42px) !important;
+      min-width: var(--plus-size, 42px) !important;
+      min-height: var(--plus-size, 42px) !important;
+      max-width: var(--plus-size, 42px) !important;
+      max-height: var(--plus-size, 42px) !important;
+      margin: 12px 0 14px 14px !important;
       margin-right: auto !important;
       padding: 0 !important;
       border: none !important;
       border-radius: 50% !important;
-      background: #0a84ff !important;
-      box-shadow: 0 2px 8px rgba(10, 132, 255, 0.35) !important;
+      background: #353538 !important; /* کمی روشن‌تر از tbl-bg برای برجستگی */
+      /* برجستگی شبیه سطح برآمده */
+      box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.5),
+        0 1px 2px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.25) !important;
       cursor: pointer;
       z-index: 5 !important;
       left: auto !important;
@@ -1788,6 +1812,9 @@
     .table-add-tab:active {
       filter: brightness(0.92);
       transform: scale(0.96) !important;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.45),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     }
     .person-detail-box > .table-add-tab .tab-plus-icon,
     .person-detail-box > .table-add-tab > svg,
@@ -1795,11 +1822,12 @@
     .shaped-card > .table-add-tab > svg,
     .recurring-box > .table-add-tab .tab-plus-icon,
     .recurring-box > .table-add-tab > svg,
+    #panel-ledger .section > .table-add-tab > svg,
     .table-add-tab .tab-plus-icon,
     .table-add-tab > svg {
-      width: 20px !important;
-      height: 20px !important;
-      stroke: #ffffff !important;
+      width: var(--plus-icon, 20px) !important;
+      height: var(--plus-icon, 20px) !important;
+      stroke: #0a84ff !important;
       fill: none !important;
       stroke-width: 2.8 !important;
       stroke-linecap: round !important;
@@ -1823,8 +1851,8 @@
     .shaped-card.summary-section,
     .shaped-card.ledger-summary,
     .recurring-box.shaped-card {
-      border: 1px solid var(--border, #3a3a3c) !important;
-      background: var(--card, #1c1c1e) !important;
+      border: 1px solid var(--tbl-stroke, rgba(255,255,255,0.55)) !important;
+      background: var(--tbl-bg, #2c2c2e) !important;
     }
     .person-detail-title {
       text-align: center;
@@ -2984,25 +3012,29 @@
     }
     /* آیکون بعلاوه آبی توپر */
     .btn-circle-plus {
-      width: 40px !important;
-      height: 40px !important;
-      min-width: 40px !important;
-      min-height: 40px !important;
+      width: 42px !important;
+      height: 42px !important;
+      min-width: 42px !important;
+      min-height: 42px !important;
       border-radius: 50% !important;
-      background: #0a84ff !important;
+      background: #353538 !important;
       border: none !important;
-      box-shadow: 0 2px 8px rgba(10, 132, 255, 0.35) !important;
+      box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.5),
+        0 1px 2px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.25) !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
       padding: 0 !important;
       cursor: pointer;
-      margin: 10px 0 12px 12px !important;
+      margin: 12px 0 14px 14px !important;
     }
     .btn-circle-plus svg {
       width: 20px !important;
       height: 20px !important;
-      stroke: #ffffff !important;
+      stroke: #0a84ff !important;
       fill: none !important;
       stroke-width: 2.8 !important;
       stroke-linecap: round !important;
@@ -3020,11 +3052,7 @@
     }
 
     
-    #panel-install #installSummarySection,
-    #panel-ledger .ledger-summary {
-      margin-bottom: 0 !important;
-      border-radius: 10px !important; /* هر چهار گوشه گرد */
-    }
+
     #panel-install .summary-section + .table-add-tab-wrap,
     #panel-ledger .ledger-summary + .table-add-tab-wrap {
       margin-top: -1px !important;
@@ -3034,40 +3062,9 @@
 
 
     /* جداول خلاصه + زبانه: کف بدون border جدا */
-    #panel-install #installSummarySection,
-    #panel-ledger .ledger-summary,
-    .recurring-box {
-      border-bottom: none !important;
-      border-bottom-left-radius: 0 !important;
-      border-bottom-right-radius: 0 !important;
-      overflow: visible !important;
-      position: relative;
-    }
-    #panel-install #installSummarySection::after,
-    #panel-ledger .ledger-summary::after,
-    .recurring-box::after {
-      content: '';
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 1px;
-      background: var(--border);
-      z-index: 2;
-      pointer-events: none;
-      -webkit-mask-image: linear-gradient(
-        to right,
-        #000 0, #000 calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px), #000 100%
-      );
-      mask-image: linear-gradient(
-        to right,
-        #000 0, #000 calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) - 1px),
-        transparent calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px),
-        #000 calc(var(--tab-gap-left, 56px) + var(--tab-w, 52px) + 1px), #000 100%
-      );
-    }
+
+    /* legacy bottom mask removed */
+
     /* ledger section (روابط) */
     #panel-ledger .section {
       overflow: visible !important;
@@ -5737,7 +5734,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-simple-plus-v23 */
+    /* build-stamp: 2026-09-16-tables-elev-v24 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17905,7 +17902,7 @@ field('حساب بانکی', accSelRec);
 
     function shapeFramePath() { return ''; }
     function ensureShapeFrame(el) {
-      /* شکل پیچیده حذف شد — فقط باکس کِرو + دایره آبی */
+      /* باکس کِرو + دایره برجسته دارک‌گری و بعلاوه آبی */
       try {
         if (!el) return;
         el.querySelectorAll(':scope > .shape-frame-svg').forEach(function(n) {
@@ -17916,7 +17913,6 @@ field('حساب بانکی', accSelRec);
           btn.querySelectorAll('.tab-join-svg, .tab-gap-cover').forEach(function(n) {
             try { n.remove(); } catch (e1) {}
           });
-          // استایل اینلاین پیچیده را پاک کن تا CSS دایره اعمال شود
           btn.style.cssText = '';
           if (!btn.querySelector('svg')) {
             btn.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
@@ -17924,7 +17920,8 @@ field('حساب بانکی', accSelRec);
           var svg = btn.querySelector('svg');
           if (svg) {
             svg.setAttribute('class', 'tab-plus-icon');
-            svg.innerHTML = '<path d="M12 5v14M5 12h14"/>';
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.innerHTML = '<path d="M12 5v14M5 12h14" fill="none" stroke="#0a84ff" stroke-width="2.8" stroke-linecap="round"/>';
           }
         }
       } catch (e) {}
