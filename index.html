@@ -1340,7 +1340,7 @@
       flex: 1 1 0;
       width: 100%;
       background: #1e1e22;
-      border: 1px solid rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.5);
       border-radius: 14px;
       box-sizing: border-box;
       padding: 6px 6px;
@@ -1351,7 +1351,7 @@
       gap: 6px;
       direction: rtl;
       min-height: 0;
-      /* حس فرو رفتن در بکگراند */
+      /* حس فرو رفتن + استروک */
       box-shadow:
         inset 0 3px 10px rgba(0,0,0,0.55),
         inset 0 1px 3px rgba(0,0,0,0.4),
@@ -6340,7 +6340,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v38 */
+    /* build-stamp: 2026-09-16-theta-home-v39 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -10178,40 +10178,52 @@
       if (window._remindScrollCloseBound) return;
       window._remindScrollCloseBound = true;
       let lastY = 0;
+      let touching = false;
       window._remindCollapse = 0; // 0 باز کامل … 1 بسته
-      function applyRemindCollapse(p) {
+      function getRemindBody() {
+        const bar = document.getElementById('remindBar');
+        return bar && (bar.querySelector('.remind-bar-body') || document.getElementById('remindBanner'));
+      }
+      function applyRemindCollapse(p, withTransition) {
         const bar = document.getElementById('remindBar');
         if (!bar || !bar.classList.contains('open')) return;
-        const body = bar.querySelector('.remind-bar-body') || document.getElementById('remindBanner');
+        const body = getRemindBody();
         p = Math.max(0, Math.min(1, p));
         window._remindCollapse = p;
         if (body) {
-          const full = body.scrollHeight || body.offsetHeight || 280;
+          const full = body._fullH || body.scrollHeight || body.offsetHeight || 280;
+          body._fullH = full;
           const h = Math.max(0, Math.round(full * (1 - p)));
           body.style.overflow = 'hidden';
+          if (withTransition) body.style.transition = 'max-height 0.22s ease, opacity 0.22s ease';
+          else body.style.transition = 'none';
           body.style.maxHeight = h + 'px';
-          body.style.opacity = String(Math.max(0.15, 1 - p));
-          body.style.transition = 'none';
+          body.style.opacity = String(Math.max(0.2, 1 - p * 0.85));
         }
-        if (p >= 0.92) {
-          try { closeRemindBar(); } catch (e) {}
-          window._remindCollapse = 0;
-          if (body) {
-            body.style.maxHeight = '';
-            body.style.opacity = '';
-            body.style.overflow = '';
-            body.style.transition = '';
-          }
+      }
+      function snapRemindCollapse() {
+        const p = window._remindCollapse || 0;
+        // بیشتر از نصف باز بود (collapse < 0.5) → کامل باز؛ وگرنه ببند
+        if (p < 0.5) {
+          applyRemindCollapse(0, true);
+          setTimeout(function() {
+            try { if (window.resetRemindCollapseStyles) window.resetRemindCollapseStyles(); } catch (e) {}
+          }, 240);
+        } else {
+          applyRemindCollapse(1, true);
+          setTimeout(function() {
+            try { closeRemindBar(); } catch (e) {}
+          }, 200);
         }
       }
       function resetRemindCollapseStyles() {
-        const bar = document.getElementById('remindBar');
-        const body = bar && (bar.querySelector('.remind-bar-body') || document.getElementById('remindBanner'));
+        const body = getRemindBody();
         if (body) {
           body.style.maxHeight = '';
           body.style.opacity = '';
           body.style.overflow = '';
           body.style.transition = '';
+          body._fullH = 0;
         }
         window._remindCollapse = 0;
       }
@@ -10219,30 +10231,48 @@
       document.addEventListener('touchstart', function(e) {
         if (!e.touches || !e.touches[0]) return;
         lastY = e.touches[0].clientY;
+        touching = true;
+        const bar = document.getElementById('remindBar');
+        if (bar && bar.classList.contains('open')) {
+          const body = getRemindBody();
+          if (body && !body._fullH) body._fullH = body.scrollHeight || body.offsetHeight || 280;
+        }
       }, { passive: true });
       document.addEventListener('touchmove', function(e) {
+        if (!touching) return;
         const bar = document.getElementById('remindBar');
         if (!bar || !bar.classList.contains('open')) return;
         if (!e.touches || !e.touches[0]) return;
         const y = e.touches[0].clientY;
         const dy = y - lastY;
         lastY = y;
-        // بالا = جمع شدن تدریجی متناسب با اسکرول
         if (dy < 0) {
-          const step = (-dy) / 220;
-          applyRemindCollapse((window._remindCollapse || 0) + step);
+          applyRemindCollapse((window._remindCollapse || 0) + (-dy) / 220, false);
         } else if (dy > 0 && (window._remindCollapse || 0) > 0) {
-          const step = dy / 260;
-          applyRemindCollapse((window._remindCollapse || 0) - step);
+          applyRemindCollapse((window._remindCollapse || 0) - dy / 260, false);
         }
       }, { passive: true });
+      document.addEventListener('touchend', function() {
+        if (!touching) return;
+        touching = false;
+        const bar = document.getElementById('remindBar');
+        if (!bar || !bar.classList.contains('open')) return;
+        if ((window._remindCollapse || 0) > 0.02) snapRemindCollapse();
+      }, { passive: true });
+      document.addEventListener('touchcancel', function() {
+        touching = false;
+        const bar = document.getElementById('remindBar');
+        if (!bar || !bar.classList.contains('open')) return;
+        if ((window._remindCollapse || 0) > 0.02) snapRemindCollapse();
+      }, { passive: true });
+      // چرخ موس: فقط در حین حرکت، بدون snap لحظه‌ای
       document.addEventListener('wheel', function(e) {
         const bar = document.getElementById('remindBar');
         if (!bar || !bar.classList.contains('open')) return;
         if (e.deltaY < 0) {
-          applyRemindCollapse((window._remindCollapse || 0) + (-e.deltaY) / 400);
+          applyRemindCollapse((window._remindCollapse || 0) + (-e.deltaY) / 400, false);
         } else if (e.deltaY > 0 && (window._remindCollapse || 0) > 0) {
-          applyRemindCollapse((window._remindCollapse || 0) - e.deltaY / 450);
+          applyRemindCollapse((window._remindCollapse || 0) - e.deltaY / 450, false);
         }
       }, { passive: true });
     }
@@ -13277,10 +13307,28 @@ function openPdfPrintWindow(){
         incomeTotal: ti.total, incomePaid: ti.paid, incomeUnpaid: ti.unpaid,
         expenseTotal: te.total, expensePaid: te.paid, expenseUnpaid: te.unpaid,
         remain: ti.total - te.total,
-        instant: (ti.paid || 0) - (te.paid || 0)
+        instant: (ti.paid || 0) - (te.paid || 0) + (typeof totalOpeningBalances === 'function' ? totalOpeningBalances() : 0)
       };
     }
     /** موجودی آنی به تفکیک حساب برای یک کاربر */
+    function getAccountOpeningBalance(label) {
+      const lb = (label || '').trim();
+      if (!lb) return 0;
+      let sum = 0;
+      (selectedBankAccounts || []).forEach(function(a) {
+        if (!a) return;
+        const al = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+        if (al === lb) sum += Number(a.openingBalance) || 0;
+      });
+      return sum;
+    }
+    function totalOpeningBalances() {
+      let s = 0;
+      (selectedBankAccounts || []).forEach(function(a) {
+        s += Number(a && a.openingBalance) || 0;
+      });
+      return s;
+    }
     function personAccountBalances(title) {
       const map = {};
       function add(tab, sign) {
@@ -13297,6 +13345,13 @@ function openPdfPrintWindow(){
       const labels = (typeof selectedAccountLabels === 'function') ? selectedAccountLabels() : [];
       labels.forEach(function(lb) {
         if (map[lb] === undefined) map[lb] = 0;
+        map[lb] += getAccountOpeningBalance(lb);
+      });
+      // حساب‌هایی که فقط موجودی اولیه دارند
+      (selectedBankAccounts || []).forEach(function(a) {
+        const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+        if (!lb) return;
+        if (map[lb] === undefined) map[lb] = getAccountOpeningBalance(lb);
       });
       return map;
     }
@@ -15610,7 +15665,8 @@ function openPdfPrintWindow(){
           const bank = migrateBankName(item.bank || item.label || '');
           const label = (item.label || bankShortLabel(bank) || bank).trim();
           if (!label) return;
-          out.push({ id: id, bank: bank, label: label });
+          const ob = Number(item.openingBalance) || 0;
+          out.push({ id: id, bank: bank, label: label, openingBalance: ob });
         }
       });
       selectedBankAccounts = out;
@@ -16272,16 +16328,29 @@ if (item.type === 'recurring') {
       editor.style.cssText = 'position:fixed;left:16px;right:16px;top:30%;z-index:480;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
       const isEdit = !!acc;
       const initial = isEdit ? acc.label : (defaultLabel || '');
+      const initBal = isEdit ? (Number(acc.openingBalance) || 0) : 0;
+      const initBalStr = initBal ? formatNum(initBal) : '';
       editor.innerHTML =
         '<div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">' + (isEdit ? 'ویرایش نام حساب' : ('نام حساب — ' + escapeHtml(bankName || ''))) + '</div>' +
         '<input id="bankAddNameInput" type="text" value="' + escapeHtml(initial) + '" placeholder="نام حساب را وارد کنید" ' +
         'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:8px;">' +
+        '<div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;color:var(--muted);">موجودی تا قبل از نصب اپ</div>' +
+        '<input id="bankAddBalInput" type="text" inputmode="numeric" value="' + escapeHtml(initBalStr) + '" placeholder="مبلغ را وارد کنید" ' +
+        'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:10px;direction:ltr;text-align:center;">' +
         '<div style="display:flex;gap:8px;">' +
         '<button type="button" id="bankAddOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">ثبت</button>' +
         '<button type="button" id="bankAddCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
         '</div>';
       document.body.appendChild(editor);
       const inp = editor.querySelector('#bankAddNameInput');
+      const balInp = editor.querySelector('#bankAddBalInput');
+      if (balInp) {
+        balInp.addEventListener('input', function() {
+          const digits = toEnglishDigits(balInp.value || '').replace(/[^0-9]/g, '');
+          if (!digits) { balInp.value = ''; return; }
+          balInp.value = formatNum(parseInt(digits, 10) || 0);
+        });
+      }
       try { inp.focus(); inp.select(); } catch (e) {}
       const closeEd = () => {
         try { editor.remove(); } catch (e) {}
@@ -16314,22 +16383,27 @@ if (item.type === 'recurring') {
         e.stopPropagation();
         const name = (inp.value || '').trim();
         if (!name) { showToast('نام حساب را وارد کنید'); return; }
+        const balDigits = toEnglishDigits((balInp && balInp.value) || '').replace(/[^0-9]/g, '');
+        const openingBalance = balDigits ? (parseInt(balDigits, 10) || 0) : 0;
         if (isEdit) {
           const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
           acc.label = name;
+          acc.openingBalance = openingBalance;
         } else {
           const exists = selectedBankAccounts.some(a => accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
           selectedBankAccounts.push({
             id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             bank: bankName,
-            label: name
+            label: name,
+            openingBalance: openingBalance
           });
         }
         saveBankAccountsSelection();
         closeEd();
         renderBankAccountsList();
+        try { renderHomeCards(); } catch (eR) {}
         if (!isEdit) showToast('حساب اضافه شد');
       };
     }
@@ -19632,18 +19706,17 @@ field('حساب بانکی', accSelRec);
       }
       pairs.forEach(p => {
         const tr = document.createElement('tr');
-        let relation, color;
+        let relation;
+        // ردیف‌های محاسبه‌شده خودکار: متن رابطه و مبلغ قرمز
+        const color = '#ff6b4a';
         if (ledgerSelectedPerson) {
           if (p.debtor === ledgerSelectedPerson) {
             relation = escapeHtml(ledgerSelectedPerson) + ' به ' + escapeHtml(p.creditor) + ' بدهکار است';
-            color = '#ff6b4a'; /* بدهکار = قرمز */
           } else {
             relation = escapeHtml(ledgerSelectedPerson) + ' از ' + escapeHtml(p.debtor) + ' بستانکار است';
-            color = '#9ee858'; /* بستانکار = سبز */
           }
         } else {
           relation = escapeHtml(p.debtor) + ' به ' + escapeHtml(p.creditor) + ' بدهکار است';
-          color = '#ff6b4a'; /* مبلغ بدهی قرمز */
         }
         tr.innerHTML = '<td class="sec-name" style="color:' + color + ';font-weight:bold;">' + relation + '</td>' +
           '<td class="val" style="color:' + color + ';font-weight:bold;">' + formatNum(p.amount) + '</td>';
