@@ -1295,7 +1295,8 @@
       align-items: stretch;
       gap: 10px;
       box-sizing: border-box;
-      padding: 6px 0 0 0;
+      padding: 0;
+      margin-top: -6px;
     }
     .home-cards {
       display: flex;
@@ -1431,34 +1432,34 @@
       height: 50px !important;
       min-width: 50px !important;
       min-height: 50px !important;
-      background: #1a1a1e !important;
-      border: 1px solid rgba(0, 200, 255, 0.45) !important;
+      background: #161618 !important;
+      border: none !important;
+      outline: none !important;
       box-shadow:
-        0 8px 22px rgba(0,0,0,0.75),
-        0 3px 8px rgba(0,0,0,0.55),
-        0 0 24px rgba(0, 180, 255, 0.35),
-        inset 0 1px 0 rgba(255,255,255,0.2),
-        inset 0 -3px 8px rgba(0,0,0,0.4) !important;
+        0 10px 24px rgba(0,0,0,0.8),
+        0 4px 10px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -4px 10px rgba(0,0,0,0.45) !important;
       transform: translateZ(0);
     }
     .home-add-wrap .btn-circle-plus.lg svg {
-      width: 24px !important;
-      height: 24px !important;
-      stroke: #00e5ff !important;
-      stroke-width: 3.5 !important;
-      animation: plusNeonPulse 1.5s ease-in-out infinite;
+      width: 26px !important;
+      height: 26px !important;
+      stroke: #00f0ff !important;
+      stroke-width: 3.8 !important;
+      animation: plusNeonPulse 1.4s ease-in-out infinite;
       filter:
-        drop-shadow(0 0 4px #00e5ff)
-        drop-shadow(0 0 12px #00b8ff)
-        drop-shadow(0 0 22px rgba(0, 200, 255, 0.95));
+        drop-shadow(0 0 3px #00f0ff)
+        drop-shadow(0 0 10px #00d4ff)
+        drop-shadow(0 0 20px rgba(0, 230, 255, 1));
     }
     @keyframes plusNeonPulse {
       0%, 100% {
-        filter: drop-shadow(0 0 3px #00e5ff) drop-shadow(0 0 10px rgba(0,184,255,0.7)) drop-shadow(0 0 16px rgba(0,200,255,0.4));
-        opacity: 0.92;
+        filter: drop-shadow(0 0 2px #00f0ff) drop-shadow(0 0 8px rgba(0,220,255,0.85)) drop-shadow(0 0 14px rgba(0,200,255,0.5));
+        opacity: 0.95;
       }
       50% {
-        filter: drop-shadow(0 0 7px #7af0ff) drop-shadow(0 0 20px rgba(0,220,255,1)) drop-shadow(0 0 32px rgba(0,200,255,0.85));
+        filter: drop-shadow(0 0 6px #a8ffff) drop-shadow(0 0 18px rgba(0,240,255,1)) drop-shadow(0 0 30px rgba(0,220,255,0.95));
         opacity: 1;
       }
     }
@@ -1474,8 +1475,11 @@
       cursor: pointer;
     }
     .remind-table th, .remind-table td,
-    .remind-bar .remind-table th, .remind-bar .remind-table td {
-      border-color: rgba(255,255,255,0.55) !important;
+    .remind-bar .remind-table th, .remind-bar .remind-table td,
+    .remind-bar .remind-table,
+    .remind-bar-body .remind-table th,
+    .remind-bar-body .remind-table td {
+      border-color: #ffffff !important;
     }
     .date-mask-label {
       font-size: 0.78rem;
@@ -4776,7 +4780,22 @@
     .remind-bar .remind-table td {
       color: #e8f1fa !important;
       background: #0a1f33 !important;
-      border-color: #0d2a45 !important;
+      border-color: #ffffff !important;
+    }
+    .remind-bar .remind-table th {
+      border-color: #ffffff !important;
+    }
+    .remind-bar .remind-table th,
+    .remind-bar .remind-table td {
+      border-left: 1px solid #ffffff !important;
+      border-bottom: 1px solid #ffffff !important;
+    }
+    .remind-bar .remind-table th:last-child,
+    .remind-bar .remind-table td:last-child {
+      border-left: none !important;
+    }
+    .remind-bar .remind-table tr:last-child td {
+      border-bottom: none !important;
     }
     .remind-bar .remind-table .r-amt,
     .remind-bar .remind-table .r-name,
@@ -6304,7 +6323,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v36 */
+    /* build-stamp: 2026-09-16-theta-home-v37 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -10137,19 +10156,52 @@
         if (arrow) arrow.style.transform = '';
       } catch (e) {}
     }
+    function bindRemindScrollClose() {
+      if (window._remindScrollCloseBound) return;
+      window._remindScrollCloseBound = true;
+      let lastY = 0;
+      let acc = 0;
+      document.addEventListener('touchstart', function(e) {
+        if (!e.touches || !e.touches[0]) return;
+        lastY = e.touches[0].clientY;
+        acc = 0;
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        const bar = document.getElementById('remindBar');
+        if (!bar || !bar.classList.contains('open')) return;
+        if (!e.touches || !e.touches[0]) return;
+        const y = e.touches[0].clientY;
+        const dy = y - lastY;
+        lastY = y;
+        // انگشت به بالا = dy منفی → جمع شدن
+        if (dy < 0) acc += -dy;
+        else acc = Math.max(0, acc + dy * 0.3);
+        if (acc > 48) {
+          acc = 0;
+          try { closeRemindBar(); } catch (err) {}
+        }
+      }, { passive: true });
+      document.addEventListener('wheel', function(e) {
+        const bar = document.getElementById('remindBar');
+        if (!bar || !bar.classList.contains('open')) return;
+        if (e.deltaY < -18) {
+          try { closeRemindBar(); } catch (err) {}
+        }
+      }, { passive: true });
+    }
     function toggleRemindBar() {
       const bar = document.getElementById('remindBar');
       const bd = document.getElementById('remindBackdrop');
       if (!bar) return;
       const willOpen = !bar.classList.contains('open');
       if (willOpen) {
-        // اول ارتفاع بسته را قفل کن، بعد اورلی باز شود — کارت تکان نخورد
         try { syncChromeHeight(); } catch (e) {}
         bar.classList.add('open');
         bar.classList.add('open-overlay');
         if (bd) bd.classList.add('open');
         const arrow = document.getElementById('remindArrow');
         if (arrow) arrow.style.transform = 'rotate(180deg)';
+        try { bindRemindScrollClose(); } catch (eB) {}
       } else {
         closeRemindBar();
         try { requestAnimationFrame(syncChromeHeight); } catch (e) {}
@@ -13254,33 +13306,25 @@ function openPdfPrintWindow(){
         const cards = Array.from(box.querySelectorAll('.person-card'));
         const targetIdx = cards.findIndex(function(el){ return (el.dataset.title || '') === title; });
         if (targetIdx < 0) return;
-        // اول کارت اول
-        box.scrollLeft = 0;
-        if (targetIdx === 0) return;
-        let i = 0;
-        const stepMs = Math.max(320, Math.min(durationMs || 420, 520));
-        function step() {
-          i += 1;
-          if (i > targetIdx) {
-            try { setActiveHomeCardTitle(title); } catch (eA) {}
-            return;
-          }
-          const card = cards[i];
-          if (card) {
-            try {
-              box.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
-            } catch (eS) {
-              box.scrollLeft = card.offsetLeft;
-            }
-          }
-          if (i < targetIdx) setTimeout(step, stepMs);
-          else {
-            setTimeout(function() {
-              try { setActiveHomeCardTitle(title); } catch (eB) {}
-            }, stepMs);
-          }
+        // از کارت قبلی شروع کن و یک ورق بزن روی کارت جدید
+        const fromIdx = Math.max(0, targetIdx - 1);
+        if (cards[fromIdx]) {
+          try { box.scrollLeft = cards[fromIdx].offsetLeft; } catch (e0) {}
         }
-        setTimeout(step, 180);
+        if (targetIdx === fromIdx) {
+          try { setActiveHomeCardTitle(title); } catch (e1) {}
+          return;
+        }
+        setTimeout(function() {
+          const card = cards[targetIdx];
+          if (card) {
+            try { box.scrollTo({ left: card.offsetLeft, behavior: 'smooth' }); }
+            catch (eS) { box.scrollLeft = card.offsetLeft; }
+          }
+          setTimeout(function() {
+            try { setActiveHomeCardTitle(title); } catch (e2) {}
+          }, 420);
+        }, 60);
       } catch (e) {}
     }
     let _detailContext = null;
