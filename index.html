@@ -4803,6 +4803,10 @@
       border-top: none !important;
       border-right: none !important;
     }
+    /* خط بالای ردیف تایتل — همرنگ بقیه خط‌کشی‌ها */
+    .remind-bar .remind-table thead tr th {
+      border-top: 1px solid rgba(255,255,255,0.5) !important;
+    }
     .remind-bar .remind-table th:last-child,
     .remind-bar .remind-table td:last-child {
       border-left: none !important;
@@ -4863,6 +4867,11 @@
     .btn-edit-title { color: var(--muted); }
     .summary-table td { color: var(--text); }
     .summary-table .val { color: var(--text) !important; }
+    /* فقط خلاصه قرض — قرمز؛ بقیه جداول summary دست نخورده */
+    #panel-ledger .ledger-summary .summary-table tbody td.sec-name,
+    #panel-ledger .ledger-summary .summary-table tbody td.val {
+      color: #ff6b4a !important;
+    }
     .text-input-sheet {
       position: fixed; left: 12px; right: 12px; z-index: 460;
       background: var(--card);
@@ -6316,8 +6325,7 @@
       <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;"></div>
       <label class="family-label">بابت چه چیزی بود؟ (شرح)</label>
       <input id="smsConfirmDesc" class="family-input" style="letter-spacing:0;text-align:right;" placeholder="مثلاً حقوق / خرید / اجاره…" dir="rtl">
-      <label class="family-label">بخش مقصد</label>
-      <div id="smsConfirmSectionWrap" style="margin-bottom:12px;"></div>
+      <div id="smsConfirmSectionWrap" style="display:none;margin-bottom:0;"></div>
       <div style="display:flex;gap:8px;">
         <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت</button>
         <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsConfirmModal()">انصراف</button>
@@ -6340,7 +6348,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v39 */
+    /* build-stamp: 2026-09-16-theta-home-v40 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -10172,6 +10180,13 @@
         const arrow = document.getElementById('remindArrow');
         if (arrow) arrow.style.transform = '';
         try { if (window.resetRemindCollapseStyles) window.resetRemindCollapseStyles(); } catch (eR) {}
+        // ارتفاع کروم را قفل نگه دار تا صفحه اصلی تکان نخورد
+        try {
+          const locked = document.documentElement.style.getPropertyValue('--chrome-h');
+          if (locked) {
+            document.body.style.paddingTop = 'calc(' + locked.trim() + ' + env(safe-area-inset-top, 0px))';
+          }
+        } catch (eP) {}
       } catch (e) {}
     }
     function bindRemindScrollClose() {
@@ -10291,7 +10306,7 @@
         try { bindRemindScrollClose(); } catch (eB) {}
       } else {
         closeRemindBar();
-        try { requestAnimationFrame(syncChromeHeight); } catch (e) {}
+        // بدون syncChromeHeight تا صفحه جابه‌جا نشود
       }
     }
 
@@ -15165,9 +15180,24 @@ function openPdfPrintWindow(){
       return '';
     }
 
+
+    function isOtpOrAuthSms(text) {
+      const t = normalizeSmsText(String(text || ''));
+      if (!t) return false;
+      // رمز پویا / موقت / یک‌بارمصرف / شناسه تأیید برداشت / کد تأیید
+      if (/رمز\s*پویا|رمزپویا|رمز\s*موقت|رمز\s*یک\s*بار|رمز\s*یکبار|رمز\s*دوم|کد\s*تایید|کد\s*تايید|کد\s*تأیید|کد\s*تاييد/i.test(t)) return true;
+      if (/شناسه\s*تایید|شناسه\s*تايید|شناسه\s*تأیید|شناسه\s*تاييد|شناسه\s*تایيد/i.test(t)) return true;
+      if (/\botp\b|one[\s-]*time|password/i.test(t)) return true;
+      if (/محرمانه\s*!/i.test(t) && /رمز/i.test(t)) return true;
+      if (/خرید\s*از/i.test(t) && /رمز\s*پویا|رمزپویا|رمز\s+\d{4,8}/i.test(t)) return true;
+      return false;
+    }
+
     function parseBankSms(text) {
       const t = String(text || '').trim();
       if (!t) return null;
+      // پیامک رمز پویا / شناسه تأیید — تراکنش مالی نیست
+      if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(t)) return null;
       return {
         type: detectTxnTypeFromSms(t),
         amount: extractAmountFromSms(t),
@@ -15340,7 +15370,9 @@ function openPdfPrintWindow(){
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
           '<label class="family-label">روز ماه:</label>' +
           '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" ' +
-            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;margin-bottom:4px;">';
+            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;direction:ltr;text-align:left;margin-bottom:10px;">' +
+          '<label class="family-label">بخش مقصد</label>' +
+          '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
           // حساب‌های شخصی‌سازی‌شده + همه بانک‌ها
@@ -15382,7 +15414,7 @@ function openPdfPrintWindow(){
       }
       const desc = document.getElementById('smsConfirmDesc');
       if (desc) desc.value = '';
-      const wrap = document.getElementById('smsConfirmSectionWrap');
+      const wrap = document.getElementById('smsConfirmSectionInner') || document.getElementById('smsConfirmSectionWrap');
       if (wrap) {
         wrap.innerHTML = '';
         const tab = parsed.type === 'income' ? 'income' : 'expense';
@@ -15390,18 +15422,30 @@ function openPdfPrintWindow(){
         const sel = document.createElement('select');
         sel.id = 'smsConfirmSectionSel';
         sel.style.cssText = 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:0.95rem;';
+        // دیفالت: نام کاربر اولین کارت
+        let defaultSecId = '';
+        try {
+          const titles = (typeof allPersonTitles === 'function') ? allPersonTitles() : [];
+          const firstName = (titles && titles[0]) ? String(titles[0]).trim() : '';
+          if (firstName) {
+            const match = sections.find(function(s){ return ((s.title || '').trim() === firstName); });
+            if (match) defaultSecId = match.id;
+          }
+          if (!defaultSecId && sections.length) defaultSecId = sections[0].id;
+        } catch (eD) {}
         const autoTitle = tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
         const optAuto = document.createElement('option');
         optAuto.value = '__auto__';
         optAuto.textContent = 'خودکار: ' + autoTitle;
-        optAuto.selected = true;
         sel.appendChild(optAuto);
         sections.forEach((s) => {
           const o = document.createElement('option');
           o.value = s.id;
           o.textContent = (s.title || '').trim() || 'بدون نام';
+          if (defaultSecId && s.id === defaultSecId) o.selected = true;
           sel.appendChild(o);
         });
+        if (!defaultSecId) optAuto.selected = true;
         wrap.appendChild(sel);
         enhanceSelectFont(sel);
         const typeSel = document.getElementById('smsConfirmType');
@@ -15411,17 +15455,28 @@ function openPdfPrintWindow(){
             const secs = (periodData[t] && periodData[t].sections) || [];
             sel.innerHTML = '';
             const at = t === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
+            let defId = '';
+            try {
+              const titles = (typeof allPersonTitles === 'function') ? allPersonTitles() : [];
+              const firstName = (titles && titles[0]) ? String(titles[0]).trim() : '';
+              if (firstName) {
+                const match = secs.find(function(s){ return ((s.title || '').trim() === firstName); });
+                if (match) defId = match.id;
+              }
+              if (!defId && secs.length) defId = secs[0].id;
+            } catch (e2) {}
             const oa = document.createElement('option');
             oa.value = '__auto__';
             oa.textContent = 'خودکار: ' + at;
-            oa.selected = true;
             sel.appendChild(oa);
             secs.forEach((s) => {
               const o = document.createElement('option');
               o.value = s.id;
               o.textContent = (s.title || '').trim() || 'بدون نام';
+              if (defId && s.id === defId) o.selected = true;
               sel.appendChild(o);
             });
+            if (!defId) oa.selected = true;
             if (sel._fancyRender) sel._fancyRender();
           };
         }
@@ -15518,6 +15573,7 @@ function openPdfPrintWindow(){
     }
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
+      if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) return;
       const parsed = parseBankSms(smsText);
       if (!parsed || !parsed.amount) {
         if (!opts.silent) showToast('پیامک بانکی قابل تشخیص نبود');
