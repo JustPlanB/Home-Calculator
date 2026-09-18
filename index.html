@@ -1390,8 +1390,8 @@
     .home-tile.icon-yellow svg { stroke: #f5c542 !important; }
     .home-tile.icon-red svg { stroke: #ff4d4d !important; }
     .home-tile svg {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       stroke: #0a84ff;
       fill: none;
       stroke-width: 1.8;
@@ -1400,7 +1400,7 @@
       flex-shrink: 0;
     }
     .home-tile span {
-      font-size: 0.64rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: rgba(255,255,255,0.92);
       text-align: center;
@@ -1414,9 +1414,9 @@
       border-radius: 11px;
     }
     .home-box.box2 .home-tile svg,
-    .home-box.box3 .home-tile svg { width: 18px; height: 18px; }
+    .home-box.box3 .home-tile svg { width: 22px; height: 22px; }
     .home-box.box2 .home-tile span,
-    .home-box.box3 .home-tile span { font-size: 0.6rem; }
+    .home-box.box3 .home-tile span { font-size: 0.68rem; }
     .home-add-wrap {
       flex: 0 0 auto;
       display: flex;
@@ -1431,33 +1431,34 @@
       height: 50px !important;
       min-width: 50px !important;
       min-height: 50px !important;
-      background: var(--bg, #121214) !important;
-      border: 1px solid rgba(80, 160, 255, 0.28) !important;
+      background: #1a1a1e !important;
+      border: 1px solid rgba(0, 200, 255, 0.45) !important;
       box-shadow:
-        0 6px 18px rgba(0,0,0,0.7),
-        0 2px 6px rgba(0,0,0,0.5),
-        0 0 20px rgba(10, 132, 255, 0.28),
-        inset 0 1px 0 rgba(255,255,255,0.16),
-        inset 0 -3px 6px rgba(0,0,0,0.35) !important;
+        0 8px 22px rgba(0,0,0,0.75),
+        0 3px 8px rgba(0,0,0,0.55),
+        0 0 24px rgba(0, 180, 255, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        inset 0 -3px 8px rgba(0,0,0,0.4) !important;
+      transform: translateZ(0);
     }
     .home-add-wrap .btn-circle-plus.lg svg {
       width: 24px !important;
       height: 24px !important;
-      stroke: #9fd8ff !important;
-      stroke-width: 3.4 !important;
-      animation: plusNeonPulse 1.7s ease-in-out infinite;
+      stroke: #00e5ff !important;
+      stroke-width: 3.5 !important;
+      animation: plusNeonPulse 1.5s ease-in-out infinite;
       filter:
-        drop-shadow(0 0 6px #0a84ff)
-        drop-shadow(0 0 16px rgba(10, 132, 255, 1))
-        drop-shadow(0 0 28px rgba(120, 200, 255, 0.75));
+        drop-shadow(0 0 4px #00e5ff)
+        drop-shadow(0 0 12px #00b8ff)
+        drop-shadow(0 0 22px rgba(0, 200, 255, 0.95));
     }
     @keyframes plusNeonPulse {
       0%, 100% {
-        filter: drop-shadow(0 0 3px #0a84ff) drop-shadow(0 0 8px rgba(10,132,255,0.6)) drop-shadow(0 0 14px rgba(80,180,255,0.35));
-        opacity: 0.9;
+        filter: drop-shadow(0 0 3px #00e5ff) drop-shadow(0 0 10px rgba(0,184,255,0.7)) drop-shadow(0 0 16px rgba(0,200,255,0.4));
+        opacity: 0.92;
       }
       50% {
-        filter: drop-shadow(0 0 6px #9ed0ff) drop-shadow(0 0 18px rgba(10,132,255,1)) drop-shadow(0 0 28px rgba(100,190,255,0.75));
+        filter: drop-shadow(0 0 7px #7af0ff) drop-shadow(0 0 20px rgba(0,220,255,1)) drop-shadow(0 0 32px rgba(0,200,255,0.85));
         opacity: 1;
       }
     }
@@ -1474,7 +1475,7 @@
     }
     .remind-table th, .remind-table td,
     .remind-bar .remind-table th, .remind-bar .remind-table td {
-      border-color: #3a3a3e !important;
+      border-color: rgba(255,255,255,0.55) !important;
     }
     .date-mask-label {
       font-size: 0.78rem;
@@ -1703,9 +1704,14 @@
       background: rgba(0,0,0,0.35) !important;
       box-sizing: border-box !important;
     }
+    .person-card-actions .btn-edit-title {
+      color: #ffffff !important;
+    }
     .person-card-actions .btn-edit-title svg {
       width: 16px !important;
       height: 16px !important;
+      stroke: #ffffff !important;
+      color: #ffffff !important;
     }
     .person-card-actions .btn-del-row {
       color: #ff4d4d !important;
@@ -6298,7 +6304,7 @@
       }
     } catch (e) {}
 
-    /* build-stamp: 2026-09-16-theta-home-v35 */
+    /* build-stamp: 2026-09-16-theta-home-v36 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -13240,27 +13246,41 @@ function openPdfPrintWindow(){
         else box.scrollLeft = left;
       } catch (e) {}
     }
-    /** ورق زدن با سرعت متوسط از کارت اول تا کارت هدف */
+    /** ورق زدن یکی‌یکی از کارت اول تا کارت هدف */
     function animateHomeCardsToTitle(title, durationMs) {
       try {
         const box = document.getElementById('homeCards');
         if (!box || !title) return;
-        const card = Array.from(box.querySelectorAll('.person-card')).find(function(el){ return (el.dataset.title || '') === title; });
-        if (!card) return;
-        const target = card.offsetLeft;
-        const start = 0;
-        box.scrollLeft = start;
-        const dur = Math.max(280, Math.min(durationMs || 550, 900));
-        const t0 = performance.now();
-        function frame(now) {
-          const p = Math.min(1, (now - t0) / dur);
-          // ease-in-out
-          const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-          box.scrollLeft = start + (target - start) * e;
-          if (p < 1) requestAnimationFrame(frame);
-          else box.scrollLeft = target;
+        const cards = Array.from(box.querySelectorAll('.person-card'));
+        const targetIdx = cards.findIndex(function(el){ return (el.dataset.title || '') === title; });
+        if (targetIdx < 0) return;
+        // اول کارت اول
+        box.scrollLeft = 0;
+        if (targetIdx === 0) return;
+        let i = 0;
+        const stepMs = Math.max(320, Math.min(durationMs || 420, 520));
+        function step() {
+          i += 1;
+          if (i > targetIdx) {
+            try { setActiveHomeCardTitle(title); } catch (eA) {}
+            return;
+          }
+          const card = cards[i];
+          if (card) {
+            try {
+              box.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+            } catch (eS) {
+              box.scrollLeft = card.offsetLeft;
+            }
+          }
+          if (i < targetIdx) setTimeout(step, stepMs);
+          else {
+            setTimeout(function() {
+              try { setActiveHomeCardTitle(title); } catch (eB) {}
+            }, stepMs);
+          }
         }
-        requestAnimationFrame(frame);
+        setTimeout(step, 180);
       } catch (e) {}
     }
     let _detailContext = null;
@@ -16877,54 +16897,118 @@ if (item.type === 'recurring') {
       const d0 = initial && (initial.d || initial.day) ? String(initial.d || initial.day) : '';
       const m0 = initial && (initial.m || initial.month) ? String(initial.m || initial.month) : '';
       const y0 = initial && (initial.y || initial.year) ? String(initial.y || initial.year) : '';
-      function seg(val, ph) {
+      function seg(val, ph, maxLen) {
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.inputMode = 'numeric';
         inp.className = 'date-seg';
-        inp.maxLength = 2;
+        inp.maxLength = maxLen || 2;
         inp.placeholder = ph;
         if (val) {
           const en = String(val).replace(/\D/g, '');
-          const two = en.length >= 2 ? en.slice(-2) : en;
-          inp.value = toPersianDigits(two.padStart(two.length, '0'));
+          if ((maxLen || 2) >= 4 && en.length >= 3) {
+            inp.value = toPersianDigits(en.slice(-4).padStart(4, '0'));
+          } else {
+            const two = en.length >= 2 ? en.slice(-2) : en;
+            inp.value = two ? toPersianDigits(two.padStart(2, '0')) : '';
+          }
         } else inp.value = '';
         return inp;
       }
-      // RTL: day (right), month, year (left)
-      const inpD = seg(d0, '––');
-      const inpM = seg(m0, '––');
-      let yShow = y0;
-      if (yShow && String(yShow).length === 4) yShow = String(yShow).slice(-2);
-      const inpY = seg(yShow, '––');
-      const s1 = document.createElement('span'); s1.className = 'date-sep'; s1.textContent = '،';
-      const s2 = document.createElement('span'); s2.className = 'date-sep'; s2.textContent = '،';
+      // RTL: day (راست) / month / year کامل (چپ)
+      const inpD = seg(d0, '––', 2);
+      const inpM = seg(m0, '––', 2);
+      let yFull = y0;
+      if (yFull && String(yFull).length <= 2) yFull = String(1400 + parseInt(String(yFull), 10));
+      const inpY = seg(yFull, '––––', 4);
+      inpY.style.width = '3.4em';
+      const s1 = document.createElement('span'); s1.className = 'date-sep'; s1.textContent = '/';
+      const s2 = document.createElement('span'); s2.className = 'date-sep'; s2.textContent = '/';
       wrap.appendChild(inpD); wrap.appendChild(s1); wrap.appendChild(inpM); wrap.appendChild(s2); wrap.appendChild(inpY);
-      function bind(inp, next, maxN) {
+
+      function prevInput(inp) {
+        var p = inp.previousElementSibling;
+        while (p && p.tagName !== 'INPUT') p = p.previousElementSibling;
+        return p;
+      }
+      // روز و ماه: صفر پیشرو مجاز (۰۵)، بعد از ۲ رقم برو بعدی
+      function bindDM(inp, next, maxN) {
         inp.addEventListener('input', function() {
           let v = toEnglishDigits(inp.value).replace(/[^0-9]/g, '');
           if (v.length > 2) v = v.slice(0, 2);
-          if (v) {
+          // حفظ صفر پیشرو — فقط وقتی ۲ رقم شد محدود کن
+          if (v.length === 2) {
             let n = parseInt(v, 10);
             if (maxN && n > maxN) n = maxN;
-            v = String(n);
+            if (n < 1 && maxN) n = 1;
+            v = String(n).padStart(2, '0');
           }
           inp.value = v ? toPersianDigits(v) : '';
-          if ((toEnglishDigits(inp.value).replace(/\D/g,'').length) >= 2 && next) {
+          if (v.length >= 2 && next) {
             try { next.focus(); if (next.select) next.select(); } catch (e) {}
           }
         });
+        inp.addEventListener('blur', function() {
+          let v = toEnglishDigits(inp.value).replace(/[^0-9]/g, '');
+          if (!v) return;
+          let n = parseInt(v, 10) || 0;
+          if (maxN && n > maxN) n = maxN;
+          if (n < 1) n = 1;
+          inp.value = toPersianDigits(String(n).padStart(2, '0'));
+        });
         inp.addEventListener('keydown', function(e) {
-          if (e.key === 'Backspace' && !(inp.value || '').length) {
-            var p = inp.previousElementSibling;
-            while (p && p.tagName !== 'INPUT') p = p.previousElementSibling;
+          if (e.key === 'Backspace' && !(toEnglishDigits(inp.value).replace(/\D/g,''))) {
+            var p = prevInput(inp);
             if (p) try { p.focus(); } catch (e2) {}
           }
         });
       }
-      bind(inpD, inpM, 31);
-      bind(inpM, inpY, 12);
-      bind(inpY, null, 99);
+      // سال: دو رقم آخر تایپ می‌شود، نمایش کامل ۱۴۰۵
+      inpY.addEventListener('input', function() {
+        let v = toEnglishDigits(inpY.value).replace(/[^0-9]/g, '');
+        // اگر ۴ رقم کامل از قبل هست و کاربر دوباره تایپ می‌کند، فقط دو رقم آخر را بگیر
+        if (v.length > 4) v = v.slice(-4);
+        if (v.length <= 2) {
+          // در حال تایپ دو رقم آخر
+          inpY.value = v ? toPersianDigits(v) : '';
+          if (v.length === 2) {
+            let y = parseInt(v, 10);
+            if (y < 100) y += 1400;
+            inpY.value = toPersianDigits(String(y));
+          }
+        } else {
+          // نمایش کامل
+          let y = parseInt(v, 10) || 0;
+          if (y < 100) y += 1400;
+          if (y > 1500) y = parseInt(String(y).slice(-2), 10) + 1400;
+          inpY.value = toPersianDigits(String(y));
+        }
+      });
+      inpY.addEventListener('focus', function() {
+        // برای ویرایش راحت، فقط دو رقم آخر را نگه دار
+        let v = toEnglishDigits(inpY.value).replace(/[^0-9]/g, '');
+        if (v.length === 4) {
+          inpY.value = toPersianDigits(v.slice(-2));
+          try { inpY.select(); } catch (e) {}
+        }
+      });
+      inpY.addEventListener('blur', function() {
+        let v = toEnglishDigits(inpY.value).replace(/[^0-9]/g, '');
+        if (!v) return;
+        let y = parseInt(v, 10) || 0;
+        if (y < 100) y += 1400;
+        inpY.value = toPersianDigits(String(y));
+      });
+      inpY.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !(toEnglishDigits(inpY.value).replace(/\D/g,''))) {
+          var p = prevInput(inpY);
+          if (p) try { p.focus(); } catch (e2) {}
+        }
+      });
+
+      bindDM(inpD, inpM, 31);
+      bindDM(inpM, inpY, 12);
+
       wrap.getDate = function() {
         const d = parseInt(toEnglishDigits(inpD.value), 10) || 0;
         const m = parseInt(toEnglishDigits(inpM.value), 10) || 0;
