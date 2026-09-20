@@ -6065,15 +6065,19 @@
     }
 
     
-    /* ========== یادآوری اقساط v56 — استروک سراسری نئونی فید ========== */
-    @keyframes remindBorderFade {
-      0%, 100% { border-color: rgba(255, 23, 68, 0.22); }
-      50% { border-color: rgba(255, 23, 68, 0.95); }
+    /* ========== یادآوری اقساط v57 — نور نقره‌ای چرخان دور محیط ========== */
+    @property --remind-spin {
+      syntax: '<angle>';
+      inherits: false;
+      initial-value: 0deg;
     }
-    /* حالت بسته: عین باکس۱ + استروک قرمز سرتاسری که ملایم خاموش/روشن می‌شود */
+    @keyframes remindSilverSpin {
+      to { --remind-spin: 360deg; }
+    }
+    /* حالت بسته: باکس۱ + نوار نقره‌ای چرخان روی محیط */
     #remindBar.remind-bar:not(.open-overlay):not(.open),
     .remind-bar#remindBar:not(.open-overlay):not(.open) {
-      border: 1.5px solid rgba(255, 23, 68, 0.55) !important;
+      border: none !important;
       border-radius: 12px !important;
       background: #1b1b1b !important;
       background-color: #1b1b1b !important;
@@ -6081,20 +6085,39 @@
       box-shadow:
         inset 4px 4px 12px rgba(0,0,0,0.72),
         inset -3px -3px 8px rgba(255,255,255,0.14) !important;
-      overflow: hidden !important;
+      overflow: visible !important;
       position: relative !important;
       isolation: isolate;
-      animation: remindBorderFade 2.8s ease-in-out infinite !important;
+      animation: none !important;
     }
-    #remindBar.remind-bar::before,
-    .remind-bar#remindBar::before {
-      display: none !important;
-      content: none !important;
+    #remindBar.remind-bar:not(.open-overlay):not(.open)::before,
+    .remind-bar#remindBar:not(.open-overlay):not(.open)::before {
+      content: '' !important;
+      display: block !important;
+      position: absolute !important;
+      inset: -2px !important;
+      border-radius: inherit !important;
+      padding: 2px !important;
+      box-sizing: border-box !important;
+      background: conic-gradient(
+        from var(--remind-spin, 0deg),
+        transparent 0deg,
+        transparent 250deg,
+        rgba(192, 197, 206, 0.15) 280deg,
+        #e8eaed 310deg,
+        #ffffff 330deg,
+        #c0c5ce 350deg,
+        transparent 360deg
+      ) !important;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+      -webkit-mask-composite: xor !important;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+      mask-composite: exclude !important;
+      animation: remindSilverSpin 2.4s linear infinite !important;
+      pointer-events: none !important;
+      z-index: 0 !important;
     }
-    /* SVG مار حذف بصری در همه حالات */
-    #remindBar .remind-snake-svg {
-      display: none !important;
-    }
+    #remindBar .remind-snake-svg,
     #remindBar .remind-snake-path {
       display: none !important;
     }
@@ -6138,11 +6161,232 @@
       max-height: min(58vh, 440px) !important;
     }
 
+    
+    /* ========== امنیت و قفل برنامه ========== */
+    #appLockOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #0e0e0e;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+      box-sizing: border-box;
+      direction: rtl;
+    }
+    #appLockOverlay.show { display: flex !important; }
+    #appLockOverlay .lock-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #f5f5f7;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    #appLockOverlay .lock-dots {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 28px;
+      direction: ltr;
+    }
+    #appLockOverlay .lock-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      background: transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    #appLockOverlay .lock-dot.filled {
+      background: #08b5f5;
+      border-color: #08b5f5;
+    }
+    #appLockOverlay .lock-dot.error {
+      border-color: #ff3b30;
+      background: rgba(255,59,48,0.35);
+    }
+    #appLockOverlay .lock-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 72px);
+      gap: 12px;
+      direction: ltr;
+      margin-bottom: 18px;
+    }
+    #appLockOverlay .lock-key {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      background: #1b1b1b;
+      color: #f5f5f7;
+      font-size: 1.45rem;
+      font-weight: 700;
+      font-family: inherit;
+      box-shadow: inset 3px 3px 8px rgba(0,0,0,0.65), inset -2px -2px 6px rgba(255,255,255,0.1);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #appLockOverlay .lock-key:active { filter: brightness(1.25); }
+    #appLockOverlay .lock-key.ghost {
+      background: transparent;
+      box-shadow: none;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.85rem;
+    }
+    #appLockOverlay .lock-bio-btn {
+      margin-top: 8px;
+      border: none;
+      background: transparent;
+      color: #08b5f5;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 10px 16px;
+    }
+    #appLockOverlay .lock-msg {
+      min-height: 22px;
+      color: #ff6b4a;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    #securityModal.modal-overlay { z-index: 9000; }
+    #securityModal .sec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      direction: rtl;
+    }
+    #securityModal .sec-label { font-weight: 700; color: #f0f0f2; }
+    #securityModal .sec-status { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-top: 4px; }
+    #securityModal .sec-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    #securityModal .sec-actions button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #securityModal .sec-btn-primary { background: #08b5f5; color: #0a0a0a; }
+    #securityModal .sec-btn-secondary { background: #2a2a2a; color: #f5f5f7; }
+    #securityModal .sec-btn-danger { background: rgba(255,59,48,0.18); color: #ff6b4a; }
+    #securityModal .sec-select {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: #242424;
+      color: #f5f5f7;
+      font-family: inherit;
+      font-weight: 600;
+    }
+    #pinSetupOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: rgba(0,0,0,0.72);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #pinSetupOverlay.show { display: flex !important; }
+    #pinSetupOverlay .pin-box {
+      width: min(360px, 100%);
+      background: #1b1b1b;
+      border-radius: 16px;
+      padding: 20px 18px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+      direction: rtl;
+    }
+    #pinSetupOverlay .pin-box h3 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+    #pinSetupOverlay .pin-box input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #121212;
+      color: #fff;
+      font-size: 1.2rem;
+      letter-spacing: 0.35em;
+      text-align: center;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+    #pinSetupOverlay .pin-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    #pinSetupOverlay .pin-actions button {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #pinSetupOverlay .pin-ok { background: #08b5f5; color: #0a0a0a; }
+    #pinSetupOverlay .pin-cancel { background: #2a2a2a; color: #eee; }
+
     </style>
 </head>
 <body class="tabs-main-hidden">
   <div class="edge-fade edge-fade-top" aria-hidden="true"></div>
   <div class="edge-fade edge-fade-bottom" aria-hidden="true"></div>
+  
+  <!-- قفل برنامه -->
+  <div id="appLockOverlay" aria-hidden="true">
+    <div class="lock-title">ورود به حساب‌کتاب</div>
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="lock-dots" id="lockDots"></div>
+    <div class="lock-pad" id="lockPad"></div>
+    <button type="button" class="lock-bio-btn" id="lockBioBtn" style="display:none;" onclick="tryBiometricUnlock()">ورود با اثرانگشت</button>
+  </div>
+  <div id="pinSetupOverlay" aria-hidden="true">
+    <div class="pin-box">
+      <h3 id="pinSetupTitle">تعیین رمز</h3>
+      <p id="pinSetupHint" style="text-align:center;color:rgba(255,255,255,0.55);font-size:0.85rem;margin:0 0 10px;"></p>
+      <input id="pinSetupInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" />
+      <div class="pin-actions">
+        <button type="button" class="pin-ok" id="pinSetupOk">تأیید</button>
+        <button type="button" class="pin-cancel" id="pinSetupCancel">انصراف</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="securityModal">
+    <div class="modal-box" style="max-width:380px;text-align:right;">
+      <div style="font-weight:800;font-size:1.1rem;margin-bottom:8px;">امنیت و قفل برنامه</div>
+      <div class="sec-status" id="secStatusText">قفل برنامه خاموش است</div>
+      <div class="sec-row" style="flex-direction:column;align-items:stretch;">
+        <div class="sec-label">قفل خودکار</div>
+        <select class="sec-select" id="secAutoLockSelect" onchange="onAutoLockChange()">
+          <option value="0">بلافاصله</option>
+          <option value="30">بعد از ۳۰ ثانیه</option>
+          <option value="60">بعد از ۱ دقیقه</option>
+          <option value="300">بعد از ۵ دقیقه</option>
+        </select>
+      </div>
+      <div class="sec-actions" id="secActions"></div>
+      <button type="button" class="modal-btn" style="width:100%;margin-top:12px;" onclick="closeSecurityModal()">بستن</button>
+    </div>
+  </div>
+
   <div class="container">
     <div class="sticky-chrome" id="stickyChrome">
     <div class="top-bar">
@@ -6178,6 +6422,7 @@
         <button class="menu-item danger" onclick="askResetCurrentMonth()">پاک کردن این ماه</button>
         <button class="menu-item danger" onclick="askResetAllData()">پاک کردن همه آرشیو</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>درباره</div>
+        <button class="menu-item" onclick="openSecurityModal()">امنیت و قفل برنامه</button>
         <button class="menu-item" onclick="openHelpModal()">راهنما</button>
         <div class="menu-version-row">
           <span class="menu-version-label">نسخه <span id="appVersionLabel">۵.۱.۰</span></span>
@@ -6564,7 +6809,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v56 | fade-only full-border actions-6 */
+    /* build-stamp: 2026-09-20-figma-home-v57 | silver-spin app-lock */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15978,6 +16223,517 @@ function openPdfPrintWindow(){
       } catch (eO) {}
       enqueueBankSms(smsText);
     };
+
+
+    /* ========== App Lock / Security ========== */
+    var __lockUnlockedThisSession = false;
+    var __lockPinBuffer = '';
+    var __lockPinLen = 6;
+    var __lockBgTs = 0;
+    var __pinSetupState = null; // { mode, step, temp, resolve, reject }
+
+    function getAppLockPlugin() {
+      try {
+        var C = window.Capacitor;
+        return C && C.Plugins && C.Plugins.AppLock ? C.Plugins.AppLock : null;
+      } catch (e) { return null; }
+    }
+
+    /** Web fallback: hash only (never raw PIN). Used when native plugin missing (browser). */
+    async function webHashPin(pin, salt) {
+      var enc = new TextEncoder();
+      var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
+      var bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: enc.encode(salt), iterations: 120000, hash: 'SHA-256' },
+        keyMaterial,
+        256
+      );
+      return Array.from(new Uint8Array(bits)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    }
+    function webGetSecMeta() {
+      try { return JSON.parse(localStorage.getItem('hk_sec_meta') || '{}') || {}; } catch (e) { return {}; }
+    }
+    function webSetSecMeta(o) {
+      try { localStorage.setItem('hk_sec_meta', JSON.stringify(o || {})); } catch (e) {}
+    }
+
+    async function lockIsEnabled() {
+      var p = getAppLockPlugin();
+      if (p && p.isEnabled) {
+        try {
+          var r = await p.isEnabled();
+          return !!(r && r.enabled);
+        } catch (e) { return false; }
+      }
+      var m = webGetSecMeta();
+      return !!(m.enabled && m.hash && m.salt);
+    }
+    async function lockIsBiometricEnabled() {
+      var p = getAppLockPlugin();
+      if (p && p.isBiometricEnabled) {
+        try {
+          var r = await p.isBiometricEnabled();
+          return !!(r && r.enabled);
+        } catch (e) { return false; }
+      }
+      return !!webGetSecMeta().bio;
+    }
+    async function lockCanBiometric() {
+      var p = getAppLockPlugin();
+      if (p && p.canUseBiometric) {
+        try {
+          var r = await p.canUseBiometric();
+          return !!(r && r.available);
+        } catch (e) { return false; }
+      }
+      return false;
+    }
+    async function lockSetPin(pin) {
+      var p = getAppLockPlugin();
+      if (p && p.setPin) {
+        await p.setPin({ pin: String(pin) });
+        return;
+      }
+      var salt = (crypto.getRandomValues(new Uint8Array(16)));
+      var saltHex = Array.from(salt).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var hash = await webHashPin(String(pin), saltHex);
+      var m = webGetSecMeta();
+      m.enabled = true;
+      m.hash = hash;
+      m.salt = saltHex;
+      m.pinLen = String(pin).length;
+      webSetSecMeta(m);
+    }
+    async function lockVerifyPin(pin) {
+      var p = getAppLockPlugin();
+      if (p && p.verifyPin) {
+        try {
+          var r = await p.verifyPin({ pin: String(pin) });
+          return !!(r && r.ok);
+        } catch (e) { return false; }
+      }
+      var m = webGetSecMeta();
+      if (!m.hash || !m.salt) return false;
+      var h = await webHashPin(String(pin), m.salt);
+      return h === m.hash;
+    }
+    async function lockDisable() {
+      var p = getAppLockPlugin();
+      if (p && p.disable) {
+        await p.disable();
+        return;
+      }
+      webSetSecMeta({});
+    }
+    async function lockSetBiometric(on) {
+      var p = getAppLockPlugin();
+      if (p && p.setBiometricEnabled) {
+        await p.setBiometricEnabled({ enabled: !!on });
+        return;
+      }
+      var m = webGetSecMeta();
+      m.bio = !!on;
+      webSetSecMeta(m);
+    }
+    async function lockGetAutoLockSeconds() {
+      var p = getAppLockPlugin();
+      if (p && p.getAutoLockSeconds) {
+        try {
+          var r = await p.getAutoLockSeconds();
+          return (r && typeof r.seconds === 'number') ? r.seconds : 0;
+        } catch (e) {}
+      }
+      var m = webGetSecMeta();
+      return typeof m.autoLock === 'number' ? m.autoLock : 0;
+    }
+    async function lockSetAutoLockSeconds(sec) {
+      var p = getAppLockPlugin();
+      if (p && p.setAutoLockSeconds) {
+        await p.setAutoLockSeconds({ seconds: Number(sec) || 0 });
+        return;
+      }
+      var m = webGetSecMeta();
+      m.autoLock = Number(sec) || 0;
+      webSetSecMeta(m);
+    }
+    async function lockGetPinLength() {
+      var p = getAppLockPlugin();
+      if (p && p.getPinLength) {
+        try {
+          var r = await p.getPinLength();
+          return (r && r.length) ? r.length : 6;
+        } catch (e) {}
+      }
+      var m = webGetSecMeta();
+      return m.pinLen || 6;
+    }
+
+    function showAppLockOverlay(show) {
+      var el = document.getElementById('appLockOverlay');
+      if (!el) return;
+      if (show) {
+        el.classList.add('show');
+        el.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      } else {
+        el.classList.remove('show');
+        el.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+    }
+
+    function renderLockDots() {
+      var box = document.getElementById('lockDots');
+      if (!box) return;
+      var html = '';
+      for (var i = 0; i < __lockPinLen; i++) {
+        html += '<div class="lock-dot' + (i < __lockPinBuffer.length ? ' filled' : '') + '"></div>';
+      }
+      box.innerHTML = html;
+    }
+    function renderLockPad() {
+      var pad = document.getElementById('lockPad');
+      if (!pad || pad.dataset.ready) return;
+      var keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+      pad.innerHTML = '';
+      keys.forEach(function(k) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lock-key' + (k === '' ? ' ghost' : '');
+        b.textContent = k === '⌫' ? '⌫' : k;
+        if (k === '') { b.disabled = true; }
+        else if (k === '⌫') {
+          b.onclick = function() {
+            __lockPinBuffer = __lockPinBuffer.slice(0, -1);
+            renderLockDots();
+            var msg = document.getElementById('lockMsg');
+            if (msg) msg.textContent = '';
+          };
+        } else {
+          b.onclick = function() { onLockDigit(k); };
+        }
+        pad.appendChild(b);
+      });
+      pad.dataset.ready = '1';
+    }
+    async function onLockDigit(d) {
+      if (__lockPinBuffer.length >= __lockPinLen) return;
+      __lockPinBuffer += d;
+      renderLockDots();
+      if (__lockPinBuffer.length === __lockPinLen) {
+        var ok = await lockVerifyPin(__lockPinBuffer);
+        if (ok) {
+          __lockUnlockedThisSession = true;
+          __lockPinBuffer = '';
+          showAppLockOverlay(false);
+        } else {
+          var box = document.getElementById('lockDots');
+          if (box) {
+            Array.prototype.forEach.call(box.children, function(el){ el.classList.add('error'); });
+          }
+          var msg = document.getElementById('lockMsg');
+          if (msg) msg.textContent = 'رمز نادرست است';
+          setTimeout(function() {
+            __lockPinBuffer = '';
+            renderLockDots();
+          }, 400);
+        }
+      }
+    }
+    async function tryBiometricUnlock() {
+      var p = getAppLockPlugin();
+      if (!p || !p.authenticateBiometric) return;
+      try {
+        var r = await p.authenticateBiometric({ title: 'ورود به حساب‌کتاب', subtitle: 'احراز هویت بیومتریک' });
+        if (r && r.ok) {
+          __lockUnlockedThisSession = true;
+          showAppLockOverlay(false);
+        }
+      } catch (e) {
+        var msg = document.getElementById('lockMsg');
+        if (msg) msg.textContent = 'اثرانگشت ناموفق — با رمز وارد شوید';
+      }
+    }
+    async function presentLockScreen() {
+      __lockPinLen = await lockGetPinLength();
+      __lockPinBuffer = '';
+      renderLockPad();
+      renderLockDots();
+      var msg = document.getElementById('lockMsg');
+      if (msg) msg.textContent = '';
+      var bioBtn = document.getElementById('lockBioBtn');
+      var bioOn = await lockIsBiometricEnabled();
+      var canBio = await lockCanBiometric();
+      if (bioBtn) {
+        bioBtn.style.display = (bioOn && canBio) ? 'block' : 'none';
+      }
+      showAppLockOverlay(true);
+      if (bioOn && canBio) {
+        setTimeout(function(){ tryBiometricUnlock(); }, 280);
+      }
+    }
+    async function ensureAppUnlocked() {
+      try {
+        var on = await lockIsEnabled();
+        if (!on) {
+          showAppLockOverlay(false);
+          return true;
+        }
+        if (__lockUnlockedThisSession) {
+          showAppLockOverlay(false);
+          return true;
+        }
+        await presentLockScreen();
+        return false;
+      } catch (e) {
+        showAppLockOverlay(false);
+        return true;
+      }
+    }
+
+    function promptPinFlow(opts) {
+      opts = opts || {};
+      return new Promise(function(resolve, reject) {
+        var ov = document.getElementById('pinSetupOverlay');
+        var title = document.getElementById('pinSetupTitle');
+        var hint = document.getElementById('pinSetupHint');
+        var inp = document.getElementById('pinSetupInput');
+        var ok = document.getElementById('pinSetupOk');
+        var cancel = document.getElementById('pinSetupCancel');
+        if (!ov || !inp) { reject(new Error('no ui')); return; }
+        __pinSetupState = { mode: opts.mode || 'new', step: 0, temp: '', resolve: resolve, reject: reject, pinLen: opts.pinLen || 0 };
+        function setStepUI() {
+          var st = __pinSetupState;
+          inp.value = '';
+          if (st.mode === 'current') {
+            title.textContent = 'ورود رمز فعلی';
+            hint.textContent = 'رمز ۴ یا ۶ رقمی فعلی را وارد کنید';
+          } else if (st.mode === 'new' && st.step === 0) {
+            title.textContent = 'تعیین رمز جدید';
+            hint.textContent = 'یک رمز ۴ یا ۶ رقمی وارد کنید';
+          } else if (st.mode === 'new' && st.step === 1) {
+            title.textContent = 'تکرار رمز';
+            hint.textContent = 'رمز را دوباره وارد کنید';
+          } else if (st.mode === 'change_current') {
+            title.textContent = 'رمز فعلی';
+            hint.textContent = 'برای تغییر رمز، رمز فعلی را وارد کنید';
+          }
+        }
+        setStepUI();
+        ov.classList.add('show');
+        setTimeout(function(){ try { inp.focus(); } catch(e){} }, 80);
+        ok.onclick = async function() {
+          var v = String(inp.value || '').replace(/\D/g, '');
+          var st = __pinSetupState;
+          if (!st) return;
+          if (st.mode === 'current' || st.mode === 'change_current') {
+            if (v.length !== 4 && v.length !== 6) { showToast('رمز باید ۴ یا ۶ رقم باشد'); return; }
+            var okv = await lockVerifyPin(v);
+            if (!okv) { showToast('رمز نادرست است'); return; }
+            ov.classList.remove('show');
+            var res = st.resolve;
+            __pinSetupState = null;
+            res({ ok: true, pin: v });
+            return;
+          }
+          if (st.mode === 'new' && st.step === 0) {
+            if (v.length !== 4 && v.length !== 6) { showToast('رمز باید ۴ یا ۶ رقم باشد'); return; }
+            st.temp = v;
+            st.step = 1;
+            setStepUI();
+            return;
+          }
+          if (st.mode === 'new' && st.step === 1) {
+            if (v !== st.temp) { showToast('رمزها یکسان نیستند'); st.step = 0; setStepUI(); return; }
+            ov.classList.remove('show');
+            var res2 = st.resolve;
+            var pin = st.temp;
+            __pinSetupState = null;
+            res2({ ok: true, pin: pin });
+          }
+        };
+        cancel.onclick = function() {
+          ov.classList.remove('show');
+          var rej = __pinSetupState && __pinSetupState.reject;
+          __pinSetupState = null;
+          if (rej) rej(new Error('cancel'));
+        };
+      });
+    }
+
+    async function openSecurityModal() {
+      try { closeSideMenu(); } catch (e) {}
+      var modal = document.getElementById('securityModal');
+      if (!modal) return;
+      modal.classList.add('open');
+      await refreshSecurityModal();
+    }
+    function closeSecurityModal() {
+      var modal = document.getElementById('securityModal');
+      if (modal) modal.classList.remove('open');
+    }
+    async function refreshSecurityModal() {
+      var enabled = await lockIsEnabled();
+      var bioOn = await lockIsBiometricEnabled();
+      var canBio = await lockCanBiometric();
+      var autoSec = await lockGetAutoLockSeconds();
+      var st = document.getElementById('secStatusText');
+      if (st) {
+        st.textContent = enabled
+          ? ('قفل برنامه روشن است' + (bioOn ? ' · اثرانگشت فعال' : ''))
+          : 'قفل برنامه خاموش است';
+      }
+      var sel = document.getElementById('secAutoLockSelect');
+      if (sel) sel.value = String(autoSec);
+      var act = document.getElementById('secActions');
+      if (!act) return;
+      act.innerHTML = '';
+      if (!enabled) {
+        var b1 = document.createElement('button');
+        b1.className = 'sec-btn-primary';
+        b1.textContent = 'فعال کردن قفل برنامه';
+        b1.onclick = enableAppLockFlow;
+        act.appendChild(b1);
+      } else {
+        var bCh = document.createElement('button');
+        bCh.className = 'sec-btn-secondary';
+        bCh.textContent = 'تغییر رمز';
+        bCh.onclick = changePinFlow;
+        act.appendChild(bCh);
+        if (canBio) {
+          var bBio = document.createElement('button');
+          bBio.className = 'sec-btn-secondary';
+          bBio.textContent = bioOn ? 'غیرفعال کردن اثرانگشت' : 'فعال کردن اثرانگشت';
+          bBio.onclick = async function() {
+            if (!bioOn) {
+              try {
+                var p = getAppLockPlugin();
+                if (p && p.authenticateBiometric) {
+                  var r = await p.authenticateBiometric({ title: 'تأیید اثرانگشت', subtitle: 'برای فعال‌سازی' });
+                  if (!(r && r.ok)) { showToast('احراز هویت ناموفق'); return; }
+                }
+              } catch (e) { showToast('اثرانگشت در دسترس نیست'); return; }
+            }
+            await lockSetBiometric(!bioOn);
+            showToast(bioOn ? 'اثرانگشت خاموش شد' : 'اثرانگشت فعال شد');
+            refreshSecurityModal();
+          };
+          act.appendChild(bBio);
+        }
+        var bOff = document.createElement('button');
+        bOff.className = 'sec-btn-danger';
+        bOff.textContent = 'غیرفعال کردن قفل برنامه';
+        bOff.onclick = disableAppLockFlow;
+        act.appendChild(bOff);
+      }
+    }
+    async function enableAppLockFlow() {
+      try {
+        var r = await promptPinFlow({ mode: 'new' });
+        if (!r || !r.pin) return;
+        await lockSetPin(r.pin);
+        await lockSetBiometric(false);
+        showToast('قفل برنامه فعال شد');
+        var canBio = await lockCanBiometric();
+        if (canBio) {
+          // سؤال ساده
+          var useBio = window.confirm('آیا می‌خواهید ورود با اثرانگشت را فعال کنید؟');
+          if (useBio) {
+            try {
+              var p = getAppLockPlugin();
+              if (p && p.authenticateBiometric) {
+                var br = await p.authenticateBiometric({ title: 'فعال‌سازی اثرانگشت', subtitle: '' });
+                if (br && br.ok) {
+                  await lockSetBiometric(true);
+                  showToast('اثرانگشت فعال شد');
+                }
+              }
+            } catch (e) {}
+          }
+        }
+        __lockUnlockedThisSession = true;
+        await refreshSecurityModal();
+      } catch (e) {}
+    }
+    async function changePinFlow() {
+      try {
+        await promptPinFlow({ mode: 'change_current' });
+        var r = await promptPinFlow({ mode: 'new' });
+        if (!r || !r.pin) return;
+        await lockSetPin(r.pin);
+        showToast('رمز با موفقیت تغییر کرد');
+        await refreshSecurityModal();
+      } catch (e) {}
+    }
+    async function disableAppLockFlow() {
+      try {
+        await promptPinFlow({ mode: 'current' });
+        await lockDisable();
+        __lockUnlockedThisSession = true;
+        showToast('قفل برنامه خاموش شد');
+        await refreshSecurityModal();
+      } catch (e) {}
+    }
+    async function onAutoLockChange() {
+      var sel = document.getElementById('secAutoLockSelect');
+      if (!sel) return;
+      await lockSetAutoLockSeconds(parseInt(sel.value, 10) || 0);
+      showToast('قفل خودکار ذخیره شد');
+    }
+
+    function bindAppLockLifecycle() {
+      document.addEventListener('visibilitychange', async function() {
+        try {
+          if (document.visibilityState === 'hidden') {
+            __lockBgTs = Date.now();
+          } else if (document.visibilityState === 'visible') {
+            var on = await lockIsEnabled();
+            if (!on) return;
+            var sec = await lockGetAutoLockSeconds();
+            var elapsed = (Date.now() - (__lockBgTs || 0)) / 1000;
+            if (sec <= 0 || elapsed >= sec) {
+              __lockUnlockedThisSession = false;
+              await presentLockScreen();
+            }
+          }
+        } catch (e) {}
+      });
+      try {
+        var C = window.Capacitor, plugins = C && C.Plugins, App = plugins && plugins.App;
+        if (App && App.addListener) {
+          App.addListener('appStateChange', async function(state) {
+            try {
+              if (!state) return;
+              if (!state.isActive) {
+                __lockBgTs = Date.now();
+              } else {
+                var on = await lockIsEnabled();
+                if (!on) return;
+                var sec = await lockGetAutoLockSeconds();
+                var elapsed = (Date.now() - (__lockBgTs || 0)) / 1000;
+                if (sec <= 0 || elapsed >= sec) {
+                  __lockUnlockedThisSession = false;
+                  await presentLockScreen();
+                }
+              }
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    }
+
+    // Gate app start: if lock off → no change; if on → overlay first
+    (function initAppLockGate() {
+      function run() {
+        try { bindAppLockLifecycle(); } catch (e) {}
+        try { ensureAppUnlocked(); } catch (e) {}
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function(){ setTimeout(run, 30); });
+      } else {
+        setTimeout(run, 30);
+      }
+    })();
 
     // --- اتصال به پلاگین بومی BankSms (Capacitor) برای خواندن خودکار پیامک‌های بانکی ---
     (function () {
