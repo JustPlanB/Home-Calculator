@@ -605,6 +605,202 @@ public class NativeFileExportPlugin extends Plugin {
 `;
 
 
+const appLockPlugin=`package ${pkg};
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.concurrent.Executor;
+
+@CapacitorPlugin(name="AppLock")
+public class AppLockPlugin extends Plugin {
+  static final String PREFS = "app_lock_secure_v1";
+  static final String K_HASH = "pin_hash";
+  static final String K_SALT = "pin_salt";
+  static final String K_ENABLED = "enabled";
+  static final String K_BIO = "bio_enabled";
+  static final String K_LEN = "pin_len";
+  static final String K_AUTO = "auto_lock_sec";
+
+  private SharedPreferences sp() {
+    return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+  }
+
+  private static String toHex(byte[] b) {
+    StringBuilder sb = new StringBuilder(b.length * 2);
+    for (byte x : b) sb.append(String.format("%02x", x));
+    return sb.toString();
+  }
+
+  private static byte[] fromHex(String s) {
+    int n = s.length();
+    byte[] out = new byte[n / 2];
+    for (int i = 0; i < n; i += 2) {
+      out[i / 2] = (byte) Integer.parseInt(s.substring(i, i + 2), 16);
+    }
+    return out;
+  }
+
+  private static String sha256(String pin, byte[] salt) throws Exception {
+    MessageDigest md = MessageDigest.getInstance("SHA-256");
+    md.update(salt);
+    md.update(pin.getBytes("UTF-8"));
+    byte[] once = md.digest();
+    md.reset();
+    md.update(salt);
+    md.update(once);
+    return toHex(md.digest());
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void isEnabled(PluginCall call) {
+    boolean en = sp().getBoolean(K_ENABLED, false) && sp().contains(K_HASH);
+    call.resolve(new JSObject().put("enabled", en));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void getPinLength(PluginCall call) {
+    call.resolve(new JSObject().put("length", sp().getInt(K_LEN, 6)));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void setPin(PluginCall call) {
+    try {
+      String pin = call.getString("pin", "");
+      if (pin == null) pin = "";
+      pin = pin.replaceAll("[^0-9]", "");
+      if (!(pin.length() == 4 || pin.length() == 6)) {
+        call.reject("pin_invalid_length");
+        return;
+      }
+      byte[] salt = new byte[16];
+      new SecureRandom().nextBytes(salt);
+      String hash = sha256(pin, salt);
+      sp().edit()
+        .putBoolean(K_ENABLED, true)
+        .putString(K_HASH, hash)
+        .putString(K_SALT, toHex(salt))
+        .putInt(K_LEN, pin.length())
+        .apply();
+      call.resolve(new JSObject().put("ok", true));
+    } catch (Exception e) {
+      call.reject("set_pin_failed", e);
+    }
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void verifyPin(PluginCall call) {
+    try {
+      String pin = call.getString("pin", "");
+      if (pin == null) pin = "";
+      pin = pin.replaceAll("[^0-9]", "");
+      String saltHex = sp().getString(K_SALT, null);
+      String hash = sp().getString(K_HASH, null);
+      if (saltHex == null || hash == null) {
+        call.resolve(new JSObject().put("ok", false));
+        return;
+      }
+      String got = sha256(pin, fromHex(saltHex));
+      call.resolve(new JSObject().put("ok", got.equals(hash)));
+    } catch (Exception e) {
+      call.resolve(new JSObject().put("ok", false));
+    }
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void disable(PluginCall call) {
+    sp().edit().clear().apply();
+    call.resolve(new JSObject().put("ok", true));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void isBiometricEnabled(PluginCall call) {
+    call.resolve(new JSObject().put("enabled", sp().getBoolean(K_BIO, false)));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void setBiometricEnabled(PluginCall call) {
+    boolean en = false;
+    try { Boolean b = call.getBoolean("enabled", false); if (b != null) en = b; } catch (Exception ignored) {}
+    sp().edit().putBoolean(K_BIO, en).apply();
+    call.resolve(new JSObject().put("ok", true));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void getAutoLockSeconds(PluginCall call) {
+    call.resolve(new JSObject().put("seconds", sp().getInt(K_AUTO, 0)));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void setAutoLockSeconds(PluginCall call) {
+    int sec = 0;
+    try { Integer v = call.getInt("seconds", 0); if (v != null) sec = v; } catch (Exception ignored) {}
+    sp().edit().putInt(K_AUTO, sec).apply();
+    call.resolve(new JSObject().put("ok", true));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void canUseBiometric(PluginCall call) {
+    try {
+      BiometricManager bm = BiometricManager.from(getContext());
+      int can = bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK);
+      boolean ok = (can == BiometricManager.BIOMETRIC_SUCCESS);
+      call.resolve(new JSObject().put("available", ok));
+    } catch (Exception e) {
+      call.resolve(new JSObject().put("available", false));
+    }
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void authenticateBiometric(PluginCall call) {
+    call.setKeepAlive(true);
+    try {
+      final FragmentActivity act = (FragmentActivity) getActivity();
+      if (act == null) { call.reject("no_activity"); return; }
+      final Executor ex = ContextCompat.getMainExecutor(getContext());
+      final String title = call.getString("title", "احراز هویت");
+      final String subtitle = call.getString("subtitle", "");
+      act.runOnUiThread(new Runnable() {
+        @Override public void run() {
+          try {
+            BiometricPrompt prompt = new BiometricPrompt(act, ex, new BiometricPrompt.AuthenticationCallback() {
+              @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                call.resolve(new JSObject().put("ok", true));
+              }
+              @Override public void onAuthenticationError(int errorCode, CharSequence errString) {
+                call.resolve(new JSObject().put("ok", false).put("error", String.valueOf(errString)));
+              }
+              @Override public void onAuthenticationFailed() {
+              }
+            });
+            BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+              .setTitle(title != null ? title : "احراز هویت")
+              .setSubtitle(subtitle != null ? subtitle : "")
+              .setNegativeButtonText("انصراف")
+              .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+              .build();
+            prompt.authenticate(info);
+          } catch (Exception e) {
+            call.reject("bio_failed", e);
+          }
+        }
+      });
+    } catch (Exception e) {
+      call.reject("bio_failed", e);
+    }
+  }
+}
+`;
+
 const main=`package ${pkg};
 
 import android.Manifest;
@@ -617,6 +813,7 @@ public class MainActivity extends BridgeActivity {
   @Override public void onCreate(Bundle savedInstanceState){
     registerPlugin(BankSmsPlugin.class);
     registerPlugin(NativeFileExportPlugin.class);
+    registerPlugin(AppLockPlugin.class);
     super.onCreate(savedInstanceState);
     java.util.ArrayList<String> needed=new java.util.ArrayList<>();
     if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
@@ -628,6 +825,7 @@ public class MainActivity extends BridgeActivity {
 
 fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
+fs.writeFileSync(path.join(javaDir,'AppLockPlugin.java'),appLockPlugin);
 fs.writeFileSync(path.join(javaDir,'NativeFileExportPlugin.java'),nativeExport);
 fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
 
@@ -635,6 +833,7 @@ const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
   let s=fs.readFileSync(gradle,'utf8');
   if(!s.includes('androidx.core:core')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.core:core:1.15.0"');
+  if(!s.includes('androidx.biometric:biometric')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.biometric:biometric:1.1.0"');
   fs.writeFileSync(gradle,s);
 }
 const manifest=path.join(base,'app/src/main/AndroidManifest.xml');
