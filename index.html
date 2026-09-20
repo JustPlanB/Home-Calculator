@@ -1469,18 +1469,13 @@
       height: 40px !important;
       stroke: #00b7ff !important;
       stroke-width: 3.4 !important;
-      animation: plusNeonLamp 2.8s ease-in-out infinite !important;
+      animation: plusSoftFade 2.8s ease-in-out infinite !important;
+      filter: none !important;
       opacity: 1 !important;
     }
-    @keyframes plusNeonLamp {
-      0%, 100% {
-        opacity: 0.32;
-        filter: drop-shadow(0 0 4px rgba(0,183,255,0.28));
-      }
-      50% {
-        opacity: 1;
-        filter: drop-shadow(0 0 7px rgba(0,183,255,0.55));
-      }
+    @keyframes plusSoftFade {
+      0%, 100% { opacity: 0.28; }
+      50% { opacity: 1; }
     }
 
     /* خلاصه اقساط: مبلغ داخل سلول */
@@ -1719,9 +1714,10 @@
       display: flex !important;
       align-items: center !important;
       gap: 6px !important;
-      /* هم‌راستا با باکس‌های آمار پایین (margin-left: -6px) + کمی شیفت به بیرون */
-      margin-left: -10px !important;
-      transform: translateX(-4px);
+      /* لبه چپ ضربدر = لبه چپ باکس مخارج (stats: margin-left -6px) */
+      margin-left: -6px !important;
+      transform: none !important;
+      padding-left: 0 !important;
     }
     .person-card-actions .btn-edit-title,
     .person-card-actions .btn-del-row {
@@ -6069,29 +6065,15 @@
     }
 
     
-    /* ========== یادآوری اقساط v55 — مثل باکس۱ + outdoor glow قرمز ========== */
-    @keyframes remindSnakeMove {
-      0% { stroke-dashoffset: 0; }
-      100% { stroke-dashoffset: -100; }
+    /* ========== یادآوری اقساط v56 — استروک سراسری نئونی فید ========== */
+    @keyframes remindBorderFade {
+      0%, 100% { border-color: rgba(255, 23, 68, 0.22); }
+      50% { border-color: rgba(255, 23, 68, 0.95); }
     }
-    @keyframes remindOutdoorGlow {
-      0%, 100% {
-        stroke: #ff1744;
-        filter:
-          drop-shadow(0 0 3px rgba(255,23,68,0.85))
-          drop-shadow(0 0 8px rgba(255,23,68,0.45));
-      }
-      50% {
-        stroke: #ff3d5c;
-        filter:
-          drop-shadow(0 0 5px rgba(255,61,92,0.95))
-          drop-shadow(0 0 12px rgba(255,23,68,0.55));
-      }
-    }
-    /* حالت بسته: عین home-box + اینر شادو */
+    /* حالت بسته: عین باکس۱ + استروک قرمز سرتاسری که ملایم خاموش/روشن می‌شود */
     #remindBar.remind-bar:not(.open-overlay):not(.open),
     .remind-bar#remindBar:not(.open-overlay):not(.open) {
-      border: none !important;
+      border: 1.5px solid rgba(255, 23, 68, 0.55) !important;
       border-radius: 12px !important;
       background: #1b1b1b !important;
       background-color: #1b1b1b !important;
@@ -6099,44 +6081,29 @@
       box-shadow:
         inset 4px 4px 12px rgba(0,0,0,0.72),
         inset -3px -3px 8px rgba(255,255,255,0.14) !important;
-      overflow: visible !important;
+      overflow: hidden !important;
       position: relative !important;
       isolation: isolate;
+      animation: remindBorderFade 2.8s ease-in-out infinite !important;
     }
     #remindBar.remind-bar::before,
     .remind-bar#remindBar::before {
       display: none !important;
       content: none !important;
     }
+    /* SVG مار حذف بصری در همه حالات */
     #remindBar .remind-snake-svg {
-      position: absolute !important;
-      inset: -1px !important;
-      width: calc(100% + 2px) !important;
-      height: calc(100% + 2px) !important;
-      pointer-events: none !important;
-      z-index: 3 !important;
-      overflow: visible !important;
+      display: none !important;
     }
-    /* outdoor glow قرمز — یک تکه ≈۱/۳ محیط که دور می‌چرخد */
     #remindBar .remind-snake-path {
-      fill: none !important;
-      stroke: #ff1744 !important;
-      stroke-width: 3 !important;
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-      stroke-dasharray: 33 67 !important;
-      stroke-dashoffset: 0 !important;
-      animation:
-        remindSnakeMove 2.8s linear infinite,
-        remindOutdoorGlow 1.8s ease-in-out infinite !important;
-      vector-effect: non-scaling-stroke;
+      display: none !important;
     }
     #remindBar.remind-bar > .remind-bar-head,
     #remindBar.remind-bar > .remind-bar-body {
       position: relative !important;
       z-index: 1 !important;
     }
-    /* حالت باز: وسط صفحه، حاشیه مساوی، استروک سفید ثابت، بدون مار */
+    /* حالت باز: وسط صفحه، استروک سفید ثابت */
     #remindBar.open .remind-snake-svg,
     #remindBar.open-overlay .remind-snake-svg {
       display: none !important;
@@ -6597,7 +6564,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v55 | soft-plus outdoor-glow actions-align */
+    /* build-stamp: 2026-09-20-figma-home-v56 | fade-only full-border actions-6 */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
