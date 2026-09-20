@@ -6535,7 +6535,7 @@
           <div class="sec-autolock-list" id="secAutoLockList" role="listbox" hidden>
             <button type="button" class="sec-autolock-opt" data-v="0" role="option">بلافاصله</button>
             <button type="button" class="sec-autolock-opt" data-v="30" role="option">بعد از ۳۰ ثانیه</button>
-            <button type="button" class="sec-autolock-opt" data-v="60" role="option">بعد از ۱ دقیقه</button>
+            <button type="button" class="sec-autolock-opt" data-v="120" role="option">بعد از ۲ دقیقه</button>
             <button type="button" class="sec-autolock-opt" data-v="300" role="option">بعد از ۵ دقیقه</button>
           </div>
           <input type="hidden" id="secAutoLockSelect" value="0" />
@@ -6968,7 +6968,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v62 | account-opening-date dblclick */
+    /* build-stamp: 2026-09-20-figma-home-v63 | confirm-z date-on-save autolock-2m */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -7609,15 +7609,25 @@
 
     /* —— Confirm —— */
     let confirmNoCallback = null;
+    function _resetConfirmModalZ() {
+      try {
+        var cm = document.getElementById('confirmModal');
+        if (cm) { cm.style.zIndex = ''; }
+      } catch (e) {}
+    }
     function askConfirm(msg, onYes, onNo) {
+      var cm = document.getElementById('confirmModal');
       document.getElementById('confirmMsg').textContent = msg;
       confirmCallback = onYes || null;
       confirmNoCallback = onNo || null;
-      document.getElementById('confirmModal').classList.add('open');
+      /* بالاتر از bankAddEditor (480) و bankEditorDim (470) */
+      if (cm) cm.style.zIndex = '520';
+      cm.classList.add('open');
       syncModalOverlaysToViewport();
     }
     document.getElementById('confirmYes').onclick = () => {
       document.getElementById('confirmModal').classList.remove('open');
+      _resetConfirmModalZ();
       const cb = confirmCallback;
       confirmCallback = null;
       confirmNoCallback = null;
@@ -7625,6 +7635,7 @@
     };
     document.getElementById('confirmNo').onclick = () => {
       document.getElementById('confirmModal').classList.remove('open');
+      _resetConfirmModalZ();
       const cb = confirmNoCallback;
       confirmCallback = null;
       confirmNoCallback = null;
@@ -7633,6 +7644,7 @@
     document.getElementById('confirmModal').addEventListener('click', (e) => {
       if (e.target.id === 'confirmModal') {
         document.getElementById('confirmModal').classList.remove('open');
+        _resetConfirmModalZ();
         confirmCallback = null;
         confirmNoCallback = null;
         const yesBtn = document.getElementById('confirmYes');
@@ -16914,9 +16926,10 @@ function openPdfPrintWindow(){
         await refreshSecurityModal();
       } catch (e) {}
     }
-        var SEC_AUTO_LABELS = { '0': 'بلافاصله', '30': 'بعد از ۳۰ ثانیه', '60': 'بعد از ۱ دقیقه', '300': 'بعد از ۵ دقیقه' };
+        var SEC_AUTO_LABELS = { '0': 'بلافاصله', '30': 'بعد از ۳۰ ثانیه', '120': 'بعد از ۲ دقیقه', '300': 'بعد از ۵ دقیقه' };
     function updateSecAutoLockUI(val) {
       val = String(val == null ? '0' : val);
+      if (val === '60') val = '120';
       var hid = document.getElementById('secAutoLockSelect');
       var lab = document.getElementById('secAutoLockLabel');
       var list = document.getElementById('secAutoLockList');
@@ -17151,14 +17164,7 @@ function openPdfPrintWindow(){
           d = parseInt(acc.createdAt.d, 10);
         }
       } catch (e) {}
-      if (!y || !m || !d) {
-        try {
-          var t = getTodayPersian();
-          y = t.y; m = t.m; d = t.d;
-        } catch (e2) {
-          y = 1405; m = 1; d = 1;
-        }
-      }
+      if (!y || !m || !d) return '';
       function pad(n) {
         n = String(n);
         return n.length < 2 ? ('0' + n) : n;
@@ -17826,11 +17832,9 @@ if (item.type === 'recurring') {
       const initBalStr = initBal ? formatNum(initBal) : '';
       var createdDateStr = '';
       try {
-        if (isEdit) createdDateStr = formatAccountCreatedDate(acc);
-        else {
-          var _td = getTodayPersian();
-          function _pad(n) { n = String(n); return n.length < 2 ? ('0' + n) : n; }
-          createdDateStr = toPersianDigits(String(_td.y) + '/' + _pad(_td.m) + '/' + _pad(_td.d));
+        /* فقط بعد از ذخیره‌ی حساب و داشتن createdAt — برای حساب جدید تاریخ را نشان نده */
+        if (isEdit && acc && acc.createdAt && acc.createdAt.y) {
+          createdDateStr = formatAccountCreatedDate(acc);
         }
       } catch (eD) { createdDateStr = ''; }
       editor.innerHTML =
