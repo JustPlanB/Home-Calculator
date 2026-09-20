@@ -1293,7 +1293,7 @@
       flex-direction: column;
       justify-content: flex-start;
       align-items: stretch;
-      gap: 10px;
+      gap: 22px;
       box-sizing: border-box;
       padding: 0;
       margin-top: -6px;
@@ -1331,11 +1331,11 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 36px;
       width: 100%;
       box-sizing: border-box;
       justify-content: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .home-box {
       flex: 0 0 auto;
@@ -1462,23 +1462,15 @@
     .home-add-wrap .btn-circle-plus.lg svg path {
       width: 40px !important;
       height: 40px !important;
-      stroke: #00d4ff !important;
-      stroke-width: 3.6 !important;
-      animation: plusNeonPulse 1.4s ease-in-out infinite !important;
-      filter: drop-shadow(0 0 6px rgba(0,212,255,0.95)) !important;
+      stroke: #00b7ff !important;
+      stroke-width: 3.4 !important;
+      animation: plusSoftPulse 1.6s ease-in-out infinite !important;
+      filter: none !important;
       opacity: 1 !important;
     }
-    @keyframes plusNeonPulse {
-      0%, 100% {
-        opacity: 0.35;
-        stroke: #0099cc;
-        filter: drop-shadow(0 0 1px rgba(0,180,255,0.3));
-      }
-      50% {
-        opacity: 1;
-        stroke: #00e5ff;
-        filter: drop-shadow(0 0 12px rgba(0,230,255,1)) drop-shadow(0 0 4px rgba(0,200,255,0.9));
-      }
+    @keyframes plusSoftPulse {
+      0%, 100% { opacity: 0.28; }
+      50% { opacity: 1; }
     }
 
     /* خلاصه اقساط: مبلغ داخل سلول */
@@ -5983,18 +5975,31 @@
   
 
     
-    /* ========== یادآوری اقساط — مار نئونی روی لبه باکس (≈۱/۳ محیط) ========== */
+    /* ========== یادآوری اقساط — یک لاین قرمز پیوسته روی لبه (حالت edge) ========== */
     @keyframes remindSnakeMove {
       to { stroke-dashoffset: -100; }
     }
-    @keyframes remindSnakeHue {
-      0%, 100% { stroke: #c026ff; }
-      50% { stroke: #ff2d55; }
+    @keyframes remindEdgeSpark {
+      0%, 100% {
+        stroke: #ff1744;
+        filter: drop-shadow(0 0 2px #ff1744) drop-shadow(0 0 6px rgba(255,23,68,0.55));
+        opacity: 0.85;
+      }
+      40% {
+        stroke: #ff5252;
+        filter: drop-shadow(0 0 4px #ff5252) drop-shadow(0 0 10px rgba(255,82,82,0.85));
+        opacity: 1;
+      }
+      70% {
+        stroke: #ff8a80;
+        filter: drop-shadow(0 0 3px #ff8a80) drop-shadow(0 0 8px rgba(255,138,128,0.7));
+        opacity: 0.95;
+      }
     }
     #remindBar.remind-bar,
     .remind-bar#remindBar {
       border: none !important;
-      border-radius: 12px !important;
+      border-radius: 14px !important;
       background: #1b1b1b !important;
       background-color: #1b1b1b !important;
       background-image: none !important;
@@ -6018,18 +6023,24 @@
       z-index: 2 !important;
       overflow: visible !important;
     }
+    /* یک قطعه پیوسته ~۳۵٪ محیط؛ گوشه‌های نرم */
     #remindBar .remind-snake-path {
       fill: none !important;
-      stroke: #c026ff !important;
-      stroke-width: 2.8 !important;
+      stroke: #ff1744 !important;
+      stroke-width: 2.4 !important;
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
-      stroke-dasharray: 30 70 !important;
+      stroke-dasharray: 35 65 !important;
       stroke-dashoffset: 0;
       animation:
-        remindSnakeMove 2.6s linear infinite,
-        remindSnakeHue 2.6s ease-in-out infinite !important;
+        remindSnakeMove 2.4s linear infinite,
+        remindEdgeSpark 1.8s ease-in-out infinite !important;
       vector-effect: non-scaling-stroke;
+    }
+    /* وقتی باز است — استروک متحرک خاموش */
+    #remindBar.open .remind-snake-svg,
+    #remindBar.open-overlay .remind-snake-svg {
+      display: none !important;
     }
     #remindBar.remind-bar > .remind-bar-head,
     #remindBar.remind-bar > .remind-bar-body,
@@ -6184,7 +6195,7 @@
     <div class="remind-backdrop" id="remindBackdrop" onclick="closeRemindBar()"></div>
     <div class="remind-bar" id="remindBar" style="display:none;">
       <svg class="remind-snake-svg" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true">
-        <rect class="remind-snake-path" x="1.2" y="1.2" width="97.6" height="33.6" rx="6" ry="6" pathLength="100"></rect>
+        <rect class="remind-snake-path" x="1.5" y="1.5" width="97" height="33" rx="10" ry="10" pathLength="100"></rect>
       </svg>
       <div class="remind-bar-head" onclick="toggleRemindBar()">
         <span class="collapse-arrow" id="remindArrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
@@ -6557,7 +6568,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v52 | snake-stroke otp-ar plus-pulse gaps */
+    /* build-stamp: 2026-09-20-figma-home-v53 | native-otp soft-plus red-snake carry */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -7919,8 +7930,11 @@
       }
     }
 
-    function onPeriodChange() {
-      // اول ماه فعلی را با دادهٔ فعلی ذخیره کن
+        function onPeriodChange() {
+      // اول ماه فعلی را با دادهٔ فعلی ذخیره کن + موجودی آنی نمایش‌داده‌شده
+      const endingPeople = (typeof computePersonEndingInstants === 'function') ? computePersonEndingInstants() : {};
+      const endingAcc = (typeof computeAccountEndingBalances === 'function') ? computeAccountEndingBalances() : {};
+      const prevKey = (currentYear || 0) * 100 + (currentMonth || 0);
       persistCurrent();
       const hm = document.getElementById('monthSelect');
       const hy = document.getElementById('yearSelect');
@@ -7930,12 +7944,47 @@
         renderAll();
         return;
       }
+      const nextKey = (newY || 0) * 100 + (newM || 0);
       currentMonth = newM || currentMonth;
       currentYear = newY || currentYear;
       loadCurrent();
+      // اگر به ماه جلوتر رفتیم، موجودی آنی نمایش‌داده‌شده‌ی ماه قبل را به‌عنوان ورودی اولیه بنشان
+      if (nextKey > prevKey) {
+        try {
+          if (!periodData.personOpeningInstant || typeof periodData.personOpeningInstant !== 'object')
+            periodData.personOpeningInstant = {};
+          if (!periodData.accountOpeningInstant || typeof periodData.accountOpeningInstant !== 'object')
+            periodData.accountOpeningInstant = {};
+          var hasRows = false;
+          ['income', 'expense'].forEach(function(tab) {
+            ((periodData[tab] && periodData[tab].sections) || []).forEach(function(s) {
+              if (s && s.rows && s.rows.some(function(r) { return r && (Number(r.amount) || r.desc); })) hasRows = true;
+            });
+          });
+          if (!hasRows) {
+            periodData.personOpeningInstant = endingPeople || {};
+            periodData.accountOpeningInstant = endingAcc || {};
+          } else {
+            Object.keys(endingPeople || {}).forEach(function(k) {
+              if (periodData.personOpeningInstant[k] == null) periodData.personOpeningInstant[k] = endingPeople[k];
+            });
+            Object.keys(endingAcc || {}).forEach(function(k) {
+              if (periodData.accountOpeningInstant[k] == null) periodData.accountOpeningInstant[k] = endingAcc[k];
+            });
+          }
+          try {
+            (selectedBankAccounts || []).forEach(function(a) {
+              if (!a) return;
+              var lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+              if (lb && endingAcc && endingAcc[lb] != null) a.openingBalance = endingAcc[lb];
+            });
+          } catch (eA) {}
+        } catch (eC) {}
+      }
       // ماه جدید را هم در آرشیو ثبت کن (اگر فقط هدر کپی شده)
       persistCurrent();
       renderAll();
+      try { if (typeof renderHomeCards === 'function') renderHomeCards(); } catch (eR) {}
       saveArchive();
     }
 
@@ -15576,6 +15625,10 @@ function openPdfPrintWindow(){
       const ta = document.getElementById('smsImportText');
       const text = (ta && ta.value || '').trim();
       if (!text) { showToast('متن پیامک را وارد کنید'); return; }
+      if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(text)) {
+        showToast('این پیامک رمز/شناسه تأیید است و تراکنش نیست');
+        return;
+      }
       const parsed = parseBankSms(text);
       if (!parsed) { showToast('متن نامعتبر است'); return; }
       parsed.bank = matchSelectedBank(parsed.bank);
