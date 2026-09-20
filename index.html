@@ -6183,6 +6183,7 @@
       color: #f5f5f7;
       margin-bottom: 28px;
       text-align: center;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
     #appLockOverlay .lock-dots {
       display: flex;
@@ -6206,44 +6207,38 @@
       border-color: #ff3b30;
       background: rgba(255,59,48,0.35);
     }
-    #appLockOverlay .lock-pad {
-      display: grid;
-      grid-template-columns: repeat(3, 72px);
-      gap: 12px;
-      direction: ltr;
-      margin-bottom: 18px;
+    #appLockOverlay,
+    #appLockOverlay * ,
+    #securityModal,
+    #securityModal *,
+    #pinSetupOverlay,
+    #pinSetupOverlay * {
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
-    #appLockOverlay .lock-key {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
+    #appLockOverlay .lock-pin-input {
+      position: absolute;
+      opacity: 0.02;
+      width: 1px;
+      height: 1px;
       border: none;
-      background: #1b1b1b;
-      color: #f5f5f7;
-      font-size: 1.45rem;
-      font-weight: 700;
-      font-family: inherit;
-      box-shadow: inset 3px 3px 8px rgba(0,0,0,0.65), inset -2px -2px 6px rgba(255,255,255,0.1);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    #appLockOverlay .lock-key:active { filter: brightness(1.25); }
-    #appLockOverlay .lock-key.ghost {
+      padding: 0;
+      margin: 0;
+      caret-color: transparent;
+      color: transparent;
       background: transparent;
-      box-shadow: none;
+    }
+    /* ناحیه قابل لمس برای فوکوس دوباره روی کیبورد سیستم */
+    #appLockOverlay .lock-dots {
+      cursor: pointer;
+      padding: 12px 20px;
+      border-radius: 16px;
+    }
+    #appLockOverlay .lock-bio-hint {
+      margin-top: 18px;
       color: rgba(255,255,255,0.55);
-      font-size: 0.85rem;
-    }
-    #appLockOverlay .lock-bio-btn {
-      margin-top: 8px;
-      border: none;
-      background: transparent;
-      color: #08b5f5;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      padding: 10px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-align: center;
     }
     #appLockOverlay .lock-msg {
       min-height: 22px;
@@ -6251,6 +6246,17 @@
       font-size: 0.85rem;
       margin-bottom: 8px;
       text-align: center;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
+    }
+    #securityModal .sec-select,
+    #securityModal .sec-label,
+    #securityModal .sec-status,
+    #securityModal .sec-actions button,
+    #securityModal .modal-btn {
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
+    }
+    #pinSetupOverlay .pin-box input {
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
     #securityModal.modal-overlay { z-index: 9000; }
     #securityModal .sec-row {
@@ -6354,15 +6360,15 @@
   <div id="appLockOverlay" aria-hidden="true">
     <div class="lock-title">ورود به حساب‌کتاب</div>
     <div class="lock-msg" id="lockMsg"></div>
-    <div class="lock-dots" id="lockDots"></div>
-    <div class="lock-pad" id="lockPad"></div>
-    <button type="button" class="lock-bio-btn" id="lockBioBtn" style="display:none;" onclick="tryBiometricUnlock()">ورود با اثرانگشت</button>
+    <div class="lock-dots" id="lockDots" role="presentation"></div>
+    <input id="lockPinInput" class="lock-pin-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" enterkeyhint="done" aria-label="رمز عبور" />
+    <div class="lock-bio-hint" id="lockBioHint" style="display:none;">در حال احراز هویت چهره / اثرانگشت…</div>
   </div>
   <div id="pinSetupOverlay" aria-hidden="true">
     <div class="pin-box">
       <h3 id="pinSetupTitle">تعیین رمز</h3>
       <p id="pinSetupHint" style="text-align:center;color:rgba(255,255,255,0.55);font-size:0.85rem;margin:0 0 10px;"></p>
-      <input id="pinSetupInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" />
+      <input id="pinSetupInput" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" />
       <div class="pin-actions">
         <button type="button" class="pin-ok" id="pinSetupOk">تأیید</button>
         <button type="button" class="pin-cancel" id="pinSetupCancel">انصراف</button>
@@ -6411,6 +6417,7 @@
             <span class="theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 28 20" fill="none"><path d="M11.2 16.8c-3.1-1.1-5.2-4-5.2-7.5 0-4.3 3.5-7.8 7.8-7.8 1.2 0 2.4.3 3.4.8C14.8 3.4 12.6 5.8 12.6 8.8c0 3.7 2.6 6.8 6.1 7.6-1.1.6-2.4.9-3.8.9-1.3 0-2.5-.2-3.7-.5z" fill="#f5c542"/><path d="M20.2 4.1l.55 1.2 1.32.2-1 .82.24 1.32-1.11-.7-1.11.7.24-1.32-1-.82 1.32-.2.55-1.2z" fill="#f5c542"/><path d="M24.4 7.2l.35.75.83.12-.62.52.15.83-.7-.44-.7.44.15-.83-.62-.52.83-.12.35-.75z" fill="#f5c542"/><path d="M22.6 11.6l.45 1 .1.02 1.08.16-.82.67.2 1.08-.91-.58-.91.58.2-1.08-.82-.67 1.08-.16.45-1z" fill="#f5c542"/></svg></span>
           </span>
         </button>
+        <button type="button" class="menu-item" onclick="event.stopPropagation(); openSecurityModal();">امنیت و قفل برنامه</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg></span>اقدامات</div>
         <button class="menu-item" onclick="openBankAccountsModal()">انتخاب حساب بانکی</button>
         <button class="menu-item" onclick="openSmsImportModal()">ثبت از پیامک بانکی</button>
@@ -6422,7 +6429,6 @@
         <button class="menu-item danger" onclick="askResetCurrentMonth()">پاک کردن این ماه</button>
         <button class="menu-item danger" onclick="askResetAllData()">پاک کردن همه آرشیو</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>درباره</div>
-        <button class="menu-item" onclick="openSecurityModal()">امنیت و قفل برنامه</button>
         <button class="menu-item" onclick="openHelpModal()">راهنما</button>
         <div class="menu-version-row">
           <span class="menu-version-label">نسخه <span id="appVersionLabel">۵.۱.۰</span></span>
@@ -6809,7 +6815,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v57 | silver-spin app-lock */
+    /* build-stamp: 2026-09-20-figma-home-v58 | lock-settings sys-kbd auto-bio */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -16382,6 +16388,10 @@ function openPdfPrintWindow(){
       }
     }
 
+    var __lockFailCount = 0;
+    var __lockLockUntil = 0;
+    var __bioPrompting = false;
+
     function renderLockDots() {
       var box = document.getElementById('lockDots');
       if (!box) return;
@@ -16391,85 +16401,141 @@ function openPdfPrintWindow(){
       }
       box.innerHTML = html;
     }
-    function renderLockPad() {
-      var pad = document.getElementById('lockPad');
-      if (!pad || pad.dataset.ready) return;
-      var keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
-      pad.innerHTML = '';
-      keys.forEach(function(k) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'lock-key' + (k === '' ? ' ghost' : '');
-        b.textContent = k === '⌫' ? '⌫' : k;
-        if (k === '') { b.disabled = true; }
-        else if (k === '⌫') {
-          b.onclick = function() {
-            __lockPinBuffer = __lockPinBuffer.slice(0, -1);
-            renderLockDots();
-            var msg = document.getElementById('lockMsg');
-            if (msg) msg.textContent = '';
-          };
-        } else {
-          b.onclick = function() { onLockDigit(k); };
+    function bindLockPinInput() {
+      var inp = document.getElementById('lockPinInput');
+      var dots = document.getElementById('lockDots');
+      if (!inp || inp.dataset.bound) return;
+      inp.dataset.bound = '1';
+      inp.addEventListener('input', function() {
+        var v = String(inp.value || '').replace(/\D/g, '');
+        if (v.length > __lockPinLen) v = v.slice(0, __lockPinLen);
+        if (inp.value !== v) inp.value = v;
+        __lockPinBuffer = v;
+        renderLockDots();
+        var msg = document.getElementById('lockMsg');
+        if (msg && v.length) msg.textContent = '';
+        if (v.length === __lockPinLen) {
+          onLockPinComplete(v);
         }
-        pad.appendChild(b);
       });
-      pad.dataset.ready = '1';
-    }
-    async function onLockDigit(d) {
-      if (__lockPinBuffer.length >= __lockPinLen) return;
-      __lockPinBuffer += d;
-      renderLockDots();
-      if (__lockPinBuffer.length === __lockPinLen) {
-        var ok = await lockVerifyPin(__lockPinBuffer);
-        if (ok) {
-          __lockUnlockedThisSession = true;
-          __lockPinBuffer = '';
-          showAppLockOverlay(false);
-        } else {
-          var box = document.getElementById('lockDots');
-          if (box) {
-            Array.prototype.forEach.call(box.children, function(el){ el.classList.add('error'); });
-          }
-          var msg = document.getElementById('lockMsg');
-          if (msg) msg.textContent = 'رمز نادرست است';
-          setTimeout(function() {
-            __lockPinBuffer = '';
-            renderLockDots();
-          }, 400);
-        }
+      if (dots) {
+        dots.addEventListener('click', function() {
+          try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
+        });
       }
     }
+    async function onLockPinComplete(pin) {
+      if (Date.now() < __lockLockUntil) {
+        var left = Math.ceil((__lockLockUntil - Date.now()) / 1000);
+        var msg = document.getElementById('lockMsg');
+        if (msg) msg.textContent = 'لطفاً ' + left + ' ثانیه صبر کنید';
+        return;
+      }
+      var ok = await lockVerifyPin(pin);
+      var inp = document.getElementById('lockPinInput');
+      if (ok) {
+        __lockFailCount = 0;
+        __lockUnlockedThisSession = true;
+        __lockPinBuffer = '';
+        if (inp) inp.value = '';
+        showAppLockOverlay(false);
+        return;
+      }
+      __lockFailCount++;
+      var box = document.getElementById('lockDots');
+      if (box) {
+        Array.prototype.forEach.call(box.children, function(el){ el.classList.add('error'); });
+      }
+      var msg = document.getElementById('lockMsg');
+      if (__lockFailCount >= 5) {
+        __lockLockUntil = Date.now() + 30000;
+        __lockFailCount = 0;
+        if (msg) msg.textContent = 'تلاش زیاد — ۳۰ ثانیه صبر کنید';
+      } else if (msg) {
+        msg.textContent = 'رمز نادرست است';
+      }
+      setTimeout(function() {
+        __lockPinBuffer = '';
+        if (inp) inp.value = '';
+        renderLockDots();
+        try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
+      }, 350);
+    }
     async function tryBiometricUnlock() {
+      if (__bioPrompting) return;
       var p = getAppLockPlugin();
       if (!p || !p.authenticateBiometric) return;
+      __bioPrompting = true;
+      var hint = document.getElementById('lockBioHint');
+      if (hint) hint.style.display = 'block';
       try {
-        var r = await p.authenticateBiometric({ title: 'ورود به حساب‌کتاب', subtitle: 'احراز هویت بیومتریک' });
+        var r = await p.authenticateBiometric({
+          title: 'ورود به حساب‌کتاب',
+          subtitle: 'چهره یا اثرانگشت خود را تأیید کنید'
+        });
         if (r && r.ok) {
           __lockUnlockedThisSession = true;
+          __lockFailCount = 0;
           showAppLockOverlay(false);
+        } else {
+          var msg = document.getElementById('lockMsg');
+          if (msg) msg.textContent = 'شناسایی نشد — رمز را وارد کنید';
+          var inp = document.getElementById('lockPinInput');
+          try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
         }
       } catch (e) {
-        var msg = document.getElementById('lockMsg');
-        if (msg) msg.textContent = 'اثرانگشت ناموفق — با رمز وارد شوید';
+        var msg2 = document.getElementById('lockMsg');
+        if (msg2) msg2.textContent = 'بیومتریک در دسترس نیست — رمز را وارد کنید';
+      } finally {
+        __bioPrompting = false;
+        if (hint) {
+          var still = document.getElementById('appLockOverlay');
+          if (still && still.classList.contains('show')) {
+            /* بعد از تلاش، راهنما را کم‌رنگ‌تر کن */
+            hint.textContent = 'می‌توانید رمز را وارد کنید';
+          } else {
+            hint.style.display = 'none';
+          }
+        }
       }
     }
     async function presentLockScreen() {
       __lockPinLen = await lockGetPinLength();
       __lockPinBuffer = '';
-      renderLockPad();
+      bindLockPinInput();
       renderLockDots();
       var msg = document.getElementById('lockMsg');
       if (msg) msg.textContent = '';
-      var bioBtn = document.getElementById('lockBioBtn');
+      var inp = document.getElementById('lockPinInput');
+      if (inp) {
+        inp.value = '';
+        inp.maxLength = __lockPinLen;
+      }
       var bioOn = await lockIsBiometricEnabled();
       var canBio = await lockCanBiometric();
-      if (bioBtn) {
-        bioBtn.style.display = (bioOn && canBio) ? 'block' : 'none';
-      }
+      var hint = document.getElementById('lockBioHint');
       showAppLockOverlay(true);
+      /* اول بیومتریک خودکار — بدون نیاز به دکمه */
       if (bioOn && canBio) {
-        setTimeout(function(){ tryBiometricUnlock(); }, 280);
+        if (hint) {
+          hint.style.display = 'block';
+          hint.textContent = 'در حال احراز هویت چهره / اثرانگشت…';
+        }
+        setTimeout(function(){ tryBiometricUnlock(); }, 200);
+      } else {
+        if (hint) hint.style.display = 'none';
+        setTimeout(function() {
+          try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
+        }, 120);
+      }
+      /* اگر بیومتریک فعال است و کاربر روی نقطه‌ها زد، کیبورد سیستم باز شود */
+      if (bioOn && canBio) {
+        setTimeout(function() {
+          var ov = document.getElementById('appLockOverlay');
+          if (ov && ov.classList.contains('show') && !__lockUnlockedThisSession && !__bioPrompting) {
+            try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
+          }
+        }, 1200);
       }
     }
     async function ensureAppUnlocked() {
