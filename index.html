@@ -6968,7 +6968,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v61 | autolock-custom eye-delegate no-jump */
+    /* build-stamp: 2026-09-20-figma-home-v62 | account-opening-date dblclick */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17127,10 +17127,43 @@ function openPdfPrintWindow(){
           const label = (item.label || bankShortLabel(bank) || bank).trim();
           if (!label) return;
           const ob = Number(item.openingBalance) || 0;
-          out.push({ id: id, bank: bank, label: label, openingBalance: ob });
+          var createdAt = null;
+          try {
+            if (item.createdAt && item.createdAt.y) {
+              createdAt = {
+                y: parseInt(item.createdAt.y, 10) || 0,
+                m: parseInt(item.createdAt.m, 10) || 0,
+                d: parseInt(item.createdAt.d, 10) || 0
+              };
+            }
+          } catch (eC) { createdAt = null; }
+          out.push({ id: id, bank: bank, label: label, openingBalance: ob, createdAt: createdAt });
         }
       });
       selectedBankAccounts = out;
+    }
+    function formatAccountCreatedDate(acc) {
+      var y, m, d;
+      try {
+        if (acc && acc.createdAt && acc.createdAt.y) {
+          y = parseInt(acc.createdAt.y, 10);
+          m = parseInt(acc.createdAt.m, 10);
+          d = parseInt(acc.createdAt.d, 10);
+        }
+      } catch (e) {}
+      if (!y || !m || !d) {
+        try {
+          var t = getTodayPersian();
+          y = t.y; m = t.m; d = t.d;
+        } catch (e2) {
+          y = 1405; m = 1; d = 1;
+        }
+      }
+      function pad(n) {
+        n = String(n);
+        return n.length < 2 ? ('0' + n) : n;
+      }
+      return toPersianDigits(String(y) + '/' + pad(m) + '/' + pad(d));
     }
     function selectedAccountLabels() {
       return (selectedBankAccounts || []).map(accountLabel).filter(Boolean);
@@ -17791,13 +17824,27 @@ if (item.type === 'recurring') {
       const initial = isEdit ? acc.label : (defaultLabel || '');
       const initBal = isEdit ? (Number(acc.openingBalance) || 0) : 0;
       const initBalStr = initBal ? formatNum(initBal) : '';
+      var createdDateStr = '';
+      try {
+        if (isEdit) createdDateStr = formatAccountCreatedDate(acc);
+        else {
+          var _td = getTodayPersian();
+          function _pad(n) { n = String(n); return n.length < 2 ? ('0' + n) : n; }
+          createdDateStr = toPersianDigits(String(_td.y) + '/' + _pad(_td.m) + '/' + _pad(_td.d));
+        }
+      } catch (eD) { createdDateStr = ''; }
       editor.innerHTML =
         '<div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">' + (isEdit ? 'ویرایش نام حساب' : ('نام حساب — ' + escapeHtml(bankName || ''))) + '</div>' +
         '<input id="bankAddNameInput" type="text" value="' + escapeHtml(initial) + '" placeholder="نام حساب را وارد کنید" ' +
         'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:8px;">' +
-        '<div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;color:var(--muted);">موجودی تا قبل از نصب اپ</div>' +
+        '<div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;color:var(--muted);">' +
+        'موجودی زمان اضافه کردن کارت' +
+        (createdDateStr ? (' <span style="font-size:0.78em;font-weight:600;opacity:0.85;">(' + createdDateStr + ')</span>') : '') +
+        '</div>' +
         '<input id="bankAddBalInput" type="text" inputmode="numeric" value="' + escapeHtml(initBalStr) + '" placeholder="مبلغ را وارد کنید" ' +
-        'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:10px;direction:ltr;text-align:center;">' +
+        (isEdit ? 'readonly ' : '') +
+        'style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;margin-bottom:10px;direction:ltr;text-align:center;' +
+        (isEdit ? 'opacity:0.9;cursor:pointer;' : '') + '">' +
         '<div style="display:flex;gap:8px;">' +
         '<button type="button" id="bankAddOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">ثبت</button>' +
         '<button type="button" id="bankAddCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
@@ -17807,10 +17854,25 @@ if (item.type === 'recurring') {
       const balInp = editor.querySelector('#bankAddBalInput');
       if (balInp) {
         balInp.addEventListener('input', function() {
+          if (balInp.readOnly) return;
           const digits = toEnglishDigits(balInp.value || '').replace(/[^0-9]/g, '');
           if (!digits) { balInp.value = ''; return; }
           balInp.value = formatNum(parseInt(digits, 10) || 0);
         });
+        if (isEdit) {
+          balInp.readOnly = true;
+          balInp.title = 'برای ویرایش دوبار ضربه بزنید';
+          balInp.addEventListener('dblclick', function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            askConfirm('تغییر موجودی، روی موجودی‌های محاسبه‌شده پس از این تاریخ تأثیر می‌گذارد', function() {
+              balInp.readOnly = false;
+              balInp.style.opacity = '1';
+              balInp.style.cursor = 'text';
+              try { balInp.focus(); balInp.select(); } catch (eF) {}
+            });
+          });
+        }
       }
       try { inp.focus(); inp.select(); } catch (e) {}
       const closeEd = () => {
@@ -17851,14 +17913,22 @@ if (item.type === 'recurring') {
           if (exists) { showToast('نام تکراریست'); return; }
           acc.label = name;
           acc.openingBalance = openingBalance;
+          if (!acc.createdAt || !acc.createdAt.y) {
+            try {
+              var _tEdit = getTodayPersian();
+              acc.createdAt = { y: _tEdit.y, m: _tEdit.m, d: _tEdit.d };
+            } catch (eE) {}
+          }
         } else {
           const exists = selectedBankAccounts.some(a => accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
+          var _tNew = getTodayPersian();
           selectedBankAccounts.push({
             id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             bank: bankName,
             label: name,
-            openingBalance: openingBalance
+            openingBalance: openingBalance,
+            createdAt: { y: _tNew.y, m: _tNew.m, d: _tNew.d }
           });
         }
         saveBankAccountsSelection();
