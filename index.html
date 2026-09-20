@@ -1298,7 +1298,7 @@
       flex-direction: column;
       justify-content: flex-start;
       align-items: stretch;
-      gap: 22px;
+      gap: 40px;
       box-sizing: border-box;
       padding: 0;
       margin-top: -6px;
@@ -6208,35 +6208,80 @@
       background: rgba(255,59,48,0.35);
     }
     #appLockOverlay,
-    #appLockOverlay * ,
+    #appLockOverlay *,
     #securityModal,
     #securityModal *,
     #pinSetupOverlay,
     #pinSetupOverlay * {
       font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
-    #appLockOverlay .lock-pin-input {
-      position: absolute;
-      opacity: 0.02;
-      width: 1px;
-      height: 1px;
-      border: none;
-      padding: 0;
-      margin: 0;
-      caret-color: transparent;
-      color: transparent;
-      background: transparent;
-    }
-    /* ناحیه قابل لمس برای فوکوس دوباره روی کیبورد سیستم */
     #appLockOverlay .lock-dots {
       cursor: pointer;
-      padding: 12px 20px;
+      padding: 8px 16px 14px;
       border-radius: 16px;
     }
+    #appLockOverlay .lock-pin-wrap,
+    #pinSetupOverlay .pin-input-wrap {
+      position: relative;
+      width: min(280px, 86vw);
+      margin: 0 auto 14px;
+    }
+    #appLockOverlay .lock-pin-input,
+    #pinSetupOverlay .pin-input-wrap input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 48px 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: #121212;
+      color: #f5f5f7;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.45em;
+      text-align: center;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
+      -webkit-text-security: disc;
+    }
+    #appLockOverlay .lock-pin-input.show-pin,
+    #pinSetupOverlay .pin-input-wrap input.show-pin {
+      -webkit-text-security: none;
+      letter-spacing: 0.25em;
+    }
+    #appLockOverlay .lock-eye-btn,
+    #pinSetupOverlay .lock-eye-btn {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.65);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    #appLockOverlay .lock-eye-btn:active,
+    #pinSetupOverlay .lock-eye-btn:active { color: #08b5f5; }
+    #appLockOverlay .lock-bio-btn {
+      margin-top: 6px;
+      border: none;
+      background: rgba(8,181,245,0.12);
+      color: #08b5f5;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 12px 18px;
+      border-radius: 12px;
+    }
     #appLockOverlay .lock-bio-hint {
-      margin-top: 18px;
-      color: rgba(255,255,255,0.55);
-      font-size: 0.88rem;
+      margin-top: 12px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
       font-weight: 600;
       text-align: center;
     }
@@ -6246,16 +6291,23 @@
       font-size: 0.85rem;
       margin-bottom: 8px;
       text-align: center;
+    }
+    #securityModal .sec-select {
+      background: #1b1b1b !important;
+      background-color: #1b1b1b !important;
+      color: #f5f5f7 !important;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    #securityModal .sec-select option {
+      background: #1b1b1b !important;
+      color: #f5f5f7 !important;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
-    #securityModal .sec-select,
     #securityModal .sec-label,
     #securityModal .sec-status,
     #securityModal .sec-actions button,
     #securityModal .modal-btn {
-      font-family: Vazirmatn, Tahoma, sans-serif !important;
-    }
-    #pinSetupOverlay .pin-box input {
       font-family: Vazirmatn, Tahoma, sans-serif !important;
     }
     #securityModal.modal-overlay { z-index: 9000; }
@@ -6361,14 +6413,27 @@
     <div class="lock-title">ورود به حساب‌کتاب</div>
     <div class="lock-msg" id="lockMsg"></div>
     <div class="lock-dots" id="lockDots" role="presentation"></div>
-    <input id="lockPinInput" class="lock-pin-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" enterkeyhint="done" aria-label="رمز عبور" />
-    <div class="lock-bio-hint" id="lockBioHint" style="display:none;">در حال احراز هویت چهره / اثرانگشت…</div>
+    <div class="lock-pin-wrap">
+      <input id="lockPinInput" class="lock-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" enterkeyhint="done" aria-label="رمز عبور" />
+      <button type="button" class="lock-eye-btn" id="lockPinEye" aria-label="نمایش رمز" title="نمایش / مخفی">
+        <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="eye-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.9 21.9 0 0 1-2.16 3.19M1 1l22 22"/><path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"/></svg>
+      </button>
+    </div>
+    <button type="button" class="lock-bio-btn" id="lockBioBtn" style="display:none;" onclick="tryBiometricUnlock()">ورود با اثرانگشت / Face ID</button>
+    <div class="lock-bio-hint" id="lockBioHint" style="display:none;">در حال احراز هویت…</div>
   </div>
   <div id="pinSetupOverlay" aria-hidden="true">
     <div class="pin-box">
       <h3 id="pinSetupTitle">تعیین رمز</h3>
       <p id="pinSetupHint" style="text-align:center;color:rgba(255,255,255,0.55);font-size:0.85rem;margin:0 0 10px;"></p>
-      <input id="pinSetupInput" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" />
+      <div class="pin-input-wrap">
+        <input id="pinSetupInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" />
+        <button type="button" class="lock-eye-btn pin-eye" id="pinSetupEye" aria-label="نمایش رمز">
+          <svg class="eye-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.9 21.9 0 0 1-2.16 3.19M1 1l22 22"/><path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"/></svg>
+        </button>
+      </div>
       <div class="pin-actions">
         <button type="button" class="pin-ok" id="pinSetupOk">تأیید</button>
         <button type="button" class="pin-cancel" id="pinSetupCancel">انصراف</button>
@@ -6815,7 +6880,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v58 | lock-settings sys-kbd auto-bio */
+    /* build-stamp: 2026-09-20-figma-home-v59 | lock-kbd eye bio-confirm gap */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -16401,10 +16466,40 @@ function openPdfPrintWindow(){
       }
       box.innerHTML = html;
     }
+    function bindPinEyeToggle(inputId, btnId) {
+      var inp = document.getElementById(inputId);
+      var btn = document.getElementById(btnId);
+      if (!inp || !btn || btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var show = !inp.classList.contains('show-pin');
+        if (show) {
+          inp.classList.add('show-pin');
+          inp.type = 'tel';
+          var off = btn.querySelector('.eye-off');
+          var on = btn.querySelector('.eye-open');
+          if (off) off.style.display = '';
+          if (on) on.style.display = 'none';
+        } else {
+          inp.classList.remove('show-pin');
+          inp.type = 'password';
+          var off2 = btn.querySelector('.eye-off');
+          var on2 = btn.querySelector('.eye-open');
+          if (off2) off2.style.display = 'none';
+          if (on2) on2.style.display = '';
+        }
+        try { inp.focus({ preventScroll: true }); } catch (err) {}
+      });
+    }
     function bindLockPinInput() {
       var inp = document.getElementById('lockPinInput');
       var dots = document.getElementById('lockDots');
-      if (!inp || inp.dataset.bound) return;
+      if (!inp) return;
+      bindPinEyeToggle('lockPinInput', 'lockPinEye');
+      bindPinEyeToggle('pinSetupInput', 'pinSetupEye');
+      if (inp.dataset.bound) return;
       inp.dataset.bound = '1';
       inp.addEventListener('input', function() {
         var v = String(inp.value || '').replace(/\D/g, '');
@@ -16510,32 +16605,32 @@ function openPdfPrintWindow(){
       if (inp) {
         inp.value = '';
         inp.maxLength = __lockPinLen;
+        inp.classList.remove('show-pin');
+        inp.type = 'password';
       }
       var bioOn = await lockIsBiometricEnabled();
       var canBio = await lockCanBiometric();
       var hint = document.getElementById('lockBioHint');
+      var bioBtn = document.getElementById('lockBioBtn');
       showAppLockOverlay(true);
-      /* اول بیومتریک خودکار — بدون نیاز به دکمه */
+      /* همیشه کیبورد عددی سیستم را بالا بیاور */
+      setTimeout(function() {
+        try { inp && inp.focus({ preventScroll: true }); } catch (e) { try { inp && inp.focus(); } catch (e2) {} }
+      }, 80);
+      setTimeout(function() {
+        try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
+      }, 320);
       if (bioOn && canBio) {
+        if (bioBtn) bioBtn.style.display = 'block';
         if (hint) {
           hint.style.display = 'block';
-          hint.textContent = 'در حال احراز هویت چهره / اثرانگشت…';
+          hint.textContent = 'در حال احراز هویت…';
         }
-        setTimeout(function(){ tryBiometricUnlock(); }, 200);
+        /* بیومتریک خودکار؛ در صورت موفقیت مستقیم وارد اپ */
+        setTimeout(function(){ tryBiometricUnlock(); }, 250);
       } else {
+        if (bioBtn) bioBtn.style.display = 'none';
         if (hint) hint.style.display = 'none';
-        setTimeout(function() {
-          try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
-        }, 120);
-      }
-      /* اگر بیومتریک فعال است و کاربر روی نقطه‌ها زد، کیبورد سیستم باز شود */
-      if (bioOn && canBio) {
-        setTimeout(function() {
-          var ov = document.getElementById('appLockOverlay');
-          if (ov && ov.classList.contains('show') && !__lockUnlockedThisSession && !__bioPrompting) {
-            try { inp && inp.focus({ preventScroll: true }); } catch (e) {}
-          }
-        }, 1200);
       }
     }
     async function ensureAppUnlocked() {
@@ -16702,9 +16797,7 @@ function openPdfPrintWindow(){
         showToast('قفل برنامه فعال شد');
         var canBio = await lockCanBiometric();
         if (canBio) {
-          // سؤال ساده
-          var useBio = window.confirm('آیا می‌خواهید ورود با اثرانگشت را فعال کنید؟');
-          if (useBio) {
+          askConfirm('آیا می‌خواهید ورود با اثرانگشت / Face ID را فعال کنید؟', async function() {
             try {
               var p = getAppLockPlugin();
               if (p && p.authenticateBiometric) {
@@ -16712,10 +16805,16 @@ function openPdfPrintWindow(){
                 if (br && br.ok) {
                   await lockSetBiometric(true);
                   showToast('اثرانگشت فعال شد');
+                } else {
+                  showToast('احراز هویت انجام نشد');
                 }
+              } else {
+                await lockSetBiometric(true);
+                showToast('اثرانگشت فعال شد');
               }
-            } catch (e) {}
-          }
+            } catch (e) { showToast('اثرانگشت در دسترس نیست'); }
+            refreshSecurityModal();
+          }, function() { refreshSecurityModal(); });
         }
         __lockUnlockedThisSession = true;
         await refreshSecurityModal();

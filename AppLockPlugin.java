@@ -180,6 +180,7 @@ public class AppLockPlugin extends Plugin {
               .setSubtitle(subtitle != null ? subtitle : "")
               .setNegativeButtonText("انصراف")
               .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+              .setConfirmationRequired(false)
               .build();
             prompt.authenticate(info);
           } catch (Exception e) {
