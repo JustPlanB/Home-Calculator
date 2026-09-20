@@ -62,6 +62,17 @@ public class BankSmsReceiver extends BroadcastReceiver {
 
   static boolean looksLikeBankTransaction(String s, String sender){
     String t=normFa(s), sd=normFa(sender);
+    // رد فوری OTP / رمز پویا / شناسه تأیید برداشت (حتی با مبلغ)
+    if(t.contains("شناسه تایید") || t.contains("شناسه تأيید") || t.contains("شناسه تايید")
+        || t.contains("شناسه تأیید") || t.contains("شناسه تاييد") || t.contains("شناسه تایید برداشت")
+        || t.contains("رمز پویا") || t.contains("رمزپویا") || t.contains("رمز موقت")
+        || t.contains("رمز لحظه") || t.contains("رمزلحظه") || t.contains("رمز دوم")
+        || t.contains("کد تایید") || t.contains("کد تأیید") || t.contains("کد تاييد")
+        || t.contains("otp") || t.contains("one-time") || t.contains("onetime")
+        || (t.contains("محرمانه") && (t.contains("رمز") || t.contains("کد")))
+        || (t.contains("هشدار") && t.contains("شناسه") && t.contains("برداشت"))) {
+      return false;
+    }
     // رد فوری پیام‌های شارژ، تبلیغاتی و غیرتراکنشی
     if(t.contains("شارژ") || t.contains("شگفت انگیز") || t.contains("شگفت\u200cانگیز")
         || t.contains("بسته اینترنت") || t.contains("بسته اينترنت") || t.contains("بسته ")
