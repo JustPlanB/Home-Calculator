@@ -1331,7 +1331,7 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 12px;
       width: 100%;
       box-sizing: border-box;
       justify-content: flex-start;
@@ -1359,7 +1359,7 @@
       flex: 1 1 0;
       max-width: 76px;
       width: 76px;
-      height: 56px;
+      height: 62px;
       aspect-ratio: auto;
       background: transparent;
       border: none;
@@ -1430,7 +1430,7 @@
     .home-box.box3 .home-tile {
       max-width: 72px;
       width: 72px;
-      height: 56px;
+      height: 62px;
       border-radius: 0;
     }
     .home-box.box2 .home-tile svg,
@@ -1442,15 +1442,15 @@
       display: flex;
       justify-content: flex-start;
       direction: ltr;
-      padding: 2px 0 max(6px, env(safe-area-inset-bottom, 0px)) 12px;
-      margin-top: 2px;
+      padding: 0 0 max(6px, env(safe-area-inset-bottom, 0px)) 12px;
+      margin-top: 4px;
     }
         .home-add-wrap .btn-circle-plus.lg {
       margin: 0 !important;
-      width: 52px !important;
-      height: 52px !important;
-      min-width: 52px !important;
-      min-height: 52px !important;
+      width: 64px !important;
+      height: 64px !important;
+      min-width: 64px !important;
+      min-height: 64px !important;
       background: #1b1b1b !important;
       border: none !important;
       outline: none !important;
@@ -1458,8 +1458,8 @@
       transform: translateZ(0);
     }
     .home-add-wrap .btn-circle-plus.lg svg {
-      width: 34px !important;
-      height: 34px !important;
+      width: 40px !important;
+      height: 40px !important;
       stroke: #00b7ff !important;
       stroke-width: 3.4 !important;
       animation: plusNeonPulse 1.8s ease-in-out infinite !important;
@@ -4629,19 +4629,13 @@
       50% { transform: scale(1.06); opacity: 1; filter: brightness(1.15); }
     }
     .remind-bar {
-      background: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border: 2px solid transparent;
-      border-radius: 10px;
+      /* base layout only — visual styles in final override */
       margin-top: 14px;
       margin-bottom: 4px;
-      overflow: hidden;
       position: relative;
       z-index: 5;
       flex-shrink: 0;
-      box-shadow: none;
-      animation: none;
+      overflow: visible;
     }
     .remind-bar::before {
       display: none !important;
@@ -5977,24 +5971,83 @@
     }
 
   
-    /* یادآوری: متن سفید، داخل بی‌رنگ */
-    .remind-bar,
-    .remind-bar-head,
-    .remind-bar-head span,
-    .remind-bar-head * {
+
+    
+    /* ========== یادآوری اقساط — ظاهر قطعی حالت بسته ========== */
+    @keyframes remindNeonOrbit {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    #remindBar.remind-bar,
+    .remind-bar#remindBar {
+      border: 2px solid transparent !important;
+      border-radius: 12px !important;
+      background-color: #1b1b1b !important;
+      background-image:
+        linear-gradient(#1b1b1b, #1b1b1b),
+        linear-gradient(90deg, #c026ff, #e879ff, #7c3aed, #f0abfc, #c026ff) !important;
+      background-origin: border-box !important;
+      background-clip: padding-box, border-box !important;
+      background-size: 100% 100%, 280% 100% !important;
+      animation: remindNeonOrbit 3.6s linear infinite !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      overflow: hidden !important;
+    }
+    #remindBar .remind-bar-head,
+    .remind-bar#remindBar .remind-bar-head {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      padding: 10px 12px !important;
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      border-bottom: none !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+    }
+    #remindBar .remind-bar-head,
+    #remindBar .remind-bar-head span,
+    #remindBar .remind-bar-head * {
       color: #ffffff !important;
       -webkit-text-fill-color: #ffffff !important;
     }
-    [data-theme="light"] .remind-bar,
-    [data-theme="light"] .remind-bar-head,
-    [data-theme="light"] .remind-bar-head *,
+    #remindBar .remind-bar-head .collapse-arrow,
+    #remindBar .remind-bar-head .collapse-arrow svg {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+      flex-shrink: 0 !important;
+    }
+    #remindBar:not(.open):not(.open-overlay) .remind-bar-body {
+      display: none !important;
+    }
+    #remindBar.open .remind-bar-body,
+    #remindBar.open-overlay .remind-bar-body {
+      display: block !important;
+    }
+    #remindBar.open-overlay {
+      background-image:
+        linear-gradient(#1b1b1b, #1b1b1b),
+        linear-gradient(90deg, #c026ff, #e879ff, #7c3aed, #f0abfc, #c026ff) !important;
+      background-color: #1b1b1b !important;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.55) !important;
+    }
     [data-theme="light"] #remindBar,
     [data-theme="light"] #remindBar .remind-bar-head,
     [data-theme="light"] #remindBar .remind-bar-head * {
       color: #ffffff !important;
       -webkit-text-fill-color: #ffffff !important;
-      background: transparent !important;
       background-color: transparent !important;
+    }
+    [data-theme="light"] #remindBar.remind-bar {
+      background-color: #1b1b1b !important;
+      background-image:
+        linear-gradient(#1b1b1b, #1b1b1b),
+        linear-gradient(90deg, #c026ff, #e879ff, #7c3aed, #f0abfc, #c026ff) !important;
     }
 
     </style>
@@ -6420,7 +6473,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v49 | moderate-box hollow-remind */
+    /* build-stamp: 2026-09-20-figma-home-v50 | remind-fixed boxes-gap plus-lg */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
