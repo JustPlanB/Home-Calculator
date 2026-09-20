@@ -222,9 +222,13 @@
       width: 40px;
       height: 40px;
       min-height: 40px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--card);
+      border: none !important;
+      border-radius: 12px !important;
+      background: #1b1b1b !important;
+      background-color: #1b1b1b !important;
+      box-shadow:
+        inset 4px 4px 12px rgba(0,0,0,0.72),
+        inset -3px -3px 8px rgba(255,255,255,0.14) !important;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -234,6 +238,7 @@
       flex-shrink: 0;
       padding: 0;
       box-sizing: border-box;
+      overflow: hidden;
     }
     .menu-btn span {
       display: block;
@@ -1464,13 +1469,18 @@
       height: 40px !important;
       stroke: #00b7ff !important;
       stroke-width: 3.4 !important;
-      animation: plusSoftPulse 1.6s ease-in-out infinite !important;
-      filter: none !important;
+      animation: plusNeonLamp 1.7s ease-in-out infinite !important;
       opacity: 1 !important;
     }
-    @keyframes plusSoftPulse {
-      0%, 100% { opacity: 0.28; }
-      50% { opacity: 1; }
+    @keyframes plusNeonLamp {
+      0%, 100% {
+        opacity: 0.4;
+        filter: drop-shadow(0 0 1px rgba(0,183,255,0.25));
+      }
+      50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 5px rgba(0,183,255,0.75)) drop-shadow(0 0 10px rgba(0,200,255,0.35));
+      }
     }
 
     /* خلاصه اقساط: مبلغ داخل سلول */
@@ -4788,21 +4798,7 @@
     }
     .remind-backdrop.open { display: block; }
     .remind-bar.open-overlay {
-      position: fixed !important;
-      top: calc(var(--chrome-h, 120px) + 4px) !important;
-      left: 12px !important;
-      right: 12px !important;
-      z-index: 8600 !important;
-      max-height: min(55vh, 420px);
-      overflow: hidden;
-      display: flex !important;
-      flex-direction: column;
-      background: #1a1a1c !important;
-      border: 2px solid transparent !important;
-      border-radius: 14px !important;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.55) !important;
-      /* از جریان sticky-chrome خارج است؛ جای خالی با --chrome-h قفل‌شده حفظ می‌شود */
-      margin: 0 !important;
+      /* ظاهر نهایی در بلاک #remindBar.open-overlay */
     }
     /* وقتی اورلی باز است، نسخهٔ in-flow فقط ارتفاع هدر بسته را نگه دارد */
     .sticky-chrome .remind-bar.open-overlay {
@@ -5975,80 +5971,7 @@
   
 
     
-    /* ========== یادآوری اقساط — یک لاین قرمز پیوسته روی لبه (حالت edge) ========== */
-    @keyframes remindSnakeMove {
-      to { stroke-dashoffset: -100; }
-    }
-    @keyframes remindEdgeSpark {
-      0%, 100% {
-        stroke: #ff1744;
-        filter: drop-shadow(0 0 2px #ff1744) drop-shadow(0 0 6px rgba(255,23,68,0.55));
-        opacity: 0.85;
-      }
-      40% {
-        stroke: #ff5252;
-        filter: drop-shadow(0 0 4px #ff5252) drop-shadow(0 0 10px rgba(255,82,82,0.85));
-        opacity: 1;
-      }
-      70% {
-        stroke: #ff8a80;
-        filter: drop-shadow(0 0 3px #ff8a80) drop-shadow(0 0 8px rgba(255,138,128,0.7));
-        opacity: 0.95;
-      }
-    }
-    #remindBar.remind-bar,
-    .remind-bar#remindBar {
-      border: none !important;
-      border-radius: 14px !important;
-      background: #1b1b1b !important;
-      background-color: #1b1b1b !important;
-      background-image: none !important;
-      box-shadow: none !important;
-      overflow: visible !important;
-      position: relative !important;
-      isolation: isolate;
-    }
-    #remindBar.remind-bar::before,
-    .remind-bar#remindBar::before {
-      display: none !important;
-      content: none !important;
-      animation: none !important;
-    }
-    #remindBar .remind-snake-svg {
-      position: absolute !important;
-      inset: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
-      overflow: visible !important;
-    }
-    /* یک قطعه پیوسته ~۳۵٪ محیط؛ گوشه‌های نرم */
-    #remindBar .remind-snake-path {
-      fill: none !important;
-      stroke: #ff1744 !important;
-      stroke-width: 2.4 !important;
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-      stroke-dasharray: 35 65 !important;
-      stroke-dashoffset: 0;
-      animation:
-        remindSnakeMove 2.4s linear infinite,
-        remindEdgeSpark 1.8s ease-in-out infinite !important;
-      vector-effect: non-scaling-stroke;
-    }
-    /* وقتی باز است — استروک متحرک خاموش */
-    #remindBar.open .remind-snake-svg,
-    #remindBar.open-overlay .remind-snake-svg {
-      display: none !important;
-    }
-    #remindBar.remind-bar > .remind-bar-head,
-    #remindBar.remind-bar > .remind-bar-body,
-    .remind-bar#remindBar > .remind-bar-head,
-    .remind-bar#remindBar > .remind-bar-body {
-      position: relative !important;
-      z-index: 1 !important;
-    }
+    
     #remindBar .remind-bar-head,
     .remind-bar#remindBar .remind-bar-head {
       display: flex !important;
@@ -6142,6 +6065,100 @@
       background: #242424 !important;
     }
 
+    
+    /* ========== یادآوری اقساط v54 ========== */
+    @keyframes remindSnakeMove {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -100; }
+    }
+    @keyframes remindEdgeSpark {
+      0%, 100% {
+        stroke: #ff1744;
+        filter: drop-shadow(0 0 2px #ff1744) drop-shadow(0 0 5px rgba(255,23,68,0.5));
+      }
+      50% {
+        stroke: #ff5252;
+        filter: drop-shadow(0 0 4px #ff5252) drop-shadow(0 0 9px rgba(255,82,82,0.75));
+      }
+    }
+    #remindBar.remind-bar,
+    .remind-bar#remindBar {
+      border: none !important;
+      border-radius: 14px !important;
+      background: #1b1b1b !important;
+      background-color: #1b1b1b !important;
+      background-image: none !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+      position: relative !important;
+      isolation: isolate;
+    }
+    #remindBar.remind-bar::before,
+    .remind-bar#remindBar::before {
+      display: none !important;
+      content: none !important;
+    }
+    #remindBar .remind-snake-svg {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      pointer-events: none !important;
+      z-index: 3 !important;
+      overflow: visible !important;
+    }
+    /* یک تکه پیوسته ≈۳۳٪ محیط؛ خط‌کپ گرد برای پیوستگی در گوشه */
+    #remindBar .remind-snake-path {
+      fill: none !important;
+      stroke: #ff1744 !important;
+      stroke-width: 2.5 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+      stroke-dasharray: 33 67 !important;
+      stroke-dashoffset: 0 !important;
+      animation: remindSnakeMove 2.5s linear infinite, remindEdgeSpark 1.6s ease-in-out infinite !important;
+      vector-effect: non-scaling-stroke;
+    }
+    #remindBar.remind-bar > .remind-bar-head,
+    #remindBar.remind-bar > .remind-bar-body {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+    /* حالت باز: وسط صفحه، حاشیه مساوی، استروک سفید ثابت، بدون مار */
+    #remindBar.open .remind-snake-svg,
+    #remindBar.open-overlay .remind-snake-svg {
+      display: none !important;
+    }
+    #remindBar.open-overlay,
+    .remind-bar.open-overlay#remindBar {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: translate(-50%, -50%) !important;
+      width: calc(100vw - 32px) !important;
+      max-width: calc(100vw - 32px) !important;
+      margin: 0 !important;
+      z-index: 8600 !important;
+      max-height: min(70vh, 520px) !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      background: #1b1b1b !important;
+      background-image: none !important;
+      border: 1.5px solid #ffffff !important;
+      border-radius: 14px !important;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.55) !important;
+      animation: none !important;
+    }
+    #remindBar.open-overlay .remind-bar-body {
+      display: block !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      max-height: min(58vh, 440px) !important;
+    }
+
     </style>
 </head>
 <body class="tabs-main-hidden">
@@ -6195,7 +6212,7 @@
     <div class="remind-backdrop" id="remindBackdrop" onclick="closeRemindBar()"></div>
     <div class="remind-bar" id="remindBar" style="display:none;">
       <svg class="remind-snake-svg" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true">
-        <rect class="remind-snake-path" x="1.5" y="1.5" width="97" height="33" rx="10" ry="10" pathLength="100"></rect>
+        <path class="remind-snake-path" pathLength="100" d="M 12,1.8 H 88 A 10.2,10.2 0 0 1 98.2,12 V 24 A 10.2,10.2 0 0 1 88,34.2 H 12 A 10.2,10.2 0 0 1 1.8,24 V 12 A 10.2,10.2 0 0 1 12,1.8 Z"></path>
       </svg>
       <div class="remind-bar-head" onclick="toggleRemindBar()">
         <span class="collapse-arrow" id="remindArrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
@@ -6568,7 +6585,7 @@
 
     
 
-    /* build-stamp: 2026-09-20-figma-home-v53 | native-otp soft-plus red-snake carry */
+    /* build-stamp: 2026-09-20-figma-home-v54 | menu-neo plus-lamp remind-stroke */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
