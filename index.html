@@ -6289,7 +6289,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 22px;
     }
     #appLockOverlay .lock-bio-btn .lock-bio-icon {
       width: auto;
@@ -6331,6 +6331,7 @@
       font-size: 0.86rem;
       font-weight: 700;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
+      margin-top: 4px; /* lock-bio-label-space */
     }
     #appLockOverlay .lock-bio-btn:active .lock-bio-icon {
       box-shadow: none !important;
@@ -6599,23 +6600,26 @@
 
     
     /* شیفت متن و فلش ماه/سال به سمت همبرگر */
+    /* باکس ماه/سال جایش ثابت؛ فقط متن و فلش داخل باکس کمی به راست */
     #monthSelectWrap .dark-select-btn,
     #yearSelectWrap .dark-select-btn {
       justify-content: center !important;
-      padding-right: 22px !important;
-      padding-left: 22px !important;
-      transform: translateX(12px);
+      transform: none !important;
+      padding-right: 10px !important;
+      padding-left: 28px !important;
+    }
+    #monthSelectWrap .dark-select-btn > span,
+    #yearSelectWrap .dark-select-btn > span,
+    #monthSelectWrap .dark-select-btn .dark-select-label,
+    #yearSelectWrap .dark-select-btn .dark-select-label {
+      transform: translateX(8px);
+      display: inline-block;
     }
     #monthSelectWrap .dark-select-btn::after,
     #yearSelectWrap .dark-select-btn::after {
       left: 10px !important;
       right: auto !important;
-    }
-    #monthSelectWrap .dark-select-btn span,
-    #yearSelectWrap .dark-select-btn span,
-    #monthSelectWrap .dark-select-btn,
-    #yearSelectWrap .dark-select-btn {
-      text-align: center;
+      transform: translateX(6px) !important;
     }
 
     
@@ -6649,7 +6653,21 @@
     .user-remind-bar:not(.open-overlay) {
       overflow: visible !important;
     }
-    /* استروک طلایی — دقیقاً همان تکنیک یادآوری اقساط */
+    /* استروک طلایی — کپی دقیق تکنیک #remindBar (نقره‌ای→طلایی) */
+    .user-remind-bar:not(.open):not(.open-overlay) {
+      overflow: visible !important;
+      isolation: isolate !important;
+    }
+    #panel-home,
+    #panel-home.active,
+    .home-stack,
+    #homeStack {
+      overflow: visible !important;
+    }
+    #panel-home.active .home-cards {
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+    }
     .user-remind-bar:not(.open):not(.open-overlay)::before {
       content: '' !important;
       display: block !important;
@@ -6662,9 +6680,9 @@
         from var(--ur-spin, 0deg),
         transparent 0deg,
         transparent 250deg,
-        rgba(160, 120, 20, 0.2) 280deg,
+        rgba(184, 148, 31, 0.18) 280deg,
         #b8941f 310deg,
-        #d4b84a 330deg,
+        #e8d48b 330deg,
         #a67c00 350deg,
         transparent 360deg
       ) !important;
@@ -6759,6 +6777,13 @@
       flex-shrink: 0;
       transition: transform 0.25s ease;
       order: 1;
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+    .user-remind-bar-head .collapse-arrow path,
+    .user-remind-bar-head .collapse-arrow svg {
+      stroke: #ffffff !important;
+      color: #ffffff !important;
     }
     .user-remind-bar-head .ur-head-title { order: 2; }
     .user-remind-bar.open .collapse-arrow { transform: rotate(180deg); }
@@ -6963,7 +6988,7 @@
       <div class="home-stack" id="homeStack">
       <div class="user-remind-bar" id="userRemindBar" style="display:none;">
         <div class="user-remind-bar-head" onclick="toggleUserRemindBar(event)">
-          <svg class="collapse-arrow" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#f5d76e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          <svg class="collapse-arrow" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           <span class="ur-head-title">یادآورها</span>
           <button type="button" class="ur-dismiss" title="بستن" onclick="dismissUserRemindBar(event)">×</button>
         </div>
@@ -7330,7 +7355,7 @@
 
     
 
-    /* build-stamp: 2026-09-21-v70 | bio-gap lock-screen ur-overlay stroke card-r month-shift */
+    /* build-stamp: 2026-09-21-v71 | month-inner lock-always ur-stroke white-arrow bio-gap */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17378,9 +17403,14 @@ function openPdfPrintWindow(){
         try {
           var on = await lockIsEnabled();
           if (!on) return;
+          /* بعد از هر بار رفتن به پس‌زمینه / قفل صفحه، حتماً دوباره قفل */
+          if (!__lockUnlockedThisSession) {
+            await presentLockScreen();
+            return;
+          }
           var sec = await lockGetAutoLockSeconds();
-          var elapsed = (Date.now() - (__lockBgTs || Date.now())) / 1000;
-          /* قفل صفحه گوشی / خروج از اپ: بلافاصله یا پس از مهلت تنظیم‌شده */
+          var elapsed = (Date.now() - (__lockBgTs || 0)) / 1000;
+          if (!__lockBgTs) return;
           if (sec <= 0 || elapsed >= sec) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();
@@ -17389,12 +17419,14 @@ function openPdfPrintWindow(){
       }
       function markBackground() {
         __lockBgTs = Date.now();
+        /* هر خروج از پیش‌زمینه → نشست باز شده باطل شود تا با برگشت قفل بیاید */
         try {
-          /* اگر قفل خودکار «بلافاصله» است، پرچم قفل برای بازگشت */
-          lockGetAutoLockSeconds().then(function(sec) {
-            if (sec <= 0) __lockUnlockedThisSession = false;
+          lockIsEnabled().then(function(on) {
+            if (on) __lockUnlockedThisSession = false;
           }).catch(function(){});
-        } catch (e) {}
+        } catch (e) {
+          __lockUnlockedThisSession = false;
+        }
       }
       document.addEventListener('visibilitychange', async function() {
         try {
@@ -17418,21 +17450,14 @@ function openPdfPrintWindow(){
               }
             } catch (e) {}
           });
-          /* برخی دستگاه‌ها فقط pause/resume می‌دهند */
-          try {
-            App.addListener('pause', function() { markBackground(); });
-          } catch (eP) {}
-          try {
-            App.addListener('resume', async function() { await maybeLockAfterBackground(); });
-          } catch (eR) {}
+          try { App.addListener('pause', function() { markBackground(); }); } catch (eP) {}
+          try { App.addListener('resume', async function() { await maybeLockAfterBackground(); }); } catch (eR) {}
         }
       } catch (e) {}
-      /* صفحه خاموش / قفل گوشی گاهی فقط pagehide می‌دهد */
       window.addEventListener('pagehide', function() { markBackground(); }, true);
       window.addEventListener('pageshow', async function() { await maybeLockAfterBackground(); }, true);
-      window.addEventListener('blur', function() {
-        try { if (document.visibilityState === 'hidden') markBackground(); } catch (e) {}
-      }, true);
+      document.addEventListener('freeze', function() { markBackground(); }, true);
+      document.addEventListener('resume', async function() { await maybeLockAfterBackground(); }, true);
     }
 
     // Gate app start: if lock off → no change; if on → overlay first
