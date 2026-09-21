@@ -607,8 +607,14 @@ public class NativeFileExportPlugin extends Plugin {
 
 const appLockPlugin=`package ${pkg};
 
+import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.PowerManager;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -630,9 +636,74 @@ public class AppLockPlugin extends Plugin {
   static final String K_BIO = "bio_enabled";
   static final String K_LEN = "pin_len";
   static final String K_AUTO = "auto_lock_sec";
+  /** فقط وقتی صفحه گوشی واقعاً خاموش/قفل شده — مستقل از onPause تعویض اپ */
+  static final String K_WAS_LOCKED = "device_was_locked";
+
+  private BroadcastReceiver screenOffReceiver;
 
   private SharedPreferences sp() {
     return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+  }
+
+  private void markDeviceLocked() {
+    try { sp().edit().putBoolean(K_WAS_LOCKED, true).apply(); } catch (Exception ignored) {}
+  }
+
+  private boolean isScreenOff() {
+    try {
+      PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+      if (pm != null && !pm.isInteractive()) return true;
+    } catch (Exception ignored) {}
+    return false;
+  }
+
+  private boolean isKeyguardLockedNow() {
+    try {
+      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+      if (km != null && km.isKeyguardLocked()) return true;
+    } catch (Exception ignored) {}
+    return false;
+  }
+
+  @Override
+  public void load() {
+    super.load();
+    try {
+      if (screenOffReceiver == null) {
+        screenOffReceiver = new BroadcastReceiver() {
+          @Override public void onReceive(Context context, Intent intent) {
+            if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+              markDeviceLocked();
+            }
+          }
+        };
+        IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        Context appCtx = getContext().getApplicationContext();
+        if (Build.VERSION.SDK_INT >= 33) {
+          appCtx.registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+          appCtx.registerReceiver(screenOffReceiver, f);
+        }
+      }
+    } catch (Exception ignored) {}
+  }
+
+  @Override
+  protected void handleOnPause() {
+    super.handleOnPause();
+    // تعویض اپ → صفحه روشن → هیچ DEVICE_LOCK
+    // قفل صفحه → صفحه خاموش یا keyguard → DEVICE_LOCK
+    if (isScreenOff() || isKeyguardLockedNow()) {
+      markDeviceLocked();
+    }
+  }
+
+  @Override
+  protected void handleOnStop() {
+    super.handleOnStop();
+    if (isScreenOff() || isKeyguardLockedNow()) {
+      markDeviceLocked();
+    }
   }
 
   private static String toHex(byte[] b) {
@@ -686,9 +757,9 @@ public class AppLockPlugin extends Plugin {
       new SecureRandom().nextBytes(salt);
       String hash = sha256(pin, salt);
       sp().edit()
-        .putBoolean(K_ENABLED, true)
         .putString(K_HASH, hash)
         .putString(K_SALT, toHex(salt))
+        .putBoolean(K_ENABLED, true)
         .putInt(K_LEN, pin.length())
         .apply();
       call.resolve(new JSObject().put("ok", true));
@@ -703,14 +774,14 @@ public class AppLockPlugin extends Plugin {
       String pin = call.getString("pin", "");
       if (pin == null) pin = "";
       pin = pin.replaceAll("[^0-9]", "");
-      String saltHex = sp().getString(K_SALT, null);
       String hash = sp().getString(K_HASH, null);
-      if (saltHex == null || hash == null) {
+      String saltHex = sp().getString(K_SALT, null);
+      if (hash == null || saltHex == null) {
         call.resolve(new JSObject().put("ok", false));
         return;
       }
-      String got = sha256(pin, fromHex(saltHex));
-      call.resolve(new JSObject().put("ok", got.equals(hash)));
+      String h = sha256(pin, fromHex(saltHex));
+      call.resolve(new JSObject().put("ok", hash.equals(h)));
     } catch (Exception e) {
       call.resolve(new JSObject().put("ok", false));
     }
@@ -729,9 +800,9 @@ public class AppLockPlugin extends Plugin {
 
   @com.getcapacitor.PluginMethod
   public void setBiometricEnabled(PluginCall call) {
-    boolean en = false;
-    try { Boolean b = call.getBoolean("enabled", false); if (b != null) en = b; } catch (Exception ignored) {}
-    sp().edit().putBoolean(K_BIO, en).apply();
+    boolean on = false;
+    try { Boolean v = call.getBoolean("enabled", false); if (v != null) on = v; } catch (Exception ignored) {}
+    sp().edit().putBoolean(K_BIO, on).apply();
     call.resolve(new JSObject().put("ok", true));
   }
 
@@ -746,6 +817,22 @@ public class AppLockPlugin extends Plugin {
     try { Integer v = call.getInt("seconds", 0); if (v != null) sec = v; } catch (Exception ignored) {}
     sp().edit().putInt(K_AUTO, sec).apply();
     call.resolve(new JSObject().put("ok", true));
+  }
+
+  /** فقط flag مربوط به DEVICE_LOCK را برمی‌گرداند و پاک می‌کند — مستقل از TIMEOUT و APP_EXIT */
+  @com.getcapacitor.PluginMethod
+  public void consumeDeviceLockedFlag(PluginCall call) {
+    boolean was = false;
+    try {
+      was = sp().getBoolean(K_WAS_LOCKED, false);
+      sp().edit().putBoolean(K_WAS_LOCKED, false).apply();
+    } catch (Exception ignored) {}
+    call.resolve(new JSObject().put("wasLocked", was));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void isDeviceLocked(PluginCall call) {
+    call.resolve(new JSObject().put("locked", isScreenOff() || isKeyguardLockedNow()));
   }
 
   @com.getcapacitor.PluginMethod
