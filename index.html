@@ -6289,7 +6289,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 22px;
+      gap: 32px;
     }
     #appLockOverlay .lock-bio-btn .lock-bio-icon {
       width: auto;
@@ -6331,7 +6331,7 @@
       font-size: 0.86rem;
       font-weight: 700;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
-      margin-top: 4px; /* lock-bio-label-space */
+      margin-top: 8px; /* lock-bio-label-space */
     }
     #appLockOverlay .lock-bio-btn:active .lock-bio-icon {
       box-shadow: none !important;
@@ -6600,26 +6600,27 @@
 
     
     /* شیفت متن و فلش ماه/سال به سمت همبرگر */
-    /* باکس ماه/سال جایش ثابت؛ فقط متن و فلش داخل باکس کمی به راست */
+    /* باکس ماه/سال جایش ثابت؛ متن و فلش داخل باکس بیشتر به راست + فلش کمی بالاتر */
     #monthSelectWrap .dark-select-btn,
     #yearSelectWrap .dark-select-btn {
       justify-content: center !important;
       transform: none !important;
-      padding-right: 10px !important;
-      padding-left: 28px !important;
+      padding-right: 6px !important;
+      padding-left: 30px !important;
     }
     #monthSelectWrap .dark-select-btn > span,
     #yearSelectWrap .dark-select-btn > span,
     #monthSelectWrap .dark-select-btn .dark-select-label,
     #yearSelectWrap .dark-select-btn .dark-select-label {
-      transform: translateX(8px);
+      transform: translateX(14px);
       display: inline-block;
     }
     #monthSelectWrap .dark-select-btn::after,
     #yearSelectWrap .dark-select-btn::after {
       left: 10px !important;
       right: auto !important;
-      transform: translateX(6px) !important;
+      top: 42% !important;
+      transform: translateX(10px) translateY(-50%) !important;
     }
 
     
@@ -6653,26 +6654,17 @@
     .user-remind-bar:not(.open-overlay) {
       overflow: visible !important;
     }
-    /* استروک طلایی — کپی دقیق تکنیک #remindBar (نقره‌ای→طلایی) */
+    /* استروک طلایی داخل باکس (نه بیرون) تا overflow والد نبرد */
     .user-remind-bar:not(.open):not(.open-overlay) {
-      overflow: visible !important;
+      overflow: hidden !important;
       isolation: isolate !important;
-    }
-    #panel-home,
-    #panel-home.active,
-    .home-stack,
-    #homeStack {
-      overflow: visible !important;
-    }
-    #panel-home.active .home-cards {
-      overflow-x: auto !important;
-      overflow-y: hidden !important;
+      position: relative !important;
     }
     .user-remind-bar:not(.open):not(.open-overlay)::before {
       content: '' !important;
       display: block !important;
       position: absolute !important;
-      inset: -2px !important;
+      inset: 0 !important;
       border-radius: inherit !important;
       padding: 2px !important;
       box-sizing: border-box !important;
@@ -6680,7 +6672,7 @@
         from var(--ur-spin, 0deg),
         transparent 0deg,
         transparent 250deg,
-        rgba(184, 148, 31, 0.18) 280deg,
+        rgba(184, 148, 31, 0.22) 280deg,
         #b8941f 310deg,
         #e8d48b 330deg,
         #a67c00 350deg,
@@ -7355,7 +7347,7 @@
 
     
 
-    /* build-stamp: 2026-09-21-v71 | month-inner lock-always ur-stroke white-arrow bio-gap */
+    /* build-stamp: 2026-09-21-v72 | lock-selective stroke-inside bio-lower month */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -16836,6 +16828,23 @@ function openPdfPrintWindow(){
       try { localStorage.setItem('hk_sec_meta', JSON.stringify(o || {})); } catch (e) {}
     }
 
+    async function lockConsumeDeviceLockedFlag() {
+      var p = getAppLockPlugin();
+      if (p && p.consumeDeviceLockedFlag) {
+        try {
+          var r = await p.consumeDeviceLockedFlag();
+          return !!(r && r.wasLocked);
+        } catch (e) { return false; }
+      }
+      try {
+        var v = sessionStorage.getItem('hk_device_was_locked');
+        sessionStorage.removeItem('hk_device_was_locked');
+        return v === '1';
+      } catch (e2) { return false; }
+    }
+    function lockMarkDeviceLockedWeb() {
+      try { sessionStorage.setItem('hk_device_was_locked', '1'); } catch (e) {}
+    }
     async function lockIsEnabled() {
       var p = getAppLockPlugin();
       if (p && p.isEnabled) {
@@ -17399,19 +17408,29 @@ function openPdfPrintWindow(){
     function bindAppLockLifecycle() {
       if (window._appLockLifecycleBound) return;
       window._appLockLifecycleBound = true;
+      /**
+       * قفل فقط وقتی:
+       * 1) صفحه گوشی قفل/خاموش شده باشد
+       * 2) مهلت قفل خودکار گذشته باشد
+       * 3) اپ کامل بسته شده باشد (cold start → ensureAppUnlocked)
+       * تعویض کوتاه به اپ دیگر بدون گذشت مهلت → قفل نشود
+       */
       async function maybeLockAfterBackground() {
         try {
           var on = await lockIsEnabled();
           if (!on) return;
-          /* بعد از هر بار رفتن به پس‌زمینه / قفل صفحه، حتماً دوباره قفل */
-          if (!__lockUnlockedThisSession) {
+          var wasLocked = false;
+          try { wasLocked = await lockConsumeDeviceLockedFlag(); } catch (eL) { wasLocked = false; }
+          if (wasLocked) {
+            __lockUnlockedThisSession = false;
             await presentLockScreen();
             return;
           }
           var sec = await lockGetAutoLockSeconds();
-          var elapsed = (Date.now() - (__lockBgTs || 0)) / 1000;
           if (!__lockBgTs) return;
-          if (sec <= 0 || elapsed >= sec) {
+          var elapsed = (Date.now() - __lockBgTs) / 1000;
+          /* sec<=0 یعنی «بلافاصله» فقط برای خروج کامل / قفل صفحه — نه تعویض اپ */
+          if (sec > 0 && elapsed >= sec) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();
           }
@@ -17419,14 +17438,6 @@ function openPdfPrintWindow(){
       }
       function markBackground() {
         __lockBgTs = Date.now();
-        /* هر خروج از پیش‌زمینه → نشست باز شده باطل شود تا با برگشت قفل بیاید */
-        try {
-          lockIsEnabled().then(function(on) {
-            if (on) __lockUnlockedThisSession = false;
-          }).catch(function(){});
-        } catch (e) {
-          __lockUnlockedThisSession = false;
-        }
       }
       document.addEventListener('visibilitychange', async function() {
         try {
@@ -17454,10 +17465,22 @@ function openPdfPrintWindow(){
           try { App.addListener('resume', async function() { await maybeLockAfterBackground(); }); } catch (eR) {}
         }
       } catch (e) {}
-      window.addEventListener('pagehide', function() { markBackground(); }, true);
+      /* وب/مرورگر: تقریبی برای خاموشی صفحه */
+      try {
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        }
+      } catch (eMq) {}
+      window.addEventListener('pagehide', function(ev) {
+        markBackground();
+        /* خروج کامل از سند */
+        try {
+          if (ev && ev.persisted === false) {
+            /* ممکن است بستن تب باشد — cold start جداگانه قفل می‌کند */
+          }
+        } catch (e) {}
+      }, true);
       window.addEventListener('pageshow', async function() { await maybeLockAfterBackground(); }, true);
-      document.addEventListener('freeze', function() { markBackground(); }, true);
-      document.addEventListener('resume', async function() { await maybeLockAfterBackground(); }, true);
     }
 
     // Gate app start: if lock off → no change; if on → overlay first

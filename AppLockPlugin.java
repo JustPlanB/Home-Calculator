@@ -1,7 +1,12 @@
 package ir.hesabketab.app;
 
+import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -23,9 +28,68 @@ public class AppLockPlugin extends Plugin {
   static final String K_BIO = "bio_enabled";
   static final String K_LEN = "pin_len";
   static final String K_AUTO = "auto_lock_sec";
+  static final String K_WAS_LOCKED = "device_was_locked";
+
+  private BroadcastReceiver screenOffReceiver;
 
   private SharedPreferences sp() {
     return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+  }
+
+  private void markDeviceLocked() {
+    try { sp().edit().putBoolean(K_WAS_LOCKED, true).apply(); } catch (Exception ignored) {}
+  }
+
+  @Override
+  public void load() {
+    super.load();
+    try {
+      screenOffReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+          if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+            markDeviceLocked();
+          }
+        }
+      };
+      IntentFilter f = new IntentFilter();
+      f.addAction(Intent.ACTION_SCREEN_OFF);
+      if (Build.VERSION.SDK_INT >= 33) {
+        getContext().registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+      } else {
+        getContext().registerReceiver(screenOffReceiver, f);
+      }
+    } catch (Exception ignored) {}
+  }
+
+  @Override
+  protected void handleOnPause() {
+    super.handleOnPause();
+    try {
+      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+      if (km != null && km.isKeyguardLocked()) {
+        markDeviceLocked();
+      }
+    } catch (Exception ignored) {}
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void consumeDeviceLockedFlag(PluginCall call) {
+    boolean was = false;
+    try {
+      was = sp().getBoolean(K_WAS_LOCKED, false);
+      sp().edit().putBoolean(K_WAS_LOCKED, false).apply();
+    } catch (Exception ignored) {}
+    call.resolve(new JSObject().put("wasLocked", was));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void isDeviceLocked(PluginCall call) {
+    boolean locked = false;
+    try {
+      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+      if (km != null) locked = km.isKeyguardLocked();
+    } catch (Exception ignored) {}
+    call.resolve(new JSObject().put("locked", locked));
   }
 
   private static String toHex(byte[] b) {
