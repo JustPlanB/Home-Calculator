@@ -7359,7 +7359,7 @@
 
     
 
-    /* build-stamp: 2026-09-21-v74 | lock-reasons-independent */
+    /* build-stamp: 2026-09-21-v75 | lock-3-reasons-idle-timeout */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17065,6 +17065,7 @@ function openPdfPrintWindow(){
       if (ok) {
         __lockFailCount = 0;
         __lockUnlockedThisSession = true;
+        try { lockNoteUserActivity(); } catch (eAct0) {}
         __lockPinBuffer = '';
         if (inp) inp.value = '';
         showAppLockOverlay(false);
@@ -17104,6 +17105,7 @@ function openPdfPrintWindow(){
         });
         if (r && r.ok) {
           __lockUnlockedThisSession = true;
+        try { lockNoteUserActivity(); } catch (eAct0) {}
           __lockFailCount = 0;
           showAppLockOverlay(false);
         } else {
@@ -17437,62 +17439,134 @@ function openPdfPrintWindow(){
      *   APP_EXIT    — فقط خروج با دبل‌بک (localStorage) یا cold start بدون نشست باز
      * تعویض اپ با صفحه روشن → فقط timestamp؛ بدون قفل.
      */
+    /**
+     * قفل — سه علت کاملاً مستقل:
+     *
+     * DEVICE_LOCK  فقط با SCREEN_OFF نیتیو (flag در SharedPreferences)
+     *              onPause / visibility / تعویض اپ به تنهایی هرگز قفل نمی‌کنند
+     *
+     * APP_EXIT     فقط با Double-Back → doAppExit (localStorage hk_lock_app_exit)
+     *
+     * TIMEOUT      فقط بی‌فعالیتی داخل خود اپ (آخرین لمس/کلیک)
+     *              رفتن به اپ دیگر زمان Timeout را به‌عنوان «خروج» حساب نمی‌کند
+     */
+    var __lockLastActivityTs = Date.now();
+    var __lockIdleTimer = null;
+
+    function lockNoteUserActivity() {
+      __lockLastActivityTs = Date.now();
+    }
+
     function bindAppLockLifecycle() {
       if (window._appLockLifecycleBound) return;
       window._appLockLifecycleBound = true;
 
-      async function evaluateLockReasons() {
+      /* ردیابی فعالیت کاربر فقط وقتی اپ در پیش‌زمینه است */
+      try {
+        ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(function(ev) {
+          document.addEventListener(ev, function() {
+            try {
+              if (document.visibilityState === 'visible') lockNoteUserActivity();
+            } catch (e) {}
+          }, true);
+        });
+      } catch (eAct) {}
+
+      async function lockForReason(reason) {
         try {
           var on = await lockIsEnabled();
           if (!on) return;
+          __lockUnlockedThisSession = false;
+          await presentLockScreen();
+        } catch (e) {}
+      }
 
-          // --- 1) DEVICE_LOCK (مستقل) ---
-          var deviceLock = false;
-          try { deviceLock = await lockConsumeDeviceLockedFlag(); } catch (e1) { deviceLock = false; }
-          if (deviceLock) {
-            __lockUnlockedThisSession = false;
-            await presentLockScreen();
-            return;
+      /** فقط DEVICE_LOCK از نیتیو — هیچ ربطی به background ندارد */
+      async function checkDeviceLockReason() {
+        try {
+          var on = await lockIsEnabled();
+          if (!on) return false;
+          var was = false;
+          try { was = await lockConsumeDeviceLockedFlag(); } catch (e) { was = false; }
+          if (was) {
+            await lockForReason('DEVICE_LOCK');
+            return true;
           }
+        } catch (e) {}
+        return false;
+      }
 
-          // --- 2) APP_EXIT (مستقل) ---
+      /** فقط APP_EXIT */
+      async function checkAppExitReason() {
+        try {
+          var on = await lockIsEnabled();
+          if (!on) return false;
           var appExit = false;
           try {
             appExit = localStorage.getItem('hk_lock_app_exit') === '1';
             if (appExit) localStorage.removeItem('hk_lock_app_exit');
-          } catch (e2) { appExit = false; }
+          } catch (e) { appExit = false; }
           if (appExit) {
-            __lockUnlockedThisSession = false;
-            await presentLockScreen();
-            return;
+            await lockForReason('APP_EXIT');
+            return true;
           }
-
-          // --- 3) TIMEOUT (مستقل) — فقط وقتی کاربر مهلت > 0 گذاشته ---
-          var sec = await lockGetAutoLockSeconds();
-          if (sec > 0 && __lockBgTs) {
-            var elapsed = (Date.now() - __lockBgTs) / 1000;
-            if (elapsed >= sec) {
-              __lockUnlockedThisSession = false;
-              await presentLockScreen();
-              return;
-            }
-          }
-          // تعویض اپ بدون DEVICE_LOCK و بدون TIMEOUT → هیچ قفلی
         } catch (e) {}
+        return false;
       }
 
-      function markBackgroundTimestampOnly() {
-        /* فقط زمان خروج از پیش‌زمینه — علت قفل نیست */
-        __lockBgTs = Date.now();
+      /** TIMEOUT فقط بر اساس آخرین فعالیت داخل اپ (نه زمان background) */
+      async function checkIdleTimeoutReason() {
+        try {
+          var on = await lockIsEnabled();
+          if (!on) return false;
+          /* اگر صفحه قفل اپ از قبل باز است کاری نکن */
+          var ov = document.getElementById('appLockOverlay');
+          if (ov && (ov.classList.contains('show') || ov.style.display === 'flex')) return false;
+          if (!__lockUnlockedThisSession) return false;
+          var sec = await lockGetAutoLockSeconds();
+          if (!(sec > 0)) return false;
+          var idle = (Date.now() - (__lockLastActivityTs || Date.now())) / 1000;
+          if (idle >= sec) {
+            await lockForReason('TIMEOUT');
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      function startIdleWatch() {
+        if (__lockIdleTimer) return;
+        __lockIdleTimer = setInterval(function() {
+          try {
+            if (document.visibilityState !== 'visible') return;
+            checkIdleTimeoutReason();
+          } catch (e) {}
+        }, 4000);
+      }
+      startIdleWatch();
+
+      /**
+       * resume / visible:
+       * 1) DEVICE_LOCK؟
+       * 2) APP_EXIT؟
+       * 3) هرگز صرفاً به‌خاطر background قفل نکن
+       * TIMEOUT فقط با idle timer جداگانه
+       */
+      async function onAppForeground() {
+        try {
+          if (await checkDeviceLockReason()) return;
+          if (await checkAppExitReason()) return;
+          /* تعویض اپ / Home → اینجا قفل نمی‌شود */
+          lockNoteUserActivity();
+        } catch (e) {}
       }
 
       document.addEventListener('visibilitychange', async function() {
         try {
-          if (document.visibilityState === 'hidden') {
-            markBackgroundTimestampOnly();
-          } else if (document.visibilityState === 'visible') {
-            await evaluateLockReasons();
+          if (document.visibilityState === 'visible') {
+            await onAppForeground();
           }
+          /* hidden: هیچ lockReason ست نکن — فقط background */
         } catch (e) {}
       }, true);
 
@@ -17502,15 +17576,16 @@ function openPdfPrintWindow(){
           App.addListener('appStateChange', async function(state) {
             try {
               if (!state) return;
-              if (!state.isActive) {
-                markBackgroundTimestampOnly();
-              } else {
-                await evaluateLockReasons();
+              if (state.isActive) {
+                await onAppForeground();
               }
+              /* isActive=false → فقط background؛ قفل نه */
             } catch (e) {}
           });
-          try { App.addListener('pause', function() { markBackgroundTimestampOnly(); }); } catch (eP) {}
-          try { App.addListener('resume', async function() { await evaluateLockReasons(); }); } catch (eR) {}
+          try {
+            App.addListener('resume', async function() { await onAppForeground(); });
+          } catch (eR) {}
+          /* pause عمداً هیچ flag قفلی نمی‌گذارد */
         }
       } catch (e) {}
     }
