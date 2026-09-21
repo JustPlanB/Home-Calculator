@@ -6619,7 +6619,7 @@
     #yearSelectWrap .dark-select-btn::after {
       left: 10px !important;
       right: auto !important;
-      top: 42% !important;
+      top: 56% !important;
       transform: translateX(10px) translateY(-50%) !important;
     }
 
@@ -6825,15 +6825,8 @@
     }
 
   
-    /* remind head compact v69 */
-    #remindBar.remind-bar:not(.open):not(.open-overlay) .remind-bar-head,
-    .remind-bar:not(.open):not(.open-overlay) .remind-bar-head {
-      padding: 7px 12px !important;
-      min-height: 0 !important;
-    }
+    /* remind head compact — see unified height block */
     .user-remind-bar-head {
-      padding: 7px 12px !important;
-      min-height: 0 !important;
       font-size: 0.88rem !important;
     }
     .user-remind-bar-head .ur-dismiss {
@@ -6842,6 +6835,25 @@
       min-width: 24px !important;
       min-height: 24px !important;
       font-size: 1.1rem !important;
+    }
+
+  
+    /* ارتفاع یکسان باکس یادآوری اقساط و یادآورها (حالت بسته) */
+    #remindBar.remind-bar:not(.open):not(.open-overlay) .remind-bar-head,
+    .remind-bar:not(.open):not(.open-overlay) .remind-bar-head,
+    .user-remind-bar:not(.open):not(.open-overlay) .user-remind-bar-head {
+      padding: 8px 12px !important;
+      min-height: 40px !important;
+      height: 40px !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .user-remind-bar:not(.open):not(.open-overlay) {
+      min-height: 40px !important;
+    }
+    #remindBar.remind-bar:not(.open):not(.open-overlay) {
+      min-height: 40px !important;
     }
 
   </style>
@@ -7347,7 +7359,7 @@
 
     
 
-    /* build-stamp: 2026-09-21-v72 | lock-selective stroke-inside bio-lower month */
+    /* build-stamp: 2026-09-21-v73 | equal-remind-h lock-screen-off arrow-down */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17421,6 +17433,16 @@ function openPdfPrintWindow(){
           if (!on) return;
           var wasLocked = false;
           try { wasLocked = await lockConsumeDeviceLockedFlag(); } catch (eL) { wasLocked = false; }
+          /* پشتیبان: اگر پلاگین isDeviceLocked داشت و هنوز قفل است */
+          if (!wasLocked) {
+            try {
+              var p = getAppLockPlugin();
+              if (p && p.isDeviceLocked) {
+                var r = await p.isDeviceLocked();
+                if (r && r.locked) wasLocked = true;
+              }
+            } catch (e2) {}
+          }
           if (wasLocked) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();
@@ -17429,7 +17451,7 @@ function openPdfPrintWindow(){
           var sec = await lockGetAutoLockSeconds();
           if (!__lockBgTs) return;
           var elapsed = (Date.now() - __lockBgTs) / 1000;
-          /* sec<=0 یعنی «بلافاصله» فقط برای خروج کامل / قفل صفحه — نه تعویض اپ */
+          /* sec<=0 فقط خروج کامل (cold start) — نه تعویض اپ */
           if (sec > 0 && elapsed >= sec) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();

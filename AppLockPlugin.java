@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.PowerManager;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -40,23 +41,37 @@ public class AppLockPlugin extends Plugin {
     try { sp().edit().putBoolean(K_WAS_LOCKED, true).apply(); } catch (Exception ignored) {}
   }
 
+  /** صفحه خاموش است یا کلیدگارد قفل است؟ */
+  private boolean isScreenOffOrKeyguard() {
+    try {
+      PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+      if (pm != null && !pm.isInteractive()) return true;
+    } catch (Exception ignored) {}
+    try {
+      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+      if (km != null && km.isKeyguardLocked()) return true;
+    } catch (Exception ignored) {}
+    return false;
+  }
+
   @Override
   public void load() {
     super.load();
     try {
-      screenOffReceiver = new BroadcastReceiver() {
-        @Override public void onReceive(Context context, Intent intent) {
-          if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-            markDeviceLocked();
+      if (screenOffReceiver == null) {
+        screenOffReceiver = new BroadcastReceiver() {
+          @Override public void onReceive(Context context, Intent intent) {
+            if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+              markDeviceLocked();
+            }
           }
+        };
+        IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        if (Build.VERSION.SDK_INT >= 33) {
+          getContext().registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+          getContext().registerReceiver(screenOffReceiver, f);
         }
-      };
-      IntentFilter f = new IntentFilter();
-      f.addAction(Intent.ACTION_SCREEN_OFF);
-      if (Build.VERSION.SDK_INT >= 33) {
-        getContext().registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
-      } else {
-        getContext().registerReceiver(screenOffReceiver, f);
       }
     } catch (Exception ignored) {}
   }
@@ -64,32 +79,18 @@ public class AppLockPlugin extends Plugin {
   @Override
   protected void handleOnPause() {
     super.handleOnPause();
-    try {
-      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
-      if (km != null && km.isKeyguardLocked()) {
-        markDeviceLocked();
-      }
-    } catch (Exception ignored) {}
+    /* فقط اگر صفحه خاموش/قفل باشد علامت بزن — تعویض اپ با صفحه روشن علامت نمی‌خورد */
+    if (isScreenOffOrKeyguard()) {
+      markDeviceLocked();
+    }
   }
 
-  @com.getcapacitor.PluginMethod
-  public void consumeDeviceLockedFlag(PluginCall call) {
-    boolean was = false;
-    try {
-      was = sp().getBoolean(K_WAS_LOCKED, false);
-      sp().edit().putBoolean(K_WAS_LOCKED, false).apply();
-    } catch (Exception ignored) {}
-    call.resolve(new JSObject().put("wasLocked", was));
-  }
-
-  @com.getcapacitor.PluginMethod
-  public void isDeviceLocked(PluginCall call) {
-    boolean locked = false;
-    try {
-      KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
-      if (km != null) locked = km.isKeyguardLocked();
-    } catch (Exception ignored) {}
-    call.resolve(new JSObject().put("locked", locked));
+  @Override
+  protected void handleOnStop() {
+    super.handleOnStop();
+    if (isScreenOffOrKeyguard()) {
+      markDeviceLocked();
+    }
   }
 
   private static String toHex(byte[] b) {
@@ -143,9 +144,9 @@ public class AppLockPlugin extends Plugin {
       new SecureRandom().nextBytes(salt);
       String hash = sha256(pin, salt);
       sp().edit()
-        .putBoolean(K_ENABLED, true)
         .putString(K_HASH, hash)
         .putString(K_SALT, toHex(salt))
+        .putBoolean(K_ENABLED, true)
         .putInt(K_LEN, pin.length())
         .apply();
       call.resolve(new JSObject().put("ok", true));
@@ -160,14 +161,14 @@ public class AppLockPlugin extends Plugin {
       String pin = call.getString("pin", "");
       if (pin == null) pin = "";
       pin = pin.replaceAll("[^0-9]", "");
-      String saltHex = sp().getString(K_SALT, null);
       String hash = sp().getString(K_HASH, null);
-      if (saltHex == null || hash == null) {
+      String saltHex = sp().getString(K_SALT, null);
+      if (hash == null || saltHex == null) {
         call.resolve(new JSObject().put("ok", false));
         return;
       }
-      String got = sha256(pin, fromHex(saltHex));
-      call.resolve(new JSObject().put("ok", got.equals(hash)));
+      String h = sha256(pin, fromHex(saltHex));
+      call.resolve(new JSObject().put("ok", hash.equals(h)));
     } catch (Exception e) {
       call.resolve(new JSObject().put("ok", false));
     }
@@ -186,9 +187,9 @@ public class AppLockPlugin extends Plugin {
 
   @com.getcapacitor.PluginMethod
   public void setBiometricEnabled(PluginCall call) {
-    boolean en = false;
-    try { Boolean b = call.getBoolean("enabled", false); if (b != null) en = b; } catch (Exception ignored) {}
-    sp().edit().putBoolean(K_BIO, en).apply();
+    boolean on = false;
+    try { Boolean v = call.getBoolean("enabled", false); if (v != null) on = v; } catch (Exception ignored) {}
+    sp().edit().putBoolean(K_BIO, on).apply();
     call.resolve(new JSObject().put("ok", true));
   }
 
@@ -203,6 +204,23 @@ public class AppLockPlugin extends Plugin {
     try { Integer v = call.getInt("seconds", 0); if (v != null) sec = v; } catch (Exception ignored) {}
     sp().edit().putInt(K_AUTO, sec).apply();
     call.resolve(new JSObject().put("ok", true));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void consumeDeviceLockedFlag(PluginCall call) {
+    boolean was = false;
+    try {
+      was = sp().getBoolean(K_WAS_LOCKED, false);
+      /* اگر هنوز صفحه خاموش/قفل است هم true */
+      if (!was && isScreenOffOrKeyguard()) was = true;
+      sp().edit().putBoolean(K_WAS_LOCKED, false).apply();
+    } catch (Exception ignored) {}
+    call.resolve(new JSObject().put("wasLocked", was));
+  }
+
+  @com.getcapacitor.PluginMethod
+  public void isDeviceLocked(PluginCall call) {
+    call.resolve(new JSObject().put("locked", isScreenOffOrKeyguard()));
   }
 
   @com.getcapacitor.PluginMethod
