@@ -7359,7 +7359,7 @@
 
     
 
-    /* build-stamp: 2026-09-21-v73 | equal-remind-h lock-screen-off arrow-down */
+    /* build-stamp: 2026-09-21-v74 | lock-reasons-independent */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17173,6 +17173,19 @@ function openPdfPrintWindow(){
           showAppLockOverlay(false);
           return true;
         }
+        /* APP_EXIT از نشست قبلی */
+        try {
+          if (localStorage.getItem('hk_lock_app_exit') === '1') {
+            localStorage.removeItem('hk_lock_app_exit');
+            __lockUnlockedThisSession = false;
+          }
+        } catch (eX) {}
+        /* DEVICE_LOCK از قبل از کشته شدن پروسس */
+        try {
+          if (await lockConsumeDeviceLockedFlag()) {
+            __lockUnlockedThisSession = false;
+          }
+        } catch (eD) {}
         if (__lockUnlockedThisSession) {
           showAppLockOverlay(false);
           return true;
@@ -17417,59 +17430,72 @@ function openPdfPrintWindow(){
       showToast('قفل خودکار ذخیره شد');
     }
 
+    /**
+     * سه علت مستقل قفل (هرگز با onPause خالی قاطی نشوند):
+     *   DEVICE_LOCK — فقط خاموش/قفل شدن صفحه گوشی (flag نیتیو)
+     *   TIMEOUT     — فقط اگر sec>0 و elapsed >= sec
+     *   APP_EXIT    — فقط خروج با دبل‌بک (localStorage) یا cold start بدون نشست باز
+     * تعویض اپ با صفحه روشن → فقط timestamp؛ بدون قفل.
+     */
     function bindAppLockLifecycle() {
       if (window._appLockLifecycleBound) return;
       window._appLockLifecycleBound = true;
-      /**
-       * قفل فقط وقتی:
-       * 1) صفحه گوشی قفل/خاموش شده باشد
-       * 2) مهلت قفل خودکار گذشته باشد
-       * 3) اپ کامل بسته شده باشد (cold start → ensureAppUnlocked)
-       * تعویض کوتاه به اپ دیگر بدون گذشت مهلت → قفل نشود
-       */
-      async function maybeLockAfterBackground() {
+
+      async function evaluateLockReasons() {
         try {
           var on = await lockIsEnabled();
           if (!on) return;
-          var wasLocked = false;
-          try { wasLocked = await lockConsumeDeviceLockedFlag(); } catch (eL) { wasLocked = false; }
-          /* پشتیبان: اگر پلاگین isDeviceLocked داشت و هنوز قفل است */
-          if (!wasLocked) {
-            try {
-              var p = getAppLockPlugin();
-              if (p && p.isDeviceLocked) {
-                var r = await p.isDeviceLocked();
-                if (r && r.locked) wasLocked = true;
-              }
-            } catch (e2) {}
-          }
-          if (wasLocked) {
+
+          // --- 1) DEVICE_LOCK (مستقل) ---
+          var deviceLock = false;
+          try { deviceLock = await lockConsumeDeviceLockedFlag(); } catch (e1) { deviceLock = false; }
+          if (deviceLock) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();
             return;
           }
-          var sec = await lockGetAutoLockSeconds();
-          if (!__lockBgTs) return;
-          var elapsed = (Date.now() - __lockBgTs) / 1000;
-          /* sec<=0 فقط خروج کامل (cold start) — نه تعویض اپ */
-          if (sec > 0 && elapsed >= sec) {
+
+          // --- 2) APP_EXIT (مستقل) ---
+          var appExit = false;
+          try {
+            appExit = localStorage.getItem('hk_lock_app_exit') === '1';
+            if (appExit) localStorage.removeItem('hk_lock_app_exit');
+          } catch (e2) { appExit = false; }
+          if (appExit) {
             __lockUnlockedThisSession = false;
             await presentLockScreen();
+            return;
           }
+
+          // --- 3) TIMEOUT (مستقل) — فقط وقتی کاربر مهلت > 0 گذاشته ---
+          var sec = await lockGetAutoLockSeconds();
+          if (sec > 0 && __lockBgTs) {
+            var elapsed = (Date.now() - __lockBgTs) / 1000;
+            if (elapsed >= sec) {
+              __lockUnlockedThisSession = false;
+              await presentLockScreen();
+              return;
+            }
+          }
+          // تعویض اپ بدون DEVICE_LOCK و بدون TIMEOUT → هیچ قفلی
         } catch (e) {}
       }
-      function markBackground() {
+
+      function markBackgroundTimestampOnly() {
+        /* فقط زمان خروج از پیش‌زمینه — علت قفل نیست */
         __lockBgTs = Date.now();
       }
+
       document.addEventListener('visibilitychange', async function() {
         try {
           if (document.visibilityState === 'hidden') {
-            markBackground();
+            markBackgroundTimestampOnly();
           } else if (document.visibilityState === 'visible') {
-            await maybeLockAfterBackground();
+            await evaluateLockReasons();
           }
         } catch (e) {}
       }, true);
+
       try {
         var C = window.Capacitor, plugins = C && C.Plugins, App = plugins && plugins.App;
         if (App && App.addListener) {
@@ -17477,32 +17503,16 @@ function openPdfPrintWindow(){
             try {
               if (!state) return;
               if (!state.isActive) {
-                markBackground();
+                markBackgroundTimestampOnly();
               } else {
-                await maybeLockAfterBackground();
+                await evaluateLockReasons();
               }
             } catch (e) {}
           });
-          try { App.addListener('pause', function() { markBackground(); }); } catch (eP) {}
-          try { App.addListener('resume', async function() { await maybeLockAfterBackground(); }); } catch (eR) {}
+          try { App.addListener('pause', function() { markBackgroundTimestampOnly(); }); } catch (eP) {}
+          try { App.addListener('resume', async function() { await evaluateLockReasons(); }); } catch (eR) {}
         }
       } catch (e) {}
-      /* وب/مرورگر: تقریبی برای خاموشی صفحه */
-      try {
-        if (window.matchMedia) {
-          var mq = window.matchMedia('(prefers-color-scheme: dark)');
-        }
-      } catch (eMq) {}
-      window.addEventListener('pagehide', function(ev) {
-        markBackground();
-        /* خروج کامل از سند */
-        try {
-          if (ev && ev.persisted === false) {
-            /* ممکن است بستن تب باشد — cold start جداگانه قفل می‌کند */
-          }
-        } catch (e) {}
-      }, true);
-      window.addEventListener('pageshow', async function() { await maybeLockAfterBackground(); }, true);
     }
 
     // Gate app start: if lock off → no change; if on → overlay first
@@ -21740,6 +21750,10 @@ field('حساب بانکی', accSelRec);
     }
 
     function doAppExit(){
+      try { localStorage.setItem('hk_lock_app_exit', '1'); } catch (e0) {}
+      try {
+        __lockUnlockedThisSession = false;
+      } catch (e1) {}
       try{
         const C=window.Capacitor, plugins=C&&C.Plugins, App=plugins&&plugins.App;
         if(App && typeof App.exitApp==='function'){ App.exitApp(); return; }

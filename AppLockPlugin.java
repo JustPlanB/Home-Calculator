@@ -29,6 +29,7 @@ public class AppLockPlugin extends Plugin {
   static final String K_BIO = "bio_enabled";
   static final String K_LEN = "pin_len";
   static final String K_AUTO = "auto_lock_sec";
+  /** فقط وقتی صفحه گوشی واقعاً خاموش/قفل شده — مستقل از onPause تعویض اپ */
   static final String K_WAS_LOCKED = "device_was_locked";
 
   private BroadcastReceiver screenOffReceiver;
@@ -41,12 +42,15 @@ public class AppLockPlugin extends Plugin {
     try { sp().edit().putBoolean(K_WAS_LOCKED, true).apply(); } catch (Exception ignored) {}
   }
 
-  /** صفحه خاموش است یا کلیدگارد قفل است؟ */
-  private boolean isScreenOffOrKeyguard() {
+  private boolean isScreenOff() {
     try {
       PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
       if (pm != null && !pm.isInteractive()) return true;
     } catch (Exception ignored) {}
+    return false;
+  }
+
+  private boolean isKeyguardLockedNow() {
     try {
       KeyguardManager km = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
       if (km != null && km.isKeyguardLocked()) return true;
@@ -67,10 +71,11 @@ public class AppLockPlugin extends Plugin {
           }
         };
         IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        Context appCtx = getContext().getApplicationContext();
         if (Build.VERSION.SDK_INT >= 33) {
-          getContext().registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+          appCtx.registerReceiver(screenOffReceiver, f, Context.RECEIVER_NOT_EXPORTED);
         } else {
-          getContext().registerReceiver(screenOffReceiver, f);
+          appCtx.registerReceiver(screenOffReceiver, f);
         }
       }
     } catch (Exception ignored) {}
@@ -79,8 +84,9 @@ public class AppLockPlugin extends Plugin {
   @Override
   protected void handleOnPause() {
     super.handleOnPause();
-    /* فقط اگر صفحه خاموش/قفل باشد علامت بزن — تعویض اپ با صفحه روشن علامت نمی‌خورد */
-    if (isScreenOffOrKeyguard()) {
+    // تعویض اپ → صفحه روشن → هیچ DEVICE_LOCK
+    // قفل صفحه → صفحه خاموش یا keyguard → DEVICE_LOCK
+    if (isScreenOff() || isKeyguardLockedNow()) {
       markDeviceLocked();
     }
   }
@@ -88,7 +94,7 @@ public class AppLockPlugin extends Plugin {
   @Override
   protected void handleOnStop() {
     super.handleOnStop();
-    if (isScreenOffOrKeyguard()) {
+    if (isScreenOff() || isKeyguardLockedNow()) {
       markDeviceLocked();
     }
   }
@@ -206,13 +212,12 @@ public class AppLockPlugin extends Plugin {
     call.resolve(new JSObject().put("ok", true));
   }
 
+  /** فقط flag مربوط به DEVICE_LOCK را برمی‌گرداند و پاک می‌کند — مستقل از TIMEOUT و APP_EXIT */
   @com.getcapacitor.PluginMethod
   public void consumeDeviceLockedFlag(PluginCall call) {
     boolean was = false;
     try {
       was = sp().getBoolean(K_WAS_LOCKED, false);
-      /* اگر هنوز صفحه خاموش/قفل است هم true */
-      if (!was && isScreenOffOrKeyguard()) was = true;
       sp().edit().putBoolean(K_WAS_LOCKED, false).apply();
     } catch (Exception ignored) {}
     call.resolve(new JSObject().put("wasLocked", was));
@@ -220,7 +225,7 @@ public class AppLockPlugin extends Plugin {
 
   @com.getcapacitor.PluginMethod
   public void isDeviceLocked(PluginCall call) {
-    call.resolve(new JSObject().put("locked", isScreenOffOrKeyguard()));
+    call.resolve(new JSObject().put("locked", isScreenOff() || isKeyguardLockedNow()));
   }
 
   @com.getcapacitor.PluginMethod
