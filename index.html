@@ -1477,7 +1477,7 @@
       filter: none !important;
     }
     @keyframes plusStrokePulse {
-      0%, 100% { opacity: 0.45; }
+      0%, 100% { opacity: 0.15; }
       50% { opacity: 1; }
     }
 
@@ -6969,24 +6969,22 @@
       z-index: 10040 !important;
     }
 
-    /* سطل زباله باکس ۳: درب جدا + الاکلنگ ملایم هر ۳۰ ثانیه */
+    /* سطل زباله باکس ۳: درب جدا از بدنه + الاکلنگ خیلی کوچک هر ۳۰ث */
     .home-box.box3 .home-tile .trash-can-svg {
-      width: 22px;
-      height: 22px;
+      width: 22px !important;
+      height: 22px !important;
       display: block;
       overflow: visible;
     }
-    .home-box.box3 .home-tile.has-img-icon .trash-can-svg { display: block !important; }
-    .home-box.box3 .home-tile:has(.trash-can-svg) img.tile-icon { display: none !important; }
     .home-box.box3 .home-tile .trash-can-svg .trash-lid {
-      transform-origin: 12px 7px;
+      transform-origin: 12px 6.5px;
       animation: trashLidRock 30s ease-in-out infinite;
     }
     @keyframes trashLidRock {
-      0%, 96%, 100% { transform: rotate(0deg); }
-      97% { transform: rotate(-9deg); }
-      98% { transform: rotate(8deg); }
-      99% { transform: rotate(-5deg); }
+      0%, 96.5%, 100% { transform: rotate(0deg); }
+      97.2% { transform: rotate(-7deg); }
+      98% { transform: rotate(6deg); }
+      98.8% { transform: rotate(-4deg); }
     }
 
   </style>
@@ -7171,13 +7169,15 @@
           </button>
           <button type="button" class="home-tile icon-red" onclick="openTrashModal()" title="سطل زباله">
             <svg class="trash-can-svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <g class="trash-lid" fill="none" stroke="#ff3b30" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7h18"/>
-                <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              <!-- درب + دستگیره (جدا از بدنه، با فاصله) -->
+              <g class="trash-lid">
+                <path fill="#ff3b30" d="M8.2 3.2h7.6c.55 0 1 .35 1 .8v1.1H7.2V4c0-.45.45-.8 1-.8z"/>
+                <path fill="#ff3b30" d="M5.2 6.2h13.6c.7 0 1.2.45 1.2 1v1.15H4V7.2c0-.55.5-1 1.2-1z"/>
               </g>
-              <g class="trash-body" fill="none" stroke="#ff3b30" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>
-                <path d="M10 11v6M14 11v6"/>
+              <!-- بدنه با سه شیار -->
+              <g class="trash-body">
+                <path fill="#ff3b30" d="M5.4 9.6h13.2l-1.05 10.1c-.12 1.15-1.05 2-2.15 2H8.6c-1.1 0-2.03-.85-2.15-2L5.4 9.6z"/>
+                <path fill="#1b1b1b" d="M8.35 11.2h1.7v7.2h-1.7zm2.95 0h1.7v7.2h-1.7zm2.95 0h1.7v7.2h-1.7z"/>
               </g>
             </svg>
             <span>سطل زباله</span>
@@ -7500,7 +7500,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v85 | month-z timeout-bg pin-focus trash-lid */
+    /* build-stamp: 2026-09-22-v86 | period-lists-safe trash-filled plus-dim */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -17133,15 +17133,49 @@ function openPdfPrintWindow(){
       return m.pinLen || 6;
     }
 
+    function isPeriodSelectList(node) {
+      try {
+        var mw = document.getElementById('monthSelectWrap');
+        var yw = document.getElementById('yearSelectWrap');
+        if (mw && mw._list === node) return true;
+        if (yw && yw._list === node) return true;
+      } catch (e) {}
+      return false;
+    }
+    function ensurePeriodSelectListsAttached() {
+      try {
+        ['monthSelectWrap', 'yearSelectWrap'].forEach(function(id) {
+          var w = document.getElementById(id);
+          if (w && w._list && !w._list.isConnected) {
+            document.body.appendChild(w._list);
+          }
+          if (w && w._list) {
+            try { w._list.classList.remove('open'); } catch (e0) {}
+          }
+        });
+      } catch (e) {}
+    }
+    function closeFloatingMenusForLock() {
+      try {
+        document.querySelectorAll('.dark-select-list').forEach(function(n) {
+          if (isPeriodSelectList(n)) {
+            try { n.classList.remove('open'); } catch (e1) {}
+            return;
+          }
+          /* منوهای موقت (مثل حساب) */
+          try { n.remove(); } catch (e2) {}
+        });
+      } catch (eR) {}
+      try {
+        var bd = document.getElementById('darkSelectBackdrop');
+        if (bd) bd.style.display = 'none';
+      } catch (eB) {}
+    }
     function showAppLockOverlay(show) {
       var el = document.getElementById('appLockOverlay');
       if (!el) return;
       if (show) {
-        try {
-          document.querySelectorAll('.dark-select-list').forEach(function(n) {
-            try { n.remove(); } catch (e) {}
-          });
-        } catch (eR) {}
+        closeFloatingMenusForLock();
         el.classList.add('show');
         el.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -17149,6 +17183,7 @@ function openPdfPrintWindow(){
         el.classList.remove('show');
         el.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+        ensurePeriodSelectListsAttached();
       }
     }
 
@@ -17239,6 +17274,7 @@ function openPdfPrintWindow(){
         __lockPinBuffer = '';
         if (inp) inp.value = '';
         showAppLockOverlay(false);
+        try { ensurePeriodSelectListsAttached(); } catch (eE) {}
         return;
       }
       __lockFailCount++;
@@ -17293,14 +17329,9 @@ function openPdfPrintWindow(){
       }
     }
     async function presentLockScreen() {
-      /* هیچ منوی شناوری روی صفحه قفل نماند */
+      try { closeFloatingMenusForLock(); } catch (e0) {}
       try {
-        document.querySelectorAll('.dark-select-list').forEach(function(el) {
-          try { el.remove(); } catch (e0) {}
-        });
-      } catch (e1) {}
-      try {
-        document.querySelectorAll('.dark-select-list.open, .sec-autolock-list.open').forEach(function(el) {
+        document.querySelectorAll('.sec-autolock-list.open').forEach(function(el) {
           try { el.classList.remove('open'); el.hidden = true; } catch (e2) {}
         });
       } catch (e3) {}
