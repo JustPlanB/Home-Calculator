@@ -1473,11 +1473,11 @@
       height: 32px !important;
       stroke: #00b7ff !important;
       stroke-width: 3.4 !important;
-      animation: plusStrokePulse 2.4s ease-in-out infinite !important;
+      animation: plusStrokePulse 5.2s ease-in-out infinite !important;
       filter: none !important;
     }
     @keyframes plusStrokePulse {
-      0%, 100% { opacity: 0.4; }
+      0%, 100% { opacity: 0.45; }
       50% { opacity: 1; }
     }
 
@@ -6936,6 +6936,30 @@
       animation: remindOverlayIn 0.28s ease-out !important;
     }
 
+
+    /* باکس «هنوز حسابی ثبت نشده» — آبی، یک‌خطی، وسط‌چین */
+    .dark-select-list .acc-empty-hint,
+    .dark-select-list .dark-select-option.acc-empty-hint,
+    .dark-select-list div.acc-empty-hint {
+      color: #08b5f5 !important;
+      background: rgba(8,181,245,0.08) !important;
+      border: 1px solid rgba(8,181,245,0.45) !important;
+      border-radius: 8px !important;
+      text-align: center !important;
+      text-decoration: none !important;
+      text-shadow: none !important;
+      font-weight: 700 !important;
+      font-size: 0.82rem !important;
+      padding: 8px 14px !important;
+      margin: 8px auto !important;
+      display: block !important;
+      width: fit-content !important;
+      max-width: calc(100% - 20px) !important;
+      white-space: nowrap !important;
+      cursor: pointer !important;
+      box-sizing: border-box !important;
+    }
+
   </style>
 </head>
 <body class="tabs-main-hidden">
@@ -7438,7 +7462,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v82 | plus-stroke empty-box lock-clear autolock-fix */
+    /* build-stamp: 2026-09-22-v83 | slow-plus empty-css autolock-web-truth */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15235,11 +15259,15 @@ function openPdfPrintWindow(){
         Object.values(map).forEach(v => addBankName(v));
       } catch (e) {}
       if (!banks.length) {
+        list.style.minWidth = '200px';
+        list.style.width = 'max-content';
+        list.style.maxWidth = '90vw';
+        list.style.padding = '6px';
+        list.style.textAlign = 'center';
         const empty = document.createElement('div');
-        empty.className = 'dark-select-option acc-empty-hint';
-        empty.style.cssText = 'padding:8px 12px;color:#08b5f5;font-size:0.82rem;font-weight:600;text-align:center;cursor:pointer;text-decoration:none;white-space:nowrap;border:1px solid rgba(8,181,245,0.4);border-radius:8px;margin:6px auto;background:rgba(8,181,245,0.07);display:block;width:fit-content;max-width:calc(100% - 16px);box-sizing:border-box;';
-        empty.textContent = 'هنوز حسابی ثبت نشده';
+        empty.className = 'acc-empty-hint';
         empty.setAttribute('role', 'button');
+        empty.textContent = 'هنوز حسابی ثبت نشده';
         empty.onclick = function(ev) {
           try { ev.preventDefault(); ev.stopPropagation(); } catch (e0) {}
           try { list.remove(); } catch (e1) {}
@@ -17024,47 +17052,40 @@ function openPdfPrintWindow(){
       m.bio = !!on;
       webSetSecMeta(m);
     }
+    /* منبع حقیقت قفل خودکار: فقط localStorage — پلاگین گاهی 0 برمی‌گرداند و تنظیم را خراب می‌کند */
+    var __autoLockSecMem = null;
     async function lockGetAutoLockSeconds() {
-      var fromWeb = function() {
-        try {
-          var m = webGetSecMeta();
-          var v = m.autoLock;
-          if (typeof v === 'string') v = parseInt(v, 10);
-          if (typeof v === 'number' && !isNaN(v) && v >= 0) return v;
-        } catch (e) {}
-        return 0;
-      };
-      var p = getAppLockPlugin();
-      if (p && p.getAutoLockSeconds) {
-        try {
-          var r = await p.getAutoLockSeconds();
-          var s = r && r.seconds;
-          if (typeof s === 'string') s = parseInt(s, 10);
-          if (typeof s === 'number' && !isNaN(s) && s >= 0) {
-            /* همگام با web برای پایداری بعد از تغییر تنظیمات */
-            try {
-              var m2 = webGetSecMeta();
-              if (m2.autoLock !== s) { m2.autoLock = s; webSetSecMeta(m2); }
-            } catch (eS) {}
-            return s;
-          }
-        } catch (e) {}
+      if (typeof __autoLockSecMem === 'number' && __autoLockSecMem >= 0) {
+        return __autoLockSecMem;
       }
-      return fromWeb();
+      try {
+        var m = webGetSecMeta();
+        var v = m.autoLock;
+        if (typeof v === 'string') v = parseInt(v, 10);
+        if (typeof v === 'number' && !isNaN(v) && v >= 0) {
+          __autoLockSecMem = v;
+          return v;
+        }
+      } catch (e) {}
+      __autoLockSecMem = 0;
+      return 0;
     }
     async function lockSetAutoLockSeconds(sec) {
       sec = Number(sec);
       if (isNaN(sec) || sec < 0) sec = 0;
-      /* همیشه در localStorage هم ذخیره شود تا بعد از تغییر گزینه درست خوانده شود */
+      __autoLockSecMem = sec;
       try {
         var m = webGetSecMeta();
         m.autoLock = sec;
         webSetSecMeta(m);
       } catch (eW) {}
-      var p = getAppLockPlugin();
-      if (p && p.setAutoLockSeconds) {
-        try { await p.setAutoLockSeconds({ seconds: sec }); } catch (eP) {}
-      }
+      /* best-effort به نیتیو — نتیجه خواندن از نیتیو نادیده گرفته می‌شود */
+      try {
+        var p = getAppLockPlugin();
+        if (p && p.setAutoLockSeconds) {
+          await p.setAutoLockSeconds({ seconds: sec });
+        }
+      } catch (eP) {}
     }
     async function lockGetPinLength() {
       var p = getAppLockPlugin();
@@ -17557,11 +17578,12 @@ function openPdfPrintWindow(){
       var v = parseInt(String(sel.value || '0'), 10);
       if (isNaN(v) || v < 0) v = 0;
       await lockSetAutoLockSeconds(v);
-      /* ریست timestamp پس‌زمینه تا با مقدار جدید سنجیده شود */
       try { __lockBgTs = 0; } catch (eB) {}
       try { lockNoteUserActivity(); } catch (eA) {}
       var check = await lockGetAutoLockSeconds();
-      showToast('قفل خودکار: ' + (check === 0 ? 'بلافاصله' : (check + ' ثانیه')));
+      try { updateSecAutoLockUI(String(check)); } catch (eU) {}
+      var label = check === 0 ? 'بلافاصله' : (check === 30 ? '۳۰ ثانیه' : (check === 120 ? '۲ دقیقه' : (check === 300 ? '۵ دقیقه' : (check + ' ثانیه'))));
+      showToast('قفل خودکار: ' + label);
     }
 
     /**
