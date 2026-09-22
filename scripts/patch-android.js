@@ -73,19 +73,25 @@ public class BankSmsReceiver extends BroadcastReceiver {
         || (t.contains("هشدار") && t.contains("شناسه") && t.contains("برداشت"))) {
       return false;
     }
-    // رد فوری پیام‌های شارژ، تبلیغاتی و غیرتراکنشی
-    if(t.contains("شارژ") || t.contains("شگفت انگیز") || t.contains("شگفت\u200cانگیز")
-        || t.contains("بسته اینترنت") || t.contains("بسته اينترنت") || t.contains("بسته ")
+    // رد تبلیغات اپراتور/غیر بانکی — اما «خرید شارژ» بانکی با مانده/حساب را رد نکن
+    boolean looksPromoCharge = (t.contains("شگفت انگیز") || t.contains("شگفت\u200cانگیز")
+        || t.contains("بسته اینترنت") || t.contains("بسته اينترنت")
+        || t.contains("مشترک گرامی") || t.contains("مشترک عزيز") || t.contains("مشترک عزیز")
         || t.contains("هدیه") || t.contains("جایزه") || t.contains("قرعه") || t.contains("تخفیف")
         || t.contains("کد تخفیف") || t.contains("فروشگاه") || t.contains("اپلیکیشن")
-        || t.contains("دانلود") || t.contains("لینک") || t.contains("کلیک")
-        || t.contains("مشترک گرامی") || t.contains("مشترک عزيز") || t.contains("مشترک عزیز")) {
+        || t.contains("دانلود") || t.contains("لینک") || t.contains("کلیک"));
+    boolean bankCharge = (t.contains("خرید شارژ") || t.contains("خریدشارژ") || t.contains("شارژ"))
+        && (t.contains("مانده") || t.contains("موجودی") || t.contains("حساب") || t.contains("بانک"));
+    if(looksPromoCharge && !bankCharge) {
+      return false;
+    }
+    if(t.contains("شارژ") && !bankCharge && !t.contains("مانده") && !t.contains("موجودی") && !t.contains("حساب")) {
       return false;
     }
     // فقط پیامک‌های واقعی بانکی
     boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
         || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
-    boolean weakTx = t.contains("خرید") || t.contains("پرداخت") || t.contains("انتقال") || t.contains("تراکنش");
+    boolean weakTx = t.contains("خرید") || t.contains("خرید شارژ") || t.contains("شارژ") || t.contains("پرداخت") || t.contains("انتقال") || t.contains("تراکنش");
     boolean hasBalance = t.contains("موجودی") || t.contains("مانده") || t.contains("موجودي");
     boolean bankHint = t.contains("بانک") || t.contains("کارت") || t.contains("حساب") || t.contains("atm") || t.contains("pos");
     boolean bankName = t.contains("ملی")||t.contains("ملت")||t.contains("سپه")||t.contains("صادرات")||t.contains("تجارت")
