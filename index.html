@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v103-PENTA | sms-full-date month-year */
+    /* build-stamp: 2026-09-22-v104-PENTA | sms-date-selects no-ghost-bank pay-due-remove-carried */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16695,9 +16695,8 @@ function openPdfPrintWindow(){
     function matchSelectedBank(bankName) {
       if (!bankName) return '';
       const list = selectedBankAccounts || [];
-      if (!list.length) return bankName;
+      if (!list.length) return '';
       const labels = selectedAccountLabels();
-      // تطبیق با برچسب سفارشی یا نام بانک
       const exactLabel = labels.find(n => n === bankName);
       if (exactLabel) return exactLabel;
       const short = bankShortLabel(bankName);
@@ -16705,9 +16704,10 @@ function openPdfPrintWindow(){
         const b = accountBank(a);
         const l = accountLabel(a);
         return b === bankName || l === bankName || bankShortLabel(b) === short || bankShortLabel(l) === short
-          || (b && b.indexOf(short) >= 0) || (short && short.indexOf(bankShortLabel(b)) >= 0);
+          || (b && b.indexOf(short) >= 0) || (short && short.indexOf(bankShortLabel(b) || '') >= 0);
       });
-      return byBank ? accountLabel(byBank) : bankName;
+      /* فقط برچسب حساب ساخته‌شده توسط کاربر — نام دیفالت بانک ساخته نشود */
+      return byBank ? accountLabel(byBank) : '';
     }
 
     function ensureSmsSection(tab, preferredTitle, bag) {
@@ -17029,7 +17029,31 @@ function openPdfPrintWindow(){
     }
 
     
-    function getWritablePeriodData(y, m) {
+    
+    function removeCarriedInstallmentRows(planId, planIndex) {
+      planIndex = parseInt(planIndex, 10);
+      function scrub(pd) {
+        if (!pd || !pd.expense || !pd.expense.sections) return;
+        pd.expense.sections.forEach(function(s) {
+          if (!s.rows) return;
+          s.rows = s.rows.filter(function(r) {
+            if (!r || r.fromPlanId !== planId) return true;
+            if (parseInt(r.fromPlanIndex, 10) !== planIndex) return true;
+            if (r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0)) return false;
+            return true;
+          });
+          if (!s.rows.length) s.rows = [emptyRow()];
+        });
+      }
+      try { scrub(periodData); } catch (e0) {}
+      try {
+        Object.keys(archive || {}).forEach(function(k) {
+          if (archive[k]) scrub(archive[k]);
+        });
+      } catch (e1) {}
+    }
+
+function getWritablePeriodData(y, m) {
       y = parseInt(y, 10); m = parseInt(m, 10);
       if (y === currentYear && m === currentMonth) return { data: periodData, isCurrent: true };
       const key = periodKey(y, m);
@@ -17060,7 +17084,14 @@ function confirmSmsEntry() {
       const type = (typeEl && typeEl.value === 'income') ? 'income' : 'expense';
       const amount = parseAmount(amtEl ? amtEl.value : pendingSmsEntry.amount);
       if (!amount) { showToast('مبلغ را وارد کنید'); return; }
-      const bank = (bankEl && bankEl.value) || pendingSmsEntry.bank || '';
+      let bank = (bankEl && bankEl.value) ? String(bankEl.value).trim() : '';
+      const _accLabels = (typeof selectedAccountLabels === 'function') ? selectedAccountLabels() : [];
+      if (bank && _accLabels.indexOf(bank) < 0) {
+        bank = (typeof matchSelectedBank === 'function') ? (matchSelectedBank(bank) || '') : '';
+      }
+      if (!bank && pendingSmsEntry && pendingSmsEntry.bank) {
+        bank = (typeof matchSelectedBank === 'function') ? (matchSelectedBank(pendingSmsEntry.bank) || '') : '';
+      }
       if (bank && pendingSmsEntry && pendingSmsEntry.raw) { try { saveSmsBankPref(pendingSmsEntry.raw, bank); } catch (e) {} }
       let day = '';
       if (dayEl && dayEl.value) {
@@ -17189,13 +17220,20 @@ function confirmSmsEntry() {
         /* هدف: همان ردیف قسط در ماه جاری (اولویت با معوق) */
         let target = null;
         let targetSec = null;
+                var dueMatch = dueEarly && dueEarly.y === targetYear && dueEarly.m === targetMonth;
         (targetPd.expense.sections || []).forEach(function(s) {
           (s.rows || []).forEach(function(r) {
             if (!r || r.fromPlanId !== linkedPlan.id) return;
             if (parseInt(r.fromPlanIndex, 10) !== linkedIdx) return;
             const isMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
-            if (isMoavagh) { target = r; targetSec = s; }
-            else if (!target) { target = r; targetSec = s; }
+            if (dueMatch) {
+              /* تاریخ پیامک = ماه سررسید → ردیف عادی همان ماه */
+              if (!isMoavagh) { target = r; targetSec = s; }
+              else if (!target) { target = r; targetSec = s; }
+            } else {
+              if (isMoavagh) { target = r; targetSec = s; }
+              else if (!target) { target = r; targetSec = s; }
+            }
           });
         });
         if (!target) {
@@ -17228,15 +17266,14 @@ function confirmSmsEntry() {
           try {
             if (periodCtx.isCurrent && typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
             else syncPlansToExpensePeriod(targetPd, targetYear, targetMonth);
-            /* مبلغ/روز/حساب پیامک برای معوق و غیرمعوق روی ردیف هدف همین ماه */
             (targetPd.expense.sections || []).forEach(function(s) {
               (s.rows || []).forEach(function(r) {
                 if (!(r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx)) return;
                 const rowMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
                 if (keepMoavagh) {
-                  if (!rowMoavagh) return; /* فقط معوق این ماه */
+                  if (!rowMoavagh) return;
                 } else {
-                  if (rowMoavagh) return; /* فقط ردیف عادی ماه سررسید */
+                  if (rowMoavagh) return;
                 }
                 r.status = 'paid';
                 r.amount = snap.amount;
@@ -17248,6 +17285,15 @@ function confirmSmsEntry() {
               });
             });
           } catch (eSync) {}
+          /* پرداخت در ماه سررسید: ردیف معوق ماه بعد کاملاً حذف شود */
+          if (!keepMoavagh) {
+            try { removeCarriedInstallmentRows(linkedPlan.id, linkedIdx); } catch (eRm) {}
+            try {
+              if (!periodCtx.isCurrent && typeof syncPlansToExpensePeriod === 'function') {
+                syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+              }
+            } catch (eSync2) {}
+          }
           try { updateInstallSummary(); } catch (eU) {}
           try { checkInstallReminders(); } catch (eR) {}
           sec = targetSec || sec;
