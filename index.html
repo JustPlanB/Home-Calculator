@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v102-PENTA | instant-ui freeze-opening early-pay */
+    /* build-stamp: 2026-09-22-v103-PENTA | sms-full-date month-year */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16561,62 +16561,75 @@ function openPdfPrintWindow(){
     }
 
 
-    function extractDayFromSms(text) {
+    function extractDateFromSms(text) {
       const raw = normalizeSmsText(text);
-      const okDay = (n) => { const d = parseInt(n, 10); return (d >= 1 && d <= 31) ? String(d) : ''; };
+      const today = (typeof getTodayPersian === 'function') ? getTodayPersian() : { y: currentYear, m: currentMonth, d: 1 };
+      const okDay = (n) => { const d = parseInt(n, 10); return (d >= 1 && d <= 31) ? d : 0; };
+      const okMonth = (n) => { const m = parseInt(n, 10); return (m >= 1 && m <= 12) ? m : 0; };
+      const fullYear = (yy) => {
+        let y = parseInt(yy, 10);
+        if (isNaN(y)) return today.y;
+        if (y >= 1300 && y <= 1500) return y;
+        if (y >= 0 && y <= 99) {
+          const base = Math.floor((today.y || 1400) / 100) * 100;
+          let cand = base + y;
+          if (cand > (today.y || 1400) + 1) cand = base - 100 + y;
+          return cand;
+        }
+        return today.y;
+      };
 
-      // 1404/06/15 یا 1404/6/01 یا 1404-06-01 یا 1404.06.01 (روز با صفر اول هم پشتیبانی می‌شود)
-      let m = raw.match(/(?:13|14)\d{2}\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
-      if (m) { const d = okDay(m[2]); if (d) return d; }
-
-      // 15/06/1404 یا 01/06/1404
-      m = raw.match(/(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(?:13|14)\d{2}/);
-      if (m) { const d = okDay(m[1]); if (d) return d; }
-
-      // سال دو رقمی + ساعت، مثل بانک ملت: 05/06/12-16:43 یا 05/06/01-09:05 (سال/ماه/روز-ساعت:دقیقه)
-      m = raw.match(/\b\d{1,2}\s*[\/\-\.]\s*\d{1,2}\s*[\/\-\.]\s*(\d{1,2})\s*[-–]\s*\d{1,2}:\d{2}/);
-      if (m) { const d = okDay(m[1]); if (d) return d; }
-
-      // بانک ملی و مشابه: MMDD-HH:MM مثل 0611-19:31 یا 0601-09:05 (روز با صفر اول)
+      let m = raw.match(/((?:13|14)\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
+      if (m) {
+        const mo = okMonth(m[2]), d = okDay(m[3]);
+        if (mo && d) return { y: parseInt(m[1], 10), m: mo, d: d };
+      }
+      m = raw.match(/(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*((?:13|14)\d{2})/);
+      if (m) {
+        const d = okDay(m[1]), mo = okMonth(m[2]);
+        if (d && mo) return { y: parseInt(m[3], 10), m: mo, d: d };
+      }
+      // ملت: YY/MM/DD-HH:MM مثل 05/06/27-16:25
+      m = raw.match(/\b(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[-–]\s*\d{1,2}:\d{2}/);
+      if (m) {
+        const yy = fullYear(m[1]), mo = okMonth(m[2]), d = okDay(m[3]);
+        if (mo && d) return { y: yy, m: mo, d: d };
+      }
+      // ملی: MMDD-HH:MM مثل 0730-20:26
       m = raw.match(/(?:^|[^\d])(\d{2})(\d{2})\s*[-–]\s*\d{1,2}:\d{2}(?:[^\d]|$)/);
       if (m) {
-        const mm = parseInt(m[1], 10);
-        const dd = okDay(m[2]);
-        if (dd && mm >= 1 && mm <= 12) return dd;
+        const mo = okMonth(m[1]), d = okDay(m[2]);
+        if (mo && d) return { y: today.y, m: mo, d: d };
       }
-
-      // MMDDHHMM چسبیده بدون خط تیره (بعضی نسخه‌های ملی): 06011931
       m = raw.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})(\d{2})(?:[^\d]|$)/);
       if (m) {
-        const mm = parseInt(m[1], 10), dd = okDay(m[2]);
+        const mo = okMonth(m[1]), d = okDay(m[2]);
         const hh = parseInt(m[3], 10), mi = parseInt(m[4], 10);
-        if (dd && mm >= 1 && mm <= 12 && hh <= 23 && mi <= 59) return dd;
+        if (mo && d && hh <= 23 && mi <= 59) return { y: today.y, m: mo, d: d };
       }
-
-      // MM/DD-HH:MM یا MM-DD HH:MM
       m = raw.match(/\b(\d{1,2})\s*[\/\-]\s*(\d{1,2})\s*[-–\s]\s*\d{1,2}:\d{2}/);
       if (m) {
         const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
-        // اگر a ماه و b روز
-        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return String(b);
-        // اگر a روز و b ماه
-        if (a >= 1 && a <= 31 && b >= 1 && b <= 12) return String(a);
+        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return { y: today.y, m: a, d: b };
+        if (a >= 1 && a <= 31 && b >= 1 && b <= 12) return { y: today.y, m: b, d: a };
       }
-
-      // تاریخ: 01-06 یا 01/06 یا تاريخ:1404/06/01
-      m = raw.match(/تاریخ\s*[:：]?\s*(?:(?:13|14)\d{2}\s*[\/\-\.]\s*)?(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
+      m = raw.match(/تاریخ\s*[:：]?\s*((?:13|14)\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
       if (m) {
-        // اگر دو گروه بعد از سال احتمالی: ممکن است ماه/روز یا روز/ماه باشد
-        const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
-        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return String(b);
-        if (a >= 1 && a <= 31) return String(a);
+        const mo = okMonth(m[2]), d = okDay(m[3]);
+        if (mo && d) return { y: parseInt(m[1], 10), m: mo, d: d };
       }
+      m = raw.match(/تاریخ\s*[:：]?\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})/);
+      if (m) {
+        const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return { y: today.y, m: a, d: b };
+        if (a >= 1 && a <= 31 && b >= 1 && b <= 12) return { y: today.y, m: b, d: a };
+      }
+      return null;
+    }
 
-      // هر الگوی YYYY/MM/DD یا YY/MM/DD در متن
-      m = raw.match(/(?:^|[^\d])(?:\d{2}|\d{4})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})(?:[^\d]|$)/);
-      if (m) { const d = okDay(m[2]); if (d) return d; }
-
-      return '';
+    function extractDayFromSms(text) {
+      const dt = extractDateFromSms(text);
+      return dt && dt.d ? String(dt.d) : '';
     }
 
 
@@ -16640,16 +16653,19 @@ function openPdfPrintWindow(){
     function parseBankSms(text) {
       const t = String(text || '').trim();
       if (!t) return null;
-      // پیامک رمز پویا / شناسه تأیید — تراکنش مالی نیست
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(t)) return null;
+      const dt = extractDateFromSms(t);
       return {
         type: detectTxnTypeFromSms(t),
         amount: extractAmountFromSms(t),
         bank: detectBankFromSms(t),
-        day: extractDayFromSms(t),
+        day: dt && dt.d ? String(dt.d) : '',
+        month: dt && dt.m ? dt.m : null,
+        year: dt && dt.y ? dt.y : null,
         raw: t
       };
     }
+
 
 
     function smsBankPrefKey(raw) {
@@ -16694,22 +16710,21 @@ function openPdfPrintWindow(){
       return byBank ? accountLabel(byBank) : bankName;
     }
 
-    function ensureSmsSection(tab, preferredTitle) {
-      if (!periodData[tab]) periodData[tab] = { sections: [], nextId: 1 };
-      if (!periodData[tab].sections) periodData[tab].sections = [];
+    function ensureSmsSection(tab, preferredTitle, bag) {
+      const pd = bag || periodData;
+      if (!pd[tab]) pd[tab] = { sections: [], nextId: 1 };
+      if (!pd[tab].sections) pd[tab].sections = [];
       const title = preferredTitle || (tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
-      let sec = periodData[tab].sections.find(s => (s.title || '').trim() === title);
+      let sec = pd[tab].sections.find(s => (s.title || '').trim() === title);
       if (sec) return sec;
-      // اگر بخشی با عنوان بانک وجود دارد
-      sec = periodData[tab].sections.find(s => /بانک|پیامک|واریز|برداشت|تراکنش/i.test(s.title || ''));
+      sec = pd[tab].sections.find(s => /بانک|پیامک|واریز|برداشت|تراکنش/i.test(s.title || ''));
       if (sec) return sec;
-      // بخش خالی بدون عنوان
-      sec = periodData[tab].sections.find(s => !(s.title || '').trim());
+      sec = pd[tab].sections.find(s => !(s.title || '').trim());
       if (sec) {
         sec.title = title;
         return sec;
       }
-      const nid = periodData[tab].nextId || (periodData[tab].sections.length + 1);
+      const nid = pd[tab].nextId || (pd[tab].sections.length + 1);
       sec = {
         id: 's' + nid + '_sms',
         title: title,
@@ -16717,8 +16732,8 @@ function openPdfPrintWindow(){
         collapsed: false,
         rows: [emptyRow()]
       };
-      periodData[tab].sections.push(sec);
-      periodData[tab].nextId = nid + 1;
+      pd[tab].sections.push(sec);
+      pd[tab].nextId = nid + 1;
       return sec;
     }
 
@@ -16816,9 +16831,12 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<label class="family-label">روز ماه:</label>' +
-          '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" ' +
-            'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;direction:ltr;text-align:left;margin-bottom:10px;">' +
+          '<label class="family-label">تاریخ (سال / ماه / روز):</label>' +
+          '<div style="display:flex;gap:8px;direction:ltr;margin-bottom:10px;">' +
+            '<input id="smsConfirmYear" type="text" inputmode="numeric" maxlength="4" placeholder="سال" value="' + toPersianDigits(String(parsed.year != null ? parsed.year : ((typeof getTodayPersian==='function'?getTodayPersian().y:null) || currentYear))) + '" style="flex:1.2;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
+            '<input id="smsConfirmMonth" type="text" inputmode="numeric" maxlength="2" placeholder="ماه" value="' + toPersianDigits(String(parsed.month != null ? parsed.month : ((typeof getTodayPersian==='function'?getTodayPersian().m:null) || currentMonth))) + '" style="flex:1;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
+            '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" placeholder="روز" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" style="flex:1;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
+          '</div>' +
           '<label class="family-label">بخش مقصد</label>' +
           '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
         const bankSel = meta.querySelector('#smsConfirmBank');
@@ -17010,7 +17028,27 @@ function openPdfPrintWindow(){
       try { syncModalOverlaysToViewport(); } catch (e) {}
     }
 
-    function confirmSmsEntry() {
+    
+    function getWritablePeriodData(y, m) {
+      y = parseInt(y, 10); m = parseInt(m, 10);
+      if (y === currentYear && m === currentMonth) return { data: periodData, isCurrent: true };
+      const key = periodKey(y, m);
+      let data = archive[key];
+      if (!data) data = emptyPeriodData();
+      else data = JSON.parse(JSON.stringify(data));
+      return { data: data, isCurrent: false, key: key };
+    }
+    function commitWritablePeriodData(ctx) {
+      if (!ctx) return;
+      if (ctx.isCurrent) {
+        try { persistCurrent(); } catch (e) {}
+      } else if (ctx.key) {
+        archive[ctx.key] = ctx.data;
+        try { if (typeof saveArchive === 'function') saveArchive(); } catch (e) {}
+      }
+    }
+
+function confirmSmsEntry() {
       if (!pendingSmsEntry) {
         showToast('اطلاعات تراکنش ناقص است');
         return;
@@ -17029,6 +17067,29 @@ function openPdfPrintWindow(){
         const d = parseInt(toEnglishDigits(dayEl.value).replace(/[^0-9]/g, '') || '0', 10) || 0;
         if (d >= 1 && d <= 31) day = String(d);
       } else if (pendingSmsEntry.day) day = pendingSmsEntry.day;
+
+      const monthEl = document.getElementById('smsConfirmMonth');
+      const yearEl = document.getElementById('smsConfirmYear');
+      let targetMonth = currentMonth;
+      let targetYear = currentYear;
+      if (monthEl && monthEl.value) {
+        const mm = parseInt(toEnglishDigits(monthEl.value).replace(/[^0-9]/g, '') || '0', 10) || 0;
+        if (mm >= 1 && mm <= 12) targetMonth = mm;
+      } else if (pendingSmsEntry && pendingSmsEntry.month) {
+        targetMonth = pendingSmsEntry.month;
+      }
+      if (yearEl && yearEl.value) {
+        let yy = parseInt(toEnglishDigits(yearEl.value).replace(/[^0-9]/g, '') || '0', 10) || 0;
+        if (yy > 0 && yy < 100) {
+          const base = Math.floor((currentYear || 1400) / 100) * 100;
+          yy = base + yy;
+        }
+        if (yy >= 1300 && yy <= 1500) targetYear = yy;
+      } else if (pendingSmsEntry && pendingSmsEntry.year) {
+        targetYear = pendingSmsEntry.year;
+      }
+      const periodCtx = getWritablePeriodData(targetYear, targetMonth);
+      const targetPd = periodCtx.data;
 
       const tab = type;
       const descInp = document.getElementById('smsConfirmDesc');
@@ -17050,10 +17111,10 @@ function openPdfPrintWindow(){
       const sel = document.getElementById('smsConfirmSectionSel');
       let sec = null;
       if (sel && sel.value && sel.value !== '__auto__') {
-        sec = (periodData[tab].sections || []).find(s => s.id === sel.value);
+        sec = (targetPd[tab].sections || []).find(s => s.id === sel.value);
       }
       if (!sec) {
-        sec = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
+        sec = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی', targetPd);
       }
 
       /* ترجیح: حساب از لیست کاربر — حساب جدید خودکار نساز */
@@ -17073,17 +17134,17 @@ function openPdfPrintWindow(){
         /* پرداخت زودهنگام قسط ماه بعد: فقط ردیف در ماه جاری؛ ماه سررسید دست‌نخورده */
         var dueEarly = null;
         try { dueEarly = dueDateForInstallment(linkedPlan, linkedIdx); } catch (eDe) {}
-        var isFutureDue = dueEarly && ((dueEarly.y > currentYear) || (dueEarly.y === currentYear && dueEarly.m > currentMonth));
+        var isFutureDue = dueEarly && ((dueEarly.y > targetYear) || (dueEarly.y === targetYear && dueEarly.m > targetMonth));
         if (isFutureDue) {
           if (!linkedPlan.paidEarlyMap) linkedPlan.paidEarlyMap = {};
           linkedPlan.paidEarlyMap[String(linkedIdx)] = {
-            y: currentYear, m: currentMonth,
+            y: targetYear, m: targetMonth,
             amount: amount, day: day || '', account: bank || ''
           };
           /* paidCount را بالا نبر — ماه سررسید پرداخت‌نشده بماند */
           let earlyRow = null;
           let earlySec = sec;
-          (periodData.expense.sections || []).forEach(function(s) {
+          (targetPd.expense.sections || []).forEach(function(s) {
             (s.rows || []).forEach(function(r) {
               if (r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx && r.planEarlyPay) {
                 earlyRow = r; earlySec = s;
@@ -17116,6 +17177,7 @@ function openPdfPrintWindow(){
           sec = earlySec || sec;
           try { updateInstallSummary(); } catch (eU) {}
           try { checkInstallReminders(); } catch (eR) {}
+          commitWritablePeriodData(periodCtx);
           persistCurrent();
           scheduleSave();
           closeSmsConfirmModal();
@@ -17127,7 +17189,7 @@ function openPdfPrintWindow(){
         /* هدف: همان ردیف قسط در ماه جاری (اولویت با معوق) */
         let target = null;
         let targetSec = null;
-        (periodData.expense.sections || []).forEach(function(s) {
+        (targetPd.expense.sections || []).forEach(function(s) {
           (s.rows || []).forEach(function(r) {
             if (!r || r.fromPlanId !== linkedPlan.id) return;
             if (parseInt(r.fromPlanIndex, 10) !== linkedIdx) return;
@@ -17138,8 +17200,8 @@ function openPdfPrintWindow(){
         });
         if (!target) {
           /* اگر هنوز ردیف ساخته نشده، اول همگام‌سازی ماه جاری */
-          try { syncPlansToExpensePeriod(periodData, currentYear, currentMonth); } catch (eS0) {}
-          (periodData.expense.sections || []).forEach(function(s) {
+          try { syncPlansToExpensePeriod(targetPd, targetYear, targetMonth); } catch (eS0) {}
+          (targetPd.expense.sections || []).forEach(function(s) {
             (s.rows || []).forEach(function(r) {
               if (!r || r.fromPlanId !== linkedPlan.id) return;
               if (parseInt(r.fromPlanIndex, 10) !== linkedIdx) return;
@@ -17164,10 +17226,10 @@ function openPdfPrintWindow(){
             planCarried: keepMoavagh
           };
           try {
-            if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
-            else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            if (periodCtx.isCurrent && typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+            else syncPlansToExpensePeriod(targetPd, targetYear, targetMonth);
             /* مبلغ/روز/حساب پیامک برای معوق و غیرمعوق روی ردیف هدف همین ماه */
-            (periodData.expense.sections || []).forEach(function(s) {
+            (targetPd.expense.sections || []).forEach(function(s) {
               (s.rows || []).forEach(function(r) {
                 if (!(r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx)) return;
                 const rowMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
@@ -17228,6 +17290,7 @@ function openPdfPrintWindow(){
         sec.collapsed = false;
       }
 
+      commitWritablePeriodData(periodCtx);
       persistCurrent();
       scheduleSave();
       closeSmsConfirmModal();
