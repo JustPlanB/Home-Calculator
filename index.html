@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v99-PENTA | sms-plan-target no-auto-bank unlock-plan-fields */
+    /* build-stamp: 2026-09-22-v100-PENTA | late-pay-no-touch-prev reminder-refresh */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7871,9 +7871,14 @@
         indicesToShow.forEach(function(item) {
           const matchIdx = item.i;
           const due = item.due;
-          const autoStatus = item.isPaid ? 'paid' : 'unpaid';
+          /* ماه سررسید: اگر دیر پرداخت شده، همان پرداخت‌نشده بماند؛ معوقِ ماه بعد: طبق isPaid */
+          var autoStatus;
+          if (item.carried) {
+            autoStatus = item.isPaid ? 'paid' : 'unpaid';
+          } else {
+            autoStatus = (item.isPaid && !isPlanIndexPaidLate(plan, matchIdx)) ? 'paid' : 'unpaid';
+          }
           const prev = prevByPlan[plan.id + ':' + matchIdx] || {};
-          /* معوق فقط روی ردیف حمل‌شده (چه پرداخت‌شده چه نشده) */
           var showMoavagh = !!item.carried;
           const row = {
             day: (prev.day != null && prev.day !== '') ? String(prev.day) : String(due.d),
@@ -7908,18 +7913,19 @@
 
 
     /** پنتا: علامت‌گذاری یک قسط به‌عنوان پرداخت‌شده (بر اساس ایندکس سررسید) */
-    function markPlanInstallmentPaid(planId, planIndex) {
+    function markPlanInstallmentPaid(planId, planIndex, asLate) {
       const plan = (plans || []).find(function(p){ return p && p.id === planId; });
       if (!plan) return false;
       const count = Math.max(0, parseInt(plan.count, 10) || 0);
       let paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
       const idx = (planIndex != null && planIndex !== '') ? parseInt(planIndex, 10) : paid;
       if (isNaN(idx) || idx < 0) return false;
-      /* paidCount = تعداد اقساط پرداخت‌شده از ابتدا؛ برای پرداخت ایندکس idx باید paid > idx */
       if (paid <= idx) {
         plan.paidCount = idx + 1;
       }
+      if (asLate) setPlanIndexPaidLate(plan, idx, true);
       try { if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll(); } catch (e) {}
+      try { if (typeof checkInstallReminders === 'function') checkInstallReminders(); } catch (eR) {}
       try { persistCurrent(); scheduleSave(); } catch (e2) {}
       try { if (typeof updateInstallSummary === 'function') updateInstallSummary(); } catch (e3) {}
       return true;
@@ -7928,6 +7934,16 @@
       const count = Math.max(0, parseInt(plan.count, 10) || 0);
       const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
       return paid < count ? paid : -1;
+    }
+    function isPlanIndexPaidLate(plan, idx) {
+      if (!plan || !plan.paidLateMap) return false;
+      return !!plan.paidLateMap[String(idx)];
+    }
+    function setPlanIndexPaidLate(plan, idx, late) {
+      if (!plan) return;
+      if (!plan.paidLateMap) plan.paidLateMap = {};
+      if (late) plan.paidLateMap[String(idx)] = true;
+      else delete plan.paidLateMap[String(idx)];
     }
 
     function syncPlansToExpenseAll() {
@@ -17075,51 +17091,39 @@ function openPdfPrintWindow(){
         }
         if (target) {
           const keepMoavagh = !!target.planCarried || (target.desc && String(target.desc).indexOf('معوق') >= 0);
-          target.status = 'paid';
-          target.amount = amount;
-          if (day) target.day = day;
-          if (bank) target.account = bank;
-          target.desc = baseDesc + (keepMoavagh ? ' (معوق)' : '');
-          target.planCarried = keepMoavagh;
-          target.allowPlanFieldEdit = true;
-          target.fromPlanId = linkedPlan.id;
-          target.fromPlanIndex = linkedIdx;
-          sec = targetSec || sec;
-          /* paidCount را جلو ببر بدون نابود کردن فیلدهای پیامک */
+          /* پرداخت معوق: فقط ماه جاری؛ ماه قبل دست‌نخورده بماند */
+          if (keepMoavagh) setPlanIndexPaidLate(linkedPlan, linkedIdx, true);
+          else setPlanIndexPaidLate(linkedPlan, linkedIdx, false);
           const need = linkedIdx + 1;
           const curPaid = Math.max(0, parseInt(linkedPlan.paidCount, 10) || 0);
           if (curPaid < need) linkedPlan.paidCount = Math.min(cnt, need);
-          /* همگام‌سازی بقیه ماه‌ها؛ بعد دوباره فیلدهای این ردیف را اعمال کن */
+          const snap = {
+            amount: amount,
+            day: day,
+            account: bank,
+            planCarried: keepMoavagh
+          };
           try {
-            const snap = {
-              amount: target.amount,
-              day: target.day,
-              account: target.account,
-              desc: target.desc,
-              planCarried: target.planCarried,
-              allowPlanFieldEdit: true,
-              status: 'paid',
-              fromPlanId: linkedPlan.id,
-              fromPlanIndex: linkedIdx
-            };
             if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
             else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
             (periodData.expense.sections || []).forEach(function(s) {
               (s.rows || []).forEach(function(r) {
-                if (r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx) {
-                  const mo = !!r.planCarried || (snap.planCarried);
-                  r.status = 'paid';
-                  r.amount = snap.amount;
-                  r.day = snap.day;
-                  r.account = snap.account;
-                  r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (mo ? ' (معوق)' : '');
-                  r.planCarried = mo;
-                  r.allowPlanFieldEdit = true;
-                }
+                if (!(r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx)) return;
+                /* فقط ردیف معوق همین ماه */
+                if (!(r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0))) return;
+                r.status = 'paid';
+                r.amount = snap.amount;
+                if (snap.day) r.day = snap.day;
+                if (snap.account) r.account = snap.account;
+                r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + ' (معوق)';
+                r.planCarried = true;
+                r.allowPlanFieldEdit = true;
               });
             });
           } catch (eSync) {}
           try { updateInstallSummary(); } catch (eU) {}
+          try { checkInstallReminders(); } catch (eR) {}
+          sec = targetSec || sec;
         } else {
           /* ردیف پیدا نشد — ردیف جدید لینک‌شده به قسط */
           const row = emptyRow();
@@ -21394,21 +21398,26 @@ field('حساب بانکی', accSelRec);
         if (isNaN(idx) || idx < 0) idx = 0;
         let paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
         if (newStatus === 'paid') {
-          // قسط این ماه پرداخت شد → تعداد پرداخت‌شده حداقل تا این قسط جلو برود
           const need = idx + 1;
           if (paid < need) {
             plan.paidCount = Math.min(count, need);
-            try {
-              if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
-              else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
-            } catch (eSync) {
-              syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
-            }
-            updateInstallSummary();
-            checkInstallReminders();
-            if (currentTab === 'install') renderPlans();
-            showToast('قسط در بخش اقساط هم "پرداخت شده" شد');
           }
+          /* اگر ردیف معوق/حمل‌شده باشد، ماه سررسید را دست نزن */
+          if (row.planCarried || (row.desc && String(row.desc).indexOf('معوق') >= 0)) {
+            setPlanIndexPaidLate(plan, idx, true);
+          } else {
+            setPlanIndexPaidLate(plan, idx, false);
+          }
+          try {
+            if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+            else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+          } catch (eSync) {
+            syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+          }
+          updateInstallSummary();
+          checkInstallReminders();
+          if (currentTab === 'install') renderPlans();
+          showToast('قسط در بخش اقساط هم "پرداخت شده" شد');
         } else if (newStatus === 'unpaid') {
           // برگشت به پرداخت‌نشده: اگر آخرین پرداخت‌شده همین قسط بود، یکی کم کن
           if (paid === idx + 1) {
