@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v89 | trash-32px-5rock-15s */
+    /* build-stamp: 2026-09-22-v90 | person-edit-back-close */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15154,11 +15154,31 @@ function openPdfPrintWindow(){
         try { box.style.transform = ''; } catch (e) {}
       };
     }
+    function closePersonEditSheet() {
+      try {
+        document.querySelectorAll('.modal-overlay.person-edit-sheet').forEach(function(ov) {
+          try { ov.remove(); } catch (e0) {}
+        });
+      } catch (e1) {}
+      try {
+        const sy = parseInt(document.body.dataset.editScrollY || '0', 10) || 0;
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        delete document.body.dataset.editScrollY;
+        window.scrollTo(0, sy);
+      } catch (e2) {}
+      try {
+        var ae = document.activeElement;
+        if (ae && ae.blur) ae.blur();
+      } catch (e3) {}
+    }
     function openPersonEditSheet(title, isNew) {
+      try { closePersonEditSheet(); } catch (eC) {}
       const _sy = window.scrollY || window.pageYOffset || 0;
       try { document.body.dataset.editScrollY = String(_sy); } catch (e) {}
       const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay open';
+      overlay.className = 'modal-overlay open person-edit-sheet';
+      overlay.setAttribute('data-person-edit', isNew ? 'new' : 'edit');
       /* بالا ثابت — بدون center عمودی تا با کیبورد پرش نکند */
       overlay.style.cssText = 'z-index:600;position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:min(18vh,120px);overflow:hidden;overscroll-behavior:none;background:rgba(0,0,0,0.45);';
       const box = document.createElement('div');
@@ -15205,14 +15225,7 @@ function openPdfPrintWindow(){
         }
         persistCurrent();
         scheduleSave();
-        try { overlay.remove(); } catch (e) {}
-        try {
-          const sy = parseInt(document.body.dataset.editScrollY || '0', 10) || 0;
-          document.documentElement.style.overflow = '';
-          document.body.style.overflow = '';
-          delete document.body.dataset.editScrollY;
-          window.scrollTo(0, sy);
-        } catch (e) {}
+        try { closePersonEditSheet(); } catch (e) {}
         renderHomeCards();
         try {
           if (isNew) {
@@ -15231,23 +15244,14 @@ function openPdfPrintWindow(){
       cancel.className = 'modal-btn no';
       cancel.textContent = 'انصراف';
       cancel.style.flex = '1';
-      cancel.onclick = () => {
-        try { overlay.remove(); } catch (e) {}
-        try {
-          const sy = parseInt(document.body.dataset.editScrollY || '0', 10) || 0;
-          document.documentElement.style.overflow = '';
-          document.body.style.overflow = '';
-          delete document.body.dataset.editScrollY;
-          window.scrollTo(0, sy);
-        } catch (e) {}
-      };
+      cancel.onclick = () => { try { closePersonEditSheet(); } catch (e) {} };
       actions.appendChild(ok);
       actions.appendChild(cancel);
       box.appendChild(lab);
       box.appendChild(inp);
       box.appendChild(actions);
       overlay.appendChild(box);
-      overlay.addEventListener('click', (e) => { if (e.target === overlay) try { overlay.remove(); } catch (err) {} });
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) try { closePersonEditSheet(); } catch (err) {} });
       document.body.appendChild(overlay);
       // فوکوس با تأخیر تا باکس اول ثابت بماند و پرش نکند
       try {
@@ -22102,6 +22106,16 @@ field('حساب بانکی', accSelRec);
           return true;
         }
       } catch (e) {}
+      /* باکس نام کاربر (ایجاد/ویرایش کارت) — بک = بستن و صفحه اصلی */
+      try {
+        const pes = document.querySelector('.modal-overlay.person-edit-sheet.open, .modal-overlay.person-edit-sheet');
+        if (pes) {
+          try { closePersonEditSheet(); } catch (eP) {
+            try { pes.remove(); } catch (eR) {}
+          }
+          return true;
+        }
+      } catch (e) {}
       try {
         const conf = document.getElementById('confirmModal');
         if (conf && conf.classList.contains('open')) {
@@ -22157,6 +22171,10 @@ field('حساب بانکی', accSelRec);
           if (!ov) continue;
           if (ov.id === 'textInputBackdrop' || ov.id === 'darkSelectBackdrop') { ov.classList.remove('open'); continue; }
           if (ov.id === 'confirmModal') continue;
+          if (ov.classList.contains('person-edit-sheet')) {
+            try { closePersonEditSheet(); } catch (ePe) { try { ov.remove(); } catch (e2) {} }
+            return true;
+          }
           if (ov.id === 'trashModal' && typeof closeTrashModal === 'function') { closeTrashModal(); return true; }
           if (ov.id === 'bankAccountsModal' && typeof closeBankAccountsModal === 'function') { _bankModalFromMenu=false; closeBankAccountsModal(); return true; }
           if (ov.id === 'userRemindersModal' && typeof closeUserRemindersModal === 'function') { closeUserRemindersModal(); return true; }
