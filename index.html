@@ -17091,7 +17091,7 @@ function openPdfPrintWindow(){
         }
         if (target) {
           const keepMoavagh = !!target.planCarried || (target.desc && String(target.desc).indexOf('معوق') >= 0);
-          /* پرداخت معوق: فقط ماه جاری؛ ماه قبل دست‌نخورده بماند */
+          /* پرداخت معوق: ماه قبل دست‌نخورده؛ غیرمعوق: همین ماه سررسید */
           if (keepMoavagh) setPlanIndexPaidLate(linkedPlan, linkedIdx, true);
           else setPlanIndexPaidLate(linkedPlan, linkedIdx, false);
           const need = linkedIdx + 1;
@@ -17106,17 +17106,22 @@ function openPdfPrintWindow(){
           try {
             if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
             else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            /* مبلغ/روز/حساب پیامک برای معوق و غیرمعوق روی ردیف هدف همین ماه */
             (periodData.expense.sections || []).forEach(function(s) {
               (s.rows || []).forEach(function(r) {
                 if (!(r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx)) return;
-                /* فقط ردیف معوق همین ماه */
-                if (!(r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0))) return;
+                const rowMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
+                if (keepMoavagh) {
+                  if (!rowMoavagh) return; /* فقط معوق این ماه */
+                } else {
+                  if (rowMoavagh) return; /* فقط ردیف عادی ماه سررسید */
+                }
                 r.status = 'paid';
                 r.amount = snap.amount;
                 if (snap.day) r.day = snap.day;
                 if (snap.account) r.account = snap.account;
-                r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + ' (معوق)';
-                r.planCarried = true;
+                r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (keepMoavagh ? ' (معوق)' : '');
+                r.planCarried = !!keepMoavagh;
                 r.allowPlanFieldEdit = true;
               });
             });
