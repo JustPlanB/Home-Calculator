@@ -1471,13 +1471,13 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 72px;
-      height: 72px;
-      margin: -36px 0 0 -36px;
+      width: 34px;
+      height: 34px;
+      margin: -17px 0 0 -17px;
       border-radius: 50%;
       pointer-events: none;
       z-index: 0;
-      background: radial-gradient(circle, rgba(0,183,255,0.55) 0%, rgba(0,183,255,0.22) 38%, rgba(0,183,255,0.06) 58%, transparent 72%);
+      background: radial-gradient(circle, rgba(0,183,255,0.5) 0%, rgba(0,183,255,0.18) 45%, transparent 70%);
       animation: plusHaloPulse 2.8s ease-in-out infinite;
     }
     .home-add-wrap .btn-circle-plus.lg svg {
@@ -1496,8 +1496,8 @@
       opacity: 1 !important;
     }
     @keyframes plusHaloPulse {
-      0%, 100% { opacity: 0.28; transform: scale(0.9); }
-      50% { opacity: 0.95; transform: scale(1.12); }
+      0%, 100% { opacity: 0.35; transform: scale(0.92); }
+      50% { opacity: 0.9; transform: scale(1.05); }
     }
 
     /* خلاصه اقساط: مبلغ داخل سلول */
@@ -6192,13 +6192,62 @@
       z-index: 99999;
       background: #0e0e0e;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
       padding: 24px 20px;
       box-sizing: border-box;
       direction: rtl;
     }
     #appLockOverlay.show { display: flex !important; }
+
+    /* قفل: همه عناصر از نظر عرض صفحه وسط */
+        /* center overrides */
+    #appLockOverlay.show {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #0e0e0e;
+      flex-direction: column;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      padding: 24px 20px;
+      box-sizing: border-box;
+      direction: rtl;
+    }
+    #appLockOverlay .lock-title,
+    #appLockOverlay .lock-msg,
+    #appLockOverlay .lock-bio-hint,
+    #appLockOverlay .lock-bio-label {
+      text-align: center !important;
+      width: 100%;
+      max-width: 320px;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+    #appLockOverlay .lock-dots {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      direction: ltr;
+    }
+    #appLockOverlay .lock-pin-wrap {
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+    #appLockOverlay .lock-bio-btn {
+      display: inline-flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      text-align: center !important;
+    }
+
     #appLockOverlay .lock-title {
       font-size: 1.25rem;
       font-weight: 800;
@@ -7408,7 +7457,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v80 | bio mid, no X, remind anim, timeout, round halo */
+    /* build-stamp: 2026-09-22-v81 | empty-box lock-center imm-timeout small-halo */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15206,7 +15255,8 @@ function openPdfPrintWindow(){
       } catch (e) {}
       if (!banks.length) {
         const empty = document.createElement('div');
-        empty.style.cssText = 'padding:12px;color:#08b5f5;font-size:0.85rem;text-align:center;cursor:pointer;text-decoration:underline;';
+        empty.className = 'dark-select-option acc-empty-hint';
+        empty.style.cssText = 'padding:10px 14px;color:#08b5f5;font-size:0.85rem;text-align:center;cursor:pointer;text-decoration:none;white-space:nowrap;border:1px solid rgba(8,181,245,0.35);border-radius:10px;margin:8px;background:rgba(8,181,245,0.08);';
         empty.textContent = 'هنوز حسابی ثبت نشده';
         empty.setAttribute('role', 'button');
         empty.onclick = function(ev) {
@@ -17597,16 +17647,24 @@ function openPdfPrintWindow(){
         return false;
       }
 
-      /** TIMEOUT از زمان ماندن در پس‌زمینه (مستقل از DEVICE_LOCK) */
+      /** TIMEOUT از زمان ماندن در پس‌زمینه (مستقل از DEVICE_LOCK)
+       * sec===0 «بلافاصله»: هر بار برگشت از پس‌زمینه → قفل
+       * sec>0: فقط اگر elapsed >= sec
+       */
       async function checkBackgroundTimeoutReason() {
         try {
           var on = await lockIsEnabled();
           if (!on) return false;
           if (!__lockUnlockedThisSession) return false;
+          if (!__lockBgTs) return false;
           var sec = await lockGetAutoLockSeconds();
-          if (!(sec > 0) || !__lockBgTs) return false;
           var elapsed = (Date.now() - __lockBgTs) / 1000;
-          if (elapsed >= sec) {
+          /* بلافاصله: حتی با elapsed خیلی کم */
+          if (sec === 0) {
+            await lockForReason('TIMEOUT_IMMEDIATE');
+            return true;
+          }
+          if (sec > 0 && elapsed >= sec) {
             await lockForReason('TIMEOUT');
             return true;
           }
