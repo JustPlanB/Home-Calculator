@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v97-PENTA | overdue-copy-keep-paid sms-close-refresh */
+    /* build-stamp: 2026-09-22-v98-PENTA | install-own-month unpaid-carry paid-stay-no-forward */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7832,15 +7832,14 @@
         });
 
         if (!sec || count <= 0) return;
-        if (paid >= count) return;
+        /* حتی اگر همه پرداخت شده باشند، ردیف ماه سررسید باید بماند */
 
-        /* پنتا: سررسید این ماه همیشه؛ معوق فقط بعد از ورود تاریخی به ماه بعد */
+        /* اقساط: هر قسط در ماه خودش؛ معوق پرداخت‌نشده فقط بعد از ورود به ماه بعد */
         const amt = planInstallmentAmount(plan);
         if (!amt && !plan.name) return;
 
         var todayJ = { y: y, m: m, d: 1 };
         try { todayJ = getTodayPersian(); } catch (eT) {}
-        /* ماه نمایش‌داده‌شده از نظر تاریخی شروع شده؟ */
         const periodEntered = (y < todayJ.y) || (y === todayJ.y && m <= todayJ.m);
 
         const indicesToShow = [];
@@ -7850,18 +7849,20 @@
           const dueThisMonth = (d.y === y && d.m === m);
           const dueBefore = (d.y < y) || (d.y === y && d.m < m);
           var dueMonthEnded = (todayJ.y > d.y) || (todayJ.y === d.y && todayJ.m > d.m);
-          const prevMeta = prevByPlan[plan.id + ':' + i] || prevByPlan[plan.id] || null;
+          /* فقط متای همین ایندکس — نه fallback به قسط دیگر */
+          const prevMeta = prevByPlan[plan.id + ':' + i] || null;
+
           if (dueThisMonth) {
-            /* سررسید این ماه — همیشه در ماه خودش */
+            /* قسط ماه جاری/سررسید: فقط در ماه خودش (پرداخت‌شده یا نشده) — بدون معوق */
             indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
           } else if (dueBefore && periodEntered && dueMonthEnded && !isPaid) {
-            /* ورود به ماه بعد + هنوز پرداخت نشده → کپی معوق */
+            /* هنوز پرداخت نشده و وارد ماه بعد شده‌ایم → کپی معوق پرداخت‌نشده */
             indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
-          } else if (dueBefore && periodEntered && dueMonthEnded && isPaid && prevMeta &&
-                     (prevMeta.planCarried || (prevMeta.desc && String(prevMeta.desc).indexOf('معوق') >= 0))) {
-            /* قبلاً به‌صورت معوق در این ماه بود و الان پرداخت شده → همان ردیف با معوق بماند */
+          } else if (dueBefore && isPaid && prevMeta && prevMeta.planCarried) {
+            /* همین ماه قبلاً معوق پرداخت‌نشده داشت؛ الان پرداخت شد → بماند با معوق؛ به ماه بعدتر نرود */
             indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
           }
+          /* قسط پرداخت‌شده‌ی قبل هرگز به‌عنوان معوق به ماه جدید اضافه نمی‌شود */
         }
         if (!indicesToShow.length) return;
 
@@ -7869,8 +7870,8 @@
           const matchIdx = item.i;
           const due = item.due;
           const autoStatus = item.isPaid ? 'paid' : 'unpaid';
-          const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
-          /* معوق: هر ردیف حمل‌شده (پرداخت‌شده یا نه) کلمه معوق را حفظ می‌کند */
+          const prev = prevByPlan[plan.id + ':' + matchIdx] || {};
+          /* معوق فقط روی ردیف حمل‌شده (چه پرداخت‌شده چه نشده) */
           var showMoavagh = !!item.carried;
           const row = {
             day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
