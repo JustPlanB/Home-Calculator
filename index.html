@@ -1477,7 +1477,7 @@
       filter: none !important;
     }
     @keyframes plusStrokePulse {
-      0%, 100% { opacity: 0.15; }
+      0%, 100% { opacity: 0.45; }
       50% { opacity: 1; }
     }
 
@@ -1724,16 +1724,16 @@
     }
     .person-card-actions .btn-edit-title,
     .person-card-actions .btn-del-row {
-      width: 34px !important;
-      height: 34px !important;
-      min-width: 34px !important;
-      min-height: 34px !important;
-      font-size: 1.25rem !important;
+      width: 28px !important;
+      height: 28px !important;
+      min-width: 28px !important;
+      min-height: 28px !important;
+      font-size: 1.05rem !important;
       padding: 0 !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      border-radius: 10px !important;
+      border-radius: 8px !important;
       border: 1px solid rgba(255,255,255,0.18) !important;
       background: rgba(0,0,0,0.15) !important;
       box-sizing: border-box !important;
@@ -1742,8 +1742,8 @@
       color: #ffffff !important;
     }
     .person-card-actions .btn-edit-title svg {
-      width: 16px !important;
-      height: 16px !important;
+      width: 13px !important;
+      height: 13px !important;
       stroke: #ffffff !important;
       color: #ffffff !important;
     }
@@ -1753,7 +1753,7 @@
     }
     .person-card-actions .btn-del-row {
       color: #ff0000 !important;
-      font-size: 1.65rem !important;
+      font-size: 1.35rem !important;
       font-weight: 900;
       line-height: 1;
     }
@@ -6969,21 +6969,52 @@
       z-index: 10040 !important;
     }
 
-    /* سطل زباله باکس ۳: درب جدا از بدنه + الاکلنگ خیلی کوچک هر ۳۰ث */
-    .home-box.box3 .home-tile .trash-can-svg {
-      width: 22px !important;
-      height: 22px !important;
+    /* سطل زباله: همان عکس کاربر — درب جدا با فاصله، الاکلنگ هر ۳۰ث */
+    .home-box.box3 .home-tile .trash-icon-anim {
+      position: relative;
+      width: 22px;
+      height: 22px;
       display: block;
       overflow: visible;
+      flex-shrink: 0;
     }
-    .home-box.box3 .home-tile .trash-can-svg .trash-lid {
-      transform-origin: 12px 6.5px;
+    .home-box.box3 .home-tile .trash-icon-anim img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      pointer-events: none;
+    }
+    .home-box.box3 .home-tile .trash-lid-clip,
+    .home-box.box3 .home-tile .trash-body-clip {
+      position: absolute;
+      left: 0;
+      width: 22px;
+      overflow: hidden;
+    }
+    /* درب + فاصله تا بدنه ≈ ۳۰٪ بالای آیکون */
+    .home-box.box3 .home-tile .trash-lid-clip {
+      top: 0;
+      height: 30%;
+      z-index: 2;
+      transform-origin: 11px 100%;
       animation: trashLidRock 30s ease-in-out infinite;
+    }
+    .home-box.box3 .home-tile .trash-lid-clip img {
+      margin-top: 0;
+    }
+    /* بدنه از زیر فاصله درب */
+    .home-box.box3 .home-tile .trash-body-clip {
+      top: 32%;
+      height: 68%;
+      z-index: 1;
+    }
+    .home-box.box3 .home-tile .trash-body-clip img {
+      margin-top: -32%; /* هم‌تراز با کل آیکون */
     }
     @keyframes trashLidRock {
       0%, 96.5%, 100% { transform: rotate(0deg); }
-      97.2% { transform: rotate(-7deg); }
-      98% { transform: rotate(6deg); }
+      97.2% { transform: rotate(-8deg); }
+      98% { transform: rotate(7deg); }
       98.8% { transform: rotate(-4deg); }
     }
 
@@ -7168,18 +7199,10 @@
             <span>حذف کلی</span>
           </button>
           <button type="button" class="home-tile icon-red" onclick="openTrashModal()" title="سطل زباله">
-            <svg class="trash-can-svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <!-- درب + دستگیره (جدا از بدنه، با فاصله) -->
-              <g class="trash-lid">
-                <path fill="#ff3b30" d="M8.2 3.2h7.6c.55 0 1 .35 1 .8v1.1H7.2V4c0-.45.45-.8 1-.8z"/>
-                <path fill="#ff3b30" d="M5.2 6.2h13.6c.7 0 1.2.45 1.2 1v1.15H4V7.2c0-.55.5-1 1.2-1z"/>
-              </g>
-              <!-- بدنه با سه شیار -->
-              <g class="trash-body">
-                <path fill="#ff3b30" d="M5.4 9.6h13.2l-1.05 10.1c-.12 1.15-1.05 2-2.15 2H8.6c-1.1 0-2.03-.85-2.15-2L5.4 9.6z"/>
-                <path fill="#1b1b1b" d="M8.35 11.2h1.7v7.2h-1.7zm2.95 0h1.7v7.2h-1.7zm2.95 0h1.7v7.2h-1.7z"/>
-              </g>
-            </svg>
+            <span class="trash-icon-anim" aria-hidden="true">
+              <span class="trash-lid-clip"><img src="data:image/png;base64,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" alt=""></span>
+              <span class="trash-body-clip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABMmlDQ1BJQ0MgUHJvZmlsZQAAeJx9kD9Lw0AYxn+Wgv8H0dEhYxelKuigLlUsOkmNYHVK0zQVmhiSlCK4+QX8EIKzowi6CjoIgpvgRxAH1/qkQdIlvsd797vnHu7ufaEwhqJYBs+Pw1q1YhzVj43RT0Y0BmHZUUB+yPXznnrfFv7x5cV404lsrV/KZqjHdaUpnnNTbifcSPki4V4cxOKrhEOztiW+FpfcIW4MsR2Eif9FvOF1unb2b6Yc//BA645ynm1OiQjoYHGOwT4rmqvaeXSJxT05YtqiiJpOKiKTUA5fSgtHTNK/9InLD9h86Pf795m29wi3azBxl2mldZiZhKfnTMt6GlihNZCKykKrBd83MF2H2Vfdc/LXyJzajEFtVc40XNXmSNnVf20WRcuUWWL1Fx+iTfmvd1mpAAAId0lEQVR42u2bW4ydVRXHf2vvfWZKGSgFKSQaX2h4mEinOAF6AY5ETGsEwYcvRPHBCw/EZzUmYJrxgvJgeCKKiUETIonHYGIkEgzKxF64OIEBMzFCSNTIVWxpp9I5Z+/99+H7Zjpz5nLOTA/TdqY7Ock533fWvvz32uu6l9HjJjADAeiG4c+QtRWSIWxZHVnZByG8xeHWb+2ll44LnEHu5Xyt14sHjOs+dikh/ALv9pz6DA1Sfp7IF+yZF17tNQiup9u/b58ZZLx/mL7aHmKKxJSIOZXf81RXn5RaFU2iFSPBX4PT46oPDgBSDzeuZwCoKLyNjGTdcPWNBP9pppoRs4CZx/A4F6j5/q4+ztUwfElrgWZs0heuJPbfaSDqdd+reYee7f7bb5e7ktlKMM05GWaG9C4xNsCOdjiSAfRZzF2BpPKZHEJIl/VaZgV63vKF4E+yqJQJ3tOM37BD4w93xU07h56i5n5HTBmj2m0ZpktWFQCBsQ9jouh85o4d8yoK8forG+Z3AzjL2ru1n7Qx4P8XF57NJk98L3GUVkVmbQKxX0XhZ8bq1AYbYgRNa6WuABAYReEYbMhGyIwgaHQDZgLQ7qETizD3cXvi1SlgqjMHbJ9c5M2kNRppeqxlaad63TM6mtrBsHmCrByg/H3ttRfiT3wU7y8j54zl98FfsIi68kgJ9GV8+DwxpplnwXtS+gnYYyf/t1Qf3Ix33yTmjOEQGe8cOR0C/QAXmqQkzBbngpwTzr1Lf/+b9sdn31psjdb+QgWeN7Z/DuxLSMMYl+PctGlT6uUl4RbkBeblXPfKS0BeQNU76zz+7D4kkN7DmAB7FOIjtv/lwyrw1ii5yOYsfse2W6n572JuqEKx6oRcTd4Q6sK0Wki9ZrQMvrXF+pC6QmF6HmYngcv536R8rx0c//n0mm1m8Tu3fYVa7WdIkFKqWNL12lo8DU3lpinjXMA7aMZv2aHx+1UUpbrSzu3XUHPPkXIq7SzzrMUmMijTVwu0WnfYgfFfmcDYNfQktXAzrVhab2u5SQnvHSm/Qm3TkGnH8FX49EJ1bo310VT6rLYrYM0t4AWKy3ZZz9pmGYcjpysCzjtqISCxrpp3kKZiwPm/0orfB86rHA+/tpnfMkamFadI+WnWeyu1wPBwYGBA5MlLkW4l63zQMRx9YBvIaSU8BmQhjmBuM04nyGqBCcsZ8y1SarcWHRDIuYlzF1P6MUcRF538jwelI2Q3gLfQ/dxMhNp75PgMftPfmZw0xsZiMJAGBmSjo1E7tn2K8zc8RCvN1Qd+pXETNx+T2V8W7dd332+3c5Og5uB9HrL9o3erXg8GCm22dqYVIzHFDyZWcFrb9JpaS8cDpg2htWYQlRZuaLd13HoXgqEHyMY5qHbrR0ipjBUCKFd0nQ2x0p6fjjN2T/eBATBjRFnphKesriZUC34mbuDMkRId3WUhvCtdXKmiq1z23ojp5USZKnu6lR4kxc/SSgUpP4F3xtKJi5Iu5keJupmU9hDTA8iOV9kgLbr44Iys50npTnK6iRhHgMNVeECrxwHTkd6Y77GDL943682vdf32P+HdJ4gpzTsOUiIET44/sgPjX5/15kntHvonPjywoEdahsSMlJ/lcPNGm5hoVm+e1s7tj+N5urJktdzj4Fa0+2aelIU1H1FReA0P11Svl9HgrN9jbuEdKc8tmD2mAq+i6KtoAzk8QUyLaB9lnDOkx2xioql6fYMKvAYH++zQi88jjeNdKRNW6QhUASq30RqNxNhYAmKZsupCfSb1VzG5xNhYstHR2KU1F6q0WKRBZmKipaLwwEC592arC4B3uS0Mp5ms7tLxupVJLZsb45/5LgZWWwieYR7NyrPFZw4Abdy0Wu30A1BUabfYvOhU1NnZzwGmgfUNgLN1egRON+5nm1O7vgEQ/esYAIH1/orMmQNAlutk7QCvrz0AGo3yXJs/Wvn1S9jztmENq8HQAQDxQVySOnMASNl1IQby2gXgnB1wDoCOPi9y765vOwBtXt9HwHqfuj/nC5wTgucAOCX73RZg0m7ye/P/k3M3IW07swAIPs8uX9E+HM46X9nwLmnW2ALD+85WntmU9rXRlYUaWm0AyuxsjucZiMHBwDvvOBshk7V4jF4q84IpXlQVPnn2bq2V8f10Ac7BUnnFrItthMzkpDE8HAxUJVVW7CStJDdo5W1L50i176g+fJeNjv0HQNdvuw64q7rK7hdDAfP3aOfV49Zo/ANAn7zmEqZa38ZMMyDN3fkyFefcXu3++A47MPYMgPZu7Wfy/O9h/iOklKu7zacAgNQdO52c0G3EtFu7tu8H9SPbg5k7WeuzKN21kCe0e+gPwBucaN2Od5eX+cYFgbMKmC2YDmnX0CjY3zjKTQR3ZUXnTp0DvDtRCajuBFLKGWcfIrjbEZQ5fnXK0Bo5C2MjLtyGASkzUxyxNOeVfQdfx6xOFmVdUbeLN2H25nwARkerc5fGSKRZ8XnrAEG5262Yqx12XYMnRIyZ6WyzdSWPSg6NaZrOLWvnlQ3xFABbtmhGCBpkFYW3/S+/hnQffcFT3qbKXU2qrO9b7lUVm6kLXDmd60pgiyb9tUBKP7aDLxyaXTZjc1RKUThrNJJ2Dz1IrfY1YoKcY4Xy2Wc2SwlngRCgGX/DlL+DW25JjIzMZJmtPehEVVyiXVffjeNegv8wKUOq2O5scJsNhzPDe4jpCNL9duDFH07bLG0p9oWjbwbS9VdthvBF4Ks4N9T9DRS1da9FDDqtbIGdxi6LpV4DfomFn9qf//KvhRa/ZG+q18P0zQ0ND29kYyrAbSanzZj1kxcoXnJAIuI4Ul6DYxPY5LwyufL5CaSpZa/f2YXAeXPHl6rKtuOY/gv2Gs1jB+25V4+2r6W9/R80Zxa7u5KJ2gAAAABJRU5ErkJggg==" alt=""></span>
+            </span>
             <span>سطل زباله</span>
           </button>
         </div>
@@ -7500,7 +7523,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v86 | period-lists-safe trash-filled plus-dim */
+    /* build-stamp: 2026-09-22-v87 | plus-restore trash-photo actions-sm */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
