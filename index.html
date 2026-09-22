@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v96-PENTA | no-paid-carry moavagh-on-pay sms-shortcut */
+    /* build-stamp: 2026-09-22-v97-PENTA | overdue-copy-keep-paid sms-close-refresh */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7814,7 +7814,9 @@
               const meta = {
                 day: r.day, account: r.account || '', status: r.status, id: r.id,
                 createdBy: r.createdBy, createdByName: r.createdByName,
-                ownerHandle: r.ownerHandle, createdAt: r.createdAt
+                ownerHandle: r.ownerHandle, createdAt: r.createdAt,
+                planCarried: !!r.planCarried,
+                desc: r.desc || ''
               };
               prevByPlan[pk] = meta;
               if (!prevByPlan[plan.id]) prevByPlan[plan.id] = meta;
@@ -7848,12 +7850,17 @@
           const dueThisMonth = (d.y === y && d.m === m);
           const dueBefore = (d.y < y) || (d.y === y && d.m < m);
           var dueMonthEnded = (todayJ.y > d.y) || (todayJ.y === d.y && todayJ.m > d.m);
+          const prevMeta = prevByPlan[plan.id + ':' + i] || prevByPlan[plan.id] || null;
           if (dueThisMonth) {
-            /* سررسید این ماه — اگر دیر پرداخت شده باشد شرح معوق می‌گیرد */
+            /* سررسید این ماه — همیشه در ماه خودش */
             indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
-          } else if (dueBefore && !isPaid && periodEntered && dueMonthEnded) {
-            /* فقط معوق پرداخت‌نشده به ماه بعد */
+          } else if (dueBefore && periodEntered && dueMonthEnded && !isPaid) {
+            /* ورود به ماه بعد + هنوز پرداخت نشده → کپی معوق */
             indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+          } else if (dueBefore && periodEntered && dueMonthEnded && isPaid && prevMeta &&
+                     (prevMeta.planCarried || (prevMeta.desc && String(prevMeta.desc).indexOf('معوق') >= 0))) {
+            /* قبلاً به‌صورت معوق در این ماه بود و الان پرداخت شده → همان ردیف با معوق بماند */
+            indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
           }
         }
         if (!indicesToShow.length) return;
@@ -7863,9 +7870,8 @@
           const due = item.due;
           const autoStatus = item.isPaid ? 'paid' : 'unpaid';
           const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
-          /* معوق: ردیف حمل‌شده پرداخت‌نشده، یا پرداخت‌شده بعد از پایان ماه سررسید */
-          var dueMonthEndedForItem = (todayJ.y > due.y) || (todayJ.y === due.y && todayJ.m > due.m);
-          var showMoavagh = item.carried || (item.isPaid && dueMonthEndedForItem);
+          /* معوق: هر ردیف حمل‌شده (پرداخت‌شده یا نه) کلمه معوق را حفظ می‌کند */
+          var showMoavagh = !!item.carried;
           const row = {
             day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
             desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
@@ -16821,20 +16827,24 @@ function openPdfPrintWindow(){
             try {
               for (var oi = 0; oi < bankSel.options.length; oi++) {
                 var op = bankSel.options[oi];
-                if (op.value && op.value !== '__add_account__' && op.selected) { keepPrev = op.value; break; }
+                if (op.value && op.value !== '__add_account__') {
+                  /* مقدار قبل از انتخاب + */
+                }
               }
+              if (bankSel.dataset.prevVal) keepPrev = bankSel.dataset.prevVal;
             } catch (e0) {}
-            /* میان‌بر همان منوی انتخاب حساب */
             setTimeout(function() {
-              try {
-                bankSel.value = keepPrev || '';
-              } catch (e1) {}
+              try { bankSel.value = keepPrev || ''; } catch (e1) {}
+              try { if (bankSel._fancyRender) bankSel._fancyRender(); } catch (eF) {}
               try {
                 window._returnToSmsConfirm = true;
                 if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
               } catch (eA) {}
             }, 0);
           };
+          bankSel.addEventListener('focus', function() {
+            try { bankSel.dataset.prevVal = bankSel.value || ''; } catch (eP) {}
+          });
         }
         const typeSelEl = meta.querySelector('#smsConfirmType');
         if (typeSelEl) enhanceSelectFont(typeSelEl);
@@ -18250,14 +18260,6 @@ function openPdfPrintWindow(){
     }
     function saveBankAccountsSelection() {
       try { localStorage.setItem(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts)); } catch (e) {}
-      try {
-        if (typeof refreshSmsConfirmBankSelect === 'function') {
-          var sm = document.getElementById('smsConfirmModal');
-          if ((sm && sm.classList.contains('open')) || window._returnToSmsConfirm) {
-            refreshSmsConfirmBankSelect();
-          }
-        }
-      } catch (eSmsRef) {}
     }
 
     function loadTrash() {
@@ -18755,6 +18757,7 @@ if (item.type === 'recurring') {
         addOpt.value = '__add_account__';
         addOpt.textContent = '＋ افزودن حساب';
         bankSel.appendChild(addOpt);
+        /* انتخاب قبلی را حفظ کن — حساب جدید را auto-select نکن */
         if (prev && prev !== '__add_account__' && personalized.indexOf(prev) >= 0) {
           bankSel.value = prev;
         } else {
@@ -18765,12 +18768,14 @@ if (item.type === 'recurring') {
           var keepPrev = (prev && personalized.indexOf(prev) >= 0) ? prev : '';
           setTimeout(function() {
             try { bankSel.value = keepPrev; } catch (e1) {}
+            try { if (bankSel._fancyRender) bankSel._fancyRender(); } catch (eF) {}
             try {
               window._returnToSmsConfirm = true;
               if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
             } catch (eA) {}
           }, 0);
         };
+        try { if (bankSel._fancyRender) bankSel._fancyRender(); } catch (eR) {}
       } catch (e) {}
     }
     function closeBankAccountsModal() {
@@ -18788,6 +18793,7 @@ if (item.type === 'recurring') {
           const sm = document.getElementById('smsConfirmModal');
           if (sm) sm.classList.add('open');
         } catch (eS) {}
+        /* بعد از بستن منوی حساب: لیست بانک پیامک را با حساب‌های جدید پر کن، بدون auto-select */
         try { refreshSmsConfirmBankSelect(); } catch (eR) {}
         return;
       }
@@ -19016,15 +19022,7 @@ if (item.type === 'recurring') {
         renderBankAccountsList();
         try { renderHomeCards(); } catch (eR) {}
         if (!isEdit) showToast('حساب اضافه شد');
-        /* هر تغییر در منوی حساب → بلافاصله در منوی پیامک منعکس شود */
-        try {
-          if (document.getElementById('smsConfirmModal') &&
-              document.getElementById('smsConfirmModal').classList.contains('open')) {
-            if (typeof refreshSmsConfirmBankSelect === 'function') refreshSmsConfirmBankSelect();
-          } else if (window._returnToSmsConfirm) {
-            if (typeof refreshSmsConfirmBankSelect === 'function') refreshSmsConfirmBankSelect();
-          }
-        } catch (eR2) {}
+        /* به‌روزرسانی منوی پیامک فقط بعد از بستن منوی حساب (closeBankAccountsModal) */
       };
     }
 
