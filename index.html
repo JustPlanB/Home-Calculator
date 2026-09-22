@@ -1454,29 +1454,36 @@
     }
         .home-add-wrap .btn-circle-plus.lg {
       margin: 0 !important;
-      width: 64px !important;
-      height: 64px !important;
-      min-width: 64px !important;
-      min-height: 64px !important;
+      width: 54px !important;
+      height: 54px !important;
+      min-width: 54px !important;
+      min-height: 54px !important;
       background: #1b1b1b !important;
       border: none !important;
       outline: none !important;
-      overflow: hidden; box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
+      overflow: visible !important;
+      box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
       transform: translateZ(0);
     }
-    .home-add-wrap .btn-circle-plus.lg svg,
+    .home-add-wrap { overflow: visible !important; }
+        .home-add-wrap .btn-circle-plus.lg svg,
     .home-add-wrap .btn-circle-plus.lg svg path {
-      width: 40px !important;
-      height: 40px !important;
+      width: 32px !important;
+      height: 32px !important;
       stroke: #00b7ff !important;
       stroke-width: 3.4 !important;
-      animation: plusSoftFade 2.8s ease-in-out infinite !important;
-      filter: none !important;
+      animation: plusHaloPulse 2.6s ease-in-out infinite !important;
       opacity: 1 !important;
     }
-    @keyframes plusSoftFade {
-      0%, 100% { opacity: 0.28; }
-      50% { opacity: 1; }
+    @keyframes plusHaloPulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 3px rgba(0, 183, 255, 0.35)) drop-shadow(0 0 6px rgba(0, 183, 255, 0.18));
+        opacity: 0.88;
+      }
+      50% {
+        filter: drop-shadow(0 0 8px rgba(0, 183, 255, 0.95)) drop-shadow(0 0 16px rgba(0, 183, 255, 0.45));
+        opacity: 1;
+      }
     }
 
     /* خلاصه اقساط: مبلغ داخل سلول */
@@ -6289,7 +6296,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 88px; /* متن ورود با اثرانگشت پایین‌تر */
+      gap: 10px; /* فاصله پایه؛ متن با margin پایین می‌رود */
     }
     #appLockOverlay .lock-bio-btn .lock-bio-icon {
       width: auto;
@@ -6331,7 +6338,8 @@
       font-size: 0.86rem;
       font-weight: 700;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
-      margin-top: 0; /* فاصله با gap کنترل می‌شود */
+      margin-top: 22px !important; /* فقط متن پایین‌تر — آیکون ثابت */
+      display: block;
     }
     #appLockOverlay .lock-bio-btn:active .lock-bio-icon {
       box-shadow: none !important;
@@ -6858,6 +6866,17 @@
       align-items: center !important;
     }
 
+
+    /* سوایپ چپ/راست برای حذف باکس یادآورها از صفحه اصلی */
+    .user-remind-bar.ur-swiping {
+      transition: none !important;
+    }
+    .user-remind-bar.ur-dismiss-fly {
+      transition: transform 0.28s ease-out, opacity 0.28s ease-out !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+
   </style>
 </head>
 <body class="tabs-main-hidden">
@@ -7361,7 +7380,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v78 | bio-lower remind-shorter */
+    /* build-stamp: 2026-09-22-v79 | bio-label empty-acc swipe-ur plus-halo */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -15159,8 +15178,17 @@ function openPdfPrintWindow(){
       } catch (e) {}
       if (!banks.length) {
         const empty = document.createElement('div');
-        empty.style.cssText = 'padding:12px;color:var(--muted);font-size:0.85rem;text-align:center;';
-        empty.textContent = 'حسابی ثبت نشده';
+        empty.style.cssText = 'padding:12px;color:#08b5f5;font-size:0.85rem;text-align:center;cursor:pointer;text-decoration:underline;';
+        empty.textContent = 'حسابی ثبت نشده — برای افزودن ضربه بزنید';
+        empty.setAttribute('role', 'button');
+        empty.onclick = function(ev) {
+          try { ev.preventDefault(); ev.stopPropagation(); } catch (e0) {}
+          try { list.remove(); } catch (e1) {}
+          try {
+            if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
+            else if (typeof window.openBankAccountsModal === 'function') window.openBankAccountsModal(false);
+          } catch (e2) {}
+        };
         list.appendChild(empty);
       }
       banks.forEach(b => {
@@ -18828,6 +18856,89 @@ if (item.type === 'recurring') {
         return localStorage.getItem(STORAGE_KEY + '_urHomeDismissed') === key;
       } catch (e) { return false; }
     }
+
+    function bindUserRemindSwipe() {
+      if (window._urSwipeBound) return;
+      window._urSwipeBound = true;
+      var startX = 0, startY = 0, dx = 0, active = false, decided = false;
+      function barEl() { return document.getElementById('userRemindBar'); }
+      function onStart(e) {
+        var bar = barEl();
+        if (!bar || bar.style.display === 'none') return;
+        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
+        bar.classList.add('ur-swiping');
+        bar.style.transition = 'none';
+      }
+      function onMove(e) {
+        if (!active) return;
+        var bar = barEl();
+        if (!bar) return;
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        var x = t.clientX - startX, y = t.clientY - startY;
+        if (!decided) {
+          if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
+          if (Math.abs(y) > Math.abs(x)) { active = false; bar.classList.remove('ur-swiping'); bar.style.transform = ''; return; }
+          decided = true;
+        }
+        dx = x;
+        try { e.preventDefault(); } catch (eP) {}
+        bar.style.transform = 'translateX(' + dx + 'px)';
+        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
+      }
+      function onEnd() {
+        if (!active && !decided) {
+          var b0 = barEl();
+          if (b0) { b0.classList.remove('ur-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
+          active = false; return;
+        }
+        active = false;
+        var bar = barEl();
+        if (!bar) return;
+        bar.classList.remove('ur-swiping');
+        var w = bar.getBoundingClientRect().width || 300;
+        if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
+          var dir = dx > 0 ? 1 : -1;
+          bar.classList.add('ur-dismiss-fly');
+          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
+          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
+          bar.style.opacity = '0';
+          setTimeout(function() {
+            try { dismissUserRemindBar(null); } catch (eD) {}
+            try {
+              bar.classList.remove('ur-dismiss-fly');
+              bar.style.transform = '';
+              bar.style.opacity = '';
+              bar.style.transition = '';
+            } catch (eC) {}
+          }, 280);
+        } else {
+          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+          bar.style.transform = 'translateX(0)';
+          bar.style.opacity = '1';
+          setTimeout(function() {
+            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eR) {}
+          }, 220);
+        }
+        dx = 0; decided = false;
+      }
+      document.addEventListener('touchstart', function(e) {
+        var bar = barEl();
+        if (!bar || bar.style.display === 'none') return;
+        if (e.target && bar.contains(e.target)) onStart(e);
+      }, { passive: true, capture: true });
+      document.addEventListener('touchmove', function(e) {
+        if (active && decided) onMove(e);
+        else if (active) onMove(e);
+      }, { passive: false, capture: true });
+      document.addEventListener('touchend', onEnd, { passive: true, capture: true });
+      document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
+    }
+    try { bindUserRemindSwipe(); } catch (eSw) {}
+
     function dismissUserRemindBar(ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       try {
