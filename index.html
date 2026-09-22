@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v93-PENTA | acc-menu-size plus-right bank-editor-z moavagh */
+    /* build-stamp: 2026-09-22-v94-PENTA | moavagh-paid no-auto-acc confirm-z ادامه */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7863,9 +7863,12 @@
           const due = item.due;
           const autoStatus = item.isPaid ? 'paid' : 'unpaid';
           const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
+          /* معوق: حمل‌شده یا پرداخت‌شده بعد از پایان ماه سررسید */
+          var dueMonthEndedForItem = (todayJ.y > due.y) || (todayJ.y === due.y && todayJ.m > due.m);
+          var showMoavagh = item.carried || (item.isPaid && dueMonthEndedForItem);
           const row = {
             day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
-            desc: planInstallmentDesc(plan, matchIdx, count) + (item.carried ? ' (معوق)' : ''),
+            desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
             amount: amt,
             status: autoStatus,
             account: prev.account || '',
@@ -8233,8 +8236,8 @@
       document.getElementById('confirmMsg').textContent = msg;
       confirmCallback = onYes || null;
       confirmNoCallback = onNo || null;
-      /* بالاتر از bankAddEditor (480) و bankEditorDim (470) */
-      if (cm) cm.style.zIndex = '520';
+      /* بالاتر از bankAddEditor / bankEditorDim و مودال پیامک */
+      if (cm) cm.style.zIndex = '100300';
       cm.classList.add('open');
       syncModalOverlaysToViewport();
     }
@@ -18732,8 +18735,11 @@ if (item.type === 'recurring') {
         addOpt.value = '__add_account__';
         addOpt.textContent = '＋ افزودن حساب';
         bankSel.appendChild(addOpt);
-        if (personalized.length && (!prev || prev === '__add_account__' || prev === '')) {
-          bankSel.value = personalized[personalized.length - 1];
+        /* حساب قبلی را نگه دار؛ اگر خالی بود خالی بماند — حساب جدید را خودکار نگذار */
+        if (prev && prev !== '__add_account__' && personalized.indexOf(prev) >= 0) {
+          bankSel.value = prev;
+        } else {
+          bankSel.value = '';
         }
         bankSel.onchange = function() {
           if (bankSel.value === '__add_account__') {
@@ -18920,7 +18926,7 @@ if (item.type === 'recurring') {
           balInp.addEventListener('dblclick', function(ev) {
             ev.preventDefault();
             ev.stopPropagation();
-            askConfirm('تغییر موجودی، روی موجودی‌های محاسبه‌شده پس از این تاریخ تأثیر می‌گذارد', function() {
+            askConfirm('تغییر موجودی، روی موجودی‌های محاسبه‌شده پس از این تاریخ تأثیر می‌گذارد. ادامه؟', function() {
               balInp.readOnly = false;
               balInp.style.opacity = '1';
               balInp.style.cursor = 'text';
@@ -18991,7 +18997,7 @@ if (item.type === 'recurring') {
         renderBankAccountsList();
         try { renderHomeCards(); } catch (eR) {}
         if (!isEdit) showToast('حساب اضافه شد');
-        /* برگشت به باکس پیامک + به‌روزرسانی لیست حساب */
+        /* فقط لیست حساب را به‌روز کن؛ حساب جدید را برای تراکنش انتخاب نکن */
         if (window._returnToSmsConfirm) {
           try {
             const sm = document.getElementById('smsConfirmModal');
@@ -19000,8 +19006,7 @@ if (item.type === 'recurring') {
           try {
             if (typeof refreshSmsConfirmBankSelect === 'function') {
               refreshSmsConfirmBankSelect();
-              const bankSel = document.getElementById('smsConfirmBank');
-              if (bankSel && name) bankSel.value = name;
+              /* prev را حفظ کن — حساب جدید را auto-select نکن */
             }
           } catch (eR2) {}
         }
