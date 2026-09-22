@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v100-PENTA | late-pay-no-touch-prev reminder-refresh */
+    /* build-stamp: 2026-09-22-v102-PENTA | instant-ui freeze-opening early-pay */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7829,7 +7829,8 @@
         (pd.expense.sections || []).forEach(s => {
           if (!s.rows) return;
           const before = s.rows.length;
-          s.rows = s.rows.filter(r => r.fromPlanId !== plan.id);
+          /* ردیف پیش‌پرداخت قسط ماه بعد را نگه دار */
+          s.rows = s.rows.filter(r => r.fromPlanId !== plan.id || r.planEarlyPay);
           if (!s.rows.length && before) s.rows = [emptyRow()];
         });
 
@@ -9026,13 +9027,7 @@
               if (periodData.accountOpeningInstant[k] == null) periodData.accountOpeningInstant[k] = endingAcc[k];
             });
           }
-          try {
-            (selectedBankAccounts || []).forEach(function(a) {
-              if (!a) return;
-              var lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
-              if (lb && endingAcc && endingAcc[lb] != null) a.openingBalance = endingAcc[lb];
-            });
-          } catch (eA) {}
+          /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
         } catch (eC) {}
       }
       // ماه جدید را هم در آرشیو ثبت کن (اگر فقط هدر کپی شده)
@@ -9164,22 +9159,39 @@
       syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
     }
 
+    function flushUiAfterChange() {
+      try {
+        if (typeof scheduleSummaryUpdate === 'function') scheduleSummaryUpdate();
+      } catch (e0) {}
+      try {
+        if (typeof checkInstallReminders === 'function') checkInstallReminders();
+      } catch (e1) {}
+      try {
+        if (typeof updateInstallSummary === 'function') updateInstallSummary();
+      } catch (e2) {}
+      try {
+        var hc = document.getElementById('homeCards');
+        if (hc && typeof renderHomeCards === 'function') {
+          /* صفحه اصلی کارت‌ها — موجودی آنی و مانده */
+          renderHomeCards();
+        }
+      } catch (e3) {}
+    }
     function scheduleSave() {
       touchLocal();
-      editingLock = true;
+      /* UI بلافاصله؛ ذخیره با تأخیر کوتاه */
+      try { flushUiAfterChange(); } catch (eF) {}
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
         try { persistCurrent(); } catch (e) {}
         try { saveArchive(); } catch (e) {}
-        editingLock = false;
-        // هیچ صف/ارسال ابری خودکار — فقط دکمه «ارسال به ابر»
-      }, 700);
+      }, 120);
     }
 
     /* —— به‌روزرسانی خلاصه با debounce برای جلوگیری از لگ هنگام تایپ —— */
     let _summaryTimer = null;
     function scheduleSummaryUpdate() {
-      if (_summaryTimer) return;
+      if (_summaryTimer) cancelAnimationFrame(_summaryTimer);
       _summaryTimer = requestAnimationFrame(() => {
         _summaryTimer = null;
         try {
@@ -11399,6 +11411,7 @@
         const count = Math.max(0, parseInt(plan.count, 10) || 0);
         const paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
         for (let i = paid; i < count; i++) {
+          if (plan.paidEarlyMap && plan.paidEarlyMap[String(i)]) continue; /* پیش‌پرداخت شده */
           const due = dueDateForInstallment(plan, i);
           const dueIdx = dateToIndex(due.y, due.m, due.d);
           const amt = planInstallmentAmount(plan);
@@ -11514,14 +11527,7 @@
               if (periodData.accountOpeningInstant[k] == null) periodData.accountOpeningInstant[k] = accEnding[k];
             });
           }
-          // موجودی اولیه حساب‌ها در selectedBankAccounts هم با ماه قبل هم‌تراز شود
-          try {
-            (selectedBankAccounts || []).forEach(function(a) {
-              if (!a) return;
-              const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
-              if (lb && accEnding[lb] != null) a.openingBalance = accEnding[lb];
-            });
-          } catch (eAcc) {}
+          /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
           try { persistCurrent(); } catch (eP2) {}
           advanced = true;
         }
@@ -17062,9 +17068,63 @@ function openPdfPrintWindow(){
       }
 
       if (linkedPlan && linkedIdx >= 0) {
-        /* هدف: همان ردیف قسط در ماه جاری (اولویت با معوق) */
         const cnt = Math.max(0, parseInt(linkedPlan.count, 10) || 0);
         const baseDesc = planInstallmentDesc(linkedPlan, linkedIdx, cnt);
+        /* پرداخت زودهنگام قسط ماه بعد: فقط ردیف در ماه جاری؛ ماه سررسید دست‌نخورده */
+        var dueEarly = null;
+        try { dueEarly = dueDateForInstallment(linkedPlan, linkedIdx); } catch (eDe) {}
+        var isFutureDue = dueEarly && ((dueEarly.y > currentYear) || (dueEarly.y === currentYear && dueEarly.m > currentMonth));
+        if (isFutureDue) {
+          if (!linkedPlan.paidEarlyMap) linkedPlan.paidEarlyMap = {};
+          linkedPlan.paidEarlyMap[String(linkedIdx)] = {
+            y: currentYear, m: currentMonth,
+            amount: amount, day: day || '', account: bank || ''
+          };
+          /* paidCount را بالا نبر — ماه سررسید پرداخت‌نشده بماند */
+          let earlyRow = null;
+          let earlySec = sec;
+          (periodData.expense.sections || []).forEach(function(s) {
+            (s.rows || []).forEach(function(r) {
+              if (r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx && r.planEarlyPay) {
+                earlyRow = r; earlySec = s;
+              }
+            });
+          });
+          if (!earlyRow) {
+            earlyRow = emptyRow();
+            earlyRow.fromPlanId = linkedPlan.id;
+            earlyRow.fromPlanIndex = linkedIdx;
+            earlyRow.planEarlyPay = true;
+            const emptyIdxE = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
+            if (emptyIdxE >= 0) sec.rows[emptyIdxE] = earlyRow;
+            else sec.rows.push(earlyRow);
+            earlySec = sec;
+          }
+          earlyRow.status = 'paid';
+          earlyRow.amount = amount;
+          if (day) earlyRow.day = day;
+          if (bank) earlyRow.account = bank;
+          earlyRow.desc = baseDesc + ' (پیش‌پرداخت)';
+          earlyRow.planEarlyPay = true;
+          earlyRow.allowPlanFieldEdit = true;
+          earlyRow.fromPlanId = linkedPlan.id;
+          earlyRow.fromPlanIndex = linkedIdx;
+          if (earlySec && earlySec.rows) {
+            earlySec.rows.sort((a, b) => (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99));
+            earlySec.collapsed = false;
+          }
+          sec = earlySec || sec;
+          try { updateInstallSummary(); } catch (eU) {}
+          try { checkInstallReminders(); } catch (eR) {}
+          persistCurrent();
+          scheduleSave();
+          closeSmsConfirmModal();
+          if (currentTab !== tab) switchTab(tab);
+          else renderAll();
+          showToast('پیش‌پرداخت قسط ثبت شد: ' + formatNum(amount));
+          return;
+        }
+        /* هدف: همان ردیف قسط در ماه جاری (اولویت با معوق) */
         let target = null;
         let targetSec = null;
         (periodData.expense.sections || []).forEach(function(s) {
