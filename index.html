@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v95-PENTA | sms-bank-shortcut moavagh-paid-row */
+    /* build-stamp: 2026-09-22-v96-PENTA | no-paid-carry moavagh-on-pay sms-shortcut */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7849,17 +7849,11 @@
           const dueBefore = (d.y < y) || (d.y === y && d.m < m);
           var dueMonthEnded = (todayJ.y > d.y) || (todayJ.y === d.y && todayJ.m > d.m);
           if (dueThisMonth) {
+            /* سررسید این ماه — اگر دیر پرداخت شده باشد شرح معوق می‌گیرد */
             indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
-          } else if (dueBefore && periodEntered && dueMonthEnded && !isPaid) {
-            /* معوق پرداخت‌نشده — در ماه‌های بعد */
+          } else if (dueBefore && !isPaid && periodEntered && dueMonthEnded) {
+            /* فقط معوق پرداخت‌نشده به ماه بعد */
             indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
-          } else if (dueBefore && periodEntered && dueMonthEnded && isPaid) {
-            /* معوق که بعداً پرداخت شده — فقط در ماه بلافاصله بعد از سررسید با همان شرح */
-            var nm = d.m + 1, ny = d.y;
-            if (nm > 12) { nm = 1; ny++; }
-            if (y === ny && m === nm) {
-              indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
-            }
           }
         }
         if (!indicesToShow.length) return;
@@ -7869,7 +7863,7 @@
           const due = item.due;
           const autoStatus = item.isPaid ? 'paid' : 'unpaid';
           const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
-          /* معوق: ردیف حمل‌شده (چه پرداخت‌شده چه نشده) یا پرداخت دیرهنگام در ماه سررسید */
+          /* معوق: ردیف حمل‌شده پرداخت‌نشده، یا پرداخت‌شده بعد از پایان ماه سررسید */
           var dueMonthEndedForItem = (todayJ.y > due.y) || (todayJ.y === due.y && todayJ.m > due.m);
           var showMoavagh = item.carried || (item.isPaid && dueMonthEndedForItem);
           const row = {
@@ -16822,15 +16816,24 @@ function openPdfPrintWindow(){
           bankSel.appendChild(addOpt);
           enhanceSelectFont(bankSel);
           bankSel.onchange = function() {
-            if (bankSel.value === '__add_account__') {
-              bankSel.value = '';
+            if (bankSel.value !== '__add_account__') return;
+            var keepPrev = '';
+            try {
+              for (var oi = 0; oi < bankSel.options.length; oi++) {
+                var op = bankSel.options[oi];
+                if (op.value && op.value !== '__add_account__' && op.selected) { keepPrev = op.value; break; }
+              }
+            } catch (e0) {}
+            /* میان‌بر همان منوی انتخاب حساب */
+            setTimeout(function() {
+              try {
+                bankSel.value = keepPrev || '';
+              } catch (e1) {}
               try {
                 window._returnToSmsConfirm = true;
-                var bm = document.getElementById('bankAccountsModal');
-                if (bm) bm.style.zIndex = '100200';
                 if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
               } catch (eA) {}
-            }
+            }, 0);
           };
         }
         const typeSelEl = meta.querySelector('#smsConfirmType');
@@ -18710,7 +18713,13 @@ if (item.type === 'recurring') {
       _bankModalFromMenu = fromMenu !== false;
       try { closeSideMenu(); } catch (e) {}
       renderBankAccountsList();
-      document.getElementById('bankAccountsModal').classList.add('open');
+      var bm = document.getElementById('bankAccountsModal');
+      if (bm) {
+        if (window._returnToSmsConfirm) {
+          bm.style.zIndex = '100200';
+        }
+        bm.classList.add('open');
+      }
     }
     function maybeShowFirstRunBankSetup() {
       try {
@@ -18752,15 +18761,15 @@ if (item.type === 'recurring') {
           bankSel.value = '';
         }
         bankSel.onchange = function() {
-          if (bankSel.value === '__add_account__') {
-            bankSel.value = (prev && personalized.indexOf(prev) >= 0) ? prev : '';
+          if (bankSel.value !== '__add_account__') return;
+          var keepPrev = (prev && personalized.indexOf(prev) >= 0) ? prev : '';
+          setTimeout(function() {
+            try { bankSel.value = keepPrev; } catch (e1) {}
             try {
               window._returnToSmsConfirm = true;
-              var bm = document.getElementById('bankAccountsModal');
-              if (bm) bm.style.zIndex = '100200';
               if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
             } catch (eA) {}
-          }
+          }, 0);
         };
       } catch (e) {}
     }
@@ -21323,10 +21332,14 @@ field('حساب بانکی', accSelRec);
           const need = idx + 1;
           if (paid < need) {
             plan.paidCount = Math.min(count, need);
-            syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            try {
+              if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+              else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            } catch (eSync) {
+              syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            }
             updateInstallSummary();
             checkInstallReminders();
-            // اگر تب اقساط باز است UI را تازه کن
             if (currentTab === 'install') renderPlans();
             showToast('قسط در بخش اقساط هم "پرداخت شده" شد');
           }
@@ -21334,7 +21347,12 @@ field('حساب بانکی', accSelRec);
           // برگشت به پرداخت‌نشده: اگر آخرین پرداخت‌شده همین قسط بود، یکی کم کن
           if (paid === idx + 1) {
             plan.paidCount = Math.max(0, paid - 1);
-            syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            try {
+              if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+              else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            } catch (eSync2) {
+              syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            }
             updateInstallSummary();
             checkInstallReminders();
             if (currentTab === 'install') renderPlans();
