@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v92-PENTA | carry-after-month-end plan-desc bank-z plus-only */
+    /* build-stamp: 2026-09-22-v93-PENTA | acc-menu-size plus-right bank-editor-z moavagh */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7865,7 +7865,7 @@
           const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
           const row = {
             day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
-            desc: planInstallmentDesc(plan, matchIdx, count),
+            desc: planInstallmentDesc(plan, matchIdx, count) + (item.carried ? ' (معوق)' : ''),
             amount: amt,
             status: autoStatus,
             account: prev.account || '',
@@ -15352,7 +15352,7 @@ function openPdfPrintWindow(){
       try { document.querySelectorAll('.dark-select-list.open').forEach(l => { try { l.remove(); } catch (e2) {} }); } catch (e0) {}
       const list = document.createElement('div');
       list.className = 'dark-select-list open';
-      list.style.cssText = 'position:fixed;z-index:99999;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:140px;box-sizing:border-box;';
+      list.style.cssText = 'position:fixed;z-index:99999;max-height:240px;overflow:auto;background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;min-width:150px;width:150px;box-sizing:border-box;';
       // لیست حساب‌های قابل انتخاب (global) — جدا از حسابِ انتخاب‌شده‌ی ردیف
       const banks = [];
       const seen = new Set();
@@ -15379,16 +15379,11 @@ function openPdfPrintWindow(){
         Object.keys(map).forEach(k => addBankName(map[k]));
         Object.values(map).forEach(v => addBankName(v));
       } catch (e) {}
-      if (!banks.length) {
-        /* فقط بعلاوه — بدون متن؛ منوی باریک؛ راست‌چین */
-        list.style.minWidth = '56px';
-        list.style.width = '56px';
-        list.style.maxWidth = '56px';
-      } else {
-        list.style.minWidth = '120px';
-        list.style.width = 'auto';
-        list.style.maxWidth = '200px';
-      }
+      /* همیشه یک سایز ثابت (با حساب یا فقط +) */
+      list.style.minWidth = '150px';
+      list.style.width = '150px';
+      list.style.maxWidth = '150px';
+      list.style.boxSizing = 'border-box';
       banks.forEach(b => {
         const opt = document.createElement('div');
         opt.className = 'dark-select-option';
@@ -15415,7 +15410,7 @@ function openPdfPrintWindow(){
       }
       const addRow = document.createElement('div');
       addRow.className = 'dark-select-option acc-add-plus';
-      addRow.style.cssText = 'padding:8px 10px;cursor:pointer;text-align:right;direction:rtl;color:#08b5f5;font-weight:800;display:flex;justify-content:flex-end;align-items:center;border-top:' + (banks.length ? '1px solid rgba(255,255,255,0.08)' : 'none') + ';';
+      addRow.style.cssText = 'padding:8px 10px;cursor:pointer;text-align:right;direction:rtl;color:#08b5f5;font-weight:800;display:flex;justify-content:flex-start;align-items:center;border-top:' + (banks.length ? '1px solid rgba(255,255,255,0.08)' : 'none') + ';';
       addRow.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(8,181,245,0.15);color:#08b5f5;font-size:1.15rem;line-height:1;">+</span>';
       addRow.onclick = function(ev) {
         try { ev.preventDefault(); ev.stopPropagation(); } catch (e0) {}
@@ -18872,15 +18867,16 @@ if (item.type === 'recurring') {
       if (!dim) {
         dim = document.createElement('div');
         dim.id = 'bankEditorDim';
-        dim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:470;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);';
+        dim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100250;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);';
         document.body.appendChild(dim);
       }
+      dim.style.zIndex = '100250';
       dim.style.display = 'block';
       let editor = document.getElementById('bankAddEditor');
       if (editor) editor.remove();
       editor = document.createElement('div');
       editor.id = 'bankAddEditor';
-      editor.style.cssText = 'position:fixed;left:16px;right:16px;top:30%;z-index:480;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
+      editor.style.cssText = 'position:fixed;left:16px;right:16px;top:30%;z-index:100260;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
       const isEdit = !!acc;
       const initial = isEdit ? acc.label : (defaultLabel || '');
       const initBal = isEdit ? (Number(acc.openingBalance) || 0) : 0;
@@ -18995,6 +18991,20 @@ if (item.type === 'recurring') {
         renderBankAccountsList();
         try { renderHomeCards(); } catch (eR) {}
         if (!isEdit) showToast('حساب اضافه شد');
+        /* برگشت به باکس پیامک + به‌روزرسانی لیست حساب */
+        if (window._returnToSmsConfirm) {
+          try {
+            const sm = document.getElementById('smsConfirmModal');
+            if (sm) sm.classList.add('open');
+          } catch (eS) {}
+          try {
+            if (typeof refreshSmsConfirmBankSelect === 'function') {
+              refreshSmsConfirmBankSelect();
+              const bankSel = document.getElementById('smsConfirmBank');
+              if (bankSel && name) bankSel.value = name;
+            }
+          } catch (eR2) {}
+        }
       };
     }
 
