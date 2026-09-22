@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v98-PENTA | install-own-month unpaid-carry paid-stay-no-forward */
+    /* build-stamp: 2026-09-22-v99-PENTA | sms-plan-target no-auto-bank unlock-plan-fields */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7816,7 +7816,9 @@
                 createdBy: r.createdBy, createdByName: r.createdByName,
                 ownerHandle: r.ownerHandle, createdAt: r.createdAt,
                 planCarried: !!r.planCarried,
-                desc: r.desc || ''
+                desc: r.desc || '',
+                amount: r.amount,
+                allowPlanFieldEdit: !!r.allowPlanFieldEdit
               };
               prevByPlan[pk] = meta;
               if (!prevByPlan[plan.id]) prevByPlan[plan.id] = meta;
@@ -7874,15 +7876,16 @@
           /* معوق فقط روی ردیف حمل‌شده (چه پرداخت‌شده چه نشده) */
           var showMoavagh = !!item.carried;
           const row = {
-            day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
+            day: (prev.day != null && prev.day !== '') ? String(prev.day) : String(due.d),
             desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
-            amount: amt,
+            amount: (prev.allowPlanFieldEdit && prev.amount != null && prev.amount !== '') ? prev.amount : amt,
             status: autoStatus,
             account: prev.account || '',
             fromPlanId: plan.id,
             fromPlanIndex: matchIdx,
             planCarried: !!item.carried
           };
+          if (prev.allowPlanFieldEdit) row.allowPlanFieldEdit = true;
           if (prev.id && !item.carried) row.id = prev.id;
           if (prev.createdBy) row.createdBy = prev.createdBy;
           if (prev.createdByName) row.createdByName = prev.createdByName;
@@ -17008,21 +17011,20 @@ function openPdfPrintWindow(){
       const tab = type;
       const descInp = document.getElementById('smsConfirmDesc');
       let desc = ((descInp && descInp.value) || '').trim() || (type === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
-      /* پنتا: اگر قسط از ساجست انتخاب شده، شرح استاندارد قسط N از M — نام */
-      try {
-        const planId = descInp && descInp.getAttribute('data-plan-id');
-        const planIdxRaw = descInp && descInp.getAttribute('data-plan-index');
-        if (planId) {
-          const plan = (plans || []).find(function(p){ return p && p.id === planId; });
-          if (plan) {
-            const cnt = Math.max(0, parseInt(plan.count, 10) || 0);
-            const pidx = (planIdxRaw != null && planIdxRaw !== '') ? parseInt(planIdxRaw, 10) : earliestUnpaidPlanIndex(plan);
-            if (pidx >= 0 && typeof planInstallmentDesc === 'function') {
-              desc = planInstallmentDesc(plan, pidx, cnt);
-            }
-          }
+      const planIdLink = descInp && descInp.getAttribute('data-plan-id');
+      const planIdxLink = descInp && descInp.getAttribute('data-plan-index');
+      let linkedPlan = null;
+      let linkedIdx = -1;
+      if (planIdLink && tab === 'expense') {
+        linkedPlan = (plans || []).find(function(p){ return p && p.id === planIdLink; }) || null;
+        if (linkedPlan) {
+          linkedIdx = (planIdxLink != null && planIdxLink !== '')
+            ? parseInt(planIdxLink, 10)
+            : earliestUnpaidPlanIndex(linkedPlan);
+          if (isNaN(linkedIdx)) linkedIdx = -1;
         }
-      } catch (eDesc) {}
+      }
+
       const sel = document.getElementById('smsConfirmSectionSel');
       let sec = null;
       if (sel && sel.value && sel.value !== '__auto__') {
@@ -17031,66 +17033,132 @@ function openPdfPrintWindow(){
       if (!sec) {
         sec = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
       }
-      const row = emptyRow();
-      row.day = day;
-      row.desc = desc;
-      row.amount = amount;
-      row.status = 'paid';
-      row.account = bank;
-      /* اگر قسط از ساجست انتخاب شده، شرح استاندارد روتین اقساط */
-      try {
-        const descEl0 = document.getElementById('smsConfirmDesc');
-        const pid0 = descEl0 && descEl0.getAttribute('data-plan-id');
-        const pidx0 = descEl0 && descEl0.getAttribute('data-plan-index');
-        if (pid0) {
-          const pl0 = (plans || []).find(function(p){ return p && p.id === pid0; });
-          if (pl0) {
-            const cnt0 = Math.max(0, parseInt(pl0.count, 10) || 0);
-            const ix0 = (pidx0 != null && pidx0 !== '') ? parseInt(pidx0, 10) : earliestUnpaidPlanIndex(pl0);
-            if (ix0 >= 0 && cnt0 > 0) row.desc = planInstallmentDesc(pl0, ix0, cnt0);
-          }
-        }
-      } catch (eDesc) {}
-      if (bank && pendingSmsEntry.raw) {
-        const acc = extractAccountFromSms(pendingSmsEntry.raw);
-        if (acc && smsAccountBankMap[acc] !== bank) {
-          smsAccountBankMap[acc] = bank;
-          saveSmsAccountBankMap();
-        }
-      }
-      if (row.account) {
-        try {
-          if (typeof ensureBankAccountSelected === 'function') ensureBankAccountSelected(row.account);
-          else {
-            if (!selectedBankAccounts) selectedBankAccounts = [];
-            const labels = selectedAccountLabels();
-            if (labels.indexOf(row.account) < 0) {
-              const full = (ALL_IRAN_BANKS || []).find(b => (bankShortLabel(b) || b) === row.account || b === row.account) || row.account;
-              selectedBankAccounts.push({ id: 'ba_auto_' + Date.now().toString(36), bank: full, label: bankShortLabel(full) || row.account });
-              try { saveBankAccountsSelection(); } catch (e) {}
-            }
-          }
-        } catch (e) {}
-      }
-      const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
-      if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
-      else sec.rows.push(row);
-      sec.rows.sort((a, b) => {
-        const da = parseInt(a.day, 10) || 99;
-        const db = parseInt(b.day, 10) || 99;
-        return da - db;
-      });
-      sec.collapsed = false;
 
-      /* پنتا: اگر بابت به قسط لینک شده، همان سررسید را پرداخت‌شده کن */
-      try {
-        const descEl = document.getElementById('smsConfirmDesc');
-        const planId = descEl && descEl.getAttribute('data-plan-id');
-        const planIdx = descEl && descEl.getAttribute('data-plan-index');
-        if (planId && tab === 'expense') {
-          markPlanInstallmentPaid(planId, planIdx);
+      /* ترجیح: حساب از لیست کاربر — حساب جدید خودکار نساز */
+      if (bank && pendingSmsEntry.raw) {
+        try {
+          const acc = extractAccountFromSms(pendingSmsEntry.raw);
+          if (acc && smsAccountBankMap[acc] !== bank) {
+            smsAccountBankMap[acc] = bank;
+            saveSmsAccountBankMap();
+          }
+        } catch (eMap) {}
+      }
+
+      if (linkedPlan && linkedIdx >= 0) {
+        /* هدف: همان ردیف قسط در ماه جاری (اولویت با معوق) */
+        const cnt = Math.max(0, parseInt(linkedPlan.count, 10) || 0);
+        const baseDesc = planInstallmentDesc(linkedPlan, linkedIdx, cnt);
+        let target = null;
+        let targetSec = null;
+        (periodData.expense.sections || []).forEach(function(s) {
+          (s.rows || []).forEach(function(r) {
+            if (!r || r.fromPlanId !== linkedPlan.id) return;
+            if (parseInt(r.fromPlanIndex, 10) !== linkedIdx) return;
+            const isMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
+            if (isMoavagh) { target = r; targetSec = s; }
+            else if (!target) { target = r; targetSec = s; }
+          });
+        });
+        if (!target) {
+          /* اگر هنوز ردیف ساخته نشده، اول همگام‌سازی ماه جاری */
+          try { syncPlansToExpensePeriod(periodData, currentYear, currentMonth); } catch (eS0) {}
+          (periodData.expense.sections || []).forEach(function(s) {
+            (s.rows || []).forEach(function(r) {
+              if (!r || r.fromPlanId !== linkedPlan.id) return;
+              if (parseInt(r.fromPlanIndex, 10) !== linkedIdx) return;
+              const isMoavagh = !!r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0);
+              if (isMoavagh) { target = r; targetSec = s; }
+              else if (!target) { target = r; targetSec = s; }
+            });
+          });
         }
-      } catch (ePlan) {}
+        if (target) {
+          const keepMoavagh = !!target.planCarried || (target.desc && String(target.desc).indexOf('معوق') >= 0);
+          target.status = 'paid';
+          target.amount = amount;
+          if (day) target.day = day;
+          if (bank) target.account = bank;
+          target.desc = baseDesc + (keepMoavagh ? ' (معوق)' : '');
+          target.planCarried = keepMoavagh;
+          target.allowPlanFieldEdit = true;
+          target.fromPlanId = linkedPlan.id;
+          target.fromPlanIndex = linkedIdx;
+          sec = targetSec || sec;
+          /* paidCount را جلو ببر بدون نابود کردن فیلدهای پیامک */
+          const need = linkedIdx + 1;
+          const curPaid = Math.max(0, parseInt(linkedPlan.paidCount, 10) || 0);
+          if (curPaid < need) linkedPlan.paidCount = Math.min(cnt, need);
+          /* همگام‌سازی بقیه ماه‌ها؛ بعد دوباره فیلدهای این ردیف را اعمال کن */
+          try {
+            const snap = {
+              amount: target.amount,
+              day: target.day,
+              account: target.account,
+              desc: target.desc,
+              planCarried: target.planCarried,
+              allowPlanFieldEdit: true,
+              status: 'paid',
+              fromPlanId: linkedPlan.id,
+              fromPlanIndex: linkedIdx
+            };
+            if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+            else syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            (periodData.expense.sections || []).forEach(function(s) {
+              (s.rows || []).forEach(function(r) {
+                if (r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx) {
+                  const mo = !!r.planCarried || (snap.planCarried);
+                  r.status = 'paid';
+                  r.amount = snap.amount;
+                  r.day = snap.day;
+                  r.account = snap.account;
+                  r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (mo ? ' (معوق)' : '');
+                  r.planCarried = mo;
+                  r.allowPlanFieldEdit = true;
+                }
+              });
+            });
+          } catch (eSync) {}
+          try { updateInstallSummary(); } catch (eU) {}
+        } else {
+          /* ردیف پیدا نشد — ردیف جدید لینک‌شده به قسط */
+          const row = emptyRow();
+          row.day = day;
+          row.amount = amount;
+          row.status = 'paid';
+          row.account = bank;
+          row.fromPlanId = linkedPlan.id;
+          row.fromPlanIndex = linkedIdx;
+          row.desc = baseDesc;
+          row.allowPlanFieldEdit = true;
+          const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
+          if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
+          else sec.rows.push(row);
+          const need = linkedIdx + 1;
+          const curPaid = Math.max(0, parseInt(linkedPlan.paidCount, 10) || 0);
+          if (curPaid < need) linkedPlan.paidCount = Math.min(cnt, need);
+        }
+      } else {
+        /* تراکنش عادی بدون لینک قسط — حساب جدید خودکار ساخته نشود */
+        const row = emptyRow();
+        row.day = day;
+        row.desc = desc;
+        row.amount = amount;
+        row.status = 'paid';
+        row.account = bank;
+        const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
+        if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
+        else sec.rows.push(row);
+      }
+      if (sec && sec.rows) {
+        sec.rows.sort((a, b) => {
+          const da = parseInt(a.day, 10) || 99;
+          const db = parseInt(b.day, 10) || 99;
+          return da - db;
+        });
+        sec.collapsed = false;
+      }
+
       persistCurrent();
       scheduleSave();
       closeSmsConfirmModal();
@@ -17098,8 +17166,10 @@ function openPdfPrintWindow(){
       else renderAll();
       showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount));
       try {
-        const el = document.getElementById('sec-' + tab + '-' + sec.id);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (sec) {
+          const el = document.getElementById('sec-' + tab + '-' + sec.id);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       } catch (e) {}
     }
 
@@ -18200,20 +18270,17 @@ function openPdfPrintWindow(){
       normalizeSelectedBanks();
       const labels = selectedAccountLabels();
       if (labels.indexOf(label) >= 0) return label;
-      // تطبیق با نام کامل بانک
+      /* فقط تطبیق با حساب موجود — حساب جدید خودکار ساخته نشود */
       const full = (ALL_IRAN_BANKS || []).find(b =>
         b === label || (bankShortLabel(b) || b) === label || b.indexOf(label) >= 0 || label.indexOf(bankShortLabel(b) || b) >= 0
       ) || label;
       const short = bankShortLabel(full) || label;
-      // اگر short یا full از قبل هست
-      if (labels.indexOf(short) >= 0 || labels.indexOf(full) >= 0) return labels.indexOf(short) >= 0 ? short : full;
-      selectedBankAccounts.push({
-        id: 'ba_auto_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-        bank: full,
-        label: short
-      });
-      try { saveBankAccountsSelection(); } catch (e) {}
-      return short;
+      if (labels.indexOf(short) >= 0) return short;
+      if (labels.indexOf(full) >= 0) return full;
+      for (var li = 0; li < labels.length; li++) {
+        if (labels[li] && (label.indexOf(labels[li]) >= 0 || labels[li].indexOf(label) >= 0)) return labels[li];
+      }
+      return label;
     }
 
     function extractAccountFromSms(text) {
@@ -21234,7 +21301,7 @@ field('حساب بانکی', accSelRec);
       };
       tdDesc.appendChild(descInp);
       /* ارتفاع ثابت — ردیف‌های آمده از قسط / غیرمالک قابل ویرایش نیستند */
-      setupLockable(descInp, !!(row.desc && row.desc.trim()), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(descInp, !!(row.desc && row.desc.trim()), (!!row.fromPlanId && !row.allowPlanFieldEdit) || !canEditRow(row), (row.fromPlanId && !row.allowPlanFieldEdit) ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const tdAmt = document.createElement('td');
       tdAmt.className = 'col-amount';
@@ -21295,7 +21362,7 @@ field('حساب بانکی', accSelRec);
         }
       };
       tdAmt.appendChild(amtInp);
-      setupLockable(amtInp, !!(row.amount), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(amtInp, !!(row.amount), (!!row.fromPlanId && !row.allowPlanFieldEdit) || !canEditRow(row), (row.fromPlanId && !row.allowPlanFieldEdit) ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
