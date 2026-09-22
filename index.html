@@ -7535,7 +7535,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v94-PENTA | moavagh-paid no-auto-acc confirm-z ادامه */
+    /* build-stamp: 2026-09-22-v95-PENTA | sms-bank-shortcut moavagh-paid-row */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7847,13 +7847,19 @@
           const isPaid = i < paid;
           const dueThisMonth = (d.y === y && d.m === m);
           const dueBefore = (d.y < y) || (d.y === y && d.m < m);
-          /* حمل معوق: فقط بعد از ورود تاریخی به ماهِ بعد از سررسید
-             یعنی تا وقتی داخل ماه سررسید هستیم، به ماه بعد منتقل نشود */
           var dueMonthEnded = (todayJ.y > d.y) || (todayJ.y === d.y && todayJ.m > d.m);
           if (dueThisMonth) {
             indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
-          } else if (dueBefore && !isPaid && periodEntered && dueMonthEnded) {
-            indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: true });
+          } else if (dueBefore && periodEntered && dueMonthEnded && !isPaid) {
+            /* معوق پرداخت‌نشده — در ماه‌های بعد */
+            indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+          } else if (dueBefore && periodEntered && dueMonthEnded && isPaid) {
+            /* معوق که بعداً پرداخت شده — فقط در ماه بلافاصله بعد از سررسید با همان شرح */
+            var nm = d.m + 1, ny = d.y;
+            if (nm > 12) { nm = 1; ny++; }
+            if (y === ny && m === nm) {
+              indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
+            }
           }
         }
         if (!indicesToShow.length) return;
@@ -7863,7 +7869,7 @@
           const due = item.due;
           const autoStatus = item.isPaid ? 'paid' : 'unpaid';
           const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
-          /* معوق: حمل‌شده یا پرداخت‌شده بعد از پایان ماه سررسید */
+          /* معوق: ردیف حمل‌شده (چه پرداخت‌شده چه نشده) یا پرداخت دیرهنگام در ماه سررسید */
           var dueMonthEndedForItem = (todayJ.y > due.y) || (todayJ.y === due.y && todayJ.m > due.m);
           var showMoavagh = item.carried || (item.isPaid && dueMonthEndedForItem);
           const row = {
@@ -16791,7 +16797,7 @@ function openPdfPrintWindow(){
           '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          /* پنتا: فقط حساب‌های ساخته‌شده کاربر + گزینه + برای افزودن */
+          /* میان‌بر منوی انتخاب حساب — فقط حساب‌های کاربر + گزینه افزودن */
           const personalized = selectedAccountLabels();
           const preferred = (typeof getSmsBankPref === 'function' ? getSmsBankPref(parsed.raw || '') : '') || parsed.bank || '';
           const opts = [];
@@ -16799,9 +16805,6 @@ function openPdfPrintWindow(){
           personalized.forEach(n => {
             if (n && !seen.has(n)) { seen.add(n); opts.push(n); }
           });
-          if (preferred && !seen.has(preferred)) {
-            /* اگر ترجیح قبلی بین حساب‌های کاربر نیست، فقط اگر در لیست کاربر باشد انتخاب نشود */
-          }
           const ph = document.createElement('option');
           ph.value = '';
           ph.textContent = opts.length ? 'انتخاب حساب' : 'حسابی ثبت نشده';
@@ -18244,7 +18247,16 @@ function openPdfPrintWindow(){
     }
     function saveBankAccountsSelection() {
       try { localStorage.setItem(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts)); } catch (e) {}
+      try {
+        if (typeof refreshSmsConfirmBankSelect === 'function') {
+          var sm = document.getElementById('smsConfirmModal');
+          if ((sm && sm.classList.contains('open')) || window._returnToSmsConfirm) {
+            refreshSmsConfirmBankSelect();
+          }
+        }
+      } catch (eSmsRef) {}
     }
+
     function loadTrash() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY + '_trash');
@@ -18728,14 +18740,12 @@ if (item.type === 'recurring') {
           const o = document.createElement('option');
           o.value = n;
           o.textContent = n;
-          if (n === prev) o.selected = true;
           bankSel.appendChild(o);
         });
         const addOpt = document.createElement('option');
         addOpt.value = '__add_account__';
         addOpt.textContent = '＋ افزودن حساب';
         bankSel.appendChild(addOpt);
-        /* حساب قبلی را نگه دار؛ اگر خالی بود خالی بماند — حساب جدید را خودکار نگذار */
         if (prev && prev !== '__add_account__' && personalized.indexOf(prev) >= 0) {
           bankSel.value = prev;
         } else {
@@ -18743,7 +18753,7 @@ if (item.type === 'recurring') {
         }
         bankSel.onchange = function() {
           if (bankSel.value === '__add_account__') {
-            bankSel.value = personalized.length ? personalized[personalized.length - 1] : '';
+            bankSel.value = (prev && personalized.indexOf(prev) >= 0) ? prev : '';
             try {
               window._returnToSmsConfirm = true;
               var bm = document.getElementById('bankAccountsModal');
@@ -18997,19 +19007,15 @@ if (item.type === 'recurring') {
         renderBankAccountsList();
         try { renderHomeCards(); } catch (eR) {}
         if (!isEdit) showToast('حساب اضافه شد');
-        /* فقط لیست حساب را به‌روز کن؛ حساب جدید را برای تراکنش انتخاب نکن */
-        if (window._returnToSmsConfirm) {
-          try {
-            const sm = document.getElementById('smsConfirmModal');
-            if (sm) sm.classList.add('open');
-          } catch (eS) {}
-          try {
-            if (typeof refreshSmsConfirmBankSelect === 'function') {
-              refreshSmsConfirmBankSelect();
-              /* prev را حفظ کن — حساب جدید را auto-select نکن */
-            }
-          } catch (eR2) {}
-        }
+        /* هر تغییر در منوی حساب → بلافاصله در منوی پیامک منعکس شود */
+        try {
+          if (document.getElementById('smsConfirmModal') &&
+              document.getElementById('smsConfirmModal').classList.contains('open')) {
+            if (typeof refreshSmsConfirmBankSelect === 'function') refreshSmsConfirmBankSelect();
+          } else if (window._returnToSmsConfirm) {
+            if (typeof refreshSmsConfirmBankSelect === 'function') refreshSmsConfirmBankSelect();
+          }
+        } catch (eR2) {}
       };
     }
 
