@@ -7535,7 +7535,8 @@
 
     
 
-    /* build-stamp: 2026-09-22-v90 | person-edit-back-close */
+    /* build-stamp: 2026-09-22-v91-PENTA | install-carry sms-bank-plus plan-suggest acc-plus */
+    /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
       '#ff453a', '#bf5af2', '#ac8e68', '#5e5ce6',
@@ -7809,11 +7810,14 @@
         (pd.expense.sections || []).forEach(s => {
           (s.rows || []).forEach(r => {
             if (r && r.fromPlanId === plan.id) {
-              prevByPlan[plan.id] = {
+              const pk = plan.id + ':' + (r.fromPlanIndex != null ? r.fromPlanIndex : '');
+              const meta = {
                 day: r.day, account: r.account || '', status: r.status, id: r.id,
                 createdBy: r.createdBy, createdByName: r.createdByName,
                 ownerHandle: r.ownerHandle, createdAt: r.createdAt
               };
+              prevByPlan[pk] = meta;
+              if (!prevByPlan[plan.id]) prevByPlan[plan.id] = meta;
             }
           });
         });
@@ -7828,49 +7832,80 @@
         if (!sec || count <= 0) return;
         if (paid >= count) return;
 
-        let matchIdx = -1;
-        let due = null;
-        for (let i = 0; i < count; i++) {
-          const d = dueDateForInstallment(plan, i);
-          if (d.y === y && d.m === m) {
-            matchIdx = i;
-            due = d;
-            break;
-          }
-        }
-        if (matchIdx < 0 || !due) return;
-
+        /* پنتا: قسط سررسید این ماه + اقساط پرداخت‌نشده ماه‌های قبل (انتقال) */
         const amt = planInstallmentAmount(plan);
         if (!amt && !plan.name) return;
 
-        const prev = prevByPlan[plan.id] || {};
-        /* وضعیت پرداخت بر اساس تعداد اقساط پرداخت‌شده: ایندکسهای 0..paid-1 پرداخت‌شده */
-        var autoStatus = (matchIdx < paid) ? 'paid' : 'unpaid';
-        const row = {
-          day: (prev.day != null && prev.day !== '') ? String(prev.day) : String(due.d),
-          desc: planInstallmentDesc(plan, matchIdx, count),
-          amount: amt,
-          status: autoStatus,
-          account: prev.account || '',
-          fromPlanId: plan.id,
-          fromPlanIndex: matchIdx
-        };
-        if (prev.id) row.id = prev.id;
-        if (prev.createdBy) row.createdBy = prev.createdBy;
-        if (prev.createdByName) row.createdByName = prev.createdByName;
-        if (prev.ownerHandle) row.ownerHandle = prev.ownerHandle;
-        if (prev.createdAt) row.createdAt = prev.createdAt;
+        const indicesToShow = [];
+        for (let i = 0; i < count; i++) {
+          const d = dueDateForInstallment(plan, i);
+          const isPaid = i < paid;
+          const dueBeforeOrEq = (d.y < y) || (d.y === y && d.m <= m);
+          const dueThisMonth = (d.y === y && d.m === m);
+          /* سررسید این ماه همیشه؛ سررسید قبل فقط اگر پرداخت‌نشده (حمل به ماه بعد) */
+          if (dueThisMonth || (dueBeforeOrEq && !isPaid && !dueThisMonth)) {
+            indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: !dueThisMonth });
+          }
+        }
+        if (!indicesToShow.length) return;
 
-        const onlyEmpty = sec.rows.length === 1 && !sec.rows[0].desc && !sec.rows[0].amount && !sec.rows[0].day && !sec.rows[0].fromPlanId;
-        if (onlyEmpty) sec.rows = [row];
-        else sec.rows.push(row);
+        indicesToShow.forEach(function(item) {
+          const matchIdx = item.i;
+          const due = item.due;
+          const autoStatus = item.isPaid ? 'paid' : 'unpaid';
+          const prev = prevByPlan[plan.id + ':' + matchIdx] || prevByPlan[plan.id] || {};
+          const row = {
+            day: (prev.day != null && prev.day !== '' && !item.carried) ? String(prev.day) : String(due.d),
+            desc: planInstallmentDesc(plan, matchIdx, count) + (item.carried ? ' (معوق)' : ''),
+            amount: amt,
+            status: autoStatus,
+            account: prev.account || '',
+            fromPlanId: plan.id,
+            fromPlanIndex: matchIdx,
+            planCarried: !!item.carried
+          };
+          if (prev.id && !item.carried) row.id = prev.id;
+          if (prev.createdBy) row.createdBy = prev.createdBy;
+          if (prev.createdByName) row.createdByName = prev.createdByName;
+          if (prev.ownerHandle) row.ownerHandle = prev.ownerHandle;
+          if (prev.createdAt) row.createdAt = prev.createdAt;
+
+          const onlyEmpty = sec.rows.length === 1 && !sec.rows[0].desc && !sec.rows[0].amount && !sec.rows[0].day && !sec.rows[0].fromPlanId;
+          if (onlyEmpty) sec.rows = [row];
+          else sec.rows.push(row);
+        });
 
         sec.rows.sort((a, b) => {
           const da = parseInt(a.day, 10) || 99;
           const db = parseInt(b.day, 10) || 99;
-          return da - db;
+          if (da !== db) return da - db;
+          return (parseInt(a.fromPlanIndex, 10) || 0) - (parseInt(b.fromPlanIndex, 10) || 0);
         });
       });
+    }
+
+
+    /** پنتا: علامت‌گذاری یک قسط به‌عنوان پرداخت‌شده (بر اساس ایندکس سررسید) */
+    function markPlanInstallmentPaid(planId, planIndex) {
+      const plan = (plans || []).find(function(p){ return p && p.id === planId; });
+      if (!plan) return false;
+      const count = Math.max(0, parseInt(plan.count, 10) || 0);
+      let paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
+      const idx = (planIndex != null && planIndex !== '') ? parseInt(planIndex, 10) : paid;
+      if (isNaN(idx) || idx < 0) return false;
+      /* paidCount = تعداد اقساط پرداخت‌شده از ابتدا؛ برای پرداخت ایندکس idx باید paid > idx */
+      if (paid <= idx) {
+        plan.paidCount = idx + 1;
+      }
+      try { if (typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll(); } catch (e) {}
+      try { persistCurrent(); scheduleSave(); } catch (e2) {}
+      try { if (typeof updateInstallSummary === 'function') updateInstallSummary(); } catch (e3) {}
+      return true;
+    }
+    function earliestUnpaidPlanIndex(plan) {
+      const count = Math.max(0, parseInt(plan.count, 10) || 0);
+      const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
+      return paid < count ? paid : -1;
     }
 
     function syncPlansToExpenseAll() {
@@ -15369,6 +15404,20 @@ function openPdfPrintWindow(){
         };
         list.appendChild(opt);
       });
+      /* پنتا: آخرین گزینه — بعلاوه آبی برای افزودن حساب */
+      const addRow = document.createElement('div');
+      addRow.className = 'dark-select-option acc-add-plus';
+      addRow.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:center;color:#08b5f5;font-size:1.25rem;font-weight:800;border-top:1px solid rgba(255,255,255,0.08);';
+      addRow.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(8,181,245,0.15);color:#08b5f5;font-size:1.2rem;line-height:1;">+</span>';
+      addRow.onclick = function(ev) {
+        try { ev.preventDefault(); ev.stopPropagation(); } catch (e0) {}
+        try { list.remove(); } catch (e1) {}
+        try {
+          if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
+          else if (typeof window.openBankAccountsModal === 'function') window.openBankAccountsModal(false);
+        } catch (e2) {}
+      };
+      list.appendChild(addRow);
       document.body.appendChild(list);
       function placeAccountMenu() {
         try {
@@ -16736,31 +16785,41 @@ function openPdfPrintWindow(){
           '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
-          // حساب‌های شخصی‌سازی‌شده + همه بانک‌ها
+          /* پنتا: فقط حساب‌های ساخته‌شده کاربر + گزینه + برای افزودن */
           const personalized = selectedAccountLabels();
-          const allBanks = (ALL_IRAN_BANKS || []).map(b => bankShortLabel(b) || b);
           const preferred = (typeof getSmsBankPref === 'function' ? getSmsBankPref(parsed.raw || '') : '') || parsed.bank || '';
-          const opts = [''];
-          const seen = new Set(['']);
+          const opts = [];
+          const seen = new Set();
           personalized.forEach(n => {
             if (n && !seen.has(n)) { seen.add(n); opts.push(n); }
           });
-          allBanks.forEach(n => {
-            if (n && !seen.has(n)) { seen.add(n); opts.push(n); }
-          });
           if (preferred && !seen.has(preferred)) {
-            opts.splice(1, 0, preferred);
-            seen.add(preferred);
+            /* اگر ترجیح قبلی بین حساب‌های کاربر نیست، فقط اگر در لیست کاربر باشد انتخاب نشود */
           }
+          const ph = document.createElement('option');
+          ph.value = '';
+          ph.textContent = opts.length ? '— انتخاب حساب —' : '— حسابی ثبت نشده —';
+          bankSel.appendChild(ph);
           opts.forEach(n => {
             const o = document.createElement('option');
             o.value = n;
-            o.textContent = n || '— انتخاب بانک —';
-            if (n && preferred && (n === preferred || n === bankShortLabel(preferred) || preferred.indexOf(n) >= 0)) o.selected = true;
+            o.textContent = n;
+            if (preferred && (n === preferred || n === bankShortLabel(preferred))) o.selected = true;
             bankSel.appendChild(o);
           });
+          const addOpt = document.createElement('option');
+          addOpt.value = '__add_account__';
+          addOpt.textContent = '＋  افزودن حساب';
+          bankSel.appendChild(addOpt);
           enhanceSelectFont(bankSel);
-          // منوی کشویی بسته بماند تا کاربر خودش باز کند
+          bankSel.addEventListener('change', function() {
+            if (bankSel.value === '__add_account__') {
+              bankSel.value = '';
+              try {
+                if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
+              } catch (eA) {}
+            }
+          });
         }
         const typeSelEl = meta.querySelector('#smsConfirmType');
         if (typeSelEl) enhanceSelectFont(typeSelEl);
@@ -16774,7 +16833,57 @@ function openPdfPrintWindow(){
         }
       }
       const desc = document.getElementById('smsConfirmDesc');
-      if (desc) desc.value = '';
+      if (desc) {
+        desc.value = '';
+        desc.removeAttribute('data-plan-id');
+        desc.removeAttribute('data-plan-index');
+        /* پنتا: حساس به کلمه قسط — ساجست اقساط ثبت‌شده */
+        let sugBox = document.getElementById('smsPlanSuggest');
+        if (!sugBox) {
+          sugBox = document.createElement('div');
+          sugBox.id = 'smsPlanSuggest';
+          sugBox.style.cssText = 'display:none;margin:4px 0 10px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1c1c1e;max-height:160px;overflow:auto;';
+          if (desc.parentNode) desc.parentNode.insertBefore(sugBox, desc.nextSibling);
+        }
+        sugBox.style.display = 'none';
+        sugBox.innerHTML = '';
+        desc.oninput = function() {
+          const t = (desc.value || '');
+          desc.removeAttribute('data-plan-id');
+          desc.removeAttribute('data-plan-index');
+          if (!/قسط/.test(t)) {
+            sugBox.style.display = 'none';
+            sugBox.innerHTML = '';
+            return;
+          }
+          const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
+          if (!list.length) {
+            sugBox.style.display = 'none';
+            sugBox.innerHTML = '';
+            return;
+          }
+          sugBox.innerHTML = '';
+          list.forEach(function(p) {
+            const unpaidIdx = earliestUnpaidPlanIndex(p);
+            const cnt = Math.max(0, parseInt(p.count, 10) || 0);
+            const paid = Math.min(cnt, Math.max(0, parseInt(p.paidCount, 10) || 0));
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
+            const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
+            const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
+            item.textContent = (p.name || 'قسط') + ' — پرداخت‌شده ' + toPersianDigits(paid) + '/' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
+            item.onmousedown = function(ev) {
+              try { ev.preventDefault(); } catch (e0) {}
+              desc.value = 'قسط — ' + (p.name || '');
+              desc.setAttribute('data-plan-id', p.id);
+              if (unpaidIdx >= 0) desc.setAttribute('data-plan-index', String(unpaidIdx));
+              sugBox.style.display = 'none';
+            };
+            sugBox.appendChild(item);
+          });
+          sugBox.style.display = 'block';
+        };
+      }
       const wrap = document.getElementById('smsConfirmSectionInner') || document.getElementById('smsConfirmSectionWrap');
       if (wrap) {
         wrap.innerHTML = '';
@@ -16794,11 +16903,7 @@ function openPdfPrintWindow(){
           }
           if (!defaultSecId && sections.length) defaultSecId = sections[0].id;
         } catch (eD) {}
-        const autoTitle = tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
-        const optAuto = document.createElement('option');
-        optAuto.value = '__auto__';
-        optAuto.textContent = 'خودکار: ' + autoTitle;
-        sel.appendChild(optAuto);
+        /* پنتا: دیفالت اولین کارت؛ گزینه خودکار در انتها */
         sections.forEach((s) => {
           const o = document.createElement('option');
           o.value = s.id;
@@ -16806,7 +16911,12 @@ function openPdfPrintWindow(){
           if (defaultSecId && s.id === defaultSecId) o.selected = true;
           sel.appendChild(o);
         });
+        const autoTitle = tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی';
+        const optAuto = document.createElement('option');
+        optAuto.value = '__auto__';
+        optAuto.textContent = 'خودکار: ' + autoTitle;
         if (!defaultSecId) optAuto.selected = true;
+        sel.appendChild(optAuto);
         wrap.appendChild(sel);
         enhanceSelectFont(sel);
         const typeSel = document.getElementById('smsConfirmType');
@@ -16914,6 +17024,15 @@ function openPdfPrintWindow(){
       });
       sec.collapsed = false;
 
+      /* پنتا: اگر بابت به قسط لینک شده، همان سررسید را پرداخت‌شده کن */
+      try {
+        const descEl = document.getElementById('smsConfirmDesc');
+        const planId = descEl && descEl.getAttribute('data-plan-id');
+        const planIdx = descEl && descEl.getAttribute('data-plan-index');
+        if (planId && tab === 'expense') {
+          markPlanInstallmentPaid(planId, planIdx);
+        }
+      } catch (ePlan) {}
       persistCurrent();
       scheduleSave();
       closeSmsConfirmModal();
