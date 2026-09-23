@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v109-PENTA | sms-year-1390-1415 date-label-reverse freq-desc-suggest */
+    /* build-stamp: 2026-09-23-v110-PENTA | no-paid-flood sms-suggest-اقساط sms-register-guard plan-row-editable */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7917,17 +7917,28 @@
           /* فقط متای همین ایندکس — نه fallback به قسط دیگر */
           const prevMeta = prevByPlan[plan.id + ':' + i] || null;
 
-          if (dueThisMonth) {
-            /* قسط ماه جاری/سررسید: فقط در ماه خودش (پرداخت‌شده یا نشده) — بدون معوق */
-            indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
-          } else if (dueBefore && periodEntered && dueMonthEnded && !isPaid) {
-            /* هنوز پرداخت نشده و وارد ماه بعد شده‌ایم → کپی معوق پرداخت‌نشده */
-            indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
-          } else if (dueBefore && isPaid && prevMeta && prevMeta.planCarried) {
-            /* همین ماه قبلاً معوق پرداخت‌نشده داشت؛ الان پرداخت شد → بماند با معوق؛ به ماه بعدتر نرود */
-            indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
+          if (isPaid) {
+            /* پرداخت‌شده: فقط در ماه سررسید؛ یا اگر در همین ماه قبلاً به‌صورت معوق پرداخت شده بود */
+            if (dueThisMonth) {
+              indicesToShow.push({ i: i, due: d, isPaid: true, carried: false });
+            } else if (
+              dueBefore &&
+              prevMeta &&
+              prevMeta.planCarried &&
+              (prevMeta.status === 'paid' || prevMeta.status === 'received')
+            ) {
+              indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
+            }
+            /* هرگز قسط پرداخت‌شده را در ماه‌های بعد از نو نساز */
+            continue;
           }
-          /* قسط پرداخت‌شده‌ی قبل هرگز به‌عنوان معوق به ماه جدید اضافه نمی‌شود */
+
+          if (dueThisMonth) {
+            indicesToShow.push({ i: i, due: d, isPaid: false, carried: false });
+          } else if (dueBefore && periodEntered && dueMonthEnded) {
+            /* فقط پرداخت‌نشده‌ی معوق */
+            indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+          }
         }
         if (!indicesToShow.length) return;
 
@@ -17124,7 +17135,7 @@ function openSmsConfirmModal(parsed) {
           desc.removeAttribute('data-plan-index');
           sugBox.innerHTML = '';
           /* اگر کلمه قسط بود — ساجست اقساط */
-          if (/قسط/.test(t)) {
+          if (/قسط|اقساط/.test(t)) {
             const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
             if (!list.length) {
               sugBox.style.display = 'none';
@@ -17404,6 +17415,15 @@ function confirmSmsEntry() {
       if (!sec) {
         sec = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی', targetPd);
       }
+      if (!sec) {
+        showToast('بخش مقصد مشخص نیست. یک کاربر/بخش انتخاب کنید');
+        return;
+      }
+      if (!targetPd[tab]) {
+        showToast('خطا در داده‌ی ماه هدف');
+        return;
+      }
+      if (!Array.isArray(sec.rows)) sec.rows = [];
 
       /* ترجیح: حساب از لیست کاربر — حساب جدید خودکار نساز */
       if (bank && pendingSmsEntry.raw) {
@@ -17596,13 +17616,25 @@ function confirmSmsEntry() {
         sec.collapsed = false;
       }
 
+      if (!sec || !Array.isArray(sec.rows) || !sec.rows.some(function(r){ return r && (r.amount || r.desc); })) {
+        showToast('ثبت انجام نشد. مبلغ و بخش را بررسی کنید');
+        return;
+      }
       commitWritablePeriodData(periodCtx);
-      persistCurrent();
+      try { persistCurrent(); } catch (eP) {}
+      try { saveArchive(); } catch (eA) {}
       scheduleSave();
       closeSmsConfirmModal();
+      /* اگر ماه هدف غیرجاری است، کاربر را مطلع کن */
+      var periodNote = '';
+      try {
+        if (targetYear !== currentYear || targetMonth !== currentMonth) {
+          periodNote = ' در ' + (MONTHS[targetMonth - 1] || '') + ' ' + toPersianDigits(targetYear);
+        }
+      } catch (eN) {}
       if (currentTab !== tab) switchTab(tab);
       else renderAll();
-      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount));
+      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote);
       try {
         if (sec) {
           const el = document.getElementById('sec-' + tab + '-' + sec.id);
@@ -21703,8 +21735,8 @@ field('حساب بانکی', accSelRec);
       tdDay.appendChild(dayInp);
       const rowOwned = canEditRow(row);
       const OTHER_OWNER_MSG = OWNERSHIP_LOCK_MSG;
-      const dayPermaLock = row.fromPlanId ? true : !rowOwned;
-      setupLockable(dayInp, !!(row.day), dayPermaLock, row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      const dayPermaLock = !rowOwned; /* ردیف اقساط قابل ویرایش؛ حذف جداگانه */
+      setupLockable(dayInp, !!(row.day), dayPermaLock, OTHER_OWNER_MSG);
 
       const tdDesc = document.createElement('td');
       tdDesc.className = 'col-desc';
@@ -21743,7 +21775,7 @@ field('حساب بانکی', accSelRec);
       };
       tdDesc.appendChild(descInp);
       /* ارتفاع ثابت — ردیف‌های آمده از قسط / غیرمالک قابل ویرایش نیستند */
-      setupLockable(descInp, !!(row.desc && row.desc.trim()), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(descInp, !!(row.desc && row.desc.trim()), !canEditRow(row), OTHER_OWNER_MSG);
 
       const tdAmt = document.createElement('td');
       tdAmt.className = 'col-amount';
@@ -21804,7 +21836,7 @@ field('حساب بانکی', accSelRec);
         }
       };
       tdAmt.appendChild(amtInp);
-      setupLockable(amtInp, !!(row.amount), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(amtInp, !!(row.amount), !canEditRow(row), OTHER_OWNER_MSG);
 
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
