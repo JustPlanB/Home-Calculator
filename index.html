@@ -7030,7 +7030,10 @@
       98% { transform: rotate(-3deg); }
     }
 
-  </style>
+  
+    .sms-date-row { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; overflow: hidden !important; }
+    .sms-date-row select { flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+</style>
 </head>
 <body class="tabs-main-hidden">
   <div id="appLockOverlay" aria-hidden="true">
@@ -7505,9 +7508,9 @@
 
   <!-- تأیید ثبت تراکنش از پیامک -->
   <div class="modal-overlay" id="smsConfirmModal">
-    <div class="modal-box family-modal-box" style="max-width:360px;text-align:right;">
+    <div class="modal-box family-modal-box" style="max-width:360px;width:92vw;text-align:right;box-sizing:border-box;overflow-x:hidden;">
       <div class="modal-msg" id="smsConfirmTitle" style="margin-bottom:10px;">ثبت تراکنش بانکی</div>
-      <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;"></div>
+      <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 10px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;"></div>
       <label class="family-label">بابت چه چیزی بود؟ (شرح)</label>
       <input id="smsConfirmDesc" class="family-input" style="letter-spacing:0;text-align:right;" placeholder="مثلاً حقوق / خرید / اجاره…" dir="rtl">
       <div id="smsConfirmSectionWrap" style="display:none;margin-bottom:0;"></div>
@@ -7535,7 +7538,7 @@
 
     
 
-    /* build-stamp: 2026-09-22-v104-PENTA | sms-date-selects no-ghost-bank pay-due-remove-carried */
+    /* build-stamp: 2026-09-23-v105-PENTA | multi-moavagh-clear plan-edit sms-date-selects */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16832,10 +16835,27 @@ function openPdfPrintWindow(){
           '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
           '<label class="family-label">تاریخ (سال / ماه / روز):</label>' +
-          '<div style="display:flex;gap:8px;direction:ltr;margin-bottom:10px;">' +
-            '<input id="smsConfirmYear" type="text" inputmode="numeric" maxlength="4" placeholder="سال" value="' + toPersianDigits(String(parsed.year != null ? parsed.year : ((typeof getTodayPersian==='function'?getTodayPersian().y:null) || currentYear))) + '" style="flex:1.2;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
-            '<input id="smsConfirmMonth" type="text" inputmode="numeric" maxlength="2" placeholder="ماه" value="' + toPersianDigits(String(parsed.month != null ? parsed.month : ((typeof getTodayPersian==='function'?getTodayPersian().m:null) || currentMonth))) + '" style="flex:1;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
-            '<input id="smsConfirmDay" type="text" inputmode="numeric" maxlength="2" placeholder="روز" value="' + (parsed.day ? toPersianDigits(parsed.day) : '') + '" style="flex:1;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;text-align:center;">' +
+          '<div class="sms-date-row" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">' +
+          (function(){
+            var ty = (parsed.year != null) ? parseInt(parsed.year,10) : ((typeof getTodayPersian==='function' && getTodayPersian().y) || currentYear || 1405);
+            var tm = (parsed.month != null) ? parseInt(parsed.month,10) : ((typeof getTodayPersian==='function' && getTodayPersian().m) || currentMonth || 1);
+            var td = parsed.day ? parseInt(String(parsed.day).replace(/[^0-9]/g,''),10) : ((typeof getTodayPersian==='function' && getTodayPersian().d) || 1);
+            if (!(ty >= 1300 && ty <= 1500)) ty = currentYear || 1405;
+            if (!(tm >= 1 && tm <= 12)) tm = currentMonth || 1;
+            if (!(td >= 1 && td <= 31)) td = 1;
+            var y0 = (currentYear || 1405) - 2, y1 = (currentYear || 1405) + 1;
+            var st = 'flex:1 1 0;min-width:0;width:0;max-width:100%;box-sizing:border-box;padding:6px 2px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:12px;text-align:center;';
+            var ys = '<select id="smsConfirmYear" style="'+st+'">';
+            for (var y=y0;y<=y1;y++) ys += '<option value="'+y+'"'+(y===ty?' selected':'')+'>'+toPersianDigits(String(y))+'</option>';
+            ys += '</select>';
+            var ms = '<select id="smsConfirmMonth" style="'+st+'">';
+            for (var mi=1;mi<=12;mi++) ms += '<option value="'+mi+'"'+(mi===tm?' selected':'')+'>'+toPersianDigits(String(mi))+'</option>';
+            ms += '</select>';
+            var ds = '<select id="smsConfirmDay" style="'+st+'">';
+            for (var di=1;di<=31;di++) ds += '<option value="'+di+'"'+(di===td?' selected':'')+'>'+toPersianDigits(String(di))+'</option>';
+            ds += '</select>';
+            return ys + ms + ds;
+          })() +
           '</div>' +
           '<label class="family-label">بخش مقصد</label>' +
           '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
@@ -17030,8 +17050,15 @@ function openPdfPrintWindow(){
 
     
     
-    function removeCarriedInstallmentRows(planId, planIndex) {
+    function removeCarriedInstallmentRows(planId, planIndex, afterY, afterM) {
       planIndex = parseInt(planIndex, 10);
+      afterY = afterY != null ? parseInt(afterY, 10) : null;
+      afterM = afterM != null ? parseInt(afterM, 10) : null;
+      function periodAfter(y, m) {
+        if (afterY == null || afterM == null) return true;
+        y = parseInt(y, 10); m = parseInt(m, 10);
+        return (y > afterY) || (y === afterY && m > afterM);
+      }
       function scrub(pd) {
         if (!pd || !pd.expense || !pd.expense.sections) return;
         pd.expense.sections.forEach(function(s) {
@@ -17045,23 +17072,20 @@ function openPdfPrintWindow(){
           if (!s.rows.length) s.rows = [emptyRow()];
         });
       }
-      try { scrub(periodData); } catch (e0) {}
+      try {
+        if (afterY == null || periodAfter(currentYear, currentMonth)) scrub(periodData);
+      } catch (e0) {}
       try {
         Object.keys(archive || {}).forEach(function(k) {
-          if (archive[k]) scrub(archive[k]);
+          if (!archive[k]) return;
+          var parts = String(k).split('-');
+          var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+          if (afterY == null || periodAfter(y, m)) scrub(archive[k]);
         });
       } catch (e1) {}
     }
 
-function getWritablePeriodData(y, m) {
-      y = parseInt(y, 10); m = parseInt(m, 10);
-      if (y === currentYear && m === currentMonth) return { data: periodData, isCurrent: true };
-      const key = periodKey(y, m);
-      let data = archive[key];
-      if (!data) data = emptyPeriodData();
-      else data = JSON.parse(JSON.stringify(data));
-      return { data: data, isCurrent: false, key: key };
-    }
+
     function commitWritablePeriodData(ctx) {
       if (!ctx) return;
       if (ctx.isCurrent) {
@@ -17285,15 +17309,18 @@ function confirmSmsEntry() {
               });
             });
           } catch (eSync) {}
-          /* پرداخت در ماه سررسید: ردیف معوق ماه بعد کاملاً حذف شود */
-          if (!keepMoavagh) {
-            try { removeCarriedInstallmentRows(linkedPlan.id, linkedIdx); } catch (eRm) {}
-            try {
-              if (!periodCtx.isCurrent && typeof syncPlansToExpensePeriod === 'function') {
-                syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
-              }
-            } catch (eSync2) {}
-          }
+          /* هر معوقِ این قسط در ماه‌های بعد از تاریخ پرداخت حذف شود (چندماهه هم) */
+          try {
+            removeCarriedInstallmentRows(linkedPlan.id, linkedIdx, targetYear, targetMonth);
+          } catch (eRm) {}
+          try {
+            if (!periodCtx.isCurrent && typeof syncPlansToExpensePeriod === 'function') {
+              syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            } else if (typeof syncPlansToExpensePeriod === 'function') {
+              syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+            }
+          } catch (eSync2) {}
+          try { if (typeof checkInstallReminders === 'function') checkInstallReminders(); } catch (eR2) {}
           try { updateInstallSummary(); } catch (eU) {}
           try { checkInstallReminders(); } catch (eR) {}
           sec = targetSec || sec;
@@ -21439,7 +21466,7 @@ field('حساب بانکی', accSelRec);
       tdDay.appendChild(dayInp);
       const rowOwned = canEditRow(row);
       const OTHER_OWNER_MSG = OWNERSHIP_LOCK_MSG;
-      const dayPermaLock = row.fromPlanId ? (!rowOwned && !!(row.createdBy || '').trim()) : !rowOwned;
+      const dayPermaLock = !rowOwned; /* ردیف اقساط قابل ویرایش است */
       setupLockable(dayInp, !!(row.day), dayPermaLock, OTHER_OWNER_MSG);
 
       const tdDesc = document.createElement('td');
@@ -21479,7 +21506,7 @@ field('حساب بانکی', accSelRec);
       };
       tdDesc.appendChild(descInp);
       /* ارتفاع ثابت — ردیف‌های آمده از قسط / غیرمالک قابل ویرایش نیستند */
-      setupLockable(descInp, !!(row.desc && row.desc.trim()), (!!row.fromPlanId && !row.allowPlanFieldEdit) || !canEditRow(row), (row.fromPlanId && !row.allowPlanFieldEdit) ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(descInp, !!(row.desc && row.desc.trim()), !canEditRow(row), OTHER_OWNER_MSG);
 
       const tdAmt = document.createElement('td');
       tdAmt.className = 'col-amount';
@@ -21540,7 +21567,7 @@ field('حساب بانکی', accSelRec);
         }
       };
       tdAmt.appendChild(amtInp);
-      setupLockable(amtInp, !!(row.amount), (!!row.fromPlanId && !row.allowPlanFieldEdit) || !canEditRow(row), (row.fromPlanId && !row.allowPlanFieldEdit) ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
+      setupLockable(amtInp, !!(row.amount), !canEditRow(row), OTHER_OWNER_MSG);
 
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
