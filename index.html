@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v107-PENTA | sms-menus-fixed-pos date-order-ym-d */
+    /* build-stamp: 2026-09-23-v108-PENTA | restore-plan-row-lock-like-before */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -21637,8 +21637,8 @@ field('حساب بانکی', accSelRec);
       tdDay.appendChild(dayInp);
       const rowOwned = canEditRow(row);
       const OTHER_OWNER_MSG = OWNERSHIP_LOCK_MSG;
-      const dayPermaLock = !rowOwned; /* ردیف اقساط قابل ویرایش است */
-      setupLockable(dayInp, !!(row.day), dayPermaLock, OTHER_OWNER_MSG);
+      const dayPermaLock = row.fromPlanId ? true : !rowOwned;
+      setupLockable(dayInp, !!(row.day), dayPermaLock, row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const tdDesc = document.createElement('td');
       tdDesc.className = 'col-desc';
@@ -21677,7 +21677,7 @@ field('حساب بانکی', accSelRec);
       };
       tdDesc.appendChild(descInp);
       /* ارتفاع ثابت — ردیف‌های آمده از قسط / غیرمالک قابل ویرایش نیستند */
-      setupLockable(descInp, !!(row.desc && row.desc.trim()), !canEditRow(row), OTHER_OWNER_MSG);
+      setupLockable(descInp, !!(row.desc && row.desc.trim()), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const tdAmt = document.createElement('td');
       tdAmt.className = 'col-amount';
@@ -21738,7 +21738,7 @@ field('حساب بانکی', accSelRec);
         }
       };
       tdAmt.appendChild(amtInp);
-      setupLockable(amtInp, !!(row.amount), !canEditRow(row), OTHER_OWNER_MSG);
+      setupLockable(amtInp, !!(row.amount), !!row.fromPlanId || !canEditRow(row), row.fromPlanId ? PLAN_LOCK_MSG : OTHER_OWNER_MSG);
 
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
