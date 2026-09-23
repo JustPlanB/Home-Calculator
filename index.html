@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v110-PENTA | no-paid-flood sms-suggest-اقساط sms-register-guard plan-row-editable */
+    /* build-stamp: 2026-09-23-v111-PENTA | install-rows-show paidCount-status sms-pay-visible */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7917,27 +7917,18 @@
           /* فقط متای همین ایندکس — نه fallback به قسط دیگر */
           const prevMeta = prevByPlan[plan.id + ':' + i] || null;
 
-          if (isPaid) {
-            /* پرداخت‌شده: فقط در ماه سررسید؛ یا اگر در همین ماه قبلاً به‌صورت معوق پرداخت شده بود */
-            if (dueThisMonth) {
-              indicesToShow.push({ i: i, due: d, isPaid: true, carried: false });
-            } else if (
-              dueBefore &&
-              prevMeta &&
-              prevMeta.planCarried &&
-              (prevMeta.status === 'paid' || prevMeta.status === 'received')
-            ) {
-              indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
-            }
-            /* هرگز قسط پرداخت‌شده را در ماه‌های بعد از نو نساز */
+          /* ماه سررسید: همیشه ردیف با وضعیت بر اساس paidCount */
+          if (dueThisMonth) {
+            indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
             continue;
           }
-
-          if (dueThisMonth) {
-            indicesToShow.push({ i: i, due: d, isPaid: false, carried: false });
-          } else if (dueBefore && periodEntered && dueMonthEnded) {
-            /* فقط پرداخت‌نشده‌ی معوق */
-            indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+          /* معوق: پرداخت‌نشده همیشه؛ پرداخت‌شده فقط اگر همین ماه قبلاً ردیف معوق داشته */
+          if (dueBefore && periodEntered && dueMonthEnded) {
+            if (prevMeta && prevMeta.planCarried) {
+              indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: true });
+            } else if (!isPaid) {
+              indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+            }
           }
         }
         if (!indicesToShow.length) return;
@@ -7957,7 +7948,7 @@
           const row = {
             day: (prev.day != null && prev.day !== '') ? String(prev.day) : String(due.d),
             desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
-            amount: (prev.allowPlanFieldEdit && prev.amount != null && prev.amount !== '') ? prev.amount : amt,
+            amount: (prev.amount != null && prev.amount !== '' && Number(prev.amount) !== 0) ? prev.amount : amt,
             status: autoStatus,
             account: prev.account || '',
             fromPlanId: plan.id,
@@ -17135,7 +17126,7 @@ function openSmsConfirmModal(parsed) {
           desc.removeAttribute('data-plan-index');
           sugBox.innerHTML = '';
           /* اگر کلمه قسط بود — ساجست اقساط */
-          if (/قسط|اقساط/.test(t)) {
+          if (t && /قسط/.test(t)) {
             const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
             if (!list.length) {
               sugBox.style.display = 'none';
@@ -17543,6 +17534,8 @@ function confirmSmsEntry() {
           try {
             if (periodCtx.isCurrent && typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
             else syncPlansToExpensePeriod(targetPd, targetYear, targetMonth);
+            var applied = false;
+            var appliedSec = null;
             (targetPd.expense.sections || []).forEach(function(s) {
               (s.rows || []).forEach(function(r) {
                 if (!(r && r.fromPlanId === linkedPlan.id && parseInt(r.fromPlanIndex, 10) === linkedIdx)) return;
@@ -17559,9 +17552,45 @@ function confirmSmsEntry() {
                 r.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (keepMoavagh ? ' (معوق)' : '');
                 r.planCarried = !!keepMoavagh;
                 r.allowPlanFieldEdit = true;
+                applied = true;
+                appliedSec = s;
               });
             });
-          } catch (eSync) {}
+            /* اگر بعد از همگام‌سازی ردیف پیدا نشد، حتماً بساز تا در جدول دیده شود */
+            if (!applied) {
+              var fallSec = targetSec || sec;
+              if (!fallSec) {
+                fallSec = ensureSmsSection('expense', 'برداشت بانکی', targetPd);
+              }
+              if (fallSec) {
+                if (!Array.isArray(fallSec.rows)) fallSec.rows = [];
+                var nr = emptyRow();
+                nr.fromPlanId = linkedPlan.id;
+                nr.fromPlanIndex = linkedIdx;
+                nr.status = 'paid';
+                nr.amount = snap.amount;
+                if (snap.day) nr.day = snap.day;
+                if (snap.account) nr.account = snap.account;
+                nr.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (keepMoavagh ? ' (معوق)' : '');
+                nr.planCarried = !!keepMoavagh;
+                nr.allowPlanFieldEdit = true;
+                var emptyIdxN = fallSec.rows.findIndex(function(r) {
+                  return r && !r.desc && !r.amount && !r.day && !r.fromPlanId;
+                });
+                if (emptyIdxN >= 0) fallSec.rows[emptyIdxN] = nr;
+                else fallSec.rows.push(nr);
+                fallSec.collapsed = false;
+                appliedSec = fallSec;
+                applied = true;
+              }
+            }
+            if (appliedSec) {
+              sec = appliedSec;
+              targetSec = appliedSec;
+            }
+          } catch (eSync) {
+            try { showToast('خطا در همگام‌سازی قسط'); } catch (eT) {}
+          }
           /* هر معوقِ این قسط در ماه‌های بعد از تاریخ پرداخت حذف شود (چندماهه هم) */
           try {
             removeCarriedInstallmentRows(linkedPlan.id, linkedIdx, targetYear, targetMonth);
@@ -17616,8 +17645,19 @@ function confirmSmsEntry() {
         sec.collapsed = false;
       }
 
-      if (!sec || !Array.isArray(sec.rows) || !sec.rows.some(function(r){ return r && (r.amount || r.desc); })) {
-        showToast('ثبت انجام نشد. مبلغ و بخش را بررسی کنید');
+      if (!sec || !Array.isArray(sec.rows)) {
+        showToast('ثبت انجام نشد. بخش مقصد را بررسی کنید');
+        return;
+      }
+      var hasRow = sec.rows.some(function(r) {
+        if (!r) return false;
+        if (r.fromPlanId) return true;
+        if (r.desc && String(r.desc).trim()) return true;
+        if (r.amount != null && r.amount !== '' && Number(r.amount) !== 0) return true;
+        return false;
+      });
+      if (!hasRow) {
+        showToast('ثبت انجام نشد. مبلغ یا شرح را بررسی کنید');
         return;
       }
       commitWritablePeriodData(periodCtx);
