@@ -7609,7 +7609,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v116-PENTA | batch-menu-stay-open early-pay-same-date */
+    /* build-stamp: 2026-09-23-v117-PENTA | no-hint batch-toggle early-keep-unpaid-due */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17332,42 +17332,29 @@ function openSmsConfirmModal(parsed) {
                     const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : '';
                     var qName = (p.name || 'قسط').trim() || 'قسط';
                     const item = document.createElement('div');
-                    item.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;text-align:right;';
+                    item.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;text-align:right;cursor:pointer;';
                     const cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.setAttribute('data-batch-plan', p.id);
                     cb.setAttribute('data-batch-idx', String(idx));
                     cb.checked = batchHas(p.id, idx);
-                    cb.style.cssText = 'width:18px;height:18px;flex-shrink:0;accent-color:#3b82f6;';
-                    cb.onmousedown = function(ev) {
-                      try { ev.preventDefault(); ev.stopPropagation(); } catch (e1) {}
-                      sugBox._keepOpen = true;
-                    };
-                    cb.onclick = function(ev) {
-                      try { ev.preventDefault(); ev.stopPropagation(); } catch (e2) {}
-                      /* toggle دستی چون preventDefault ممکن است رفتار native را ببندد */
-                      /* onchange بعد از click native می‌آید — اینجا فقط keepOpen */
-                      sugBox._keepOpen = true;
-                      setTimeout(function() { writeBatch(); sugBox.style.display = 'block'; }, 0);
-                    };
-                    cb.onchange = function(ev) {
-                      try { ev.stopPropagation(); } catch (e3) {}
-                      writeBatch();
-                      sugBox.style.display = 'block';
-                      sugBox._keepOpen = true;
-                      try { desc.focus(); } catch (eF) {}
-                    };
+                    cb.style.cssText = 'width:18px;height:18px;flex-shrink:0;accent-color:#3b82f6;pointer-events:none;';
                     const lab = document.createElement('span');
-                    lab.style.cssText = 'flex:1;cursor:pointer;';
+                    lab.style.cssText = 'flex:1;';
                     lab.textContent = qName + ' — پرداخت‌نشده ' + toPersianDigits(idx + 1) + ' از ' + toPersianDigits(cnt) + (dueTxt ? (' — سررسید: ' + dueTxt) : '');
-                    lab.onmousedown = function(ev) {
-                      try { ev.preventDefault(); ev.stopPropagation(); } catch (e4) {}
+                    function toggleBatchRow(ev) {
+                      try { if (ev) { ev.preventDefault(); ev.stopPropagation(); } } catch (eT) {}
                       sugBox._keepOpen = true;
                       cb.checked = !cb.checked;
                       writeBatch();
                       sugBox.style.display = 'block';
-                      try { desc.focus(); } catch (eF2) {}
+                      try { desc.focus(); } catch (eF) {}
+                    }
+                    item.onmousedown = function(ev) {
+                      try { ev.preventDefault(); ev.stopPropagation(); } catch (eM) {}
+                      sugBox._keepOpen = true;
                     };
+                    item.onclick = toggleBatchRow;
                     item.appendChild(lab);
                     item.appendChild(cb);
                     sugBox.appendChild(item);
@@ -17380,10 +17367,6 @@ function openSmsConfirmModal(parsed) {
               return;
             }
             if (isBatch) {
-              var hint = document.createElement('div');
-              hint.style.cssText = 'padding:8px 10px;font-size:0.78rem;opacity:0.75;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);';
-              hint.textContent = 'چند قسط را تیک بزنید؛ با ثبت، همه در تاریخ تراکنش پرداخت‌شده می‌شوند';
-              sugBox.insertBefore(hint, sugBox.firstChild);
               sugBox.onmousedown = function(ev) {
                 try { ev.preventDefault(); } catch (eK) {}
                 sugBox._keepOpen = true;
@@ -17778,21 +17761,22 @@ function confirmSmsEntry() {
               y: targetYear, m: targetMonth,
               amount: bAmt, day: day || '', account: bank || ''
             };
+            /* پیش‌پرداخت: paidCount بالا نرود تا ماه سررسید پرداخت‌نشده بماند */
           } else {
             tRow.desc = bDesc + (isMoavaghB ? ' (معوق)' : '');
             tRow.planCarried = !!isMoavaghB;
             tRow.planEarlyPay = false;
+            if (isMoavaghB) setPlanIndexPaidLate(bp, bIdx, true);
+            else setPlanIndexPaidLate(bp, bIdx, false);
+            var need = bIdx + 1;
+            var curPaid = Math.max(0, parseInt(bp.paidCount, 10) || 0);
+            if (curPaid < need) bp.paidCount = Math.min(bCnt, need);
+            try { clampPlanPaymentState(bp); } catch (eC) {}
+            try { removeCarriedInstallmentRows(bp.id, bIdx, targetYear, targetMonth); } catch (eR) {}
           }
           tRow.allowPlanFieldEdit = true;
           tRow.fromPlanId = bp.id;
           tRow.fromPlanIndex = bIdx;
-          if (isMoavaghB) setPlanIndexPaidLate(bp, bIdx, true);
-          else setPlanIndexPaidLate(bp, bIdx, false);
-          var need = bIdx + 1;
-          var curPaid = Math.max(0, parseInt(bp.paidCount, 10) || 0);
-          if (curPaid < need) bp.paidCount = Math.min(bCnt, need);
-          try { clampPlanPaymentState(bp); } catch (eC) {}
-          try { removeCarriedInstallmentRows(bp.id, bIdx, targetYear, targetMonth); } catch (eR) {}
           batchOk++;
           sec = tSec || sec;
         });
