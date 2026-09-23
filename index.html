@@ -7031,48 +7031,66 @@
     }
 
   
-    .sms-date-row { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; overflow: hidden !important; }
-    .sms-date-row select { flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
-
+    .sms-date-row {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      overflow: visible !important;
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 6px !important;
+      position: relative;
+      z-index: auto !important;
+    }
+    .sms-date-row .fancy-select-wrap {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      width: auto !important;
+      position: relative;
+      z-index: auto;
+    }
     #smsConfirmModal.modal-overlay {
       align-items: flex-start !important;
       justify-content: center !important;
-      padding-top: 6vh !important;
-      padding-bottom: 4vh !important;
+      padding-top: 5vh !important;
+      padding-bottom: 3vh !important;
       box-sizing: border-box;
+      z-index: 100000 !important;
     }
     #smsConfirmModal .modal-box {
-      max-height: 88vh !important;
-      overflow-x: hidden !important;
-      overflow-y: auto !important;
+      max-height: 90vh !important;
+      overflow: visible !important;
       width: 92vw !important;
       max-width: 360px !important;
       box-sizing: border-box !important;
+      position: relative;
+      z-index: 1;
     }
     #smsConfirmMeta {
       overflow: visible !important;
       position: relative;
-      z-index: 1;
+      z-index: auto;
     }
     #smsConfirmModal .fancy-select-wrap {
       position: relative;
-      z-index: 2;
+      z-index: auto;
       width: 100%;
       max-width: 100%;
       box-sizing: border-box;
     }
-    #smsConfirmModal .fancy-select-list {
-      z-index: 100600 !important;
-      max-height: 160px;
+    #smsConfirmModal .fancy-select-wrap.is-open {
+      z-index: 100800 !important;
     }
-    #smsConfirmModal .sms-date-row {
-      position: relative;
-      z-index: 3;
+    .fancy-select-list.open {
+      display: block !important;
     }
-    #smsConfirmModal .sms-date-row .fancy-select-wrap {
-      flex: 1 1 0;
-      min-width: 0;
-      width: 0;
+    body > .fancy-select-list {
+      z-index: 100900 !important;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
     }
 </style>
 </head>
@@ -7579,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v106-PENTA | restore-getWritable fancy-dates modal-fix */
+    /* build-stamp: 2026-09-23-v107-PENTA | sms-menus-fixed-pos date-order-ym-d */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16814,7 +16832,8 @@ function openPdfPrintWindow(){
 
     function enhanceSelectFont(selectEl) {
       if (!selectEl) return;
-      if (selectEl._fancyRender) { selectEl._fancyRender(); return; }
+      if (selectEl._fancyRender) { try { selectEl._fancyRender(); } catch (e) {} return; }
+      if (!selectEl.parentNode) return;
       selectEl.style.display = 'none';
       const wrap = document.createElement('div');
       wrap.className = 'fancy-select-wrap';
@@ -16825,36 +16844,118 @@ function openPdfPrintWindow(){
       btn.className = 'fancy-select-btn';
       const list = document.createElement('div');
       list.className = 'fancy-select-list';
+      list._wrap = wrap;
+      function closeList() {
+        list.classList.remove('open');
+        wrap.classList.remove('is-open');
+        wrap.style.zIndex = '';
+        list.style.position = '';
+        list.style.left = '';
+        list.style.right = '';
+        list.style.top = '';
+        list.style.bottom = '';
+        list.style.width = '';
+        list.style.zIndex = '';
+        if (list.parentNode === document.body) {
+          try { wrap.appendChild(list); } catch (e) {}
+        }
+      }
+      function openList() {
+        document.querySelectorAll('.fancy-select-list.open').forEach(function(l) {
+          if (l === list) return;
+          l.classList.remove('open');
+          if (l._wrap) {
+            l._wrap.classList.remove('is-open');
+            l._wrap.style.zIndex = '';
+          }
+          if (l.parentNode === document.body && l._wrap) {
+            try { l._wrap.appendChild(l); } catch (e2) {}
+          }
+        });
+        list.classList.add('open');
+        wrap.classList.add('is-open');
+        wrap.style.zIndex = '100800';
+        var inModal = false;
+        try { inModal = !!(selectEl.closest && selectEl.closest('.modal-overlay')); } catch (eM) {}
+        try {
+          var rect = btn.getBoundingClientRect();
+          var spaceBelow = window.innerHeight - rect.bottom;
+          if (inModal) {
+            if (list.parentNode !== document.body) document.body.appendChild(list);
+            list.style.position = 'fixed';
+            list.style.left = Math.max(8, rect.left) + 'px';
+            list.style.width = Math.max(rect.width, 72) + 'px';
+            list.style.right = 'auto';
+            list.style.zIndex = '100900';
+            if (spaceBelow < 180) {
+              list.style.top = 'auto';
+              list.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+              list.style.maxHeight = Math.min(200, rect.top - 12) + 'px';
+            } else {
+              list.style.top = (rect.bottom + 4) + 'px';
+              list.style.bottom = 'auto';
+              list.style.maxHeight = Math.min(200, spaceBelow - 12) + 'px';
+            }
+          } else {
+            if (list.parentNode !== wrap) wrap.appendChild(list);
+            list.style.position = 'absolute';
+            list.style.left = '0';
+            list.style.right = '0';
+            list.style.width = '';
+            list.style.zIndex = '100810';
+            if (spaceBelow < 170) {
+              list.style.top = 'auto';
+              list.style.bottom = 'calc(100% + 4px)';
+            } else {
+              list.style.top = 'calc(100% + 4px)';
+              list.style.bottom = 'auto';
+            }
+          }
+        } catch (ePos) {}
+      }
       function render() {
         const opts = Array.from(selectEl.options);
-        const cur = opts.find(o => o.value === selectEl.value) || opts[0];
+        const cur = opts.find(function(o){ return o.value === selectEl.value; }) || opts[0];
         btn.textContent = cur ? cur.textContent : '';
         list.innerHTML = '';
-        opts.forEach(o => {
+        opts.forEach(function(o) {
           const item = document.createElement('div');
           item.className = 'fancy-select-opt' + (o.value === selectEl.value ? ' selected' : '');
           item.textContent = o.textContent;
-          item.onclick = (e) => {
+          item.onmousedown = function(e) { e.preventDefault(); e.stopPropagation(); };
+          item.onclick = function(e) {
+            e.preventDefault();
             e.stopPropagation();
             selectEl.value = o.value;
-            selectEl.dispatchEvent(new Event('change'));
+            try { selectEl.dispatchEvent(new Event('change', { bubbles: true })); } catch (eC) {}
             render();
-            list.classList.remove('open');
+            closeList();
           };
           list.appendChild(item);
         });
       }
-      btn.onclick = (e) => {
+      btn.onclick = function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        document.querySelectorAll('.fancy-select-list.open').forEach(l => { if (l !== list) l.classList.remove('open'); });
-        list.classList.toggle('open');
+        if (list.classList.contains('open')) closeList();
+        else openList();
       };
-      document.addEventListener('click', () => list.classList.remove('open'));
+      if (!selectEl._fancyDocClose) {
+        selectEl._fancyDocClose = function(e) {
+          try {
+            if (wrap.contains(e.target) || list.contains(e.target)) return;
+          } catch (eX) {}
+          closeList();
+        };
+        document.addEventListener('click', selectEl._fancyDocClose, true);
+      }
       wrap.appendChild(btn);
       wrap.appendChild(list);
       render();
       selectEl._fancyRender = render;
+      selectEl._fancyClose = closeList;
     }
+
 
     function openSmsConfirmModal(parsed) {
       const m = document.getElementById('smsConfirmModal');
@@ -16875,7 +16976,7 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<label class="family-label">تاریخ (روز / ماه / سال):</label>' +
+          '<label class="family-label">تاریخ (سال / ماه / روز):</label>' +
           '<div class="sms-date-row" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;">' +
           (function(){
             var ty = (parsed.year != null) ? parseInt(parsed.year,10) : ((typeof getTodayPersian==='function' && getTodayPersian().y) || currentYear || 1405);
@@ -16895,7 +16996,7 @@ function openPdfPrintWindow(){
             var ys = '<select id="smsConfirmYear" style="'+st+'">';
             for (var y=y0;y<=y1;y++) ys += '<option value="'+y+'"'+(y===ty?' selected':'')+'>'+toPersianDigits(String(y))+'</option>';
             ys += '</select>';
-            return ds + ms + ys;
+            return ys + ms + ds;
           })() +
           '</div>' +
           
