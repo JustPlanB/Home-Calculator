@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v112-PENTA | fix-paidCount-edit-flood paid-only-due-month */
+    /* build-stamp: 2026-09-23-v113-PENTA | reset-unpaid-amt-day sms-section-by-title suggest-unpaid-label register-force */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7957,17 +7957,20 @@
           }
           const prev = prevByPlan[plan.id + ':' + matchIdx] || {};
           var showMoavagh = !!item.carried;
+          /* اگر قسط دوباره unpaid شد (کم کردن paidCount): مبلغ و روزِ اصلی طرح برگردد */
+          var usePrevAmt = item.isPaid && prev.amount != null && prev.amount !== '' && Number(prev.amount) !== 0;
+          var usePrevDay = item.isPaid && prev.day != null && prev.day !== '';
           const row = {
-            day: (prev.day != null && prev.day !== '') ? String(prev.day) : String(due.d),
+            day: usePrevDay ? String(prev.day) : String(due.d),
             desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
-            amount: (prev.amount != null && prev.amount !== '' && Number(prev.amount) !== 0) ? prev.amount : amt,
+            amount: usePrevAmt ? prev.amount : amt,
             status: autoStatus,
-            account: prev.account || '',
+            account: item.isPaid ? (prev.account || '') : (prev.account || ''),
             fromPlanId: plan.id,
             fromPlanIndex: matchIdx,
             planCarried: !!item.carried
           };
-          if (prev.allowPlanFieldEdit) row.allowPlanFieldEdit = true;
+          if (item.isPaid && prev.allowPlanFieldEdit) row.allowPlanFieldEdit = true;
           if (prev.id && !item.carried) row.id = prev.id;
           if (prev.createdBy) row.createdBy = prev.createdBy;
           if (prev.createdByName) row.createdByName = prev.createdByName;
@@ -17017,8 +17020,8 @@ function openPdfPrintWindow(){
       function add(s) {
         s = (s || '').trim();
         if (!s || s.length < 2) return;
-        if (/^قسط\s*\d/.test(s)) return;
-        if (/قسط/.test(s) && /از\s*\d+/.test(s)) return;
+        /* هیچ شرح مرتبط با اقساط در ساجست عمومی نباشد */
+        if (/قسط/.test(s) || /اقساط/.test(s) || /معوق/.test(s) || /پیش‌پرداخت/.test(s)) return;
         if (s === 'واریز بانکی' || s === 'برداشت بانکی') return;
         counts[s] = (counts[s] || 0) + 1;
       }
@@ -17191,7 +17194,11 @@ function openSmsConfirmModal(parsed) {
               item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
               const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
               const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
-              item.textContent = (p.name || 'قسط') + ' — پرداخت‌شده ' + toPersianDigits(paid) + '/' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
+              var unNum = unpaidIdx >= 0 ? (unpaidIdx + 1) : cnt;
+              var nameLine = unpaidIdx >= 0
+                ? planInstallmentDesc(p, unpaidIdx, cnt)
+                : ((p.name || 'قسط'));
+              item.textContent = nameLine + ' — پرداخت‌نشده ' + toPersianDigits(unNum) + ' از ' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
               item.onmousedown = function(ev) {
                 try { ev.preventDefault(); } catch (e0) {}
                 var stdDesc = (unpaidIdx >= 0)
@@ -17451,8 +17458,27 @@ function confirmSmsEntry() {
 
       const sel = document.getElementById('smsConfirmSectionSel');
       let sec = null;
+      let secTitleWanted = '';
       if (sel && sel.value && sel.value !== '__auto__') {
-        sec = (targetPd[tab].sections || []).find(s => s.id === sel.value);
+        /* اول در ماه هدف با id */
+        sec = (targetPd[tab] && targetPd[tab].sections || []).find(function(s){ return s.id === sel.value; });
+        /* اگر ماه هدف بخش با این id ندارد (آرشیو)، با عنوان گزینه پیدا/بساز */
+        if (!sec) {
+          try {
+            var opt = sel.options[sel.selectedIndex];
+            secTitleWanted = opt ? String(opt.textContent || '').trim() : '';
+          } catch (eO) { secTitleWanted = ''; }
+          if (secTitleWanted) {
+            sec = (targetPd[tab] && targetPd[tab].sections || []).find(function(s){
+              return (s.title || '').trim() === secTitleWanted;
+            });
+            if (!sec) {
+              sec = ensureSmsSection(tab, secTitleWanted, targetPd);
+            }
+          }
+        } else {
+          secTitleWanted = (sec.title || '').trim();
+        }
       }
       if (!sec) {
         sec = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی', targetPd);
@@ -17466,6 +17492,10 @@ function confirmSmsEntry() {
         return;
       }
       if (!Array.isArray(sec.rows)) sec.rows = [];
+      /* مطمئن شو sec داخل targetPd است */
+      if (!(targetPd[tab].sections || []).some(function(s){ return s === sec || s.id === sec.id; })) {
+        targetPd[tab].sections.push(sec);
+      }
 
       /* ترجیح: حساب از لیست کاربر — حساب جدید خودکار نساز */
       if (bank && pendingSmsEntry.raw) {
@@ -17700,32 +17730,62 @@ function confirmSmsEntry() {
         showToast('ثبت انجام نشد. بخش مقصد را بررسی کنید');
         return;
       }
-      var hasRow = sec.rows.some(function(r) {
+      /* اگر ردیف هنوز اضافه نشده، همین‌جا بساز (ایمنی نهایی) */
+      var hasMatching = sec.rows.some(function(r) {
         if (!r) return false;
-        if (r.fromPlanId) return true;
-        if (r.desc && String(r.desc).trim()) return true;
-        if (r.amount != null && r.amount !== '' && Number(r.amount) !== 0) return true;
+        if (Number(r.amount) === Number(amount) && (r.desc || '') === (desc || '')) return true;
+        if (r.fromPlanId && Number(r.amount) === Number(amount)) return true;
         return false;
       });
-      if (!hasRow) {
-        showToast('ثبت انجام نشد. مبلغ یا شرح را بررسی کنید');
-        return;
+      if (!hasMatching) {
+        var safety = emptyRow();
+        safety.day = day || '';
+        safety.desc = desc || (tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
+        safety.amount = amount;
+        safety.status = 'paid';
+        safety.account = bank || '';
+        var emptyIdxS = sec.rows.findIndex(function(r) {
+          return r && !r.desc && !r.amount && !r.day && !r.fromPlanId;
+        });
+        if (emptyIdxS >= 0) sec.rows[emptyIdxS] = safety;
+        else sec.rows.push(safety);
       }
+      sec.collapsed = false;
+      try {
+        if (!periodCtx.isCurrent) {
+          archive[periodCtx.key] = targetPd;
+        } else {
+          periodData = targetPd;
+        }
+      } catch (eForce) {}
       commitWritablePeriodData(periodCtx);
       try { persistCurrent(); } catch (eP) {}
       try { saveArchive(); } catch (eA) {}
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('hesab_force_flush', String(Date.now()));
+        }
+      } catch (eL) {}
       scheduleSave();
       closeSmsConfirmModal();
-      /* اگر ماه هدف غیرجاری است، کاربر را مطلع کن */
       var periodNote = '';
       try {
         if (targetYear !== currentYear || targetMonth !== currentMonth) {
           periodNote = ' در ' + (MONTHS[targetMonth - 1] || '') + ' ' + toPersianDigits(targetYear);
+          /* برو به همان ماه تا کاربر ردیف را ببیند */
+          try {
+            currentYear = targetYear;
+            currentMonth = targetMonth;
+            if (archive[periodKey(targetYear, targetMonth)]) {
+              periodData = archive[periodKey(targetYear, targetMonth)];
+            }
+          } catch (eNav) {}
         }
       } catch (eN) {}
       if (currentTab !== tab) switchTab(tab);
       else renderAll();
-      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote);
+      var secNote = (sec && sec.title) ? (' — ' + sec.title) : '';
+      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote + secNote);
       try {
         if (sec) {
           const el = document.getElementById('sec-' + tab + '-' + sec.id);
