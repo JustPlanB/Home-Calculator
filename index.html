@@ -7052,24 +7052,36 @@
     #smsConfirmModal.modal-overlay {
       align-items: flex-start !important;
       justify-content: center !important;
-      padding-top: 5vh !important;
-      padding-bottom: 3vh !important;
+      padding-top: 4vh !important;
+      padding-bottom: 4vh !important;
       box-sizing: border-box;
       z-index: 100000 !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
     }
     #smsConfirmModal .modal-box {
-      max-height: 90vh !important;
-      overflow: visible !important;
+      max-height: min(88vh, 640px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
       width: 92vw !important;
       max-width: 360px !important;
       box-sizing: border-box !important;
       position: relative;
       z-index: 1;
+      -webkit-overflow-scrolling: touch;
     }
     #smsConfirmMeta {
       overflow: visible !important;
       position: relative;
       z-index: auto;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #smsConfirmModal .family-input,
+    #smsConfirmModal input,
+    #smsConfirmModal select {
+      max-width: 100% !important;
+      box-sizing: border-box !important;
     }
     #smsConfirmModal .fancy-select-wrap {
       position: relative;
@@ -7597,7 +7609,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v113-PENTA | reset-unpaid-amt-day sms-section-by-title suggest-unpaid-label register-force */
+    /* build-stamp: 2026-09-23-v114-PENTA | suggest-label early-pay-cleanup nav-to-tx-month sms-modal-scroll */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7892,7 +7904,16 @@
           if (!s.rows) return;
           const before = s.rows.length;
           /* ردیف پیش‌پرداخت قسط ماه بعد را نگه دار */
-          s.rows = s.rows.filter(r => r.fromPlanId !== plan.id || r.planEarlyPay);
+          s.rows = s.rows.filter(function(r) {
+            if (!r || r.fromPlanId !== plan.id) return true;
+            if (r.planEarlyPay) {
+              var eidx = parseInt(r.fromPlanIndex, 10);
+              if (isNaN(eidx)) return false;
+              /* فقط اگر هنوز در paidEarlyMap باشد نگه دار؛ با کم کردن paidCount پاک می‌شود */
+              return !!(plan.paidEarlyMap && plan.paidEarlyMap[String(eidx)]);
+            }
+            return false;
+          });
           if (!s.rows.length && before) s.rows = [emptyRow()];
         });
 
@@ -8044,6 +8065,26 @@
           if (isNaN(idx) || idx >= paid) delete plan.paidEarlyMap[k];
         });
       }
+      /* ردیف‌های پیش‌پرداختی که دیگر در map نیستند از همه ماه‌ها حذف شوند */
+      try {
+        function scrubEarly(pd) {
+          if (!pd || !pd.expense || !pd.expense.sections) return;
+          pd.expense.sections.forEach(function(s) {
+            if (!s.rows) return;
+            s.rows = s.rows.filter(function(r) {
+              if (!r || r.fromPlanId !== plan.id || !r.planEarlyPay) return true;
+              var eidx = parseInt(r.fromPlanIndex, 10);
+              if (isNaN(eidx)) return false;
+              return !!(plan.paidEarlyMap && plan.paidEarlyMap[String(eidx)]);
+            });
+            if (!s.rows.length) s.rows = [emptyRow()];
+          });
+        }
+        scrubEarly(periodData);
+        Object.keys(archive || {}).forEach(function(k) {
+          try { scrubEarly(archive[k]); } catch (eA) {}
+        });
+      } catch (eScrub) {}
     }
 
 
@@ -9090,7 +9131,44 @@
       }
     }
 
-        function onPeriodChange() {
+        
+    function navigateToPeriod(y, m) {
+      y = parseInt(y, 10);
+      m = parseInt(m, 10);
+      if (!y || !m) return;
+      try { persistCurrent(); } catch (e0) {}
+      currentYear = y;
+      currentMonth = m;
+      try {
+        var hm = document.getElementById('monthSelect');
+        var hy = document.getElementById('yearSelect');
+        if (hm) {
+          hm.value = String(m);
+          try {
+            var mw = document.getElementById('monthSelectWrap');
+            var btn = mw && mw.querySelector('.dark-select-btn');
+            if (btn) btn.textContent = MONTHS[m - 1] || hm.value;
+          } catch (e1) {}
+          if (typeof hm._fancyRender === 'function') try { hm._fancyRender(); } catch (e2) {}
+        }
+        if (hy) {
+          hy.value = String(y);
+          try {
+            var yw = document.getElementById('yearSelectWrap');
+            var ybtn = yw && yw.querySelector('.dark-select-btn');
+            if (ybtn) ybtn.textContent = (typeof toPersianDigits === 'function') ? toPersianDigits(String(y)) : String(y);
+          } catch (e3) {}
+          if (typeof hy._fancyRender === 'function') try { hy._fancyRender(); } catch (e4) {}
+        }
+      } catch (eSel) {}
+      try { loadCurrent(); } catch (eL) {}
+      try { renderAll(); } catch (eR) {}
+      try {
+        if (typeof updateMonthYearUI === 'function') updateMonthYearUI();
+      } catch (eU) {}
+    }
+
+function onPeriodChange() {
       // اول ماه فعلی را با دادهٔ فعلی ذخیره کن + موجودی آنی نمایش‌داده‌شده
       const endingPeople = (typeof computePersonEndingInstants === 'function') ? computePersonEndingInstants() : {};
       const endingAcc = (typeof computeAccountEndingBalances === 'function') ? computeAccountEndingBalances() : {};
@@ -17195,10 +17273,8 @@ function openSmsConfirmModal(parsed) {
               const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
               const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
               var unNum = unpaidIdx >= 0 ? (unpaidIdx + 1) : cnt;
-              var nameLine = unpaidIdx >= 0
-                ? planInstallmentDesc(p, unpaidIdx, cnt)
-                : ((p.name || 'قسط'));
-              item.textContent = nameLine + ' — پرداخت‌نشده ' + toPersianDigits(unNum) + ' از ' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
+              var qName = (p.name || 'قسط').trim() || 'قسط';
+              item.textContent = qName + ' — پرداخت‌نشده ' + toPersianDigits(unNum) + ' از ' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
               item.onmousedown = function(ev) {
                 try { ev.preventDefault(); } catch (e0) {}
                 var stdDesc = (unpaidIdx >= 0)
@@ -17244,7 +17320,17 @@ function openSmsConfirmModal(parsed) {
           sugBox.style.display = 'block';
         }
         desc.oninput = function() { renderSmsDescSuggest(); };
-        desc.onfocus = function() { renderSmsDescSuggest(); };
+        desc.onfocus = function() {
+          renderSmsDescSuggest();
+          setTimeout(function() {
+            try {
+              var box = document.querySelector('#smsConfirmModal .modal-box');
+              if (box && desc.scrollIntoView) {
+                desc.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }
+            } catch (eSc) {}
+          }, 280);
+        };
         desc.addEventListener('blur', function() {
           setTimeout(function() {
             try { sugBox.style.display = 'none'; } catch (eB) {}
@@ -17561,6 +17647,9 @@ function confirmSmsEntry() {
           persistCurrent();
           scheduleSave();
           closeSmsConfirmModal();
+          try {
+            if (typeof navigateToPeriod === 'function') navigateToPeriod(targetYear, targetMonth);
+          } catch (eNavE) {}
           if (currentTab !== tab) switchTab(tab);
           else renderAll();
           showToast('پیش‌پرداخت قسط ثبت شد: ' + formatNum(amount));
@@ -17772,14 +17861,14 @@ function confirmSmsEntry() {
       try {
         if (targetYear !== currentYear || targetMonth !== currentMonth) {
           periodNote = ' در ' + (MONTHS[targetMonth - 1] || '') + ' ' + toPersianDigits(targetYear);
-          /* برو به همان ماه تا کاربر ردیف را ببیند */
-          try {
-            currentYear = targetYear;
-            currentMonth = targetMonth;
-            if (archive[periodKey(targetYear, targetMonth)]) {
-              periodData = archive[periodKey(targetYear, targetMonth)];
-            }
-          } catch (eNav) {}
+        }
+        /* همیشه بعد از ثبت به ماه تراکنش برو تا ردیف همان لحظه دیده شود */
+        if (typeof navigateToPeriod === 'function') {
+          navigateToPeriod(targetYear, targetMonth);
+        } else {
+          currentYear = targetYear;
+          currentMonth = targetMonth;
+          try { loadCurrent(); } catch (eL2) {}
         }
       } catch (eN) {}
       if (currentTab !== tab) switchTab(tab);
