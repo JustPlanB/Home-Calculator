@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v111-PENTA | install-rows-show paidCount-status sms-pay-visible */
+    /* build-stamp: 2026-09-23-v112-PENTA | fix-paidCount-edit-flood paid-only-due-month */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7914,21 +7914,33 @@
           const dueThisMonth = (d.y === y && d.m === m);
           const dueBefore = (d.y < y) || (d.y === y && d.m < m);
           var dueMonthEnded = (todayJ.y > d.y) || (todayJ.y === d.y && todayJ.m > d.m);
-          /* فقط متای همین ایندکس — نه fallback به قسط دیگر */
           const prevMeta = prevByPlan[plan.id + ':' + i] || null;
+          const paidLate = isPlanIndexPaidLate(plan, i);
 
-          /* ماه سررسید: همیشه ردیف با وضعیت بر اساس paidCount */
+          /*
+           * قواعد:
+           * 1) ماه سررسید: همیشه یک ردیف — اگر دیرپرداخت (paidLate) باشد در ماه اصلی unpaid می‌ماند
+           * 2) پرداخت‌شده به‌موقع: فقط همان ماه سررسید (هیچ کپی در ماه‌های بعد)
+           * 3) پرداخت‌نشده و سررسید گذشته: معوق unpaid در ماه‌های بعد
+           * 4) پرداخت معوق: فقط در ماهی که قبلاً ردیف معوقِ پرداخت‌شده داشته (نه همه ماه‌ها)
+           */
           if (dueThisMonth) {
-            indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: false });
+            var paidInDue = isPaid && !paidLate;
+            indicesToShow.push({ i: i, due: d, isPaid: paidInDue, carried: false });
             continue;
           }
-          /* معوق: پرداخت‌نشده همیشه؛ پرداخت‌شده فقط اگر همین ماه قبلاً ردیف معوق داشته */
           if (dueBefore && periodEntered && dueMonthEnded) {
-            if (prevMeta && prevMeta.planCarried) {
-              indicesToShow.push({ i: i, due: d, isPaid: isPaid, carried: true });
-            } else if (!isPaid) {
+            if (!isPaid) {
               indicesToShow.push({ i: i, due: d, isPaid: false, carried: true });
+            } else if (
+              paidLate &&
+              prevMeta &&
+              prevMeta.planCarried &&
+              (prevMeta.status === 'paid' || prevMeta.status === 'received')
+            ) {
+              indicesToShow.push({ i: i, due: d, isPaid: true, carried: true });
             }
+            /* پرداخت‌شده عادی: در ماه غیرسررسید ردیف نساز — جلوی سیل بعد از ادیت paidCount */
           }
         }
         if (!indicesToShow.length) return;
@@ -8011,7 +8023,33 @@
       else delete plan.paidLateMap[String(idx)];
     }
 
+    /** بعد از تغییر paidCount: وضعیت دیرکرد/پیش‌پرداخت اقساطِ بالاتر از paid را پاک کن */
+    function clampPlanPaymentState(plan) {
+      if (!plan) return;
+      const count = Math.max(0, parseInt(plan.count, 10) || 0);
+      let paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
+      plan.paidCount = paid;
+      if (plan.paidLateMap && typeof plan.paidLateMap === 'object') {
+        Object.keys(plan.paidLateMap).forEach(function(k) {
+          const idx = parseInt(k, 10);
+          if (isNaN(idx) || idx >= paid) delete plan.paidLateMap[k];
+        });
+      }
+      if (plan.paidEarlyMap && typeof plan.paidEarlyMap === 'object') {
+        Object.keys(plan.paidEarlyMap).forEach(function(k) {
+          const idx = parseInt(k, 10);
+          if (isNaN(idx) || idx >= paid) delete plan.paidEarlyMap[k];
+        });
+      }
+    }
+
+
     function syncPlansToExpenseAll() {
+      try {
+        (plans || []).forEach(function(p) {
+          try { clampPlanPaymentState(p); } catch (e0) {}
+        });
+      } catch (e1) {}
       // ماه جاری
       syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
       // آرشیو بقیه ماه‌ها
@@ -14166,7 +14204,20 @@ function openPdfPrintWindow(){
         if (n > c) n = c;
         plan.paidCount = n;
         paidInp.value = toPersianDigits(n);
+        try { clampPlanPaymentState(plan); } catch (eC) {}
         refreshProgressOnly();
+      };
+      paidInp.onblur = () => {
+        try { clampPlanPaymentState(plan); } catch (eC2) {}
+        try {
+          if (plan.expenseSectionId || (plan.expenseSectionTitle || '').trim()) {
+            syncPlansToExpenseAll();
+          }
+        } catch (eS) {}
+        try { updateInstallSummary(); } catch (eU) {}
+        try { checkInstallReminders(); } catch (eR) {}
+        scheduleSave();
+        if (currentTab === 'expense') renderAll();
       };
       paidInp.onkeydown = (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
