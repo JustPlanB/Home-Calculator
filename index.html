@@ -7609,7 +7609,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v114-PENTA | suggest-label early-pay-cleanup nav-to-tx-month sms-modal-scroll */
+    /* build-stamp: 2026-09-23-v115-PENTA | month-select-sync batch-اقساط */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -9142,24 +9142,35 @@
       try {
         var hm = document.getElementById('monthSelect');
         var hy = document.getElementById('yearSelect');
-        if (hm) {
-          hm.value = String(m);
+        var mw = document.getElementById('monthSelectWrap');
+        var yw = document.getElementById('yearSelectWrap');
+        if (hm) hm.value = String(m);
+        if (hy) hy.value = String(y);
+        /* سینک هایلایت آبی منوی کشویی ماه/سال */
+        if (mw && typeof mw.setValue === 'function') {
+          try { mw.setValue(m); } catch (eM) {}
+        } else if (mw) {
+          var btn = mw.querySelector('.dark-select-btn');
+          if (btn) btn.textContent = MONTHS[m - 1] || String(m);
           try {
-            var mw = document.getElementById('monthSelectWrap');
-            var btn = mw && mw.querySelector('.dark-select-btn');
-            if (btn) btn.textContent = MONTHS[m - 1] || hm.value;
-          } catch (e1) {}
-          if (typeof hm._fancyRender === 'function') try { hm._fancyRender(); } catch (e2) {}
+            (mw._list || document).querySelectorAll && (mw._list || { querySelectorAll: function(){ return []; } }).querySelectorAll('.dark-select-item').forEach(function(it) {
+              it.classList.toggle('selected', String(it.dataset.value) === String(m));
+            });
+          } catch (eMl) {}
         }
-        if (hy) {
-          hy.value = String(y);
+        if (yw && typeof yw.setValue === 'function') {
+          try { yw.setValue(y); } catch (eY) {}
+        } else if (yw) {
+          var ybtn = yw.querySelector('.dark-select-btn');
+          if (ybtn) ybtn.textContent = (typeof toPersianDigits === 'function') ? toPersianDigits(String(y)) : String(y);
           try {
-            var yw = document.getElementById('yearSelectWrap');
-            var ybtn = yw && yw.querySelector('.dark-select-btn');
-            if (ybtn) ybtn.textContent = (typeof toPersianDigits === 'function') ? toPersianDigits(String(y)) : String(y);
-          } catch (e3) {}
-          if (typeof hy._fancyRender === 'function') try { hy._fancyRender(); } catch (e4) {}
+            if (yw._list) yw._list.querySelectorAll('.dark-select-item').forEach(function(it) {
+              it.classList.toggle('selected', String(it.dataset.value) === String(y));
+            });
+          } catch (eYl) {}
         }
+        if (typeof hm._fancyRender === 'function') try { hm._fancyRender(); } catch (e2) {}
+        if (typeof hy._fancyRender === 'function') try { hy._fancyRender(); } catch (e4) {}
       } catch (eSel) {}
       try { loadCurrent(); } catch (eL) {}
       try { renderAll(); } catch (eR) {}
@@ -17254,39 +17265,110 @@ function openSmsConfirmModal(parsed) {
         sugBox.innerHTML = '';
         function renderSmsDescSuggest() {
           const t = (desc.value || '').trim();
+          if (!/اقساط/.test(t)) {
+            desc.removeAttribute('data-plan-batch');
+          }
           desc.removeAttribute('data-plan-id');
           desc.removeAttribute('data-plan-index');
           sugBox.innerHTML = '';
-          /* اگر کلمه قسط بود — ساجست اقساط */
-          if (t && /قسط/.test(t)) {
+          /* اقساط = پرداخت دسته‌ای | قسط = تک‌قسط — بدون همپوشانی */
+          var isBatch = t && /اقساط/.test(t);
+          var isSingle = t && !isBatch && /قسط/.test(t);
+          if (isBatch || isSingle) {
             const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
             if (!list.length) {
               sugBox.style.display = 'none';
               return;
             }
+            /* وضعیت تیک‌های قبلی برای حالت دسته‌ای */
+            var prevBatch = [];
+            try {
+              prevBatch = JSON.parse(desc.getAttribute('data-plan-batch') || '[]') || [];
+            } catch (eB0) { prevBatch = []; }
+            function batchHas(pid, idx) {
+              return prevBatch.some(function(x){ return x && x.id === pid && parseInt(x.index, 10) === idx; });
+            }
+            function writeBatch() {
+              var boxes = sugBox.querySelectorAll('input[data-batch-plan]');
+              var arr = [];
+              boxes.forEach(function(cb) {
+                if (!cb.checked) return;
+                arr.push({ id: cb.getAttribute('data-batch-plan'), index: parseInt(cb.getAttribute('data-batch-idx'), 10) });
+              });
+              desc.setAttribute('data-plan-batch', JSON.stringify(arr));
+              desc.removeAttribute('data-plan-id');
+              desc.removeAttribute('data-plan-index');
+              if (arr.length) {
+                desc.value = 'اقساط (' + toPersianDigits(arr.length) + ' مورد)';
+              }
+            }
             list.forEach(function(p) {
-              const unpaidIdx = earliestUnpaidPlanIndex(p);
               const cnt = Math.max(0, parseInt(p.count, 10) || 0);
               const paid = Math.min(cnt, Math.max(0, parseInt(p.paidCount, 10) || 0));
-              const item = document.createElement('div');
-              item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
-              const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
-              const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
-              var unNum = unpaidIdx >= 0 ? (unpaidIdx + 1) : cnt;
-              var qName = (p.name || 'قسط').trim() || 'قسط';
-              item.textContent = qName + ' — پرداخت‌نشده ' + toPersianDigits(unNum) + ' از ' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
-              item.onmousedown = function(ev) {
-                try { ev.preventDefault(); } catch (e0) {}
-                var stdDesc = (unpaidIdx >= 0)
-                  ? planInstallmentDesc(p, unpaidIdx, cnt)
-                  : ((p.name || 'قسط'));
-                desc.value = stdDesc;
-                desc.setAttribute('data-plan-id', p.id);
-                if (unpaidIdx >= 0) desc.setAttribute('data-plan-index', String(unpaidIdx));
-                sugBox.style.display = 'none';
-              };
-              sugBox.appendChild(item);
+              if (isSingle) {
+                const unpaidIdx = earliestUnpaidPlanIndex(p);
+                if (unpaidIdx < 0) return;
+                const item = document.createElement('div');
+                item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
+                const due = dueDateForInstallment(p, unpaidIdx);
+                const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : '';
+                var unNum = unpaidIdx + 1;
+                var qName = (p.name || 'قسط').trim() || 'قسط';
+                item.textContent = qName + ' — پرداخت‌نشده ' + toPersianDigits(unNum) + ' از ' + toPersianDigits(cnt) + (dueTxt ? (' — سررسید: ' + dueTxt) : '');
+                item.onmousedown = function(ev) {
+                  try { ev.preventDefault(); } catch (e0) {}
+                  desc.value = planInstallmentDesc(p, unpaidIdx, cnt);
+                  desc.setAttribute('data-plan-id', p.id);
+                  desc.setAttribute('data-plan-index', String(unpaidIdx));
+                  desc.removeAttribute('data-plan-batch');
+                  sugBox.style.display = 'none';
+                };
+                sugBox.appendChild(item);
+              } else {
+                /* دسته‌ای: همه اقساط پرداخت‌نشده با چک‌باکس */
+                for (var ui = paid; ui < cnt; ui++) {
+                  (function(idx) {
+                    const due = dueDateForInstallment(p, idx);
+                    const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : '';
+                    var qName = (p.name || 'قسط').trim() || 'قسط';
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;text-align:right;';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.setAttribute('data-batch-plan', p.id);
+                    cb.setAttribute('data-batch-idx', String(idx));
+                    cb.checked = batchHas(p.id, idx);
+                    cb.style.cssText = 'width:18px;height:18px;flex-shrink:0;accent-color:#3b82f6;';
+                    cb.onmousedown = function(ev) { try { ev.stopPropagation(); } catch (e1) {} };
+                    cb.onchange = function(ev) {
+                      try { ev.stopPropagation(); } catch (e2) {}
+                      writeBatch();
+                    };
+                    const lab = document.createElement('span');
+                    lab.style.cssText = 'flex:1;cursor:pointer;';
+                    lab.textContent = qName + ' — پرداخت‌نشده ' + toPersianDigits(idx + 1) + ' از ' + toPersianDigits(cnt) + (dueTxt ? (' — سررسید: ' + dueTxt) : '');
+                    lab.onmousedown = function(ev) {
+                      try { ev.preventDefault(); } catch (e3) {}
+                      cb.checked = !cb.checked;
+                      writeBatch();
+                    };
+                    item.appendChild(lab);
+                    item.appendChild(cb);
+                    sugBox.appendChild(item);
+                  })(ui);
+                }
+              }
             });
+            if (!sugBox.children.length) {
+              sugBox.style.display = 'none';
+              return;
+            }
+            if (isBatch) {
+              var hint = document.createElement('div');
+              hint.style.cssText = 'padding:8px 10px;font-size:0.78rem;opacity:0.75;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);';
+              hint.textContent = 'چند قسط را تیک بزنید؛ با ثبت، همه در تاریخ تراکنش پرداخت‌شده می‌شوند';
+              sugBox.insertBefore(hint, sugBox.firstChild);
+            }
             sugBox.style.display = 'block';
             return;
           }
@@ -17530,9 +17612,14 @@ function confirmSmsEntry() {
       let desc = ((descInp && descInp.value) || '').trim() || (type === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
       const planIdLink = descInp && descInp.getAttribute('data-plan-id');
       const planIdxLink = descInp && descInp.getAttribute('data-plan-index');
+      let batchItems = [];
+      try {
+        batchItems = JSON.parse((descInp && descInp.getAttribute('data-plan-batch')) || '[]') || [];
+        if (!Array.isArray(batchItems)) batchItems = [];
+      } catch (eBat) { batchItems = []; }
       let linkedPlan = null;
       let linkedIdx = -1;
-      if (planIdLink && tab === 'expense') {
+      if (planIdLink && tab === 'expense' && !batchItems.length) {
         linkedPlan = (plans || []).find(function(p){ return p && p.id === planIdLink; }) || null;
         if (linkedPlan) {
           linkedIdx = (planIdxLink != null && planIdxLink !== '')
@@ -17594,6 +17681,99 @@ function confirmSmsEntry() {
         } catch (eMap) {}
       }
 
+      if (batchItems.length && tab === 'expense') {
+        /* پرداخت دسته‌ای اقساط */
+        var batchOk = 0;
+        batchItems.forEach(function(bi) {
+          if (!bi || !bi.id) return;
+          var bp = (plans || []).find(function(p){ return p && p.id === bi.id; });
+          if (!bp) return;
+          var bIdx = parseInt(bi.index, 10);
+          if (isNaN(bIdx) || bIdx < 0) return;
+          var bCnt = Math.max(0, parseInt(bp.count, 10) || 0);
+          var bAmt = (typeof planInstallmentAmount === 'function') ? planInstallmentAmount(bp) : amount;
+          if (!bAmt) bAmt = amount;
+          var bDesc = planInstallmentDesc(bp, bIdx, bCnt);
+          var dueB = null;
+          try { dueB = dueDateForInstallment(bp, bIdx); } catch (eD) {}
+          var isMoavaghB = dueB && ((dueB.y < targetYear) || (dueB.y === targetYear && dueB.m < targetMonth));
+          /* پیدا یا ساخت ردیف */
+          var tRow = null, tSec = sec;
+          (targetPd.expense.sections || []).forEach(function(s) {
+            (s.rows || []).forEach(function(r) {
+              if (r && r.fromPlanId === bp.id && parseInt(r.fromPlanIndex, 10) === bIdx) {
+                if (isMoavaghB) {
+                  if (r.planCarried || (r.desc && String(r.desc).indexOf('معوق') >= 0)) { tRow = r; tSec = s; }
+                  else if (!tRow) { tRow = r; tSec = s; }
+                } else {
+                  if (!r.planCarried) { tRow = r; tSec = s; }
+                  else if (!tRow) { tRow = r; tSec = s; }
+                }
+              }
+            });
+          });
+          if (!tRow) {
+            try { syncPlansToExpensePeriod(targetPd, targetYear, targetMonth); } catch (eSy) {}
+            (targetPd.expense.sections || []).forEach(function(s) {
+              (s.rows || []).forEach(function(r) {
+                if (r && r.fromPlanId === bp.id && parseInt(r.fromPlanIndex, 10) === bIdx && !tRow) {
+                  tRow = r; tSec = s;
+                }
+              });
+            });
+          }
+          if (!tRow) {
+            tRow = emptyRow();
+            tRow.fromPlanId = bp.id;
+            tRow.fromPlanIndex = bIdx;
+            if (!tSec) tSec = sec;
+            if (!tSec.rows) tSec.rows = [];
+            var ei = tSec.rows.findIndex(function(r){ return r && !r.desc && !r.amount && !r.day && !r.fromPlanId; });
+            if (ei >= 0) tSec.rows[ei] = tRow;
+            else tSec.rows.push(tRow);
+          }
+          tRow.status = 'paid';
+          tRow.amount = bAmt;
+          if (day) tRow.day = day;
+          if (bank) tRow.account = bank;
+          tRow.desc = bDesc + (isMoavaghB ? ' (معوق)' : '');
+          tRow.planCarried = !!isMoavaghB;
+          tRow.allowPlanFieldEdit = true;
+          tRow.fromPlanId = bp.id;
+          tRow.fromPlanIndex = bIdx;
+          if (isMoavaghB) setPlanIndexPaidLate(bp, bIdx, true);
+          else setPlanIndexPaidLate(bp, bIdx, false);
+          var need = bIdx + 1;
+          var curPaid = Math.max(0, parseInt(bp.paidCount, 10) || 0);
+          if (curPaid < need) bp.paidCount = Math.min(bCnt, need);
+          try { clampPlanPaymentState(bp); } catch (eC) {}
+          try { removeCarriedInstallmentRows(bp.id, bIdx, targetYear, targetMonth); } catch (eR) {}
+          batchOk++;
+          sec = tSec || sec;
+        });
+        try {
+          if (periodCtx.isCurrent && typeof syncPlansToExpenseAll === 'function') syncPlansToExpenseAll();
+          else syncPlansToExpensePeriod(targetPd, targetYear, targetMonth);
+        } catch (eSy2) {}
+        if (sec && sec.rows) {
+          sec.rows.sort(function(a, b) {
+            return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99);
+          });
+          sec.collapsed = false;
+        }
+        commitWritablePeriodData(periodCtx);
+        try { persistCurrent(); } catch (eP) {}
+        try { saveArchive(); } catch (eA) {}
+        scheduleSave();
+        closeSmsConfirmModal();
+        try {
+          if (typeof navigateToPeriod === 'function') navigateToPeriod(targetYear, targetMonth);
+        } catch (eN) {}
+        if (currentTab !== tab) switchTab(tab);
+        else renderAll();
+        showToast('پرداخت دسته‌ای: ' + toPersianDigits(batchOk) + ' قسط ثبت شد');
+        return;
+      }
       if (linkedPlan && linkedIdx >= 0) {
         const cnt = Math.max(0, parseInt(linkedPlan.count, 10) || 0);
         const baseDesc = planInstallmentDesc(linkedPlan, linkedIdx, cnt);
