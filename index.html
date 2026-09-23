@@ -7609,7 +7609,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v117-PENTA | no-hint batch-toggle early-keep-unpaid-due */
+    /* build-stamp: 2026-09-23-v118-PENTA | batch-amount-split */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17695,17 +17695,29 @@ function confirmSmsEntry() {
       }
 
       if (batchItems.length && tab === 'expense') {
-        /* پرداخت دسته‌ای اقساط */
+        /* پرداخت دسته‌ای اقساط — مبلغ تراکنش ÷ تعداد تیک‌خورده */
         var batchOk = 0;
+        var validBatch = [];
         batchItems.forEach(function(bi) {
           if (!bi || !bi.id) return;
-          var bp = (plans || []).find(function(p){ return p && p.id === bi.id; });
-          if (!bp) return;
-          var bIdx = parseInt(bi.index, 10);
-          if (isNaN(bIdx) || bIdx < 0) return;
+          var bp0 = (plans || []).find(function(p){ return p && p.id === bi.id; });
+          if (!bp0) return;
+          var bIdx0 = parseInt(bi.index, 10);
+          if (isNaN(bIdx0) || bIdx0 < 0) return;
+          validBatch.push({ bi: bi, bp: bp0, bIdx: bIdx0 });
+        });
+        var nSplit = validBatch.length || 1;
+        var totalAmt = Number(amount) || 0;
+        var baseShare = Math.floor(totalAmt / nSplit);
+        var remShare = totalAmt - baseShare * nSplit;
+        validBatch.forEach(function(item, iSplit) {
+          var bi = item.bi;
+          var bp = item.bp;
+          var bIdx = item.bIdx;
           var bCnt = Math.max(0, parseInt(bp.count, 10) || 0);
-          var bAmt = (typeof planInstallmentAmount === 'function') ? planInstallmentAmount(bp) : amount;
-          if (!bAmt) bAmt = amount;
+          /* سهم مساوی؛ باقی‌مانده تقسیم به اولین قسط */
+          var bAmt = baseShare + (iSplit === 0 ? remShare : 0);
+          if (!bAmt && totalAmt) bAmt = totalAmt;
           var bDesc = planInstallmentDesc(bp, bIdx, bCnt);
           var dueB = null;
           try { dueB = dueDateForInstallment(bp, bIdx); } catch (eD) {}
