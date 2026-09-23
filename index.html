@@ -7609,7 +7609,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v118-PENTA | batch-amount-split */
+    /* build-stamp: 2026-09-24-v119-PENTA | unified-account-instant-balance */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -14986,19 +14986,23 @@ function openPdfPrintWindow(){
       const exp = findSectionByTitle('expense', title);
       const ti = sectionPaidUnpaidTotal(inc || { rows: [] });
       const te = sectionPaidUnpaidTotal(exp || { rows: [] });
-      let open = 0;
+      /* موجودی آنی واحد: جمع موجودی همه حساب‌ها (مشترک بین کاربران) */
+      let instant = 0;
       try {
-        const map = (periodData && periodData.personOpeningInstant) || {};
-        if (title && map[title] != null && map[title] !== '') open = Number(map[title]) || 0;
-        else if (typeof totalOpeningBalances === 'function') open = totalOpeningBalances() || 0;
+        if (typeof sumGlobalAccountBalances === 'function') instant = sumGlobalAccountBalances() || 0;
+        else if (typeof totalOpeningBalances === 'function') {
+          instant = (ti.paid || 0) - (te.paid || 0) + (totalOpeningBalances() || 0);
+        } else {
+          instant = (ti.paid || 0) - (te.paid || 0);
+        }
       } catch (eO) {
-        open = (typeof totalOpeningBalances === 'function' ? totalOpeningBalances() : 0) || 0;
+        instant = (ti.paid || 0) - (te.paid || 0);
       }
       return {
         incomeTotal: ti.total, incomePaid: ti.paid, incomeUnpaid: ti.unpaid,
         expenseTotal: te.total, expensePaid: te.paid, expenseUnpaid: te.unpaid,
         remain: ti.total - te.total,
-        instant: (ti.paid || 0) - (te.paid || 0) + open
+        instant: instant
       };
     }
     /** موجودی آنی به تفکیک حساب برای یک کاربر */
@@ -15024,32 +15028,48 @@ function openPdfPrintWindow(){
       });
       return s;
     }
-    function personAccountBalances(title) {
+    function globalAccountBalances() {
       const map = {};
-      function add(tab, sign) {
-        const sec = findSectionByTitle(tab, title);
-        (sec && sec.rows || []).forEach(function(r) {
-          if ((r.status || 'paid') !== 'paid') return;
-          const acc = (r.account || '').trim() || 'بدون حساب';
-          const amt = Number(r.amount) || 0;
-          map[acc] = (map[acc] || 0) + sign * amt;
+      function addAll(tab, sign) {
+        const secs = (periodData && periodData[tab] && periodData[tab].sections) || [];
+        secs.forEach(function(sec) {
+          (sec && sec.rows || []).forEach(function(r) {
+            if ((r.status || 'paid') !== 'paid') return;
+            const acc = (r.account || '').trim() || 'بدون حساب';
+            const amt = Number(r.amount) || 0;
+            map[acc] = (map[acc] || 0) + sign * amt;
+          });
         });
       }
-      add('income', 1);
-      add('expense', -1);
-      const labels = (typeof selectedAccountLabels === 'function') ? selectedAccountLabels() : [];
-      labels.forEach(function(lb) {
-        if (map[lb] === undefined) map[lb] = 0;
-        map[lb] += getAccountOpeningBalance(lb);
-      });
-      // حساب‌هایی که فقط موجودی اولیه دارند
+      addAll('income', 1);
+      addAll('expense', -1);
+      const labels = {};
+      Object.keys(map).forEach(function(k) { labels[k] = true; });
       (selectedBankAccounts || []).forEach(function(a) {
+        if (!a) return;
         const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
-        if (!lb) return;
-        if (map[lb] === undefined) map[lb] = getAccountOpeningBalance(lb);
+        if (lb) labels[lb] = true;
+      });
+      try {
+        const amap = (periodData && periodData.accountOpeningInstant) || {};
+        Object.keys(amap).forEach(function(k) { if (k) labels[k] = true; });
+      } catch (eA) {}
+      Object.keys(labels).forEach(function(lb) {
+        map[lb] = (map[lb] || 0) + (getAccountOpeningBalance(lb) || 0);
       });
       return map;
     }
+    function sumGlobalAccountBalances() {
+      const map = globalAccountBalances();
+      let s = 0;
+      Object.keys(map).forEach(function(k) { s += Number(map[k]) || 0; });
+      return s;
+    }
+    /* سازگاری: موجودی حساب‌ها مشترک بین همه کاربران */
+    function personAccountBalances(title) {
+      return globalAccountBalances();
+    }
+
     let _instantBalOpen = false;
     function closeInstantBalance() {
       _instantBalOpen = false;
@@ -15063,12 +15083,13 @@ function openPdfPrintWindow(){
         const ov = document.getElementById('instantBalOverlay');
         const panel = document.getElementById('instantBalPanel');
         if (!ov || !panel) return;
-        const tot = personTotals(title);
-        const map = personAccountBalances(title);
+        const map = (typeof globalAccountBalances === 'function') ? globalAccountBalances() : personAccountBalances(title);
         const keys = Object.keys(map);
-        let html = '<div class="instant-bal-head">موجودی آنی — ' + escapeHtml(title) + '</div>';
+        let totInstant = 0;
+        keys.forEach(function(k) { totInstant += Number(map[k]) || 0; });
+        let html = '<div class="instant-bal-head">موجودی آنی (مشترک)</div>';
         html += '<div class="instant-bal-row"><span class="ib-name">کل</span><span class="ib-amt ' +
-          ((tot.instant || 0) >= 0 ? 'pos' : 'neg') + '">' + formatNum(tot.instant || 0) + '</span></div>';
+          ((totInstant || 0) >= 0 ? 'pos' : 'neg') + '">' + formatNum(totInstant || 0) + '</span></div>';
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
         keys.forEach(function(k) {
           const v = map[k] || 0;
