@@ -7033,6 +7033,47 @@
   
     .sms-date-row { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; overflow: hidden !important; }
     .sms-date-row select { flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+
+    #smsConfirmModal.modal-overlay {
+      align-items: flex-start !important;
+      justify-content: center !important;
+      padding-top: 6vh !important;
+      padding-bottom: 4vh !important;
+      box-sizing: border-box;
+    }
+    #smsConfirmModal .modal-box {
+      max-height: 88vh !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      width: 92vw !important;
+      max-width: 360px !important;
+      box-sizing: border-box !important;
+    }
+    #smsConfirmMeta {
+      overflow: visible !important;
+      position: relative;
+      z-index: 1;
+    }
+    #smsConfirmModal .fancy-select-wrap {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #smsConfirmModal .fancy-select-list {
+      z-index: 100600 !important;
+      max-height: 160px;
+    }
+    #smsConfirmModal .sms-date-row {
+      position: relative;
+      z-index: 3;
+    }
+    #smsConfirmModal .sms-date-row .fancy-select-wrap {
+      flex: 1 1 0;
+      min-width: 0;
+      width: 0;
+    }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -7508,14 +7549,14 @@
 
   <!-- تأیید ثبت تراکنش از پیامک -->
   <div class="modal-overlay" id="smsConfirmModal">
-    <div class="modal-box family-modal-box" style="max-width:360px;width:92vw;text-align:right;box-sizing:border-box;overflow-x:hidden;">
+    <div class="modal-box family-modal-box" style="max-width:360px;width:92vw;text-align:right;box-sizing:border-box;overflow:visible;">
       <div class="modal-msg" id="smsConfirmTitle" style="margin-bottom:10px;">ثبت تراکنش بانکی</div>
-      <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 10px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;"></div>
+      <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 10px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;box-sizing:border-box;width:100%;max-width:100%;overflow:visible;"></div>
       <label class="family-label">بابت چه چیزی بود؟ (شرح)</label>
       <input id="smsConfirmDesc" class="family-input" style="letter-spacing:0;text-align:right;" placeholder="مثلاً حقوق / خرید / اجاره…" dir="rtl">
       <div id="smsConfirmSectionWrap" style="display:none;margin-bottom:0;"></div>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="confirmSmsEntry()">ثبت</button>
+        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;position:relative;z-index:5;" onclick="try{confirmSmsEntry();}catch(e){showToast(String(e));}">ثبت</button>
         <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsConfirmModal()">انصراف</button>
       </div>
     </div>
@@ -7538,7 +7579,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v105-PENTA | multi-moavagh-clear plan-edit sms-date-selects */
+    /* build-stamp: 2026-09-23-v106-PENTA | restore-getWritable fancy-dates modal-fix */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16834,8 +16875,8 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<label class="family-label">تاریخ (سال / ماه / روز):</label>' +
-          '<div class="sms-date-row" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">' +
+          '<label class="family-label">تاریخ (روز / ماه / سال):</label>' +
+          '<div class="sms-date-row" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;">' +
           (function(){
             var ty = (parsed.year != null) ? parseInt(parsed.year,10) : ((typeof getTodayPersian==='function' && getTodayPersian().y) || currentYear || 1405);
             var tm = (parsed.month != null) ? parseInt(parsed.month,10) : ((typeof getTodayPersian==='function' && getTodayPersian().m) || currentMonth || 1);
@@ -16844,21 +16885,28 @@ function openPdfPrintWindow(){
             if (!(tm >= 1 && tm <= 12)) tm = currentMonth || 1;
             if (!(td >= 1 && td <= 31)) td = 1;
             var y0 = (currentYear || 1405) - 2, y1 = (currentYear || 1405) + 1;
-            var st = 'flex:1 1 0;min-width:0;width:0;max-width:100%;box-sizing:border-box;padding:6px 2px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:12px;text-align:center;';
-            var ys = '<select id="smsConfirmYear" style="'+st+'">';
-            for (var y=y0;y<=y1;y++) ys += '<option value="'+y+'"'+(y===ty?' selected':'')+'>'+toPersianDigits(String(y))+'</option>';
-            ys += '</select>';
-            var ms = '<select id="smsConfirmMonth" style="'+st+'">';
-            for (var mi=1;mi<=12;mi++) ms += '<option value="'+mi+'"'+(mi===tm?' selected':'')+'>'+toPersianDigits(String(mi))+'</option>';
-            ms += '</select>';
+            var st = 'width:100%;box-sizing:border-box;padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:12px;text-align:center;';
             var ds = '<select id="smsConfirmDay" style="'+st+'">';
             for (var di=1;di<=31;di++) ds += '<option value="'+di+'"'+(di===td?' selected':'')+'>'+toPersianDigits(String(di))+'</option>';
             ds += '</select>';
-            return ys + ms + ds;
+            var ms = '<select id="smsConfirmMonth" style="'+st+'">';
+            for (var mi=1;mi<=12;mi++) ms += '<option value="'+mi+'"'+(mi===tm?' selected':'')+'>'+toPersianDigits(String(mi))+'</option>';
+            ms += '</select>';
+            var ys = '<select id="smsConfirmYear" style="'+st+'">';
+            for (var y=y0;y<=y1;y++) ys += '<option value="'+y+'"'+(y===ty?' selected':'')+'>'+toPersianDigits(String(y))+'</option>';
+            ys += '</select>';
+            return ds + ms + ys;
           })() +
           '</div>' +
+          
           '<label class="family-label">بخش مقصد</label>' +
           '<div id="smsConfirmSectionInner" style="margin-bottom:4px;"></div>';
+        ['smsConfirmDay','smsConfirmMonth','smsConfirmYear'].forEach(function(id){
+          try {
+            var el = meta.querySelector('#'+id);
+            if (el && typeof enhanceSelectFont === 'function') enhanceSelectFont(el);
+          } catch (eD) {}
+        });
         const bankSel = meta.querySelector('#smsConfirmBank');
         if (bankSel) {
           /* میان‌بر منوی انتخاب حساب — فقط حساب‌های کاربر + گزینه افزودن */
@@ -17086,6 +17134,23 @@ function openPdfPrintWindow(){
     }
 
 
+    function getWritablePeriodData(y, m) {
+      y = parseInt(y, 10) || currentYear;
+      m = parseInt(m, 10) || currentMonth;
+      if (y === currentYear && m === currentMonth) return { data: periodData, isCurrent: true };
+      if (!archive || typeof archive !== 'object') archive = {};
+      const key = periodKey(y, m);
+      let data = archive[key];
+      if (!data) data = emptyPeriodData();
+      else {
+        try { data = JSON.parse(JSON.stringify(data)); } catch (e) { data = emptyPeriodData(); }
+      }
+      if (!data.expense) data.expense = { sections: [], nextId: 1 };
+      if (!data.income) data.income = { sections: [], nextId: 1 };
+      if (!data.expense.sections) data.expense.sections = [];
+      if (!data.income.sections) data.income.sections = [];
+      return { data: data, isCurrent: false, key: key };
+    }
     function commitWritablePeriodData(ctx) {
       if (!ctx) return;
       if (ctx.isCurrent) {
@@ -17097,6 +17162,7 @@ function openPdfPrintWindow(){
     }
 
 function confirmSmsEntry() {
+      try {
       if (!pendingSmsEntry) {
         showToast('اطلاعات تراکنش ناقص است');
         return;
@@ -17376,6 +17442,10 @@ function confirmSmsEntry() {
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } catch (e) {}
+      } catch (eConfirm) {
+        try { console.error('confirmSmsEntry', eConfirm); } catch (e0) {}
+        try { showToast('خطا در ثبت: ' + (eConfirm && eConfirm.message ? eConfirm.message : 'نامشخص')); } catch (e1) {}
+      }
     }
 
     // اگر اپ داخل WebView با پل نیتیو باشد (مثلاً Capacitor)، از بیرون قابل فراخوانی است:
