@@ -7597,7 +7597,7 @@
 
     
 
-    /* build-stamp: 2026-09-23-v108-PENTA | restore-plan-row-lock-like-before */
+    /* build-stamp: 2026-09-23-v109-PENTA | sms-year-1390-1415 date-label-reverse freq-desc-suggest */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16957,7 +16957,40 @@ function openPdfPrintWindow(){
     }
 
 
-    function openSmsConfirmModal(parsed) {
+    
+    function collectFrequentDescs(limit) {
+      limit = limit || 12;
+      const counts = {};
+      function add(s) {
+        s = (s || '').trim();
+        if (!s || s.length < 2) return;
+        if (/^قسط\s*\d/.test(s)) return;
+        if (/قسط/.test(s) && /از\s*\d+/.test(s)) return;
+        if (s === 'واریز بانکی' || s === 'برداشت بانکی') return;
+        counts[s] = (counts[s] || 0) + 1;
+      }
+      function scanPd(pd) {
+        if (!pd) return;
+        ['income', 'expense'].forEach(function(tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
+            (sec.rows || []).forEach(function(r) {
+              if (r && r.desc) add(r.desc);
+            });
+          });
+        });
+      }
+      try { scanPd(periodData); } catch (e0) {}
+      try {
+        Object.keys(archive || {}).forEach(function(k) {
+          try { scanPd(archive[k]); } catch (e1) {}
+        });
+      } catch (e2) {}
+      return Object.keys(counts).sort(function(a, b) {
+        return counts[b] - counts[a] || a.localeCompare(b, 'fa');
+      }).slice(0, limit);
+    }
+
+function openSmsConfirmModal(parsed) {
       const m = document.getElementById('smsConfirmModal');
       if (!m) return;
       const kind = parsed.type === 'income' ? 'واریز (درآمد)' : 'برداشت (مخارج)';
@@ -16976,7 +17009,7 @@ function openPdfPrintWindow(){
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '<label class="family-label">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
-          '<label class="family-label">تاریخ (سال / ماه / روز):</label>' +
+          '<label class="family-label">تاریخ (روز / ماه / سال):</label>' +
           '<div class="sms-date-row" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;">' +
           (function(){
             var ty = (parsed.year != null) ? parseInt(parsed.year,10) : ((typeof getTodayPersian==='function' && getTodayPersian().y) || currentYear || 1405);
@@ -16985,7 +17018,7 @@ function openPdfPrintWindow(){
             if (!(ty >= 1300 && ty <= 1500)) ty = currentYear || 1405;
             if (!(tm >= 1 && tm <= 12)) tm = currentMonth || 1;
             if (!(td >= 1 && td <= 31)) td = 1;
-            var y0 = (currentYear || 1405) - 2, y1 = (currentYear || 1405) + 1;
+            var y0 = 1390, y1 = 1415;
             var st = 'width:100%;box-sizing:border-box;padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;font-size:12px;text-align:center;';
             var ds = '<select id="smsConfirmDay" style="'+st+'">';
             for (var di=1;di<=31;di++) ds += '<option value="'+di+'"'+(di===td?' selected':'')+'>'+toPersianDigits(String(di))+'</option>';
@@ -17075,55 +17108,88 @@ function openPdfPrintWindow(){
         desc.value = '';
         desc.removeAttribute('data-plan-id');
         desc.removeAttribute('data-plan-index');
-        /* پنتا: حساس به کلمه قسط — ساجست اقساط ثبت‌شده */
+        /* ساجست: اقساط (کلمه قسط) + شرح‌های پرتکرار درآمد/مخارج */
         let sugBox = document.getElementById('smsPlanSuggest');
         if (!sugBox) {
           sugBox = document.createElement('div');
           sugBox.id = 'smsPlanSuggest';
-          sugBox.style.cssText = 'display:none;margin:4px 0 10px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1c1c1e;max-height:160px;overflow:auto;';
+          sugBox.style.cssText = 'display:none;margin:4px 0 10px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1c1c1e;max-height:180px;overflow:auto;position:relative;z-index:20;';
           if (desc.parentNode) desc.parentNode.insertBefore(sugBox, desc.nextSibling);
         }
         sugBox.style.display = 'none';
         sugBox.innerHTML = '';
-        desc.oninput = function() {
-          const t = (desc.value || '');
+        function renderSmsDescSuggest() {
+          const t = (desc.value || '').trim();
           desc.removeAttribute('data-plan-id');
           desc.removeAttribute('data-plan-index');
-          if (!/قسط/.test(t)) {
-            sugBox.style.display = 'none';
-            sugBox.innerHTML = '';
-            return;
-          }
-          const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
-          if (!list.length) {
-            sugBox.style.display = 'none';
-            sugBox.innerHTML = '';
-            return;
-          }
           sugBox.innerHTML = '';
-          list.forEach(function(p) {
-            const unpaidIdx = earliestUnpaidPlanIndex(p);
-            const cnt = Math.max(0, parseInt(p.count, 10) || 0);
-            const paid = Math.min(cnt, Math.max(0, parseInt(p.paidCount, 10) || 0));
+          /* اگر کلمه قسط بود — ساجست اقساط */
+          if (/قسط/.test(t)) {
+            const list = (plans || []).filter(function(p){ return p && (p.name || p.count); });
+            if (!list.length) {
+              sugBox.style.display = 'none';
+              return;
+            }
+            list.forEach(function(p) {
+              const unpaidIdx = earliestUnpaidPlanIndex(p);
+              const cnt = Math.max(0, parseInt(p.count, 10) || 0);
+              const paid = Math.min(cnt, Math.max(0, parseInt(p.paidCount, 10) || 0));
+              const item = document.createElement('div');
+              item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
+              const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
+              const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
+              item.textContent = (p.name || 'قسط') + ' — پرداخت‌شده ' + toPersianDigits(paid) + '/' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
+              item.onmousedown = function(ev) {
+                try { ev.preventDefault(); } catch (e0) {}
+                var stdDesc = (unpaidIdx >= 0)
+                  ? planInstallmentDesc(p, unpaidIdx, cnt)
+                  : ((p.name || 'قسط'));
+                desc.value = stdDesc;
+                desc.setAttribute('data-plan-id', p.id);
+                if (unpaidIdx >= 0) desc.setAttribute('data-plan-index', String(unpaidIdx));
+                sugBox.style.display = 'none';
+              };
+              sugBox.appendChild(item);
+            });
+            sugBox.style.display = 'block';
+            return;
+          }
+          /* در غیر این صورت — شرح‌های پرتکرار از درآمد و مخارج */
+          var freq = [];
+          try { freq = collectFrequentDescs(20) || []; } catch (eF) { freq = []; }
+          if (t) {
+            var tNorm = t.toLowerCase();
+            freq = freq.filter(function(s) {
+              return String(s).indexOf(t) >= 0 || String(s).toLowerCase().indexOf(tNorm) >= 0;
+            });
+          }
+          freq = freq.slice(0, 10);
+          if (!freq.length) {
+            sugBox.style.display = 'none';
+            return;
+          }
+          freq.forEach(function(s) {
             const item = document.createElement('div');
             item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
-            const due = unpaidIdx >= 0 ? dueDateForInstallment(p, unpaidIdx) : null;
-            const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : 'تمام‌شده';
-            item.textContent = (p.name || 'قسط') + ' — پرداخت‌شده ' + toPersianDigits(paid) + '/' + toPersianDigits(cnt) + (due ? (' — سررسید: ' + dueTxt) : '');
+            item.textContent = s;
             item.onmousedown = function(ev) {
               try { ev.preventDefault(); } catch (e0) {}
-              var stdDesc = (unpaidIdx >= 0)
-                ? planInstallmentDesc(p, unpaidIdx, cnt)
-                : ((p.name || 'قسط'));
-              desc.value = stdDesc;
-              desc.setAttribute('data-plan-id', p.id);
-              if (unpaidIdx >= 0) desc.setAttribute('data-plan-index', String(unpaidIdx));
+              desc.value = s;
+              desc.removeAttribute('data-plan-id');
+              desc.removeAttribute('data-plan-index');
               sugBox.style.display = 'none';
             };
             sugBox.appendChild(item);
           });
           sugBox.style.display = 'block';
-        };
+        }
+        desc.oninput = function() { renderSmsDescSuggest(); };
+        desc.onfocus = function() { renderSmsDescSuggest(); };
+        desc.addEventListener('blur', function() {
+          setTimeout(function() {
+            try { sugBox.style.display = 'none'; } catch (eB) {}
+          }, 180);
+        });
       }
       const wrap = document.getElementById('smsConfirmSectionInner') || document.getElementById('smsConfirmSectionWrap');
       if (wrap) {
