@@ -1605,6 +1605,35 @@
       color: rgba(255,255,255,0.92);
       gap: 10px;
     }
+    .instant-bal-row.ib-acc-row { cursor: pointer; }
+    .ib-check-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+    .ib-acc-check {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: #3b82f6;
+      cursor: pointer;
+    }
+    .instant-bal-sep {
+      height: 0;
+      margin: 4px 14px;
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.28);
+    }
+    .instant-bal-row.ib-sum-row {
+      border-bottom: none;
+      font-weight: 800;
+      padding-top: 12px;
+      padding-bottom: 14px;
+    }
+    .instant-bal-row.ib-sum-row .ib-name { opacity: 0.9; }
     .instant-bal-row:last-child { border-bottom: none; }
     .instant-bal-row .ib-name { font-weight: 700; flex: 1; text-align: right; }
     .instant-bal-row .ib-amt { font-weight: 800; font-variant-numeric: tabular-nums; direction: ltr; }
@@ -7609,7 +7638,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v119-PENTA | unified-account-instant-balance */
+    /* build-stamp: 2026-09-24-v120-PENTA | fix-month-opening restore + ib-checkbox-sum */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -9204,21 +9233,31 @@ function onPeriodChange() {
             periodData.personOpeningInstant = {};
           if (!periodData.accountOpeningInstant || typeof periodData.accountOpeningInstant !== 'object')
             periodData.accountOpeningInstant = {};
+          var hadStoredAcc = false;
+          try {
+            hadStoredAcc = !!(archive[periodKey(currentYear, currentMonth)] &&
+              archive[periodKey(currentYear, currentMonth)].accountOpeningInstant &&
+              Object.keys(archive[periodKey(currentYear, currentMonth)].accountOpeningInstant || {}).length);
+          } catch (eH) { hadStoredAcc = false; }
           var hasRows = false;
           ['income', 'expense'].forEach(function(tab) {
             ((periodData[tab] && periodData[tab].sections) || []).forEach(function(s) {
               if (s && s.rows && s.rows.some(function(r) { return r && (Number(r.amount) || r.desc); })) hasRows = true;
             });
           });
-          if (!hasRows) {
+          /* فقط کلیدهای خالی را پر کن؛ اگر ماه از آرشیو opening دارد هرگز بازنویسی کامل نکن */
+          if (!hasRows && !hadStoredAcc &&
+              (!periodData.accountOpeningInstant || !Object.keys(periodData.accountOpeningInstant).length)) {
             periodData.personOpeningInstant = endingPeople || {};
             periodData.accountOpeningInstant = endingAcc || {};
           } else {
             Object.keys(endingPeople || {}).forEach(function(k) {
-              if (periodData.personOpeningInstant[k] == null) periodData.personOpeningInstant[k] = endingPeople[k];
+              if (periodData.personOpeningInstant[k] == null)
+                periodData.personOpeningInstant[k] = endingPeople[k];
             });
             Object.keys(endingAcc || {}).forEach(function(k) {
-              if (periodData.accountOpeningInstant[k] == null) periodData.accountOpeningInstant[k] = endingAcc[k];
+              if (periodData.accountOpeningInstant[k] == null)
+                periodData.accountOpeningInstant[k] = endingAcc[k];
             });
           }
           /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
@@ -9322,6 +9361,15 @@ function onPeriodChange() {
             cardMeta: savedCardMeta || {}
           };
         }
+        /* بازگردانی موجودی‌های اولیه ماه از آرشیو — جلوی بازنویسی اشتباه هنگام برگشت به ماه */
+        try {
+          if (raw.accountOpeningInstant && typeof raw.accountOpeningInstant === 'object') {
+            periodData.accountOpeningInstant = JSON.parse(JSON.stringify(raw.accountOpeningInstant));
+          }
+          if (raw.personOpeningInstant && typeof raw.personOpeningInstant === 'object') {
+            periodData.personOpeningInstant = JSON.parse(JSON.stringify(raw.personOpeningInstant));
+          }
+        } catch (eRest) {}
       } else {
         // ماه جدید: فقط هدرها از ماه‌های قبل، بدون ردیف
         const tmpl = findHeaderTemplate();
@@ -15085,21 +15133,49 @@ function openPdfPrintWindow(){
         if (!ov || !panel) return;
         const map = (typeof globalAccountBalances === 'function') ? globalAccountBalances() : personAccountBalances(title);
         const keys = Object.keys(map);
-        let totInstant = 0;
-        keys.forEach(function(k) { totInstant += Number(map[k]) || 0; });
-        let html = '<div class="instant-bal-head">موجودی آنی (مشترک)</div>';
-        html += '<div class="instant-bal-row"><span class="ib-name">کل</span><span class="ib-amt ' +
-          ((totInstant || 0) >= 0 ? 'pos' : 'neg') + '">' + formatNum(totInstant || 0) + '</span></div>';
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
+        let html = '<div class="instant-bal-head">موجودی آنی (مشترک)</div>';
         keys.forEach(function(k) {
           const v = map[k] || 0;
-          html += '<div class="instant-bal-row"><span class="ib-name">' + escapeHtml(k) +
-            '</span><span class="ib-amt ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
+          html += '<div class="instant-bal-row ib-acc-row" data-acc="' + escapeHtml(k) + '" data-amt="' + String(v) + '">' +
+            '<label class="ib-check-wrap">' +
+            '<input type="checkbox" class="ib-acc-check" data-amt="' + String(v) + '" />' +
+            '<span class="ib-name">' + escapeHtml(k) + '</span>' +
+            '</label>' +
+            '<span class="ib-amt ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
         });
         if (!keys.length) {
           html += '<div class="instant-bal-row"><span class="ib-name">حسابی ثبت نشده</span><span class="ib-amt">۰</span></div>';
         }
+        html += '<div class="instant-bal-sep"></div>';
+        html += '<div class="instant-bal-row ib-sum-row"><span class="ib-name">جمع انتخاب‌شده</span>' +
+          '<span class="ib-amt ib-sum-amt">۰</span></div>';
         panel.innerHTML = html;
+        function refreshIbSum() {
+          var sum = 0;
+          panel.querySelectorAll('.ib-acc-check:checked').forEach(function(cb) {
+            sum += Number(cb.getAttribute('data-amt')) || 0;
+          });
+          var el = panel.querySelector('.ib-sum-amt');
+          if (el) {
+            el.textContent = formatNum(sum);
+            el.classList.toggle('pos', sum >= 0);
+            el.classList.toggle('neg', sum < 0);
+          }
+        }
+        panel.querySelectorAll('.ib-acc-check').forEach(function(cb) {
+          cb.addEventListener('change', refreshIbSum);
+        });
+        panel.querySelectorAll('.ib-acc-row').forEach(function(row) {
+          row.addEventListener('click', function(e) {
+            if (e.target && e.target.classList && e.target.classList.contains('ib-acc-check')) return;
+            var cb = row.querySelector('.ib-acc-check');
+            if (cb) {
+              cb.checked = !cb.checked;
+              refreshIbSum();
+            }
+          });
+        });
         ov.classList.add('open');
         _instantBalOpen = true;
       } catch (e) {}
