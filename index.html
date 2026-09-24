@@ -7425,7 +7425,7 @@
             <thead>
               <tr>
                 <th style="width:22%; text-align:right; padding-right:12px;">بخش</th>
-                <th style="width:26%;">موجودی</th>
+                <th style="width:26%;">موجودی کل</th>
                 <th style="width:26%;">مخارج</th>
                 <th style="width:26%;">مانده</th>
               </tr>
@@ -7441,7 +7441,7 @@
             </tfoot>
           </table>
         </div>
-        <div class="balance-hint" style="padding:6px 4px 14px;font-size:0.78rem;opacity:0.75;text-align:right;line-height:1.5;">مخارج: مخارج پرداخت شده + مخارج پرداخت نشده</div>
+        <div class="balance-hint" style="padding:0 4px 10px;margin-top:-6px;font-size:0.68rem;opacity:0.7;text-align:right;line-height:1.4;">(مخارج: مخارج پرداخت شده + مخارج پرداخت نشده)</div>
         <div class="summary-section" id="dayDetailBox" style="display:none;">
           <div class="summary-header balance-h" id="dayDetailTitle">جزئیات روز</div>
           <table class="summary-table">
@@ -7645,7 +7645,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v124-PENTA | balance-hint-outside */
+    /* build-stamp: 2026-09-24-v125-PENTA | mojoodi-kol income+opening */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -15190,18 +15190,59 @@ function openPdfPrintWindow(){
       Object.keys(map).forEach(function(k) { s += Number(map[k]) || 0; });
       return s;
     }
-    /** موجودی برای جدول مانده: یک حساب خاص یا کل حساب‌ها */
-    function resolveBalanceMojoodi(accFilter) {
+    /** موجودی ماه قبل (افتتاحیه) برای یک حساب یا مجموع همه حساب‌ها */
+    function sumFilteredOpeningBalance(accFilter) {
       accFilter = (accFilter || '').trim();
       try {
-        if (accFilter && typeof globalAccountBalances === 'function') {
-          const map = globalAccountBalances() || {};
-          if (map[accFilter] != null) return Number(map[accFilter]) || 0;
-          return 0;
+        if (accFilter) {
+          return (typeof getAccountOpeningBalance === 'function')
+            ? (Number(getAccountOpeningBalance(accFilter)) || 0)
+            : 0;
         }
-        if (typeof sumGlobalAccountBalances === 'function') return sumGlobalAccountBalances() || 0;
-      } catch (e) {}
-      return 0;
+        const labels = {};
+        (selectedBankAccounts || []).forEach(function(a) {
+          if (!a) return;
+          const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+          if (lb) labels[lb] = true;
+        });
+        try {
+          const prev = (typeof getPrevMonthAccountEndings === 'function') ? getPrevMonthAccountEndings() : {};
+          Object.keys(prev || {}).forEach(function(k) { if (k) labels[k] = true; });
+        } catch (e0) {}
+        try {
+          const amap = (periodData && periodData.accountOpeningInstant) || {};
+          Object.keys(amap).forEach(function(k) { if (k) labels[k] = true; });
+        } catch (e1) {}
+        let s = 0;
+        Object.keys(labels).forEach(function(lb) {
+          s += (typeof getAccountOpeningBalance === 'function')
+            ? (Number(getAccountOpeningBalance(lb)) || 0)
+            : 0;
+        });
+        return s;
+      } catch (e) { return 0; }
+    }
+    /**
+     * موجودی کل = جمع ردیف‌های درآمد (با فیلتر حساب) + موجودی ماه قبل
+     */
+    function resolveBalanceMojoodi(accFilter, dayF) {
+      accFilter = (accFilter || '').trim();
+      let incomeSum = 0;
+      try {
+        const secs = (periodData && periodData.income && periodData.income.sections) || [];
+        secs.forEach(function(sec) {
+          const title = (sec && sec.title || '').trim() || '—';
+          if (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles && balanceSelectedTitles.length &&
+              balanceSelectedTitles.indexOf(title) < 0) return;
+          (sec && sec.rows || []).forEach(function(r) {
+            if (dayF && typeof dayNum === 'function' && dayNum(r) !== dayF) return;
+            if (accFilter && (r.account || '').trim() !== accFilter) return;
+            incomeSum += Number(r.amount) || 0;
+          });
+        });
+      } catch (eI) {}
+      const opening = sumFilteredOpeningBalance(accFilter);
+      return incomeSum + opening;
     }
     /* سازگاری: موجودی حساب‌ها مشترک بین همه کاربران */
     function personAccountBalances(title) {
@@ -23136,12 +23177,14 @@ field('حساب بانکی', accSelRec);
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
       let gExp = 0;
+      let gIncOnly = 0;
       const accFBal = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
-      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
-        ? resolveBalanceMojoodi(accFBal)
-        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
+      const openingBal = (typeof sumFilteredOpeningBalance === 'function')
+        ? sumFilteredOpeningBalance(accFBal)
+        : 0;
       titles.forEach(title => {
-        const bal = balGlobal;
+        const bal = (typeof incMap !== 'undefined' && incMap[title] != null) ? (incMap[title] || 0) : 0;
+        gIncOnly += bal;
         const exp = expMap[title] || 0;
         const remain = bal - exp;
         gExp += exp;
@@ -23154,7 +23197,8 @@ field('حساب بانکی', accSelRec);
           <td class="val" style="color:${color};">${formatNum(remain)}</td>`;
         tbody.appendChild(tr);
       });
-      const gBal = balGlobal;
+      /* جمع کل موجودی = جمع درآمدها + موجودی ماه قبل */
+      const gBal = gIncOnly + openingBal;
       const gRemain = gBal - gExp;
       document.getElementById('balIncome').textContent = formatNum(gBal);
       document.getElementById('balExpense').textContent = formatNum(gExp);
@@ -24890,11 +24934,14 @@ field('حساب بانکی', accSelRec);
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
       let gExp = 0;
-      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
-        ? resolveBalanceMojoodi(accF)
-        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
+      let gIncOnly = 0;
+      const openingBal = (typeof sumFilteredOpeningBalance === 'function')
+        ? sumFilteredOpeningBalance(accF)
+        : 0;
       order.forEach(title => {
-        const bal = balGlobal;
+        /* موجودی کل هر بخش = جمع ردیف‌های درآمد همان بخش (با فیلتر حساب) */
+        const bal = incMap[title] || 0;
+        gIncOnly += bal;
         const exp = expMap[title] || 0;
         const remain = bal - exp;
         gExp += exp;
@@ -24926,7 +24973,8 @@ field('حساب بانکی', accSelRec);
         tr.appendChild(tdRem);
         tbody.appendChild(tr);
       });
-      const gBal = balGlobal;
+      /* جمع کل موجودی = جمع درآمدها + موجودی ماه قبل */
+      const gBal = gIncOnly + openingBal;
       const gRemain = gBal - gExp;
       document.getElementById('balIncome').textContent = formatNum(gBal);
       document.getElementById('balExpense').textContent = formatNum(gExp);
