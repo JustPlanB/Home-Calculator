@@ -1606,6 +1606,7 @@
       gap: 10px;
     }
     .instant-bal-row.ib-acc-row { cursor: pointer; }
+    .instant-bal-row.ib-acc-row:last-of-type { border-bottom: none; }
     .ib-check-wrap {
       display: flex;
       align-items: center;
@@ -1621,17 +1622,13 @@
       accent-color: #3b82f6;
       cursor: pointer;
     }
-    .instant-bal-sep {
-      height: 0;
-      margin: 4px 14px;
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.28);
-    }
     .instant-bal-row.ib-sum-row {
       border-bottom: none;
+      border-top: 1px solid rgba(255,255,255,0.28);
       font-weight: 800;
       padding-top: 12px;
       padding-bottom: 14px;
+      margin-top: 2px;
     }
     .instant-bal-row.ib-sum-row .ib-name { opacity: 0.9; }
     .instant-bal-row:last-child { border-bottom: none; }
@@ -7638,7 +7635,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v120-PENTA | fix-month-opening restore + ib-checkbox-sum */
+    /* build-stamp: 2026-09-24-v121b-PENTA | opening-zero-recovery */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -9233,32 +9230,18 @@ function onPeriodChange() {
             periodData.personOpeningInstant = {};
           if (!periodData.accountOpeningInstant || typeof periodData.accountOpeningInstant !== 'object')
             periodData.accountOpeningInstant = {};
-          var hadStoredAcc = false;
-          try {
-            hadStoredAcc = !!(archive[periodKey(currentYear, currentMonth)] &&
-              archive[periodKey(currentYear, currentMonth)].accountOpeningInstant &&
-              Object.keys(archive[periodKey(currentYear, currentMonth)].accountOpeningInstant || {}).length);
-          } catch (eH) { hadStoredAcc = false; }
-          var hasRows = false;
-          ['income', 'expense'].forEach(function(tab) {
-            ((periodData[tab] && periodData[tab].sections) || []).forEach(function(s) {
-              if (s && s.rows && s.rows.some(function(r) { return r && (Number(r.amount) || r.desc); })) hasRows = true;
-            });
+          /* انتقال موجودی پایان ماه قبل → اول ماه جدید (فقط کلیدهای خالی؛ ذخیره‌شده‌های آرشیو حفظ شوند) */
+          Object.keys(endingPeople || {}).forEach(function(k) {
+            if (periodData.personOpeningInstant[k] == null || periodData.personOpeningInstant[k] === '')
+              periodData.personOpeningInstant[k] = endingPeople[k];
           });
-          /* فقط کلیدهای خالی را پر کن؛ اگر ماه از آرشیو opening دارد هرگز بازنویسی کامل نکن */
-          if (!hasRows && !hadStoredAcc &&
-              (!periodData.accountOpeningInstant || !Object.keys(periodData.accountOpeningInstant).length)) {
-            periodData.personOpeningInstant = endingPeople || {};
-            periodData.accountOpeningInstant = endingAcc || {};
-          } else {
-            Object.keys(endingPeople || {}).forEach(function(k) {
-              if (periodData.personOpeningInstant[k] == null)
-                periodData.personOpeningInstant[k] = endingPeople[k];
-            });
-            Object.keys(endingAcc || {}).forEach(function(k) {
-              if (periodData.accountOpeningInstant[k] == null)
-                periodData.accountOpeningInstant[k] = endingAcc[k];
-            });
+          Object.keys(endingAcc || {}).forEach(function(k) {
+            if (periodData.accountOpeningInstant[k] == null || periodData.accountOpeningInstant[k] === '')
+              periodData.accountOpeningInstant[k] = endingAcc[k];
+          });
+          /* اگر اصلاً opening حساب نداریم، کل endingAcc را بنشان */
+          if (!Object.keys(periodData.accountOpeningInstant).length && endingAcc && Object.keys(endingAcc).length) {
+            periodData.accountOpeningInstant = Object.assign({}, endingAcc);
           }
           /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
         } catch (eC) {}
@@ -15054,20 +15037,100 @@ function openPdfPrintWindow(){
       };
     }
     /** موجودی آنی به تفکیک حساب برای یک کاربر */
+    function prevYearMonth(y, m) {
+      y = parseInt(y, 10) || 0;
+      m = parseInt(m, 10) || 1;
+      if (m <= 1) return { y: y - 1, m: 12 };
+      return { y: y, m: m - 1 };
+    }
+    /** موجودی پایان ماه قبل از آرشیو (بدون وابستگی به periodData فعلی) */
+    function getPrevMonthAccountEndings() {
+      const map = {};
+      try {
+        const p = prevYearMonth(currentYear, currentMonth);
+        if (!p.y || p.y < 1300) return map;
+        const raw = archive[periodKey(p.y, p.m)];
+        if (!raw) return map;
+        const openMap = (raw.accountOpeningInstant && typeof raw.accountOpeningInstant === 'object')
+          ? raw.accountOpeningInstant : {};
+        const labels = {};
+        Object.keys(openMap).forEach(function(k) { if (k) labels[k] = true; });
+        (selectedBankAccounts || []).forEach(function(a) {
+          if (!a) return;
+          const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+          if (lb) labels[lb] = true;
+        });
+        function bankOpen(lb) {
+          if (openMap[lb] != null && openMap[lb] !== '') return Number(openMap[lb]) || 0;
+          let s = 0;
+          (selectedBankAccounts || []).forEach(function(a) {
+            if (!a) return;
+            const al = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+            if (al === lb) s += Number(a.openingBalance) || 0;
+          });
+          return s;
+        }
+        Object.keys(labels).forEach(function(lb) { map[lb] = bankOpen(lb); });
+        ['income', 'expense'].forEach(function(tab) {
+          const sign = tab === 'income' ? 1 : -1;
+          const side = raw[tab] || (tab === 'expense' && raw.sections ? { sections: raw.sections } : null);
+          const secs = (side && side.sections) || [];
+          secs.forEach(function(sec) {
+            (sec && sec.rows || []).forEach(function(r) {
+              if (!r || (r.status || 'paid') !== 'paid') return;
+              const acc = (r.account || '').trim();
+              if (!acc) return;
+              map[acc] = (map[acc] || 0) + sign * (Number(r.amount) || 0);
+            });
+          });
+        });
+      } catch (eP) {}
+      return map;
+    }
     function getAccountOpeningBalance(label) {
       const lb = (label || '').trim();
       if (!lb) return 0;
+      function bankFallback() {
+        let sum = 0;
+        (selectedBankAccounts || []).forEach(function(a) {
+          if (!a) return;
+          const al = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+          if (al === lb) sum += Number(a.openingBalance) || 0;
+        });
+        return sum;
+      }
+      function hasTxThisMonth() {
+        try {
+          var found = false;
+          ['income', 'expense'].forEach(function(tab) {
+            ((periodData[tab] && periodData[tab].sections) || []).forEach(function(sec) {
+              (sec && sec.rows || []).forEach(function(r) {
+                if (!r || (r.status || 'paid') !== 'paid') return;
+                if ((r.account || '').trim() === lb && (Number(r.amount) || 0)) found = true;
+              });
+            });
+          });
+          return found;
+        } catch (eT) { return false; }
+      }
+      var stored = null;
       try {
         const amap = (periodData && periodData.accountOpeningInstant) || {};
-        if (amap[lb] != null && amap[lb] !== '') return Number(amap[lb]) || 0;
+        if (amap[lb] != null && amap[lb] !== '') stored = Number(amap[lb]) || 0;
       } catch (e) {}
-      let sum = 0;
-      (selectedBankAccounts || []).forEach(function(a) {
-        if (!a) return;
-        const al = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
-        if (al === lb) sum += Number(a.openingBalance) || 0;
-      });
-      return sum;
+      var prevVal = null;
+      try {
+        const prev = getPrevMonthAccountEndings();
+        if (prev && prev[lb] != null && prev[lb] !== '') prevVal = Number(prev[lb]) || 0;
+      } catch (e2) {}
+      /* ذخیره‌شده معتبر؛ صفرِ مشکوک بدون تراکنش ماه جاری → پایان ماه قبل */
+      if (stored != null) {
+        if (stored !== 0) return stored;
+        if (prevVal != null && prevVal !== 0 && !hasTxThisMonth()) return prevVal;
+        return stored;
+      }
+      if (prevVal != null) return prevVal;
+      return bankFallback();
     }
     function totalOpeningBalances() {
       let s = 0;
@@ -15135,8 +15198,12 @@ function openPdfPrintWindow(){
         const keys = Object.keys(map);
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
         let html = '<div class="instant-bal-head">موجودی آنی (مشترک)</div>';
+        var shown = 0;
         keys.forEach(function(k) {
-          const v = map[k] || 0;
+          const v = Number(map[k]) || 0;
+          if (!k || k === 'بدون حساب') return;
+          if (v === 0) return;
+          shown++;
           html += '<div class="instant-bal-row ib-acc-row" data-acc="' + escapeHtml(k) + '" data-amt="' + String(v) + '">' +
             '<label class="ib-check-wrap">' +
             '<input type="checkbox" class="ib-acc-check" data-amt="' + String(v) + '" />' +
@@ -15144,10 +15211,9 @@ function openPdfPrintWindow(){
             '</label>' +
             '<span class="ib-amt ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
         });
-        if (!keys.length) {
-          html += '<div class="instant-bal-row"><span class="ib-name">حسابی ثبت نشده</span><span class="ib-amt">۰</span></div>';
+        if (!shown) {
+          html += '<div class="instant-bal-row"><span class="ib-name">حسابی با موجودی نیست</span><span class="ib-amt">۰</span></div>';
         }
-        html += '<div class="instant-bal-sep"></div>';
         html += '<div class="instant-bal-row ib-sum-row"><span class="ib-name">جمع انتخاب‌شده</span>' +
           '<span class="ib-amt ib-sum-amt">۰</span></div>';
         panel.innerHTML = html;
