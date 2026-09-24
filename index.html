@@ -7440,7 +7440,7 @@
               </tr>
             </tfoot>
           </table>
-          <div class="balance-hint" style="padding:8px 12px 12px;font-size:0.78rem;opacity:0.75;text-align:right;line-height:1.5;">مخارج: مخارج پرداخت نشده+مخارج پرداخت شده</div>
+          <div class="balance-hint" style="padding:8px 12px 12px;font-size:0.78rem;opacity:0.75;text-align:right;line-height:1.5;">مانده= پرداخت شده+پرداخت نشده</div>
         </div>
         <div class="summary-section" id="dayDetailBox" style="display:none;">
           <div class="summary-header balance-h" id="dayDetailTitle">جزئیات روز</div>
@@ -7645,7 +7645,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v122-PENTA | ib-ui remain-mojoodi-col */
+    /* build-stamp: 2026-09-24-v123-PENTA | ib-name-click balance-acc-mojoodi */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -12866,13 +12866,12 @@ function onPeriodChange() {
       });
       const rows = [];
       let gExp = 0;
-      const balGlobal = (typeof sumGlobalAccountBalances === 'function')
-        ? (sumGlobalAccountBalances() || 0)
-        : 0;
+      const _accForBal = (typeof accF !== 'undefined' ? accF : '');
+      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
+        ? resolveBalanceMojoodi(_accForBal)
+        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
       order.forEach(title => {
-        const bal = (typeof personTotals === 'function')
-          ? (Number(personTotals(title).instant) || 0)
-          : (incMap[title] || 0);
+        const bal = balGlobal;
         const exp = expMap[title] || 0;
         gExp += exp;
         rows.push([title, formatNum(bal), formatNum(exp), formatNum(bal - exp)]);
@@ -15191,6 +15190,19 @@ function openPdfPrintWindow(){
       Object.keys(map).forEach(function(k) { s += Number(map[k]) || 0; });
       return s;
     }
+    /** موجودی برای جدول مانده: یک حساب خاص یا کل حساب‌ها */
+    function resolveBalanceMojoodi(accFilter) {
+      accFilter = (accFilter || '').trim();
+      try {
+        if (accFilter && typeof globalAccountBalances === 'function') {
+          const map = globalAccountBalances() || {};
+          if (map[accFilter] != null) return Number(map[accFilter]) || 0;
+          return 0;
+        }
+        if (typeof sumGlobalAccountBalances === 'function') return sumGlobalAccountBalances() || 0;
+      } catch (e) {}
+      return 0;
+    }
     /* سازگاری: موجودی حساب‌ها مشترک بین همه کاربران */
     function personAccountBalances(title) {
       return globalAccountBalances();
@@ -15220,10 +15232,10 @@ function openPdfPrintWindow(){
           if (v === 0) return;
           shown++;
           html += '<div class="instant-bal-row ib-acc-row" data-acc="' + escapeHtml(k) + '" data-amt="' + String(v) + '">' +
-            '<label class="ib-check-wrap">' +
+            '<div class="ib-check-wrap">' +
             '<input type="checkbox" class="ib-acc-check" data-amt="' + String(v) + '" />' +
             '<span class="ib-name">' + escapeHtml(k) + '</span>' +
-            '</label>' +
+            '</div>' +
             '<span class="ib-amt ib-amt-click ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
         });
         if (!shown) {
@@ -15244,18 +15256,21 @@ function openPdfPrintWindow(){
             el.classList.add(sum < 0 ? 'neg' : 'pos');
           }
         }
-        panel.querySelectorAll('.ib-acc-check').forEach(function(cb) {
-          cb.addEventListener('click', function(e) { e.stopPropagation(); });
-          cb.addEventListener('change', refreshIbSum);
-        });
         panel.querySelectorAll('.ib-acc-row').forEach(function(row) {
+          var cb = row.querySelector('.ib-acc-check');
+          if (!cb) return;
+          function toggle() {
+            cb.checked = !cb.checked;
+            refreshIbSum();
+          }
+          cb.addEventListener('click', function(e) {
+            e.stopPropagation();
+            /* native toggle already applied */
+            refreshIbSum();
+          });
           row.addEventListener('click', function(e) {
-            if (e.target && e.target.classList && e.target.classList.contains('ib-acc-check')) return;
-            var cb = row.querySelector('.ib-acc-check');
-            if (cb) {
-              cb.checked = !cb.checked;
-              refreshIbSum();
-            }
+            if (e.target === cb || (e.target && e.target.classList && e.target.classList.contains('ib-acc-check'))) return;
+            toggle();
           });
         });
         refreshIbSum();
@@ -23120,10 +23135,13 @@ field('حساب بانکی', accSelRec);
       incOrder.forEach(t => { if (!titles.includes(t)) titles.push(t); });
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
-      let gInc = 0, gExp = 0;
-      const balGlobal = (typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0;
+      let gExp = 0;
+      const accFBal = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
+      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
+        ? resolveBalanceMojoodi(accFBal)
+        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
       titles.forEach(title => {
-        const bal = (typeof personTotals === 'function') ? (Number(personTotals(title).instant) || 0) : (incMap[title] || 0);
+        const bal = balGlobal;
         const exp = expMap[title] || 0;
         const remain = bal - exp;
         gExp += exp;
@@ -24872,13 +24890,11 @@ field('حساب بانکی', accSelRec);
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
       let gExp = 0;
-      const balGlobal = (typeof sumGlobalAccountBalances === 'function')
-        ? (sumGlobalAccountBalances() || 0)
-        : 0;
+      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
+        ? resolveBalanceMojoodi(accF)
+        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
       order.forEach(title => {
-        const bal = (typeof personTotals === 'function')
-          ? (Number(personTotals(title).instant) || 0)
-          : (incMap[title] || 0);
+        const bal = balGlobal;
         const exp = expMap[title] || 0;
         const remain = bal - exp;
         gExp += exp;
