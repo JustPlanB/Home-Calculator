@@ -1605,8 +1605,15 @@
       color: rgba(255,255,255,0.92);
       gap: 10px;
     }
-    .instant-bal-row.ib-acc-row { cursor: pointer; }
-    .instant-bal-row.ib-acc-row:last-of-type { border-bottom: none; }
+    .instant-bal-row.ib-acc-row {
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .instant-bal-row.ib-acc-row:has(+ .ib-sum-row),
+    .instant-bal-row.ib-acc-row:last-of-type {
+      border-bottom: none !important;
+    }
+    .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
     .ib-check-wrap {
       display: flex;
       align-items: center;
@@ -1631,6 +1638,8 @@
       margin-top: 2px;
     }
     .instant-bal-row.ib-sum-row .ib-name { opacity: 0.9; }
+    .ib-sum-amt.pos { color: #9ee858 !important; }
+    .ib-sum-amt.neg { color: #ff6b4a !important; }
     .instant-bal-row:last-child { border-bottom: none; }
     .instant-bal-row .ib-name { font-weight: 700; flex: 1; text-align: right; }
     .instant-bal-row .ib-amt { font-weight: 800; font-variant-numeric: tabular-nums; direction: ltr; }
@@ -7416,7 +7425,7 @@
             <thead>
               <tr>
                 <th style="width:22%; text-align:right; padding-right:12px;">بخش</th>
-                <th style="width:26%;">درآمد</th>
+                <th style="width:26%;">موجودی</th>
                 <th style="width:26%;">مخارج</th>
                 <th style="width:26%;">مانده</th>
               </tr>
@@ -7431,6 +7440,7 @@
               </tr>
             </tfoot>
           </table>
+          <div class="balance-hint" style="padding:8px 12px 12px;font-size:0.78rem;opacity:0.75;text-align:right;line-height:1.5;">مخارج: مخارج پرداخت نشده+مخارج پرداخت شده</div>
         </div>
         <div class="summary-section" id="dayDetailBox" style="display:none;">
           <div class="summary-header balance-h" id="dayDetailTitle">جزئیات روز</div>
@@ -7635,7 +7645,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v121b-PENTA | opening-zero-recovery */
+    /* build-stamp: 2026-09-24-v122-PENTA | ib-ui remain-mojoodi-col */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -12855,14 +12865,19 @@ function onPeriodChange() {
         if (!order.includes(t)) order.push(t);
       });
       const rows = [];
-      let gInc = 0, gExp = 0;
+      let gExp = 0;
+      const balGlobal = (typeof sumGlobalAccountBalances === 'function')
+        ? (sumGlobalAccountBalances() || 0)
+        : 0;
       order.forEach(title => {
-        const inc = incMap[title] || 0;
+        const bal = (typeof personTotals === 'function')
+          ? (Number(personTotals(title).instant) || 0)
+          : (incMap[title] || 0);
         const exp = expMap[title] || 0;
-        gInc += inc; gExp += exp;
-        rows.push([title, formatNum(inc), formatNum(exp), formatNum(inc - exp)]);
+        gExp += exp;
+        rows.push([title, formatNum(bal), formatNum(exp), formatNum(bal - exp)]);
       });
-      rows.push(['جمع کل', formatNum(gInc), formatNum(gExp), formatNum(gInc - gExp)]);
+      rows.push(['جمع کل', formatNum(balGlobal), formatNum(gExp), formatNum(balGlobal - gExp)]);
       return rows;
     }
 
@@ -12984,7 +12999,7 @@ function onPeriodChange() {
       sheets.push({name:'مخارج - خلاصه',rows:xlsxRowsFrom(['بخش','پرداخت شده','پرداخت نشده','جمع کل'],collectSummaryRows('expense')),widths:[28,20,20,20]});
       sheets.push({name:'اقساط',rows:xlsxRowsFrom(['نام قسط','مبلغ هر قسط','تعداد','پرداخت‌شده','جمع پرداختی','باقی‌مانده','جمع کل'],collectInstallDetailRows()),widths:[30,20,12,16,20,20,20]});
       sheets.push({name:'اقساط - خلاصه',rows:xlsxRowsFrom(['شرح','مبلغ'],collectInstallSummaryRows()),widths:[30,24]});
-      sheets.push({name:'مانده',rows:xlsxRowsFrom(['بخش','درآمد','مخارج','مانده'],collectBalanceRows()),widths:[30,22,22,22]});
+      sheets.push({name:'مانده',rows:xlsxRowsFrom(['بخش','موجودی','مخارج','مانده'],collectBalanceRows()),widths:[30,22,22,22]});
       const ss=xlsxMakeSharedStrings(sheets),sheetFiles=[],rels=[];
       sheets.forEach((sh,i)=>{sheetFiles.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:xlsxSheetXml(sh.rows,sh.widths,ss.id)});rels.push('<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>');});
       let workbook='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr/><bookViews><workbookView xWindow="0" yWindow="0"/></bookViews><sheets>';
@@ -15197,7 +15212,7 @@ function openPdfPrintWindow(){
         const map = (typeof globalAccountBalances === 'function') ? globalAccountBalances() : personAccountBalances(title);
         const keys = Object.keys(map);
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
-        let html = '<div class="instant-bal-head">موجودی آنی (مشترک)</div>';
+        let html = '<div class="instant-bal-head">موجودی آنی</div>';
         var shown = 0;
         keys.forEach(function(k) {
           const v = Number(map[k]) || 0;
@@ -15209,13 +15224,13 @@ function openPdfPrintWindow(){
             '<input type="checkbox" class="ib-acc-check" data-amt="' + String(v) + '" />' +
             '<span class="ib-name">' + escapeHtml(k) + '</span>' +
             '</label>' +
-            '<span class="ib-amt ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
+            '<span class="ib-amt ib-amt-click ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
         });
         if (!shown) {
           html += '<div class="instant-bal-row"><span class="ib-name">حسابی با موجودی نیست</span><span class="ib-amt">۰</span></div>';
         }
         html += '<div class="instant-bal-row ib-sum-row"><span class="ib-name">جمع انتخاب‌شده</span>' +
-          '<span class="ib-amt ib-sum-amt">۰</span></div>';
+          '<span class="ib-amt ib-sum-amt pos">۰</span></div>';
         panel.innerHTML = html;
         function refreshIbSum() {
           var sum = 0;
@@ -15225,11 +15240,12 @@ function openPdfPrintWindow(){
           var el = panel.querySelector('.ib-sum-amt');
           if (el) {
             el.textContent = formatNum(sum);
-            el.classList.toggle('pos', sum >= 0);
-            el.classList.toggle('neg', sum < 0);
+            el.classList.remove('pos', 'neg');
+            el.classList.add(sum < 0 ? 'neg' : 'pos');
           }
         }
         panel.querySelectorAll('.ib-acc-check').forEach(function(cb) {
+          cb.addEventListener('click', function(e) { e.stopPropagation(); });
           cb.addEventListener('change', refreshIbSum);
         });
         panel.querySelectorAll('.ib-acc-row').forEach(function(row) {
@@ -15242,10 +15258,12 @@ function openPdfPrintWindow(){
             }
           });
         });
+        refreshIbSum();
         ov.classList.add('open');
         _instantBalOpen = true;
       } catch (e) {}
     }
+
     let _activeHomeCardTitle = '';
     function setActiveHomeCardTitle(t) {
       _activeHomeCardTitle = (t || '').trim();
@@ -23103,22 +23121,24 @@ field('حساب بانکی', accSelRec);
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
       let gInc = 0, gExp = 0;
+      const balGlobal = (typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0;
       titles.forEach(title => {
-        const inc = incMap[title] || 0;
+        const bal = (typeof personTotals === 'function') ? (Number(personTotals(title).instant) || 0) : (incMap[title] || 0);
         const exp = expMap[title] || 0;
-        const remain = inc - exp;
-        gInc += inc; gExp += exp;
+        const remain = bal - exp;
+        gExp += exp;
         const color = remain > 0 ? '#16a34a' : (remain < 0 ? '#dc2626' : '#1a1a1a');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="sec-name">${escapeHtml(title)}</td>
-          <td class="val inc-cell" style="color:var(--text);">${formatNum(inc)}</td>
+          <td class="val inc-cell" style="color:var(--text);">${formatNum(bal)}</td>
           <td class="val exp-cell" style="color:var(--text);">${formatNum(exp)}</td>
           <td class="val" style="color:${color};">${formatNum(remain)}</td>`;
         tbody.appendChild(tr);
       });
-      const gRemain = gInc - gExp;
-      document.getElementById('balIncome').textContent = formatNum(gInc);
+      const gBal = balGlobal;
+      const gRemain = gBal - gExp;
+      document.getElementById('balIncome').textContent = formatNum(gBal);
       document.getElementById('balExpense').textContent = formatNum(gExp);
       document.getElementById('balIncome').style.color = '#1a1a1a';
       document.getElementById('balExpense').style.color = '#1a1a1a';
@@ -24851,12 +24871,17 @@ field('حساب بانکی', accSelRec);
 
       const tbody = document.getElementById('balance-body');
       tbody.innerHTML = '';
-      let gInc = 0, gExp = 0;
+      let gExp = 0;
+      const balGlobal = (typeof sumGlobalAccountBalances === 'function')
+        ? (sumGlobalAccountBalances() || 0)
+        : 0;
       order.forEach(title => {
-        const inc = incMap[title] || 0;
+        const bal = (typeof personTotals === 'function')
+          ? (Number(personTotals(title).instant) || 0)
+          : (incMap[title] || 0);
         const exp = expMap[title] || 0;
-        const remain = inc - exp;
-        gInc += inc; gExp += exp;
+        const remain = bal - exp;
+        gExp += exp;
         const color = remain > 0 ? '#16a34a' : (remain < 0 ? '#dc2626' : 'var(--text)');
         const tr = document.createElement('tr');
         const tdSec = document.createElement('td');
@@ -24871,7 +24896,7 @@ field('حساب بانکی', accSelRec);
         const tdInc = document.createElement('td');
         tdInc.className = 'val inc-cell';
         tdInc.style.color = 'var(--text)';
-        tdInc.textContent = formatNum(inc);
+        tdInc.textContent = formatNum(bal);
         tr.appendChild(tdInc);
         const tdExp = document.createElement('td');
         tdExp.className = 'val exp-cell';
@@ -24885,8 +24910,9 @@ field('حساب بانکی', accSelRec);
         tr.appendChild(tdRem);
         tbody.appendChild(tr);
       });
-      const gRemain = gInc - gExp;
-      document.getElementById('balIncome').textContent = formatNum(gInc);
+      const gBal = balGlobal;
+      const gRemain = gBal - gExp;
+      document.getElementById('balIncome').textContent = formatNum(gBal);
       document.getElementById('balExpense').textContent = formatNum(gExp);
       document.getElementById('balIncome').style.color = 'var(--text)';
       document.getElementById('balExpense').style.color = 'var(--text)';
