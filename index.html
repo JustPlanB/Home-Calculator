@@ -1322,6 +1322,92 @@
       touch-action: pan-x !important;
     }
     .home-cards::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+    /* —— حالت جابجایی کارت (لانگ‌پرس) —— */
+    body.card-reorder-mode #homeTools,
+    body.card-reorder-mode .sticky-chrome,
+    body.card-reorder-mode .user-remind-wrap,
+    body.card-reorder-mode .install-remind-wrap { opacity: 0.35; pointer-events: none; }
+    body.card-reorder-mode .home-cards {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    #cardReorderOverlay {
+      display: none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 9000;
+      padding: 12px 10px calc(18px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(to top, rgba(0,0,0,0.92) 60%, rgba(0,0,0,0.55));
+      box-sizing: border-box;
+    }
+    body.card-reorder-mode #cardReorderOverlay { display: block; }
+    #cardReorderOverlay .cro-hint {
+      text-align: center;
+      color: #ccc;
+      font-size: 0.78rem;
+      margin-bottom: 10px;
+    }
+    #cardReorderStrip {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px 4px 12px;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+    #cardReorderStrip::-webkit-scrollbar { display: none; }
+    .cro-mini {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 56px;
+      border-radius: 10px;
+      background: #2a2a2a;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 4px 6px;
+      box-sizing: border-box;
+      scroll-snap-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cro-mini.dragging {
+      opacity: 0.95;
+      transform: scale(1.08);
+      border-color: #08b5f5;
+      box-shadow: 0 4px 16px rgba(8,181,245,0.35);
+      z-index: 2;
+    }
+    .cro-mini.selected {
+      border-color: #08b5f5;
+      box-shadow: 0 0 0 2px rgba(8,181,245,0.35);
+    }
+    .cro-done {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: #08b5f5;
+      color: #0a0a0a;
+      font-weight: 800;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
     .home-cards .person-card {
       flex: 0 0 100%;
       width: 100% !important;
@@ -7281,6 +7367,11 @@
         <div class="user-remind-body" id="userRemindBanner"></div>
       </div>
       <div class="home-cards" id="homeCards"></div>
+      <div id="cardReorderOverlay" aria-hidden="true">
+        <div class="cro-hint">کارت را بکشید تا جابجا شود</div>
+        <div id="cardReorderStrip"></div>
+        <button type="button" class="cro-done" id="cardReorderDone">تمام</button>
+      </div>
       <div class="home-tools" id="homeTools">
         <div class="home-box box1" id="homeBox1">
           <button type="button" class="home-tile has-img-icon icon-green" onclick="openRecurringFromMenu()" title="درآمدهای ثابت">
@@ -7645,7 +7736,7 @@
 
     
 
-    /* build-stamp: 2026-09-24-v125-PENTA | mojoodi-kol income+opening */
+    /* build-stamp: 2026-09-25-v126-PENTA | card-reorder longpress + month sync */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -9392,6 +9483,7 @@ function onPeriodChange() {
       // بخش‌های متصل به اقساط تا آخرین سررسید + ردیف خودکار این ماه
       ensureAllLinkedPlanSections();
       syncPlansToExpensePeriod(periodData, currentYear, currentMonth);
+      try { syncCardOrderForPeriod(); } catch (eOrd) {}
     }
 
     function flushUiAfterChange() {
@@ -15006,7 +15098,7 @@ function openPdfPrintWindow(){
       }
       return { income: inc, expense: exp };
     }
-    function allPersonTitles() {
+    function allPersonTitlesRaw() {
       const set = new Set();
       ['income', 'expense'].forEach(tab => {
         (periodData[tab] && periodData[tab].sections || []).forEach(s => {
@@ -15015,6 +15107,222 @@ function openPdfPrintWindow(){
         });
       });
       return Array.from(set);
+    }
+    function loadGlobalCardOrder() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY + '_cardOrder');
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.map(function(x){ return String(x || '').trim(); }).filter(Boolean) : [];
+      } catch (e) { return []; }
+    }
+    function saveGlobalCardOrder(arr) {
+      try { localStorage.setItem(STORAGE_KEY + '_cardOrder', JSON.stringify(arr || [])); } catch (e) {}
+    }
+    function sortTitlesByOrder(titles, order) {
+      const list = (titles || []).slice();
+      const ord = (order || []).map(function(x){ return String(x || '').trim(); }).filter(Boolean);
+      if (!ord.length) return list;
+      const idx = {};
+      ord.forEach(function(t, i) { if (idx[t] == null) idx[t] = i; });
+      list.sort(function(a, b) {
+        const ia = idx[a] != null ? idx[a] : 9999;
+        const ib = idx[b] != null ? idx[b] : 9999;
+        if (ia !== ib) return ia - ib;
+        return String(a).localeCompare(String(b), 'fa');
+      });
+      return list;
+    }
+    function reorderSectionsByTitles(orderArr) {
+      const order = (orderArr || []).map(function(x){ return String(x || '').trim(); }).filter(Boolean);
+      if (!order.length) return;
+      ['income', 'expense'].forEach(function(tab) {
+        if (!periodData[tab] || !Array.isArray(periodData[tab].sections)) return;
+        const secs = periodData[tab].sections;
+        const byTitle = {};
+        secs.forEach(function(s) {
+          const t = (s.title || '').trim();
+          if (t && !byTitle[t]) byTitle[t] = s;
+        });
+        const next = [];
+        const used = {};
+        order.forEach(function(t) {
+          if (byTitle[t] && !used[t]) { next.push(byTitle[t]); used[t] = true; }
+        });
+        secs.forEach(function(s) {
+          const t = (s.title || '').trim();
+          if (t && !used[t]) { next.push(s); used[t] = true; }
+        });
+        periodData[tab].sections = next;
+      });
+    }
+    function applyPersonCardOrder(orderArr, opts) {
+      opts = opts || {};
+      const titles = allPersonTitlesRaw();
+      let sorted = sortTitlesByOrder(titles, orderArr);
+      titles.forEach(function(t) {
+        if (sorted.indexOf(t) < 0) sorted.push(t);
+      });
+      reorderSectionsByTitles(sorted);
+      try { periodData.personCardOrder = sorted.slice(); } catch (e) {}
+      saveGlobalCardOrder(sorted);
+      try { if (typeof persistCurrent === 'function') persistCurrent(); } catch (e2) {}
+      if (!opts.silent) {
+        try { renderHomeCards(); } catch (e3) {}
+      }
+      return sorted;
+    }
+    function syncCardOrderForPeriod() {
+      try {
+        let order = null;
+        if (periodData && Array.isArray(periodData.personCardOrder) && periodData.personCardOrder.length) {
+          order = periodData.personCardOrder.slice();
+        }
+        if (!order || !order.length) {
+          try {
+            const p = (typeof prevYearMonth === 'function') ? prevYearMonth(currentYear, currentMonth) : null;
+            if (p && p.y) {
+              const prev = archive[periodKey(p.y, p.m)];
+              if (prev && Array.isArray(prev.personCardOrder) && prev.personCardOrder.length) {
+                order = prev.personCardOrder.slice();
+              }
+            }
+          } catch (eP) {}
+        }
+        if (!order || !order.length) order = loadGlobalCardOrder();
+        if (!order || !order.length) return;
+        applyPersonCardOrder(order, { silent: true });
+      } catch (e) {}
+    }
+
+    let _cardReorderActive = false;
+    let _cardReorderOrder = [];
+    let _cardReorderDrag = null;
+
+    function closeCardReorderMode() {
+      _cardReorderActive = false;
+      _cardReorderDrag = null;
+      try { document.body.classList.remove('card-reorder-mode'); } catch (e) {}
+      const ov = document.getElementById('cardReorderOverlay');
+      if (ov) ov.setAttribute('aria-hidden', 'true');
+    }
+    function commitCardReorderMode() {
+      if (_cardReorderOrder && _cardReorderOrder.length) {
+        applyPersonCardOrder(_cardReorderOrder, { silent: false });
+      }
+      closeCardReorderMode();
+    }
+    function buildCardReorderStrip() {
+      const strip = document.getElementById('cardReorderStrip');
+      if (!strip) return;
+      strip.innerHTML = '';
+      _cardReorderOrder.forEach(function(title, idx) {
+        const el = document.createElement('div');
+        el.className = 'cro-mini';
+        el.dataset.title = title;
+        el.dataset.idx = String(idx);
+        el.textContent = title;
+        function onDown(ev) {
+          if (!_cardReorderActive) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          try { el.setPointerCapture(ev.pointerId); } catch (eC) {}
+          _cardReorderDrag = { title: title, startX: ev.clientX, fromIdx: idx, el: el };
+          el.classList.add('dragging', 'selected');
+          strip.querySelectorAll('.cro-mini').forEach(function(m) {
+            if (m !== el) m.classList.remove('selected');
+          });
+        }
+        function onMove(ev) {
+          if (!_cardReorderDrag || _cardReorderDrag.el !== el) return;
+          const dx = ev.clientX - _cardReorderDrag.startX;
+          el.style.transform = 'translateX(' + dx + 'px) scale(1.08)';
+          const mids = Array.from(strip.querySelectorAll('.cro-mini')).map(function(m) {
+            const r = m.getBoundingClientRect();
+            return { el: m, mid: r.left + r.width / 2, title: m.dataset.title };
+          });
+          const curX = ev.clientX;
+          let targetIdx = _cardReorderDrag.fromIdx;
+          mids.forEach(function(m, i) {
+            if (m.el === el) return;
+            if (curX > m.mid && i > _cardReorderDrag.fromIdx) targetIdx = i;
+            if (curX < m.mid && i < _cardReorderDrag.fromIdx) targetIdx = i;
+          });
+          if (targetIdx !== _cardReorderDrag.fromIdx) {
+            const from = _cardReorderOrder.indexOf(_cardReorderDrag.title);
+            if (from >= 0) {
+              _cardReorderOrder.splice(from, 1);
+              _cardReorderOrder.splice(targetIdx, 0, _cardReorderDrag.title);
+              _cardReorderDrag.fromIdx = targetIdx;
+              _cardReorderDrag.startX = ev.clientX;
+              el.style.transform = '';
+              buildCardReorderStrip();
+              const sel = CSS && CSS.escape ? CSS.escape(_cardReorderDrag.title) : String(_cardReorderDrag.title).replace(/"/g, '');
+              const neu = strip.querySelector('.cro-mini[data-title="' + sel + '"]');
+              if (neu) {
+                neu.classList.add('dragging', 'selected');
+                _cardReorderDrag.el = neu;
+                try { neu.setPointerCapture(ev.pointerId); } catch (e2) {}
+              }
+            }
+          }
+        }
+        function onUp() {
+          if (!_cardReorderDrag) return;
+          if (_cardReorderDrag.el) {
+            _cardReorderDrag.el.classList.remove('dragging');
+            _cardReorderDrag.el.style.transform = '';
+          }
+          _cardReorderDrag = null;
+        }
+        el.addEventListener('pointerdown', onDown);
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerup', onUp);
+        el.addEventListener('pointercancel', onUp);
+        strip.appendChild(el);
+      });
+    }
+    function openCardReorderMode(focusTitle) {
+      try {
+        _cardReorderOrder = allPersonTitles().slice();
+        if (!_cardReorderOrder.length) return;
+        _cardReorderActive = true;
+        document.body.classList.add('card-reorder-mode');
+        const ov = document.getElementById('cardReorderOverlay');
+        if (ov) ov.setAttribute('aria-hidden', 'false');
+        buildCardReorderStrip();
+        bindCardReorderChrome();
+        if (focusTitle) {
+          const strip = document.getElementById('cardReorderStrip');
+          const sel = CSS && CSS.escape ? CSS.escape(focusTitle) : String(focusTitle).replace(/"/g, '');
+          const el = strip && strip.querySelector('.cro-mini[data-title="' + sel + '"]');
+          if (el) {
+            el.classList.add('selected');
+            try { el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (eS) {}
+          }
+        }
+      } catch (e) {}
+    }
+    function bindCardReorderChrome() {
+      const btn = document.getElementById('cardReorderDone');
+      if (btn && !btn._croBound) {
+        btn._croBound = true;
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          commitCardReorderMode();
+        });
+      }
+    }
+    function allPersonTitles() {
+      const raw = allPersonTitlesRaw();
+      let order = null;
+      try {
+        if (periodData && Array.isArray(periodData.personCardOrder) && periodData.personCardOrder.length) {
+          order = periodData.personCardOrder;
+        }
+      } catch (e) {}
+      if (!order || !order.length) order = loadGlobalCardOrder();
+      return sortTitlesByOrder(raw, order);
     }
     function ensureDefaultPersonCard() {
       try {
@@ -15614,8 +15922,34 @@ function openPdfPrintWindow(){
         inner.appendChild(top);
         inner.appendChild(stats);
         card.appendChild(inner);
+        /* لانگ‌پرس → حالت جابجایی کارت‌ها */
+        (function(cardEl, cardTitle) {
+          var lpTimer = null;
+          var startX = 0, startY = 0;
+          function clearLp() {
+            if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+          }
+          cardEl.addEventListener('pointerdown', function(ev) {
+            if (ev.button != null && ev.button !== 0) return;
+            if (ev.target && ev.target.closest && (ev.target.closest('.btn-edit-title') || ev.target.closest('.btn-del-row') || ev.target.closest('button'))) return;
+            startX = ev.clientX; startY = ev.clientY;
+            clearLp();
+            lpTimer = setTimeout(function() {
+              lpTimer = null;
+              try { if (navigator.vibrate) navigator.vibrate(30); } catch (eV) {}
+              openCardReorderMode(cardTitle);
+            }, 480);
+          });
+          cardEl.addEventListener('pointermove', function(ev) {
+            if (!lpTimer) return;
+            if (Math.abs(ev.clientX - startX) > 12 || Math.abs(ev.clientY - startY) > 12) clearLp();
+          });
+          cardEl.addEventListener('pointerup', clearLp);
+          cardEl.addEventListener('pointercancel', clearLp);
+        })(card, title);
         box.appendChild(card);
       });
+      try { bindCardReorderChrome(); } catch (eB) {}
       // اسکرول افقی: عرض هر کارت = عرض کانتینر؛ موقعیت کارت فعال حفظ شود
       try {
         const w = box.clientWidth || box.offsetWidth;
