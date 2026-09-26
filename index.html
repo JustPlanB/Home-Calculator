@@ -576,6 +576,58 @@
       text-align: right;
     }
     .menu-pro-row:hover { background: var(--bg3); }
+
+    .modal-btn.primary {
+      background: #08b5f5;
+      color: #0a0a0a;
+    }
+    .modal-btn.primary:active { filter: brightness(0.95); }
+    .pro-details-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 10px;
+      margin: 6px 0 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg3);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .pro-details-body { display: none; margin-top: 6px; }
+    .pro-details-body.open { display: block; }
+    .proj-report-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.86rem;
+    }
+    .proj-report-row .val { direction: ltr; font-variant-numeric: tabular-nums; }
+    .proj-report-section {
+      margin: 12px 0 6px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      opacity: 0.75;
+    }
+    #projectReportModal .modal-box { max-width: 360px; width: 92vw; max-height: 88vh; overflow-y: auto; }
+    .fancy-select-list {
+      z-index: 100900 !important;
+    }
+    .fancy-select-list.open {
+      z-index: 100900 !important;
+    }
+    body > .fancy-select-list.open {
+      z-index: 100950 !important;
+    }
+
     .pro-mode-switch {
       position: relative;
       width: 48px;
@@ -7867,7 +7919,7 @@
 
     
 
-    /* build-stamp: 2026-09-26-v128-PENTA | fix-boot-syntax disable-supabase */
+    /* build-stamp: 2026-09-26-v129-PENTA | pro-report progressive-disclosure UI */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -11355,14 +11407,14 @@ function onPeriodChange() {
           html += '</div></div>';
         });
         html += '<label class="family-label" style="margin-top:8px;">نام نمایشی</label>';
-        html += '<input id="memberNameInp" class="family-input" placeholder="مثلاً علی" value="' + escapeHtml(memberName || '') + '" oninput="onMemberChange()">';
+        html += '<input id="memberNameInp" class="family-input" placeholder="مثلاً سهراب" value="' + escapeHtml(memberName || '') + '" oninput="onMemberChange()">';
         html += '<label class="family-label">نام کاربری یکتا</label>';
         html += '<input id="memberHandleInp" class="family-input" placeholder="مثلاً ali_01" dir="ltr" value="' + escapeHtml(memberHandle || '') + '" oninput="onHandleChange()" autocomplete="username">';
         html += '<p class="family-help" style="margin-top:4px;">با همین نام کاربری + کد اشتراک از دستگاه دیگر به اطلاعات خود دسترسی دارید.</p>';
         html += '</div>';
       } else {
         html += '<label class="family-label">نام نمایشی</label>';
-        html += '<input id="memberNameInp" class="family-input" placeholder="مثلاً علی" value="' + escapeHtml(memberName || '') + '" oninput="onMemberChange()">';
+        html += '<input id="memberNameInp" class="family-input" placeholder="مثلاً سهراب" value="' + escapeHtml(memberName || '') + '" oninput="onMemberChange()">';
         html += '<label class="family-label">نام کاربری یکتا</label>';
         html += '<input id="memberHandleInp" class="family-input" placeholder="مثلاً ali_01" dir="ltr" value="' + escapeHtml(memberHandle || '') + '" oninput="onHandleChange()" autocomplete="username">';
         html += '<p class="family-help">نام کاربری برای بازیابی روی دستگاه دیگر لازم است.</p>';
@@ -15688,6 +15740,9 @@ function openPdfPrintWindow(){
         const keys = Object.keys(map);
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
         let html = '<div class="instant-bal-head">موجودی آنی</div>';
+        if (typeof isProfessionalMode === 'function' && isProfessionalMode()) {
+          html += '<div style="font-size:0.72rem;opacity:0.7;padding:0 4px 6px;text-align:right;">موجودی واقعی کارت (شامل پول پروژه‌ها)</div>';
+        }
         var shown = 0;
         keys.forEach(function(k) {
           const v = Number(map[k]) || 0;
@@ -17913,6 +17968,10 @@ function openPdfPrintWindow(){
         row.appendChild(span);
         var acts = document.createElement('span');
         acts.className = 'sub-acts';
+        var b0 = document.createElement('button');
+        b0.type = 'button';
+        b0.textContent = 'گزارش';
+        b0.onclick = function(){ openProjectReportModal(s.id); };
         var b1 = document.createElement('button');
         b1.type = 'button';
         b1.textContent = 'ویرایش';
@@ -17921,6 +17980,7 @@ function openPdfPrintWindow(){
         b2.type = 'button';
         b2.textContent = 'حذف';
         b2.onclick = function(){ deleteSubject(s.id); };
+        acts.appendChild(b0);
         acts.appendChild(b1);
         acts.appendChild(b2);
         row.appendChild(acts);
@@ -18026,6 +18086,95 @@ function openPdfPrintWindow(){
 
 
     
+    
+    function iterAllPeriodData(cb) {
+      try {
+        if (periodData) cb(periodData, periodKey(currentYear, currentMonth));
+      } catch (e0) {}
+      try {
+        Object.keys(archive || {}).forEach(function(k) {
+          var pd = archive[k];
+          if (pd && pd !== periodData) cb(pd, k);
+        });
+      } catch (e1) {}
+    }
+    function computeSubjectReport(subjectId) {
+      subjectId = (subjectId || '').trim();
+      if (!subjectId || subjectId === 'personal') {
+        return { received: 0, spentSubject: 0, spentPersonal: 0, balance: 0, receivable: 0, totalCost: 0, rows: [] };
+      }
+      var received = 0, spentSubject = 0, spentPersonal = 0;
+      var rows = [];
+      iterAllPeriodData(function(pd, key) {
+        ['income', 'expense'].forEach(function(tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
+            (sec.rows || []).forEach(function(r) {
+              if (!r || (r.status || 'paid') !== 'paid') return;
+              var fc = rowFinancialContext(r);
+              if (fc.subjectId !== subjectId) return;
+              var amt = Number(r.amount) || 0;
+              if (tab === 'income' && fc.classification === 'third_party') {
+                received += amt;
+                rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key });
+              } else if (tab === 'expense' && fc.classification === 'third_party') {
+                if (fc.fundingSource === 'subject') {
+                  spentSubject += amt;
+                  rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, fund: 'subject' });
+                } else {
+                  spentPersonal += amt;
+                  rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, fund: 'personal' });
+                }
+              }
+            });
+          });
+        });
+      });
+      return {
+        received: received,
+        spentSubject: spentSubject,
+        spentPersonal: spentPersonal,
+        balance: received - spentSubject,
+        receivable: spentPersonal,
+        totalCost: spentSubject + spentPersonal,
+        rows: rows
+      };
+    }
+    function openProjectReportModal(subjectId) {
+      var sub = getSubjectById(subjectId);
+      if (!sub || sub.id === 'personal') {
+        showToast('یک موضوع غیرشخصی انتخاب کنید');
+        return;
+      }
+      var rep = computeSubjectReport(sub.id);
+      var title = document.getElementById('projectReportTitle');
+      if (title) title.textContent = 'گزارش: ' + sub.name;
+      var body = document.getElementById('projectReportBody');
+      if (body) {
+        function row(label, val, color) {
+          return '<div class="proj-report-row"><span>' + label + '</span><span class="val" style="' + (color ? 'color:'+color : '') + '">' + formatNum(val) + '</span></div>';
+        }
+        body.innerHTML =
+          '<div class="proj-report-section">خلاصه مالی</div>' +
+          row('دریافتی برای پروژه', rep.received) +
+          row('هزینه‌های پروژه', rep.totalCost) +
+          row('مانده پول پروژه', rep.balance, rep.balance >= 0 ? '#16a34a' : '#dc2626') +
+          '<div class="proj-report-section">منبع پرداخت</div>' +
+          row('پرداخت‌شده از پول پروژه', rep.spentSubject) +
+          row('پرداخت‌شده از پول شخصی من', rep.spentPersonal) +
+          row('طلب من از این موضوع', rep.receivable, rep.receivable > 0 ? '#f59e0b' : '') +
+          '<div class="proj-report-section">توضیح</div>' +
+          '<div style="font-size:0.78rem;opacity:0.75;line-height:1.5;padding:4px;">موجودی واقعی کارت جدا از مانده پروژه محاسبه می‌شود. پول پروژه درآمد شخصی محسوب نمی‌شود.</div>';
+      }
+      var m = document.getElementById('projectReportModal');
+      if (m) m.style.display = 'flex';
+      try { closeSubjectsModal(); } catch (e) {}
+    }
+    function closeProjectReportModal() {
+      var m = document.getElementById('projectReportModal');
+      if (m) m.style.display = 'none';
+    }
+
+
     function enhanceSmsConfirmProUI(parsed) {
       try {
         var meta = document.getElementById('smsConfirmMeta');
@@ -18034,13 +18183,14 @@ function openPdfPrintWindow(){
         var typeEl = document.getElementById('smsConfirmType');
         var curType = (typeEl && typeEl.value) || (parsed && parsed.type) || 'expense';
 
-        // segmented: مخارج / پرداخت قسط (فقط برای برداشت)
         var oldSeg = document.getElementById('smsExpenseSeg');
         if (oldSeg) oldSeg.remove();
         var oldPlanPick = document.getElementById('smsPlanPickBlock');
         if (oldPlanPick) oldPlanPick.remove();
         var oldPro = document.getElementById('smsProBlock');
         if (oldPro) oldPro.remove();
+        var oldToggle = document.getElementById('smsProDetailsToggle');
+        if (oldToggle) oldToggle.remove();
 
         if (curType === 'expense') {
           var seg = document.createElement('div');
@@ -18048,7 +18198,6 @@ function openPdfPrintWindow(){
           seg.className = 'sms-seg';
           seg.innerHTML = '<button type="button" data-mode="expense" class="active">مخارج</button>' +
             '<button type="button" data-mode="installment">پرداخت قسط</button>';
-          // insert after type select
           var typeSel = document.getElementById('smsConfirmType');
           if (typeSel && typeSel.parentNode) {
             typeSel.parentNode.insertBefore(seg, typeSel.nextSibling);
@@ -18111,6 +18260,7 @@ function openPdfPrintWindow(){
                 pm.textContent = (it.status || '') + (dueTxt ? ' — ' + dueTxt : '');
               }
             };
+            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(pick); } catch (eFs) {}
           }
           seg.querySelectorAll('button').forEach(function(btn) {
             btn.onclick = function() {
@@ -18129,9 +18279,16 @@ function openPdfPrintWindow(){
         }
 
         if (pro) {
+          var toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.id = 'smsProDetailsToggle';
+          toggle.className = 'pro-details-toggle';
+          toggle.innerHTML = '<span>جزئیات حرفه‌ای</span><span class="pro-chev">▾</span>';
+          meta.appendChild(toggle);
+
           var block = document.createElement('div');
           block.id = 'smsProBlock';
-          block.className = 'sms-pro-block';
+          block.className = 'sms-pro-block pro-details-body';
           if (curType === 'income') {
             block.innerHTML =
               '<label class="family-label">نوع واریز</label>' +
@@ -18141,7 +18298,7 @@ function openPdfPrintWindow(){
               '</div>' +
               '<div id="smsThirdPartyFields" style="display:none;">' +
               '<label class="family-label">متعلق به (نام شخص/مالک)</label>' +
-              '<input id="smsOwnerName" class="family-input" placeholder="مثلاً علی" dir="rtl">' +
+              '<input id="smsOwnerName" class="family-input" placeholder="مثلاً سهراب" dir="rtl">' +
               '<label class="family-label">حساب / موضوع</label>' +
               '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;"></select>' +
               '</div>';
@@ -18157,7 +18314,12 @@ function openPdfPrintWindow(){
               '</div></div>';
           }
           meta.appendChild(block);
-          // fill subjects
+          toggle.onclick = function() {
+            var open = block.classList.toggle('open');
+            var ch = toggle.querySelector('.pro-chev');
+            if (ch) ch.textContent = open ? '▴' : '▾';
+          };
+
           var sel = document.getElementById('smsSubjectSel');
           if (sel) {
             sel.innerHTML = '<option value="personal">شخصی</option>';
@@ -18171,8 +18333,8 @@ function openPdfPrintWindow(){
               var fw = document.getElementById('smsFundingWrap');
               if (fw) fw.style.display = (sel.value && sel.value !== 'personal') ? 'block' : 'none';
             };
+            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(sel); } catch (eFs2) {}
           }
-          // income chips
           var row = document.getElementById('smsIncomeClassRow');
           if (row) {
             row.querySelectorAll('.sms-chip').forEach(function(ch) {
@@ -18204,6 +18366,7 @@ function openPdfPrintWindow(){
       } catch (e) { try { console.warn(e); } catch (e2) {} }
     }
 
+    
     function readSmsFinancialContext(type) {
       var fc = defaultFinancialContext();
       if (!isProfessionalMode()) return fc;
@@ -26050,10 +26213,21 @@ field('حساب بانکی', accSelRec);
       <div class="modal-title">حساب‌ها و موضوعات</div>
       <div id="subjectsList" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
       <label class="family-label">موضوع جدید</label>
-      <input id="subjectNewName" class="family-input" placeholder="مثلاً پروژه علی" dir="rtl" style="margin-bottom:8px;">
+      <input id="subjectNewName" class="family-input" placeholder="مثلاً پروژه سهراب" dir="rtl" style="margin-bottom:8px;">
       <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">افزودن</button>
+        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">＋ افزودن حساب / موضوع</button>
         <button type="button" class="modal-btn" onclick="closeSubjectsModal()">بستن</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="projectReportModal" style="display:none;" onclick="if(event.target===this)closeProjectReportModal();">
+    <div class="modal-box" onclick="event.stopPropagation();">
+      <div class="modal-title" id="projectReportTitle">گزارش موضوع</div>
+      <div id="projectReportBody"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="modal-btn no" onclick="closeProjectReportModal()">بستن</button>
       </div>
     </div>
   </div>
