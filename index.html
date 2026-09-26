@@ -7853,8 +7853,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
+    <script>
     
     /* balance-layout-resize */
     try { document.addEventListener('DOMContentLoaded', function(){ try { enhanceTableAddTabs(document); refreshAllShapeFrames(); } catch(e){} }); setTimeout(function(){ try { refreshAllShapeFrames(); } catch(e){} }, 100); } catch(e){}
@@ -7868,7 +7867,7 @@
 
     
 
-    /* build-stamp: 2026-09-26-v127-PENTA | pro-mode financialContext installment-tab */
+    /* build-stamp: 2026-09-26-v128-PENTA | fix-boot-syntax disable-supabase */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -7985,9 +7984,9 @@
     const STORAGE_KEY = 'hesabKetabArchive_v5';
     /* —— Supabase (حساب مشترک) — این مقادیر را فقط در کد قرار دهید؛ در UI نمایش داده نمی‌شوند —— */
     /* Supabase — فقط اتصال و Anonymous Auth در این مرحله */
-    const SUPABASE_URL = 'https://nqecsfvjvdymvlxjdptn.supabase.co';
+    const SUPABASE_URL = '';
     /* Publishable (anon) key را خودتان اینجا قرار دهید — هرگز Service Role نگذارید */
-    const SUPABASE_ANON_KEY = 'sb_publishable_iRzD3XdXS8xRycG7zlPguw_I588r_ho';
+    const SUPABASE_ANON_KEY = '';
     const SHARE_MAX_MEMBERS = 0; /* 0 = بدون سقف */
     const OWNERSHIP_LOCK_MSG = 'اطلاعات، متعلق به کاربر دیگریست و قابل تغییر نمی‌باشد';
     const PLAN_LOCK_MSG = 'برای ویرایش از بخش اقساط اقدام کنید';
@@ -10368,6 +10367,7 @@ function onPeriodChange() {
       return h;
     }
     function getSupabaseClient() {
+      return null; // Supabase disabled
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
       if (supabaseClient) return supabaseClient;
       try {
@@ -10395,35 +10395,8 @@ function onPeriodChange() {
        به‌جای اینکه فوراً بگوید «کلاینت آماده نیست». */
     let supabaseLibLoadPromise = null;
     function ensureSupabaseLibLoaded() {
-      const isLoaded = () => (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function');
-      if (isLoaded()) return Promise.resolve(true);
-      if (supabaseLibLoadPromise) return supabaseLibLoadPromise;
-      supabaseLibLoadPromise = new Promise((resolve) => {
-        let settled = false;
-        const finish = (ok) => {
-          if (settled) return;
-          settled = true;
-          if (!ok) supabaseLibLoadPromise = null; // اجازه بده دفعه بعد دوباره تلاش کند
-          resolve(ok);
-        };
-        const poll = setInterval(() => {
-          if (isLoaded()) { clearInterval(poll); finish(true); }
-        }, 150);
-        // اگر بعد از چند ثانیه هنوز لود نشده (مثلاً موقع باز شدن اپ اینترنت نبوده)، خودمان دوباره اسکریپت را تزریق می‌کنیم
-        setTimeout(() => {
-          if (isLoaded()) { clearInterval(poll); finish(true); return; }
-          try {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            s.onload = () => { clearInterval(poll); finish(isLoaded()); };
-            s.onerror = () => { clearInterval(poll); finish(false); };
-            document.head.appendChild(s);
-          } catch (e) { clearInterval(poll); finish(false); }
-        }, 3000);
-        // سقف نهایی صبر تا کاربر برای همیشه معطل نماند
-        setTimeout(() => { clearInterval(poll); finish(isLoaded()); }, 12000);
-      });
-      return supabaseLibLoadPromise;
+      /* Supabase غیرفعال — اپ بدون اینترنت/همگام‌سازی ابری کار می‌کند */
+      return Promise.resolve(false);
     }
     async function ensureSupabaseClient() {
       if (supabaseClient) return supabaseClient;
@@ -10438,12 +10411,12 @@ function onPeriodChange() {
      */
     /* نمایش خطا فقط در صورت شکست Auth — پیام SUCCESS حذف شده */
     function showSupabaseAuthDebug(ok, detail) {
-      if (ok) return; // موفقیت Auth هیچ پیام UI نشان داده نشود
+      if (ok) return;
       try {
+        // Supabase غیرفعال — بدون toast / UI
+        return;
         const box = document.getElementById('supabaseDebugBox');
         if (!box) {
-          // باکس دیباگ حذف شده؛ فقط toast خطا
-          if (detail) showToast('خطا در ورود: ' + String(detail).slice(0, 120));
           return;
         }
         box.style.borderColor = '#ef4444';
@@ -10454,6 +10427,7 @@ function onPeriodChange() {
     }
 
     async function initSupabaseAuth() {
+      return null; // Supabase disabled
       const client = await ensureSupabaseClient();
       if (!client) {
         const msg = !SUPABASE_ANON_KEY
@@ -12414,21 +12388,7 @@ function onPeriodChange() {
         if (w) {
           w.document.write('<html><head><meta charset="utf-8"><title>' + filename + '</title></head><body style="font-family:Tahoma;padding:16px;direction:rtl;">' +
             '<p>اگر دانلود خودکار نشد، لینک زیر را لمس کنید و «ذخیره» را بزنید:</p>' +
-            '<p><a download="' + filename + '" href="' + dataUrl + '">' + filename + '</a></p>
-  <div class="modal-overlay" id="subjectsModal" style="display:none;" onclick="if(event.target===this)closeSubjectsModal();">
-    <div class="modal-box" onclick="event.stopPropagation();">
-      <div class="modal-title">حساب‌ها و موضوعات</div>
-      <div id="subjectsList" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
-      <label class="family-label">موضوع جدید</label>
-      <input id="subjectNewName" class="family-input" placeholder="مثلاً پروژه علی" dir="rtl" style="margin-bottom:8px;">
-      <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">افزودن</button>
-        <button type="button" class="modal-btn" onclick="closeSubjectsModal()">بستن</button>
-      </div>
-    </div>
-  </div>
-
-</body></html>');
+            '<p><a download="' + filename + '" href="' + dataUrl + '">' + filename + '</a></p></body></html>');
           w.document.close();
           return 'popup';
         }
@@ -26032,23 +25992,8 @@ field('حساب بانکی', accSelRec);
         } catch (e) {}
       });
     } catch (e) {}
-    /* راه‌اندازی Auth و سپس Sync خودکار حساب مشترک */
-    try {
-      initSupabaseAuth().then(function () {
-        try {
-          migrateLocalRecordsForSync();
-          if (sharedAccountId && navigator.onLine) {
-            setTimeout(() => { try { syncSharedData(false); } catch (e) {} }, 500);
-          }
-        } catch (e) { console.error('[Sync] startup:', e); }
-      }).catch(function (err) {
-        console.error('[Supabase] init در startup ناموفق:', err);
-        try { showSupabaseAuthDebug(false, (err && err.message) ? err.message : String(err)); } catch (e2) {}
-      });
-    } catch (e) {
-      console.error('[Supabase] init در startup ناموفق:', e);
-      try { showSupabaseAuthDebug(false, (e && e.message) ? e.message : String(e)); } catch (e2) {}
-    }
+    /* Supabase غیرفعال — راه‌اندازی ابری انجام نمی‌شود */
+    try { /* no-op cloud init */ } catch (e) {}
     updateFamilyUI();
     try {
       currentTab = 'home';
@@ -26099,5 +26044,19 @@ field('حساب بانکی', accSelRec);
       }).catch(() => {});
     }
   </script>
+
+  <div class="modal-overlay" id="subjectsModal" style="display:none;" onclick="if(event.target===this)closeSubjectsModal();">
+    <div class="modal-box" onclick="event.stopPropagation();">
+      <div class="modal-title">حساب‌ها و موضوعات</div>
+      <div id="subjectsList" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
+      <label class="family-label">موضوع جدید</label>
+      <input id="subjectNewName" class="family-input" placeholder="مثلاً پروژه علی" dir="rtl" style="margin-bottom:8px;">
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">افزودن</button>
+        <button type="button" class="modal-btn" onclick="closeSubjectsModal()">بستن</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
