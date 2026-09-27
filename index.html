@@ -667,14 +667,8 @@
       gap: 8px;
       margin-bottom: 8px;
     }
-    .project-card-accent {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--proj-accent, #b464ff);
-      flex-shrink: 0;
-      box-shadow: 0 0 8px var(--proj-accent, #b464ff);
-    }
+    .project-card-accent { display: none !important; }
+    .project-card-stats { display: none !important; }
     .project-card-name {
       flex: 1;
       font-weight: 800;
@@ -705,16 +699,66 @@
     .project-card-status.credit { color: var(--green-tx); }
     .project-card-status.debt { color: var(--red-tx); }
 
-    /* —— هایلایت ماژیکی ردیف پروژه در درآمد/مخارج —— */
+    
+    /* هایلایت ماژیک — نسخه سازگار با جدول */
+    tr.project-row-hl {
+      position: relative;
+    }
     tr.project-row-hl > td {
-      background: var(--proj-row-bg, rgba(180, 100, 255, 0.16)) !important;
+      position: relative;
+      background: transparent !important;
+      z-index: 1;
+    }
+    tr.project-row-hl > td::before {
+      content: '';
+      position: absolute;
+      top: 20%;
+      bottom: 20%;
+      left: 0;
+      right: 0;
+      background: var(--proj-row-bg, rgba(180, 100, 255, 0.2));
+      z-index: -1;
+      pointer-events: none;
+    }
+    /* لبه راست ردیف (شروع ماژیک در RTL) — گرد و نامنظم */
+    tr.project-row-hl > td:first-child::before {
+      right: 8%;
+      border-radius: 0 12px 14px 0 / 0 40% 45% 0;
+      transform: skewY(-0.4deg);
+    }
+    /* لبه چپ ردیف (پایان ماژیک) */
+    tr.project-row-hl > td:last-child::before {
+      left: 10%;
+      border-radius: 14px 0 0 12px / 45% 0 0 40%;
+      transform: skewY(0.35deg);
+    }
+    /* سلول‌های میانی — پوشش کامل با کمی موج */
+    tr.project-row-hl > td:not(:first-child):not(:last-child)::before {
+      border-radius: 3px;
+      transform: skewX(-0.3deg);
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
     tr.project-row-hl > td .status-num {
       background: transparent !important;
+      position: relative;
+      z-index: 1;
     }
-    /* مبلغ سبز/قرمز مالی دست‌نخورده می‌ماند */
+
+    .proj-table-caption {
+      padding: 8px 10px 4px;
+      font-weight: 800;
+      font-size: 0.82rem;
+      color: var(--text);
+      opacity: 0.9;
+    }
+    .proj-table-wrap { margin-top: 10px; }
+    .proj-td-amt {
+      color: var(--text) !important;
+    }
+    .proj-amt-in, .proj-amt-out {
+      color: var(--text) !important;
+    }
 
     #subjectsModal .modal-box {
       max-width: min(96vw, 420px);
@@ -8164,7 +8208,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v134-PENTA | projects-home highlight-rows back-nav */
+    /* build-stamp: 2026-09-27-v135-PENTA | report-captions marker-hl edit-fix */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18298,7 +18342,7 @@ function openPdfPrintWindow(){
       box.innerHTML = '';
       list.forEach(function(s) {
         var meta = getProjectHighlightMeta(s.highlightColor);
-        var rep = { received: 0, totalExpense: 0, balance: 0 };
+        var rep = { received: 0, totalExpense: 0 };
         try { rep = computeSubjectReport(s.id) || rep; } catch (eR) {}
         var deposits = Number(rep.received) || 0;
         var expenses = Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0;
@@ -18313,10 +18357,6 @@ function openPdfPrintWindow(){
         var top = document.createElement('div');
         top.className = 'project-card-top';
 
-        var accent = document.createElement('span');
-        accent.className = 'project-card-accent';
-        top.appendChild(accent);
-
         var name = document.createElement('div');
         name.className = 'project-card-name';
         name.textContent = s.name;
@@ -18330,26 +18370,19 @@ function openPdfPrintWindow(){
         btnDel.className = 'btn btn-del-row';
         btnDel.textContent = '×';
         btnDel.title = 'حذف';
-        btnDel.onclick = function(e) { e.stopPropagation(); deleteSubject(s.id); };
+        btnDel.onclick = function(e) { e.preventDefault(); e.stopPropagation(); deleteSubject(s.id); };
 
         var btnEdit = document.createElement('button');
         btnEdit.type = 'button';
         btnEdit.className = 'btn-edit-title';
         btnEdit.title = 'ویرایش';
         btnEdit.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
-        btnEdit.onclick = function(e) { e.stopPropagation(); renameSubject(s.id); };
+        btnEdit.onclick = function(e) { e.preventDefault(); e.stopPropagation(); renameSubject(s.id); };
 
         actions.appendChild(btnDel);
         actions.appendChild(btnEdit);
         top.appendChild(actions);
         card.appendChild(top);
-
-        var stats = document.createElement('div');
-        stats.className = 'project-card-stats';
-        stats.innerHTML =
-          '<span>واریزی: ' + formatNum(deposits) + '</span>' +
-          '<span>مخارج: ' + formatNum(expenses) + '</span>';
-        card.appendChild(stats);
 
         var status = document.createElement('div');
         status.className = 'project-card-status';
@@ -18365,7 +18398,7 @@ function openPdfPrintWindow(){
         card.appendChild(status);
 
         card.onclick = function(e) {
-          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row'))) return;
+          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row') || e.target.closest('.subject-rename-input') || e.target.closest('.modal-btn'))) return;
           openProjectReportModal(s.id);
         };
 
@@ -18394,20 +18427,25 @@ function openPdfPrintWindow(){
       if (!s || s.id === 'personal') return;
       var box = document.getElementById('subjectsList');
       if (!box) return;
-      var row = box.querySelector('.subject-list-item[data-id="' + id + '"]');
-      if (!row) return;
-      if (row.querySelector('.subject-rename-input')) return;
-      var span = row.querySelector('span');
-      var acts = row.querySelector('.sub-acts');
+      var card = box.querySelector('.project-card[data-id="' + id + '"]') ||
+                 box.querySelector('.subject-list-item[data-id="' + id + '"]');
+      if (!card) return;
+      if (card.querySelector('.subject-rename-input')) return;
+
+      var nameEl = card.querySelector('.project-card-name') || card.querySelector('span');
+      var acts = card.querySelector('.project-card-actions') || card.querySelector('.sub-acts') || card.querySelector('.person-card-actions');
+      var statusEl = card.querySelector('.project-card-status');
+
       var inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'family-input subject-rename-input';
       inp.value = s.name;
       inp.dir = 'rtl';
-      inp.style.flex = '1';
-      inp.style.margin = '0 6px';
-      if (span) span.style.display = 'none';
+      inp.style.cssText = 'flex:1;min-width:0;margin:0 6px;';
+      if (nameEl) nameEl.style.display = 'none';
       if (acts) acts.style.display = 'none';
+      if (statusEl) statusEl.style.display = 'none';
+
       var saveBtn = document.createElement('button');
       saveBtn.type = 'button';
       saveBtn.className = 'modal-btn primary';
@@ -18418,12 +18456,16 @@ function openPdfPrintWindow(){
       cancelBtn.className = 'modal-btn';
       cancelBtn.textContent = 'انصراف';
       cancelBtn.style.padding = '6px 10px';
+
       function finish() {
         try { inp.remove(); saveBtn.remove(); cancelBtn.remove(); } catch (e) {}
-        if (span) span.style.display = '';
+        if (nameEl) nameEl.style.display = '';
         if (acts) acts.style.display = '';
+        if (statusEl) statusEl.style.display = '';
       }
-      saveBtn.onclick = function() {
+      saveBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         var n = (inp.value || '').trim();
         if (!n) { showToast('نام پروژه را وارد کنید'); return; }
         var list = loadFinancialSubjects();
@@ -18437,10 +18479,21 @@ function openPdfPrintWindow(){
         renderSubjectsList();
         showToast('نام پروژه به‌روز شد');
       };
-      cancelBtn.onclick = function() { finish(); };
-      row.appendChild(inp);
-      row.appendChild(saveBtn);
-      row.appendChild(cancelBtn);
+      cancelBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        finish();
+      };
+      inp.onclick = function(e) { e.stopPropagation(); };
+      inp.onkeydown = function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(); }
+      };
+
+      var top = card.querySelector('.project-card-top') || card;
+      top.appendChild(inp);
+      top.appendChild(saveBtn);
+      top.appendChild(cancelBtn);
       try { inp.focus(); inp.select(); } catch (eF) {}
     }
     function deleteSubject(id) {
@@ -18611,6 +18664,12 @@ function openPdfPrintWindow(){
         showToast('یک پروژه انتخاب کنید');
         return;
       }
+      // هنگام باز بودن گزارش، لیست پروژه‌ها زیر آن نباشد
+      try {
+        var sm = document.getElementById('subjectsModal');
+        if (sm) sm.style.display = 'none';
+      } catch (eS) {}
+
       var rep = computeSubjectReport(sub.id);
       var title = document.getElementById('projectReportTitle');
       if (title) title.textContent = 'پروژه ' + sub.name;
@@ -18640,18 +18699,19 @@ function openPdfPrintWindow(){
           return toPersianDigits(out);
         }
 
-        function txTable(list, isOut) {
-          if (!list.length) return '<div class="proj-table-wrap"><table class="proj-table"><thead><tr><th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>بانک</th></tr></thead><tbody></tbody></table></div>';
-          var h = '<div class="proj-table-wrap"><table class="proj-table"><thead><tr>' +
+        function txTable(list, caption) {
+          var h = '<div class="proj-table-wrap">';
+          h += '<div class="proj-table-caption">' + escapeHtml(caption) + '</div>';
+          h += '<table class="proj-table"><thead><tr>' +
             '<th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>بانک</th>' +
             '</tr></thead><tbody>';
-          list.forEach(function(r) {
+          (list || []).forEach(function(r) {
             var fullDesc = r.desc || '—';
             h += '<tr>' +
               '<td class="proj-td-date">' + formatRowDate(r.key, r.day) + '</td>' +
               '<td class="proj-td-desc" data-full-desc="' + escapeHtml(fullDesc).replace(/"/g, '&quot;') + '">' +
                 '<span class="proj-desc-text">' + escapeHtml(fullDesc) + '</span></td>' +
-              '<td class="proj-td-amt ' + (isOut ? 'proj-amt-out' : 'proj-amt-in') + '">' + formatNum(r.amt) + '</td>' +
+              '<td class="proj-td-amt">' + formatNum(r.amt) + '</td>' +
               '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
               '</tr>';
           });
@@ -18668,12 +18728,9 @@ function openPdfPrintWindow(){
             '<div class="proj-report-row"><span>جمع مخارج</span><span class="val">' + formatNum(expenses) + ' تومان</span></div>' +
             statusHtml +
           '</div>' +
-          '<div class="proj-report-section">واریزی‌های پروژه</div>' +
-          txTable(inRows, false) +
-          '<div class="proj-report-section">مخارج پروژه</div>' +
-          txTable(outRows, true);
+          txTable(inRows, 'واریزی‌ها') +
+          txTable(outRows, 'مخارج');
 
-        // tap روی شرح → نمایش کامل با showCellTextPopup
         try {
           body.querySelectorAll('.proj-td-desc').forEach(function(td) {
             td.addEventListener('click', function(ev) {
@@ -18687,12 +18744,16 @@ function openPdfPrintWindow(){
       }
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'flex';
-      try { closeSubjectsModal(); } catch (e) {}
     }
-    function closeProjectReportModal() {
+    function closeProjectReportModal(opts) {
+      opts = opts || {};
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'none';
+      /* بستن گزارش → برگشت به لیست پروژه‌ها */
+      if (!opts.skipProjects) {
+        try { openSubjectsModal(); } catch (eO) {}
+      }
     }
 
 
@@ -25344,8 +25405,7 @@ field('حساب بانکی', accSelRec);
       try {
         var prm = document.getElementById('projectReportModal');
         if (prm && prm.style.display === 'flex') {
-          closeProjectReportModal();
-          try { openSubjectsModal(); } catch (eO) {}
+          closeProjectReportModal(); // خودش لیست پروژه‌ها را باز می‌کند
           return;
         }
       } catch (e) {}
