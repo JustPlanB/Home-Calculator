@@ -7961,7 +7961,7 @@
 
     
 
-    /* build-stamp: 2026-09-26-v130-PENTA | menu-layer scroll-close sms-amount */
+    /* build-stamp: 2026-09-27-v131-PENTA | rial-toman project-account auto-alloc */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17499,7 +17499,6 @@ function openPdfPrintWindow(){
       let raw = normalizeSmsText(text);
       // شماره حساب/کارت را قبل از جست‌وجوی مبلغ حذف کن تا اشتباهی به‌عنوان مبلغ خوانده نشود
       raw = raw.replace(/(حساب|شماره\s*حساب|شماره\s*کارت|کارت)\s*[:：]?\s*[0-9][0-9\-]{3,}/gi, '$1:');
-      // الگوهای رایج بانک ملی / ملت و بقیه
       const patterns = [
         /مبلغ\s*[:：=\-]?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i,
         /مبلغ\s+([0-9][0-9,\.\s]{2,})/i,
@@ -17508,7 +17507,6 @@ function openPdfPrintWindow(){
         /([0-9]{1,3}(?:\.[0-9]{3})+)\s*(?:ریال|rial|تومان|تومن)/i,
         /([0-9]{5,14})\s*(?:ریال|rial|تومان|تومن)/i,
         /(?:ریال|rial|تومان|تومن)\s*[:：=\-]?\s*([0-9][0-9,\.\s]*)/i,
-        // ملت گاهی: +1,200,000 یا -500,000
         /([+\-]?\s*[0-9]{1,3}(?:,[0-9]{3}){1,4})/,
         /([+\-]?\s*[0-9]{6,14})/
       ];
@@ -17519,32 +17517,41 @@ function openPdfPrintWindow(){
         const m = raw.match(patterns[i]);
         if (!m) continue;
         const v = parseAmountToken(m[1]);
-        if (v < 100) continue; // خیلی کوچک = احتمالاً روز/ساعت
+        if (v < 100) continue;
         amount = v;
         matched = true;
         const around = raw.slice(Math.max(0, (m.index || 0) - 12), (m.index || 0) + String(m[0]).length + 16);
         if (/تومان|تومن|toman/i.test(around)) unit = 'toman';
         else if (/ریال|rial/i.test(around)) unit = 'rial';
-        // هر الگوی معتبرتر از عدد خام (شامل «مبلغ»، واحد پول، یا جداکنندهٔ سه‌رقمی) کافی است؛
-        // فقط اگر هیچ‌کدام مچ نشد سراغ الگوی آخر (عدد خام بدون جداکننده) می‌رویم
         if (i <= 7) break;
       }
       if (!matched) {
-        // بزرگ‌ترین عدد معنادار (حذف سال شمسی مثل 1404)
         const nums = raw.match(/[0-9]{4,14}/g) || [];
         let best = 0;
         nums.forEach(n => {
           const v = parseInt(n, 10) || 0;
-          if (v >= 1300 && v <= 1500) return; // سال
+          if (v >= 1300 && v <= 1500) return;
           if (v > best) best = v;
         });
         amount = best;
       }
-      // فقط وقتی واحد صریحاً «ریال» است به تومان تبدیل کن (÷۱۰).
-      // حدس زدن از روی بزرگی عدد ممنوع است — باعث تغییر اشتباه مبلغ SMS می‌شود.
-      // اگر واحد تومان است یا مشخص نیست، همان عدد استخراج‌شده canonical است.
-      if (unit === 'rial' && amount >= 10) {
-        amount = Math.round(amount / 10);
+      // واحد کل متن SMS (گاهی واحد دور از عدد است)
+      if (!unit) {
+        if (/\bتومان\b|\bتومن\b|\btoman\b/i.test(raw)) unit = 'toman';
+        else if (/\bریال\b|\brial\b/i.test(raw)) unit = 'rial';
+      }
+      // Canonical: اپ فقط تومان ذخیره می‌کند. تبدیل ریال→تومان دقیقاً یک‌بار اینجا.
+      // SMS بانکی ایران معمولاً ریال است؛ اگر واحد صریح تومان نبود و پیامک بانکی است → ریال.
+      if (unit === 'toman') {
+        /* already toman — no convert */
+      } else if (unit === 'rial') {
+        if (amount >= 10) amount = Math.round(amount / 10);
+      } else {
+        // واحد نامشخص: اگر نشانه‌های تراکنش بانکی دارد، مبلغ را ریال فرض کن
+        var bankish = /مبلغ|برداشت|واریز|مانده|خرید|انتقال|حساب|بانك|بانک|کارت/i.test(raw);
+        if (bankish && amount >= 1000) {
+          amount = Math.round(amount / 10);
+        }
       }
       return amount;
     }
@@ -17644,9 +17651,12 @@ function openPdfPrintWindow(){
       if (!t) return null;
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(t)) return null;
       const dt = extractDateFromSms(t);
+      // amount اینجا canonical تومان است (تبدیل فقط یک‌بار داخل extractAmountFromSms)
+      const amtToman = extractAmountFromSms(t);
       return {
         type: detectTxnTypeFromSms(t),
-        amount: extractAmountFromSms(t),
+        amount: amtToman,
+        rawSmsAmount: amtToman,
         bank: detectBankFromSms(t),
         day: dt && dt.d ? String(dt.d) : '',
         month: dt && dt.m ? dt.m : null,
@@ -18097,23 +18107,31 @@ function openPdfPrintWindow(){
     function defaultFinancialContext() {
       return {
         classification: 'personal',
+        accountType: 'personal',
         ownerId: '',
         ownerName: '',
         subjectId: 'personal',
         subjectName: 'شخصی',
-        fundingSource: 'personal'
+        fundingSource: 'personal',
+        projectAmount: 0,
+        personalAdvanceAmount: 0
       };
     }
     function rowFinancialContext(r) {
       if (r && r.financialContext && typeof r.financialContext === 'object') {
         var fc = r.financialContext;
+        var acct = fc.accountType === 'project' || fc.classification === 'third_party' ? 'project' : 'personal';
+        if (fc.subjectId && fc.subjectId !== 'personal' && fc.classification === 'third_party') acct = 'project';
         return {
           classification: fc.classification === 'third_party' ? 'third_party' : 'personal',
+          accountType: acct,
           ownerId: fc.ownerId || '',
           ownerName: fc.ownerName || '',
           subjectId: fc.subjectId || 'personal',
           subjectName: fc.subjectName || 'شخصی',
-          fundingSource: fc.fundingSource === 'subject' ? 'subject' : 'personal'
+          fundingSource: fc.fundingSource === 'subject' ? 'subject' : (fc.fundingSource === 'mixed' ? 'mixed' : 'personal'),
+          projectAmount: Number(fc.projectAmount) || 0,
+          personalAdvanceAmount: Number(fc.personalAdvanceAmount) || 0
         };
       }
       return defaultFinancialContext();
@@ -18176,10 +18194,16 @@ function openPdfPrintWindow(){
     function computeSubjectReport(subjectId) {
       subjectId = (subjectId || '').trim();
       if (!subjectId || subjectId === 'personal') {
-        return { received: 0, spentSubject: 0, spentPersonal: 0, balance: 0, receivable: 0, totalCost: 0, rows: [] };
+        return { received: 0, spentSubject: 0, spentPersonal: 0, balance: 0, receivable: 0, totalCost: 0, rows: [], byBank: {} };
       }
       var received = 0, spentSubject = 0, spentPersonal = 0;
       var rows = [];
+      var byBank = {};
+      function touchBank(name) {
+        var k = (name || '—').trim() || '—';
+        if (!byBank[k]) byBank[k] = { in: 0, out: 0 };
+        return byBank[k];
+      }
       iterAllPeriodData(function(pd, key) {
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
@@ -18187,18 +18211,33 @@ function openPdfPrintWindow(){
               if (!r || (r.status || 'paid') !== 'paid') return;
               var fc = rowFinancialContext(r);
               if (fc.subjectId !== subjectId) return;
+              if (fc.classification !== 'third_party' && fc.accountType !== 'project') return;
+              // amount همیشه تومان canonical — هیچ تبدیل مجددی
               var amt = Number(r.amount) || 0;
-              if (tab === 'income' && fc.classification === 'third_party') {
+              var bank = (r.account || '').trim() || '—';
+              var day = r.day || '';
+              if (tab === 'income') {
                 received += amt;
-                rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key });
-              } else if (tab === 'expense' && fc.classification === 'third_party') {
-                if (fc.fundingSource === 'subject') {
-                  spentSubject += amt;
-                  rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, fund: 'subject' });
-                } else {
-                  spentPersonal += amt;
-                  rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, fund: 'personal' });
+                touchBank(bank).in += amt;
+                rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, bank: bank, day: day, fund: 'subject' });
+              } else if (tab === 'expense') {
+                var pAmt = Number(fc.projectAmount) || 0;
+                var aAmt = Number(fc.personalAdvanceAmount) || 0;
+                // سازگاری با داده‌های قدیمی بدون allocation
+                if (!pAmt && !aAmt) {
+                  if (fc.fundingSource === 'subject') pAmt = amt;
+                  else aAmt = amt;
                 }
+                // جلوگیری از جمع > مبلغ تراکنش
+                if (pAmt + aAmt > amt && amt > 0) {
+                  var scale = amt / (pAmt + aAmt);
+                  pAmt = Math.round(pAmt * scale);
+                  aAmt = amt - pAmt;
+                }
+                spentSubject += pAmt;
+                spentPersonal += aAmt;
+                touchBank(bank).out += amt;
+                rows.push({ tab: tab, amt: amt, projectAmount: pAmt, personalAdvanceAmount: aAmt, desc: r.desc || '', key: key, bank: bank, day: day, fund: fc.fundingSource });
               }
             });
           });
@@ -18211,7 +18250,8 @@ function openPdfPrintWindow(){
         balance: received - spentSubject,
         receivable: spentPersonal,
         totalCost: spentSubject + spentPersonal,
-        rows: rows
+        rows: rows,
+        byBank: byBank
       };
     }
     function openProjectReportModal(subjectId) {
@@ -18222,23 +18262,55 @@ function openPdfPrintWindow(){
       }
       var rep = computeSubjectReport(sub.id);
       var title = document.getElementById('projectReportTitle');
-      if (title) title.textContent = 'گزارش: ' + sub.name;
+      if (title) title.textContent = 'پروژه ' + sub.name;
       var body = document.getElementById('projectReportBody');
       if (body) {
         function row(label, val, color) {
           return '<div class="proj-report-row"><span>' + label + '</span><span class="val" style="' + (color ? 'color:'+color : '') + '">' + formatNum(val) + '</span></div>';
         }
+        var bankHtml = '';
+        var banks = Object.keys(rep.byBank || {});
+        if (banks.length) {
+          bankHtml = '<div class="proj-report-section">به تفکیک بانک</div>';
+          banks.forEach(function(b) {
+            var bb = rep.byBank[b];
+            var net = (bb.in || 0) - (bb.out || 0);
+            bankHtml += row(b + ' (ورود)', bb.in || 0);
+            bankHtml += row(b + ' (خروج)', bb.out || 0);
+            bankHtml += row(b + ' (خالص)', net, net >= 0 ? '#16a34a' : '#dc2626');
+          });
+        }
+        var inRows = (rep.rows || []).filter(function(x){ return x.tab === 'income'; });
+        var outRows = (rep.rows || []).filter(function(x){ return x.tab === 'expense'; });
+        function txTable(list, isOut) {
+          if (!list.length) return '<div style="font-size:0.8rem;opacity:0.7;padding:6px 4px;">موردی نیست</div>';
+          var h = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+          h += '<tr style="background:var(--bg3);"><th style="padding:6px;text-align:right;">تاریخ</th><th style="padding:6px;text-align:right;">بانک</th><th style="padding:6px;text-align:right;">شرح</th><th style="padding:6px;text-align:left;">مبلغ</th></tr>';
+          list.forEach(function(r) {
+            var d = (r.key || '') + (r.day ? '/' + r.day : '');
+            h += '<tr style="border-bottom:1px solid var(--border);">' +
+              '<td style="padding:6px;">' + toPersianDigits(d) + '</td>' +
+              '<td style="padding:6px;">' + (r.bank || '—') + '</td>' +
+              '<td style="padding:6px;">' + (r.desc || '—') + '</td>' +
+              '<td style="padding:6px;text-align:left;color:' + (isOut ? '#dc2626' : '#16a34a') + ';">' + formatNum(r.amt) + '</td></tr>';
+          });
+          h += '</table></div>';
+          return h;
+        }
         body.innerHTML =
           '<div class="proj-report-section">خلاصه مالی</div>' +
-          row('دریافتی برای پروژه', rep.received) +
-          row('هزینه‌های پروژه', rep.totalCost) +
-          row('مانده پول پروژه', rep.balance, rep.balance >= 0 ? '#16a34a' : '#dc2626') +
-          '<div class="proj-report-section">منبع پرداخت</div>' +
-          row('پرداخت‌شده از پول پروژه', rep.spentSubject) +
-          row('پرداخت‌شده از پول شخصی من', rep.spentPersonal) +
-          row('طلب من از این موضوع', rep.receivable, rep.receivable > 0 ? '#f59e0b' : '') +
-          '<div class="proj-report-section">توضیح</div>' +
-          '<div style="font-size:0.78rem;opacity:0.75;line-height:1.5;padding:4px;">موجودی واقعی کارت جدا از مانده پروژه محاسبه می‌شود. پول پروژه درآمد شخصی محسوب نمی‌شود.</div>';
+          row('موجودی پروژه', rep.balance, rep.balance >= 0 ? '#16a34a' : '#dc2626') +
+          row('بدهی به کاربر', rep.receivable, rep.receivable > 0 ? '#f59e0b' : '') +
+          row('جمع ورودی', rep.received) +
+          row('جمع مخارج', rep.totalCost) +
+          row('پرداخت از موجودی پروژه', rep.spentSubject) +
+          row('پرداخت شخصی کاربر', rep.spentPersonal) +
+          bankHtml +
+          '<div class="proj-report-section">ورودی‌ها</div>' +
+          txTable(inRows, false) +
+          '<div class="proj-report-section">مخارج</div>' +
+          txTable(outRows, true) +
+          '<div style="font-size:0.75rem;opacity:0.7;line-height:1.5;padding:8px 4px;">مبالغ به تومان است. موجودی واقعی کارت جدا محاسبه می‌شود و دوبار شمرده نمی‌شود.</div>';
       }
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'flex';
@@ -18354,82 +18426,57 @@ function openPdfPrintWindow(){
           });
         }
 
-        if (pro) {
-          var toggle = document.createElement('button');
-          toggle.type = 'button';
-          toggle.id = 'smsProDetailsToggle';
-          toggle.className = 'pro-details-toggle';
-          toggle.innerHTML = '<span>جزئیات حرفه‌ای</span><span class="pro-chev">▾</span>';
-          meta.appendChild(toggle);
-
+        /* حساب: شخصی | پروژه — همیشه زیر بخش مقصد (بدون «جزئیات حرفه‌ای») */
+        {
           var block = document.createElement('div');
           block.id = 'smsProBlock';
-          block.className = 'sms-pro-block pro-details-body';
-          if (curType === 'income') {
-            block.innerHTML =
-              '<label class="family-label">نوع واریز</label>' +
-              '<div class="sms-chip-row" id="smsIncomeClassRow">' +
-              '<button type="button" class="sms-chip active" data-val="personal">درآمد شخصی من</button>' +
-              '<button type="button" class="sms-chip" data-val="third_party">پول متعلق به شخص/پروژه دیگر</button>' +
-              '</div>' +
-              '<div id="smsThirdPartyFields" style="display:none;">' +
-              '<label class="family-label">متعلق به (نام شخص/مالک)</label>' +
-              '<input id="smsOwnerName" class="family-input" placeholder="مثلاً سهراب" dir="rtl">' +
-              '<label class="family-label">حساب / موضوع</label>' +
-              '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;"></select>' +
-              '</div>';
-          } else {
-            block.innerHTML =
-              '<label class="family-label">حساب / موضوع</label>' +
-              '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:6px;"></select>' +
-              '<div id="smsFundingWrap" style="display:none;">' +
-              '<label class="family-label">پرداخت از</label>' +
-              '<div class="sms-chip-row" id="smsFundingRow">' +
-              '<button type="button" class="sms-chip active" data-val="personal">پول شخصی من</button>' +
-              '<button type="button" class="sms-chip" data-val="subject">پول پروژه</button>' +
-              '</div></div>';
-          }
+          block.className = 'sms-pro-block';
+          block.style.display = 'block';
+          block.innerHTML =
+            '<label class="family-label">حساب</label>' +
+            '<select id="smsAccountTypeSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:8px;">' +
+            '<option value="personal">شخصی</option>' +
+            '<option value="project">پروژه</option>' +
+            '</select>' +
+            '<div id="smsProjectPickWrap" style="display:none;">' +
+            '<label class="family-label">پروژه</label>' +
+            '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;"></select>' +
+            '</div>';
           meta.appendChild(block);
-          toggle.onclick = function() {
-            var open = block.classList.toggle('open');
-            var ch = toggle.querySelector('.pro-chev');
-            if (ch) ch.textContent = open ? '▴' : '▾';
-          };
 
+          var acctSel = document.getElementById('smsAccountTypeSel');
+          var projWrap = document.getElementById('smsProjectPickWrap');
           var sel = document.getElementById('smsSubjectSel');
           if (sel) {
-            sel.innerHTML = '<option value="personal">شخصی</option>';
-            loadFinancialSubjects().forEach(function(s) {
-              var o = document.createElement('option');
-              o.value = s.id;
-              o.textContent = s.name;
-              sel.appendChild(o);
+            sel.innerHTML = '';
+            var subjects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
+              return s && s.id && s.id !== 'personal';
             });
-            sel.onchange = function() {
-              var fw = document.getElementById('smsFundingWrap');
-              if (fw) fw.style.display = (sel.value && sel.value !== 'personal') ? 'block' : 'none';
-            };
-            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(sel); } catch (eFs2) {}
+            if (!subjects.length) {
+              var o0 = document.createElement('option');
+              o0.value = '';
+              o0.textContent = 'پروژه‌ای تعریف نشده';
+              sel.appendChild(o0);
+            } else {
+              subjects.forEach(function(s) {
+                var o = document.createElement('option');
+                o.value = s.id;
+                o.textContent = s.name;
+                sel.appendChild(o);
+              });
+            }
           }
-          var row = document.getElementById('smsIncomeClassRow');
-          if (row) {
-            row.querySelectorAll('.sms-chip').forEach(function(ch) {
-              ch.onclick = function() {
-                row.querySelectorAll('.sms-chip').forEach(function(x){ x.classList.remove('active'); });
-                ch.classList.add('active');
-                var tp = document.getElementById('smsThirdPartyFields');
-                if (tp) tp.style.display = ch.getAttribute('data-val') === 'third_party' ? 'block' : 'none';
-              };
-            });
+          function syncAcctUI() {
+            var isProj = acctSel && acctSel.value === 'project';
+            if (projWrap) projWrap.style.display = isProj ? 'block' : 'none';
           }
-          var fund = document.getElementById('smsFundingRow');
-          if (fund) {
-            fund.querySelectorAll('.sms-chip').forEach(function(ch) {
-              ch.onclick = function() {
-                fund.querySelectorAll('.sms-chip').forEach(function(x){ x.classList.remove('active'); });
-                ch.classList.add('active');
-              };
-            });
+          if (acctSel) {
+            acctSel.onchange = syncAcctUI;
+            syncAcctUI();
+            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(acctSel); } catch (eA) {}
+          }
+          if (sel) {
+            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(sel); } catch (eS) {}
           }
         }
 
@@ -18445,34 +18492,57 @@ function openPdfPrintWindow(){
     
     function readSmsFinancialContext(type) {
       var fc = defaultFinancialContext();
-      if (!isProfessionalMode()) return fc;
-      if (type === 'income') {
+      var acctEl = document.getElementById('smsAccountTypeSel');
+      var acct = (acctEl && acctEl.value === 'project') ? 'project' : 'personal';
+      // سازگاری با UI قبلی (chips)
+      if (!acctEl) {
         var active = document.querySelector('#smsIncomeClassRow .sms-chip.active');
-        var cls = active ? active.getAttribute('data-val') : 'personal';
-        if (cls === 'third_party') {
-          fc.classification = 'third_party';
-          var own = document.getElementById('smsOwnerName');
-          fc.ownerName = (own && own.value || '').trim();
-          var sel = document.getElementById('smsSubjectSel');
-          var sid = sel ? sel.value : 'personal';
-          var sub = getSubjectById(sid);
-          fc.subjectId = sid || 'personal';
-          fc.subjectName = sub ? sub.name : 'شخصی';
-          fc.fundingSource = 'subject';
-        }
+        if (active && active.getAttribute('data-val') === 'third_party') acct = 'project';
+        var selLegacy = document.getElementById('smsSubjectSel');
+        if (selLegacy && selLegacy.value && selLegacy.value !== 'personal') acct = 'project';
+      }
+      fc.accountType = acct;
+      if (acct !== 'project') return fc;
+      var sel = document.getElementById('smsSubjectSel');
+      var sid = sel ? (sel.value || '') : '';
+      if (!sid || sid === 'personal') {
+        // پروژه انتخاب نشده — شخصی بماند
+        fc.accountType = 'personal';
+        return fc;
+      }
+      var sub = getSubjectById(sid);
+      fc.classification = 'third_party';
+      fc.subjectId = sid;
+      fc.subjectName = sub ? sub.name : '';
+      fc.ownerName = fc.subjectName;
+      if (type === 'income') {
+        fc.fundingSource = 'subject';
+        fc.projectAmount = 0;
+        fc.personalAdvanceAmount = 0;
       } else {
-        var sel2 = document.getElementById('smsSubjectSel');
-        var sid2 = sel2 ? sel2.value : 'personal';
-        var sub2 = getSubjectById(sid2);
-        fc.subjectId = sid2 || 'personal';
-        fc.subjectName = sub2 ? sub2.name : 'شخصی';
-        if (sid2 && sid2 !== 'personal') {
-          fc.classification = 'third_party';
-          var fundAct = document.querySelector('#smsFundingRow .sms-chip.active');
-          fc.fundingSource = fundAct && fundAct.getAttribute('data-val') === 'subject' ? 'subject' : 'personal';
-        }
+        // تخصیص خودکار در confirmSmsEntry بعد از دانستن مبلغ انجام می‌شود
+        fc.fundingSource = 'subject';
       }
       return fc;
+    }
+
+    /** موجودی فعلی پروژه = دریافتی‌های پروژه − هزینه‌های پرداخت‌شده از موجودی پروژه */
+    function getProjectBalance(subjectId) {
+      var rep = computeSubjectReport(subjectId);
+      return Number(rep && rep.balance) || 0;
+    }
+
+    /** تخصیص خودکار مخارج پروژه نسبت به موجودی */
+    function allocateProjectExpense(subjectId, amount) {
+      amount = Math.max(0, Number(amount) || 0);
+      var bal = Math.max(0, getProjectBalance(subjectId));
+      var fromProject = Math.min(bal, amount);
+      var fromPersonal = amount - fromProject;
+      return {
+        projectAmount: fromProject,
+        personalAdvanceAmount: fromPersonal,
+        fundingSource: fromPersonal > 0 && fromProject > 0 ? 'mixed' : (fromProject > 0 ? 'subject' : 'personal')
+      };
     }
 
 
@@ -19369,9 +19439,18 @@ function confirmSmsEntry() {
         row.account = bank;
         try {
           row.financialContext = readSmsFinancialContext(tab);
-          if (row.financialContext && row.financialContext.classification === 'third_party' &&
-              row.financialContext.fundingSource === 'personal' && tab === 'expense') {
-            row.createsReceivable = true;
+          // تخصیص خودکار مخارج پروژه — amount همین تومان canonical است
+          if (tab === 'expense' && row.financialContext && row.financialContext.accountType === 'project' &&
+              row.financialContext.subjectId && row.financialContext.subjectId !== 'personal') {
+            var alloc = allocateProjectExpense(row.financialContext.subjectId, amount);
+            row.financialContext.projectAmount = alloc.projectAmount;
+            row.financialContext.personalAdvanceAmount = alloc.personalAdvanceAmount;
+            row.financialContext.fundingSource = alloc.fundingSource;
+            if (alloc.personalAdvanceAmount > 0) row.createsReceivable = true;
+          } else if (tab === 'income' && row.financialContext && row.financialContext.accountType === 'project') {
+            row.financialContext.projectAmount = amount;
+            row.financialContext.personalAdvanceAmount = 0;
+            row.financialContext.fundingSource = 'subject';
           }
         } catch (eFc) { row.financialContext = defaultFinancialContext(); }
         const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
@@ -19405,7 +19484,20 @@ function confirmSmsEntry() {
         safety.amount = amount;
         safety.status = 'paid';
         safety.account = bank || '';
-        try { safety.financialContext = readSmsFinancialContext(tab); } catch (eSf) {}
+        try {
+          safety.financialContext = readSmsFinancialContext(tab);
+          if (tab === 'expense' && safety.financialContext && safety.financialContext.accountType === 'project' &&
+              safety.financialContext.subjectId && safety.financialContext.subjectId !== 'personal') {
+            var allocS = allocateProjectExpense(safety.financialContext.subjectId, amount);
+            safety.financialContext.projectAmount = allocS.projectAmount;
+            safety.financialContext.personalAdvanceAmount = allocS.personalAdvanceAmount;
+            safety.financialContext.fundingSource = allocS.fundingSource;
+          } else if (tab === 'income' && safety.financialContext && safety.financialContext.accountType === 'project') {
+            safety.financialContext.projectAmount = amount;
+            safety.financialContext.personalAdvanceAmount = 0;
+            safety.financialContext.fundingSource = 'subject';
+          }
+        } catch (eSf) {}
         var emptyIdxS = sec.rows.findIndex(function(r) {
           return r && !r.desc && !r.amount && !r.day && !r.fromPlanId;
         });
