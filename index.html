@@ -623,6 +623,13 @@
       border-radius: 12px;
       padding: 8px 10px 10px;
       background: var(--bg2, var(--input-bg));
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .proj-summary .proj-report-row {
+      flex-direction: row;
+      justify-content: space-between;
     }
     .proj-summary .proj-report-row {
       color: var(--text);
@@ -700,59 +707,93 @@
     .project-card-status.debt { color: var(--red-tx); }
 
     
-    /* هایلایت ماژیک — نسخه سازگار با جدول */
-    tr.project-row-hl {
-      position: relative;
-    }
+    
+    /* هایلایت ماژیکی واقعی — لبه نامنظم، پوشش ناقص ابتدا/انتها */
     tr.project-row-hl > td {
-      position: relative;
-      background: transparent !important;
-      z-index: 1;
+      position: relative !important;
+      isolation: isolate;
+      background-color: transparent !important;
+      background-image: none !important;
+      z-index: 0;
     }
     tr.project-row-hl > td::before {
       content: '';
       position: absolute;
-      top: 20%;
-      bottom: 20%;
+      top: 16%;
+      bottom: 16%;
       left: 0;
       right: 0;
-      background: var(--proj-row-bg, rgba(180, 100, 255, 0.2));
+      background: var(--proj-row-bg, rgba(180, 100, 255, 0.28));
       z-index: -1;
       pointer-events: none;
-    }
-    /* لبه راست ردیف (شروع ماژیک در RTL) — گرد و نامنظم */
-    tr.project-row-hl > td:first-child::before {
-      right: 8%;
-      border-radius: 0 12px 14px 0 / 0 40% 45% 0;
-      transform: skewY(-0.4deg);
-    }
-    /* لبه چپ ردیف (پایان ماژیک) */
-    tr.project-row-hl > td:last-child::before {
-      left: 10%;
-      border-radius: 14px 0 0 12px / 45% 0 0 40%;
-      transform: skewY(0.35deg);
-    }
-    /* سلول‌های میانی — پوشش کامل با کمی موج */
-    tr.project-row-hl > td:not(:first-child):not(:last-child)::before {
       border-radius: 3px;
-      transform: skewX(-0.3deg);
+      opacity: 1;
+    }
+    /* شروع ماژیک (سمت راست در RTL = first-child) */
+    tr.project-row-hl > td:first-child::before {
+      right: 9%;
+      left: 0;
+      border-radius: 3px 14px 16px 3px / 3px 55% 50% 3px;
+      transform: skewY(-0.5deg) rotate(-0.2deg);
+    }
+    /* پایان ماژیک (سمت چپ = last-child) */
+    tr.project-row-hl > td:last-child::before {
+      left: 11%;
+      right: 0;
+      border-radius: 15px 3px 3px 13px / 50% 3px 3px 55%;
+      transform: skewY(0.4deg) rotate(0.15deg);
+    }
+    tr.project-row-hl > td:not(:first-child):not(:last-child)::before {
+      border-radius: 2px;
+      transform: skewX(-0.35deg);
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
-    tr.project-row-hl > td .status-num {
+    tr.project-row-hl > td .status-num,
+    tr.project-row-hl > td select {
       background: transparent !important;
       position: relative;
       z-index: 1;
     }
 
-    .proj-table-caption {
-      padding: 8px 10px 4px;
+.proj-table-caption {
+      padding: 9px 12px;
       font-weight: 800;
       font-size: 0.82rem;
-      color: var(--text);
-      opacity: 0.9;
+      color: #e8f1f6;
+      background: #0b2c3d;
+      border-radius: 10px 10px 0 0;
     }
-    .proj-table-wrap { margin-top: 10px; }
+    .proj-table-wrap {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--bg2, var(--input-bg));
+    }
+    .proj-table-scroll {
+      max-height: 210px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proj-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .proj-table thead th {
+      position: sticky;
+      top: 0;
+      background: #0b2c3d;
+      color: #e8f1f6;
+      z-index: 2;
+      font-size: 0.78rem;
+      padding: 8px 6px;
+    }
+    .proj-table td {
+      padding: 7px 6px;
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
     .proj-td-amt {
       color: var(--text) !important;
     }
@@ -761,11 +802,55 @@
     }
 
     #subjectsModal .modal-box {
-      max-width: min(96vw, 420px);
-      width: 94vw;
+      max-width: min(88vw, 320px) !important;
+      width: 88vw !important;
     }
     #subjectsList {
       max-height: 50vh !important;
+    }
+    .project-card {
+      padding: 8px 10px 8px !important;
+      margin-bottom: 8px !important;
+      border-radius: 10px !important;
+    }
+    .project-card-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      direction: rtl;
+    }
+    .project-card-name {
+      flex: 1;
+      text-align: right !important;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+    .project-card-status {
+      text-align: right !important;
+      width: 100%;
+      margin-top: 4px;
+      font-size: 0.78rem !important;
+    }
+    .project-card-actions {
+      order: -1;
+    }
+    #subjectsList.project-editing {
+      position: relative;
+    }
+    #subjectsList.project-editing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 5;
+      border-radius: 8px;
+      pointer-events: auto;
+    }
+    #subjectsList .project-card.project-card-editing {
+      position: relative;
+      z-index: 6;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      border-color: rgba(255,255,255,0.18);
     }
 
     .proj-status-credit { color: var(--green-tx); }
@@ -8208,7 +8293,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v135-PENTA | report-captions marker-hl edit-fix */
+    /* build-stamp: 2026-09-27-v136-PENTA | project-ui marker live-refresh */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17567,6 +17652,8 @@ function openPdfPrintWindow(){
       }
       checkInstallReminders();
       try { moveTabIndicator(); } catch (e) {}
+    
+      try { if (typeof refreshOpenProjectViews === 'function') refreshOpenProjectViews(null, { report: false }); } catch (eRV) {}
     }
 
     /* —— حساب‌های بانکی —— */
@@ -18256,10 +18343,10 @@ function openPdfPrintWindow(){
       if (btn) btn.style.display = '';
     }
     var PROJECT_HIGHLIGHT_PALETTE = [
-      { id: 'lime', accent: '#b8ff3c', bg: 'rgba(184, 255, 60, 0.16)' },
-      { id: 'purple', accent: '#b464ff', bg: 'rgba(180, 100, 255, 0.18)' },
-      { id: 'orange', accent: '#ff9a2e', bg: 'rgba(255, 154, 46, 0.16)' },
-      { id: 'blue', accent: '#3ca0ff', bg: 'rgba(60, 160, 255, 0.18)' }
+      { id: 'lime', accent: '#b8ff3c', bg: 'rgba(184, 255, 60, 0.30)' },
+      { id: 'purple', accent: '#b464ff', bg: 'rgba(180, 100, 255, 0.32)' },
+      { id: 'orange', accent: '#ff9a2e', bg: 'rgba(255, 154, 46, 0.30)' },
+      { id: 'blue', accent: '#3ca0ff', bg: 'rgba(60, 160, 255, 0.32)' }
     ];
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
@@ -18436,12 +18523,16 @@ function openPdfPrintWindow(){
       var acts = card.querySelector('.project-card-actions') || card.querySelector('.sub-acts') || card.querySelector('.person-card-actions');
       var statusEl = card.querySelector('.project-card-status');
 
+      /* مات کردن اطراف */
+      box.classList.add('project-editing');
+      card.classList.add('project-card-editing');
+
       var inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'family-input subject-rename-input';
       inp.value = s.name;
       inp.dir = 'rtl';
-      inp.style.cssText = 'flex:1;min-width:0;margin:0 6px;';
+      inp.style.cssText = 'flex:1;min-width:0;margin:0 6px;text-align:right;';
       if (nameEl) nameEl.style.display = 'none';
       if (acts) acts.style.display = 'none';
       if (statusEl) statusEl.style.display = 'none';
@@ -18457,11 +18548,18 @@ function openPdfPrintWindow(){
       cancelBtn.textContent = 'انصراف';
       cancelBtn.style.padding = '6px 10px';
 
+      function clearDim() {
+        try {
+          box.classList.remove('project-editing');
+          card.classList.remove('project-card-editing');
+        } catch (e) {}
+      }
       function finish() {
         try { inp.remove(); saveBtn.remove(); cancelBtn.remove(); } catch (e) {}
         if (nameEl) nameEl.style.display = '';
         if (acts) acts.style.display = '';
         if (statusEl) statusEl.style.display = '';
+        clearDim();
       }
       saveBtn.onclick = function(e) {
         e.preventDefault();
@@ -18476,6 +18574,7 @@ function openPdfPrintWindow(){
         list.forEach(function(x){ if (x.id === id) x.name = n; });
         _financialSubjects = list;
         saveFinancialSubjects();
+        clearDim();
         renderSubjectsList();
         showToast('نام پروژه به‌روز شد');
       };
@@ -18489,6 +18588,16 @@ function openPdfPrintWindow(){
         if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
         if (e.key === 'Escape') { e.preventDefault(); finish(); }
       };
+      /* کلیک روی مات = انصراف */
+      box.addEventListener('click', function onDimClick(ev) {
+        if (ev.target === box || (ev.target.classList && ev.target.classList.contains('project-editing'))) {
+          /* ignore */
+        }
+        if (!card.contains(ev.target) && box.classList.contains('project-editing')) {
+          finish();
+          box.removeEventListener('click', onDimClick, true);
+        }
+      }, true);
 
       var top = card.querySelector('.project-card-top') || card;
       top.appendChild(inp);
@@ -18658,6 +18767,28 @@ function openPdfPrintWindow(){
         rows: rows
       };
     }
+    function refreshOpenProjectViews(preferSubjectId, opts) {
+      opts = opts || {};
+      try {
+        var sm = document.getElementById('subjectsModal');
+        if (sm && sm.style.display === 'flex') {
+          renderSubjectsList();
+        }
+      } catch (e1) {}
+      /* گزارش را فقط وقتی صریحاً خواسته شده رفرش کن (ثبت تراکنش) تا اسکرول نپرد */
+      if (opts.report !== false) {
+        try {
+          var prm = document.getElementById('projectReportModal');
+          if (prm && prm.style.display === 'flex') {
+            var sid = preferSubjectId || prm.dataset.subjectId || '';
+            if (sid && typeof openProjectReportModal === 'function') {
+              openProjectReportModal(sid);
+            }
+          }
+        } catch (e2) {}
+      }
+    }
+
     function openProjectReportModal(subjectId) {
       var sub = getSubjectById(subjectId);
       if (!sub || sub.id === 'personal') {
@@ -18702,6 +18833,7 @@ function openPdfPrintWindow(){
         function txTable(list, caption) {
           var h = '<div class="proj-table-wrap">';
           h += '<div class="proj-table-caption">' + escapeHtml(caption) + '</div>';
+          h += '<div class="proj-table-scroll">';
           h += '<table class="proj-table"><thead><tr>' +
             '<th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>بانک</th>' +
             '</tr></thead><tbody>';
@@ -18715,7 +18847,7 @@ function openPdfPrintWindow(){
               '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
               '</tr>';
           });
-          h += '</tbody></table></div>';
+          h += '</tbody></table></div></div>';
           return h;
         }
 
@@ -18743,7 +18875,10 @@ function openPdfPrintWindow(){
         } catch (eTap) {}
       }
       var m = document.getElementById('projectReportModal');
-      if (m) m.style.display = 'flex';
+      if (m) {
+        m.dataset.subjectId = sub.id;
+        m.style.display = 'flex';
+      }
     }
     function closeProjectReportModal(opts) {
       opts = opts || {};
@@ -19980,6 +20115,25 @@ function confirmSmsEntry() {
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } catch (e) {}
+      try {
+        var sidRefresh = '';
+        try {
+          var fcR = (typeof readSmsFinancialContext === 'function') ? null : null;
+        } catch (e0) {}
+        /* از ردیف ثبت‌شده subjectId را بردار */
+        try {
+          var lastRows = (sec && sec.rows) ? sec.rows : [];
+          for (var ri = lastRows.length - 1; ri >= 0; ri--) {
+            var rr = lastRows[ri];
+            var fcr = rr && rr.financialContext;
+            if (fcr && fcr.subjectId && fcr.subjectId !== 'personal') {
+              sidRefresh = fcr.subjectId;
+              break;
+            }
+          }
+        } catch (eS) {}
+        if (typeof refreshOpenProjectViews === 'function') refreshOpenProjectViews(sidRefresh, { report: true });
+      } catch (eRef) {}
       } catch (eConfirm) {
         try { console.error('confirmSmsEntry', eConfirm); } catch (e0) {}
         try { showToast('خطا در ثبت: ' + (eConfirm && eConfirm.message ? eConfirm.message : 'نامشخص')); } catch (e1) {}
