@@ -711,70 +711,37 @@
     
     
     
-    /* هایلایت ماژیک — همرنگ نوار پروژه، قبل از ستون حذف قطع می‌شود */
-    tr.project-row-hl {
-      position: relative !important;
+    
+    /*
+      هایلایت پروژه — فقط background-color روی td
+      هیچ position/z-index/transform روی tr/td نگذار:
+      در غیر این صورت border-collapse جدول به‌هم می‌ریزد و خطوط عمودی جابه‌جا می‌شوند.
+    */
+    tr.project-row-hl > td:not(:last-child) {
+      background-color: var(--proj-row-bg, rgba(208, 0, 255, 0.28)) !important;
+      background-image: none !important;
     }
-    tr.project-row-hl > td {
-      position: relative !important;
+    /* ستون حذف هایلایت نشود */
+    tr.project-row-hl > td:last-child {
       background-color: transparent !important;
       background-image: none !important;
-      z-index: 1;
     }
-    tr.project-row-hl::after {
-      content: '';
-      position: absolute;
-      /* ستون حذف ~2.6em سمت چپ — هایلایت داخلش نرود */
-      left: 2.75em;
-      right: 1.5%;
-      top: 4%;
-      bottom: 4%;
-      background-color: var(--proj-accent, #d000ff);
-      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
-      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
-      -webkit-mask-size: 100% 100%;
-      mask-size: 100% 100%;
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
-      -webkit-mask-mode: alpha;
-      mask-mode: alpha;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.30;
-      transform: rotate(-0.2deg);
-      filter: none;
-    }
-    
-    tr.project-row-hl > td:last-child {
-      z-index: 3;
-      background: transparent !important;
-    }
-    tr.project-row-hl > td:last-child::before,
-    tr.project-row-hl > td:last-child::after {
-      display: none !important;
-      content: none !important;
-    }
-
-    tr.project-row-hl > td .cell,
-    tr.project-row-hl > td input,
-    tr.project-row-hl > td textarea,
-    tr.project-row-hl > td .status-num,
-    tr.project-row-hl > td select,
-    tr.project-row-hl > td span,
-    tr.project-row-hl > td button,
-    tr.project-row-hl > td .pd-num,
-    tr.project-row-hl > td .pd-desc,
-    tr.project-row-hl > td .pd-amount,
-    tr.project-row-hl > td .pd-account,
-    tr.project-row-hl > td .pd-del {
-      position: relative;
-      z-index: 2;
-      background: transparent !important;
-    }
-    .person-detail-page tr.project-row-hl > td,
-    .pd-table tr.project-row-hl > td,
-    table.pd-table tr.project-row-hl > td {
+    /* اینپوت/متن روی همان بکگراند شفاف بمانند تا رنگ سلول دیده شود */
+    tr.project-row-hl > td:not(:last-child) input,
+    tr.project-row-hl > td:not(:last-child) textarea,
+    tr.project-row-hl > td:not(:last-child) select,
+    tr.project-row-hl > td:not(:last-child) .cell,
+    tr.project-row-hl > td:not(:last-child) .pd-cell,
+    tr.project-row-hl > td:not(:last-child) .pd-num,
+    tr.project-row-hl > td:not(:last-child) .pd-desc,
+    tr.project-row-hl > td:not(:last-child) .pd-amount,
+    tr.project-row-hl > td:not(:last-child) .status-num {
       background-color: transparent !important;
+      background-image: none !important;
+    }
+    /* خط‌کشی جدول دست‌نخورده — صریحاً همان بوردر همیشگی */
+    tr.project-row-hl > td {
+      border-color: #3a3a3e !important;
     }
 
     .proj-table-caption {
@@ -8494,7 +8461,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v142-PENTA | col-align marker-opacity palette-order */
+    /* build-stamp: 2026-09-27-v143-PENTA | highlight-no-position border-safe */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17688,8 +17655,9 @@ function openPdfPrintWindow(){
             var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
             var metaH = (typeof getProjectHighlightMeta === 'function') ? getProjectHighlightMeta(colorId) : { bg: 'rgba(180,100,255,0.3)' };
             tr.classList.add('project-row-hl');
-            tr.style.setProperty('--proj-accent', metaH.accent || '#ff4fa3');
-            tr.style.setProperty('--proj-row-bg', metaH.accent || '#ff4fa3');
+            var acc1 = metaH.accent || '#d000ff';
+            tr.style.setProperty('--proj-accent', acc1);
+            tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc1, 0.28) : acc1);
             tr.dataset.projectId = fcRow.subjectId;
           }
         } catch (eHlPd) {}
@@ -18589,6 +18557,16 @@ function openPdfPrintWindow(){
       { id: 'magenta', accent: '#ff00aa', bg: 'rgba(255, 0, 170, 0.35)', glow: 'rgba(255, 0, 170, 0.35)' },
       { id: 'gold', accent: '#ffd000', bg: 'rgba(255, 208, 0, 0.35)', glow: 'rgba(255, 208, 0, 0.35)' }
     ];
+    function accentToRgba(hex, alpha) {
+      var h = String(hex || '').replace('#', '').trim();
+      if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+      if (h.length !== 6) return 'rgba(208,0,255,' + (alpha != null ? alpha : 0.28) + ')';
+      var r = parseInt(h.slice(0, 2), 16);
+      var g = parseInt(h.slice(2, 4), 16);
+      var b = parseInt(h.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(208,0,255,' + (alpha != null ? alpha : 0.28) + ')';
+      return 'rgba(' + r + ',' + g + ',' + b + ',' + (alpha != null ? alpha : 0.28) + ')';
+    }
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
       for (var i = 0; i < PROJECT_HIGHLIGHT_PALETTE.length; i++) {
@@ -24843,8 +24821,9 @@ field('حساب بانکی', accSelRec);
           var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
           var metaH = getProjectHighlightMeta(colorId);
           tr.classList.add('project-row-hl');
-          tr.style.setProperty('--proj-accent', metaH.accent || '#ff4fa3');
-          tr.style.setProperty('--proj-row-bg', metaH.accent || '#ff4fa3');
+          var acc2 = metaH.accent || '#d000ff';
+          tr.style.setProperty('--proj-accent', acc2);
+          tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc2, 0.28) : acc2);
           tr.dataset.projectId = fcRow.subjectId;
         }
       } catch (eHl) {}
