@@ -709,7 +709,8 @@
     
     
     
-    /* هایلایت ماژیک واقعی: یک نوار پیوسته روی کل ردیف، لبه‌های نامنظم */
+    
+    /* هایلایت ماژیک — شبیه ضربه قلم واقعی، متن خوانا، خط‌کشی جدول حفظ */
     tr.project-row-hl {
       position: relative !important;
     }
@@ -718,63 +719,28 @@
       background-color: transparent !important;
       background-image: none !important;
       z-index: 1;
-      overflow: visible !important;
-      border-color: transparent !important; /* مرز سلول زیر ماژیک قطع نشود */
+      /* خط‌کشی جدول دست‌نخورده بماند */
     }
-    /* نوار اصلی — از روی مرز سلول‌ها رد می‌شود */
     tr.project-row-hl::after {
       content: '';
       position: absolute;
-      /* دو طرف ردیف کمی خالی می‌ماند */
-      left: 7%;
-      right: 7%;
-      top: 30%;
-      height: 40%;
-      background: var(--proj-row-bg, rgba(200, 90, 255, 0.42));
-      /* لبه‌های شبیه نوک ماژیک — نامتقارن و کمی موج‌دار */
-      border-radius: 48% 52% 45% 55% / 70% 35% 65% 40%;
-      transform: rotate(-0.55deg) skewX(-1.2deg);
+      left: 3%;
+      right: 3%;
+      top: 12%;
+      bottom: 12%;
+      background-color: var(--proj-row-bg, rgba(255, 90, 180, 0.45));
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,16 C14,8 28,10 42,12 C70,15 95,9 130,11 C170,13 210,8 250,12 C290,15 330,10 365,14 C378,15 390,13 396,18 L397,30 C390,36 378,34 365,33 C330,30 295,36 250,34 C210,32 170,37 130,35 C95,33 70,38 42,35 C28,34 14,36 5,28 Z'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,16 C14,8 28,10 42,12 C70,15 95,9 130,11 C170,13 210,8 250,12 C290,15 330,10 365,14 C378,15 390,13 396,18 L397,30 C390,36 378,34 365,33 C330,30 295,36 250,34 C210,32 170,37 130,35 C95,33 70,38 42,35 C28,34 14,36 5,28 Z'/%3E%3C/svg%3E");
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-mode: alpha;
+      mask-mode: alpha;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.92;
-      /* حس نئون ملایم */
-      box-shadow:
-        0 0 6px var(--proj-glow, rgba(200, 90, 255, 0.35)),
-        0 0 1px var(--proj-glow, rgba(200, 90, 255, 0.5)),
-        inset 0 1px 0 rgba(255,255,255,0.18);
-      filter: saturate(1.25);
-    }
-    /* رد قلم ابتدا (راست) */
-    tr.project-row-hl::before {
-      content: '';
-      position: absolute;
-      right: 5.5%;
-      top: 26%;
-      width: 10px;
-      height: 48%;
-      background: var(--proj-row-bg, rgba(200, 90, 255, 0.5));
-      border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
-      transform: rotate(8deg) skewY(-6deg);
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.75;
-      box-shadow: 0 0 4px var(--proj-glow, rgba(200, 90, 255, 0.4));
-    }
-    /* رد قلم انتها — روی last cell با یک لایه اضافی */
-    tr.project-row-hl > td:last-child::after {
-      content: '';
-      position: absolute;
-      left: -2px;
-      top: 28%;
-      width: 9px;
-      height: 44%;
-      background: var(--proj-row-bg, rgba(200, 90, 255, 0.48));
-      border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%;
-      transform: rotate(-11deg) skewY(5deg);
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.7;
-      box-shadow: 0 0 4px var(--proj-glow, rgba(200, 90, 255, 0.35));
+      opacity: 0.72;
+      transform: rotate(-0.3deg);
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
@@ -787,9 +753,9 @@
     tr.project-row-hl > td .pd-desc,
     tr.project-row-hl > td .pd-amount,
     tr.project-row-hl > td .pd-account {
-      background: transparent !important;
       position: relative;
       z-index: 2;
+      background: transparent !important;
     }
     .person-detail-page tr.project-row-hl > td,
     .pd-table tr.project-row-hl > td,
@@ -859,6 +825,18 @@
       margin-bottom: 7px !important;
       border-radius: 10px !important;
       min-height: 0 !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      direction: rtl !important;
+      gap: 8px !important;
+    }
+    .project-card-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .project-card-top {
       display: flex;
@@ -895,6 +873,52 @@
       margin-left: -6px !important;
       order: 0 !important;
     }
+    
+    /* ادیت پروژه — مات کامل صفحه مودال، فقط کارت ادیت واضح */
+    #subjectsModal.project-rename-active .modal-box {
+      position: relative;
+    }
+    #subjectsModal.project-rename-active .modal-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.62);
+      z-index: 20;
+      border-radius: inherit;
+      pointer-events: auto;
+    }
+    #subjectsModal.project-rename-active .project-card.project-card-editing {
+      position: relative;
+      z-index: 25;
+      background: var(--bg2, #252525) !important;
+      box-shadow: 0 10px 32px rgba(0,0,0,0.5);
+    }
+    #subjectsModal.project-rename-active .project-card.project-card-editing .project-card-actions {
+      display: none !important;
+    }
+    .project-card-editing .project-rename-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding: 4px 0;
+    }
+    .project-card-editing .project-rename-stack .subject-rename-input {
+      width: 100%;
+      text-align: right;
+      box-sizing: border-box;
+    }
+    .project-card-editing .project-rename-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+      direction: rtl;
+    }
+    .project-card-editing .project-rename-btns .modal-btn {
+      flex: 1;
+      padding: 8px 10px;
+    }
+
     #subjectsList.project-editing {
       position: relative;
     }
@@ -979,10 +1003,16 @@
     }
     .proj-empty { font-size: 0.8rem; opacity: 0.65; padding: 10px 6px; }
     #projectReportModal .modal-box {
-      max-width: min(96vw, 520px);
-      width: 96vw;
+      max-width: min(98vw, 640px);
+      width: 98vw;
       max-height: 90vh;
       overflow-y: auto;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    #projectReportModal .proj-table-wrap {
+      width: 100%;
+      max-width: 100%;
     }
     #projectReportModal .modal-box .proj-summary,
     #projectReportModal .modal-box .proj-table-wrap {
@@ -8354,7 +8384,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v138-PENTA | neon-marker continuous stroke */
+    /* build-stamp: 2026-09-27-v139-PENTA | brush-marker report-width rename-ui */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18418,10 +18448,15 @@ function openPdfPrintWindow(){
       if (btn) btn.style.display = '';
     }
     var PROJECT_HIGHLIGHT_PALETTE = [
-      { id: 'lime', accent: '#d4ff00', bg: 'rgba(200, 255, 40, 0.48)', glow: 'rgba(200, 255, 40, 0.55)' },
-      { id: 'purple', accent: '#e040ff', bg: 'rgba(210, 70, 255, 0.45)', glow: 'rgba(220, 80, 255, 0.55)' },
-      { id: 'orange', accent: '#ff9f1a', bg: 'rgba(255, 150, 20, 0.48)', glow: 'rgba(255, 160, 30, 0.55)' },
-      { id: 'blue', accent: '#1ad4ff', bg: 'rgba(30, 200, 255, 0.45)', glow: 'rgba(40, 210, 255, 0.55)' }
+      { id: 'pink', accent: '#ff4fa3', bg: 'rgba(255, 79, 163, 0.55)', glow: 'rgba(255, 79, 163, 0.4)' },
+      { id: 'orange', accent: '#ff8a2b', bg: 'rgba(255, 138, 43, 0.55)', glow: 'rgba(255, 138, 43, 0.4)' },
+      { id: 'yellow', accent: '#ffe14a', bg: 'rgba(255, 225, 74, 0.55)', glow: 'rgba(255, 225, 74, 0.4)' },
+      { id: 'green', accent: '#8fdc3a', bg: 'rgba(143, 220, 58, 0.55)', glow: 'rgba(143, 220, 58, 0.4)' },
+      { id: 'cyan', accent: '#3ecbff', bg: 'rgba(62, 203, 255, 0.55)', glow: 'rgba(62, 203, 255, 0.4)' },
+      /* سازگاری با پروژه‌های قدیمی */
+      { id: 'lime', accent: '#8fdc3a', bg: 'rgba(143, 220, 58, 0.55)', glow: 'rgba(143, 220, 58, 0.4)' },
+      { id: 'purple', accent: '#ff4fa3', bg: 'rgba(255, 79, 163, 0.55)', glow: 'rgba(255, 79, 163, 0.4)' },
+      { id: 'blue', accent: '#3ecbff', bg: 'rgba(62, 203, 255, 0.55)', glow: 'rgba(62, 203, 255, 0.4)' }
     ];
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
@@ -18516,13 +18551,27 @@ function openPdfPrintWindow(){
         card.style.setProperty('--proj-accent', meta.accent);
         card.style.setProperty('--proj-bg', meta.bg);
 
-        var top = document.createElement('div');
-        top.className = 'project-card-top';
+        var body = document.createElement('div');
+        body.className = 'project-card-body';
 
         var name = document.createElement('div');
         name.className = 'project-card-name';
         name.textContent = s.name;
-        top.appendChild(name);
+        body.appendChild(name);
+
+        var status = document.createElement('div');
+        status.className = 'project-card-status';
+        if (net > 0) {
+          status.classList.add('credit');
+          status.textContent = formatNum(net) + ' تومان طلب دارد';
+        } else if (net < 0) {
+          status.classList.add('debt');
+          status.textContent = formatNum(Math.abs(net)) + ' تومان بدهکار است';
+        } else {
+          status.textContent = 'تسویه';
+        }
+        body.appendChild(status);
+        card.appendChild(body);
 
         var actions = document.createElement('div');
         actions.className = 'person-card-actions project-card-actions';
@@ -18543,24 +18592,10 @@ function openPdfPrintWindow(){
 
         actions.appendChild(btnDel);
         actions.appendChild(btnEdit);
-        top.appendChild(actions);
-        card.appendChild(top);
-
-        var status = document.createElement('div');
-        status.className = 'project-card-status';
-        if (net > 0) {
-          status.classList.add('credit');
-          status.textContent = formatNum(net) + ' تومان طلب دارد';
-        } else if (net < 0) {
-          status.classList.add('debt');
-          status.textContent = formatNum(Math.abs(net)) + ' تومان بدهکار است';
-        } else {
-          status.textContent = 'تسویه';
-        }
-        card.appendChild(status);
+        card.appendChild(actions);
 
         card.onclick = function(e) {
-          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row') || e.target.closest('.subject-rename-input') || e.target.closest('.modal-btn'))) return;
+          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row') || e.target.closest('.subject-rename-input') || e.target.closest('.modal-btn') || e.target.closest('.project-rename-stack'))) return;
           openProjectReportModal(s.id);
         };
 
@@ -18588,52 +18623,60 @@ function openPdfPrintWindow(){
       var s = getSubjectById(id);
       if (!s || s.id === 'personal') return;
       var box = document.getElementById('subjectsList');
+      var modal = document.getElementById('subjectsModal');
       if (!box) return;
       var card = box.querySelector('.project-card[data-id="' + id + '"]') ||
                  box.querySelector('.subject-list-item[data-id="' + id + '"]');
       if (!card) return;
       if (card.querySelector('.subject-rename-input')) return;
 
-      var nameEl = card.querySelector('.project-card-name') || card.querySelector('span');
-      var acts = card.querySelector('.project-card-actions') || card.querySelector('.sub-acts') || card.querySelector('.person-card-actions');
+      var body = card.querySelector('.project-card-body') || card;
+      var nameEl = card.querySelector('.project-card-name');
+      var acts = card.querySelector('.project-card-actions');
       var statusEl = card.querySelector('.project-card-status');
 
-      /* مات کردن اطراف */
+      if (modal) modal.classList.add('project-rename-active');
       box.classList.add('project-editing');
       card.classList.add('project-card-editing');
+      if (acts) acts.style.display = 'none';
+      if (nameEl) nameEl.style.display = 'none';
+      if (statusEl) statusEl.style.display = 'none';
+
+      var stack = document.createElement('div');
+      stack.className = 'project-rename-stack';
 
       var inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'family-input subject-rename-input';
       inp.value = s.name;
       inp.dir = 'rtl';
-      inp.style.cssText = 'flex:1;min-width:0;margin:0 6px;text-align:right;';
-      if (nameEl) nameEl.style.display = 'none';
-      if (acts) acts.style.display = 'none';
-      if (statusEl) statusEl.style.display = 'none';
+      inp.setAttribute('placeholder', 'نام پروژه');
+
+      var btns = document.createElement('div');
+      btns.className = 'project-rename-btns';
 
       var saveBtn = document.createElement('button');
       saveBtn.type = 'button';
       saveBtn.className = 'modal-btn primary';
       saveBtn.textContent = 'ثبت';
-      saveBtn.style.padding = '6px 10px';
+
       var cancelBtn = document.createElement('button');
       cancelBtn.type = 'button';
       cancelBtn.className = 'modal-btn';
       cancelBtn.textContent = 'انصراف';
-      cancelBtn.style.padding = '6px 10px';
 
       function clearDim() {
         try {
+          if (modal) modal.classList.remove('project-rename-active');
           box.classList.remove('project-editing');
           card.classList.remove('project-card-editing');
         } catch (e) {}
       }
       function finish() {
-        try { inp.remove(); saveBtn.remove(); cancelBtn.remove(); } catch (e) {}
+        try { stack.remove(); } catch (e) {}
         if (nameEl) nameEl.style.display = '';
-        if (acts) acts.style.display = '';
         if (statusEl) statusEl.style.display = '';
+        if (acts) acts.style.display = '';
         clearDim();
       }
       saveBtn.onclick = function(e) {
@@ -18659,25 +18702,17 @@ function openPdfPrintWindow(){
         finish();
       };
       inp.onclick = function(e) { e.stopPropagation(); };
+      stack.onclick = function(e) { e.stopPropagation(); };
       inp.onkeydown = function(e) {
         if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
         if (e.key === 'Escape') { e.preventDefault(); finish(); }
       };
-      /* کلیک روی مات = انصراف */
-      box.addEventListener('click', function onDimClick(ev) {
-        if (ev.target === box || (ev.target.classList && ev.target.classList.contains('project-editing'))) {
-          /* ignore */
-        }
-        if (!card.contains(ev.target) && box.classList.contains('project-editing')) {
-          finish();
-          box.removeEventListener('click', onDimClick, true);
-        }
-      }, true);
 
-      var top = card.querySelector('.project-card-top') || card;
-      top.appendChild(inp);
-      top.appendChild(saveBtn);
-      top.appendChild(cancelBtn);
+      btns.appendChild(saveBtn);
+      btns.appendChild(cancelBtn);
+      stack.appendChild(inp);
+      stack.appendChild(btns);
+      body.appendChild(stack);
       try { inp.focus(); inp.select(); } catch (eF) {}
     }
     function deleteSubject(id) {
