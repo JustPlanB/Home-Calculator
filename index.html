@@ -724,12 +724,12 @@
     tr.project-row-hl::after {
       content: '';
       position: absolute;
-      /* چپ = سمت ستون حذف؛ هایلایت روی ضربدر نرود */
-      left: 1.85em;
+      /* قبل از ستون حذف قطع شود */
+      left: 2.15em;
       right: 2%;
-      top: 8%;
-      bottom: 8%;
-      background-color: var(--proj-accent, #ff4fa3);
+      top: 3%;
+      bottom: 3%;
+      background-color: var(--proj-accent, #ff2d95);
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%;
@@ -740,8 +740,9 @@
       mask-mode: alpha;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.42;
-      transform: rotate(-0.25deg);
+      opacity: 0.55;
+      transform: rotate(-0.2deg);
+      filter: saturate(1.35) brightness(1.08);
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
@@ -772,24 +773,36 @@
       color: #e8f1f6;
       background: #0b2c3d;
       border-radius: 10px 10px 0 0;
+      position: relative;
+      z-index: 0;
     }
     .proj-table-wrap {
       margin-top: 12px;
       border: 1px solid var(--border);
       border-radius: 10px;
       overflow: hidden;
-      background: var(--bg2, var(--input-bg));
+      background: transparent;
       position: relative;
       isolation: isolate;
-      /* استروک همیشه روی بکگراند گوشه‌ها */
-      box-shadow: inset 0 0 0 1px var(--border);
+      z-index: 0;
+    }
+    .proj-table-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      pointer-events: none;
+      z-index: 5; /* استروک همیشه روی بکگراند */
     }
     .proj-table-scroll {
       max-height: 210px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       border-radius: 0 0 9px 9px;
-      background: transparent;
+      background: var(--bg2, var(--input-bg));
+      position: relative;
+      z-index: 0;
     }
     .proj-table {
       width: 100%;
@@ -799,7 +812,7 @@
     .proj-table thead th {
       position: sticky;
       top: 0;
-      background: transparent;
+      background: var(--bg2, var(--input-bg));
       color: var(--text);
       z-index: 2;
       font-size: 0.78rem;
@@ -815,24 +828,25 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    /* عرض ستون‌ها: مبلغ عریض‌تر، شرح/تاریخ کمی کمتر، تاریخ بیرون نزند */
+    /* شرح کمتر — تاریخ و مبلغ بیشتر */
     .proj-table .proj-td-date,
     .proj-table th:nth-child(1) {
-      width: 22%;
+      width: 26%;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
     }
     .proj-table .proj-td-desc,
     .proj-table th:nth-child(2) {
-      width: 30%;
+      width: 22%;
     }
     .proj-table .proj-td-amt,
     .proj-table th:nth-child(3) {
-      width: 30%;
+      width: 34%;
       color: var(--text) !important;
       font-weight: 700;
       direction: ltr;
       unicode-bidi: plaintext;
+      cursor: pointer;
     }
     .proj-table .proj-td-bank,
     .proj-table th:nth-child(4) {
@@ -3024,6 +3038,7 @@
     .person-detail-table {
       width: 100%;
       border-collapse: collapse;
+      border-spacing: 0;
       table-layout: fixed;
     }
     .person-detail-table thead th {
@@ -3037,14 +3052,20 @@
       border-bottom: 1px solid #3a3a3e;
       box-sizing: border-box;
     }
-    .person-detail-sticky .person-detail-table {
-      border-bottom: 1px solid #3a3a3e;
-    }
+    /* خط زیر تایتل — هم‌تراز با خط‌کشی بدنه */
     .person-detail-sticky {
       border-bottom: 1px solid #3a3a3e;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .person-detail-sticky .person-detail-table {
+      margin-bottom: 0;
+    }
+    .person-detail-scroll {
+      margin-top: 0;
     }
     .person-detail-scroll .person-detail-table tbody tr:first-child td {
-      border-top: none;
+      border-top: 0 !important;
     }
     .person-detail-table tbody td {
       background: transparent;
@@ -3054,6 +3075,11 @@
       text-align: center;
       height: 36px;
       box-sizing: border-box;
+    }
+    /* ستون‌های عمودی دقیقاً زیر تایتل */
+    .person-detail-sticky .person-detail-table,
+    .person-detail-scroll .person-detail-table {
+      width: 100%;
     }
     .person-detail-table tbody tr { height: 36px; }
     .person-detail-table tbody td.pd-num-cell {
@@ -8428,7 +8454,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v140-PENTA | marker-accent report-cols */
+    /* build-stamp: 2026-09-27-v141-PENTA | report-cols fluoro-marker */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18492,15 +18518,15 @@ function openPdfPrintWindow(){
       if (btn) btn.style.display = '';
     }
     var PROJECT_HIGHLIGHT_PALETTE = [
-      { id: 'pink', accent: '#ff4fa3', bg: 'rgba(255, 79, 163, 0.55)', glow: 'rgba(255, 79, 163, 0.4)' },
-      { id: 'orange', accent: '#ff8a2b', bg: 'rgba(255, 138, 43, 0.55)', glow: 'rgba(255, 138, 43, 0.4)' },
-      { id: 'yellow', accent: '#ffe14a', bg: 'rgba(255, 225, 74, 0.55)', glow: 'rgba(255, 225, 74, 0.4)' },
-      { id: 'green', accent: '#8fdc3a', bg: 'rgba(143, 220, 58, 0.55)', glow: 'rgba(143, 220, 58, 0.4)' },
-      { id: 'cyan', accent: '#3ecbff', bg: 'rgba(62, 203, 255, 0.55)', glow: 'rgba(62, 203, 255, 0.4)' },
+      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.6)', glow: 'rgba(255, 45, 149, 0.5)' },
+      { id: 'orange', accent: '#ff6a00', bg: 'rgba(255, 106, 0, 0.6)', glow: 'rgba(255, 106, 0, 0.5)' },
+      { id: 'yellow', accent: '#f5ff33', bg: 'rgba(245, 255, 51, 0.6)', glow: 'rgba(245, 255, 51, 0.5)' },
+      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.6)', glow: 'rgba(184, 255, 0, 0.5)' },
+      { id: 'cyan', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.6)', glow: 'rgba(0, 232, 255, 0.5)' },
       /* سازگاری با پروژه‌های قدیمی */
-      { id: 'lime', accent: '#8fdc3a', bg: 'rgba(143, 220, 58, 0.55)', glow: 'rgba(143, 220, 58, 0.4)' },
-      { id: 'purple', accent: '#ff4fa3', bg: 'rgba(255, 79, 163, 0.55)', glow: 'rgba(255, 79, 163, 0.4)' },
-      { id: 'blue', accent: '#3ecbff', bg: 'rgba(62, 203, 255, 0.55)', glow: 'rgba(62, 203, 255, 0.4)' }
+      { id: 'lime', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.6)', glow: 'rgba(184, 255, 0, 0.5)' },
+      { id: 'purple', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.6)', glow: 'rgba(255, 45, 149, 0.5)' },
+      { id: 'blue', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.6)', glow: 'rgba(0, 232, 255, 0.5)' }
     ];
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
@@ -18997,7 +19023,7 @@ function openPdfPrintWindow(){
               '<td class="proj-td-date">' + formatRowDate(r.key, r.day) + '</td>' +
               '<td class="proj-td-desc" data-full-desc="' + escapeHtml(fullDesc).replace(/"/g, '&quot;') + '">' +
                 '<span class="proj-desc-text">' + escapeHtml(fullDesc) + '</span></td>' +
-              '<td class="proj-td-amt">' + formatNum(r.amt) + '</td>' +
+              '<td class="proj-td-amt" data-full-amt="' + escapeHtml(String(formatNum(r.amt))).replace(/"/g, '&quot;') + '">' + formatNum(r.amt) + '</td>' +
               '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
               '</tr>';
           });
@@ -19024,6 +19050,14 @@ function openPdfPrintWindow(){
               ev.stopPropagation();
               var full = td.getAttribute('data-full-desc') || (td.textContent || '');
               if (typeof showCellTextPopup === 'function') showCellTextPopup(td, full);
+            });
+          });
+          body.querySelectorAll('.proj-td-amt').forEach(function(td) {
+            td.addEventListener('click', function(ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              var full = (td.getAttribute('data-full-amt') || td.textContent || '').trim();
+              if (full && typeof showCellTextPopup === 'function') showCellTextPopup(td, full);
             });
           });
         } catch (eTap) {}
