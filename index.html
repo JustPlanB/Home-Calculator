@@ -724,12 +724,12 @@
     tr.project-row-hl::after {
       content: '';
       position: absolute;
-      /* قبل از ستون حذف قطع شود */
-      left: 2.15em;
-      right: 2%;
-      top: 3%;
-      bottom: 3%;
-      background-color: var(--proj-accent, #ff2d95);
+      /* ستون حذف ~2.6em سمت چپ — هایلایت داخلش نرود */
+      left: 2.75em;
+      right: 1.5%;
+      top: 4%;
+      bottom: 4%;
+      background-color: var(--proj-accent, #d000ff);
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%;
@@ -740,10 +740,21 @@
       mask-mode: alpha;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.55;
+      opacity: 0.30;
       transform: rotate(-0.2deg);
-      filter: saturate(1.35) brightness(1.08);
+      filter: none;
     }
+    
+    tr.project-row-hl > td:last-child {
+      z-index: 3;
+      background: transparent !important;
+    }
+    tr.project-row-hl > td:last-child::before,
+    tr.project-row-hl > td:last-child::after {
+      display: none !important;
+      content: none !important;
+    }
+
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
     tr.project-row-hl > td textarea,
@@ -2916,6 +2927,35 @@
       overflow-x: hidden;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable;
+    }
+    .person-detail-sticky {
+      box-sizing: border-box;
+    }
+    .person-detail-sticky .person-detail-table,
+    .person-detail-scroll .person-detail-table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+      border-spacing: 0 !important;
+    }
+    /* ستون حذف ثابت تا خط‌ها هم‌تراز بمانند */
+    .person-detail-table col[style*="2.6em"],
+    .person-detail-table th:last-child,
+    .person-detail-table td.pd-del-cell,
+    .person-detail-table td:last-child {
+      width: 2.6em !important;
+      max-width: 2.6em !important;
+      min-width: 2.6em !important;
+      box-sizing: border-box !important;
+    }
+    .person-detail-table th:first-child,
+    .person-detail-table td.pd-num-cell,
+    .person-detail-table td:first-child {
+      width: 2.4em !important;
+      max-width: 2.4em !important;
+      min-width: 2.4em !important;
+      box-sizing: border-box !important;
     }
     .person-detail-hint {
       background: transparent;
@@ -8454,7 +8494,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v141-PENTA | report-cols fluoro-marker */
+    /* build-stamp: 2026-09-27-v142-PENTA | col-align marker-opacity palette-order */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17660,6 +17700,26 @@ function openPdfPrintWindow(){
       scroll.appendChild(table);
       box.appendChild(scroll);
 
+      /* هم‌ترازی ستون هدر با بدنه — جبران عرض اسکرول‌بار */
+      try {
+        var syncPdCols = function() {
+          var sb = Math.max(0, (scroll.offsetWidth || 0) - (scroll.clientWidth || 0));
+          sticky.style.paddingLeft = sb + 'px';
+          sticky.style.boxSizing = 'border-box';
+          headTable.style.width = '100%';
+          table.style.width = '100%';
+        };
+        syncPdCols();
+        setTimeout(syncPdCols, 50);
+        setTimeout(syncPdCols, 200);
+        if (typeof ResizeObserver !== 'undefined') {
+          try {
+            var ro = new ResizeObserver(function() { syncPdCols(); });
+            ro.observe(scroll);
+          } catch (eRo) {}
+        }
+      } catch (eSync) {}
+
       const hint = document.createElement('div');
       hint.className = 'person-detail-hint';
       hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
@@ -18518,15 +18578,16 @@ function openPdfPrintWindow(){
       if (btn) btn.style.display = '';
     }
     var PROJECT_HIGHLIGHT_PALETTE = [
-      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.6)', glow: 'rgba(255, 45, 149, 0.5)' },
-      { id: 'orange', accent: '#ff6a00', bg: 'rgba(255, 106, 0, 0.6)', glow: 'rgba(255, 106, 0, 0.5)' },
-      { id: 'yellow', accent: '#f5ff33', bg: 'rgba(245, 255, 51, 0.6)', glow: 'rgba(245, 255, 51, 0.5)' },
-      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.6)', glow: 'rgba(184, 255, 0, 0.5)' },
-      { id: 'cyan', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.6)', glow: 'rgba(0, 232, 255, 0.5)' },
-      /* سازگاری با پروژه‌های قدیمی */
-      { id: 'lime', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.6)', glow: 'rgba(184, 255, 0, 0.5)' },
-      { id: 'purple', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.6)', glow: 'rgba(255, 45, 149, 0.5)' },
-      { id: 'blue', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.6)', glow: 'rgba(0, 232, 255, 0.5)' }
+      { id: 'purple', accent: '#d000ff', bg: 'rgba(208, 0, 255, 0.35)', glow: 'rgba(208, 0, 255, 0.35)' },
+      { id: 'yellow', accent: '#f5ff33', bg: 'rgba(245, 255, 51, 0.35)', glow: 'rgba(245, 255, 51, 0.35)' },
+      { id: 'blue', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.35)', glow: 'rgba(0, 232, 255, 0.35)' },
+      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.35)', glow: 'rgba(184, 255, 0, 0.35)' },
+      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.35)', glow: 'rgba(255, 45, 149, 0.35)' },
+      { id: 'orange', accent: '#ff6a00', bg: 'rgba(255, 106, 0, 0.35)', glow: 'rgba(255, 106, 0, 0.35)' },
+      { id: 'lime', accent: '#66ff66', bg: 'rgba(102, 255, 102, 0.35)', glow: 'rgba(102, 255, 102, 0.35)' },
+      { id: 'cyan', accent: '#00ffd0', bg: 'rgba(0, 255, 208, 0.35)', glow: 'rgba(0, 255, 208, 0.35)' },
+      { id: 'magenta', accent: '#ff00aa', bg: 'rgba(255, 0, 170, 0.35)', glow: 'rgba(255, 0, 170, 0.35)' },
+      { id: 'gold', accent: '#ffd000', bg: 'rgba(255, 208, 0, 0.35)', glow: 'rgba(255, 208, 0, 0.35)' }
     ];
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
