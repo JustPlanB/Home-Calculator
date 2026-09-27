@@ -712,36 +712,41 @@
     
     
     
+    
     /*
-      هایلایت پروژه — فقط background-color روی td
-      هیچ position/z-index/transform روی tr/td نگذار:
-      در غیر این صورت border-collapse جدول به‌هم می‌ریزد و خطوط عمودی جابه‌جا می‌شوند.
+      هایلایت ماژیک واقعی بدون خراب کردن خط‌کشی:
+      - فقط background روی خود tr (نه position روی td/tr)
+      - اندازه تا قبل از ستون حذف (2.6em از چپ)
+      - شکل قلم با SVG mask
     */
-    tr.project-row-hl > td:not(:last-child) {
-      background-color: var(--proj-row-bg, rgba(208, 0, 255, 0.28)) !important;
-      background-image: none !important;
+    tr.project-row-hl {
+      background-image: var(--proj-marker-img, none);
+      background-repeat: no-repeat;
+      background-size: calc(100% - 2.6em) 70%;
+      background-position: right center;
+      /* مهم: position نده — border-collapse را خراب می‌کند */
     }
-    /* ستون حذف هایلایت نشود */
-    tr.project-row-hl > td:last-child {
-      background-color: transparent !important;
-      background-image: none !important;
-    }
-    /* اینپوت/متن روی همان بکگراند شفاف بمانند تا رنگ سلول دیده شود */
-    tr.project-row-hl > td:not(:last-child) input,
-    tr.project-row-hl > td:not(:last-child) textarea,
-    tr.project-row-hl > td:not(:last-child) select,
-    tr.project-row-hl > td:not(:last-child) .cell,
-    tr.project-row-hl > td:not(:last-child) .pd-cell,
-    tr.project-row-hl > td:not(:last-child) .pd-num,
-    tr.project-row-hl > td:not(:last-child) .pd-desc,
-    tr.project-row-hl > td:not(:last-child) .pd-amount,
-    tr.project-row-hl > td:not(:last-child) .status-num {
-      background-color: transparent !important;
-      background-image: none !important;
-    }
-    /* خط‌کشی جدول دست‌نخورده — صریحاً همان بوردر همیشگی */
     tr.project-row-hl > td {
+      background-color: transparent !important;
+      background-image: none !important;
+      /* بدون position / z-index / transform */
       border-color: #3a3a3e !important;
+    }
+    tr.project-row-hl > td:last-child {
+      /* ستون حذف روی پس‌زمینهٔ ردیف ماژیک نرود — بکگراند tr از قبل کوتاه شده */
+      background-color: transparent !important;
+    }
+    tr.project-row-hl > td input,
+    tr.project-row-hl > td textarea,
+    tr.project-row-hl > td select,
+    tr.project-row-hl > td .cell,
+    tr.project-row-hl > td .pd-cell,
+    tr.project-row-hl > td .pd-num,
+    tr.project-row-hl > td .pd-desc,
+    tr.project-row-hl > td .pd-amount,
+    tr.project-row-hl > td .status-num {
+      background-color: transparent !important;
+      background-image: none !important;
     }
 
     .proj-table-caption {
@@ -8461,7 +8466,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v143-PENTA | highlight-no-position border-safe */
+    /* build-stamp: 2026-09-27-v144-PENTA | tr-bg marker border-safe */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17654,10 +17659,11 @@ function openPdfPrintWindow(){
             var subH = (typeof getSubjectById === 'function') ? getSubjectById(fcRow.subjectId) : null;
             var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
             var metaH = (typeof getProjectHighlightMeta === 'function') ? getProjectHighlightMeta(colorId) : { bg: 'rgba(180,100,255,0.3)' };
-            tr.classList.add('project-row-hl');
-            var acc1 = metaH.accent || '#d000ff';
-            tr.style.setProperty('--proj-accent', acc1);
-            tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc1, 0.28) : acc1);
+            if (typeof applyProjectRowMarker === 'function') applyProjectRowMarker(tr, metaH.accent || '#d000ff');
+            else {
+              tr.classList.add('project-row-hl');
+              tr.style.setProperty('--proj-accent', metaH.accent || '#d000ff');
+            }
             tr.dataset.projectId = fcRow.subjectId;
           }
         } catch (eHlPd) {}
@@ -18567,6 +18573,28 @@ function openPdfPrintWindow(){
       if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(208,0,255,' + (alpha != null ? alpha : 0.28) + ')';
       return 'rgba(' + r + ',' + g + ',' + b + ',' + (alpha != null ? alpha : 0.28) + ')';
     }
+    function buildMarkerDataUrl(accentHex, alpha) {
+      var fill = (typeof accentToRgba === 'function')
+        ? accentToRgba(accentHex, alpha != null ? alpha : 0.38)
+        : 'rgba(208,0,255,0.38)';
+      // شکل ضربه ماژیک — لبه‌های نامنظم
+      var path = 'M4,15 C12,7 30,9 48,11 C80,14 110,8 150,11 C190,14 230,8 270,12 C310,15 345,10 372,14 C384,15 394,13 398,18 L399,31 C392,37 380,34 370,33 C340,30 300,36 270,34 C230,32 190,37 150,35 C110,33 80,38 48,35 C30,34 12,36 3,28 Z';
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 48" preserveAspectRatio="none">'
+        + '<path fill="' + fill + '" d="' + path + '"/></svg>';
+      return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    }
+    function applyProjectRowMarker(tr, accentHex) {
+      if (!tr) return;
+      var acc = accentHex || '#d000ff';
+      tr.classList.add('project-row-hl');
+      tr.style.setProperty('--proj-accent', acc);
+      try {
+        tr.style.setProperty('--proj-marker-img', buildMarkerDataUrl(acc, 0.40));
+      } catch (e) {
+        tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc, 0.28) : acc);
+      }
+    }
+
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
       for (var i = 0; i < PROJECT_HIGHLIGHT_PALETTE.length; i++) {
@@ -24820,10 +24848,11 @@ field('حساب بانکی', accSelRec);
           var subH = getSubjectById(fcRow.subjectId);
           var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
           var metaH = getProjectHighlightMeta(colorId);
-          tr.classList.add('project-row-hl');
-          var acc2 = metaH.accent || '#d000ff';
-          tr.style.setProperty('--proj-accent', acc2);
-          tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc2, 0.28) : acc2);
+          if (typeof applyProjectRowMarker === 'function') applyProjectRowMarker(tr, metaH.accent || '#d000ff');
+          else {
+            tr.classList.add('project-row-hl');
+            tr.style.setProperty('--proj-accent', metaH.accent || '#d000ff');
+          }
           tr.dataset.projectId = fcRow.subjectId;
         }
       } catch (eHl) {}
