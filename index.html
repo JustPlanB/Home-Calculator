@@ -3394,6 +3394,48 @@
       font-size: 0.85rem;
       font-weight: 500;
     }
+    
+    #app-menu-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 100900;
+      pointer-events: none;
+    }
+    #app-menu-layer > * {
+      pointer-events: auto;
+    }
+    .fancy-select-list {
+      display: none;
+      position: fixed;
+      z-index: 100920;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+      max-height: 220px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      color: var(--text);
+    }
+    .fancy-select-list.open { display: block; }
+    .fancy-select-opt {
+      padding: 11px 14px;
+      text-align: right;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .fancy-select-opt:last-child { border-bottom: none; }
+    .fancy-select-opt.selected {
+      color: #08b5f5;
+      background: rgba(8,181,245,0.1);
+    }
+    .fancy-select-opt:active {
+      background: var(--bg3);
+    }
+
     .fancy-select-wrap {
       position: relative;
       width: 100%;
@@ -7919,7 +7961,7 @@
 
     
 
-    /* build-stamp: 2026-09-26-v129-PENTA | pro-report progressive-disclosure UI */
+    /* build-stamp: 2026-09-26-v130-PENTA | menu-layer scroll-close sms-amount */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -9345,7 +9387,7 @@
         // همیشه رو به پایین با ارتفاع کافی برای دیدن گزینه‌ها
         const top = r.bottom + 4;
         const spaceBelow = Math.max(120, window.innerHeight - top - 8);
-        list.style.zIndex = '10050';
+        list.style.zIndex = '100920';
         list.style.top = top + 'px';
         list.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 140)) + 'px';
         list.style.maxHeight = Math.max(160, Math.min(spaceBelow, 280)) + 'px';
@@ -9356,7 +9398,7 @@
         openDarkList = list;
         const bd = ensureDarkSelectBackdrop();
         bd.style.display = 'block';
-        bd.style.zIndex = '10040';
+        bd.style.zIndex = '100910';
         const sel = list.querySelector('.selected');
         if (sel) try { sel.scrollIntoView({ block: 'nearest' }); } catch (err) {}
       };
@@ -17339,6 +17381,7 @@ function openPdfPrintWindow(){
       unlockBodyScroll();
     }
     function closeSmsConfirmModal() {
+      try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
       pendingSmsEntry = null;
@@ -17497,13 +17540,12 @@ function openPdfPrintWindow(){
         });
         amount = best;
       }
-      // تشخیص واحد: اگر عدد خیلی بزرگ و واحد نامشخص → ریال
-      if (!unit) {
-        if (amount >= 100000) unit = 'rial'; // مثلاً 1,500,000 ریال
-        else unit = 'toman';
+      // فقط وقتی واحد صریحاً «ریال» است به تومان تبدیل کن (÷۱۰).
+      // حدس زدن از روی بزرگی عدد ممنوع است — باعث تغییر اشتباه مبلغ SMS می‌شود.
+      // اگر واحد تومان است یا مشخص نیست، همان عدد استخراج‌شده canonical است.
+      if (unit === 'rial' && amount >= 10) {
+        amount = Math.round(amount / 10);
       }
-      // اپ بر حسب تومان
-      if (unit === 'rial' && amount >= 10) amount = Math.round(amount / 10);
       return amount;
     }
 
@@ -17715,96 +17757,124 @@ function openPdfPrintWindow(){
       } catch (e) {}
     }
 
-    function enhanceSelectFont(selectEl) {
-      if (!selectEl) return;
-      if (selectEl._fancyRender) { try { selectEl._fancyRender(); } catch (e) {} return; }
-      if (!selectEl.parentNode) return;
-      selectEl.style.display = 'none';
-      const wrap = document.createElement('div');
-      wrap.className = 'fancy-select-wrap';
-      selectEl.parentNode.insertBefore(wrap, selectEl);
-      wrap.appendChild(selectEl);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'fancy-select-btn';
-      const list = document.createElement('div');
-      list.className = 'fancy-select-list';
-      list._wrap = wrap;
-      function closeList() {
-        list.classList.remove('open');
-        wrap.classList.remove('is-open');
-        wrap.style.zIndex = '';
-        list.style.position = '';
-        list.style.left = '';
-        list.style.right = '';
-        list.style.top = '';
-        list.style.bottom = '';
-        list.style.width = '';
-        list.style.zIndex = '';
-        if (list.parentNode === document.body) {
-          try { wrap.appendChild(list); } catch (e) {}
-        }
+    function getAppMenuLayer() {
+      var layer = document.getElementById('app-menu-layer');
+      if (!layer) {
+        layer = document.createElement('div');
+        layer.id = 'app-menu-layer';
+        document.body.appendChild(layer);
       }
-      function openList() {
+      return layer;
+    }
+    function closeAllAppMenus(exceptList) {
+      try {
         document.querySelectorAll('.fancy-select-list.open').forEach(function(l) {
-          if (l === list) return;
+          if (exceptList && l === exceptList) return;
           l.classList.remove('open');
           if (l._wrap) {
             l._wrap.classList.remove('is-open');
             l._wrap.style.zIndex = '';
           }
-          if (l.parentNode === document.body && l._wrap) {
-            try { l._wrap.appendChild(l); } catch (e2) {}
-          }
         });
+      } catch (e1) {}
+      try {
+        if (typeof closeDarkSelects === 'function') closeDarkSelects();
+      } catch (e2) {}
+    }
+    function bindAppMenuScrollClose() {
+      if (window.__appMenuScrollBound) return;
+      window.__appMenuScrollBound = true;
+      function shouldIgnore(t) {
+        try {
+          if (!t || !t.closest) return false;
+          if (t.closest('.fancy-select-list')) return true;
+          if (t.closest('.dark-select-list')) return true;
+          return false;
+        } catch (e) { return false; }
+      }
+      function onScrollOrResize(e) {
+        if (e && shouldIgnore(e.target)) return;
+        closeAllAppMenus();
+      }
+      window.addEventListener('scroll', onScrollOrResize, true);
+      document.addEventListener('scroll', onScrollOrResize, true);
+      window.addEventListener('resize', onScrollOrResize, true);
+      window.addEventListener('orientationchange', onScrollOrResize, true);
+    }
+    function enhanceAllSelectsIn(root) {
+      try {
+        var scope = root || document;
+        scope.querySelectorAll('select').forEach(function(sel) {
+          if (!sel || !sel.parentNode) return;
+          if (sel.id === 'monthSelect' || sel.id === 'yearSelect') return;
+          if (sel.closest && sel.closest('.dark-select')) return;
+          if (sel.dataset && sel.dataset.nativeKeep === '1') return;
+          enhanceSelectFont(sel);
+        });
+      } catch (e) {}
+    }
+    function enhanceSelectFont(selectEl) {
+      if (!selectEl) return;
+      bindAppMenuScrollClose();
+      if (selectEl._fancyRender) {
+        try { selectEl._fancyRender(); } catch (e) {}
+        return;
+      }
+      if (!selectEl.parentNode) return;
+      selectEl.style.display = 'none';
+      selectEl.setAttribute('aria-hidden', 'true');
+      var wrap = document.createElement('div');
+      wrap.className = 'fancy-select-wrap';
+      selectEl.parentNode.insertBefore(wrap, selectEl);
+      wrap.appendChild(selectEl);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fancy-select-btn';
+      var list = document.createElement('div');
+      list.className = 'fancy-select-list';
+      list._wrap = wrap;
+      list._select = selectEl;
+      try { getAppMenuLayer().appendChild(list); } catch (eL) { document.body.appendChild(list); }
+
+      function closeList() {
+        list.classList.remove('open');
+        wrap.classList.remove('is-open');
+        wrap.style.zIndex = '';
+      }
+      function positionList() {
+        var rect = btn.getBoundingClientRect();
+        var spaceBelow = window.innerHeight - rect.bottom;
+        var width = Math.max(rect.width, 72);
+        var left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+        list.style.position = 'fixed';
+        list.style.left = left + 'px';
+        list.style.width = width + 'px';
+        list.style.right = 'auto';
+        list.style.zIndex = '100920';
+        if (spaceBelow < 180) {
+          list.style.top = 'auto';
+          list.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+          list.style.maxHeight = Math.min(220, Math.max(120, rect.top - 12)) + 'px';
+        } else {
+          list.style.top = (rect.bottom + 4) + 'px';
+          list.style.bottom = 'auto';
+          list.style.maxHeight = Math.min(220, Math.max(120, spaceBelow - 12)) + 'px';
+        }
+      }
+      function openList() {
+        closeAllAppMenus(list);
         list.classList.add('open');
         wrap.classList.add('is-open');
-        wrap.style.zIndex = '100800';
-        var inModal = false;
-        try { inModal = !!(selectEl.closest && selectEl.closest('.modal-overlay')); } catch (eM) {}
-        try {
-          var rect = btn.getBoundingClientRect();
-          var spaceBelow = window.innerHeight - rect.bottom;
-          if (inModal) {
-            if (list.parentNode !== document.body) document.body.appendChild(list);
-            list.style.position = 'fixed';
-            list.style.left = Math.max(8, rect.left) + 'px';
-            list.style.width = Math.max(rect.width, 72) + 'px';
-            list.style.right = 'auto';
-            list.style.zIndex = '100900';
-            if (spaceBelow < 180) {
-              list.style.top = 'auto';
-              list.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-              list.style.maxHeight = Math.min(200, rect.top - 12) + 'px';
-            } else {
-              list.style.top = (rect.bottom + 4) + 'px';
-              list.style.bottom = 'auto';
-              list.style.maxHeight = Math.min(200, spaceBelow - 12) + 'px';
-            }
-          } else {
-            if (list.parentNode !== wrap) wrap.appendChild(list);
-            list.style.position = 'absolute';
-            list.style.left = '0';
-            list.style.right = '0';
-            list.style.width = '';
-            list.style.zIndex = '100810';
-            if (spaceBelow < 170) {
-              list.style.top = 'auto';
-              list.style.bottom = 'calc(100% + 4px)';
-            } else {
-              list.style.top = 'calc(100% + 4px)';
-              list.style.bottom = 'auto';
-            }
-          }
-        } catch (ePos) {}
+        wrap.style.zIndex = '100910';
+        positionList();
       }
       function render() {
-        const opts = Array.from(selectEl.options);
-        const cur = opts.find(function(o){ return o.value === selectEl.value; }) || opts[0];
+        var opts = Array.from(selectEl.options);
+        var cur = opts.find(function(o){ return o.value === selectEl.value; }) || opts[0];
         btn.textContent = cur ? cur.textContent : '';
         list.innerHTML = '';
         opts.forEach(function(o) {
-          const item = document.createElement('div');
+          var item = document.createElement('div');
           item.className = 'fancy-select-opt' + (o.value === selectEl.value ? ' selected' : '');
           item.textContent = o.textContent;
           item.onmousedown = function(e) { e.preventDefault(); e.stopPropagation(); };
@@ -17835,10 +17905,14 @@ function openPdfPrintWindow(){
         document.addEventListener('click', selectEl._fancyDocClose, true);
       }
       wrap.appendChild(btn);
-      wrap.appendChild(list);
-      render();
       selectEl._fancyRender = render;
       selectEl._fancyClose = closeList;
+      selectEl._fancyList = list;
+      render();
+      try {
+        var mo = new MutationObserver(function() { try { render(); } catch (eR) {} });
+        mo.observe(selectEl, { childList: true, attributes: true, subtree: true });
+      } catch (eMo) {}
     }
 
 
@@ -17947,6 +18021,7 @@ function openPdfPrintWindow(){
       if (m) m.style.display = 'flex';
     }
     function closeSubjectsModal() {
+      try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       var m = document.getElementById('subjectsModal');
       if (m) m.style.display = 'none';
     }
@@ -18170,6 +18245,7 @@ function openPdfPrintWindow(){
       try { closeSubjectsModal(); } catch (e) {}
     }
     function closeProjectReportModal() {
+      try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'none';
     }
@@ -18766,6 +18842,7 @@ function openPdfPrintWindow(){
         }
       }
       try { enhanceSmsConfirmProUI(parsed); } catch (ePro) {}
+      try { enhanceAllSelectsIn(m); } catch (eAll) {}
       m.classList.add('open');
       try { syncModalOverlaysToViewport(); } catch (e) {}
     }
@@ -26232,5 +26309,6 @@ field('حساب بانکی', accSelRec);
     </div>
   </div>
 
+  <div id="app-menu-layer" aria-hidden="true"></div>
 </body>
 </html>
