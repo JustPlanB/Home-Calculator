@@ -711,10 +711,10 @@
     /* هایلایت ماژیکی واقعی — لبه نامنظم، پوشش ناقص ابتدا/انتها */
     tr.project-row-hl > td {
       position: relative !important;
-      isolation: isolate;
       background-color: transparent !important;
       background-image: none !important;
       z-index: 0;
+      overflow: visible !important;
     }
     tr.project-row-hl > td::before {
       content: '';
@@ -723,8 +723,8 @@
       bottom: 16%;
       left: 0;
       right: 0;
-      background: var(--proj-row-bg, rgba(180, 100, 255, 0.28));
-      z-index: -1;
+      background: var(--proj-row-bg, rgba(180, 100, 255, 0.32));
+      z-index: 0;
       pointer-events: none;
       border-radius: 3px;
       opacity: 1;
@@ -749,14 +749,33 @@
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
+    tr.project-row-hl > td textarea,
     tr.project-row-hl > td .status-num,
-    tr.project-row-hl > td select {
+    tr.project-row-hl > td select,
+    tr.project-row-hl > td span,
+    tr.project-row-hl > td button {
+      background: transparent !important;
+      position: relative;
+      z-index: 1;
+    }
+    /* pd-* cells in person detail */
+    tr.project-row-hl > td .pd-num,
+    tr.project-row-hl > td .pd-desc,
+    tr.project-row-hl > td .pd-amount,
+    tr.project-row-hl > td .pd-account {
       background: transparent !important;
       position: relative;
       z-index: 1;
     }
 
-.proj-table-caption {
+
+    .person-detail-page tr.project-row-hl > td,
+    .pd-table tr.project-row-hl > td,
+    table.pd-table tr.project-row-hl > td {
+      background-color: transparent !important;
+    }
+
+    .proj-table-caption {
       padding: 9px 12px;
       font-weight: 800;
       font-size: 0.82rem;
@@ -8293,7 +8312,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v136-PENTA | project-ui marker live-refresh */
+    /* build-stamp: 2026-09-27-v137-PENTA | detail-panel marker highlight */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17478,6 +17497,19 @@ function openPdfPrintWindow(){
           tdDel.appendChild(del);
         }
         tr.appendChild(tdDel);
+        /* هایلایت ماژیکی پروژه روی ردیف جزئیات کارت */
+        try {
+          var fcRow = (typeof rowFinancialContext === 'function') ? rowFinancialContext(row) : (row && row.financialContext);
+          if (fcRow && (fcRow.accountType === 'project' || fcRow.classification === 'third_party') &&
+              fcRow.subjectId && fcRow.subjectId !== 'personal') {
+            var subH = (typeof getSubjectById === 'function') ? getSubjectById(fcRow.subjectId) : null;
+            var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
+            var metaH = (typeof getProjectHighlightMeta === 'function') ? getProjectHighlightMeta(colorId) : { bg: 'rgba(180,100,255,0.3)' };
+            tr.classList.add('project-row-hl');
+            tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(180,100,255,0.3)');
+            tr.dataset.projectId = fcRow.subjectId;
+          }
+        } catch (eHlPd) {}
         tbody.appendChild(tr);
       });
 
