@@ -710,7 +710,8 @@
     
     
     
-    /* هایلایت ماژیک — شبیه ضربه قلم واقعی، متن خوانا، خط‌کشی جدول حفظ */
+    
+    /* هایلایت ماژیک — همرنگ نوار پروژه، قبل از ستون حذف قطع می‌شود */
     tr.project-row-hl {
       position: relative !important;
     }
@@ -719,18 +720,18 @@
       background-color: transparent !important;
       background-image: none !important;
       z-index: 1;
-      /* خط‌کشی جدول دست‌نخورده بماند */
     }
     tr.project-row-hl::after {
       content: '';
       position: absolute;
-      left: 3%;
-      right: 3%;
-      top: 12%;
-      bottom: 12%;
-      background-color: var(--proj-row-bg, rgba(255, 90, 180, 0.45));
-      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,16 C14,8 28,10 42,12 C70,15 95,9 130,11 C170,13 210,8 250,12 C290,15 330,10 365,14 C378,15 390,13 396,18 L397,30 C390,36 378,34 365,33 C330,30 295,36 250,34 C210,32 170,37 130,35 C95,33 70,38 42,35 C28,34 14,36 5,28 Z'/%3E%3C/svg%3E");
-      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,16 C14,8 28,10 42,12 C70,15 95,9 130,11 C170,13 210,8 250,12 C290,15 330,10 365,14 C378,15 390,13 396,18 L397,30 C390,36 378,34 365,33 C330,30 295,36 250,34 C210,32 170,37 130,35 C95,33 70,38 42,35 C28,34 14,36 5,28 Z'/%3E%3C/svg%3E");
+      /* چپ = سمت ستون حذف؛ هایلایت روی ضربدر نرود */
+      left: 1.85em;
+      right: 2%;
+      top: 8%;
+      bottom: 8%;
+      background-color: var(--proj-accent, #ff4fa3);
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 48' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M6,14 C14,7 28,9 42,11 C70,14 95,8 130,10 C170,12 210,7 250,11 C290,14 330,9 365,13 C378,14 390,12 396,17 L397,31 C390,37 378,35 365,34 C330,31 295,37 250,35 C210,33 170,38 130,36 C95,34 70,39 42,36 C28,35 14,37 5,29 Z'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%;
       mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat;
@@ -739,8 +740,8 @@
       mask-mode: alpha;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.72;
-      transform: rotate(-0.3deg);
+      opacity: 0.42;
+      transform: rotate(-0.25deg);
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
@@ -752,7 +753,8 @@
     tr.project-row-hl > td .pd-num,
     tr.project-row-hl > td .pd-desc,
     tr.project-row-hl > td .pd-amount,
-    tr.project-row-hl > td .pd-account {
+    tr.project-row-hl > td .pd-account,
+    tr.project-row-hl > td .pd-del {
       position: relative;
       z-index: 2;
       background: transparent !important;
@@ -777,15 +779,22 @@
       border-radius: 10px;
       overflow: hidden;
       background: var(--bg2, var(--input-bg));
+      position: relative;
+      isolation: isolate;
+      /* استروک همیشه روی بکگراند گوشه‌ها */
+      box-shadow: inset 0 0 0 1px var(--border);
     }
     .proj-table-scroll {
       max-height: 210px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      border-radius: 0 0 9px 9px;
+      background: transparent;
     }
     .proj-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
     .proj-table thead th {
       position: sticky;
@@ -803,6 +812,31 @@
       padding: 7px 6px;
       font-size: 0.8rem;
       border-top: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* عرض ستون‌ها: مبلغ عریض‌تر، شرح/تاریخ کمی کمتر، تاریخ بیرون نزند */
+    .proj-table .proj-td-date,
+    .proj-table th:nth-child(1) {
+      width: 22%;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .proj-table .proj-td-desc,
+    .proj-table th:nth-child(2) {
+      width: 30%;
+    }
+    .proj-table .proj-td-amt,
+    .proj-table th:nth-child(3) {
+      width: 30%;
+      color: var(--text) !important;
+      font-weight: 700;
+      direction: ltr;
+      unicode-bidi: plaintext;
+    }
+    .proj-table .proj-td-bank,
+    .proj-table th:nth-child(4) {
+      width: 18%;
     }
     .proj-td-amt {
       color: var(--text) !important;
@@ -3000,7 +3034,17 @@
       text-align: center;
       padding: 8px 1px;
       border: 1px solid #3a3a3e;
+      border-bottom: 1px solid #3a3a3e;
       box-sizing: border-box;
+    }
+    .person-detail-sticky .person-detail-table {
+      border-bottom: 1px solid #3a3a3e;
+    }
+    .person-detail-sticky {
+      border-bottom: 1px solid #3a3a3e;
+    }
+    .person-detail-scroll .person-detail-table tbody tr:first-child td {
+      border-top: none;
     }
     .person-detail-table tbody td {
       background: transparent;
@@ -8384,7 +8428,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v139-PENTA | brush-marker report-width rename-ui */
+    /* build-stamp: 2026-09-27-v140-PENTA | marker-accent report-cols */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17578,8 +17622,8 @@ function openPdfPrintWindow(){
             var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
             var metaH = (typeof getProjectHighlightMeta === 'function') ? getProjectHighlightMeta(colorId) : { bg: 'rgba(180,100,255,0.3)' };
             tr.classList.add('project-row-hl');
-            tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(210,70,255,0.45)');
-            tr.style.setProperty('--proj-glow', metaH.glow || metaH.accent || 'rgba(220,80,255,0.5)');
+            tr.style.setProperty('--proj-accent', metaH.accent || '#ff4fa3');
+            tr.style.setProperty('--proj-row-bg', metaH.accent || '#ff4fa3');
             tr.dataset.projectId = fcRow.subjectId;
           }
         } catch (eHlPd) {}
@@ -24704,8 +24748,8 @@ field('حساب بانکی', accSelRec);
           var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
           var metaH = getProjectHighlightMeta(colorId);
           tr.classList.add('project-row-hl');
-          tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(210,70,255,0.45)');
-          tr.style.setProperty('--proj-glow', metaH.glow || metaH.accent || 'rgba(220,80,255,0.5)');
+          tr.style.setProperty('--proj-accent', metaH.accent || '#ff4fa3');
+          tr.style.setProperty('--proj-row-bg', metaH.accent || '#ff4fa3');
           tr.dataset.projectId = fcRow.subjectId;
         }
       } catch (eHl) {}
