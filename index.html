@@ -19321,15 +19321,48 @@ function openPdfPrintWindow(){
             });
           }
           if (acctSel) {
-            /* دیفالت شخصی */
+            /* دیفالت شخصی — بدون fancy-select روی hidden */
             acctSel.value = 'personal';
             acctSel.onchange = syncAcctUI;
-            syncAcctUI();
-            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(acctSel); } catch (eA) {}
           }
           if (sel) {
             try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(sel); } catch (eS) {}
           }
+          /* اول مخفی؛ فقط با انتخاب پروژه نمایش داده شود */
+          if (projWrap) {
+            projWrap.style.display = 'none';
+            projWrap.setAttribute('hidden', 'hidden');
+          }
+          syncAcctUI = (function(orig) {
+            return function() {
+              var isProj = acctSel && acctSel.value === 'project';
+              if (projWrap) {
+                if (isProj) {
+                  projWrap.style.display = 'block';
+                  projWrap.removeAttribute('hidden');
+                } else {
+                  projWrap.style.display = 'none';
+                  projWrap.setAttribute('hidden', 'hidden');
+                }
+              }
+              if (acctSeg) {
+                acctSeg.querySelectorAll('button').forEach(function(btn) {
+                  var on = btn.getAttribute('data-acct') === (acctSel ? acctSel.value : 'personal');
+                  btn.classList.toggle('active', on);
+                });
+              }
+              /* fancy-select دکمهٔ پروژه را هم مخفی/نمایش کن */
+              try {
+                if (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) {
+                  sel.parentNode.style.display = isProj ? '' : 'none';
+                }
+              } catch (eW) {}
+              if (isProj && sel) {
+                try { sel.focus(); } catch (eF) {}
+              }
+            };
+          })(typeof syncAcctUI === 'function' ? syncAcctUI : null);
+          syncAcctUI();
         }
 
         if (typeEl && !typeEl._proBound) {
