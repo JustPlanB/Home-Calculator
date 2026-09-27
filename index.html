@@ -722,8 +722,9 @@
     tr.project-row-hl {
       background-image: var(--proj-marker-img, none);
       background-repeat: no-repeat;
-      background-size: calc(100% - 2.6em) 92%;
-      background-position: right center;
+      /* 75% ارتفاع؛ از وسط سلول ردیف شروع (1.2em از راست)؛ قبل از حذف تمام */
+      background-size: calc(100% - 2.6em - 1.2em) 75%;
+      background-position: right 1.2em center;
       /* مهم: position نده — border-collapse را خراب می‌کند */
     }
     tr.project-row-hl > td {
@@ -1120,6 +1121,9 @@
       overflow: hidden;
       margin-bottom: 10px;
       direction: rtl;
+    }
+    .sms-acct-seg {
+      margin-bottom: 8px;
     }
     .sms-seg button {
       flex: 1;
@@ -8466,7 +8470,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v145-PENTA | thicker marker stroke */
+    /* build-stamp: 2026-09-27-v146-PENTA | marker-75 sms-seg-account */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18575,7 +18579,7 @@ function openPdfPrintWindow(){
     }
     function buildMarkerDataUrl(accentHex, alpha) {
       var fill = (typeof accentToRgba === 'function')
-        ? accentToRgba(accentHex, alpha != null ? alpha : 0.38)
+        ? accentToRgba(accentHex, alpha != null ? alpha : 0.26)
         : 'rgba(208,0,255,0.38)';
       // شکل ضربه ماژیک — لبه‌های نامنظم
       var path = 'M3,8 C14,2 32,3 52,5 C90,8 120,2 160,5 C200,8 240,2 280,6 C320,9 350,3 375,7 C386,8 395,6 399,10 L399,38 C390,44 375,42 360,41 C330,39 300,44 270,42 C230,40 190,45 150,43 C110,41 80,46 50,43 C32,42 14,44 2,38 Z';
@@ -18589,7 +18593,7 @@ function openPdfPrintWindow(){
       tr.classList.add('project-row-hl');
       tr.style.setProperty('--proj-accent', acc);
       try {
-        tr.style.setProperty('--proj-marker-img', buildMarkerDataUrl(acc, 0.42));
+        tr.style.setProperty('--proj-marker-img', buildMarkerDataUrl(acc, 0.26));
       } catch (e) {
         tr.style.setProperty('--proj-row-bg', (typeof accentToRgba === 'function') ? accentToRgba(acc, 0.28) : acc);
       }
@@ -19258,17 +19262,19 @@ function openPdfPrintWindow(){
           block.style.display = 'block';
           block.innerHTML =
             '<label class="family-label">حساب</label>' +
-            '<select id="smsAccountTypeSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:8px;">' +
-            '<option value="personal">شخصی</option>' +
-            '<option value="project">پروژه</option>' +
-            '</select>' +
-            '<div id="smsProjectPickWrap" style="display:none;">' +
+            '<div class="sms-seg sms-acct-seg" id="smsAccountTypeSeg" role="group" aria-label="نوع حساب">' +
+            '<button type="button" data-acct="personal" class="active">شخصی</button>' +
+            '<button type="button" data-acct="project">پروژه</button>' +
+            '</div>' +
+            '<input type="hidden" id="smsAccountTypeSel" value="personal" />' +
+            '<div id="smsProjectPickWrap" style="display:none;margin-top:8px;">' +
             '<label class="family-label">پروژه</label>' +
             '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;"></select>' +
             '</div>';
           meta.appendChild(block);
 
           var acctSel = document.getElementById('smsAccountTypeSel');
+          var acctSeg = document.getElementById('smsAccountTypeSeg');
           var projWrap = document.getElementById('smsProjectPickWrap');
           var sel = document.getElementById('smsSubjectSel');
           if (sel) {
@@ -19293,8 +19299,30 @@ function openPdfPrintWindow(){
           function syncAcctUI() {
             var isProj = acctSel && acctSel.value === 'project';
             if (projWrap) projWrap.style.display = isProj ? 'block' : 'none';
+            if (acctSeg) {
+              acctSeg.querySelectorAll('button').forEach(function(btn) {
+                var on = btn.getAttribute('data-acct') === (acctSel ? acctSel.value : 'personal');
+                btn.classList.toggle('active', on);
+              });
+            }
+            if (isProj && sel) {
+              try { sel.focus(); } catch (eF) {}
+            }
+          }
+          if (acctSeg) {
+            acctSeg.querySelectorAll('button').forEach(function(btn) {
+              btn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var v = btn.getAttribute('data-acct') || 'personal';
+                if (acctSel) acctSel.value = v;
+                syncAcctUI();
+              };
+            });
           }
           if (acctSel) {
+            /* دیفالت شخصی */
+            acctSel.value = 'personal';
             acctSel.onchange = syncAcctUI;
             syncAcctUI();
             try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(acctSel); } catch (eA) {}
