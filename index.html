@@ -629,31 +629,103 @@
       border: 1px solid var(--border);
       background: var(--bg3);
     }
-    .proj-status-credit { color: #16a34a; }
-    .proj-status-debt { color: #dc2626; }
+    .proj-status-credit { color: var(--green-tx); }
+    .proj-status-debt { color: var(--red-tx); }
     .proj-status-even { color: var(--text); opacity: 0.85; }
-    .proj-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
-    .proj-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; font-weight: 600; }
+    .proj-amt-in { color: var(--green-tx) !important; }
+    .proj-amt-out { color: var(--red-tx) !important; }
+    .proj-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+    }
+    .proj-table {
+      width: 100%;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      font-weight: 600;
+      table-layout: fixed;
+    }
     .proj-table th {
       background: var(--bg3);
-      padding: 8px 6px;
+      padding: 10px 8px;
       text-align: right;
       white-space: nowrap;
       border-bottom: 1px solid var(--border);
     }
     .proj-table td {
-      padding: 8px 6px;
+      padding: 10px 8px;
       text-align: right;
       border-bottom: 1px solid var(--border);
-      vertical-align: top;
+      vertical-align: middle;
     }
     .proj-table tr:last-child td { border-bottom: none; }
     .proj-td-date { white-space: nowrap; width: 22%; }
-    .proj-td-desc { width: 34%; word-break: break-word; }
-    .proj-td-amt { width: 24%; direction: ltr; unicode-bidi: plaintext; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .proj-td-bank { width: 20%; word-break: break-word; }
+    .proj-td-desc {
+      width: 36%;
+      max-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .proj-desc-text {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .proj-td-amt {
+      width: 24%;
+      direction: ltr;
+      unicode-bidi: plaintext;
+      text-align: left;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .proj-td-bank {
+      width: 18%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .proj-empty { font-size: 0.8rem; opacity: 0.65; padding: 10px 6px; }
-    #projectReportModal .modal-box { max-width: 400px; width: 94vw; max-height: 88vh; overflow-y: auto; }
+    #projectReportModal .modal-box {
+      max-width: min(96vw, 520px);
+      width: 96vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    #projectReportModal .modal-box .proj-summary,
+    #projectReportModal .modal-box .proj-table-wrap {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .subject-list-item {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .subject-list-item .sub-acts {
+      display: flex;
+      gap: 6px;
+      margin-right: auto;
+    }
+    .subject-list-item .sub-acts button {
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+    }
     .fancy-select-list {
       z-index: 100900 !important;
     }
@@ -7561,11 +7633,11 @@
         <button type="button" class="menu-item" onclick="event.stopPropagation(); switchTabFromMenu('ledger');">قرض</button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openUserRemindersModal();">یادآور</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>تنظیمات</div>
-        <button type="button" class="menu-pro-row" onclick="event.stopPropagation(); toggleProfessionalMode();">
+        <button type="button" class="menu-pro-row" style="display:none;" onclick="event.stopPropagation(); toggleProfessionalMode();">
           <span>حالت حرفه‌ای</span>
           <span class="pro-mode-switch" id="proModeSwitch" aria-hidden="true"><span class="pro-knob"></span></span>
         </button>
-        <button type="button" class="menu-item" id="menuSubjectsBtn" style="display:none;" onclick="event.stopPropagation(); openSubjectsModal();">حساب‌ها و موضوعات</button>
+        <button type="button" class="menu-item" id="menuSubjectsBtn" onclick="event.stopPropagation(); openSubjectsModal();">پروژه‌ها</button>
         <button type="button" class="menu-theme-row" onclick="event.stopPropagation(); toggleTheme();">
           <span>حالت شب / روز</span>
           <span class="theme-switch" id="themeSwitch" aria-hidden="true">
@@ -7997,7 +8069,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v132-PENTA | project-report simplified */
+    /* build-stamp: 2026-09-27-v133-PENTA | projects-always personal-balance report-ui */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -8042,10 +8114,22 @@
       let paid = 0, unpaid = 0;
       (sec.rows || []).forEach(r => {
         if (opts.personalIncomeOnly && typeof isPersonalIncomeRow === 'function' && !isPersonalIncomeRow(r)) return;
-        /* هزینه از پول پروژه / متعلق به پروژه: جزو مخارج شخصی شمرده نشود */
-        if (opts.personalExpenseOnly && r && r.financialContext) {
-          var fc = rowFinancialContext(r);
-          if (fc.classification === 'third_party') return;
+        /* مخارج پروژه: فقط سهم پیش‌پرداخت شخصی روی موجودی شخصی اثر بگذارد */
+        if (opts.personalExpenseOnly && r) {
+          var fcE = rowFinancialContext(r);
+          if (fcE.classification === 'third_party' || fcE.accountType === 'project') {
+            var adv = Number(fcE.personalAdvanceAmount) || 0;
+            var pAmt = Number(fcE.projectAmount) || 0;
+            if (pAmt || adv) {
+              if (!adv) return; // کاملاً از موجودی پروژه
+              var aAdv = adv;
+              if (r.status === 'paid') paid += aAdv; else unpaid += aAdv;
+              return;
+            }
+            // داده قدیمی بدون allocation
+            if (fcE.fundingSource === 'subject') return;
+            // fundingSource personal → کل مبلغ شخصی
+          }
         }
         const a = Number(r.amount) || 0;
         if (r.status === 'paid') paid += a; else unpaid += a;
@@ -18002,10 +18086,8 @@ function openPdfPrintWindow(){
     var _financialSubjects = null;
 
     function isProfessionalMode() {
-      try {
-        var v = localStorage.getItem(PRO_MODE_KEY);
-        return v === 'true' || v === '1';
-      } catch (e) { return false; }
+      /* حالت حرفه‌ای حذف شد — قابلیت پروژه برای همه فعال است */
+      return true;
     }
     function setProfessionalMode(on) {
       try { localStorage.setItem(PRO_MODE_KEY, on ? 'true' : 'false'); } catch (e) {}
@@ -18025,13 +18107,14 @@ function openPdfPrintWindow(){
     } catch (eBoot) {}
 
     function updateProfessionalModeUI() {
-      var on = isProfessionalMode();
       var sw = document.getElementById('proModeSwitch');
       if (sw) {
-        if (on) sw.classList.add('on'); else sw.classList.remove('on');
+        var row = sw.closest && sw.closest('.menu-pro-row');
+        if (row) row.style.display = 'none';
+        else sw.style.display = 'none';
       }
       var btn = document.getElementById('menuSubjectsBtn');
-      if (btn) btn.style.display = on ? '' : 'none';
+      if (btn) btn.style.display = '';
     }
     function loadFinancialSubjects() {
       if (_financialSubjects) return _financialSubjects;
@@ -18076,7 +18159,7 @@ function openPdfPrintWindow(){
       if (!box) return;
       var list = loadFinancialSubjects();
       if (!list.length) {
-        box.innerHTML = '<div style="opacity:0.7;padding:8px;font-size:0.85rem;">موضوعی ثبت نشده. «شخصی» همیشه در دسترس است.</div>';
+        box.innerHTML = '<div style="opacity:0.7;padding:8px;font-size:0.85rem;">پروژه‌ای ثبت نشده.</div>';
         return;
       }
       box.innerHTML = '';
@@ -18111,34 +18194,79 @@ function openPdfPrintWindow(){
     function addSubjectFromModal() {
       var inp = document.getElementById('subjectNewName');
       var name = (inp && inp.value || '').trim();
-      if (!name) { showToast('نام موضوع را وارد کنید'); return; }
+      if (!name) { showToast('نام پروژه را وارد کنید'); return; }
       var list = loadFinancialSubjects();
-      if (list.some(function(s){ return s.name === name; })) { showToast('این موضوع قبلاً ثبت شده'); return; }
+      if (list.some(function(s){ return s.name === name; })) { showToast('این پروژه قبلاً ثبت شده'); return; }
       list.push({ id: 's' + Date.now(), name: name });
       _financialSubjects = list;
       saveFinancialSubjects();
       if (inp) inp.value = '';
       renderSubjectsList();
-      showToast('موضوع اضافه شد');
+      showToast('پروژه اضافه شد');
     }
     function renameSubject(id) {
       var s = getSubjectById(id);
       if (!s || s.id === 'personal') return;
-      var n = prompt('نام جدید موضوع:', s.name);
-      if (n == null) return;
-      n = String(n).trim();
-      if (!n) return;
-      var list = loadFinancialSubjects();
-      list.forEach(function(x){ if (x.id === id) x.name = n; });
-      _financialSubjects = list;
-      saveFinancialSubjects();
-      renderSubjectsList();
+      var box = document.getElementById('subjectsList');
+      if (!box) return;
+      var row = box.querySelector('.subject-list-item[data-id="' + id + '"]');
+      if (!row) return;
+      if (row.querySelector('.subject-rename-input')) return;
+      var span = row.querySelector('span');
+      var acts = row.querySelector('.sub-acts');
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'family-input subject-rename-input';
+      inp.value = s.name;
+      inp.dir = 'rtl';
+      inp.style.flex = '1';
+      inp.style.margin = '0 6px';
+      if (span) span.style.display = 'none';
+      if (acts) acts.style.display = 'none';
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'modal-btn primary';
+      saveBtn.textContent = 'ثبت';
+      saveBtn.style.padding = '6px 10px';
+      var cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'modal-btn';
+      cancelBtn.textContent = 'انصراف';
+      cancelBtn.style.padding = '6px 10px';
+      function finish() {
+        try { inp.remove(); saveBtn.remove(); cancelBtn.remove(); } catch (e) {}
+        if (span) span.style.display = '';
+        if (acts) acts.style.display = '';
+      }
+      saveBtn.onclick = function() {
+        var n = (inp.value || '').trim();
+        if (!n) { showToast('نام پروژه را وارد کنید'); return; }
+        var list = loadFinancialSubjects();
+        if (list.some(function(x){ return x.id !== id && x.name === n; })) {
+          showToast('نام پروژه تکراری است');
+          return;
+        }
+        list.forEach(function(x){ if (x.id === id) x.name = n; });
+        _financialSubjects = list;
+        saveFinancialSubjects();
+        renderSubjectsList();
+        showToast('نام پروژه به‌روز شد');
+      };
+      cancelBtn.onclick = function() { finish(); };
+      row.appendChild(inp);
+      row.appendChild(saveBtn);
+      row.appendChild(cancelBtn);
+      try { inp.focus(); inp.select(); } catch (eF) {}
     }
     function deleteSubject(id) {
-      if (!confirm('موضوع حذف شود؟ تراکنش‌های قبلی حفظ می‌شوند.')) return;
-      _financialSubjects = loadFinancialSubjects().filter(function(s){ return s.id !== id; });
-      saveFinancialSubjects();
-      renderSubjectsList();
+      var s = getSubjectById(id);
+      if (!s || s.id === 'personal') return;
+      askConfirm('پروژه «' + s.name + '» حذف شود؟ تراکنش‌های قبلی حفظ می‌شوند.', function() {
+        _financialSubjects = loadFinancialSubjects().filter(function(x){ return x.id !== id; });
+        saveFinancialSubjects();
+        renderSubjectsList();
+        showToast('پروژه حذف شد');
+      });
     }
     function defaultFinancialContext() {
       return {
@@ -18174,7 +18302,7 @@ function openPdfPrintWindow(){
     }
     function isPersonalIncomeRow(r) {
       var fc = rowFinancialContext(r);
-      return fc.classification !== 'third_party';
+      return fc.classification !== 'third_party' && fc.accountType !== 'project';
     }
     /** گزینه‌های قسط قابل پرداخت برای UI */
     function listPayableInstallments() {
@@ -18295,7 +18423,7 @@ function openPdfPrintWindow(){
     function openProjectReportModal(subjectId) {
       var sub = getSubjectById(subjectId);
       if (!sub || sub.id === 'personal') {
-        showToast('یک موضوع غیرشخصی انتخاب کنید');
+        showToast('یک پروژه انتخاب کنید');
         return;
       }
       var rep = computeSubjectReport(sub.id);
@@ -18316,13 +18444,9 @@ function openPdfPrintWindow(){
         }
 
         function formatRowDate(key, day) {
-          // key = "1405-7" یا "1405-07"
           var y = '', m = '';
           var parts = String(key || '').split('-');
-          if (parts.length >= 2) {
-            y = parts[0];
-            m = parts[1];
-          }
+          if (parts.length >= 2) { y = parts[0]; m = parts[1]; }
           var mm = parseInt(toEnglishDigits(String(m)), 10) || 0;
           var dd = parseInt(toEnglishDigits(String(day || '')), 10) || 0;
           if (!y) return '—';
@@ -18332,17 +18456,17 @@ function openPdfPrintWindow(){
         }
 
         function txTable(list, isOut) {
-          if (!list.length) {
-            return '<div class="proj-empty">موردی ثبت نشده</div>';
-          }
+          if (!list.length) return '<div class="proj-empty">موردی ثبت نشده</div>';
           var h = '<div class="proj-table-wrap"><table class="proj-table"><thead><tr>' +
             '<th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>بانک</th>' +
             '</tr></thead><tbody>';
           list.forEach(function(r) {
+            var fullDesc = r.desc || '—';
             h += '<tr>' +
               '<td class="proj-td-date">' + formatRowDate(r.key, r.day) + '</td>' +
-              '<td class="proj-td-desc">' + escapeHtml(r.desc || '—') + '</td>' +
-              '<td class="proj-td-amt" style="color:' + (isOut ? '#dc2626' : '#16a34a') + ';">' + formatNum(r.amt) + '</td>' +
+              '<td class="proj-td-desc" data-full-desc="' + escapeHtml(fullDesc).replace(/"/g, '&quot;') + '">' +
+                '<span class="proj-desc-text">' + escapeHtml(fullDesc) + '</span></td>' +
+              '<td class="proj-td-amt ' + (isOut ? 'proj-amt-out' : 'proj-amt-in') + '">' + formatNum(r.amt) + '</td>' +
               '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
               '</tr>';
           });
@@ -18363,6 +18487,18 @@ function openPdfPrintWindow(){
           txTable(inRows, false) +
           '<div class="proj-report-section">مخارج پروژه</div>' +
           txTable(outRows, true);
+
+        // tap روی شرح → نمایش کامل با showCellTextPopup
+        try {
+          body.querySelectorAll('.proj-td-desc').forEach(function(td) {
+            td.addEventListener('click', function(ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              var full = td.getAttribute('data-full-desc') || (td.textContent || '');
+              if (typeof showCellTextPopup === 'function') showCellTextPopup(td, full);
+            });
+          });
+        } catch (eTap) {}
       }
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'flex';
@@ -26431,12 +26567,12 @@ field('حساب بانکی', accSelRec);
 
   <div class="modal-overlay" id="subjectsModal" style="display:none;" onclick="if(event.target===this)closeSubjectsModal();">
     <div class="modal-box" onclick="event.stopPropagation();">
-      <div class="modal-title">حساب‌ها و موضوعات</div>
+      <div class="modal-title">پروژه‌ها</div>
       <div id="subjectsList" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
-      <label class="family-label">موضوع جدید</label>
-      <input id="subjectNewName" class="family-input" placeholder="مثلاً پروژه سهراب" dir="rtl" style="margin-bottom:8px;">
+      <label class="family-label">نام پروژه</label>
+      <input id="subjectNewName" class="family-input" placeholder="مثلاً سهراب" dir="rtl" style="margin-bottom:8px;">
       <div style="display:flex;gap:8px;">
-        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">＋ افزودن حساب / موضوع</button>
+        <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">＋ پروژه</button>
         <button type="button" class="modal-btn" onclick="closeSubjectsModal()">بستن</button>
       </div>
     </div>
