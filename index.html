@@ -708,44 +708,73 @@
 
     
     
-    /* هایلایت ماژیکی واقعی — لبه نامنظم، پوشش ناقص ابتدا/انتها */
+    
+    /* هایلایت ماژیک واقعی: یک نوار پیوسته روی کل ردیف، لبه‌های نامنظم */
+    tr.project-row-hl {
+      position: relative !important;
+    }
     tr.project-row-hl > td {
       position: relative !important;
       background-color: transparent !important;
       background-image: none !important;
-      z-index: 0;
+      z-index: 1;
       overflow: visible !important;
+      border-color: transparent !important; /* مرز سلول زیر ماژیک قطع نشود */
     }
-    tr.project-row-hl > td::before {
+    /* نوار اصلی — از روی مرز سلول‌ها رد می‌شود */
+    tr.project-row-hl::after {
       content: '';
       position: absolute;
-      top: 16%;
-      bottom: 16%;
-      left: 0;
-      right: 0;
-      background: var(--proj-row-bg, rgba(180, 100, 255, 0.32));
-      z-index: 0;
+      /* دو طرف ردیف کمی خالی می‌ماند */
+      left: 7%;
+      right: 7%;
+      top: 30%;
+      height: 40%;
+      background: var(--proj-row-bg, rgba(200, 90, 255, 0.42));
+      /* لبه‌های شبیه نوک ماژیک — نامتقارن و کمی موج‌دار */
+      border-radius: 48% 52% 45% 55% / 70% 35% 65% 40%;
+      transform: rotate(-0.55deg) skewX(-1.2deg);
       pointer-events: none;
-      border-radius: 3px;
-      opacity: 1;
+      z-index: 0;
+      opacity: 0.92;
+      /* حس نئون ملایم */
+      box-shadow:
+        0 0 6px var(--proj-glow, rgba(200, 90, 255, 0.35)),
+        0 0 1px var(--proj-glow, rgba(200, 90, 255, 0.5)),
+        inset 0 1px 0 rgba(255,255,255,0.18);
+      filter: saturate(1.25);
     }
-    /* شروع ماژیک (سمت راست در RTL = first-child) */
-    tr.project-row-hl > td:first-child::before {
-      right: 9%;
-      left: 0;
-      border-radius: 3px 14px 16px 3px / 3px 55% 50% 3px;
-      transform: skewY(-0.5deg) rotate(-0.2deg);
+    /* رد قلم ابتدا (راست) */
+    tr.project-row-hl::before {
+      content: '';
+      position: absolute;
+      right: 5.5%;
+      top: 26%;
+      width: 10px;
+      height: 48%;
+      background: var(--proj-row-bg, rgba(200, 90, 255, 0.5));
+      border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+      transform: rotate(8deg) skewY(-6deg);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.75;
+      box-shadow: 0 0 4px var(--proj-glow, rgba(200, 90, 255, 0.4));
     }
-    /* پایان ماژیک (سمت چپ = last-child) */
-    tr.project-row-hl > td:last-child::before {
-      left: 11%;
-      right: 0;
-      border-radius: 15px 3px 3px 13px / 50% 3px 3px 55%;
-      transform: skewY(0.4deg) rotate(0.15deg);
-    }
-    tr.project-row-hl > td:not(:first-child):not(:last-child)::before {
-      border-radius: 2px;
-      transform: skewX(-0.35deg);
+    /* رد قلم انتها — روی last cell با یک لایه اضافی */
+    tr.project-row-hl > td:last-child::after {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: 28%;
+      width: 9px;
+      height: 44%;
+      background: var(--proj-row-bg, rgba(200, 90, 255, 0.48));
+      border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%;
+      transform: rotate(-11deg) skewY(5deg);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.7;
+      box-shadow: 0 0 4px var(--proj-glow, rgba(200, 90, 255, 0.35));
     }
     tr.project-row-hl > td .cell,
     tr.project-row-hl > td input,
@@ -753,22 +782,15 @@
     tr.project-row-hl > td .status-num,
     tr.project-row-hl > td select,
     tr.project-row-hl > td span,
-    tr.project-row-hl > td button {
-      background: transparent !important;
-      position: relative;
-      z-index: 1;
-    }
-    /* pd-* cells in person detail */
+    tr.project-row-hl > td button,
     tr.project-row-hl > td .pd-num,
     tr.project-row-hl > td .pd-desc,
     tr.project-row-hl > td .pd-amount,
     tr.project-row-hl > td .pd-account {
       background: transparent !important;
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
-
-
     .person-detail-page tr.project-row-hl > td,
     .pd-table tr.project-row-hl > td,
     table.pd-table tr.project-row-hl > td {
@@ -802,11 +824,14 @@
     .proj-table thead th {
       position: sticky;
       top: 0;
-      background: #0b2c3d;
-      color: #e8f1f6;
+      background: transparent;
+      color: var(--text);
       z-index: 2;
       font-size: 0.78rem;
       padding: 8px 6px;
+      font-weight: 700;
+      opacity: 0.85;
+      border-bottom: 1px solid var(--border);
     }
     .proj-table td {
       padding: 7px 6px;
@@ -821,21 +846,26 @@
     }
 
     #subjectsModal .modal-box {
-      max-width: min(88vw, 320px) !important;
-      width: 88vw !important;
+      max-width: min(96vw, 440px) !important;
+      width: 96vw !important;
+      padding-left: 10px !important;
+      padding-right: 10px !important;
     }
     #subjectsList {
       max-height: 50vh !important;
     }
     .project-card {
-      padding: 8px 10px 8px !important;
-      margin-bottom: 8px !important;
+      padding: 5px 10px 6px !important;
+      margin-bottom: 7px !important;
       border-radius: 10px !important;
+      min-height: 0 !important;
     }
     .project-card-top {
       display: flex;
+      flex-direction: row;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      gap: 8px;
       direction: rtl;
     }
     .project-card-name {
@@ -843,15 +873,27 @@
       text-align: right !important;
       font-weight: 800;
       font-size: 0.9rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .project-card-status {
       text-align: right !important;
       width: 100%;
-      margin-top: 4px;
-      font-size: 0.78rem !important;
+      margin-top: 2px;
+      margin-bottom: 0;
+      font-size: 0.76rem !important;
+      line-height: 1.25;
     }
     .project-card-actions {
-      order: -1;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      direction: ltr !important;
+      flex-shrink: 0 !important;
+      margin-left: -6px !important;
+      order: 0 !important;
     }
     #subjectsList.project-editing {
       position: relative;
@@ -8312,7 +8354,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v137-PENTA | detail-panel marker highlight */
+    /* build-stamp: 2026-09-27-v138-PENTA | neon-marker continuous stroke */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17506,7 +17548,8 @@ function openPdfPrintWindow(){
             var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
             var metaH = (typeof getProjectHighlightMeta === 'function') ? getProjectHighlightMeta(colorId) : { bg: 'rgba(180,100,255,0.3)' };
             tr.classList.add('project-row-hl');
-            tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(180,100,255,0.3)');
+            tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(210,70,255,0.45)');
+            tr.style.setProperty('--proj-glow', metaH.glow || metaH.accent || 'rgba(220,80,255,0.5)');
             tr.dataset.projectId = fcRow.subjectId;
           }
         } catch (eHlPd) {}
@@ -18375,10 +18418,10 @@ function openPdfPrintWindow(){
       if (btn) btn.style.display = '';
     }
     var PROJECT_HIGHLIGHT_PALETTE = [
-      { id: 'lime', accent: '#b8ff3c', bg: 'rgba(184, 255, 60, 0.30)' },
-      { id: 'purple', accent: '#b464ff', bg: 'rgba(180, 100, 255, 0.32)' },
-      { id: 'orange', accent: '#ff9a2e', bg: 'rgba(255, 154, 46, 0.30)' },
-      { id: 'blue', accent: '#3ca0ff', bg: 'rgba(60, 160, 255, 0.32)' }
+      { id: 'lime', accent: '#d4ff00', bg: 'rgba(200, 255, 40, 0.48)', glow: 'rgba(200, 255, 40, 0.55)' },
+      { id: 'purple', accent: '#e040ff', bg: 'rgba(210, 70, 255, 0.45)', glow: 'rgba(220, 80, 255, 0.55)' },
+      { id: 'orange', accent: '#ff9f1a', bg: 'rgba(255, 150, 20, 0.48)', glow: 'rgba(255, 160, 30, 0.55)' },
+      { id: 'blue', accent: '#1ad4ff', bg: 'rgba(30, 200, 255, 0.45)', glow: 'rgba(40, 210, 255, 0.55)' }
     ];
     function getProjectHighlightMeta(colorId) {
       var id = (colorId || '').trim();
@@ -24626,7 +24669,8 @@ field('حساب بانکی', accSelRec);
           var colorId = (subH && subH.highlightColor) || (row.financialContext && row.financialContext.highlightColor) || '';
           var metaH = getProjectHighlightMeta(colorId);
           tr.classList.add('project-row-hl');
-          tr.style.setProperty('--proj-row-bg', metaH.bg);
+          tr.style.setProperty('--proj-row-bg', metaH.bg || 'rgba(210,70,255,0.45)');
+          tr.style.setProperty('--proj-glow', metaH.glow || metaH.accent || 'rgba(220,80,255,0.5)');
           tr.dataset.projectId = fcRow.subjectId;
         }
       } catch (eHl) {}
