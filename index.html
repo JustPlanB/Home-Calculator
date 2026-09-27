@@ -610,14 +610,50 @@
       font-weight: 600;
       font-size: 0.86rem;
     }
-    .proj-report-row .val { direction: ltr; font-variant-numeric: tabular-nums; }
+    .proj-report-row .val { direction: ltr; font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
     .proj-report-section {
-      margin: 12px 0 6px;
+      margin: 14px 0 6px;
       font-weight: 800;
-      font-size: 0.8rem;
-      opacity: 0.75;
+      font-size: 0.82rem;
+      opacity: 0.8;
     }
-    #projectReportModal .modal-box { max-width: 360px; width: 92vw; max-height: 88vh; overflow-y: auto; }
+    .proj-summary { margin-bottom: 4px; }
+    .proj-status {
+      margin-top: 10px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      text-align: center;
+      line-height: 1.5;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    .proj-status-credit { color: #16a34a; }
+    .proj-status-debt { color: #dc2626; }
+    .proj-status-even { color: var(--text); opacity: 0.85; }
+    .proj-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    .proj-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; font-weight: 600; }
+    .proj-table th {
+      background: var(--bg3);
+      padding: 8px 6px;
+      text-align: right;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .proj-table td {
+      padding: 8px 6px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .proj-table tr:last-child td { border-bottom: none; }
+    .proj-td-date { white-space: nowrap; width: 22%; }
+    .proj-td-desc { width: 34%; word-break: break-word; }
+    .proj-td-amt { width: 24%; direction: ltr; unicode-bidi: plaintext; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .proj-td-bank { width: 20%; word-break: break-word; }
+    .proj-empty { font-size: 0.8rem; opacity: 0.65; padding: 10px 6px; }
+    #projectReportModal .modal-box { max-width: 400px; width: 94vw; max-height: 88vh; overflow-y: auto; }
     .fancy-select-list {
       z-index: 100900 !important;
     }
@@ -7961,7 +7997,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v131-PENTA | rial-toman project-account auto-alloc */
+    /* build-stamp: 2026-09-27-v132-PENTA | project-report simplified */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18194,41 +18230,43 @@ function openPdfPrintWindow(){
     function computeSubjectReport(subjectId) {
       subjectId = (subjectId || '').trim();
       if (!subjectId || subjectId === 'personal') {
-        return { received: 0, spentSubject: 0, spentPersonal: 0, balance: 0, receivable: 0, totalCost: 0, rows: [], byBank: {} };
+        return { received: 0, spentSubject: 0, spentPersonal: 0, totalExpense: 0, balance: 0, receivable: 0, totalCost: 0, rows: [] };
       }
-      var received = 0, spentSubject = 0, spentPersonal = 0;
+      var received = 0, spentSubject = 0, spentPersonal = 0, totalExpense = 0;
       var rows = [];
-      var byBank = {};
-      function touchBank(name) {
-        var k = (name || '—').trim() || '—';
-        if (!byBank[k]) byBank[k] = { in: 0, out: 0 };
-        return byBank[k];
-      }
+      var seen = Object.create(null);
+      var curKey = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function(pd, key) {
+        // از شمارش دوبارهٔ ماه جاری (آرشیو + periodData) جلوگیری کن
+        if (key === curKey && pd !== periodData) return;
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
-            (sec.rows || []).forEach(function(r) {
+            (sec.rows || []).forEach(function(r, ri) {
               if (!r || (r.status || 'paid') !== 'paid') return;
               var fc = rowFinancialContext(r);
               if (fc.subjectId !== subjectId) return;
               if (fc.classification !== 'third_party' && fc.accountType !== 'project') return;
-              // amount همیشه تومان canonical — هیچ تبدیل مجددی
+              // amount canonical تومان — بدون تبدیل مجدد
               var amt = Number(r.amount) || 0;
+              if (!amt) return;
               var bank = (r.account || '').trim() || '—';
               var day = r.day || '';
+              var desc = r.desc || '';
+              var dedupe = tab + '|' + key + '|' + day + '|' + bank + '|' + amt + '|' + desc + '|' + (r.id || ri);
+              if (seen[dedupe]) return;
+              seen[dedupe] = true;
               if (tab === 'income') {
                 received += amt;
-                touchBank(bank).in += amt;
-                rows.push({ tab: tab, amt: amt, desc: r.desc || '', key: key, bank: bank, day: day, fund: 'subject' });
-              } else if (tab === 'expense') {
+                rows.push({ tab: tab, amt: amt, desc: desc, key: key, bank: bank, day: day });
+              } else {
+                totalExpense += amt;
                 var pAmt = Number(fc.projectAmount) || 0;
                 var aAmt = Number(fc.personalAdvanceAmount) || 0;
-                // سازگاری با داده‌های قدیمی بدون allocation
                 if (!pAmt && !aAmt) {
                   if (fc.fundingSource === 'subject') pAmt = amt;
-                  else aAmt = amt;
+                  else if (fc.fundingSource === 'personal') aAmt = amt;
+                  else pAmt = amt;
                 }
-                // جلوگیری از جمع > مبلغ تراکنش
                 if (pAmt + aAmt > amt && amt > 0) {
                   var scale = amt / (pAmt + aAmt);
                   pAmt = Math.round(pAmt * scale);
@@ -18236,8 +18274,8 @@ function openPdfPrintWindow(){
                 }
                 spentSubject += pAmt;
                 spentPersonal += aAmt;
-                touchBank(bank).out += amt;
-                rows.push({ tab: tab, amt: amt, projectAmount: pAmt, personalAdvanceAmount: aAmt, desc: r.desc || '', key: key, bank: bank, day: day, fund: fc.fundingSource });
+                // یک ردیف با مبلغ کامل تراکنش بانکی — نه دو ردیف allocation
+                rows.push({ tab: tab, amt: amt, desc: desc, key: key, bank: bank, day: day });
               }
             });
           });
@@ -18247,11 +18285,11 @@ function openPdfPrintWindow(){
         received: received,
         spentSubject: spentSubject,
         spentPersonal: spentPersonal,
+        totalExpense: totalExpense,
         balance: received - spentSubject,
         receivable: spentPersonal,
-        totalCost: spentSubject + spentPersonal,
-        rows: rows,
-        byBank: byBank
+        totalCost: totalExpense,
+        rows: rows
       };
     }
     function openProjectReportModal(subjectId) {
@@ -18265,52 +18303,66 @@ function openPdfPrintWindow(){
       if (title) title.textContent = 'پروژه ' + sub.name;
       var body = document.getElementById('projectReportBody');
       if (body) {
-        function row(label, val, color) {
-          return '<div class="proj-report-row"><span>' + label + '</span><span class="val" style="' + (color ? 'color:'+color : '') + '">' + formatNum(val) + '</span></div>';
+        var deposits = Number(rep.received) || 0;
+        var expenses = Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0;
+        var net = deposits - expenses;
+        var statusHtml;
+        if (net > 0) {
+          statusHtml = '<div class="proj-status proj-status-credit">پروژه ' + escapeHtml(sub.name) + ' ' + formatNum(net) + ' تومان طلب دارد</div>';
+        } else if (net < 0) {
+          statusHtml = '<div class="proj-status proj-status-debt">پروژه ' + escapeHtml(sub.name) + ' ' + formatNum(Math.abs(net)) + ' تومان بدهکار است</div>';
+        } else {
+          statusHtml = '<div class="proj-status proj-status-even">پروژه ' + escapeHtml(sub.name) + ' تسویه است</div>';
         }
-        var bankHtml = '';
-        var banks = Object.keys(rep.byBank || {});
-        if (banks.length) {
-          bankHtml = '<div class="proj-report-section">به تفکیک بانک</div>';
-          banks.forEach(function(b) {
-            var bb = rep.byBank[b];
-            var net = (bb.in || 0) - (bb.out || 0);
-            bankHtml += row(b + ' (ورود)', bb.in || 0);
-            bankHtml += row(b + ' (خروج)', bb.out || 0);
-            bankHtml += row(b + ' (خالص)', net, net >= 0 ? '#16a34a' : '#dc2626');
-          });
+
+        function formatRowDate(key, day) {
+          // key = "1405-7" یا "1405-07"
+          var y = '', m = '';
+          var parts = String(key || '').split('-');
+          if (parts.length >= 2) {
+            y = parts[0];
+            m = parts[1];
+          }
+          var mm = parseInt(toEnglishDigits(String(m)), 10) || 0;
+          var dd = parseInt(toEnglishDigits(String(day || '')), 10) || 0;
+          if (!y) return '—';
+          var out = y + '/' + String(mm).padStart(2, '0');
+          if (dd >= 1 && dd <= 31) out += '/' + String(dd).padStart(2, '0');
+          return toPersianDigits(out);
         }
-        var inRows = (rep.rows || []).filter(function(x){ return x.tab === 'income'; });
-        var outRows = (rep.rows || []).filter(function(x){ return x.tab === 'expense'; });
+
         function txTable(list, isOut) {
-          if (!list.length) return '<div style="font-size:0.8rem;opacity:0.7;padding:6px 4px;">موردی نیست</div>';
-          var h = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
-          h += '<tr style="background:var(--bg3);"><th style="padding:6px;text-align:right;">تاریخ</th><th style="padding:6px;text-align:right;">بانک</th><th style="padding:6px;text-align:right;">شرح</th><th style="padding:6px;text-align:left;">مبلغ</th></tr>';
+          if (!list.length) {
+            return '<div class="proj-empty">موردی ثبت نشده</div>';
+          }
+          var h = '<div class="proj-table-wrap"><table class="proj-table"><thead><tr>' +
+            '<th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>بانک</th>' +
+            '</tr></thead><tbody>';
           list.forEach(function(r) {
-            var d = (r.key || '') + (r.day ? '/' + r.day : '');
-            h += '<tr style="border-bottom:1px solid var(--border);">' +
-              '<td style="padding:6px;">' + toPersianDigits(d) + '</td>' +
-              '<td style="padding:6px;">' + (r.bank || '—') + '</td>' +
-              '<td style="padding:6px;">' + (r.desc || '—') + '</td>' +
-              '<td style="padding:6px;text-align:left;color:' + (isOut ? '#dc2626' : '#16a34a') + ';">' + formatNum(r.amt) + '</td></tr>';
+            h += '<tr>' +
+              '<td class="proj-td-date">' + formatRowDate(r.key, r.day) + '</td>' +
+              '<td class="proj-td-desc">' + escapeHtml(r.desc || '—') + '</td>' +
+              '<td class="proj-td-amt" style="color:' + (isOut ? '#dc2626' : '#16a34a') + ';">' + formatNum(r.amt) + '</td>' +
+              '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
+              '</tr>';
           });
-          h += '</table></div>';
+          h += '</tbody></table></div>';
           return h;
         }
+
+        var inRows = (rep.rows || []).filter(function(x){ return x.tab === 'income'; });
+        var outRows = (rep.rows || []).filter(function(x){ return x.tab === 'expense'; });
+
         body.innerHTML =
-          '<div class="proj-report-section">خلاصه مالی</div>' +
-          row('موجودی پروژه', rep.balance, rep.balance >= 0 ? '#16a34a' : '#dc2626') +
-          row('بدهی به کاربر', rep.receivable, rep.receivable > 0 ? '#f59e0b' : '') +
-          row('جمع ورودی', rep.received) +
-          row('جمع مخارج', rep.totalCost) +
-          row('پرداخت از موجودی پروژه', rep.spentSubject) +
-          row('پرداخت شخصی کاربر', rep.spentPersonal) +
-          bankHtml +
-          '<div class="proj-report-section">ورودی‌ها</div>' +
+          '<div class="proj-summary">' +
+            '<div class="proj-report-row"><span>جمع واریزی</span><span class="val">' + formatNum(deposits) + ' تومان</span></div>' +
+            '<div class="proj-report-row"><span>جمع مخارج</span><span class="val">' + formatNum(expenses) + ' تومان</span></div>' +
+            statusHtml +
+          '</div>' +
+          '<div class="proj-report-section">واریزی‌های پروژه</div>' +
           txTable(inRows, false) +
-          '<div class="proj-report-section">مخارج</div>' +
-          txTable(outRows, true) +
-          '<div style="font-size:0.75rem;opacity:0.7;line-height:1.5;padding:8px 4px;">مبالغ به تومان است. موجودی واقعی کارت جدا محاسبه می‌شود و دوبار شمرده نمی‌شود.</div>';
+          '<div class="proj-report-section">مخارج پروژه</div>' +
+          txTable(outRows, true);
       }
       var m = document.getElementById('projectReportModal');
       if (m) m.style.display = 'flex';
