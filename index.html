@@ -8687,7 +8687,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v161-PENTA | fix-bank-modal-hide */
+    /* build-stamp: 2026-09-28-v162-PENTA | longpress-scroll-proj-recv */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16876,8 +16876,14 @@ function openPdfPrintWindow(){
               if (typeof projectMoneyOnAccounts === 'function') {
                 cash = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
               }
-              var rep = (typeof computeSubjectReport === 'function') ? computeSubjectReport(s.id) : null;
-              var receivable = Number(rep && rep.receivable) || 0;
+              /* طلب/بدهی فقط نسبت به حساب(های) انتخاب‌شده — نه جمع کل پروژه */
+              var receivable = 0;
+              if (typeof projectReceivableOnAccounts === 'function') {
+                receivable = Number(projectReceivableOnAccounts(s.id, accountSet)) || 0;
+              } else {
+                var rep = (typeof computeSubjectReport === 'function') ? computeSubjectReport(s.id) : null;
+                receivable = Number(rep && rep.receivable) || 0;
+              }
               var hasCash = Math.abs(cash) > EPS;
               var hasDebt = Math.abs(receivable) > EPS;
               /* فقط اگر به کارت انتخاب‌شده مربوط باشد */
@@ -17733,18 +17739,16 @@ function openPdfPrintWindow(){
       try {
         var _scrollKey = String(tab || '') + '|' + String(title || '');
         var _prevScrollEl = document.querySelector('.section-rows-scroll');
-        if (_prevScrollEl) {
+        if (_prevScrollEl && _prevScrollEl.isConnected) {
           var _st = _prevScrollEl.scrollTop || 0;
-          if (_st > 0 || (window._detailRowScroll && window._detailRowScroll[_scrollKey])) {
-            /* فقط اگر مقدار معنی‌دار است یا قبلاً ذخیره شده، به‌روز کن */
-            if (_st > 0) {
-              window._detailRowScroll = window._detailRowScroll || {};
-              window._detailRowScroll[_scrollKey] = _st;
-              if (sec) {
-                sec._rowScrollTop = _st;
-                window._secRowScroll = window._secRowScroll || {};
-                if (sec.id != null) window._secRowScroll[sec.id] = _st;
-              }
+          /* همیشه وقتی >0 ذخیره کن تا بعد از edit/rerender پرش نکند */
+          if (_st > 0) {
+            window._detailRowScroll = window._detailRowScroll || {};
+            window._detailRowScroll[_scrollKey] = _st;
+            if (sec) {
+              sec._rowScrollTop = _st;
+              window._secRowScroll = window._secRowScroll || {};
+              if (sec.id != null) window._secRowScroll[sec.id] = _st;
             }
           }
         }
@@ -17802,7 +17806,21 @@ function openPdfPrintWindow(){
         return banks;
       }
 
-            container.innerHTML = '';
+                  try {
+        var _fk = String(tab || '') + '|' + String(title || '');
+        var _fe = document.querySelector('.section-rows-scroll');
+        if (_fe && (_fe.scrollTop || 0) > 0) {
+          var _fst = _fe.scrollTop;
+          window._detailRowScroll = window._detailRowScroll || {};
+          window._detailRowScroll[_fk] = _fst;
+          if (sec) {
+            sec._rowScrollTop = _fst;
+            window._secRowScroll = window._secRowScroll || {};
+            if (sec.id != null) window._secRowScroll[sec.id] = _fst;
+          }
+        }
+      } catch (eForceScr) {}
+container.innerHTML = '';
       const page = document.createElement('div');
       page.className = 'person-detail-page';
       const box = document.createElement('div');
@@ -20113,6 +20131,55 @@ function getProjectBalance(subjectId) {
     }
 
     /** تخصیص خودکار مخارج پروژه نسبت به موجودی */
+    /** طلب پروژه از کاربر (مخارج شخصی برای پروژه) فقط روی حساب‌های مشخص‌شده */
+    function projectReceivableOnAccounts(subjectId, accountSet) {
+      subjectId = (subjectId || '').trim();
+      if (!subjectId || subjectId === 'personal') return 0;
+      if (!accountSet || typeof accountSet.has !== 'function') return 0;
+      var total = 0;
+      var seen = Object.create(null);
+      var curKey = (typeof periodKey === 'function' && typeof currentYear !== 'undefined')
+        ? periodKey(currentYear, currentMonth) : '';
+      if (typeof iterAllPeriodData !== 'function') return 0;
+      try {
+        iterAllPeriodData(function(pd, key) {
+          if (key === curKey && pd !== periodData) return;
+          ((pd.expense && pd.expense.sections) || []).forEach(function(sec) {
+            (sec.rows || []).forEach(function(r, ri) {
+              if (!r || (r.status || 'paid') !== 'paid') return;
+              var fc = (typeof rowFinancialContext === 'function') ? rowFinancialContext(r) : null;
+              if (!fc) return;
+              if (fc.subjectId !== subjectId) return;
+              if (fc.classification !== 'third_party' && fc.accountType !== 'project') return;
+              var bank = (r.account || '').trim() || 'بدون حساب';
+              if (!accountSet.has(bank)) return;
+              var amt = Number(r.amount) || 0;
+              if (!amt) return;
+              var pAmt = Number(fc.projectAmount) || 0;
+              var aAmt = Number(fc.personalAdvanceAmount) || 0;
+              if (!pAmt && !aAmt) {
+                if (fc.fundingSource === 'subject') pAmt = amt;
+                else if (fc.fundingSource === 'personal') aAmt = amt;
+                else aAmt = 0;
+              }
+              if (pAmt + aAmt > amt && amt > 0) {
+                var scale = amt / (pAmt + aAmt);
+                pAmt = Math.round(pAmt * scale);
+                aAmt = amt - pAmt;
+              }
+              if (!aAmt) return;
+              var dedupe = key + '|' + (r.day || '') + '|' + bank + '|' + amt + '|' + (r.desc || '') + '|' + (r.id || ri);
+              if (seen[dedupe]) return;
+              seen[dedupe] = true;
+              total += aAmt;
+            });
+          });
+        });
+      } catch (e) {}
+      return total;
+    }
+
+
     function allocateProjectExpense(subjectId, amount) {
       amount = Math.max(0, Number(amount) || 0);
       var bal = Math.max(0, getProjectBalance(subjectId));
@@ -25153,6 +25220,7 @@ field('حساب بانکی', accSelRec);
           setTimeout(apply, 160);
           setTimeout(apply, 280);
           setTimeout(apply, 450);
+          setTimeout(apply, 700);
         }
       }
       function persistRowScroll() {
@@ -25224,33 +25292,36 @@ field('حساب بانکی', accSelRec);
       btnAddRow.title = 'ردیف جدید';
       btnAddRow.setAttribute('aria-label', 'ردیف جدید');
       btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      /* کلیک کوتاه = ردیف عادی */
+      /* tap <1s = ردیف عادی | long-press >=1s = ردیف پروژه؛ هر لمس فقط یک action */
+      try {
+        bindLongPress(
+          btnAddRow,
+          function() {
+            try {
+              var fn = window.openProjectRowPicker || openProjectRowPicker;
+              if (typeof fn === 'function') fn(sec.id);
+              else showToast('انتخاب پروژه در دسترس نیست', 'warn');
+            } catch (eP) {
+              try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
+            }
+          },
+          function() {
+            try { addRow(sec.id, 1); } catch (eA) {}
+          },
+          1000
+        );
+      } catch (eBind) {
+        btnAddRow.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          try { addRow(sec.id, 1); } catch (eA) {}
+        });
+      }
       btnAddRow.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        try { addRow(sec.id, 1); } catch (eA) {}
-      });
+      }, true);
       addRowWrap.appendChild(btnAddRow);
-
-      /* دکمه جدا برای ردیف پروژه — قابل اعتمادتر از لانگ‌پرس روی همان آیکون */
-      var btnProj = document.createElement('button');
-      btnProj.type = 'button';
-      btnProj.className = 'btn-circle-plus btn-proj-row';
-      btnProj.title = 'ردیف پروژه';
-      btnProj.setAttribute('aria-label', 'ردیف پروژه');
-      btnProj.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 2h11v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h2"/></svg>';
-      btnProj.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          var fn = window.openProjectRowPicker || openProjectRowPicker;
-          if (typeof fn === 'function') fn(sec.id);
-          else showToast('انتخاب پروژه در دسترس نیست', 'warn');
-        } catch (eP) {
-          try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
-        }
-      });
-      addRowWrap.appendChild(btnProj);
 
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
@@ -25864,6 +25935,7 @@ field('حساب بانکی', accSelRec);
         el.addEventListener('pointerdown', function(e) {
           if (e.button != null && e.button !== 0) return;
           e.stopPropagation();
+          try { e.preventDefault(); } catch (ePd) {}
           try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch (eC) {}
           arm(e, e.clientX, e.clientY, e.pointerId);
         });
