@@ -2395,6 +2395,32 @@
     .ib-breakdown .ib-amt.neg {
       color: rgba(255,255,255,0.92) !important;
     }
+    .ib-bd-sub {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      opacity: 0.75;
+      margin-top: 2px;
+      text-align: right;
+    }
+    .ib-bd-receivable {
+      color: #f0b429 !important;
+      font-size: 0.78rem !important;
+      font-weight: 700 !important;
+    }
+    .ib-breakdown.ib-bd-hidden {
+      display: none !important;
+    }
+    .ib-bd-proj-block {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ib-bd-proj-block .instant-bal-row {
+      border-bottom: none;
+    }
+    .ib-bd-proj-block .ib-bd-recv-row {
+      padding-top: 0;
+      padding-bottom: 10px;
+    }
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
     .ib-check-wrap {
       display: flex;
@@ -8529,7 +8555,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v149-PENTA | ib-breakdown-selected */
+    /* build-stamp: 2026-09-28-v150-PENTA | project-breakdown-receivable */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16385,7 +16411,7 @@ function openPdfPrintWindow(){
           '<span class="ib-amt ib-sum-amt pos">۰</span></div>';
         /* بخش تفکیک موجودی انتخاب‌شده — فقط نمایش؛ منطق موجودی آنی دست‌نخورده */
         html += '<div class="ib-breakdown" id="ibBreakdown">' +
-          '<div class="ib-breakdown-head">تفکیک موجودی انتخاب‌شده</div>' +
+          '<div class="ib-breakdown-head">تفکیک موجودی پروژه‌ها</div>' +
           '<div class="ib-breakdown-body" id="ibBreakdownBody"></div>' +
           '</div>';
         panel.innerHTML = html;
@@ -16409,10 +16435,12 @@ function openPdfPrintWindow(){
             el.classList.remove('pos', 'neg');
             el.classList.add(sum < 0 ? 'neg' : 'pos');
           }
-          /* به‌روزرسانی تفکیک — همان sum به‌عنوان جمع نهایی */
+          /* تفکیک موجودی پروژه‌ها — فقط نمایش؛ جمع انتخاب‌شده دست‌نخورده */
           try {
+            var wrap = panel.querySelector('#ibBreakdown');
             var body = panel.querySelector('#ibBreakdownBody');
             if (!body) return;
+            var EPS = 0.5; /* جلوگیری از خطای اعشاری */
             var projects = [];
             try {
               projects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
@@ -16420,34 +16448,75 @@ function openPdfPrintWindow(){
               });
             } catch (eP) { projects = []; }
             var hasSet = accountSet && typeof accountSet.has === 'function';
-            var projRows = [];
-            var projectsTotal = 0;
+            var activeRows = [];
+            var projectsCashTotal = 0;
             projects.forEach(function(s) {
-              var pAmt = 0;
+              /* موجودی پروژه روی کارت‌های انتخاب‌شده */
+              var cash = 0;
               if (hasSet && accountSet.size > 0 && typeof projectMoneyOnAccounts === 'function') {
-                pAmt = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
+                cash = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
               }
-              projectsTotal += pAmt;
+              /* وضعیت کامل پروژه از همان منبع گزارش پروژه */
+              var rep = (typeof computeSubjectReport === 'function') ? computeSubjectReport(s.id) : null;
+              var receivable = Number(rep && rep.receivable) || 0; /* طلب کاربر از پروژه = spentPersonal */
+              var globalCash = Number(rep && rep.balance) || 0;
+              /* قابل پرداخت به پروژه (در مدل فعلی معمولاً همان موجودی مثبت سراسری است) */
+              var payable = 0;
+              /* نمایش اگر مانده مالی غیرصفر باشد */
+              var hasCash = Math.abs(cash) > EPS;
+              var hasRecv = Math.abs(receivable) > EPS;
+              var hasGlobal = Math.abs(globalCash) > EPS;
+              if (!hasCash && !hasRecv && !hasGlobal) return; /* تسویه */
+              projectsCashTotal += cash;
               var meta = (typeof getProjectHighlightMeta === 'function')
                 ? getProjectHighlightMeta(s.highlightColor) : null;
               var accent = (meta && meta.accent) || '#d000ff';
-              projRows.push({ name: s.name || 'پروژه', amount: pAmt, accent: accent });
+              activeRows.push({
+                name: s.name || 'پروژه',
+                cash: cash,
+                receivable: receivable,
+                accent: accent
+              });
             });
-            var personal = sum - projectsTotal;
+            /* شرط نمایش کل بخش: حداقل یک پروژه با مانده مالی */
+            if (!projects.length || !activeRows.length) {
+              if (wrap) wrap.classList.add('ib-bd-hidden');
+              body.innerHTML = '';
+              return;
+            }
+            if (wrap) wrap.classList.remove('ib-bd-hidden');
+            /* پول شخصی = جمع انتخاب‌شده − موجودی پروژه روی همان کارت‌ها (بدون طلب) */
+            var personal = sum - projectsCashTotal;
             var bd = '';
             bd += '<div class="instant-bal-row">' +
               '<span class="ib-bd-name"><span class="ib-name">پول شخصی</span></span>' +
               '<span class="ib-amt">' + formatNum(personal) + '</span></div>';
-            projRows.forEach(function(pr) {
-              bd += '<div class="instant-bal-row">' +
-                '<span class="ib-bd-name">' +
-                '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
-                '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
-                '<span class="ib-amt">' + formatNum(pr.amount) + '</span></div>';
+            activeRows.forEach(function(pr) {
+              var hasCash = Math.abs(pr.cash) > EPS;
+              var hasRecv = Math.abs(pr.receivable) > EPS;
+              bd += '<div class="ib-bd-proj-block">';
+              if (hasCash) {
+                bd += '<div class="instant-bal-row">' +
+                  '<span class="ib-bd-name">' +
+                  '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
+                  '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
+                  '<span class="ib-amt">' + formatNum(pr.cash) + '</span></div>';
+              } else {
+                /* فقط طلب — نام پروژه با نقطه رنگی */
+                bd += '<div class="instant-bal-row">' +
+                  '<span class="ib-bd-name">' +
+                  '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
+                  '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
+                  '<span class="ib-amt">' + formatNum(0) + '</span></div>';
+              }
+              if (hasRecv) {
+                bd += '<div class="instant-bal-row ib-bd-recv-row">' +
+                  '<span class="ib-bd-name"><span class="ib-bd-sub">طلب من از پروژه</span></span>' +
+                  '<span class="ib-amt ib-bd-receivable">' + formatNum(pr.receivable) + '</span></div>';
+              }
+              bd += '</div>';
             });
-            bd += '<div class="instant-bal-row ib-bd-sum">' +
-              '<span class="ib-name">جمع</span>' +
-              '<span class="ib-amt ib-bd-sum-amt">' + formatNum(sum) + '</span></div>';
+            /* ردیف «جمع» حذف شد — همان جمع انتخاب‌شده در بالا */
             body.innerHTML = bd;
           } catch (eBd) {}
         }
