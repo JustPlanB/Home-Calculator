@@ -3421,7 +3421,79 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    .person-detail-add .btn-circle-plus.lp-holding {
+    .person-detail-add 
+    /* —— سوئیچ شخصی / پروژه برای دکمه + درآمد و مخارج —— */
+    .row-add-switch {
+      position: relative;
+      width: 64px;
+      height: 34px;
+      border-radius: 999px;
+      background: #252525;
+      box-shadow:
+        inset 2px 2px 4px rgba(0,0,0,0.55),
+        inset -1px -1px 3px rgba(255,255,255,0.06);
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      touch-action: manipulation;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      margin-top: 6px;
+    }
+    .row-add-switch .ras-track {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+    .row-add-switch .ras-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1b1b1b;
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      transition: left 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .row-add-switch .ras-knob svg {
+      width: 16px;
+      height: 16px;
+      stroke: #08b5f5;
+      stroke-width: 2.6;
+      fill: none;
+      transition: stroke 0.2s ease;
+      pointer-events: none;
+    }
+    .row-add-switch.is-project .ras-knob {
+      left: calc(100% - 30px);
+    }
+    .row-add-switch.is-project .ras-knob svg {
+      stroke: #c084fc;
+    }
+    .row-add-switch.is-project {
+      border-color: rgba(192,132,252,0.35);
+    }
+    .row-add-switch:not(.is-project) {
+      border-color: rgba(8,181,245,0.28);
+    }
+.btn-circle-plus.lp-holding {
       box-shadow: 0 0 0 3px rgba(59,130,246,0.55) !important;
     }
     .btn-proj-row {
@@ -8687,7 +8759,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v162-PENTA | longpress-scroll-proj-recv */
+    /* build-stamp: 2026-09-28-v163-PENTA | personal-project-toggle-switch */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -25291,37 +25363,64 @@ field('حساب بانکی', accSelRec);
       btnAddRow.className = 'btn-circle-plus';
       btnAddRow.title = 'ردیف جدید';
       btnAddRow.setAttribute('aria-label', 'ردیف جدید');
-      btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      /* tap <1s = ردیف عادی | long-press >=1s = ردیف پروژه؛ هر لمس فقط یک action */
-      try {
-        bindLongPress(
-          btnAddRow,
-          function() {
-            try {
-              var fn = window.openProjectRowPicker || openProjectRowPicker;
-              if (typeof fn === 'function') fn(sec.id);
-              else showToast('انتخاب پروژه در دسترس نیست', 'warn');
-            } catch (eP) {
-              try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
-            }
-          },
-          function() {
-            try { addRow(sec.id, 1); } catch (eA) {}
-          },
-          1000
-        );
-      } catch (eBind) {
-        btnAddRow.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          try { addRow(sec.id, 1); } catch (eA) {}
-        });
+      /* سوئیچ بیضی: چپ=شخصی (آبی) | راست=پروژه (بنفش) */
+      var sw = document.createElement('div');
+      sw.className = 'row-add-switch';
+      sw.setAttribute('data-mode', 'personal');
+      sw.setAttribute('role', 'switch');
+      sw.setAttribute('aria-checked', 'false');
+      sw.title = 'شخصی / پروژه';
+      sw.innerHTML =
+        '<div class="ras-track" aria-hidden="true"></div>' +
+        '<button type="button" class="ras-knob" aria-label="افزودن ردیف">' +
+          '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+        '</button>';
+      var knob = sw.querySelector('.ras-knob');
+      function setRowMode(mode) {
+        var isProj = mode === 'project';
+        sw.setAttribute('data-mode', isProj ? 'project' : 'personal');
+        sw.setAttribute('aria-checked', isProj ? 'true' : 'false');
+        if (isProj) sw.classList.add('is-project');
+        else sw.classList.remove('is-project');
+        try { knob.setAttribute('aria-label', isProj ? 'افزودن ردیف پروژه' : 'افزودن ردیف شخصی'); } catch (eA) {}
       }
-      btnAddRow.addEventListener('click', function(e) {
+      function openProjForSection() {
+        try {
+          var fn = window.openProjectRowPicker || openProjectRowPicker;
+          if (typeof fn === 'function') fn(sec.id);
+          else showToast('انتخاب پروژه در دسترس نیست', 'warn');
+        } catch (eP) {
+          try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
+        }
+      }
+      /* کلیک روی بیضی: سمت چپ=شخصی، سمت راست=پروژه + باز شدن منو */
+      sw.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-      }, true);
-      addRowWrap.appendChild(btnAddRow);
+        var rect = sw.getBoundingClientRect();
+        var x = (e.clientX != null ? e.clientX : (rect.left + rect.width / 2)) - rect.left;
+        var goProject = x > rect.width * 0.5;
+        /* اگر روی خود knob کلیک شده: اجرای action بر اساس mode فعلی */
+        var onKnob = e.target === knob || (knob.contains && knob.contains(e.target));
+        if (onKnob) {
+          if (sw.getAttribute('data-mode') === 'project') openProjForSection();
+          else { try { addRow(sec.id, 1); } catch (eA) {} }
+          return;
+        }
+        if (goProject) {
+          setRowMode('project');
+          openProjForSection();
+        } else {
+          setRowMode('personal');
+        }
+      });
+      knob.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (sw.getAttribute('data-mode') === 'project') openProjForSection();
+        else { try { addRow(sec.id, 1); } catch (eA) {} }
+      });
+      addRowWrap.appendChild(sw);
 
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
@@ -25853,6 +25952,7 @@ field('حساب بانکی', accSelRec);
           }
           closeProjectRowPicker();
           addRow(secId, 1, { financialContext: fc });
+          /* بعد از ثبت ردیف پروژه، سوئیچ روی پروژه می‌ماند تا کاربر برگرداند */
         });
         list.appendChild(btn);
       });
