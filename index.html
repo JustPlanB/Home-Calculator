@@ -2359,7 +2359,7 @@
       margin-top: 2px;
       padding-top: 2px;
     }
-    .ib-breakdown-head {
+    .ib-breakdown-head { display: none !important; /* title removed */
       padding: 12px 14px 8px;
       font-weight: 800;
       font-size: 0.88rem;
@@ -2387,6 +2387,70 @@
       align-items: center;
       gap: 6px;
       min-width: 0;
+    }
+    .proj-row-picker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100500;
+      background: rgba(0,0,0,0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+    .proj-row-picker-overlay.open { opacity: 1; }
+    .proj-row-picker-panel {
+      width: min(100%, 340px);
+      max-height: min(70vh, 420px);
+      overflow-y: auto;
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      direction: rtl;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+      padding: 14px;
+    }
+    .proj-row-picker-title {
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .proj-row-picker-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      text-align: right;
+      padding: 12px 12px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .proj-row-picker-item:active { background: rgba(255,255,255,0.1); }
+    .proj-row-picker-cancel {
+      width: 100%;
+      margin-top: 6px;
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
     }
     .ib-breakdown.ib-bd-hidden {
       display: none !important;
@@ -8541,7 +8605,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v151-PENTA | ib-project-credit-debt-ui */
+    /* build-stamp: 2026-09-28-v152-PENTA | ib-related-cards longpress-project-row */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16397,7 +16461,7 @@ function openPdfPrintWindow(){
           '<span class="ib-amt ib-sum-amt pos">۰</span></div>';
         /* بخش تفکیک موجودی انتخاب‌شده — فقط نمایش؛ منطق موجودی آنی دست‌نخورده */
         html += '<div class="ib-breakdown" id="ibBreakdown">' +
-          '<div class="ib-breakdown-head">تفکیک موجودی پروژه‌ها</div>' +
+          '' +
           '<div class="ib-breakdown-body" id="ibBreakdownBody"></div>' +
           '</div>';
         panel.innerHTML = html;
@@ -16421,12 +16485,12 @@ function openPdfPrintWindow(){
             el.classList.remove('pos', 'neg');
             el.classList.add(sum < 0 ? 'neg' : 'pos');
           }
-          /* تفکیک موجودی پروژه‌ها — فقط نمایش؛ جمع انتخاب‌شده دست‌نخورده */
+          /* تفکیک پروژه — فقط وقتی کارت مرتبط تیک خورده؛ بدون عنوان */
           try {
             var wrap = panel.querySelector('#ibBreakdown');
             var body = panel.querySelector('#ibBreakdownBody');
             if (!body) return;
-            var EPS = 0.5; /* جلوگیری از خطای اعشاری */
+            var EPS = 0.5;
             var projects = [];
             try {
               projects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
@@ -16436,58 +16500,57 @@ function openPdfPrintWindow(){
             var hasSet = accountSet && typeof accountSet.has === 'function';
             var activeRows = [];
             var projectsCashTotal = 0;
+            var projectsDebtTotal = 0;
+            /* دیفالت: اگر هیچ کارتی تیک نخورده، چیزی نشان نده */
+            if (!hasSet || accountSet.size === 0 || !projects.length) {
+              if (wrap) wrap.classList.add('ib-bd-hidden');
+              body.innerHTML = '';
+              return;
+            }
             projects.forEach(function(s) {
-              /* موجودی پروژه روی کارت‌های انتخاب‌شده */
+              var touches = (typeof projectTouchesAccounts === 'function')
+                ? projectTouchesAccounts(s.id, accountSet) : false;
               var cash = 0;
-              if (hasSet && accountSet.size > 0 && typeof projectMoneyOnAccounts === 'function') {
+              if (typeof projectMoneyOnAccounts === 'function') {
                 cash = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
               }
-              /* همان منبع گزارش پروژه */
               var rep = (typeof computeSubjectReport === 'function') ? computeSubjectReport(s.id) : null;
-              var receivable = Number(rep && rep.receivable) || 0; /* بدهی پروژه به کاربر */
-              var globalCash = Number(rep && rep.balance) || 0;
-              var hasCash = Math.abs(cash) > EPS || Math.abs(globalCash) > EPS;
+              var receivable = Number(rep && rep.receivable) || 0;
+              var hasCash = Math.abs(cash) > EPS;
               var hasDebt = Math.abs(receivable) > EPS;
-              /* تسویه کامل → نمایش نده */
-              if (!hasCash && !hasDebt) return;
-              /* برای تفکیک کارت‌ها از موجودی روی حساب‌های انتخاب‌شده استفاده کن؛
-                 اگر سراسری موجودی دارد ولی روی انتخاب‌شده صفر است، همان صفر را نشان بده */
-              var showCash = Math.abs(cash) > EPS ? cash : (Math.abs(globalCash) > EPS && (!hasSet || accountSet.size === 0) ? globalCash : cash);
-              /* فقط وقتی روی کارت‌های انتخاب‌شده یا طلب غیرصفر است در لیست فعال بماند */
-              if (Math.abs(showCash) <= EPS && !hasDebt) return;
-              if (Math.abs(showCash) > EPS) projectsCashTotal += showCash;
+              /* فقط اگر به کارت انتخاب‌شده مربوط باشد */
+              if (!touches && !hasCash) return;
+              if (!hasCash && !hasDebt) return; /* تسویه */
+              if (hasCash) projectsCashTotal += cash;
+              if (hasDebt) projectsDebtTotal += receivable;
               var meta = (typeof getProjectHighlightMeta === 'function')
                 ? getProjectHighlightMeta(s.highlightColor) : null;
               var accent = (meta && meta.accent) || '#d000ff';
               activeRows.push({
                 name: s.name || 'پروژه',
-                cash: showCash,
+                cash: cash,
                 receivable: receivable,
                 accent: accent
               });
             });
-            /* فقط وقتی حداقل یک پروژه طلبکار/بدهکار است بخش را نشان بده؛ وگرنه جدول معمولی */
-            if (!projects.length || !activeRows.length) {
+            if (!activeRows.length) {
               if (wrap) wrap.classList.add('ib-bd-hidden');
               body.innerHTML = '';
               return;
             }
             if (wrap) wrap.classList.remove('ib-bd-hidden');
-            /* موجودی شخصی = جمع انتخاب‌شده − موجودی پروژه‌ها روی همان کارت‌ها (بدون بدهی) */
-            var personal = sum - projectsCashTotal;
+            /* شخصی = جمع انتخاب − موجودی پروژه + بدهی پروژه (طلب کاربر) */
+            var personal = sum - projectsCashTotal + projectsDebtTotal;
             var bd = '';
-            /* اول پروژه‌ها: طلبکار سبز / بدهکار قرمز */
             activeRows.forEach(function(pr) {
-              var hasCash = Math.abs(pr.cash) > EPS;
-              var hasDebt = Math.abs(pr.receivable) > EPS;
-              if (hasCash) {
+              if (Math.abs(pr.cash) > EPS) {
                 bd += '<div class="instant-bal-row">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
                   '<span class="ib-name">موجودی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
                   '<span class="ib-amt ib-bd-credit">' + formatNum(pr.cash) + '</span></div>';
               }
-              if (hasDebt) {
+              if (Math.abs(pr.receivable) > EPS) {
                 bd += '<div class="instant-bal-row">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
@@ -16495,7 +16558,6 @@ function openPdfPrintWindow(){
                   '<span class="ib-amt ib-bd-debt">' + formatNum(pr.receivable) + '</span></div>';
               }
             });
-            /* بعد موجودی شخصی */
             bd += '<div class="instant-bal-row ib-bd-personal-row">' +
               '<span class="ib-bd-name"><span class="ib-name">موجودی شخصی</span></span>' +
               '<span class="ib-amt ib-bd-personal">' + formatNum(personal) + '</span></div>';
@@ -19577,7 +19639,41 @@ function openPdfPrintWindow(){
      * (واریز پروژه − مخارج از محل پروژه روی همان حساب‌ها)
      * طلب/بدهیِ پرداخت‌نشده را حساب نمی‌کند.
      */
-    function projectMoneyOnAccounts(subjectId, accountSet) {
+    
+    /** آیا پروژه روی حداقل یکی از حساب‌های داده‌شده تراکنش دارد؟ */
+    function projectTouchesAccounts(subjectId, accountSet) {
+      subjectId = (subjectId || '').trim();
+      if (!subjectId || subjectId === 'personal') return false;
+      if (!accountSet || typeof accountSet.has !== 'function' || accountSet.size === 0) return false;
+      var seen = false;
+      var curKey = (typeof periodKey === 'function' && typeof currentYear !== 'undefined')
+        ? periodKey(currentYear, currentMonth) : '';
+      if (typeof iterAllPeriodData !== 'function') return false;
+      try {
+        iterAllPeriodData(function(pd, key) {
+          if (seen) return;
+          if (key === curKey && pd !== periodData) return;
+          ['income', 'expense'].forEach(function(tab) {
+            if (seen) return;
+            ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
+              if (seen) return;
+              (sec.rows || []).forEach(function(r) {
+                if (seen) return;
+                if (!r || (r.status || 'paid') !== 'paid') return;
+                var fc = (typeof rowFinancialContext === 'function') ? rowFinancialContext(r) : null;
+                if (!fc || fc.subjectId !== subjectId) return;
+                if (fc.classification !== 'third_party' && fc.accountType !== 'project') return;
+                var bank = (r.account || '').trim() || 'بدون حساب';
+                if (accountSet.has(bank)) seen = true;
+              });
+            });
+          });
+        });
+      } catch (e) {}
+      return seen;
+    }
+
+function projectMoneyOnAccounts(subjectId, accountSet) {
       subjectId = (subjectId || '').trim();
       if (!subjectId || subjectId === 'personal') return 0;
       if (!accountSet || typeof accountSet.has !== 'function') return 0;
@@ -24687,8 +24783,20 @@ field('حساب بانکی', accSelRec);
       btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       btnAddRow.onclick = (e) => {
         e.stopPropagation();
-        addRow(sec.id, 1);
+        e.preventDefault();
       };
+      if (typeof bindLongPress === 'function') {
+        bindLongPress(btnAddRow, function(e) {
+          try { openProjectRowPicker(sec.id); } catch (eL) {}
+        }, function(e) {
+          addRow(sec.id, 1);
+        }, 480);
+      } else {
+        btnAddRow.addEventListener('click', function(e) {
+          e.stopPropagation();
+          addRow(sec.id, 1);
+        });
+      }
       addRowWrap.appendChild(btnAddRow);
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
@@ -25163,12 +25271,126 @@ field('حساب بانکی', accSelRec);
       return true;
     }
 
-    function addRow(secId, count) {
+
+    function closeProjectRowPicker() {
+      var ov = document.getElementById('projectRowPickerOverlay');
+      if (ov) ov.remove();
+    }
+    function openProjectRowPicker(secId) {
+      closeProjectRowPicker();
+      var projects = [];
+      try {
+        projects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
+          return s && s.id && s.id !== 'personal';
+        });
+      } catch (e) { projects = []; }
+      if (!projects.length) {
+        try { showToast('پروژه‌ای تعریف نشده است', 'warn'); } catch (eT) {}
+        return;
+      }
+      var ov = document.createElement('div');
+      ov.id = 'projectRowPickerOverlay';
+      ov.className = 'proj-row-picker-overlay';
+      ov.innerHTML = '<div class="proj-row-picker-panel" role="dialog" aria-label="انتخاب پروژه">' +
+        '<div class="proj-row-picker-title">انتخاب پروژه</div>' +
+        '<div class="proj-row-picker-list" id="projRowPickerList"></div>' +
+        '<button type="button" class="proj-row-picker-cancel" id="projRowPickerCancel">انصراف</button>' +
+        '</div>';
+      document.body.appendChild(ov);
+      var list = ov.querySelector('#projRowPickerList');
+      projects.forEach(function(s) {
+        var meta = (typeof getProjectHighlightMeta === 'function')
+          ? getProjectHighlightMeta(s.highlightColor) : null;
+        var accent = (meta && meta.accent) || '#d000ff';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'proj-row-picker-item';
+        btn.innerHTML = '<span class="ib-proj-dot" style="background:' + accent + ';"></span>' +
+          '<span>' + escapeHtml(s.name || 'پروژه') + '</span>';
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var fc = defaultFinancialContext();
+          fc.classification = 'third_party';
+          fc.accountType = 'project';
+          fc.subjectId = s.id;
+          fc.subjectName = s.name || '';
+          fc.ownerName = fc.subjectName;
+          var tab = (typeof currentTab !== 'undefined') ? currentTab : 'expense';
+          if (tab === 'income') {
+            fc.fundingSource = 'subject';
+            fc.projectAmount = 0;
+            fc.personalAdvanceAmount = 0;
+          } else {
+            fc.fundingSource = 'subject';
+            fc.projectAmount = 0;
+            fc.personalAdvanceAmount = 0;
+          }
+          closeProjectRowPicker();
+          addRow(secId, 1, { financialContext: fc });
+        });
+        list.appendChild(btn);
+      });
+      ov.querySelector('#projRowPickerCancel').onclick = function(e) {
+        e.preventDefault();
+        closeProjectRowPicker();
+      };
+      ov.addEventListener('click', function(e) {
+        if (e.target === ov) closeProjectRowPicker();
+      });
+      requestAnimationFrame(function() { ov.classList.add('open'); });
+    }
+    function bindLongPress(el, onLong, onShort, ms) {
+      if (!el) return;
+      ms = ms || 480;
+      var timer = null;
+      var longFired = false;
+      function clear() {
+        if (timer) { clearTimeout(timer); timer = null; }
+      }
+      function start(e) {
+        longFired = false;
+        clear();
+        timer = setTimeout(function() {
+          longFired = true;
+          try { if (navigator.vibrate) navigator.vibrate(12); } catch (eV) {}
+          if (typeof onLong === 'function') onLong(e);
+        }, ms);
+      }
+      function end(e) {
+        var wasLong = longFired;
+        clear();
+        if (!wasLong && typeof onShort === 'function') onShort(e);
+        longFired = false;
+      }
+      el.addEventListener('touchstart', start, { passive: true });
+      el.addEventListener('touchend', end, { passive: true });
+      el.addEventListener('touchcancel', clear, { passive: true });
+      el.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        start(e);
+      });
+      el.addEventListener('mouseup', end);
+      el.addEventListener('mouseleave', clear);
+    }
+
+    function addRow(secId, count, opts) {
       closeRemindBarIfOpen();
       const sec = findSection(secId);
       if (!sec) return;
+      opts = opts || {};
       const n = Math.max(1, Math.min(5, parseInt(count, 10) || 1));
-      for (let i = 0; i < n; i++) sec.rows.push(emptyRow());
+      for (let i = 0; i < n; i++) {
+        var row = emptyRow();
+        if (opts.financialContext && typeof opts.financialContext === 'object') {
+          try {
+            row.financialContext = JSON.parse(JSON.stringify(opts.financialContext));
+          } catch (eFc) {
+            row.financialContext = opts.financialContext;
+          }
+        }
+        sec.rows.push(row);
+      }
       sec.collapsed = false;
       // پنجره را روی آخرین ردیف‌ها بگذار تا ردیف جدید دیده شود
       try {
