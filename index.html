@@ -3421,30 +3421,37 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    /* —— سوئیچ شخصی / پروژه برای دکمه + درآمد و مخارج —— */
+    /* —— سوئیچ شخصی / پروژه (بیضی کشویی شبیه آنلاک) —— */
     .row-add-switch {
       position: relative !important;
-      width: 72px !important;
-      height: 36px !important;
-      min-width: 72px !important;
-      min-height: 36px !important;
+      width: 118px !important;
+      height: 38px !important;
+      min-width: 118px !important;
+      min-height: 38px !important;
       border-radius: 999px !important;
       background: #2a2a2a !important;
       box-shadow:
         inset 2px 2px 5px rgba(0,0,0,0.55),
         inset -1px -1px 3px rgba(255,255,255,0.07) !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      cursor: pointer !important;
+      display: block !important;
+      cursor: grab !important;
       flex-shrink: 0 !important;
       -webkit-tap-highlight-color: transparent;
       user-select: none !important;
-      touch-action: manipulation !important;
-      border: 1px solid rgba(8,181,245,0.4) !important;
+      -webkit-user-select: none !important;
+      touch-action: none !important;
+      border: 1px solid rgba(8,181,245,0.45) !important;
       box-sizing: border-box !important;
-      margin: 8px 10px 12px !important;
+      /* چسبیده به سمت چپ کارت */
+      margin: 10px auto 14px 12px !important;
       padding: 0 !important;
-      overflow: visible !important;
+      overflow: hidden !important;
+      z-index: 5 !important;
+      transform: none !important;
+      filter: none !important;
+    }
+    .row-add-switch.is-project {
+      border-color: rgba(192,132,252,0.55) !important;
     }
     .row-add-switch .ras-track {
       position: absolute !important;
@@ -3455,16 +3462,17 @@
     }
     .row-add-switch .ras-knob {
       position: absolute !important;
-      top: 3px !important;
-      left: 3px !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      left: 4px !important;
       width: 30px !important;
       height: 30px !important;
       min-width: 30px !important;
       min-height: 30px !important;
+      margin: auto 0 !important; /* وسط عمودی دقیق */
       border-radius: 50% !important;
       border: none !important;
       padding: 0 !important;
-      margin: 0 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -3472,10 +3480,18 @@
       box-shadow:
         0 2px 6px rgba(0,0,0,0.5),
         inset 0 1px 0 rgba(255,255,255,0.1) !important;
-      transition: left 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease !important;
-      cursor: pointer !important;
-      z-index: 2 !important;
+      transition: left 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease !important;
+      cursor: grab !important;
+      z-index: 6 !important;
       -webkit-tap-highlight-color: transparent;
+      touch-action: none !important;
+    }
+    .row-add-switch.is-dragging .ras-knob {
+      transition: none !important;
+      cursor: grabbing !important;
+    }
+    .row-add-switch.is-project .ras-knob {
+      left: calc(100% - 34px) !important;
     }
     .row-add-switch .ras-knob svg {
       width: 17px !important;
@@ -3486,75 +3502,24 @@
       transition: stroke 0.2s ease !important;
       pointer-events: none !important;
     }
-    .row-add-switch.is-project {
-      border-color: rgba(192,132,252,0.55) !important;
-    }
-    .row-add-switch.is-project .ras-knob {
-      left: calc(100% - 33px) !important;
-    }
     .row-add-switch.is-project .ras-knob svg {
       stroke: #c084fc !important;
     }
-
-    /* سوئیچ روی صفحه جزئیات درآمد/مخارج — باید از استایل table-add-tab مستقل باشد */
     .person-detail-box > .row-add-switch,
     .person-detail-page .row-add-switch {
-      position: relative !important;
-      width: 72px !important;
-      height: 36px !important;
-      min-width: 72px !important;
-      min-height: 36px !important;
-      margin: 10px 12px 14px !important;
-      border-radius: 999px !important;
-      background: #2a2a2a !important;
-      border: 1px solid rgba(8,181,245,0.45) !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      box-sizing: border-box !important;
-      z-index: 5 !important;
-      transform: none !important;
-      filter: none !important;
-      overflow: visible !important;
+      width: 118px !important;
+      height: 38px !important;
+      min-width: 118px !important;
+      margin: 10px auto 14px 12px !important;
     }
-    .person-detail-box > .row-add-switch.is-project,
-    .person-detail-page .row-add-switch.is-project {
-      border-color: rgba(192,132,252,0.55) !important;
-    }
-    .person-detail-box > .row-add-switch .ras-knob,
-    .person-detail-page .row-add-switch .ras-knob {
-      position: absolute !important;
-      top: 3px !important;
-      left: 3px !important;
-      width: 30px !important;
-      height: 30px !important;
-      border-radius: 50% !important;
-      background: #1b1b1b !important;
+    .add-row-wrap {
       display: flex !important;
       align-items: center !important;
-      justify-content: center !important;
-      border: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      z-index: 6 !important;
-      transition: left 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+      justify-content: flex-start !important;
+      direction: ltr !important;
+      padding: 4px 8px 8px !important;
     }
-    .person-detail-box > .row-add-switch.is-project .ras-knob,
-    .person-detail-page .row-add-switch.is-project .ras-knob {
-      left: calc(100% - 33px) !important;
-    }
-    .person-detail-box > .row-add-switch .ras-knob svg,
-    .person-detail-page .row-add-switch .ras-knob svg {
-      width: 17px !important;
-      height: 17px !important;
-      stroke: #08b5f5 !important;
-      stroke-width: 2.8 !important;
-      fill: none !important;
-      pointer-events: none !important;
-    }
-    .person-detail-box > .row-add-switch.is-project .ras-knob svg,
-    .person-detail-page .row-add-switch.is-project .ras-knob svg {
-      stroke: #c084fc !important;
-    }
+
 
     .add-row-wrap {
       display: flex !important;
@@ -8829,7 +8794,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v165-PENTA | switch-on-real-table-add-tab-path */
+    /* build-stamp: 2026-09-28-v166-PENTA | slide-unlock-switch-left-wider */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18488,13 +18453,26 @@ container.innerHTML = '';
           '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
         '</button>';
       var knob = sw.querySelector('.ras-knob');
-      function setRowMode(mode) {
+      var PAD = 4;
+      var KNOB_W = 30;
+      function maxLeft() {
+        return Math.max(PAD, (sw.clientWidth || 118) - KNOB_W - PAD);
+      }
+      function setRowMode(mode, instant) {
         var isProj = mode === 'project';
         sw.setAttribute('data-mode', isProj ? 'project' : 'personal');
         sw.setAttribute('aria-checked', isProj ? 'true' : 'false');
         if (isProj) sw.classList.add('is-project');
         else sw.classList.remove('is-project');
         try { knob.setAttribute('aria-label', isProj ? 'افزودن ردیف پروژه' : 'افزودن ردیف شخصی'); } catch (eA) {}
+        try {
+          if (instant) knob.style.transition = 'none';
+          knob.style.left = (isProj ? maxLeft() : PAD) + 'px';
+          if (instant) {
+            void knob.offsetWidth;
+            knob.style.transition = '';
+          }
+        } catch (eL) {}
       }
       function openProjForSection() {
         try {
@@ -18513,30 +18491,76 @@ container.innerHTML = '';
           try { addRow(sec.id, 1); } catch (eA) {}
         }
       }
-      sw.addEventListener('click', function(e) {
+      /* کشیدن دایره مثل آنلاک آیفون */
+      var dragging = false;
+      var startX = 0;
+      var startLeft = 0;
+      var moved = false;
+      var activeId = null;
+      function knobLeft() {
+        var v = parseFloat(knob.style.left);
+        if (!isNaN(v)) return v;
+        return sw.classList.contains('is-project') ? maxLeft() : PAD;
+      }
+      function onPtrDown(e) {
+        if (e.button != null && e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
-        var rect = sw.getBoundingClientRect();
-        var x = (e.clientX != null ? e.clientX : (rect.left + rect.width / 2)) - rect.left;
-        var onKnob = (e.target === knob) || (knob && knob.contains && knob.contains(e.target));
-        if (onKnob) {
+        dragging = true;
+        moved = false;
+        activeId = e.pointerId != null ? e.pointerId : null;
+        startX = e.clientX;
+        startLeft = knobLeft();
+        sw.classList.add('is-dragging');
+        try { knob.style.transition = 'none'; } catch (eT) {}
+        try { if (knob.setPointerCapture && activeId != null) knob.setPointerCapture(activeId); } catch (eC) {}
+      }
+      function onPtrMove(e) {
+        if (!dragging) return;
+        if (activeId != null && e.pointerId !== activeId) return;
+        e.preventDefault();
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        var next = Math.min(maxLeft(), Math.max(PAD, startLeft + dx));
+        knob.style.left = next + 'px';
+      }
+      function onPtrUp(e) {
+        if (!dragging) return;
+        if (activeId != null && e.pointerId != null && e.pointerId !== activeId) return;
+        dragging = false;
+        sw.classList.remove('is-dragging');
+        try { knob.style.transition = ''; } catch (eT) {}
+        var left = knobLeft();
+        var mid = maxLeft() * 0.45;
+        try { if (knob.releasePointerCapture && activeId != null) knob.releasePointerCapture(activeId); } catch (eR) {}
+        activeId = null;
+        if (!moved) {
+          /* ضربه کوتاه روی دایره = افزودن بر اساس حالت فعلی */
           if (sw.getAttribute('data-mode') === 'project') openProjForSection();
           else addPersonalRow();
           return;
         }
-        if (x > rect.width * 0.5) {
+        if (left >= mid) {
           setRowMode('project');
           openProjForSection();
         } else {
           setRowMode('personal');
         }
-      });
-      knob.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (sw.getAttribute('data-mode') === 'project') openProjForSection();
-        else addPersonalRow();
-      });
+      }
+      function onPtrCancel() {
+        dragging = false;
+        activeId = null;
+        sw.classList.remove('is-dragging');
+        try { knob.style.transition = ''; } catch (eT) {}
+        setRowMode(sw.getAttribute('data-mode') === 'project' ? 'project' : 'personal');
+      }
+      knob.addEventListener('pointerdown', onPtrDown);
+      knob.addEventListener('pointermove', onPtrMove);
+      knob.addEventListener('pointerup', onPtrUp);
+      knob.addEventListener('pointercancel', onPtrCancel);
+      /* جلوگیری از click مصنوعی */
+      knob.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+      setRowMode('personal', true);
       box.appendChild(sw);
 
       page.appendChild(box);
