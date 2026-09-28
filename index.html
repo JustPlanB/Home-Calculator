@@ -8687,7 +8687,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v159-PENTA | no-cloud scroll-fix dual-proj */
+    /* build-stamp: 2026-09-28-v160-PENTA | prev+no-cloud-no-family-no-false-toast */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17802,21 +17802,7 @@ function openPdfPrintWindow(){
         return banks;
       }
 
-            try {
-        var _rs = document.querySelector('.section-rows-scroll');
-        if (_rs) {
-          var _sv = _rs.scrollTop || 0;
-          window._detailRowScroll = window._detailRowScroll || {};
-          var _sk = String(tab || '') + '|' + String(title || '');
-          if (_sv > 0) window._detailRowScroll[_sk] = _sv;
-          if (sec) {
-            sec._rowScrollTop = _sv > 0 ? _sv : (sec._rowScrollTop || 0);
-            window._secRowScroll = window._secRowScroll || {};
-            if (sec.id != null && _sv > 0) window._secRowScroll[sec.id] = _sv;
-          }
-        }
-      } catch (eSaveScr) {}
-      container.innerHTML = '';
+            container.innerHTML = '';
       const page = document.createElement('div');
       page.className = 'person-detail-page';
       const box = document.createElement('div');
@@ -17972,7 +17958,7 @@ function openPdfPrintWindow(){
               return;
             }
             desc.readOnly = false;
-            try { desc.focus({ preventScroll: true }); } catch (err) { try { desc.focus(); } catch (e2) {} }
+            try { desc.focus(); } catch (err) {}
             return;
           }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
@@ -17988,7 +17974,7 @@ function openPdfPrintWindow(){
           document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           desc.readOnly = false;
           desc.classList.add('pd-editing');
-          try { desc.focus({ preventScroll: true }); } catch (err) { try { desc.focus(); } catch (e2) {} }
+          try { desc.focus(); } catch (err) {}
         };
         desc.onfocus = () => {
           if (fromPlan) return;
@@ -18059,7 +18045,7 @@ function openPdfPrintWindow(){
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           amt.readOnly = false;
-          try { amt.focus({ preventScroll: true }); } catch (err) { try { amt.focus(); } catch (e2) {} }
+          try { amt.focus(); } catch (err) {}
         }
         amt.ondblclick = (e) => {
           e.preventDefault();
@@ -18158,7 +18144,7 @@ function openPdfPrintWindow(){
           if (fromPlan) return;
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
-            try { amt.focus({ preventScroll: true }); } catch (err) { try { amt.focus(); } catch (e2) {} }
+            try { amt.focus(); } catch (err) {}
             return;
           }
           if (document.activeElement === amt && !amt.readOnly) return;
@@ -21135,10 +21121,9 @@ function confirmSmsEntry() {
       var secNote = (sec && sec.title) ? (' — ' + sec.title) : '';
       showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote + secNote);
       try {
-        /* در صفحه جزئیات کارت، scrollIntoView باعث پرش جدول می‌شود */
-        if (sec && !(typeof _detailContext !== 'undefined' && _detailContext)) {
+        if (sec) {
           const el = document.getElementById('sec-' + tab + '-' + sec.id);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } catch (e) {}
       try {
@@ -25168,8 +25153,6 @@ field('حساب بانکی', accSelRec);
           setTimeout(apply, 160);
           setTimeout(apply, 280);
           setTimeout(apply, 450);
-          setTimeout(apply, 700);
-          setTimeout(apply, 1000);
         }
       }
       function persistRowScroll() {
