@@ -2388,38 +2388,24 @@
       gap: 6px;
       min-width: 0;
     }
-    .ib-breakdown .ib-amt {
-      color: rgba(255,255,255,0.92) !important;
-    }
-    .ib-breakdown .ib-amt.pos,
-    .ib-breakdown .ib-amt.neg {
-      color: rgba(255,255,255,0.92) !important;
-    }
-    .ib-bd-sub {
-      display: block;
-      font-size: 0.72rem;
-      font-weight: 600;
-      opacity: 0.75;
-      margin-top: 2px;
-      text-align: right;
-    }
-    .ib-bd-receivable {
-      color: #f0b429 !important;
-      font-size: 0.78rem !important;
-      font-weight: 700 !important;
-    }
     .ib-breakdown.ib-bd-hidden {
       display: none !important;
     }
-    .ib-bd-proj-block {
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+    .ib-breakdown .ib-amt.ib-bd-credit {
+      color: #9ee858 !important;
+      font-weight: 700;
     }
-    .ib-bd-proj-block .instant-bal-row {
-      border-bottom: none;
+    .ib-breakdown .ib-amt.ib-bd-debt {
+      color: #ff6b4a !important;
+      font-weight: 700;
     }
-    .ib-bd-proj-block .ib-bd-recv-row {
-      padding-top: 0;
-      padding-bottom: 10px;
+    .ib-breakdown .ib-amt.ib-bd-personal {
+      color: rgba(255,255,255,0.92) !important;
+      font-weight: 700;
+    }
+    .ib-bd-personal-row {
+      border-top: 1px solid rgba(255,255,255,0.14);
+      margin-top: 2px;
     }
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
     .ib-check-wrap {
@@ -8555,7 +8541,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v150-PENTA | project-breakdown-receivable */
+    /* build-stamp: 2026-09-28-v151-PENTA | ib-project-credit-debt-ui */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16456,67 +16442,63 @@ function openPdfPrintWindow(){
               if (hasSet && accountSet.size > 0 && typeof projectMoneyOnAccounts === 'function') {
                 cash = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
               }
-              /* وضعیت کامل پروژه از همان منبع گزارش پروژه */
+              /* همان منبع گزارش پروژه */
               var rep = (typeof computeSubjectReport === 'function') ? computeSubjectReport(s.id) : null;
-              var receivable = Number(rep && rep.receivable) || 0; /* طلب کاربر از پروژه = spentPersonal */
+              var receivable = Number(rep && rep.receivable) || 0; /* بدهی پروژه به کاربر */
               var globalCash = Number(rep && rep.balance) || 0;
-              /* قابل پرداخت به پروژه (در مدل فعلی معمولاً همان موجودی مثبت سراسری است) */
-              var payable = 0;
-              /* نمایش اگر مانده مالی غیرصفر باشد */
-              var hasCash = Math.abs(cash) > EPS;
-              var hasRecv = Math.abs(receivable) > EPS;
-              var hasGlobal = Math.abs(globalCash) > EPS;
-              if (!hasCash && !hasRecv && !hasGlobal) return; /* تسویه */
-              projectsCashTotal += cash;
+              var hasCash = Math.abs(cash) > EPS || Math.abs(globalCash) > EPS;
+              var hasDebt = Math.abs(receivable) > EPS;
+              /* تسویه کامل → نمایش نده */
+              if (!hasCash && !hasDebt) return;
+              /* برای تفکیک کارت‌ها از موجودی روی حساب‌های انتخاب‌شده استفاده کن؛
+                 اگر سراسری موجودی دارد ولی روی انتخاب‌شده صفر است، همان صفر را نشان بده */
+              var showCash = Math.abs(cash) > EPS ? cash : (Math.abs(globalCash) > EPS && (!hasSet || accountSet.size === 0) ? globalCash : cash);
+              /* فقط وقتی روی کارت‌های انتخاب‌شده یا طلب غیرصفر است در لیست فعال بماند */
+              if (Math.abs(showCash) <= EPS && !hasDebt) return;
+              if (Math.abs(showCash) > EPS) projectsCashTotal += showCash;
               var meta = (typeof getProjectHighlightMeta === 'function')
                 ? getProjectHighlightMeta(s.highlightColor) : null;
               var accent = (meta && meta.accent) || '#d000ff';
               activeRows.push({
                 name: s.name || 'پروژه',
-                cash: cash,
+                cash: showCash,
                 receivable: receivable,
                 accent: accent
               });
             });
-            /* شرط نمایش کل بخش: حداقل یک پروژه با مانده مالی */
+            /* فقط وقتی حداقل یک پروژه طلبکار/بدهکار است بخش را نشان بده؛ وگرنه جدول معمولی */
             if (!projects.length || !activeRows.length) {
               if (wrap) wrap.classList.add('ib-bd-hidden');
               body.innerHTML = '';
               return;
             }
             if (wrap) wrap.classList.remove('ib-bd-hidden');
-            /* پول شخصی = جمع انتخاب‌شده − موجودی پروژه روی همان کارت‌ها (بدون طلب) */
+            /* موجودی شخصی = جمع انتخاب‌شده − موجودی پروژه‌ها روی همان کارت‌ها (بدون بدهی) */
             var personal = sum - projectsCashTotal;
             var bd = '';
-            bd += '<div class="instant-bal-row">' +
-              '<span class="ib-bd-name"><span class="ib-name">پول شخصی</span></span>' +
-              '<span class="ib-amt">' + formatNum(personal) + '</span></div>';
+            /* اول پروژه‌ها: طلبکار سبز / بدهکار قرمز */
             activeRows.forEach(function(pr) {
               var hasCash = Math.abs(pr.cash) > EPS;
-              var hasRecv = Math.abs(pr.receivable) > EPS;
-              bd += '<div class="ib-bd-proj-block">';
+              var hasDebt = Math.abs(pr.receivable) > EPS;
               if (hasCash) {
                 bd += '<div class="instant-bal-row">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
-                  '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
-                  '<span class="ib-amt">' + formatNum(pr.cash) + '</span></div>';
-              } else {
-                /* فقط طلب — نام پروژه با نقطه رنگی */
+                  '<span class="ib-name">موجودی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
+                  '<span class="ib-amt ib-bd-credit">' + formatNum(pr.cash) + '</span></div>';
+              }
+              if (hasDebt) {
                 bd += '<div class="instant-bal-row">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
-                  '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
-                  '<span class="ib-amt">' + formatNum(0) + '</span></div>';
+                  '<span class="ib-name">بدهی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
+                  '<span class="ib-amt ib-bd-debt">' + formatNum(pr.receivable) + '</span></div>';
               }
-              if (hasRecv) {
-                bd += '<div class="instant-bal-row ib-bd-recv-row">' +
-                  '<span class="ib-bd-name"><span class="ib-bd-sub">طلب من از پروژه</span></span>' +
-                  '<span class="ib-amt ib-bd-receivable">' + formatNum(pr.receivable) + '</span></div>';
-              }
-              bd += '</div>';
             });
-            /* ردیف «جمع» حذف شد — همان جمع انتخاب‌شده در بالا */
+            /* بعد موجودی شخصی */
+            bd += '<div class="instant-bal-row ib-bd-personal-row">' +
+              '<span class="ib-bd-name"><span class="ib-name">موجودی شخصی</span></span>' +
+              '<span class="ib-amt ib-bd-personal">' + formatNum(personal) + '</span></div>';
             body.innerHTML = bd;
           } catch (eBd) {}
         }
