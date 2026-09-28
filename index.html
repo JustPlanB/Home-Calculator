@@ -2455,6 +2455,9 @@
     .ib-breakdown.ib-bd-hidden {
       display: none !important;
     }
+    .ib-breakdown .instant-bal-row {
+      border-bottom: none !important;
+    }
     .ib-breakdown .ib-amt.ib-bd-credit {
       color: #9ee858 !important;
       font-weight: 700;
@@ -2468,9 +2471,57 @@
       font-weight: 700;
     }
     .ib-bd-personal-row {
-      border-top: 1px solid rgba(255,255,255,0.14);
-      margin-top: 2px;
+      border-top: 1px solid rgba(255,255,255,0.14) !important;
+      margin-top: 4px;
     }
+    .ib-bd-proj-row {
+      border-radius: 8px;
+      margin: 3px 6px;
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    .instant-bal-sub {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      opacity: 0.72;
+      margin-top: 6px;
+      text-align: center;
+    }
+    .backup-pick-overlay {
+      position: fixed; inset: 0; z-index: 100600;
+      background: rgba(0,0,0,0.72);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px 14px; box-sizing: border-box;
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    }
+    .backup-pick-panel {
+      width: min(100%, 360px); max-height: min(80vh, 520px);
+      overflow-y: auto; direction: rtl;
+      background: #2c2c2e; border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px; padding: 14px 14px 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+    }
+    .backup-pick-title {
+      text-align: center; font-weight: 800; font-size: 0.95rem;
+      color: #fff; margin-bottom: 12px;
+    }
+    .backup-pick-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.92); font-weight: 600; font-size: 0.88rem;
+      cursor: pointer;
+    }
+    .backup-pick-item input { width: 18px; height: 18px; accent-color: #3b82f6; flex-shrink: 0; }
+    .backup-pick-item.all { font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.18); margin-bottom: 4px; }
+    .backup-pick-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .backup-pick-actions button {
+      flex: 1; padding: 11px; border-radius: 12px; border: none;
+      font-family: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer;
+    }
+    .backup-pick-ok { background: #3b82f6; color: #fff; }
+    .backup-pick-cancel { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.15) !important; }
+
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
     .ib-check-wrap {
       display: flex;
@@ -8186,7 +8237,7 @@
         <button class="menu-item" onclick="openBankAccountsModal()">انتخاب حساب بانکی</button>
         <button class="menu-item" onclick="openSmsImportModal()">ثبت از پیامک بانکی</button>
         <button class="menu-item" onclick="askExport()">خروجی (اکسل / PDF)</button>
-        <button class="menu-item" onclick="exportFullBackup()">پشتیبان‌گیری</button>
+        <button class="menu-item" onclick="askBackupParts()">پشتیبان‌گیری</button>
         <button class="menu-item" onclick="triggerImportBackup()">بازیابی از پشتیبان</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></span>حذف</div>
         <button class="menu-item danger" onclick="openTrashModal()">سطل زباله</button>
@@ -8605,7 +8656,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v152-PENTA | ib-related-cards longpress-project-row */
+    /* build-stamp: 2026-09-28-v153-PENTA | ib-bg longpress1s scroll backup-parts */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13169,40 +13220,124 @@ function onPeriodChange() {
         .catch(() => showToast('ذخیره فایل ناموفق بود'));
     }
 
-    async function exportFullBackup() {
+    
+    function askBackupParts() {
+      closeSideMenu();
+      var existing = document.getElementById('backupPickOverlay');
+      if (existing) existing.remove();
+      var parts = [
+        { key: 'all', label: 'همه' },
+        { key: 'archive', label: 'آرشیو ماه‌ها / داده‌های ماهانه' },
+        { key: 'plans', label: 'اقساط' },
+        { key: 'recurringIncomes', label: 'درآمدهای ثابت' },
+        { key: 'selectedBankAccounts', label: 'حساب‌های بانکی' },
+        { key: 'subjects', label: 'پروژه‌ها' },
+        { key: 'userReminders', label: 'یادآورها' },
+        { key: 'trash', label: 'سطل زباله' },
+        { key: 'cardMeta', label: 'پس‌زمینه و تنظیمات کارت‌ها' },
+        { key: 'meta', label: 'سایر تنظیمات (تم، متا)' }
+      ];
+      var ov = document.createElement('div');
+      ov.id = 'backupPickOverlay';
+      ov.className = 'backup-pick-overlay';
+      var html = '<div class="backup-pick-panel" role="dialog">' +
+        '<div class="backup-pick-title">از چه بخش‌هایی پشتیبان گرفته شود؟</div>';
+      parts.forEach(function(p, idx) {
+        html += '<label class="backup-pick-item' + (p.key === 'all' ? ' all' : '') + '">' +
+          '<input type="checkbox" data-bk="' + p.key + '"' + (p.key === 'all' ? ' id="bkCheckAll"' : ' class="bk-part"') + ' checked />' +
+          '<span>' + p.label + '</span></label>';
+      });
+      html += '<div class="backup-pick-actions">' +
+        '<button type="button" class="backup-pick-ok" id="bkDoExport">پشتیبان‌گیری</button>' +
+        '<button type="button" class="backup-pick-cancel" id="bkCancel">انصراف</button>' +
+        '</div></div>';
+      ov.innerHTML = html;
+      document.body.appendChild(ov);
+      var allCb = ov.querySelector('#bkCheckAll');
+      var partCbs = ov.querySelectorAll('.bk-part');
+      function syncFromAll() {
+        var on = !!(allCb && allCb.checked);
+        partCbs.forEach(function(cb) { cb.checked = on; });
+      }
+      function syncToAll() {
+        if (!allCb) return;
+        var allOn = true;
+        partCbs.forEach(function(cb) { if (!cb.checked) allOn = false; });
+        allCb.checked = allOn;
+      }
+      if (allCb) allCb.addEventListener('change', syncFromAll);
+      partCbs.forEach(function(cb) { cb.addEventListener('change', syncToAll); });
+      ov.querySelector('#bkCancel').onclick = function() { ov.remove(); };
+      ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+      ov.querySelector('#bkDoExport').onclick = function() {
+        var selected = {};
+        if (allCb && allCb.checked) {
+          parts.forEach(function(p) { if (p.key !== 'all') selected[p.key] = true; });
+        } else {
+          partCbs.forEach(function(cb) {
+            if (cb.checked) selected[cb.getAttribute('data-bk')] = true;
+          });
+        }
+        var any = false;
+        Object.keys(selected).forEach(function(k) { if (selected[k]) any = true; });
+        if (!any) {
+          try { showToast('حداقل یک بخش را انتخاب کنید', 'warn'); } catch (eT) {}
+          return;
+        }
+        ov.remove();
+        exportFullBackup(selected);
+      };
+    }
+
+async function exportFullBackup(selectedParts) {
       closeSideMenu();
       try {
         persistCurrent();
         saveArchive();
+        var sel = selectedParts || null;
+        function want(k) { return !sel || !!sel[k]; }
         const payload = {
           version: 1,
           app: 'hesab-ketab',
           exportedAt: new Date().toISOString(),
-          archive: archive,
-          plans: plans,
-          recurringIncomes: recurringIncomes,
           currentYear: currentYear,
           currentMonth: currentMonth,
           familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
-          theme: document.documentElement.getAttribute('data-theme') || 'dark'
+          theme: document.documentElement.getAttribute('data-theme') || 'dark',
+          backupParts: sel || { all: true }
         };
-        try {
-          let meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null');
-          if (meta) payload.meta = meta;
-        } catch (e) {}
-        try {
-          payload.selectedBankAccounts = selectedBankAccounts;
-          payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
-          payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
-          try { payload.userReminders = typeof userReminders !== 'undefined' ? userReminders : []; } catch (eR) {}
-          // پس‌زمینه کارت‌ها
-          payload.cardMeta = (periodData && periodData.cardMeta) ? periodData.cardMeta : {};
+        if (want('archive')) payload.archive = archive;
+        if (want('plans')) payload.plans = plans;
+        if (want('recurringIncomes')) payload.recurringIncomes = recurringIncomes;
+        if (want('meta')) {
           try {
-            const cm = localStorage.getItem(STORAGE_KEY + '_cardMeta');
-            if (cm && (!payload.cardMeta || !Object.keys(payload.cardMeta).length)) {
-              payload.cardMeta = JSON.parse(cm) || {};
-            }
-          } catch (e2) {}
+            let meta = JSON.parse(localStorage.getItem(STORAGE_KEY + '_meta') || 'null');
+            if (meta) payload.meta = meta;
+          } catch (e) {}
+        }
+        try {
+          if (want('selectedBankAccounts')) {
+            payload.selectedBankAccounts = selectedBankAccounts;
+            payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+          }
+          if (want('trash')) payload.trash = typeof trashItems !== 'undefined' ? trashItems : [];
+          if (want('userReminders')) {
+            try { payload.userReminders = typeof userReminders !== 'undefined' ? userReminders : []; } catch (eR) {}
+          }
+          if (want('cardMeta')) {
+            payload.cardMeta = (periodData && periodData.cardMeta) ? periodData.cardMeta : {};
+            try {
+              const cm = localStorage.getItem(STORAGE_KEY + '_cardMeta');
+              if (cm && (!payload.cardMeta || !Object.keys(payload.cardMeta).length)) {
+                payload.cardMeta = JSON.parse(cm) || {};
+              }
+            } catch (e2) {}
+          }
+          if (want('subjects')) {
+            try {
+              payload.financialSubjects = (typeof loadFinancialSubjects === 'function') ? loadFinancialSubjects() : [];
+            } catch (eS) { payload.financialSubjects = []; }
+          }
         } catch (e) {}
         const textOut = JSON.stringify(payload);
         const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
@@ -16437,10 +16572,8 @@ function openPdfPrintWindow(){
         const map = (typeof globalAccountBalances === 'function') ? globalAccountBalances() : personAccountBalances(title);
         const keys = Object.keys(map);
         keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
-        let html = '<div class="instant-bal-head">موجودی آنی</div>';
-        if (typeof isProfessionalMode === 'function' && isProfessionalMode()) {
-          html += '<div style="font-size:0.72rem;opacity:0.7;padding:0 4px 6px;text-align:right;">موجودی واقعی کارت (شامل پول پروژه‌ها)</div>';
-        }
+        let html = '<div class="instant-bal-head">موجودی آنی' +
+          '<div class="instant-bal-sub">موجودی واقعی کارت (شامل پول پروژه‌ها)</div></div>';
         var shown = 0;
         keys.forEach(function(k) {
           const v = Number(map[k]) || 0;
@@ -16543,15 +16676,18 @@ function openPdfPrintWindow(){
             var personal = sum - projectsCashTotal + projectsDebtTotal;
             var bd = '';
             activeRows.forEach(function(pr) {
+              var bg = pr.accent || '#d000ff';
+              /* بکگراند نیمه‌شفاف رنگ پروژه */
+              var bgStyle = 'background:color-mix(in srgb, ' + bg + ' 28%, transparent);';
               if (Math.abs(pr.cash) > EPS) {
-                bd += '<div class="instant-bal-row">' +
+                bd += '<div class="instant-bal-row ib-bd-proj-row" style="' + bgStyle + '">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
                   '<span class="ib-name">موجودی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
                   '<span class="ib-amt ib-bd-credit">' + formatNum(pr.cash) + '</span></div>';
               }
               if (Math.abs(pr.receivable) > EPS) {
-                bd += '<div class="instant-bal-row">' +
+                bd += '<div class="instant-bal-row ib-bd-proj-row" style="' + bgStyle + '">' +
                   '<span class="ib-bd-name">' +
                   '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
                   '<span class="ib-name">بدهی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
@@ -24714,13 +24850,33 @@ field('حساب بانکی', accSelRec);
         }
         rowsScroll.style.maxHeight = (rh * 5.5) + 'px';
         rowsScroll.style.overflowY = 'auto';
-        // بازگرداندن موقعیت اسکرول قبلی
-        if (typeof sec._rowScrollTop === 'number' && sec._rowScrollTop > 0) {
-          rowsScroll.scrollTop = sec._rowScrollTop;
+        // بازگرداندن موقعیت اسکرول — بعد از layout تا نپرد بالا
+        var saved = (typeof sec._rowScrollTop === 'number') ? sec._rowScrollTop : null;
+        try {
+          if (saved == null && window._secRowScroll && sec && sec.id != null) {
+            saved = window._secRowScroll[sec.id];
+          }
+        } catch (eS) {}
+        if (typeof saved === 'number' && saved >= 0) {
+          var apply = function() {
+            try { rowsScroll.scrollTop = saved; } catch (eA) {}
+          };
+          apply();
+          requestAnimationFrame(function() {
+            apply();
+            requestAnimationFrame(apply);
+          });
+          setTimeout(apply, 40);
+          setTimeout(apply, 120);
         }
       }
       function persistRowScroll() {
-        sec._rowScrollTop = rowsScroll.scrollTop || 0;
+        var t = rowsScroll.scrollTop || 0;
+        sec._rowScrollTop = t;
+        try {
+          window._secRowScroll = window._secRowScroll || {};
+          if (sec && sec.id != null) window._secRowScroll[sec.id] = t;
+        } catch (eP) {}
       }
       rowsScroll.addEventListener('scroll', () => {
         persistRowScroll();
@@ -24790,7 +24946,7 @@ field('حساب بانکی', accSelRec);
           try { openProjectRowPicker(sec.id); } catch (eL) {}
         }, function(e) {
           addRow(sec.id, 1);
-        }, 480);
+        }, 1100);
       } else {
         btnAddRow.addEventListener('click', function(e) {
           e.stopPropagation();
@@ -25342,37 +25498,85 @@ field('حساب بانکی', accSelRec);
     }
     function bindLongPress(el, onLong, onShort, ms) {
       if (!el) return;
-      ms = ms || 480;
+      ms = (typeof ms === 'number' && ms > 0) ? ms : 1100;
       var timer = null;
       var longFired = false;
-      function clear() {
+      var startX = 0, startY = 0;
+      var tracking = false;
+      function clearTimer() {
         if (timer) { clearTimeout(timer); timer = null; }
       }
-      function start(e) {
+      function arm(e) {
         longFired = false;
-        clear();
+        tracking = true;
+        clearTimer();
+        try {
+          var pt = (e.touches && e.touches[0]) || e;
+          startX = pt.clientX || 0;
+          startY = pt.clientY || 0;
+        } catch (e0) {}
         timer = setTimeout(function() {
+          if (!tracking) return;
           longFired = true;
-          try { if (navigator.vibrate) navigator.vibrate(12); } catch (eV) {}
-          if (typeof onLong === 'function') onLong(e);
+          try { if (navigator.vibrate) navigator.vibrate(18); } catch (eV) {}
+          try { if (typeof onLong === 'function') onLong(e); } catch (eL) {}
         }, ms);
       }
-      function end(e) {
+      function move(e) {
+        if (!tracking || longFired) return;
+        try {
+          var pt = (e.touches && e.touches[0]) || e;
+          var dx = (pt.clientX || 0) - startX;
+          var dy = (pt.clientY || 0) - startY;
+          if (dx * dx + dy * dy > 100) { /* ~10px */
+            tracking = false;
+            clearTimer();
+          }
+        } catch (eM) {}
+      }
+      function release(e) {
         var wasLong = longFired;
-        clear();
-        if (!wasLong && typeof onShort === 'function') onShort(e);
+        var wasTracking = tracking;
+        tracking = false;
+        clearTimer();
+        if (!wasLong && wasTracking && typeof onShort === 'function') {
+          try { onShort(e); } catch (eS) {}
+        }
         longFired = false;
       }
-      el.addEventListener('touchstart', start, { passive: true });
-      el.addEventListener('touchend', end, { passive: true });
-      el.addEventListener('touchcancel', clear, { passive: true });
+      el.style.touchAction = 'manipulation';
+      el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+      el.addEventListener('touchstart', function(e) {
+        e.stopPropagation();
+        arm(e);
+      }, { passive: true });
+      el.addEventListener('touchmove', move, { passive: true });
+      el.addEventListener('touchend', function(e) {
+        e.stopPropagation();
+        release(e);
+      }, { passive: true });
+      el.addEventListener('touchcancel', function() {
+        tracking = false;
+        clearTimer();
+        longFired = false;
+      }, { passive: true });
       el.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
-        start(e);
+        e.preventDefault();
+        e.stopPropagation();
+        arm(e);
       });
-      el.addEventListener('mouseup', end);
-      el.addEventListener('mouseleave', clear);
+      el.addEventListener('mousemove', move);
+      el.addEventListener('mouseup', function(e) {
+        e.stopPropagation();
+        release(e);
+      });
+      el.addEventListener('mouseleave', function() {
+        tracking = false;
+        clearTimer();
+      });
     }
+
 
     function addRow(secId, count, opts) {
       closeRemindBarIfOpen();
@@ -25392,10 +25596,11 @@ field('حساب بانکی', accSelRec);
         sec.rows.push(row);
       }
       sec.collapsed = false;
-      // پنجره را روی آخرین ردیف‌ها بگذار تا ردیف جدید دیده شود
+      // موقعیت اسکرول حفظ شود؛ پرش به بالا/پایین نکن
       try {
-        // بعد از رندر به آخر لیست ردیف‌ها برو
-        sec._rowScrollTop = 99999;
+        if (typeof sec._rowScrollTop !== 'number') {
+          sec._rowScrollTop = (window._secRowScroll && sec.id != null) ? (window._secRowScroll[sec.id] || 0) : 0;
+        }
       } catch (e) {}
       // مثل قبل: رندر کامل تا ردیف حتماً دیده شود (هر دو تب)
       renderAll();
