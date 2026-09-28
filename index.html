@@ -3465,7 +3465,7 @@
       position: absolute !important;
       top: 0 !important;
       bottom: 0 !important;
-      left: 5px !important;
+      /* left فقط با JS — بدون !important تا اسلاید کار کند */
       width: 38px !important;
       height: 38px !important;
       min-width: 38px !important;
@@ -3491,7 +3491,7 @@
       box-shadow: 0 3px 12px rgba(0,0,0,0.5) !important;
     }
     .row-add-switch.is-project .ras-knob {
-      left: calc(100% - 43px) !important;
+      /* left توسط JS */
       border-color: #c084fc !important;
     }
     .row-add-switch .ras-knob svg {
@@ -8796,7 +8796,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v167-PENTA | slide-unlock-plus-blue-purple */
+    /* build-stamp: 2026-09-28-v168-PENTA | fix-slide-left-important */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18488,7 +18488,7 @@ container.innerHTML = '';
         var target = isProj ? maxLeft() : PAD;
         try {
           if (instant) knob.style.transition = 'none';
-          knob.style.left = target + 'px';
+          knob.style.setProperty('left', target + 'px', 'important');
           setKnobVisual(target);
           if (instant) {
             void knob.offsetWidth;
@@ -18535,7 +18535,10 @@ container.innerHTML = '';
         startLeft = knobLeft();
         sw.classList.add('is-dragging');
         try { knob.style.transition = 'none'; } catch (eT) {}
-        try { if (knob.setPointerCapture && activeId != null) knob.setPointerCapture(activeId); } catch (eC) {}
+        try {
+          var capEl = (e.currentTarget && e.currentTarget.setPointerCapture) ? e.currentTarget : knob;
+          if (capEl && capEl.setPointerCapture && activeId != null) capEl.setPointerCapture(activeId);
+        } catch (eC) {}
       }
       function onPtrMove(e) {
         if (!dragging) return;
@@ -18544,7 +18547,7 @@ container.innerHTML = '';
         var dx = e.clientX - startX;
         if (Math.abs(dx) > 5) moved = true;
         var next = Math.min(maxLeft(), Math.max(PAD, startLeft + dx));
-        knob.style.left = next + 'px';
+        knob.style.setProperty('left', next + 'px', 'important');
         setKnobVisual(next);
       }
       function onPtrUp(e) {
@@ -18579,11 +18582,17 @@ container.innerHTML = '';
         try { knob.style.transition = ''; } catch (eT) {}
         setRowMode('personal');
       }
-      knob.addEventListener('pointerdown', onPtrDown);
-      knob.addEventListener('pointermove', onPtrMove);
-      knob.addEventListener('pointerup', onPtrUp);
-      knob.addEventListener('pointercancel', onPtrCancel);
+      function bindSlide(el) {
+        if (!el) return;
+        el.addEventListener('pointerdown', onPtrDown);
+        el.addEventListener('pointermove', onPtrMove);
+        el.addEventListener('pointerup', onPtrUp);
+        el.addEventListener('pointercancel', onPtrCancel);
+      }
+      bindSlide(knob);
+      bindSlide(sw);
       knob.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+      sw.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
       setRowMode('personal', true);
       box.appendChild(sw);
 
