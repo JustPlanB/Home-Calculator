@@ -1123,7 +1123,24 @@
       direction: rtl;
     }
     .sms-acct-seg {
-      margin-bottom: 8px;
+      margin-bottom: 0;
+    }
+    #smsProjectPickWrap {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      border: none !important;
+    }
+    #smsProjectPickWrap.sms-proj-visible {
+      display: block !important;
+      margin-top: 8px !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #smsProjectPickWrap .fancy-select-wrap {
+      width: 100%;
     }
     .sms-seg button {
       flex: 1;
@@ -2301,7 +2318,7 @@
     .instant-bal-overlay.open { display: flex; }
     .instant-bal-panel {
       width: min(100%, var(--match-card-w, 400px));
-      max-height: min(60vh, 420px);
+      max-height: min(72vh, 560px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       background: #2c2c2e;
@@ -2335,6 +2352,48 @@
     .instant-bal-row.ib-acc-row:has(+ .ib-sum-row),
     .instant-bal-row.ib-acc-row:last-of-type {
       border-bottom: none !important;
+    }
+    /* تفکیک موجودی انتخاب‌شده — زیر جمع انتخاب‌شده */
+    .ib-breakdown {
+      border-top: 1px solid rgba(255,255,255,0.14);
+      margin-top: 2px;
+      padding-top: 2px;
+    }
+    .ib-breakdown-head {
+      padding: 12px 14px 8px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.95);
+      text-align: right;
+    }
+    .ib-breakdown .instant-bal-row {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ib-breakdown .ib-bd-sum {
+      border-top: 1px solid rgba(255,255,255,0.14);
+      font-weight: 800;
+    }
+    .ib-proj-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 6px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .ib-bd-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .ib-breakdown .ib-amt {
+      color: rgba(255,255,255,0.92) !important;
+    }
+    .ib-breakdown .ib-amt.pos,
+    .ib-breakdown .ib-amt.neg {
+      color: rgba(255,255,255,0.92) !important;
     }
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
     .ib-check-wrap {
@@ -8470,7 +8529,7 @@
 
     
 
-    /* build-stamp: 2026-09-27-v146-PENTA | marker-75 sms-seg-account */
+    /* build-stamp: 2026-09-28-v149-PENTA | ib-breakdown-selected */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -16324,11 +16383,25 @@ function openPdfPrintWindow(){
         }
         html += '<div class="instant-bal-row ib-sum-row"><span class="ib-name">جمع انتخاب‌شده</span>' +
           '<span class="ib-amt ib-sum-amt pos">۰</span></div>';
+        /* بخش تفکیک موجودی انتخاب‌شده — فقط نمایش؛ منطق موجودی آنی دست‌نخورده */
+        html += '<div class="ib-breakdown" id="ibBreakdown">' +
+          '<div class="ib-breakdown-head">تفکیک موجودی انتخاب‌شده</div>' +
+          '<div class="ib-breakdown-body" id="ibBreakdownBody"></div>' +
+          '</div>';
         panel.innerHTML = html;
         function refreshIbSum() {
           var sum = 0;
+          var selectedAccounts = Object.create(null);
+          var accountSet = (typeof Set !== 'undefined') ? new Set() : null;
           panel.querySelectorAll('.ib-acc-check:checked').forEach(function(cb) {
-            sum += Number(cb.getAttribute('data-amt')) || 0;
+            var amt = Number(cb.getAttribute('data-amt')) || 0;
+            sum += amt;
+            var row = cb.closest ? cb.closest('.ib-acc-row') : null;
+            var acc = row ? (row.getAttribute('data-acc') || '') : '';
+            if (acc) {
+              selectedAccounts[acc] = true;
+              if (accountSet) accountSet.add(acc);
+            }
           });
           var el = panel.querySelector('.ib-sum-amt');
           if (el) {
@@ -16336,6 +16409,47 @@ function openPdfPrintWindow(){
             el.classList.remove('pos', 'neg');
             el.classList.add(sum < 0 ? 'neg' : 'pos');
           }
+          /* به‌روزرسانی تفکیک — همان sum به‌عنوان جمع نهایی */
+          try {
+            var body = panel.querySelector('#ibBreakdownBody');
+            if (!body) return;
+            var projects = [];
+            try {
+              projects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
+                return s && s.id && s.id !== 'personal';
+              });
+            } catch (eP) { projects = []; }
+            var hasSet = accountSet && typeof accountSet.has === 'function';
+            var projRows = [];
+            var projectsTotal = 0;
+            projects.forEach(function(s) {
+              var pAmt = 0;
+              if (hasSet && accountSet.size > 0 && typeof projectMoneyOnAccounts === 'function') {
+                pAmt = Number(projectMoneyOnAccounts(s.id, accountSet)) || 0;
+              }
+              projectsTotal += pAmt;
+              var meta = (typeof getProjectHighlightMeta === 'function')
+                ? getProjectHighlightMeta(s.highlightColor) : null;
+              var accent = (meta && meta.accent) || '#d000ff';
+              projRows.push({ name: s.name || 'پروژه', amount: pAmt, accent: accent });
+            });
+            var personal = sum - projectsTotal;
+            var bd = '';
+            bd += '<div class="instant-bal-row">' +
+              '<span class="ib-bd-name"><span class="ib-name">پول شخصی</span></span>' +
+              '<span class="ib-amt">' + formatNum(personal) + '</span></div>';
+            projRows.forEach(function(pr) {
+              bd += '<div class="instant-bal-row">' +
+                '<span class="ib-bd-name">' +
+                '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
+                '<span class="ib-name">' + escapeHtml(pr.name) + '</span></span>' +
+                '<span class="ib-amt">' + formatNum(pr.amount) + '</span></div>';
+            });
+            bd += '<div class="instant-bal-row ib-bd-sum">' +
+              '<span class="ib-name">جمع</span>' +
+              '<span class="ib-amt ib-bd-sum-amt">' + formatNum(sum) + '</span></div>';
+            body.innerHTML = bd;
+          } catch (eBd) {}
         }
         panel.querySelectorAll('.ib-acc-row').forEach(function(row) {
           var cb = row.querySelector('.ib-acc-check');
@@ -19277,7 +19391,8 @@ function openPdfPrintWindow(){
           var acctSeg = document.getElementById('smsAccountTypeSeg');
           var projWrap = document.getElementById('smsProjectPickWrap');
           var sel = document.getElementById('smsSubjectSel');
-          if (sel) {
+          function fillProjectOptions() {
+            if (!sel) return;
             sel.innerHTML = '';
             var subjects = (typeof loadFinancialSubjects === 'function' ? loadFinancialSubjects() : []).filter(function(s) {
               return s && s.id && s.id !== 'personal';
@@ -19295,19 +19410,48 @@ function openPdfPrintWindow(){
                 sel.appendChild(o);
               });
             }
+            if (sel._fancyRender) {
+              try { sel._fancyRender(); } catch (eR) {}
+            }
+          }
+          function setProjectVisible(on) {
+            if (!projWrap) return;
+            if (on) {
+              projWrap.classList.add('sms-proj-visible');
+              projWrap.style.display = 'block';
+              projWrap.removeAttribute('hidden');
+              fillProjectOptions();
+              /* فقط وقتی پروژه انتخاب شد منوی کشویی ساخته شود */
+              if (sel && typeof enhanceSelectFont === 'function' && !sel._fancyRender) {
+                try { enhanceSelectFont(sel); } catch (eS) {}
+              }
+              if (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) {
+                sel.parentNode.style.display = '';
+              }
+            } else {
+              projWrap.classList.remove('sms-proj-visible');
+              projWrap.style.display = 'none';
+              projWrap.setAttribute('hidden', 'hidden');
+              if (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) {
+                sel.parentNode.style.display = 'none';
+              }
+              /* بستن لیست باز احتمالی */
+              try {
+                document.querySelectorAll('.fancy-select-list.open').forEach(function(l) {
+                  if (l._select === sel) l.classList.remove('open');
+                });
+              } catch (eC) {}
+            }
           }
           function syncAcctUI() {
-            var isProj = acctSel && acctSel.value === 'project';
-            if (projWrap) projWrap.style.display = isProj ? 'block' : 'none';
+            var isProj = !!(acctSel && acctSel.value === 'project');
             if (acctSeg) {
               acctSeg.querySelectorAll('button').forEach(function(btn) {
                 var on = btn.getAttribute('data-acct') === (acctSel ? acctSel.value : 'personal');
                 btn.classList.toggle('active', on);
               });
             }
-            if (isProj && sel) {
-              try { sel.focus(); } catch (eF) {}
-            }
+            setProjectVisible(isProj);
           }
           if (acctSeg) {
             acctSeg.querySelectorAll('button').forEach(function(btn) {
@@ -19321,47 +19465,11 @@ function openPdfPrintWindow(){
             });
           }
           if (acctSel) {
-            /* دیفالت شخصی — بدون fancy-select روی hidden */
             acctSel.value = 'personal';
             acctSel.onchange = syncAcctUI;
           }
-          if (sel) {
-            try { if (typeof enhanceSelectFont === 'function') enhanceSelectFont(sel); } catch (eS) {}
-          }
-          /* اول مخفی؛ فقط با انتخاب پروژه نمایش داده شود */
-          if (projWrap) {
-            projWrap.style.display = 'none';
-            projWrap.setAttribute('hidden', 'hidden');
-          }
-          syncAcctUI = (function(orig) {
-            return function() {
-              var isProj = acctSel && acctSel.value === 'project';
-              if (projWrap) {
-                if (isProj) {
-                  projWrap.style.display = 'block';
-                  projWrap.removeAttribute('hidden');
-                } else {
-                  projWrap.style.display = 'none';
-                  projWrap.setAttribute('hidden', 'hidden');
-                }
-              }
-              if (acctSeg) {
-                acctSeg.querySelectorAll('button').forEach(function(btn) {
-                  var on = btn.getAttribute('data-acct') === (acctSel ? acctSel.value : 'personal');
-                  btn.classList.toggle('active', on);
-                });
-              }
-              /* fancy-select دکمهٔ پروژه را هم مخفی/نمایش کن */
-              try {
-                if (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) {
-                  sel.parentNode.style.display = isProj ? '' : 'none';
-                }
-              } catch (eW) {}
-              if (isProj && sel) {
-                try { sel.focus(); } catch (eF) {}
-              }
-            };
-          })(typeof syncAcctUI === 'function' ? syncAcctUI : null);
+          /* دیفالت: شخصی — هیچ منوی پروژه‌ای نباشد */
+          setProjectVisible(false);
           syncAcctUI();
         }
 
@@ -19412,7 +19520,62 @@ function openPdfPrintWindow(){
     }
 
     /** موجودی فعلی پروژه = دریافتی‌های پروژه − هزینه‌های پرداخت‌شده از موجودی پروژه */
-    function getProjectBalance(subjectId) {
+    
+    /**
+     * موجودی پروژه که الان روی کارت‌های مشخص‌شده نشسته است
+     * (واریز پروژه − مخارج از محل پروژه روی همان حساب‌ها)
+     * طلب/بدهیِ پرداخت‌نشده را حساب نمی‌کند.
+     */
+    function projectMoneyOnAccounts(subjectId, accountSet) {
+      subjectId = (subjectId || '').trim();
+      if (!subjectId || subjectId === 'personal') return 0;
+      if (!accountSet || typeof accountSet.has !== 'function') return 0;
+      var total = 0;
+      var seen = Object.create(null);
+      var curKey = (typeof periodKey === 'function' && typeof currentYear !== 'undefined')
+        ? periodKey(currentYear, currentMonth) : '';
+      if (typeof iterAllPeriodData !== 'function') return 0;
+      iterAllPeriodData(function(pd, key) {
+        if (key === curKey && pd !== periodData) return;
+        ['income', 'expense'].forEach(function(tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
+            (sec.rows || []).forEach(function(r, ri) {
+              if (!r || (r.status || 'paid') !== 'paid') return;
+              var fc = (typeof rowFinancialContext === 'function') ? rowFinancialContext(r) : null;
+              if (!fc) return;
+              if (fc.subjectId !== subjectId) return;
+              if (fc.classification !== 'third_party' && fc.accountType !== 'project') return;
+              var bank = (r.account || '').trim() || 'بدون حساب';
+              if (!accountSet.has(bank)) return;
+              var amt = Number(r.amount) || 0;
+              if (!amt) return;
+              var dedupe = tab + '|' + key + '|' + (r.day || '') + '|' + bank + '|' + amt + '|' + (r.desc || '') + '|' + (r.id || ri);
+              if (seen[dedupe]) return;
+              seen[dedupe] = true;
+              if (tab === 'income') {
+                total += amt;
+              } else {
+                var pAmt = Number(fc.projectAmount) || 0;
+                var aAmt = Number(fc.personalAdvanceAmount) || 0;
+                if (!pAmt && !aAmt) {
+                  if (fc.fundingSource === 'subject') pAmt = amt;
+                  else if (fc.fundingSource === 'personal') pAmt = 0;
+                  else pAmt = amt;
+                }
+                if (pAmt + aAmt > amt && amt > 0) {
+                  var scale = amt / (pAmt + aAmt);
+                  pAmt = Math.round(pAmt * scale);
+                }
+                total -= pAmt;
+              }
+            });
+          });
+        });
+      });
+      return total;
+    }
+
+function getProjectBalance(subjectId) {
       var rep = computeSubjectReport(subjectId);
       return Number(rep && rep.balance) || 0;
     }
