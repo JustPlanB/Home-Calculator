@@ -3424,6 +3424,21 @@
     .person-detail-add .btn-circle-plus.lp-holding {
       box-shadow: 0 0 0 3px rgba(59,130,246,0.55) !important;
     }
+    .btn-proj-row {
+      margin-right: 10px !important;
+      width: 32px !important;
+      height: 32px !important;
+      color: #c084fc !important;
+      border: 1px solid rgba(192,132,252,0.45) !important;
+    }
+    .btn-proj-row svg {
+      width: 15px !important;
+      height: 15px !important;
+      pointer-events: none !important;
+    }
+    .add-row-wrap {
+      gap: 8px;
+    }
     .btn-circle-plus {
       width: 32px;
       height: 32px;
@@ -8669,7 +8684,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v157b-PENTA | restore-export pointer-lp cards-months */
+    /* build-stamp: 2026-09-28-v158-PENTA | dual-add-btn current-month-bak scroll-key bank-sync */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13482,20 +13497,13 @@ function onPeriodChange() {
 function askBackupUserCards(selectedParts) {
       var titles = [];
       try { titles = (typeof allPersonTitles === 'function') ? allPersonTitles() : []; } catch (e) { titles = []; }
-      try { persistCurrent(); saveArchive(); } catch (eP) {}
-      var monthKeys = [];
+      /* فقط ماه جاری — بدون پرسش ماه */
       try {
-        Object.keys(archive || {}).forEach(function(k) { if (k && archive[k]) monthKeys.push(k); });
-        var ck = periodKey(currentYear, currentMonth);
-        if (monthKeys.indexOf(ck) < 0) monthKeys.push(ck);
-        monthKeys.sort(function(a, b) {
-          var pa = String(a).split('-').map(Number);
-          var pb = String(b).split('-').map(Number);
-          if (pa[0] !== pb[0]) return pa[0] - pb[0];
-          return (pa[1] || 0) - (pb[1] || 0);
-        });
-      } catch (eM) { monthKeys = []; }
-      if ((!titles || !titles.length) && (!monthKeys || !monthKeys.length)) {
+        selectedParts = selectedParts || {};
+        selectedParts.selectedMonths = [periodKey(currentYear, currentMonth)];
+        selectedParts._allMonths = false;
+      } catch (eM) {}
+      if (!titles || !titles.length) {
         exportFullBackup(selectedParts);
         return;
       }
@@ -13504,79 +13512,48 @@ function askBackupUserCards(selectedParts) {
       var ov = document.createElement('div');
       ov.id = 'backupPickOverlay';
       ov.className = 'backup-pick-overlay';
-      ov.setAttribute('data-backup-step', 'cards-months');
-      function labelMonthKey(key) {
-        try {
-          var p = String(key).split('-');
-          var y = parseInt(p[0], 10), m = parseInt(p[1], 10);
-          var name = (MONTHS && MONTHS[m - 1]) ? MONTHS[m - 1] : ('ماه ' + m);
-          return name + ' ' + y;
-        } catch (e) { return String(key); }
-      }
-      var html = '<div class="backup-pick-panel" role="dialog" style="max-height:85vh;overflow:auto;">';
-      if (titles && titles.length) {
-        html += '<div class="backup-pick-title">کدام کارت‌های کاربر؟</div>';
-        html += '<label class="backup-pick-item all"><input type="checkbox" id="bkCardAll" checked /><span>همه کارت‌ها</span></label>';
-        titles.forEach(function(t) {
-          html += '<label class="backup-pick-item"><input type="checkbox" class="bk-card" data-card="' +
-            String(t).replace(/"/g, '&quot;') + '" checked /><span>' + String(t).replace(/</g, '&lt;') + '</span></label>';
-        });
-      }
-      if (monthKeys && monthKeys.length) {
-        html += '<div class="backup-pick-title" style="margin-top:12px;">کدام ماه‌ها؟</div>';
-        html += '<label class="backup-pick-item all"><input type="checkbox" id="bkMonthAll" checked /><span>همه ماه‌ها</span></label>';
-        monthKeys.forEach(function(k) {
-          html += '<label class="backup-pick-item"><input type="checkbox" class="bk-month" data-month="' +
-            String(k).replace(/"/g, '&quot;') + '" checked /><span>' + labelMonthKey(k) + '</span></label>';
-        });
-      }
+      ov.setAttribute('data-backup-step', 'cards');
+      var html = '<div class="backup-pick-panel" role="dialog">' +
+        '<div class="backup-pick-title">کدام کارت‌های کاربر پشتیبان‌گیری شوند؟</div>';
+      html += '<label class="backup-pick-item all"><input type="checkbox" id="bkCardAll" checked /><span>همه کارت‌ها</span></label>';
+      titles.forEach(function(t) {
+        html += '<label class="backup-pick-item"><input type="checkbox" class="bk-card" data-card="' +
+          String(t).replace(/"/g, '&quot;') + '" checked /><span>' + String(t).replace(/</g, '&lt;') + '</span></label>';
+      });
       html += '<div class="backup-pick-actions">' +
         '<button type="button" class="backup-pick-ok" id="bkDoExportCards">پشتیبان‌گیری</button>' +
         '<button type="button" class="backup-pick-cancel" id="bkCancelCards">انصراف</button></div></div>';
       ov.innerHTML = html;
       document.body.appendChild(ov);
-      function wireAll(allId, itemSel) {
-        var allCb = ov.querySelector(allId);
-        var items = ov.querySelectorAll(itemSel);
-        if (allCb) allCb.addEventListener('change', function() {
-          var on = !!allCb.checked;
-          items.forEach(function(cb) { cb.checked = on; });
+      var allCb = ov.querySelector('#bkCardAll');
+      var cardCbs = ov.querySelectorAll('.bk-card');
+      if (allCb) allCb.addEventListener('change', function() {
+        var on = !!allCb.checked;
+        cardCbs.forEach(function(cb) { cb.checked = on; });
+      });
+      cardCbs.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          if (!allCb) return;
+          var allOn = true;
+          cardCbs.forEach(function(x) { if (!x.checked) allOn = false; });
+          allCb.checked = allOn;
         });
-        items.forEach(function(cb) {
-          cb.addEventListener('change', function() {
-            if (!allCb) return;
-            var allOn = true;
-            items.forEach(function(x) { if (!x.checked) allOn = false; });
-            allCb.checked = allOn;
-          });
-        });
-      }
-      wireAll('#bkCardAll', '.bk-card');
-      wireAll('#bkMonthAll', '.bk-month');
+      });
       ov.querySelector('#bkCancelCards').onclick = function() { ov.remove(); };
       ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
       ov.querySelector('#bkDoExportCards').onclick = function() {
-        var pickedCards = [], cardAll = ov.querySelector('#bkCardAll'), cardCbs = ov.querySelectorAll('.bk-card');
-        if (cardCbs.length) {
-          if (cardAll && cardAll.checked) titles.forEach(function(t) { pickedCards.push(t); });
-          else cardCbs.forEach(function(cb) { if (cb.checked) pickedCards.push(cb.getAttribute('data-card')); });
-          if (!pickedCards.length) { try { showToast('حداقل یک کارت را انتخاب کنید', 'warn'); } catch (eT) {} return; }
-        }
-        var pickedMonths = [], monthAll = ov.querySelector('#bkMonthAll'), monthCbs = ov.querySelectorAll('.bk-month');
-        if (monthCbs.length) {
-          if (monthAll && monthAll.checked) monthKeys.forEach(function(k) { pickedMonths.push(k); });
-          else monthCbs.forEach(function(cb) { if (cb.checked) pickedMonths.push(cb.getAttribute('data-month')); });
-          if (!pickedMonths.length) { try { showToast('حداقل یک ماه را انتخاب کنید', 'warn'); } catch (eT) {} return; }
+        var picked = [];
+        if (allCb && allCb.checked) titles.forEach(function(t) { picked.push(t); });
+        else cardCbs.forEach(function(cb) { if (cb.checked) picked.push(cb.getAttribute('data-card')); });
+        if (!picked.length) {
+          try { showToast('حداقل یک کارت را انتخاب کنید', 'warn'); } catch (eT) {}
+          return;
         }
         selectedParts = selectedParts || {};
-        if (pickedCards.length) {
-          selectedParts.selectedUserCards = pickedCards;
-          selectedParts._allUserCards = !!(cardAll && cardAll.checked);
-        }
-        if (pickedMonths.length) {
-          selectedParts.selectedMonths = pickedMonths;
-          selectedParts._allMonths = !!(monthAll && monthAll.checked);
-        }
+        selectedParts.selectedUserCards = picked;
+        selectedParts._allUserCards = !!(allCb && allCb.checked);
+        selectedParts.selectedMonths = [periodKey(currentYear, currentMonth)];
+        selectedParts._allMonths = false;
         ov.remove();
         exportFullBackup(selectedParts);
       };
@@ -16816,9 +16793,21 @@ function openPdfPrintWindow(){
         let html = '<div class="instant-bal-head">موجودی آنی' +
           '<div class="instant-bal-sub">موجودی واقعی کارت (شامل پول پروژه‌ها)</div></div>';
         var shown = 0;
+        /* فقط حساب‌هایی که کاربر ساخته/بازیابی کرده */
+        var allowed = {};
+        try {
+          (selectedBankAccounts || []).forEach(function(a) {
+            if (!a) return;
+            var lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+            if (lb) allowed[lb] = true;
+            if (a.bank) allowed[String(a.bank)] = true;
+            if (a.name) allowed[String(a.name)] = true;
+          });
+        } catch (eAl) {}
         keys.forEach(function(k) {
           const v = Number(map[k]) || 0;
           if (!k || k === 'بدون حساب') return;
+          if (Object.keys(allowed).length && !allowed[k]) return;
           if (v === 0) return;
           shown++;
           html += '<div class="instant-bal-row ib-acc-row" data-acc="' + escapeHtml(k) + '" data-amt="' + String(v) + '">' +
@@ -17743,12 +17732,22 @@ function openPdfPrintWindow(){
 
       const sec = findSectionByTitle(tab, title);
       try {
+        var _scrollKey = String(tab || '') + '|' + String(title || '');
         var _prevScrollEl = document.querySelector('.section-rows-scroll');
-        if (_prevScrollEl && sec) {
+        if (_prevScrollEl) {
           var _st = _prevScrollEl.scrollTop || 0;
-          sec._rowScrollTop = _st;
-          window._secRowScroll = window._secRowScroll || {};
-          if (sec.id != null) window._secRowScroll[sec.id] = _st;
+          if (_st > 0 || (window._detailRowScroll && window._detailRowScroll[_scrollKey])) {
+            /* فقط اگر مقدار معنی‌دار است یا قبلاً ذخیره شده، به‌روز کن */
+            if (_st > 0) {
+              window._detailRowScroll = window._detailRowScroll || {};
+              window._detailRowScroll[_scrollKey] = _st;
+              if (sec) {
+                sec._rowScrollTop = _st;
+                window._secRowScroll = window._secRowScroll || {};
+                if (sec.id != null) window._secRowScroll[sec.id] = _st;
+              }
+            }
+          }
         }
       } catch (ePreScroll) {}
 
@@ -22900,8 +22899,36 @@ if (item.type === 'recurring') {
           delBtn.onclick = (e) => {
             e.stopPropagation();
             askConfirm('این حساب حذف شود؟', () => {
+              var removed = selectedBankAccounts[idx];
+              var rmLabel = '';
+              try {
+                rmLabel = (typeof accountLabel === 'function') ? accountLabel(removed) : ((removed && removed.label) || '');
+              } catch (eL) {}
               selectedBankAccounts.splice(idx, 1);
               saveBankAccountsSelection();
+              /* پاک‌سازی از موجودی آنی / موجودی اولیه */
+              try {
+                if (rmLabel && periodData && periodData.accountOpeningInstant) {
+                  delete periodData.accountOpeningInstant[rmLabel];
+                }
+              } catch (e1) {}
+              try {
+                if (rmLabel && archive) {
+                  Object.keys(archive).forEach(function(k) {
+                    var pd = archive[k];
+                    if (pd && pd.accountOpeningInstant) delete pd.accountOpeningInstant[rmLabel];
+                  });
+                }
+              } catch (e2) {}
+              try {
+                if (typeof saveArchive === 'function') { persistCurrent(); saveArchive(); }
+              } catch (e3) {}
+              try {
+                if (typeof smsAccountBankMap !== 'undefined' && rmLabel && smsAccountBankMap[rmLabel]) {
+                  delete smsAccountBankMap[rmLabel];
+                  if (typeof saveSmsAccountBankMap === 'function') saveSmsAccountBankMap();
+                }
+              } catch (e4) {}
               renderBankAccountsList();
             });
           };
@@ -25102,11 +25129,16 @@ field('حساب بانکی', accSelRec);
         rowsScroll.style.maxHeight = (rh * 5.5) + 'px';
         rowsScroll.style.overflowY = 'auto';
         // بازگرداندن موقعیت اسکرول — بعد از layout تا نپرد بالا
-        var saved = (typeof sec._rowScrollTop === 'number') ? sec._rowScrollTop : null;
+        var saved = null;
         try {
-          if (saved == null && window._secRowScroll && sec && sec.id != null) {
+          var _sk = String(tab || '') + '|' + String(title || '');
+          if (window._detailRowScroll && typeof window._detailRowScroll[_sk] === 'number')
+            saved = window._detailRowScroll[_sk];
+        } catch (eSk) {}
+        if (saved == null && typeof sec._rowScrollTop === 'number') saved = sec._rowScrollTop;
+        try {
+          if (saved == null && window._secRowScroll && sec && sec.id != null)
             saved = window._secRowScroll[sec.id];
-          }
         } catch (eS) {}
         if (typeof saved === 'number' && saved >= 0) {
           var apply = function() {
@@ -25130,6 +25162,8 @@ field('حساب بانکی', accSelRec);
         try {
           window._secRowScroll = window._secRowScroll || {};
           if (sec && sec.id != null) window._secRowScroll[sec.id] = t;
+          window._detailRowScroll = window._detailRowScroll || {};
+          window._detailRowScroll[String(tab || '') + '|' + String(title || '')] = t;
         } catch (eP) {}
       }
       rowsScroll.addEventListener('scroll', () => {
@@ -25191,73 +25225,34 @@ field('حساب بانکی', accSelRec);
       btnAddRow.title = 'ردیف جدید';
       btnAddRow.setAttribute('aria-label', 'ردیف جدید');
       btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      /* لانگ‌پرس اختصاصی دکمه + — فقط Pointer Events */
-      (function(btn, sectionId) {
-        var HOLD_MS = 1050;
-        var timer = null;
-        var active = false;
-        var longDone = false;
-        var startX = 0, startY = 0;
-        var ptrId = null;
-        function clearT() { if (timer) { clearTimeout(timer); timer = null; } }
-        function resetVisual() {
-          try { btn.style.transform = ''; btn.style.opacity = ''; btn.classList.remove('lp-holding'); } catch (e) {}
-        }
-        function doLong() {
-          if (longDone) return;
-          longDone = true; active = false; clearT(); resetVisual();
-          try { if (navigator.vibrate) navigator.vibrate(30); } catch (eV) {}
-          try {
-            var fn = window.openProjectRowPicker || openProjectRowPicker;
-            if (typeof fn === 'function') fn(sectionId);
-            else showToast('انتخاب پروژه در دسترس نیست', 'warn');
-          } catch (eL) {
-            try { console.warn(eL); showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
-          }
-        }
-        function doShort() { try { addRow(sectionId, 1); } catch (eS) {} }
-        try {
-          btn.style.touchAction = 'none';
-          btn.style.webkitUserSelect = 'none';
-          btn.style.userSelect = 'none';
-          btn.style.webkitTouchCallout = 'none';
-        } catch (eSt) {}
-        btn.addEventListener('contextmenu', function(e) { e.preventDefault(); e.stopPropagation(); });
-        btn.addEventListener('pointerdown', function(e) {
-          if (e.button != null && e.button !== 0) return;
-          if (active) return;
-          active = true; longDone = false; ptrId = e.pointerId;
-          startX = e.clientX || 0; startY = e.clientY || 0;
-          clearT();
-          try { btn.style.transform = 'scale(0.92)'; btn.style.opacity = '0.85'; btn.classList.add('lp-holding'); } catch (eV) {}
-          try { if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId); } catch (eC) {}
-          timer = setTimeout(function() { if (active && !longDone) doLong(); }, HOLD_MS);
-          try { if (e.cancelable) e.preventDefault(); } catch (eP) {}
-          try { e.stopPropagation(); } catch (eS) {}
-        }, { passive: false });
-        btn.addEventListener('pointermove', function(e) {
-          if (!active || longDone) return;
-          if (ptrId != null && e.pointerId !== ptrId) return;
-          var dx = (e.clientX || 0) - startX, dy = (e.clientY || 0) - startY;
-          if (dx * dx + dy * dy > 3000) {
-            active = false; clearT(); resetVisual();
-          }
-        }, { passive: true });
-        function endPointer(e) {
-          if (ptrId != null && e.pointerId !== ptrId) return;
-          if (longDone) { active = false; clearT(); resetVisual(); try { e.preventDefault(); e.stopPropagation(); } catch (e1) {} return; }
-          if (!active) { clearT(); resetVisual(); return; }
-          active = false; clearT(); resetVisual();
-          doShort();
-          try { e.preventDefault(); e.stopPropagation(); } catch (e2) {}
-        }
-        btn.addEventListener('pointerup', endPointer, { passive: false });
-        btn.addEventListener('pointercancel', function() {
-          active = false; clearT(); resetVisual(); longDone = false; ptrId = null;
-        });
-        btn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); });
-      })(btnAddRow, sec.id);
+      /* کلیک کوتاه = ردیف عادی */
+      btnAddRow.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try { addRow(sec.id, 1); } catch (eA) {}
+      });
       addRowWrap.appendChild(btnAddRow);
+
+      /* دکمه جدا برای ردیف پروژه — قابل اعتمادتر از لانگ‌پرس روی همان آیکون */
+      var btnProj = document.createElement('button');
+      btnProj.type = 'button';
+      btnProj.className = 'btn-circle-plus btn-proj-row';
+      btnProj.title = 'ردیف پروژه';
+      btnProj.setAttribute('aria-label', 'ردیف پروژه');
+      btnProj.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 2h11v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h2"/></svg>';
+      btnProj.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          var fn = window.openProjectRowPicker || openProjectRowPicker;
+          if (typeof fn === 'function') fn(sec.id);
+          else showToast('انتخاب پروژه در دسترس نیست', 'warn');
+        } catch (eP) {
+          try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
+        }
+      });
+      addRowWrap.appendChild(btnProj);
+
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
       hint.className = 'tap-hint';
@@ -25950,9 +25945,18 @@ field('حساب بانکی', accSelRec);
       try {
         var liveScroll = document.querySelector('.section-rows-scroll');
         if (liveScroll && typeof liveScroll.scrollTop === 'number') {
-          sec._rowScrollTop = liveScroll.scrollTop;
+          var st = liveScroll.scrollTop;
+          sec._rowScrollTop = st;
           window._secRowScroll = window._secRowScroll || {};
-          if (sec.id != null) window._secRowScroll[sec.id] = liveScroll.scrollTop;
+          if (sec.id != null) window._secRowScroll[sec.id] = st;
+          try {
+            window._detailRowScroll = window._detailRowScroll || {};
+            var _dt = (typeof _detailContext !== 'undefined' && _detailContext) ? _detailContext : null;
+            if (_dt && _dt.title) {
+              var _tb = (currentTab === 'income' || currentTab === 'expense') ? currentTab : (_dt.kind || 'income');
+              window._detailRowScroll[String(_tb) + '|' + String(_dt.title)] = st;
+            }
+          } catch (eK) {}
         } else if (typeof sec._rowScrollTop !== 'number') {
           sec._rowScrollTop = (window._secRowScroll && sec.id != null) ? (window._secRowScroll[sec.id] || 0) : 0;
         }
