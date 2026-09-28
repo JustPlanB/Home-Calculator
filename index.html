@@ -8169,6 +8169,9 @@
       overflow-y: auto;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
     }
+
+    #familyModal, #familyModal.open, .family-modal-box { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+    #syncStatus, .sync-status, [data-sync-status] { display: none !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -8684,7 +8687,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v158-PENTA | dual-add-btn current-month-bak scroll-key bank-sync */
+    /* build-stamp: 2026-09-28-v159-PENTA | no-cloud scroll-fix dual-proj */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -8819,7 +8822,7 @@
     const SHARE_MAX_MEMBERS = 0; /* 0 = بدون سقف */
     const OWNERSHIP_LOCK_MSG = 'اطلاعات، متعلق به کاربر دیگریست و قابل تغییر نمی‌باشد';
     const PLAN_LOCK_MSG = 'برای ویرایش از بخش اقساط اقدام کنید';
-    const SUPABASE_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+    const SUPABASE_ENABLED = false; /* ابر کاملاً غیرفعال — بدون Supabase/Firebase */
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
@@ -10984,6 +10987,8 @@ function onPeriodChange() {
     // آخرین خطای pull برای نمایش در UI
     let lastPullError = '';
      async function pullAndMergeSharedRecords() {
+      return false; /* ابر حذف شد */
+
       lastPullError = '';
       lastPullStats = { fetched: 0, merged: 0, skipped: 0, ignored: 0 };
       if (!SUPABASE_ENABLED || !sharedAccountId || !navigator.onLine) {
@@ -11091,6 +11096,8 @@ function onPeriodChange() {
     }
 
     async function syncSharedData(manual) {
+      return false; /* ابر حذف شد */
+
       try { loadSharedAccountLocal(); } catch (e) {}
       if (!SUPABASE_ENABLED || !sharedAccountId) {
         if (manual) showToast('خطا: account_id حساب مشترک خالی است');
@@ -11669,6 +11676,8 @@ function onPeriodChange() {
       } catch (e) {}
     }
     async function flushSyncQueue() {
+      return; /* ابر حذف شد */
+
       if (!SUPABASE_ENABLED || !navigator.onLine) return;
       loadSyncQueue();
       if (!syncQueue.length) return;
@@ -12270,12 +12279,11 @@ function onPeriodChange() {
     }
 
     function openFamilyModal() {
-      closeSideMenu();
-      ensureLocalUid();
-      registerSelfInFamily();
-      document.getElementById('familyModal').classList.add('open');
-      renderFamilyModalBody();
+      /* حساب مشترک / ابر حذف شد */
+      try { closeFamilyModal(); } catch (e) {}
+      return;
     }
+    
     function closeFamilyModal() {
       document.getElementById('familyModal').classList.remove('open');
       openSideMenu();
@@ -12656,18 +12664,9 @@ function onPeriodChange() {
     }
 
     function startSyncLoop() {
-      // همگام‌سازی دوره‌ای سبک؛ هر دستگاه تغییرات خودش را push و سپس رکوردهای
-      // حساب مشترک را pull/merge می‌کند. این جایگزین sync کل bundle شده است.
-      clearInterval(syncTimer);
-      syncTimer = setInterval(() => {
-        try {
-          if (SUPABASE_ENABLED && sharedAccountId && navigator.onLine) {
-            syncSharedData(false);
-          }
-        } catch (e) {
-          console.error('[Sync] periodic:', e);
-        }
-      }, 10000);
+      /* ابر حذف شد — همگام‌سازی دوره‌ای غیرفعال */
+      try { if (typeof syncTimer !== 'undefined' && syncTimer) clearInterval(syncTimer); } catch (e) {}
+      syncTimer = null;
     }
 
     /* —— Installment reminders —— */
@@ -17803,6 +17802,20 @@ function openPdfPrintWindow(){
         return banks;
       }
 
+            try {
+        var _rs = document.querySelector('.section-rows-scroll');
+        if (_rs) {
+          var _sv = _rs.scrollTop || 0;
+          window._detailRowScroll = window._detailRowScroll || {};
+          var _sk = String(tab || '') + '|' + String(title || '');
+          if (_sv > 0) window._detailRowScroll[_sk] = _sv;
+          if (sec) {
+            sec._rowScrollTop = _sv > 0 ? _sv : (sec._rowScrollTop || 0);
+            window._secRowScroll = window._secRowScroll || {};
+            if (sec.id != null && _sv > 0) window._secRowScroll[sec.id] = _sv;
+          }
+        }
+      } catch (eSaveScr) {}
       container.innerHTML = '';
       const page = document.createElement('div');
       page.className = 'person-detail-page';
@@ -17959,7 +17972,7 @@ function openPdfPrintWindow(){
               return;
             }
             desc.readOnly = false;
-            try { desc.focus(); } catch (err) {}
+            try { desc.focus({ preventScroll: true }); } catch (err) { try { desc.focus(); } catch (e2) {} }
             return;
           }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
@@ -17975,7 +17988,7 @@ function openPdfPrintWindow(){
           document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           desc.readOnly = false;
           desc.classList.add('pd-editing');
-          try { desc.focus(); } catch (err) {}
+          try { desc.focus({ preventScroll: true }); } catch (err) { try { desc.focus(); } catch (e2) {} }
         };
         desc.onfocus = () => {
           if (fromPlan) return;
@@ -18046,7 +18059,7 @@ function openPdfPrintWindow(){
           if (amt._clickTimer) { clearTimeout(amt._clickTimer); amt._clickTimer = null; }
           document.querySelectorAll('.status-menu').forEach(m => { try { m.remove(); } catch (e2) {} });
           amt.readOnly = false;
-          try { amt.focus(); } catch (err) {}
+          try { amt.focus({ preventScroll: true }); } catch (err) { try { amt.focus(); } catch (e2) {} }
         }
         amt.ondblclick = (e) => {
           e.preventDefault();
@@ -18145,7 +18158,7 @@ function openPdfPrintWindow(){
           if (fromPlan) return;
           if (!isFilledVal(row.amount)) {
             amt.readOnly = false;
-            try { amt.focus(); } catch (err) {}
+            try { amt.focus({ preventScroll: true }); } catch (err) { try { amt.focus(); } catch (e2) {} }
             return;
           }
           if (document.activeElement === amt && !amt.readOnly) return;
@@ -21122,9 +21135,10 @@ function confirmSmsEntry() {
       var secNote = (sec && sec.title) ? (' — ' + sec.title) : '';
       showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote + secNote);
       try {
-        if (sec) {
+        /* در صفحه جزئیات کارت، scrollIntoView باعث پرش جدول می‌شود */
+        if (sec && !(typeof _detailContext !== 'undefined' && _detailContext)) {
           const el = document.getElementById('sec-' + tab + '-' + sec.id);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       } catch (e) {}
       try {
@@ -25154,6 +25168,8 @@ field('حساب بانکی', accSelRec);
           setTimeout(apply, 160);
           setTimeout(apply, 280);
           setTimeout(apply, 450);
+          setTimeout(apply, 700);
+          setTimeout(apply, 1000);
         }
       }
       function persistRowScroll() {
@@ -26339,6 +26355,10 @@ field('حساب بانکی', accSelRec);
     function showToast(msg) {
       const t = document.getElementById('toast');
       if (!t) return;
+      try {
+        var _m = String(msg || '');
+        if (/supabase|firebase|همگام|ابر|sync|offline|آنلاین|آفلاین —|در صف همگام/i.test(_m)) return;
+      } catch (eFilt) {}
       t.textContent = msg;
       // همیشه بالاتر از مودال‌های مات
       try {
@@ -28268,27 +28288,15 @@ field('حساب بانکی', accSelRec);
     initSelectors();
     updateTabUI();
     ensureLocalUid();
-    loadSharedAccountLocal();
-    loadSyncQueue();
-    try { refreshSyncStatusFromQueue(); } catch (e) {}
+    /* ابر حذف شد — پاک‌سازی وضعیت حساب مشترک قدیمی */
     try {
-      window.addEventListener('offline', () => {
-        try {
-          if (sharedAccountId) setSyncStatus('آفلاین', 'pending');
-        } catch (e) {}
-      });
-      window.addEventListener('online', () => {
-        try {
-          if (sharedAccountId) {
-            setSyncStatus('در حال همگام‌سازی...', 'busy');
-            setTimeout(() => { try { syncSharedData(false); } catch (e) {} }, 300);
-          }
-        } catch (e) {}
-      });
-    } catch (e) {}
-    /* Supabase غیرفعال — راه‌اندازی ابری انجام نمی‌شود */
-    try { /* no-op cloud init */ } catch (e) {}
-    updateFamilyUI();
+      sharedAccountId = '';
+      familyCode = '';
+      localStorage.removeItem(STORAGE_KEY + '_sharedAccount');
+      localStorage.removeItem(STORAGE_KEY + '_syncQueue');
+    } catch (eCloudClr) {}
+    /* بدون همگام‌سازی / بدون toast ابری */
+    try { updateFamilyUI(); } catch (eFU) {}
     try {
       currentTab = 'home';
       _detailContext = null;
@@ -28317,8 +28325,8 @@ field('حساب بانکی', accSelRec);
       try { maybeShowFirstRunBankSetup(); } catch (e2) {}
     }
     checkInstallReminders();
-    startSyncLoop();
-    /* Sync خودکار پس از Auth و سپس هر ۱۰ ثانیه فعال است. */
+    /* startSyncLoop removed — بدون ابر */
+
     // ارتفاع هدر ثابت را با محتوا هم‌تراز کن
     requestAnimationFrame(() => {
       syncChromeHeight();
