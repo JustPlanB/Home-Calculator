@@ -8669,7 +8669,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v155-PENTA | dedicated-plus-longpress */
+    /* build-stamp: 2026-09-28-v156-PENTA | longpress-1050 restore-subjects backup-user-cards */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13234,7 +13234,118 @@ function onPeriodChange() {
     }
 
     
-    function askBackupParts() {
+    
+    function filterArchiveByUserCards(arch, cardNames) {
+      if (!arch || typeof arch !== 'object') return arch || {};
+      if (!cardNames || !cardNames.length) return arch;
+      var set = {};
+      cardNames.forEach(function(t) {
+        var k = String(t || '').trim();
+        if (k) set[k] = true;
+      });
+      var out = {};
+      Object.keys(arch).forEach(function(key) {
+        var pd = arch[key];
+        if (!pd || typeof pd !== 'object') return;
+        var clone;
+        try { clone = JSON.parse(JSON.stringify(pd)); } catch (e) { clone = pd; }
+        ['income', 'expense'].forEach(function(tab) {
+          if (clone[tab] && Array.isArray(clone[tab].sections)) {
+            clone[tab].sections = clone[tab].sections.filter(function(s) {
+              return s && set[String(s.title || '').trim()];
+            });
+          }
+        });
+        if (Array.isArray(clone.personCardOrder)) {
+          clone.personCardOrder = clone.personCardOrder.filter(function(t) {
+            return set[String(t || '').trim()];
+          });
+        }
+        if (clone.personOpeningInstant && typeof clone.personOpeningInstant === 'object') {
+          var poi = {};
+          Object.keys(clone.personOpeningInstant).forEach(function(k) {
+            if (set[k]) poi[k] = clone.personOpeningInstant[k];
+          });
+          clone.personOpeningInstant = poi;
+        }
+        if (clone.cardMeta && typeof clone.cardMeta === 'object') {
+          var cm = {};
+          Object.keys(clone.cardMeta).forEach(function(k) {
+            if (set[k]) cm[k] = clone.cardMeta[k];
+          });
+          clone.cardMeta = cm;
+        }
+        out[key] = clone;
+      });
+      return out;
+    }
+
+    function askBackupUserCards(selectedParts) {
+      var titles = [];
+      try { titles = (typeof allPersonTitles === 'function') ? allPersonTitles() : []; } catch (e) { titles = []; }
+      if (!titles || !titles.length) {
+        exportFullBackup(selectedParts);
+        return;
+      }
+      var existing = document.getElementById('backupPickOverlay');
+      if (existing) existing.remove();
+      var ov = document.createElement('div');
+      ov.id = 'backupPickOverlay';
+      ov.className = 'backup-pick-overlay';
+      var html = '<div class="backup-pick-panel" role="dialog">' +
+        '<div class="backup-pick-title">کدام کارت‌های کاربر هم پشتیبان‌گیری شوند؟</div>';
+      html += '<label class="backup-pick-item all">' +
+        '<input type="checkbox" id="bkCardAll" checked />' +
+        '<span>همه</span></label>';
+      titles.forEach(function(t, idx) {
+        html += '<label class="backup-pick-item">' +
+          '<input type="checkbox" class="bk-card" data-card="' + String(t).replace(/"/g, '&quot;') + '" checked />' +
+          '<span>' + String(t).replace(/</g, '&lt;') + '</span></label>';
+      });
+      html += '<div class="backup-pick-actions">' +
+        '<button type="button" class="backup-pick-ok" id="bkDoExportCards">پشتیبان‌گیری</button>' +
+        '<button type="button" class="backup-pick-cancel" id="bkCancelCards">انصراف</button>' +
+        '</div></div>';
+      ov.innerHTML = html;
+      document.body.appendChild(ov);
+      var allCb = ov.querySelector('#bkCardAll');
+      var cardCbs = ov.querySelectorAll('.bk-card');
+      function syncFromAll() {
+        var on = !!(allCb && allCb.checked);
+        cardCbs.forEach(function(cb) { cb.checked = on; });
+      }
+      function syncToAll() {
+        if (!allCb) return;
+        var allOn = true;
+        cardCbs.forEach(function(cb) { if (!cb.checked) allOn = false; });
+        allCb.checked = allOn;
+      }
+      if (allCb) allCb.addEventListener('change', syncFromAll);
+      cardCbs.forEach(function(cb) { cb.addEventListener('change', syncToAll); });
+      ov.querySelector('#bkCancelCards').onclick = function() { ov.remove(); };
+      ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+      ov.querySelector('#bkDoExportCards').onclick = function() {
+        var picked = [];
+        if (allCb && allCb.checked) {
+          titles.forEach(function(t) { picked.push(t); });
+        } else {
+          cardCbs.forEach(function(cb) {
+            if (cb.checked) picked.push(cb.getAttribute('data-card'));
+          });
+        }
+        if (!picked.length) {
+          try { showToast('حداقل یک کارت کاربر را انتخاب کنید', 'warn'); } catch (eT) {}
+          return;
+        }
+        selectedParts = selectedParts || {};
+        selectedParts.selectedUserCards = picked;
+        selectedParts._allUserCards = !!(allCb && allCb.checked);
+        ov.remove();
+        exportFullBackup(selectedParts);
+      };
+    }
+
+function askBackupParts() {
       closeSideMenu();
       var existing = document.getElementById('backupPickOverlay');
       if (existing) existing.remove();
@@ -13298,7 +13409,13 @@ function onPeriodChange() {
           return;
         }
         ov.remove();
-        exportFullBackup(selected);
+        if (selected.archive) {
+          try { askBackupUserCards(selected); } catch (eC) {
+            try { exportFullBackup(selected); } catch (e2) {}
+          }
+        } else {
+          exportFullBackup(selected);
+        }
       };
     }
 
@@ -13319,7 +13436,37 @@ async function exportFullBackup(selectedParts) {
           theme: document.documentElement.getAttribute('data-theme') || 'dark',
           backupParts: sel || { all: true }
         };
-        if (want('archive')) payload.archive = archive;
+        if (want('archive')) {
+          var cardList = null;
+          try {
+            if (sel && Array.isArray(sel.selectedUserCards) && sel.selectedUserCards.length && !sel._allUserCards) {
+              cardList = sel.selectedUserCards.slice();
+            }
+          } catch (eCL) { cardList = null; }
+          if (cardList && cardList.length) {
+            payload.archive = filterArchiveByUserCards(archive, cardList);
+            payload.selectedUserCards = cardList.slice();
+          } else {
+            payload.archive = archive;
+            try {
+              payload.selectedUserCards = (typeof allPersonTitles === 'function') ? allPersonTitles() : [];
+            } catch (eA) { payload.selectedUserCards = []; }
+          }
+          try {
+            var order = [];
+            if (periodData && Array.isArray(periodData.personCardOrder) && periodData.personCardOrder.length) {
+              order = periodData.personCardOrder.slice();
+            } else if (typeof loadGlobalCardOrder === 'function') {
+              order = loadGlobalCardOrder();
+            }
+            if (cardList && cardList.length) {
+              var setO = {};
+              cardList.forEach(function(t) { setO[String(t || '').trim()] = true; });
+              order = order.filter(function(t) { return setO[String(t || '').trim()]; });
+            }
+            payload.personCardOrder = order;
+          } catch (eO) {}
+        }
         if (want('plans')) payload.plans = plans;
         if (want('recurringIncomes')) payload.recurringIncomes = recurringIncomes;
         if (want('meta')) {
@@ -13345,6 +13492,17 @@ async function exportFullBackup(selectedParts) {
                 payload.cardMeta = JSON.parse(cm) || {};
               }
             } catch (e2) {}
+            try {
+              if (sel && Array.isArray(sel.selectedUserCards) && sel.selectedUserCards.length && !sel._allUserCards && payload.cardMeta) {
+                var setCm = {};
+                sel.selectedUserCards.forEach(function(t) { setCm[String(t || '').trim()] = true; });
+                var filteredCm = {};
+                Object.keys(payload.cardMeta).forEach(function(k) {
+                  if (setCm[k]) filteredCm[k] = payload.cardMeta[k];
+                });
+                payload.cardMeta = filteredCm;
+              }
+            } catch (eCmF) {}
           }
           if (want('subjects')) {
             try {
@@ -13717,6 +13875,60 @@ async function exportFullBackup(selectedParts) {
           saveUserReminders();
         } catch (e) {}
       }
+
+      /* بازیابی پروژه‌ها (financialSubjects) */
+      if (Array.isArray(data.financialSubjects)) {
+        try {
+          if (mode === 'replace') {
+            _financialSubjects = JSON.parse(JSON.stringify(data.financialSubjects));
+          } else {
+            try { loadFinancialSubjects(); } catch (eL) {}
+            if (!Array.isArray(_financialSubjects)) _financialSubjects = [];
+            var byId = {};
+            _financialSubjects.forEach(function(s) {
+              if (s && s.id) byId[s.id] = true;
+            });
+            data.financialSubjects.forEach(function(s) {
+              if (!s || !s.id) return;
+              if (byId[s.id]) return; /* id موجود → duplicate نساز */
+              try {
+                _financialSubjects.push(JSON.parse(JSON.stringify(s)));
+                byId[s.id] = true;
+              } catch (eP) {
+                _financialSubjects.push(s);
+                byId[s.id] = true;
+              }
+            });
+          }
+          saveFinancialSubjects();
+        } catch (eFS) {
+          try { console.warn('restore financialSubjects', eFS); } catch (e2) {}
+        }
+      }
+      /* ترتیب کارت‌های کاربر */
+      if (Array.isArray(data.personCardOrder) && data.personCardOrder.length) {
+        try {
+          if (mode === 'replace') {
+            if (periodData) periodData.personCardOrder = data.personCardOrder.slice();
+            if (typeof saveGlobalCardOrder === 'function') saveGlobalCardOrder(data.personCardOrder.slice());
+          } else {
+            var curOrder = [];
+            try {
+              if (periodData && Array.isArray(periodData.personCardOrder)) curOrder = periodData.personCardOrder.slice();
+              else if (typeof loadGlobalCardOrder === 'function') curOrder = loadGlobalCardOrder();
+            } catch (eO) {}
+            var seen = {};
+            curOrder.forEach(function(t) { seen[String(t || '').trim()] = true; });
+            data.personCardOrder.forEach(function(t) {
+              var k = String(t || '').trim();
+              if (k && !seen[k]) { curOrder.push(k); seen[k] = true; }
+            });
+            if (periodData) periodData.personCardOrder = curOrder;
+            if (typeof saveGlobalCardOrder === 'function') saveGlobalCardOrder(curOrder);
+          }
+        } catch (ePO) {}
+      }
+
       if (data.currentYear) currentYear = parseInt(data.currentYear, 10) || currentYear;
       if (data.currentMonth) currentMonth = parseInt(data.currentMonth, 10) || currentMonth;
       if (mode === 'replace' && (data.theme === 'light' || data.theme === 'dark')) applyTheme(data.theme);
@@ -24952,7 +25164,7 @@ field('حساب بانکی', accSelRec);
       btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
       /* لانگ‌پرس اختصاصی دکمه + — بدون وابستگی به bindLongPress عمومی */
       (function(btn, sectionId) {
-        var HOLD_MS = 800;
+        var HOLD_MS = 1050;
         var timer = null;
         var pressed = false;
         var longDone = false;
