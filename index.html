@@ -3421,7 +3421,10 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    .person-detail-add .btn-circle-plus {
+    .person-detail-add .btn-circle-plus.lp-holding {
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.55) !important;
+    }
+    .btn-circle-plus {
       width: 32px;
       height: 32px;
     }
@@ -8666,7 +8669,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v154-PENTA | longpress-fix home-backup-ask */
+    /* build-stamp: 2026-09-28-v155-PENTA | dedicated-plus-longpress */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -24947,24 +24950,142 @@ field('حساب بانکی', accSelRec);
       btnAddRow.title = 'ردیف جدید';
       btnAddRow.setAttribute('aria-label', 'ردیف جدید');
       btnAddRow.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      btnAddRow.onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      };
-      if (typeof bindLongPress === 'function') {
-        bindLongPress(btnAddRow, function(e) {
-          try { openProjectRowPicker(sec.id); } catch (eL) {
-            try { console.warn(eL); showToast('خطا در انتخاب پروژه', 'warn'); } catch (e2) {}
+      /* لانگ‌پرس اختصاصی دکمه + — بدون وابستگی به bindLongPress عمومی */
+      (function(btn, sectionId) {
+        var HOLD_MS = 800;
+        var timer = null;
+        var pressed = false;
+        var longDone = false;
+        var startX = 0, startY = 0;
+
+        function clearT() {
+          if (timer) { clearTimeout(timer); timer = null; }
+        }
+        function resetVisual() {
+          try {
+            btn.style.transform = '';
+            btn.style.opacity = '';
+            btn.classList.remove('lp-holding');
+          } catch (e) {}
+        }
+        function doLong() {
+          if (longDone) return;
+          longDone = true;
+          pressed = false;
+          clearT();
+          resetVisual();
+          try { if (navigator.vibrate) navigator.vibrate(25); } catch (eV) {}
+          try {
+            if (typeof openProjectRowPicker === 'function') {
+              openProjectRowPicker(sectionId);
+            } else {
+              showToast('انتخاب پروژه در دسترس نیست', 'warn');
+            }
+          } catch (eL) {
+            try { console.warn(eL); } catch (e2) {}
+            try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e3) {}
           }
-        }, function(e) {
-          addRow(sec.id, 1);
-        }, 1000);
-      } else {
-        btnAddRow.addEventListener('click', function(e) {
+        }
+        function doShort() {
+          try { addRow(sectionId, 1); } catch (eS) {}
+        }
+        function onDown(e) {
+          /* فقط لمس/کلیک اصلی */
+          if (e.type === 'mousedown' && e.button !== 0) return;
+          if (e.type === 'pointerdown' && e.button != null && e.button !== 0) return;
+          pressed = true;
+          longDone = false;
+          clearT();
+          try {
+            var pt = (e.touches && e.touches[0]) || e;
+            startX = pt.clientX || 0;
+            startY = pt.clientY || 0;
+          } catch (e0) {}
+          try {
+            btn.style.transform = 'scale(0.92)';
+            btn.style.opacity = '0.85';
+            btn.classList.add('lp-holding');
+          } catch (eV) {}
+          timer = setTimeout(function() {
+            if (!pressed) return;
+            doLong();
+          }, HOLD_MS);
+          /* جلوگیری از gesture سیستم و اسکرول */
+          try {
+            if (e.cancelable) e.preventDefault();
+          } catch (eP) {}
+          try { e.stopPropagation(); } catch (eS) {}
+        }
+        function onMove(e) {
+          if (!pressed || longDone) return;
+          try {
+            var pt = (e.touches && e.touches[0]) || e;
+            var dx = (pt.clientX || 0) - startX;
+            var dy = (pt.clientY || 0) - startY;
+            /* فقط حرکت خیلی زیاد (~50px) لغو کند */
+            if (dx * dx + dy * dy > 2500) {
+              pressed = false;
+              clearT();
+              resetVisual();
+            }
+          } catch (eM) {}
+        }
+        function onUp(e) {
+          if (longDone) {
+            pressed = false;
+            clearT();
+            resetVisual();
+            try { e.preventDefault(); e.stopPropagation(); } catch (e1) {}
+            return;
+          }
+          if (!pressed) {
+            clearT();
+            resetVisual();
+            return;
+          }
+          pressed = false;
+          clearT();
+          resetVisual();
+          doShort();
+          try { e.preventDefault(); e.stopPropagation(); } catch (e2) {}
+        }
+        function onCancel() {
+          pressed = false;
+          clearT();
+          resetVisual();
+          longDone = false;
+        }
+
+        try {
+          btn.style.touchAction = 'none';
+          btn.style.webkitUserSelect = 'none';
+          btn.style.userSelect = 'none';
+          btn.style.webkitTouchCallout = 'none';
+        } catch (eSt) {}
+
+        btn.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
           e.stopPropagation();
-          addRow(sec.id, 1);
         });
-      }
+
+        /* touch — غیر passive تا preventDefault کار کند */
+        btn.addEventListener('touchstart', onDown, { passive: false });
+        btn.addEventListener('touchmove', onMove, { passive: true });
+        btn.addEventListener('touchend', onUp, { passive: false });
+        btn.addEventListener('touchcancel', onCancel, { passive: true });
+
+        /* mouse / pointer fallback */
+        btn.addEventListener('mousedown', onDown);
+        btn.addEventListener('mousemove', onMove);
+        btn.addEventListener('mouseup', onUp);
+        btn.addEventListener('mouseleave', onCancel);
+
+        /* جلوگیری از click مصنوعی بعد از touch */
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      })(btnAddRow, sec.id);
       addRowWrap.appendChild(btnAddRow);
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
@@ -25508,6 +25629,8 @@ field('حساب بانکی', accSelRec);
       });
       requestAnimationFrame(function() { ov.classList.add('open'); });
     }
+    try { window.openProjectRowPicker = openProjectRowPicker; window.closeProjectRowPicker = closeProjectRowPicker; } catch (eEx) {}
+
     function bindLongPress(el, onLong, onShort, ms) {
       if (!el) return;
       ms = (typeof ms === 'number' && ms > 0) ? ms : 1000;
