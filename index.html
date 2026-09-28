@@ -3495,6 +3495,67 @@
     .row-add-switch.is-project .ras-knob svg {
       stroke: #c084fc !important;
     }
+
+    /* سوئیچ روی صفحه جزئیات درآمد/مخارج — باید از استایل table-add-tab مستقل باشد */
+    .person-detail-box > .row-add-switch,
+    .person-detail-page .row-add-switch {
+      position: relative !important;
+      width: 72px !important;
+      height: 36px !important;
+      min-width: 72px !important;
+      min-height: 36px !important;
+      margin: 10px 12px 14px !important;
+      border-radius: 999px !important;
+      background: #2a2a2a !important;
+      border: 1px solid rgba(8,181,245,0.45) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      box-sizing: border-box !important;
+      z-index: 5 !important;
+      transform: none !important;
+      filter: none !important;
+      overflow: visible !important;
+    }
+    .person-detail-box > .row-add-switch.is-project,
+    .person-detail-page .row-add-switch.is-project {
+      border-color: rgba(192,132,252,0.55) !important;
+    }
+    .person-detail-box > .row-add-switch .ras-knob,
+    .person-detail-page .row-add-switch .ras-knob {
+      position: absolute !important;
+      top: 3px !important;
+      left: 3px !important;
+      width: 30px !important;
+      height: 30px !important;
+      border-radius: 50% !important;
+      background: #1b1b1b !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      z-index: 6 !important;
+      transition: left 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+    .person-detail-box > .row-add-switch.is-project .ras-knob,
+    .person-detail-page .row-add-switch.is-project .ras-knob {
+      left: calc(100% - 33px) !important;
+    }
+    .person-detail-box > .row-add-switch .ras-knob svg,
+    .person-detail-page .row-add-switch .ras-knob svg {
+      width: 17px !important;
+      height: 17px !important;
+      stroke: #08b5f5 !important;
+      stroke-width: 2.8 !important;
+      fill: none !important;
+      pointer-events: none !important;
+    }
+    .person-detail-box > .row-add-switch.is-project .ras-knob svg,
+    .person-detail-page .row-add-switch.is-project .ras-knob svg {
+      stroke: #c084fc !important;
+    }
+
     .add-row-wrap {
       display: flex !important;
       align-items: center !important;
@@ -8768,7 +8829,7 @@
 
     
 
-    /* build-stamp: 2026-09-28-v164-PENTA | fix-toggle-switch-css */
+    /* build-stamp: 2026-09-28-v165-PENTA | switch-on-real-table-add-tab-path */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18414,18 +18475,69 @@ container.innerHTML = '';
       hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
       box.appendChild(hint);
 
-      /* پله پایین‌راست — طبق تصویر مرجع */
-      const addBtn = document.createElement('button');
-      addBtn.type = 'button';
-      addBtn.className = 'table-add-tab';
-      addBtn.title = 'ردیف جدید';
-      addBtn.setAttribute('aria-label', 'ردیف جدید');
-      addBtn.innerHTML = '<svg class="tab-plus-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      addBtn.onclick = () => {
-        sec.rows.push(emptyRow(tab));
-        rebuild();
-      };
-      box.appendChild(addBtn);
+      /* سوئیچ بیضی شخصی/پروژه — جایگزین table-add-tab */
+      var sw = document.createElement('div');
+      sw.className = 'row-add-switch';
+      sw.setAttribute('data-mode', 'personal');
+      sw.setAttribute('role', 'switch');
+      sw.setAttribute('aria-checked', 'false');
+      sw.title = 'شخصی / پروژه';
+      sw.innerHTML =
+        '<div class="ras-track" aria-hidden="true"></div>' +
+        '<button type="button" class="ras-knob" aria-label="افزودن ردیف شخصی">' +
+          '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+        '</button>';
+      var knob = sw.querySelector('.ras-knob');
+      function setRowMode(mode) {
+        var isProj = mode === 'project';
+        sw.setAttribute('data-mode', isProj ? 'project' : 'personal');
+        sw.setAttribute('aria-checked', isProj ? 'true' : 'false');
+        if (isProj) sw.classList.add('is-project');
+        else sw.classList.remove('is-project');
+        try { knob.setAttribute('aria-label', isProj ? 'افزودن ردیف پروژه' : 'افزودن ردیف شخصی'); } catch (eA) {}
+      }
+      function openProjForSection() {
+        try {
+          var fn = window.openProjectRowPicker || openProjectRowPicker;
+          if (typeof fn === 'function') fn(sec.id);
+          else showToast('انتخاب پروژه در دسترس نیست', 'warn');
+        } catch (eP) {
+          try { showToast('خطا در باز کردن پروژه‌ها', 'warn'); } catch (e2) {}
+        }
+      }
+      function addPersonalRow() {
+        try {
+          sec.rows.push(emptyRow(tab));
+          rebuild();
+        } catch (eR) {
+          try { addRow(sec.id, 1); } catch (eA) {}
+        }
+      }
+      sw.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var rect = sw.getBoundingClientRect();
+        var x = (e.clientX != null ? e.clientX : (rect.left + rect.width / 2)) - rect.left;
+        var onKnob = (e.target === knob) || (knob && knob.contains && knob.contains(e.target));
+        if (onKnob) {
+          if (sw.getAttribute('data-mode') === 'project') openProjForSection();
+          else addPersonalRow();
+          return;
+        }
+        if (x > rect.width * 0.5) {
+          setRowMode('project');
+          openProjForSection();
+        } else {
+          setRowMode('personal');
+        }
+      });
+      knob.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (sw.getAttribute('data-mode') === 'project') openProjForSection();
+        else addPersonalRow();
+      });
+      box.appendChild(sw);
 
       page.appendChild(box);
       container.appendChild(page);
