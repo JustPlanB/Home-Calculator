@@ -18521,8 +18521,11 @@ container.innerHTML = '';
             const trEl = ev.target.closest && ev.target.closest('tbody tr');
             if (trEl) return;
             if (ev.target.closest && ev.target.closest('.dark-select-list, .status-menu, .pd-desc-popup')) return;
+            /* دکمه + (لمس/کشیدن) نباید باعث بازسازی صفحه شود، وگرنه ژست کشیدن وسط راه قطع می‌شود */
+            if (ev.target.closest && ev.target.closest('.row-add-fab-wrap')) return;
             setTimeout(() => {
               try {
+                if (document.querySelector('.row-add-fab-wrap.is-dragging')) return;
                 if (document.querySelector('.dark-select-list.open, .status-menu')) return;
                 const a = document.activeElement;
                 if (a && a.closest && a.closest('.person-detail-table tbody')) return;
