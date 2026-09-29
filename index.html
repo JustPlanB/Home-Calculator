@@ -2423,23 +2423,40 @@
       margin-bottom: 12px;
     }
     .proj-row-picker-item {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 10px;
       width: 100%;
       text-align: right;
-      padding: 12px 12px;
+      padding: 12px 14px 12px 12px;
       margin-bottom: 8px;
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 12px;
-      background: rgba(255,255,255,0.04);
+      background: #2c2c2e; /* هم‌رنگ پنل زیرین */
       color: #fff;
       font-family: inherit;
       font-weight: 700;
       font-size: 0.9rem;
       cursor: pointer;
+      overflow: hidden;
+      box-sizing: border-box;
     }
-    .proj-row-picker-item:active { background: rgba(255,255,255,0.1); }
+    /* خط رنگی مثل منوی اصلی پروژه‌ها (project-card::before) */
+    .proj-row-picker-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 4px;
+      background: var(--proj-accent, #b464ff);
+      border-radius: 0 12px 12px 0;
+    }
+    .proj-row-picker-item .ib-proj-dot {
+      display: none !important;
+    }
+    .proj-row-picker-item:active { background: #323234; }
     .proj-row-picker-cancel {
       width: 100%;
       margin-top: 6px;
@@ -3421,13 +3438,13 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    /* —— دکمه + : ظاهر مثل باکس‌های ۱/۲/۳ صفحه اصلی؛ عملکرد اسلاید بدون تغییر —— */
+    /* —— دکمه + : ظاهر هم‌رنگ جدول؛ عملکرد اسلاید بدون تغییر —— */
     .row-add-fab-wrap {
       position: relative !important;
       display: block !important;
-      width: 150px !important;
-      height: 44px !important;
-      min-height: 44px !important;
+      width: 118px !important;
+      height: 42px !important;
+      min-height: 42px !important;
       margin: 10px auto 14px 12px !important;
       padding: 0 !important;
       direction: ltr !important;
@@ -3437,7 +3454,7 @@
       user-select: none !important;
       touch-action: none !important;
     }
-    /* بیضی: همان استایل home-box (#1b1b1b + اینر شادو) */
+    /* بیضی: بک‌گراند جدول؛ اینر تیره ثابت؛ اینر روشن کمی تیره‌تر و ظریف‌تر */
     .row-add-track {
       position: absolute !important;
       inset: 0 !important;
@@ -3446,15 +3463,15 @@
       overflow: hidden !important;
       white-space: nowrap !important;
       pointer-events: none !important;
-      background-color: #1b1b1b !important;
+      background-color: #2c2c2e !important;
       background-image: none !important;
       border: none !important;
       color: #b0b0b0 !important;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
       z-index: 7 !important;
       box-shadow:
-        inset 4px 4px 12px rgba(0, 0, 0, 0.72),
-        inset -3px -3px 8px rgba(255, 255, 255, 0.14) !important;
+        inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.42),
+        inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.16) !important;
       animation: none !important;
       filter: none !important;
     }
@@ -3468,21 +3485,24 @@
       animation: none !important;
       pointer-events: none;
     }
-    /* کلیدواژه‌های انیمیشن قبلی خنثی — JS ممکن است class بگذارد */
     @keyframes rowAddFlow {
       from { background-position: 0 0; }
       to   { background-position: 0 0; }
     }
     @keyframes rowAddGlow {
-      0%, 100% { box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14); }
+      0%, 100% {
+        box-shadow:
+          inset 1.5px 1.5px 3px rgba(0,0,0,0.42),
+          inset -1.5px -1.5px 3px rgba(255,255,255,0.16);
+      }
     }
     @keyframes rowAddSpark {
       0%, 100% { filter: none; }
     }
-    /* «پروژه»: طوسی براق (بازتاب نور) */
+    /* «پروژه» رنگ ثابت — بدون کم‌رنگ/پررنگ */
     .row-add-track-label {
       position: absolute !important;
-      right: 14px !important;
+      right: 10px !important;
       top: 0 !important;
       bottom: 0 !important;
       z-index: 1 !important;
@@ -3491,37 +3511,39 @@
       justify-content: flex-end !important;
       direction: rtl !important;
       text-align: right !important;
-      font-size: 17px !important;
-      font-weight: 800 !important;
-      color: #c4c4c4 !important;
-      opacity: 0.85;
-      text-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.28),
-        0 -1px 0 rgba(0, 0, 0, 0.55),
-        0 0 8px rgba(200, 200, 200, 0.15);
-      transition: opacity 0.15s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      color: #c8c8c8 !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+      filter: none !important;
+      animation: none !important;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
-    /* فلش: طوسی براق */
+    /* فلش: شروع کمی راست‌تر + فید‌این در شروع حرکت، بدون سایه */
     .row-add-arrow {
       position: absolute !important;
       z-index: 1 !important;
-      left: 47px !important;
+      left: 46px !important;
       top: 50% !important;
-      margin-top: -10.5px !important;
+      margin-top: -18px !important;
+      width: 22px !important;
+      height: 36px !important;
       display: block !important;
       fill: #b8b8b8 !important;
       stroke: none !important;
       opacity: 0;
-      filter:
-        drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25))
-        drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.4));
-      animation: rowAddArrowGo 2.6s ease-in-out infinite;
+      text-shadow: none !important;
+      filter: none !important;
+      animation: rowAddArrowGo 2.8s linear infinite !important;
     }
+    /* ارتفاع کل بیشتر؛ اپسیتی کمتر؛ فید‌این از چپ‌تر */
     @keyframes rowAddArrowGo {
-      0%   { transform: translateX(0);    opacity: 0; }
-      25%  { opacity: 0.95; }
-      60%  { opacity: 0.85; }
-      100% { transform: translateX(10px); opacity: 0; }
+      0%   { transform: translateX(-4px); opacity: 0; }
+      18%  { opacity: 0.55; }
+      55%  { opacity: 0.55; }
+      72%  { opacity: 0; }
+      100% { transform: translateX(12px);  opacity: 0; }
     }
     .row-add-fab-wrap.is-armed .row-add-track::after {
       background: transparent !important;
@@ -3529,14 +3551,15 @@
     .row-add-fab-wrap.is-armed .row-add-arrow { display: none !important; }
     .row-add-fab-wrap.is-armed .row-add-track-label {
       opacity: 1 !important;
-      transform: translateX(-44px);
-      color: #d0d0d0 !important;
+      transform: translateX(-60px);
+      color: #c8c8c8 !important;
+      animation: none !important;
     }
-    /* دایره داخل بیضی: همان اینر شادوی home-box؛ بعلاوه آبی */
+    /* دایره فیت با ارتفاع بیضی (گوشه‌های کِرو) */
     .row-add-fab {
       position: absolute !important;
-      top: 3px !important;
-      left: 3px !important;
+      top: 2px !important;
+      left: 2px !important;
       width: 38px !important;
       height: 38px !important;
       min-width: 38px !important;
@@ -3548,11 +3571,11 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background-color: #1b1b1b !important;
+      background-color: #2c2c2e !important;
       background-image: none !important;
       box-shadow:
-        inset 3px 3px 8px rgba(0, 0, 0, 0.72),
-        inset -2px -2px 6px rgba(255, 255, 255, 0.14) !important;
+        inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.42),
+        inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.16) !important;
       filter: none !important;
       cursor: grab !important;
       z-index: 8 !important;
@@ -3561,31 +3584,45 @@
       will-change: transform;
     }
     .row-add-fab svg {
-      width: 19px !important;
-      height: 19px !important;
+      width: 21px !important;
+      height: 21px !important;
       stroke: #08b5f5 !important;
       stroke-width: 2.8 !important;
       fill: none !important;
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
       pointer-events: none !important;
-      transition: stroke 0.15s ease !important;
     }
-    .row-add-fab .fab-check { display: none; }
+    .row-add-fab svg path.fab-plus {
+      animation: plusStrokePulse 5.2s ease-in-out infinite !important;
+    }
+    .row-add-fab svg path.fab-check {
+      display: none;
+      stroke: #08b5f5 !important;
+      stroke-width: 2.8 !important;
+      animation: none !important;
+    }
     .row-add-fab-wrap.is-dragging .row-add-fab {
       cursor: grabbing !important;
       box-shadow:
-        inset 3px 3px 8px rgba(0, 0, 0, 0.72),
-        inset -2px -2px 6px rgba(255, 255, 255, 0.14) !important;
+        inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.42),
+        inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.16) !important;
     }
-    /* بعلاوه همیشه آبی — حتی در حالت مسلح */
-    .row-add-fab-wrap.is-armed .row-add-fab svg { stroke: #08b5f5 !important; }
-    .row-add-fab-wrap.is-armed .row-add-fab .fab-plus { display: inline; }
-    .row-add-fab-wrap.is-armed .row-add-fab .fab-check { display: none; }
+    /* روی «پروژه»: بعلاوه → تیک آبی همرنگ */
+    .row-add-fab-wrap.is-armed .row-add-fab svg path.fab-plus {
+      display: none !important;
+    }
+    .row-add-fab-wrap.is-armed .row-add-fab svg path.fab-check {
+      display: inline !important;
+      stroke: #08b5f5 !important;
+    }
     .person-detail-box > .row-add-fab-wrap,
     .person-detail-page .row-add-fab-wrap {
       margin: 10px auto 14px 12px !important;
     }
+
+
+
 
     .add-row-wrap {
       display: flex !important;
@@ -8870,7 +8907,7 @@
 
     
 
-    /* build-stamp: 2026-09-29-v170-PENTA | fab-homebox-look-only */
+    /* build-stamp: 2026-09-29-v178-PENTA | arrow-taller-opacity-shadow */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -18521,7 +18558,7 @@ container.innerHTML = '';
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
         '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-label">پروژه</span>' +
-          '<svg class="row-add-arrow" viewBox="0 0 45 30" width="32" height="21"><polygon points="0,7.5 24,7.5 24,0 45,15 24,30 24,22.5 0,22.5"/></svg></div>' +
+          '<svg class="row-add-arrow" viewBox="0 0 45 52" width="22" height="36" preserveAspectRatio="xMidYMid meet"><polygon points="0,15 26,15 26,0 45,26 26,52 26,37 0,37"/></svg></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
           '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
@@ -25495,7 +25532,7 @@ field('حساب بانکی', accSelRec);
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
         '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-label">پروژه</span>' +
-          '<svg class="row-add-arrow" viewBox="0 0 45 30" width="32" height="21"><polygon points="0,7.5 24,7.5 24,0 45,15 24,30 24,22.5 0,22.5"/></svg></div>' +
+          '<svg class="row-add-arrow" viewBox="0 0 45 52" width="22" height="36" preserveAspectRatio="xMidYMid meet"><polygon points="0,15 26,15 26,0 45,26 26,52 26,37 0,37"/></svg></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
           '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
@@ -26002,12 +26039,12 @@ field('حساب بانکی', accSelRec);
       if (!fab) return;
       wrap._vpaBound = true;
       var TAP_SLOP = 10;     /* بیشتر از این جابه‌جایی = دیگر «ضربه» نیست */
-      var INSET = 3;         /* فاصلهٔ دایره از لبهٔ بیضی */
+      var INSET = 2;         /* فاصلهٔ دایره از لبهٔ بیضی */
       var active = false, dragging = false, moved = false;
       var startX = 0, startY = 0, dx = 0, pid = null;
 
       function travel() {
-        var w = wrap.clientWidth || 150;
+        var w = wrap.clientWidth || 118;
         var fw = fab.offsetWidth || 38;
         return Math.max(30, w - INSET * 2 - fw);
       }
@@ -26142,8 +26179,8 @@ function openProjectRowPicker(secId) {
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'proj-row-picker-item';
-        btn.innerHTML = '<span class="ib-proj-dot" style="background:' + accent + ';"></span>' +
-          '<span>' + escapeHtml(s.name || 'پروژه') + '</span>';
+        btn.style.setProperty('--proj-accent', accent);
+        btn.innerHTML = '<span>' + escapeHtml(s.name || 'پروژه') + '</span>';
         btn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
