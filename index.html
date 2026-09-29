@@ -3421,46 +3421,64 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    /* —— دکمه + عمودی: TAP=شخصی | کشیدن به بالا=پروژه —— */
+    /* —— دکمه + : TAP=ردیف شخصی | کشیدن افقی (قرص کشیده‌شونده)=ردیف پروژه —— */
     .row-add-fab-wrap {
       position: relative !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-      width: 56px !important;
-      min-height: 56px !important;
+      display: block !important;
+      width: 44px !important;
+      height: 44px !important;
+      min-height: 44px !important;
       margin: 10px auto 14px 12px !important;
-      padding: 36px 0 0 !important;
+      padding: 0 !important;
+      direction: ltr !important;
       box-sizing: border-box !important;
       z-index: 6 !important;
       -webkit-tap-highlight-color: transparent;
       user-select: none !important;
       touch-action: none !important;
     }
-    .row-add-proj-target {
+    .row-add-track {
       position: absolute !important;
       top: 0 !important;
-      left: 50% !important;
-      transform: translate(-50%, 8px) scale(0.9) !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      padding: 4px 10px !important;
+      left: 0 !important;
+      width: 44px;
+      height: 44px !important;
+      box-sizing: border-box !important;
       border-radius: 999px !important;
-      background: rgba(192, 132, 252, 0.22) !important;
-      border: 1px solid rgba(192, 132, 252, 0.55) !important;
-      color: #e9d5ff !important;
-      font-size: 11px !important;
-      font-family: Vazirmatn, Tahoma, sans-serif !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      padding: 0 14px 0 52px !important;
+      overflow: hidden !important;
       white-space: nowrap !important;
-      transition: opacity 0.12s ease, transform 0.12s ease, background 0.15s ease, border-color 0.15s ease !important;
+      opacity: 0;
+      pointer-events: none !important;
+      background: rgba(192, 132, 252, 0.10) !important;
+      border: 1px solid rgba(192, 132, 252, 0.32) !important;
+      color: #e9d5ff !important;
+      font-size: 12px !important;
+      font-family: Vazirmatn, Tahoma, sans-serif !important;
       z-index: 7 !important;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
     }
-    .row-add-fab-wrap.is-armed .row-add-proj-target {
-      background: rgba(192, 132, 252, 0.4) !important;
-      border-color: rgba(192, 132, 252, 0.9) !important;
-      box-shadow: 0 0 12px rgba(192, 132, 252, 0.35) !important;
+    .row-add-track-arrow {
+      font-size: 16px !important;
+      line-height: 1 !important;
+      opacity: 0;
+      color: #c084fc !important;
     }
+    .row-add-track-label {
+      opacity: 0;
+      direction: rtl !important;
+      font-weight: 600 !important;
+    }
+    .row-add-fab-wrap.is-armed .row-add-track {
+      background: rgba(192, 132, 252, 0.38) !important;
+      border-color: rgba(192, 132, 252, 0.95) !important;
+      box-shadow: 0 0 14px rgba(192, 132, 252, 0.4) !important;
+    }
+    .row-add-fab-wrap.is-armed .row-add-track-arrow { display: none !important; }
+    .row-add-fab-wrap.is-armed .row-add-track-label { opacity: 1 !important; font-weight: 800 !important; }
     .row-add-fab {
       position: relative !important;
       width: 44px !important;
@@ -3490,15 +3508,20 @@
       stroke: #08b5f5 !important;
       stroke-width: 2.8 !important;
       fill: none !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
       pointer-events: none !important;
       transition: stroke 0.15s ease !important;
     }
+    .row-add-fab .fab-check { display: none; }
     .row-add-fab-wrap.is-dragging .row-add-fab {
       box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
     }
     .row-add-fab-wrap.is-armed .row-add-fab svg {
       stroke: #c084fc !important;
     }
+    .row-add-fab-wrap.is-armed .row-add-fab .fab-plus { display: none; }
+    .row-add-fab-wrap.is-armed .row-add-fab .fab-check { display: inline; }
     .person-detail-box > .row-add-fab-wrap,
     .person-detail-page .row-add-fab-wrap {
       margin: 10px auto 14px 12px !important;
@@ -18432,16 +18455,16 @@ container.innerHTML = '';
       hint.textContent = 'برای ویرایش، دوبار روی فیلد ضربه بزنید';
       box.appendChild(hint);
 
-      /* دکمه + : TAP=شخصی | Drag↑=پروژه */
+      /* دکمه + : TAP=شخصی | کشیدن افقی=پروژه */
       var fabWrap = document.createElement('div');
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
-        '<div class="row-add-proj-target" aria-hidden="true">پروژه</div>' +
+        '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-arrow">→</span><span class="row-add-track-label">پروژه</span></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
-          '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+          '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
       bindVerticalProjectAdd(fabWrap, {
-        threshold: 56,
+        threshold: 100,
         onTap: function() {
           try {
             sec.rows.push(emptyRow(tab));
@@ -25402,16 +25425,16 @@ field('حساب بانکی', accSelRec);
 
       const addRowWrap = document.createElement('div');
       addRowWrap.className = 'add-row-wrap';
-      /* دکمه + : TAP=شخصی | Drag↑=پروژه */
+      /* دکمه + : TAP=شخصی | کشیدن افقی=پروژه */
       var fabWrap = document.createElement('div');
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
-        '<div class="row-add-proj-target" aria-hidden="true">پروژه</div>' +
+        '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-arrow">→</span><span class="row-add-track-label">پروژه</span></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
-          '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+          '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
       bindVerticalProjectAdd(fabWrap, {
-        threshold: 56,
+        threshold: 100,
         onTap: function() {
           try { addRow(sec.id, 1); } catch (eA) {}
         },
@@ -25904,29 +25927,44 @@ field('حساب بانکی', accSelRec);
       if (ov) ov.remove();
     }
     
-    /** دکمه + عمودی: TAP=ردیف عادی | Drag بالا=پروژه — بدون long-press / بدون slide افقی */
+    /** دکمه +: TAP=ردیف عادی | کشیدن افقی (قرص کشیده‌شونده) تا آستانه = ردیف پروژه */
     function bindVerticalProjectAdd(wrap, opts) {
       opts = opts || {};
       if (!wrap || wrap._vpaBound) return;
       var fab = wrap.querySelector('.row-add-fab');
       if (!fab) return;
       wrap._vpaBound = true;
-      var THRESHOLD = (typeof opts.threshold === 'number') ? opts.threshold : 56;
+      var THRESHOLD = (typeof opts.threshold === 'number') ? opts.threshold : 100;
       var TAP_MAX = (typeof opts.tapMax === 'number') ? opts.tapMax : 10;
-      var target = wrap.querySelector('.row-add-proj-target');
-      var active = false, dragging = false, startY = 0, startX = 0, dyUp = 0, pid = null;
+      var BASE_W = 44;
+      var track = wrap.querySelector('.row-add-track');
+      var arrowEl = track ? track.querySelector('.row-add-track-arrow') : null;
+      var labelEl = track ? track.querySelector('.row-add-track-label') : null;
+      var active = false, dragging = false, startY = 0, startX = 0, dx = 0, pid = null;
+
+      function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+      function paint(dist) {
+        if (!track) return;
+        var p = clamp01(dist / THRESHOLD);
+        track.style.width = (BASE_W + dist) + 'px';
+        track.style.opacity = String(clamp01(dist / 8));
+        if (arrowEl) arrowEl.style.opacity = String(clamp01(p * 4));
+        if (labelEl) labelEl.style.opacity = String(clamp01((p - 0.4) / 0.4));
+      }
 
       function resetVisual(animate) {
         try {
-          fab.style.transition = animate
-            ? 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)'
-            : 'none';
-          fab.style.transform = 'translateY(0px)';
-          wrap.classList.remove('is-dragging', 'is-armed');
-          if (target) {
-            target.style.opacity = '0';
-            target.style.transform = 'translate(-50%, 8px) scale(0.9)';
+          if (track) {
+            track.style.transition = animate
+              ? 'width 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease'
+              : 'none';
+            track.style.width = BASE_W + 'px';
+            track.style.opacity = '0';
+            if (arrowEl) arrowEl.style.opacity = '0';
+            if (labelEl) labelEl.style.opacity = '0';
           }
+          wrap.classList.remove('is-dragging', 'is-armed');
         } catch (eR) {}
       }
 
@@ -25934,11 +25972,11 @@ field('حساب بانکی', accSelRec);
         if (e.button != null && e.button !== 0) return;
         active = true;
         dragging = false;
-        dyUp = 0;
+        dx = 0;
         startY = e.clientY;
         startX = e.clientX;
         pid = (e.pointerId != null) ? e.pointerId : null;
-        try { fab.style.transition = 'none'; } catch (eT) {}
+        try { if (track) track.style.transition = 'none'; } catch (eT) {}
         try {
           if (fab.setPointerCapture && pid != null) fab.setPointerCapture(pid);
         } catch (eC) {}
@@ -25948,23 +25986,25 @@ field('حساب بانکی', accSelRec);
       function onMove(e) {
         if (!active) return;
         if (pid != null && e.pointerId != null && e.pointerId !== pid) return;
-        var ddy = startY - e.clientY; /* بالا مثبت */
-        var ddx = e.clientX - startX;
-        if (!dragging && ddy > 6 && ddy >= Math.abs(ddx) * 0.85) {
+        var ddx = e.clientX - startX;   /* راست مثبت */
+        var ddy = e.clientY - startY;
+        if (!dragging && ddx > 6 && ddx >= Math.abs(ddy) * 0.85) {
           dragging = true;
           wrap.classList.add('is-dragging');
+          try { if (track) track.style.transition = 'none'; } catch (eT) {}
         }
         if (dragging) {
           try { e.preventDefault(); e.stopPropagation(); } catch (eP) {}
-          dyUp = Math.max(0, Math.min(ddy, THRESHOLD + 48));
-          try { fab.style.transform = 'translateY(' + (-dyUp) + 'px)'; } catch (eF) {}
-          var p = Math.min(1, dyUp / THRESHOLD);
-          if (target) {
-            target.style.opacity = String(0.25 + 0.75 * p);
-            target.style.transform = 'translate(-50%, ' + (8 - 10 * p) + 'px) scale(' + (0.9 + 0.12 * p) + ')';
+          dx = Math.max(0, Math.min(ddx, THRESHOLD + 30));
+          paint(dx);
+          if (dx >= THRESHOLD) {
+            if (!wrap.classList.contains('is-armed')) {
+              wrap.classList.add('is-armed');
+              try { if (navigator.vibrate) navigator.vibrate(12); } catch (eV) {}
+            }
+          } else {
+            wrap.classList.remove('is-armed');
           }
-          if (dyUp >= THRESHOLD) wrap.classList.add('is-armed');
-          else wrap.classList.remove('is-armed');
         }
       }
 
@@ -25977,7 +26017,7 @@ field('حساب بانکی', accSelRec);
         } catch (eR) {}
         pid = null;
         var wasDrag = dragging;
-        var dist = dyUp;
+        var dist = dx;
         dragging = false;
 
         if (!wasDrag || dist <= TAP_MAX) {
@@ -26005,6 +26045,7 @@ field('حساب بانکی', accSelRec);
         active = false;
         pid = null;
         dragging = false;
+        dx = 0;
         resetVisual(true);
       });
       fab.addEventListener('click', function(e) {
