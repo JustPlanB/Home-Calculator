@@ -3421,11 +3421,11 @@
       padding: 14px 10px 6px;
       flex-shrink: 0;
     }
-    /* —— دکمه + : بیضی بنفش ثابت؛ TAP روی دایره=ردیف شخصی | اسلاید دایره تا انتها=ردیف پروژه —— */
+    /* —— دکمه + : بیضی بنفش ثابت؛ TAP روی دایره=ردیف شخصی | اسلاید دایره تا انتهای بیضی=ردیف پروژه —— */
     .row-add-fab-wrap {
       position: relative !important;
       display: block !important;
-      width: 180px !important;
+      width: 176px !important;
       height: 44px !important;
       min-height: 44px !important;
       margin: 10px auto 14px 12px !important;
@@ -3442,44 +3442,70 @@
       inset: 0 !important;
       box-sizing: border-box !important;
       border-radius: 999px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-      padding: 0 18px 0 0 !important;
       overflow: hidden !important;
       white-space: nowrap !important;
       pointer-events: none !important;
       background: rgba(192, 132, 252, 0.12) !important;
       border: 1px solid rgba(192, 132, 252, 0.38) !important;
       color: #e9d5ff !important;
-      font-size: 13px !important;
       font-family: Vazirmatn, Tahoma, sans-serif !important;
       z-index: 7 !important;
       transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
     }
-    .row-add-track-arrow {
+    /* فلش + برچسب زیرش، نزدیک به دایره */
+    .row-add-track-hint {
       position: absolute !important;
-      left: 60px !important;
-      top: 50% !important;
-      transform: translateY(-52%) !important;
-      font-size: 17px !important;
-      line-height: 1 !important;
-      color: #c084fc !important;
-      opacity: 0.7;
+      left: 48px !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      width: 84px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 2px !important;
+    }
+    .row-add-arrow {
+      display: block !important;
+      overflow: visible !important;
+    }
+    .row-add-arrow .fa {
+      fill: none !important;
+      stroke: #c084fc !important;
+      stroke-width: 2.4 !important;
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+      opacity: 0.15;
+      animation: rowAddArrowFade 1.4s ease-in-out infinite;
+    }
+    .row-add-arrow .fa2 { animation-delay: 0.18s; }
+    .row-add-arrow .fa3 { animation-delay: 0.36s; }
+    .row-add-arrow .fa4 { animation-delay: 0.54s; }
+    @keyframes rowAddArrowFade {
+      0%   { opacity: 0.12; }
+      30%  { opacity: 1; }
+      60%  { opacity: 0.12; }
+      100% { opacity: 0.12; }
     }
     .row-add-track-label {
       direction: rtl !important;
+      font-size: 10px !important;
+      line-height: 1 !important;
       font-weight: 600 !important;
-      opacity: 0.6;
-      transition: opacity 0.15s ease !important;
+      opacity: 0.5;
+      transition: opacity 0.15s ease, font-size 0.15s ease !important;
     }
     .row-add-fab-wrap.is-armed .row-add-track {
       background: rgba(192, 132, 252, 0.38) !important;
       border-color: rgba(192, 132, 252, 0.95) !important;
       box-shadow: 0 0 14px rgba(192, 132, 252, 0.4) !important;
     }
-    .row-add-fab-wrap.is-armed .row-add-track-arrow { opacity: 0 !important; }
-    .row-add-fab-wrap.is-armed .row-add-track-label { opacity: 1 !important; font-weight: 800 !important; }
+    .row-add-fab-wrap.is-armed .row-add-arrow { display: none !important; }
+    .row-add-fab-wrap.is-armed .row-add-track-label {
+      opacity: 1 !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+    }
     .row-add-fab {
       position: absolute !important;
       top: 3px !important;
@@ -18461,7 +18487,10 @@ container.innerHTML = '';
       var fabWrap = document.createElement('div');
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
-        '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-arrow">→</span><span class="row-add-track-label">پروژه</span></div>' +
+        '<div class="row-add-track" aria-hidden="true"><div class="row-add-track-hint">' +
+          '<svg class="row-add-arrow" viewBox="0 0 84 14" width="84" height="14">' +
+            '<path class="fa fa1" d="M3 7h14"/><path class="fa fa2" d="M23 7h14"/><path class="fa fa3" d="M43 7h14"/><path class="fa fa4" d="M63 7h16M72 1.8L79 7l-7 5.2"/>' +
+          '</svg><span class="row-add-track-label">پروژه</span></div></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
           '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
@@ -25434,7 +25463,10 @@ field('حساب بانکی', accSelRec);
       var fabWrap = document.createElement('div');
       fabWrap.className = 'row-add-fab-wrap';
       fabWrap.innerHTML =
-        '<div class="row-add-track" aria-hidden="true"><span class="row-add-track-arrow">→</span><span class="row-add-track-label">پروژه</span></div>' +
+        '<div class="row-add-track" aria-hidden="true"><div class="row-add-track-hint">' +
+          '<svg class="row-add-arrow" viewBox="0 0 84 14" width="84" height="14">' +
+            '<path class="fa fa1" d="M3 7h14"/><path class="fa fa2" d="M23 7h14"/><path class="fa fa3" d="M43 7h14"/><path class="fa fa4" d="M63 7h16M72 1.8L79 7l-7 5.2"/>' +
+          '</svg><span class="row-add-track-label">پروژه</span></div></div>' +
         '<button type="button" class="row-add-fab" aria-label="افزودن ردیف">' +
           '<svg viewBox="0 0 24 24"><path class="fab-plus" d="M12 5v14M5 12h14"/><path class="fab-check" d="M5 12.5l4.5 4.5L19 7.5"/></svg>' +
         '</button>';
@@ -25932,36 +25964,33 @@ field('حساب بانکی', accSelRec);
       if (ov) ov.remove();
     }
     
-    /** دکمه +: بیضی بنفش ثابت. TAP روی دایره=ردیف عادی | اسلاید دایره تا انتهای بیضی=ردیف پروژه */
+    /** دکمه +: بیضی بنفش ثابت. TAP ساده روی + = ردیف عادی | اسلاید دایره تا انتهای بیضی = ردیف پروژه.
+     * هر اسلایدی (حتی اگر برگردد) هرگز ردیف عادی نمی‌سازد. */
     function bindVerticalProjectAdd(wrap, opts) {
       opts = opts || {};
       if (!wrap || wrap._vpaBound) return;
       var fab = wrap.querySelector('.row-add-fab');
       if (!fab) return;
       wrap._vpaBound = true;
-      var TAP_MAX = (typeof opts.tapMax === 'number') ? opts.tapMax : 8;
-      var LABEL_ZONE = 66;   /* فضای ثابت برچسب «پروژه» در سمت راست بیضی */
+      var TAP_SLOP = 10;     /* بیشتر از این جابه‌جایی = دیگر «ضربه» نیست */
       var INSET = 3;         /* فاصلهٔ دایره از لبهٔ بیضی */
-      var track = wrap.querySelector('.row-add-track');
-      var arrowEl = track ? track.querySelector('.row-add-track-arrow') : null;
-      var active = false, dragging = false, startX = 0, startY = 0, dx = 0, pid = null;
+      var active = false, dragging = false, moved = false;
+      var startX = 0, startY = 0, dx = 0, pid = null;
 
       function travel() {
-        var w = wrap.clientWidth || 180;
+        var w = wrap.clientWidth || 176;
         var fw = fab.offsetWidth || 38;
-        return Math.max(30, w - INSET * 2 - fw - LABEL_ZONE);
+        return Math.max(30, w - INSET * 2 - fw);
       }
       function place(x, animate) {
         fab.style.transition = animate
           ? 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease, background 0.15s ease'
           : 'none';
         fab.style.transform = 'translateX(' + x + 'px)';
-        if (arrowEl) arrowEl.style.opacity = String(Math.max(0, 0.7 * (1 - x / travel() * 1.4)));
       }
       function resetVisual(animate) {
         try {
           place(0, !!animate);
-          if (arrowEl) arrowEl.style.opacity = '';
           wrap.classList.remove('is-dragging', 'is-armed');
         } catch (eR) {}
       }
@@ -25970,6 +25999,7 @@ field('حساب بانکی', accSelRec);
         if (e.button != null && e.button !== 0) return;
         active = true;
         dragging = false;
+        moved = false;
         dx = 0;
         startX = e.clientX;
         startY = e.clientY;
@@ -25986,8 +26016,10 @@ field('حساب بانکی', accSelRec);
         if (pid != null && e.pointerId != null && e.pointerId !== pid) return;
         var ddx = e.clientX - startX;   /* راست مثبت */
         var ddy = e.clientY - startY;
+        if (!moved && Math.sqrt(ddx * ddx + ddy * ddy) > TAP_SLOP) moved = true;
         if (!dragging && ddx > 5 && ddx >= Math.abs(ddy) * 0.85) {
           dragging = true;
+          moved = true;
           wrap.classList.add('is-dragging');
         }
         if (dragging) {
@@ -26015,27 +26047,24 @@ field('حساب بانکی', accSelRec);
         } catch (eR) {}
         pid = null;
         var wasDrag = dragging;
+        var wasMoved = moved;
         var armed = wrap.classList.contains('is-armed');
-        var dist = dx;
         dragging = false;
+        moved = false;
 
-        if (!wasDrag || dist <= TAP_MAX) {
-          resetVisual(false);
-          if (typeof opts.onTap === 'function') {
-            try { opts.onTap(); } catch (eT) {}
-          }
-          return;
-        }
-        if (armed) {
-          /* بعد از رها کردن، دایره به ابتدا برمی‌گردد و ردیف پروژه ساخته می‌شود */
+        if (wasDrag) {
           resetVisual(true);
-          if (typeof opts.onProject === 'function') {
+          /* فقط اگر تا انتها رسیده و همان‌جا رها شده → ردیف پروژه. برگشتن = هیچ ردیفی */
+          if (armed && typeof opts.onProject === 'function') {
             try { opts.onProject(); } catch (eP) {}
           }
           return;
         }
-        /* اسلاید ناتمام — برگشت بدون ایجاد ردیف */
-        resetVisual(true);
+        resetVisual(false);
+        if (wasMoved) return;   /* حرکت غیرافقی/بیش از حد → نه ضربه است نه اسلاید */
+        if (typeof opts.onTap === 'function') {
+          try { opts.onTap(); } catch (eT) {}
+        }
       }
 
       fab.addEventListener('pointerdown', onDown);
@@ -26045,6 +26074,7 @@ field('حساب بانکی', accSelRec);
         active = false;
         pid = null;
         dragging = false;
+        moved = false;
         dx = 0;
         resetVisual(true);
       });
