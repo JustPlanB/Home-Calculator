@@ -17937,6 +17937,7 @@ function openPdfPrintWindow(){
       } else {
         currentTab = kind;
         activatePanel(kind);
+        window._pdResetScroll = true;
         renderPersonDetailPanel(kind, title);
       }
       // دکمه بازگشت UI حذف — با Back سخت‌افزاری برمی‌گردد
@@ -18085,6 +18086,19 @@ function openPdfPrintWindow(){
           }
         }
       } catch (eForceScr) {}
+      /* حفظ موقعیت اسکرول جدول جزئیات قبل از بازسازی (قبلاً روی کلاس دیگری ذخیره می‌شد و هر بازسازی جدول را به بالا می‌برد) */
+      var _pdKey = String(tab || '') + '|' + String(title || '');
+      var _pdSavedTop = 0, _pdPrevRows = null;
+      try {
+        window._pdRowsSeen = window._pdRowsSeen || {};
+        if (window._pdResetScroll) {
+          delete window._pdRowsSeen[_pdKey];
+        } else {
+          var _pdOldEl = container.querySelector('.person-detail-scroll');
+          if (_pdOldEl && _pdOldEl._pdKey === _pdKey) _pdSavedTop = _pdOldEl.scrollTop || 0;
+        }
+        _pdPrevRows = window._pdRowsSeen[_pdKey] || null;
+      } catch (ePdCap) {}
 container.innerHTML = '';
       const page = document.createElement('div');
       page.className = 'person-detail-page';
@@ -18611,6 +18625,7 @@ container.innerHTML = '';
         threshold: 100,
         onTap: function() {
           try {
+            window._pdNewRowAt = Date.now();
             sec.rows.push(emptyRow(tab));
             rebuild();
           } catch (eR) {
@@ -18631,6 +18646,49 @@ container.innerHTML = '';
 
       page.appendChild(box);
       container.appendChild(page);
+      /* بازگرداندن اسکرول + نمایش ردیف تازه‌ساخته‌شده */
+      try {
+        scroll._pdKey = _pdKey;
+        var _pdRowsNow = (sec.rows || []).slice();
+        var _pdNewIdx = [];
+        var _pdFlag = !!(window._pdNewRowAt && (Date.now() - window._pdNewRowAt) < 4000);
+        if (_pdFlag) {
+          if (_pdPrevRows) {
+            _pdRowsNow.forEach(function (r, i) { if (!_pdPrevRows.has(r)) _pdNewIdx.push(i); });
+            if (!(_pdNewIdx.length >= 1 && _pdNewIdx.length <= 5 &&
+                  (_pdRowsNow.length - _pdPrevRows.size) === _pdNewIdx.length)) _pdNewIdx = [];
+          } else if (_pdRowsNow.length) {
+            _pdNewIdx = [_pdRowsNow.length - 1];
+          }
+          window._pdNewRowAt = 0;
+        }
+        window._pdRowsSeen[_pdKey] = new Set(_pdRowsNow);
+        window._pdResetScroll = false;
+
+        var _pdUserScrolled = false;
+        ['touchstart', 'wheel', 'pointerdown'].forEach(function (evn) {
+          scroll.addEventListener(evn, function () { _pdUserScrolled = true; }, { passive: true });
+        });
+        function _pdApplyTop() {
+          if (_pdUserScrolled) return;
+          try { if (Math.abs(scroll.scrollTop - _pdSavedTop) > 1) scroll.scrollTop = _pdSavedTop; } catch (e1) {}
+        }
+        if (_pdSavedTop > 0) {
+          try { scroll.scrollTop = _pdSavedTop; } catch (e2) {}
+          if (!_pdNewIdx.length) {
+            requestAnimationFrame(_pdApplyTop);
+            setTimeout(_pdApplyTop, 60);
+            setTimeout(_pdApplyTop, 220);
+          }
+        }
+        if (_pdNewIdx.length) {
+          var _pdNewTr = tbody.children[_pdNewIdx[_pdNewIdx.length - 1]];
+          if (_pdNewTr) {
+            requestAnimationFrame(function () { try { window.pdEnsureRowVisible(_pdNewTr, true); } catch (e3) {} });
+            setTimeout(function () { try { window.pdEnsureRowVisible(_pdNewTr, false); } catch (e4) {} }, 350);
+          }
+        }
+      } catch (ePdRestore) {}
       try {
         requestAnimationFrame(function() {
           ensureShapeFrame(box);
@@ -26428,6 +26486,7 @@ function openProjectRowPicker(secId) {
         }
       } catch (e) {}
       // مثل قبل: رندر کامل تا ردیف حتماً دیده شود (هر دو تب)
+      window._pdNewRowAt = Date.now();
       renderAll();
       scheduleSave();
       setTimeout(() => focusNewRowDay(secId, n), 60);
@@ -26894,6 +26953,79 @@ function openProjectRowPicker(secId) {
 
 
     /* —— Theme —— */
+    /* —— جدول جزئیات درآمد/مخارج: نمایش ردیف در محدودهٔ دید (داخل جدول + بالای کیبورد) —— */
+    window.pdEnsureRowVisible = function (tr, smooth) {
+      try {
+        if (!tr || !tr.isConnected) return;
+        var sc = tr.closest && tr.closest('.person-detail-scroll');
+        if (!sc) return;
+        /* ۱) داخل خود جدول اسکرولی */
+        var s = sc.getBoundingClientRect(), r = tr.getBoundingClientRect();
+        var d = 0;
+        if (r.bottom > s.bottom - 6) d = r.bottom - (s.bottom - 6);
+        else if (r.top < s.top + 12) d = r.top - (s.top + 12);
+        if (d) {
+          var t = Math.max(0, sc.scrollTop + d);
+          if (smooth && sc.scrollTo) { try { sc.scrollTo({ top: t, behavior: 'smooth' }); } catch (e0) { sc.scrollTop = t; } }
+          else sc.scrollTop = t;
+          if (smooth) return; /* بعد از اسکرول نرم، تنظیم نهایی در فراخوانی بعدی انجام می‌شود */
+        }
+        /* ۲) نسبت به صفحه/کیبورد: پایین ردیف درست بالای کیبورد */
+        var vv = window.visualViewport;
+        var vTop = vv ? vv.offsetTop : 0;
+        var vBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+        r = tr.getBoundingClientRect();
+        var m = 10, dy = 0;
+        if (r.bottom > vBottom - m) dy = r.bottom - (vBottom - m);
+        else if (r.top < vTop + m) dy = r.top - (vTop + m);
+        if (dy) {
+          var before = window.pageYOffset || 0;
+          window.scrollBy(0, dy);
+          var moved = (window.pageYOffset || 0) - before;
+          var rest = dy - moved;
+          if (rest > 1) sc.scrollTop = sc.scrollTop + rest; /* صفحه بیشتر اسکرول نمی‌شود؛ ردیف را داخل جدول بالا ببر */
+        }
+      } catch (e) {}
+    };
+    (function () {
+      var activeEl = null, timers = [];
+      function clearT() { timers.forEach(clearTimeout); timers = []; }
+      function isEditable(el) {
+        return el && el.tagName && /^(INPUT|TEXTAREA)$/.test(el.tagName) && !el.readOnly &&
+               el.closest && el.closest('.person-detail-table tbody');
+      }
+      function run() {
+        if (!activeEl || document.activeElement !== activeEl || !activeEl.isConnected || activeEl.readOnly) return;
+        var tr = activeEl.closest('tr');
+        if (tr) window.pdEnsureRowVisible(tr, false);
+      }
+      function schedule() {
+        clearT();
+        /* بعد از قفل موقعیت focusin (۵۰ms) و هم‌زمان با باز شدن کیبورد */
+        timers = [130, 300, 550, 900].map(function (ms) { return setTimeout(run, ms); });
+      }
+      function activate(t) {
+        if (!isEditable(t)) return;
+        activeEl = t;
+        if (!t._pdKbBound) {
+          t._pdKbBound = true;
+          t.addEventListener('input', function () { if (activeEl === t) setTimeout(run, 30); });
+        }
+        schedule();
+      }
+      document.addEventListener('focusin', function (e) { activate(e.target); }, true);
+      /* سلول‌های پرشده اول readOnly هستند؛ کلیک/دابل‌کلیک آن‌ها را editable می‌کند بدون اینکه focusin دوباره بیاید */
+      ['click', 'dblclick'].forEach(function (evn) {
+        document.addEventListener(evn, function () { setTimeout(function () { activate(document.activeElement); }, 0); }, false);
+      });
+      document.addEventListener('focusout', function (e) {
+        if (e.target === activeEl) { activeEl = null; clearT(); }
+      }, true);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function () { if (activeEl) schedule(); });
+      }
+    })();
+
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
