@@ -2247,16 +2247,16 @@
       direction: ltr;
       position: relative;
       min-height: 52px;
-      padding: 0 4px;
+      padding: 0 16px;
       box-sizing: border-box;
       pointer-events: none;
     }
     .box4-row > * { pointer-events: auto; }
     .box4-side {
-      width: 40px;
-      height: 40px;
-      min-width: 40px;
-      min-height: 40px;
+      width: 46px;
+      height: 46px;
+      min-width: 46px;
+      min-height: 46px;
       border-radius: 50%;
       border: none;
       outline: none;
@@ -2279,8 +2279,8 @@
     .box4-add { margin-left: 0; margin-right: 0; }
     .box4-search { margin-right: 0; margin-left: 0; }
     .box4-side svg {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       stroke: #08b5f5;
       fill: none;
     }
@@ -2299,7 +2299,7 @@
       border: none;
       outline: none;
       background: #1b1b1b;
-      color: #08b5f5;
+      color: #9ee858;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -2311,27 +2311,29 @@
         inset -3px -3px 8px rgba(255,255,255,0.14),
         0 6px 14px rgba(0,0,0,0.35);
       flex-shrink: 0;
-      padding: 10px 4px 6px;
+      padding: 14px 4px 6px;
       z-index: 3;
-      /* بیشتر بیرون از باکس ۴ از بالا؛ از پایین فاصله */
-      margin-top: -36px;
-      margin-bottom: 6px;
+      /* بالاتر از باکس ۴؛ فاصله امن تا باکس ۳ */
+      margin-top: -48px;
+      margin-bottom: 8px;
       align-self: center;
       position: relative;
     }
     .box4-bal-label {
       font-size: 0.7rem;
       font-weight: 800;
-      color: #08b5f5;
+      color: #9ee858 !important;
       line-height: 1;
-      margin-top: 0;
+      margin-top: 6px;
       margin-bottom: 0;
       flex: 0 0 auto;
+      position: relative;
+      z-index: 2;
     }
     .box4-bal-amount {
       font-size: 0.68rem !important;
       font-weight: 800;
-      color: #08b5f5;
+      color: #9ee858 !important;
       line-height: 1 !important;
       max-width: 70px;
       overflow: hidden;
@@ -2344,15 +2346,15 @@
       height: 1em;
       position: absolute;
       left: 50%;
-      top: 50%;
+      top: 62%;
       transform: translate(-50%, -50%);
       transform-origin: center center;
-      animation: balAmtPulse 2.6s ease-in-out infinite;
+      animation: balAmtPulse 4.8s ease-in-out infinite;
       pointer-events: none;
     }
     @keyframes balAmtPulse {
       0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.08); }
+      50% { transform: translate(-50%, -50%) scale(1.06); }
     }
     .box4-bal-amount .od-col {
       display: inline-block;
@@ -2404,6 +2406,9 @@
       pointer-events: none;
       writing-mode: vertical-rl;
       text-orientation: mixed;
+      opacity: 1;
+      transition: opacity 0.28s ease;
+      will-change: opacity;
     }
     .home-greet-strip span {
       color: rgba(255,255,255,0.7);
@@ -2418,13 +2423,16 @@
       scroll-padding-inline: 14%;
       gap: 12px !important;
       align-items: center;
+      scroll-snap-type: x mandatory !important;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
     }
     .home-cards .person-card {
       flex: 0 0 72% !important;
       width: 72% !important;
       max-width: 72% !important;
-      scroll-snap-align: center;
-      scroll-snap-stop: always;
+      scroll-snap-align: center !important;
+      scroll-snap-stop: always !important;
       aspect-ratio: 1.72 / 1 !important;
       border-radius: 16px !important;
     }
@@ -9238,7 +9246,7 @@
 
     
 
-    /* build-stamp: 2026-09-30-v186-AFTER | od-dir + box4-layout + stack-stats + greet + delete-all */
+    /* build-stamp: 2026-09-30-v187-AFTER | green-bal + greet-fade + snap + od-dir */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -17470,12 +17478,12 @@ function openCardReorderMode(focusTitle) {
           var digit = fa.indexOf(ch);
           if (digit < 0) digit = en.indexOf(ch);
           if (digit < 0) digit = 0;
-          /* دو دور کامل: از عدد بزرگ به کوچک، حرکت از بالا به پایین */
+          /* بزرگ→کوچک؛ جهت عمودی برعکس قبل: از پایین به بالا شروع و به digit می‌رسد */
           var seq = [];
-          for (var r = 0; r < 2; r++) {
-            for (var d = 9; d >= 0; d--) seq.push(d);
-          }
           seq.push(digit);
+          for (var r = 0; r < 2; r++) {
+            for (var d = 0; d <= 9; d++) seq.push(d);
+          }
           for (var s = 0; s < seq.length; s++) {
             var sp = document.createElement('span');
             sp.textContent = fa[seq[s]];
@@ -17483,18 +17491,18 @@ function openCardReorderMode(focusTitle) {
           }
           col.appendChild(strip);
           el.appendChild(col);
-          /* شروع از بالا (شاخص 0 = ۹) و رفتن به آخر لیست */
+          var startIdx = seq.length - 1;
           strip.style.transition = 'none';
-          strip.style.transform = 'translateY(0)';
-          (function(st, finalIdx, delay) {
+          strip.style.transform = 'translateY(-' + startIdx + 'em)';
+          (function(st, delay) {
             requestAnimationFrame(function() {
               requestAnimationFrame(function() {
                 st.style.transition = 'transform 0.72s cubic-bezier(0.22,1,0.36,1)';
                 st.style.transitionDelay = delay + 'ms';
-                st.style.transform = 'translateY(-' + finalIdx + 'em)';
+                st.style.transform = 'translateY(0)';
               });
             });
-          })(strip, seq.length - 1, i * 30);
+          })(strip, i * 30);
         } else {
           var sep = document.createElement('span');
           sep.className = 'od-col od-sep';
@@ -17557,11 +17565,40 @@ function openCardReorderMode(focusTitle) {
       if (hc && !hc._box4ScrollBound) {
         hc._box4ScrollBound = true;
         var t = null;
-        hc.addEventListener('scroll', function() {
+        function onHomeCardsScroll() {
+          try { updateHomeGreetFade(); } catch (eF) {}
           if (t) clearTimeout(t);
           t = setTimeout(function() { updateBox4Balance(true); }, 80);
-        }, { passive: true });
+        }
+        hc.addEventListener('scroll', onHomeCardsScroll, { passive: true });
+        try { updateHomeGreetFade(); } catch (eF0) {}
       }
+    }
+    function updateHomeGreetFade() {
+      try {
+        var strip = document.getElementById('homeGreetStrip');
+        var box = document.getElementById('homeCards');
+        if (!strip || !box) return;
+        var cards = box.querySelectorAll('.person-card');
+        if (!cards.length) {
+          strip.style.opacity = '0';
+          return;
+        }
+        var first = cards[0];
+        var br = box.getBoundingClientRect();
+        var fr = first.getBoundingClientRect();
+        /* وقتی کارت اول وسط است opacity=1؛ با اسکرول به کارت بعد محو شود */
+        var firstCenter = fr.left + fr.width / 2;
+        var viewCenter = br.left + br.width / 2;
+        var dist = Math.abs(firstCenter - viewCenter);
+        var fadeRange = Math.max(fr.width * 0.55, 80);
+        var op = 1 - (dist / fadeRange);
+        if (op < 0) op = 0;
+        if (op > 1) op = 1;
+        /* اگر کارت اول تقریباً از نما خارج شده */
+        if (fr.right < br.left + 8) op = 0;
+        strip.style.opacity = String(op);
+      } catch (e) {}
     }
 
     function openInstantBalance(title) {
@@ -18039,7 +18076,7 @@ function openCardReorderMode(focusTitle) {
         box.appendChild(card);
       });
       try { bindCardReorderChrome(); } catch (eB) {}
-      try { bindBox4Actions(); updateBox4Balance(true); updateHomeGreet(); } catch (eB4) {}
+      try { bindBox4Actions(); updateBox4Balance(true); updateHomeGreet(); updateHomeGreetFade(); } catch (eB4) {}
       // اسکرول افقی: عرض هر کارت = عرض کانتینر؛ موقعیت کارت فعال حفظ شود
       try {
         const w = box.clientWidth || box.offsetWidth;
