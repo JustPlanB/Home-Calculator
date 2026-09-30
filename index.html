@@ -8402,6 +8402,112 @@
 
     #familyModal, #familyModal.open { display: none !important; visibility: hidden !important; pointer-events: none !important; }
     #syncStatus, .sync-status, [data-sync-status] { display: none !important; }
+
+    /* ===== فاز افتر: کاروسل کارت‌ها + باکس ۴ ===== */
+    #panel-home.active { overflow-x: visible !important; overflow-y: clip !important; }
+    /* در صفحهٔ خانه، والدهای برش‌دهنده تمام‌عرض می‌شوند (حاشیه منفی + padding هم‌اندازه → جای بقیهٔ محتوا تغییر نمی‌کند) */
+    body.tabs-main-hidden:has(#panel-home.active) .container,
+    body.tabs-main-hidden:has(#panel-home.active) .tab-viewport {
+      width: auto !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
+      margin-left: calc(-1 * var(--hc-il, 0px)) !important;
+      margin-right: calc(-1 * var(--hc-ir, 0px)) !important;
+      padding-left: var(--hc-il, 0px) !important;
+      padding-right: var(--hc-ir, 0px) !important;
+    }
+    .home-cards { position: relative; align-items: center; }
+    .home-cards .person-card {
+      transition: none !important;
+      will-change: transform;
+      transform-origin: 50% 50%;
+    }
+    .home-cards .person-card .person-card-name { font-size: 1.3rem !important; }
+    .home-cards .person-card .person-stat-line.em { font-size: 0.76rem; }
+    .home-cards .person-card .person-stat-line.paid,
+    .home-cards .person-card .person-stat-line.unpaid { font-size: 0.7rem; }
+
+    .home-tools .home-box.box4 {
+      position: relative;
+      overflow: visible !important;
+      direction: ltr;
+      height: 66px;
+      padding: 6px 14px;
+      box-sizing: border-box;
+      justify-content: center;
+      align-items: center;
+      gap: 26px;
+      margin-top: 30px;
+      margin-bottom: 14px;
+    }
+    .home-circle {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      min-width: 54px;
+      min-height: 54px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      outline: none;
+      border-radius: 50%;
+      background: #1b1b1b;
+      box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14);
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transform: translateZ(0);
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+    .home-circle:active { filter: brightness(0.92); transform: scale(0.96) translateZ(0); }
+    .home-circle svg {
+      width: 32px;
+      height: 32px;
+      fill: none;
+      stroke: #00b7ff;
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: plusStrokePulse 5.2s ease-in-out infinite;
+    }
+    .home-circle-search svg { width: 30px; height: 30px; stroke-width: 2.8; }
+    .home-circle-big {
+      width: 108px;
+      height: 108px;
+      min-width: 108px;
+      min-height: 108px;
+      flex-direction: column;
+      gap: 2px;
+      top: -14px;
+    }
+    .home-circle-big:active { transform: scale(0.97) translateZ(0); }
+    .hbc-label {
+      color: #00b7ff;
+      font-weight: 800;
+      font-size: 0.82rem;
+      line-height: 1.2;
+    }
+    .hbc-amt {
+      display: inline-flex;
+      direction: ltr;
+      unicode-bidi: isolate;
+      align-items: flex-start;
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.3;
+      height: 1.3em;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      color: #9ee858;
+    }
+    .rn-d { display: inline-block; height: 1.3em; overflow: hidden; }
+    .rn-strip { display: block; will-change: transform; }
+    .rn-strip i { display: block; height: 1.3em; line-height: 1.3em; font-style: normal; text-align: center; }
+    .rn-s { display: inline-block; height: 1.3em; line-height: 1.3em; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -8600,11 +8706,16 @@
             <span>سطل زباله</span>
           </button>
         </div>
+        <div class="home-box box4" id="homeBox4">
+          <button type="button" class="home-circle home-circle-add" onclick="addPersonCard()" aria-label="ایجاد کارت"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" class="home-circle home-circle-big" id="homeBalanceCircle" onclick="openInstantBalance(getActiveHomeCardTitle())" aria-label="موجودی آنی">
+            <span class="hbc-label">موجودی</span>
+            <span class="hbc-amt" id="homeBalanceAmt" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="home-circle home-circle-search" onclick="openHomeMandeh()" aria-label="جستجو"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.9-4.9"/></svg></button>
+        </div>
       </div>
       </div><!-- /home-stack -->
-      <div class="home-add-wrap">
-        <button type="button" class="btn-circle-plus lg" onclick="addPersonCard()" title="کاربر جدید" aria-label="کاربر جدید"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-      </div>
       <div class="instant-bal-overlay" id="instantBalOverlay" onclick="if(event.target===this)closeInstantBalance()">
         <div class="instant-bal-panel" id="instantBalPanel" onclick="event.stopPropagation()"></div>
       </div>
@@ -17280,9 +17391,8 @@ function openPdfPrintWindow(){
         const card = box.querySelector('.person-card[data-title="' + (window.CSS && CSS.escape ? CSS.escape(title) : title.replace(/"/g, '')) + '"]')
           || Array.from(box.querySelectorAll('.person-card')).find(function(el){ return (el.dataset.title || '') === title; });
         if (!card) return;
-        const left = card.offsetLeft;
-        if (smooth) box.scrollTo({ left: left, behavior: 'smooth' });
-        else box.scrollLeft = left;
+        homeCenterCard(box, card, !!smooth);
+        try { updateHomeCardScales(box); } catch (eU) {}
       } catch (e) {}
     }
     /** ورق زدن یکی‌یکی از کارت اول تا کارت هدف */
@@ -17296,7 +17406,7 @@ function openPdfPrintWindow(){
         // از کارت قبلی شروع کن و یک ورق بزن روی کارت جدید
         const fromIdx = Math.max(0, targetIdx - 1);
         if (cards[fromIdx]) {
-          try { box.scrollLeft = cards[fromIdx].offsetLeft; } catch (e0) {}
+          try { homeCenterCard(box, cards[fromIdx], false); } catch (e0) {}
         }
         if (targetIdx === fromIdx) {
           try { setActiveHomeCardTitle(title); } catch (e1) {}
@@ -17305,8 +17415,7 @@ function openPdfPrintWindow(){
         setTimeout(function() {
           const card = cards[targetIdx];
           if (card) {
-            try { box.scrollTo({ left: card.offsetLeft, behavior: 'smooth' }); }
-            catch (eS) { box.scrollLeft = card.offsetLeft; }
+            try { homeCenterCard(box, card, true); } catch (eS) {}
           }
           setTimeout(function() {
             try { setActiveHomeCardTitle(title); } catch (e2) {}
@@ -17453,12 +17562,175 @@ function openPdfPrintWindow(){
         document.body.style.touchAction = '';
       } catch (e) {}
     }
+    /* ===== فاز افتر: کاروسل کارت‌ها، دایرهٔ موجودی، جستجوی مانده ===== */
+    function sizeHomeCards(box) {
+      box = box || document.getElementById('homeCards');
+      if (!box) return;
+      /* کاروسل تمام‌عرض صفحه شود تا لبهٔ کارت‌های کناری تا کنار صفحه دیده شود */
+      var panel = document.getElementById('panel-home');
+      var pr = panel ? panel.getBoundingClientRect() : null;
+      if (!pr || !(pr.width > 0)) return;
+      var vw = document.documentElement.clientWidth || window.innerWidth;
+      var insL = Math.max(0, Math.round(pr.left)), insR = Math.max(0, Math.round(vw - pr.right));
+      document.documentElement.style.setProperty('--hc-il', insL + 'px');
+      document.documentElement.style.setProperty('--hc-ir', insR + 'px');
+      box.style.setProperty('margin-left', (-insL) + 'px', 'important');
+      box.style.setProperty('margin-right', (-insR) + 'px', 'important');
+      box.style.setProperty('width', vw + 'px', 'important');
+      box.style.setProperty('max-width', 'none', 'important');
+      var W = box.clientWidth || box.offsetWidth;
+      if (!(W > 0)) return;
+      var cw = Math.round(W * 0.74), gap = Math.round(W * 0.02), side = Math.floor((W - cw) / 2);
+      box.style.setProperty('padding-left', side + 'px', 'important');
+      box.style.setProperty('padding-right', side + 'px', 'important');
+      box.style.setProperty('gap', gap + 'px', 'important');
+      box._hcDist = cw + gap;
+      box.querySelectorAll('.person-card').forEach(function (c) {
+        c.style.setProperty('width', cw + 'px', 'important');
+        c.style.setProperty('min-width', cw + 'px', 'important');
+        c.style.setProperty('max-width', cw + 'px', 'important');
+        c.style.setProperty('flex', '0 0 ' + cw + 'px', 'important');
+      });
+    }
+    /* فاصلهٔ مرکز کارت (بدون اثر transform) تا مرکز کاروسل؛ مستقل از RTL/LTR */
+    function homeCardOffset(box, card) {
+      var br = box.getBoundingClientRect();
+      var W = card.offsetWidth, s0 = card._hs || 1, p0 = (card._hp == null) ? 0.5 : card._hp;
+      var r = card.getBoundingClientRect();
+      return (r.left - p0 * W * (1 - s0) + W / 2) - (br.left + br.width / 2);
+    }
+    function homeCenterCard(box, card, smooth) {
+      var left = box.scrollLeft + homeCardOffset(box, card);
+      try {
+        if (smooth) box.scrollTo({ left: left, behavior: 'smooth' });
+        else box.scrollLeft = left;
+      } catch (e) { box.scrollLeft = left; }
+    }
+    /* کارت وسط کامل؛ کارت‌های کناری کوچک‌تر و لبهٔ داخلی‌شان ثابت (فقط لبهٔ آن‌ها دیده می‌شود) */
+    function updateHomeCardScales(box) {
+      box = box || document.getElementById('homeCards');
+      if (!box) return null;
+      var cards = box.querySelectorAll('.person-card');
+      if (!cards.length) return null;
+      var br = box.getBoundingClientRect(), mid = br.left + br.width / 2;
+      var dist = box._hcDist || (cards[0].offsetWidth * 1.03) || 300;
+      var best = null, bestD = 1e9;
+      cards.forEach(function (c) {
+        var W = c.offsetWidth, s0 = c._hs || 1, p0 = (c._hp == null) ? 0.5 : c._hp;
+        var r = c.getBoundingClientRect();
+        var o = (r.left - p0 * W * (1 - s0) + W / 2) - mid;
+        var t = Math.min(1, Math.abs(o) / dist);
+        var sc = 1 - 0.155 * t;
+        var p = Math.max(0, Math.min(1, 0.5 - 0.5 * (o / dist)));
+        c._hs = sc; c._hp = p;
+        c.style.transformOrigin = (p * 100).toFixed(1) + '% 50%';
+        c.style.transform = 'scale(' + sc.toFixed(4) + ')';
+        if (Math.abs(o) < bestD) { bestD = Math.abs(o); best = c; }
+      });
+      return best;
+    }
+    (function () {
+      var rz = 0;
+      window.addEventListener('resize', function () {
+        clearTimeout(rz);
+        rz = setTimeout(function () {
+          try { sizeHomeCards(); updateHomeCardScales(); } catch (e) {}
+        }, 120);
+      });
+    })();
+
+    /* —— Rolling number: ارقام چرخان، سریع و ظریف —— */
+    var _HBC_SETS = ['0123456789', '۰۱۲۳۴۵۶۷۸۹', '٠١٢٣٤٥٦٧٨٩'];
+    function _digitInfo(ch) {
+      for (var k = 0; k < _HBC_SETS.length; k++) {
+        var i = _HBC_SETS[k].indexOf(ch);
+        if (i >= 0) return { idx: i, set: _HBC_SETS[k] };
+      }
+      return null;
+    }
+    function rollNumberInto(el, text, prev) {
+      var reduce = false;
+      try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+      var chars = Array.from(text), pchars = prev ? Array.from(prev) : [];
+      var n = chars.length, H = 1.3, anim = [];
+      el.innerHTML = '';
+      for (var i = 0; i < n; i++) {
+        var ch = chars[i], di = _digitInfo(ch);
+        if (!di) {
+          var sp = document.createElement('span');
+          sp.className = 'rn-s';
+          sp.textContent = ch;
+          el.appendChild(sp);
+          continue;
+        }
+        var pc = pchars[pchars.length - (n - i)];
+        var pdi = pc ? _digitInfo(pc) : null;
+        var from = pdi ? pdi.idx : 0;
+        var travel = ((di.idx - from) % 10 + 10) % 10;
+        if (!(pdi && travel === 0)) travel += 10;      /* یک دور کامل از بین اعداد عبور کند */
+        if (reduce) travel = ((di.idx - from) % 10 + 10) % 10;
+        var d = document.createElement('span');
+        d.className = 'rn-d';
+        var strip = document.createElement('span');
+        strip.className = 'rn-strip';
+        var html = '';
+        for (var k = 0; k < 30; k++) html += '<i>' + di.set.charAt(k % 10) + '</i>';
+        strip.innerHTML = html;
+        strip.style.transform = 'translate3d(0,' + (-from * H) + 'em,0)';
+        d.appendChild(strip);
+        el.appendChild(d);
+        if (travel) anim.push({ strip: strip, to: from + travel, delay: (n - 1 - i) * 26 });
+      }
+      /* اگر مبلغ بلند بود، فونت را کوچک کن تا داخل دایره جا شود */
+      try {
+        el.style.fontSize = '';
+        var w = el.getBoundingClientRect().width, maxW = 82;
+        if (w > maxW) {
+          var cur = parseFloat(getComputedStyle(el).fontSize) || 15;
+          el.style.fontSize = (cur * maxW / w).toFixed(2) + 'px';
+        }
+      } catch (e) {}
+      if (!anim.length) return;
+      void el.offsetWidth;
+      requestAnimationFrame(function () {
+        anim.forEach(function (a) {
+          a.strip.style.transition = 'transform 560ms cubic-bezier(.12,.8,.2,1) ' + a.delay + 'ms';
+          a.strip.style.transform = 'translate3d(0,' + (-a.to * H) + 'em,0)';
+        });
+      });
+    }
+    var _hbcLast = null;
+    function updateHomeBalanceCircle() {
+      var amt = document.getElementById('homeBalanceAmt');
+      if (!amt) return;
+      var iv = 0;
+      try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
+      var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
+      if (txt === _hbcLast) return;
+      var prev = _hbcLast;
+      _hbcLast = txt;
+      amt.style.color = iv < 0 ? '#ff6b4a' : '#9ee858';
+      var btn = document.getElementById('homeBalanceCircle');
+      if (btn) btn.setAttribute('aria-label', 'موجودی آنی ' + txt);
+      rollNumberInto(amt, txt, prev);
+    }
+    /* دایرهٔ جستجو: بخش مانده (فیلترها + جدول مانده به تفکیک) */
+    function openHomeMandeh() {
+      try {
+        var titles = allPersonTitles();
+        var t = getActiveHomeCardTitle();
+        if (!t || titles.indexOf(t) < 0) t = titles[0];
+        if (t) openPersonDetail(t, 'balance');
+      } catch (e) {}
+    }
+
     function renderHomeCards() {
       try { unlockPageScroll(); } catch (e) {}
       try { ensureDefaultPersonCard(); } catch (e) {}
       try { syncMatchCardWidth(); } catch (e) {}
       const box = document.getElementById('homeCards');
       if (!box) return;
+      try { updateHomeBalanceCircle(); } catch (eHB) {}
       box.innerHTML = '';
       const titles = allPersonTitles();
       titles.forEach(title => {
@@ -17527,33 +17799,8 @@ function openPdfPrintWindow(){
         cols.appendChild(boxInc);
         cols.appendChild(boxExp);
 
-        const rem = document.createElement('div');
-        rem.className = 'person-remain-box';
-        const rv = Number(tot.remain) || 0;
-        if (rv < 0) {
-          rem.classList.add('remain-neg');
-          rem.textContent = 'مانده نهایی: ' + formatNum(Math.abs(rv)) + '-';
-        } else {
-          rem.classList.add('remain-pos');
-          rem.textContent = 'مانده نهایی: ' + formatNum(rv);
-        }
-        rem.onclick = (e) => { e.stopPropagation(); openPersonDetail(title, 'balance'); };
-
-        const inst = document.createElement('div');
-        inst.className = 'person-instant-box';
-        const iv = Number(tot.instant) || 0;
-        if (iv < 0) {
-          inst.style.color = '#ff6b4a';
-          inst.textContent = 'موجودی آنی: ' + formatNum(Math.abs(iv)) + '-';
-        } else {
-          inst.style.color = '#9ee858';
-          inst.textContent = 'موجودی آنی: ' + formatNum(iv);
-        }
-        inst.onclick = (e) => { e.stopPropagation(); openInstantBalance(title); };
-
+        /* فیلدهای «مانده نهایی» و «موجودی آنی» از کارت حذف شدند (موجودی آنی به باکس ۴ رفت) */
         stats.appendChild(cols);
-        stats.appendChild(rem);
-        stats.appendChild(inst);
         inner.appendChild(top);
         inner.appendChild(stats);
         card.appendChild(inner);
@@ -17587,31 +17834,19 @@ function openPdfPrintWindow(){
       try { bindCardReorderChrome(); } catch (eB) {}
       // اسکرول افقی: عرض هر کارت = عرض کانتینر؛ موقعیت کارت فعال حفظ شود
       try {
-        const w = box.clientWidth || box.offsetWidth;
-        if (w > 0) {
-          box.querySelectorAll('.person-card').forEach(function(card) {
-            card.style.width = w + 'px';
-            card.style.minWidth = w + 'px';
-            card.style.maxWidth = w + 'px';
-            card.style.flex = '0 0 ' + w + 'px';
-          });
-        }
+        sizeHomeCards(box);
         if (!box._homeScrollBound) {
           box._homeScrollBound = true;
+          let hcRaf = 0;
           box.addEventListener('scroll', function() {
-            try {
-              const cards = Array.from(box.querySelectorAll('.person-card'));
-              if (!cards.length) return;
-              const mid = box.scrollLeft + (box.clientWidth / 2);
-              let best = cards[0];
-              let bestDist = Infinity;
-              cards.forEach(function(card) {
-                const cmid = card.offsetLeft + card.offsetWidth / 2;
-                const d = Math.abs(cmid - mid);
-                if (d < bestDist) { bestDist = d; best = card; }
-              });
-              if (best && best.dataset.title) setActiveHomeCardTitle(best.dataset.title);
-            } catch (eS) {}
+            if (hcRaf) return;
+            hcRaf = requestAnimationFrame(function() {
+              hcRaf = 0;
+              try {
+                const best = updateHomeCardScales(box);
+                if (best && best.dataset.title) setActiveHomeCardTitle(best.dataset.title);
+              } catch (eS) {}
+            });
           }, { passive: true });
         }
         const active = getActiveHomeCardTitle();
@@ -17619,6 +17854,7 @@ function openPdfPrintWindow(){
           requestAnimationFrame(function(){ scrollHomeCardsToTitle(active, false); });
         } else {
           box.scrollLeft = 0;
+          requestAnimationFrame(function(){ updateHomeCardScales(box); });
         }
       } catch (e) {}
     }
