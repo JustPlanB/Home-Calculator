@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>حساب کتاب</title>
-  <!-- build-stamp: 2026-09-30-v180 -->
   <style>
 
     /* Vazirmatn embedded for offline APK */
@@ -2038,7 +2037,9 @@
       position: relative;
       overflow: hidden;
     }
+    #cardReorderStrip.cro-dragging { scroll-snap-type: none !important; }
     .cro-mini.dragging {
+      transition: none !important;
       opacity: 0.95;
       transform: scale(1.08);
       border-color: #08b5f5;
@@ -8957,7 +8958,7 @@
 
     
 
-    /* build-stamp: 2026-09-30-v180-PENTA | palette-4-6-swap + install-swipe-session */
+    /* build-stamp: 2026-09-29-v178-PENTA | arrow-taller-opacity-shadow */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13097,6 +13098,7 @@ function onPeriodChange() {
       let items = [];
       try { items = getReminderItems() || []; } catch (e) { items = []; }
       if (!bar || !banner) return;
+      if (bar._dismissing) return; /* در حال انیمیشن بسته شدن */
       // یادآور باید داخل sticky-chrome بماند
       try {
         const chrome = document.getElementById('stickyChrome');
@@ -13106,18 +13108,20 @@ function onPeriodChange() {
           else chrome.appendChild(bar);
         }
       } catch (e) {}
-      if (!items.length) {
+      if (window._remindDismissed && window._remindDismissed.install) {
+        /* کاربر باکس اقساط را (موقتاً) بسته است؛ تا ورود دوباره به اپ نمایش داده نمی‌شود */
         bar.style.display = 'none';
         bar.classList.remove('has-alerts');
-        banner.innerHTML = '';
+        bar.classList.remove('open');
+        bar.classList.remove('open-overlay');
         if (dot) dot.style.display = 'none';
         requestAnimationFrame(syncChromeHeight);
         return;
       }
-      if (window._irHomeDismissedSession) {
+      if (!items.length) {
         bar.style.display = 'none';
-        bar.classList.remove('open');
-        bar.classList.remove('open-overlay');
+        bar.classList.remove('has-alerts');
+        banner.innerHTML = '';
         if (dot) dot.style.display = 'none';
         requestAnimationFrame(syncChromeHeight);
         return;
@@ -16706,73 +16710,96 @@ function openPdfPrintWindow(){
       }
       closeCardReorderMode();
     }
+    /* ——— جابه‌جایی کارت‌ها: کشیدن نمونهٔ کوچک؛ DOM حین کشیدن بازسازی نمی‌شود، RTL هم درست کار می‌کند ——— */
+    function croReadOrderFromDom(strip) {
+      return Array.prototype.map.call(strip.children, function (c) { return c.dataset.title; });
+    }
+    function croPlace() {
+      const d = _cardReorderDrag;
+      if (!d || !d.el || !d.el.parentNode) return;
+      const el = d.el, strip = el.parentNode;
+      el.style.transform = '';
+      let r = el.getBoundingClientRect();
+      const center = (d.x - d.grab) + r.width / 2;
+      const rtl = getComputedStyle(strip).direction === 'rtl';
+      const others = Array.prototype.filter.call(strip.children, function (c) { return c !== el; });
+      let before = 0; /* چند کارت از نظر بصری سمت چپِ مرکز کارتِ در حال کشیدن‌اند */
+      others.forEach(function (o) {
+        const or = o.getBoundingClientRect();
+        if (or.left + or.width / 2 < center) before++;
+      });
+      const targetIdx = rtl ? (others.length - before) : before;
+      const curIdx = Array.prototype.indexOf.call(strip.children, el);
+      if (targetIdx !== curIdx) {
+        strip.insertBefore(el, others[targetIdx] || null);
+        _cardReorderOrder = croReadOrderFromDom(strip);
+        r = el.getBoundingClientRect();
+      }
+      const dx = (d.x - d.grab) - r.left;
+      el.style.transform = 'translateX(' + dx + 'px) scale(1.08)';
+    }
+    function croEdgeLoop() {
+      const d = _cardReorderDrag;
+      if (!d || !d.el || !d.el.parentNode) return;
+      const strip = d.el.parentNode;
+      const sr = strip.getBoundingClientRect();
+      const edge = 56;
+      let v = 0;
+      if (d.x < sr.left + edge) v = -Math.ceil((sr.left + edge - d.x) / 5);
+      else if (d.x > sr.right - edge) v = Math.ceil((d.x - (sr.right - edge)) / 5);
+      if (v) { strip.scrollLeft += v; croPlace(); }
+      d.raf = requestAnimationFrame(croEdgeLoop);
+    }
+    function croEndDrag() {
+      const d = _cardReorderDrag;
+      if (!d) return;
+      try { cancelAnimationFrame(d.raf); } catch (e) {}
+      const el = d.el;
+      if (el) {
+        el.classList.remove('dragging');
+        el.style.transform = '';
+        try { el.releasePointerCapture(d.pid); } catch (e2) {}
+        if (el.parentNode) {
+          el.parentNode.classList.remove('cro-dragging');
+          _cardReorderOrder = croReadOrderFromDom(el.parentNode);
+        }
+      }
+      _cardReorderDrag = null;
+    }
     function buildCardReorderStrip() {
       const strip = document.getElementById('cardReorderStrip');
       if (!strip) return;
       strip.innerHTML = '';
-      _cardReorderOrder.forEach(function(title, idx) {
+      _cardReorderOrder.forEach(function (title) {
         const el = document.createElement('div');
         el.className = 'cro-mini';
         el.dataset.title = title;
-        el.dataset.idx = String(idx);
         el.textContent = title;
-        function onDown(ev) {
-          if (!_cardReorderActive) return;
+        el.addEventListener('pointerdown', function (ev) {
+          if (!_cardReorderActive || _cardReorderDrag) return;
           ev.preventDefault();
           ev.stopPropagation();
           try { el.setPointerCapture(ev.pointerId); } catch (eC) {}
-          _cardReorderDrag = { title: title, startX: ev.clientX, fromIdx: idx, el: el };
+          const r0 = el.getBoundingClientRect();
+          _cardReorderDrag = { el: el, pid: ev.pointerId, grab: ev.clientX - r0.left, x: ev.clientX, raf: 0 };
           el.classList.add('dragging', 'selected');
-          strip.querySelectorAll('.cro-mini').forEach(function(m) {
-            if (m !== el) m.classList.remove('selected');
+          strip.classList.add('cro-dragging');
+          Array.prototype.forEach.call(strip.children, function (m) { if (m !== el) m.classList.remove('selected'); });
+          croPlace();
+          _cardReorderDrag.raf = requestAnimationFrame(croEdgeLoop);
+        });
+        el.addEventListener('pointermove', function (ev) {
+          const d = _cardReorderDrag;
+          if (!d || d.el !== el || ev.pointerId !== d.pid) return;
+          d.x = ev.clientX;
+          croPlace();
+        });
+        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (evn) {
+          el.addEventListener(evn, function (ev) {
+            const d = _cardReorderDrag;
+            if (d && d.el === el) croEndDrag();
           });
-        }
-        function onMove(ev) {
-          if (!_cardReorderDrag || _cardReorderDrag.el !== el) return;
-          const dx = ev.clientX - _cardReorderDrag.startX;
-          el.style.transform = 'translateX(' + dx + 'px) scale(1.08)';
-          const mids = Array.from(strip.querySelectorAll('.cro-mini')).map(function(m) {
-            const r = m.getBoundingClientRect();
-            return { el: m, mid: r.left + r.width / 2, title: m.dataset.title };
-          });
-          const curX = ev.clientX;
-          let targetIdx = _cardReorderDrag.fromIdx;
-          mids.forEach(function(m, i) {
-            if (m.el === el) return;
-            if (curX > m.mid && i > _cardReorderDrag.fromIdx) targetIdx = i;
-            if (curX < m.mid && i < _cardReorderDrag.fromIdx) targetIdx = i;
-          });
-          if (targetIdx !== _cardReorderDrag.fromIdx) {
-            const from = _cardReorderOrder.indexOf(_cardReorderDrag.title);
-            if (from >= 0) {
-              _cardReorderOrder.splice(from, 1);
-              _cardReorderOrder.splice(targetIdx, 0, _cardReorderDrag.title);
-              _cardReorderDrag.fromIdx = targetIdx;
-              _cardReorderDrag.startX = ev.clientX;
-              el.style.transform = '';
-              buildCardReorderStrip();
-              const sel = CSS && CSS.escape ? CSS.escape(_cardReorderDrag.title) : String(_cardReorderDrag.title).replace(/"/g, '');
-              const neu = strip.querySelector('.cro-mini[data-title="' + sel + '"]');
-              if (neu) {
-                neu.classList.add('dragging', 'selected');
-                _cardReorderDrag.el = neu;
-                try { neu.setPointerCapture(ev.pointerId); } catch (e2) {}
-              }
-            }
-          }
-        }
-        function onUp() {
-          if (!_cardReorderDrag) return;
-          if (_cardReorderDrag.el) {
-            _cardReorderDrag.el.classList.remove('dragging');
-            _cardReorderDrag.el.style.transform = '';
-          }
-          _cardReorderDrag = null;
-        }
-        el.addEventListener('pointerdown', onDown);
-        el.addEventListener('pointermove', onMove);
-        el.addEventListener('pointerup', onUp);
-        el.addEventListener('pointercancel', onUp);
+        });
         strip.appendChild(el);
       });
     }
@@ -23811,7 +23838,7 @@ if (item.type === 'recurring') {
           });
         }
         saveUserReminders();
-        try { localStorage.removeItem(STORAGE_KEY + '_urHomeDismissed'); } catch (eD) {}
+        try { (window._remindDismissed = window._remindDismissed || {}).user = false; } catch (eD) {}
         closeEd();
         renderUserRemindersList();
         showToast(existing ? 'ذخیره شد' : 'یادآور اضافه شد');
@@ -23836,25 +23863,90 @@ if (item.type === 'recurring') {
       list.sort(function(a, b) { return a.days - b.days; });
       return list;
     }
+    /* بسته شدن باکس‌ها فقط تا خروج از اپ معتبر است؛ با ورود دوباره اگر موعدشان باشد دوباره نمایش داده می‌شوند */
+    window._remindDismissed = window._remindDismissed || { install: false, user: false };
     function isUserRemindHomeDismissed() {
-      /* فقط همین اجرای اپ — با ورود مجدد اگر موعد باشد دوباره نشان داده می‌شود */
-      try { return !!window._urHomeDismissedSession; } catch (e) { return false; }
+      return !!(window._remindDismissed && window._remindDismissed.user);
     }
 
-    function bindUserRemindSwipe() {
-      if (window._urSwipeBound) return;
-      window._urSwipeBound = true;
+    /* بستن باکس‌ها با کشیدن به چپ/راست (مستقل از هم) + بالا آمدن نرم محتوای زیر */
+    var _REMIND_BAR_PROPS = ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom',
+      'padding-top', 'padding-bottom', 'overflow', 'transition', 'transform', 'opacity', 'pointer-events'];
+    function resetRemindBarInline(bar) {
+      if (!bar) return;
+      _REMIND_BAR_PROPS.forEach(function (pn) { try { bar.style.removeProperty(pn); } catch (e) {} });
+      bar._dismissing = false;
+    }
+    function collapseRemindBar(bar, kind, dir, onDone) {
+      if (!bar || bar._dismissing) return;
+      bar._dismissing = true;
+      window._remindDismissed = window._remindDismissed || { install: false, user: false };
+      window._remindDismissed[kind] = true;
+      var w = bar.getBoundingClientRect().width || 300;
+      var imp = function (pn, v) { bar.style.setProperty(pn, v, 'important'); };
+      /* ۱) پرواز به کنار */
+      imp('transition', 'transform 0.26s cubic-bezier(.4,0,1,1), opacity 0.26s ease-out');
+      imp('transform', 'translateX(' + (dir * (w + 40)) + 'px)');
+      imp('opacity', '0');
+      imp('pointer-events', 'none');
+      setTimeout(function () {
+        /* ۲) جمع شدن ارتفاع؛ محتوای زیر با همان سرعت بالا می‌آید */
+        var cs = getComputedStyle(bar);
+        var h = bar.offsetHeight;
+        imp('overflow', 'hidden');
+        imp('transition', 'none');
+        imp('height', h + 'px'); imp('min-height', h + 'px'); imp('max-height', h + 'px');
+        imp('margin-top', cs.marginTop); imp('margin-bottom', cs.marginBottom);
+        void bar.offsetHeight; /* reflow */
+        var ease = 'cubic-bezier(.4,0,.2,1)', dur = '0.34s';
+        imp('transition', ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom', 'padding-top', 'padding-bottom']
+          .map(function (pn) { return pn + ' ' + dur + ' ' + ease; }).join(', '));
+        imp('height', '0px'); imp('min-height', '0px'); imp('max-height', '0px');
+        imp('margin-top', '0px'); imp('margin-bottom', '0px');
+        imp('padding-top', '0px'); imp('padding-bottom', '0px');
+        var t0 = Date.now();
+        (function tick() {
+          try { syncChromeHeight(); } catch (e) {}
+          if (Date.now() - t0 < 380) requestAnimationFrame(tick);
+        })();
+        setTimeout(function () {
+          bar.style.display = 'none';
+          try { bar.classList.remove('open'); bar.classList.remove('open-overlay'); } catch (e) {}
+          resetRemindBarInline(bar);
+          try { if (onDone) onDone(); } catch (e) {}
+          try { syncChromeHeight(); } catch (e) {}
+        }, 390);
+      }, 270);
+    }
+    window.collapseRemindBar = collapseRemindBar;
+
+    function bindBarSwipeDismiss(barId, kind) {
+      var flag = '_swipeBound_' + barId;
+      if (window[flag]) return;
+      window[flag] = true;
       var startX = 0, startY = 0, dx = 0, active = false, decided = false;
-      function barEl() { return document.getElementById('userRemindBar'); }
+      function barEl() { return document.getElementById(barId); }
+      function usable(bar) {
+        return bar && bar.style.display !== 'none' && !bar._dismissing &&
+          !bar.classList.contains('open') && !bar.classList.contains('open-overlay');
+      }
       function onStart(e) {
         var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
-        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
+        if (!usable(bar)) return;
         var t = e.touches && e.touches[0];
         if (!t) return;
         startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
         bar.classList.add('ur-swiping');
-        bar.style.transition = 'none';
+        bar.style.setProperty('transition', 'none', 'important');
+      }
+      function reset(bar) {
+        if (!bar) return;
+        bar.classList.remove('ur-swiping');
+        if (!bar._dismissing) {
+          bar.style.removeProperty('transition');
+          bar.style.removeProperty('transform');
+          bar.style.removeProperty('opacity');
+        }
       }
       function onMove(e) {
         if (!active) return;
@@ -23865,161 +23957,98 @@ if (item.type === 'recurring') {
         var x = t.clientX - startX, y = t.clientY - startY;
         if (!decided) {
           if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
-          if (Math.abs(y) > Math.abs(x)) { active = false; bar.classList.remove('ur-swiping'); bar.style.transform = ''; return; }
+          if (Math.abs(y) > Math.abs(x)) { active = false; reset(bar); return; }
           decided = true;
         }
         dx = x;
         try { e.preventDefault(); } catch (eP) {}
-        bar.style.transform = 'translateX(' + dx + 'px)';
-        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
+        bar.style.setProperty('transform', 'translateX(' + dx + 'px)', 'important');
+        bar.style.setProperty('opacity', String(Math.max(0.25, 1 - Math.abs(dx) / 220)), 'important');
       }
       function onEnd() {
-        if (!active && !decided) {
-          var b0 = barEl();
-          if (b0) { b0.classList.remove('ur-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
-          active = false; return;
-        }
-        active = false;
         var bar = barEl();
+        if (!active) { return; }
+        active = false;
         if (!bar) return;
+        if (!decided) { reset(bar); return; }
         bar.classList.remove('ur-swiping');
         var w = bar.getBoundingClientRect().width || 300;
         if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
           var dir = dx > 0 ? 1 : -1;
-          bar.classList.add('ur-dismiss-fly');
-          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
-          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
-          bar.style.opacity = '0';
-          setTimeout(function() {
-            try { dismissUserRemindBar(null); } catch (eD) {}
-            try {
-              bar.classList.remove('ur-dismiss-fly');
-              bar.style.transform = '';
-              bar.style.opacity = '';
-              bar.style.transition = '';
-            } catch (eC) {}
-          }, 280);
+          /* از موقعیت فعلی ادامه بده تا پرش نداشته باشد */
+          bar.style.removeProperty('transform');
+          bar.style.removeProperty('opacity');
+          bar.style.removeProperty('transition');
+          collapseRemindBar(bar, kind, dir, function () {
+            if (kind === 'user') {
+              try {
+                var bd = document.getElementById('remindBackdrop');
+                var rb = document.getElementById('remindBar');
+                var installOpen = rb && (rb.classList.contains('open') || rb.classList.contains('open-overlay'));
+                if (bd && !installOpen) bd.classList.remove('open');
+              } catch (eBd) {}
+            }
+          });
         } else {
-          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-          bar.style.transform = 'translateX(0)';
-          bar.style.opacity = '1';
-          setTimeout(function() {
-            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eR) {}
-          }, 220);
+          bar.style.setProperty('transition', 'transform 0.2s ease-out, opacity 0.2s ease-out', 'important');
+          bar.style.setProperty('transform', 'translateX(0)', 'important');
+          bar.style.setProperty('opacity', '1', 'important');
+          setTimeout(function () { reset(bar); }, 220);
         }
         dx = 0; decided = false;
       }
-      document.addEventListener('touchstart', function(e) {
+      document.addEventListener('touchstart', function (e) {
         var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
+        if (!usable(bar)) return;
         if (e.target && bar.contains(e.target)) onStart(e);
       }, { passive: true, capture: true });
-      document.addEventListener('touchmove', function(e) {
-        if (active && decided) onMove(e);
-        else if (active) onMove(e);
-      }, { passive: false, capture: true });
+      document.addEventListener('touchmove', function (e) { if (active) onMove(e); }, { passive: false, capture: true });
       document.addEventListener('touchend', onEnd, { passive: true, capture: true });
       document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
+    }
+    function bindUserRemindSwipe() {
+      bindBarSwipeDismiss('userRemindBar', 'user');
+      bindBarSwipeDismiss('remindBar', 'install');
     }
     try { bindUserRemindSwipe(); } catch (eSw) {}
 
-    function dismissInstallRemindBar() {
-      try { window._irHomeDismissedSession = true; } catch (e) {}
-      var bar = document.getElementById('remindBar');
-      if (bar) {
-        bar.style.display = 'none';
-        bar.classList.remove('open');
-        bar.classList.remove('open-overlay');
-        bar.style.transform = '';
-        bar.style.opacity = '';
-        bar.style.transition = '';
+    /* ورود دوباره به اپ: هر دو باکس (اگر موعدشان باشد) دوباره ظاهر شوند */
+    function resetRemindDismissals() {
+      window._remindDismissed = { install: false, user: false };
+      ['remindBar', 'userRemindBar'].forEach(function (id) {
+        var b = document.getElementById(id);
+        if (b) resetRemindBarInline(b);
+      });
+      try { checkInstallReminders(); } catch (e1) {}
+      try { renderUserRemindHomeBar(); } catch (e2) {}
+      try { syncChromeHeight(); } catch (e3) {}
+    }
+    (function () {
+      var hiddenAt = 0;
+      function goneAway() { if (!hiddenAt) hiddenAt = Date.now(); }
+      function cameBack() {
+        var away = hiddenAt ? (Date.now() - hiddenAt) : 0;
+        hiddenAt = 0;
+        if (away >= 3000) resetRemindDismissals();
       }
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) goneAway(); else cameBack();
+      });
       try {
-        var bd = document.getElementById('remindBackdrop');
-        var ur = document.getElementById('userRemindBar');
-        var urOpen = ur && (ur.classList.contains('open') || ur.classList.contains('open-overlay'));
-        if (bd && !urOpen) bd.classList.remove('open');
-      } catch (e2) {}
-      try { if (typeof syncChromeHeight === 'function') syncChromeHeight(); } catch (e3) {}
-    }
-    function bindInstallRemindSwipe() {
-      if (window._irSwipeBound) return;
-      window._irSwipeBound = true;
-      var startX = 0, startY = 0, dx = 0, active = false, decided = false;
-      function barEl() { return document.getElementById('remindBar'); }
-      function onStart(e) {
-        var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
-        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
-        var t = e.touches && e.touches[0];
-        if (!t) return;
-        startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
-        bar.classList.add('ir-swiping');
-        bar.style.transition = 'none';
-      }
-      function onMove(e) {
-        if (!active) return;
-        var bar = barEl();
-        if (!bar) return;
-        var t = e.touches && e.touches[0];
-        if (!t) return;
-        var x = t.clientX - startX, y = t.clientY - startY;
-        if (!decided) {
-          if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
-          if (Math.abs(y) > Math.abs(x)) {
-            active = false;
-            bar.classList.remove('ir-swiping');
-            bar.style.transform = '';
-            return;
-          }
-          decided = true;
+        var CapApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (CapApp && typeof CapApp.addListener === 'function') {
+          CapApp.addListener('appStateChange', function (st) {
+            if (st && st.isActive) cameBack(); else goneAway();
+          });
         }
-        dx = x;
-        try { e.preventDefault(); } catch (eP) {}
-        bar.style.transform = 'translateX(' + dx + 'px)';
-        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
-      }
-      function onEnd() {
-        if (!active && !decided) {
-          var b0 = barEl();
-          if (b0) { b0.classList.remove('ir-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
-          active = false; return;
-        }
-        active = false;
-        var bar = barEl();
-        if (!bar) return;
-        bar.classList.remove('ir-swiping');
-        var w = bar.getBoundingClientRect().width || 300;
-        if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
-          var dir = dx > 0 ? 1 : -1;
-          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
-          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
-          bar.style.opacity = '0';
-          setTimeout(function() {
-            try { dismissInstallRemindBar(); } catch (eD) {}
-          }, 280);
-        } else {
-          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-          bar.style.transform = 'translateX(0)';
-          bar.style.opacity = '1';
-          setTimeout(function() {
-            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eC) {}
-          }, 200);
-        }
-      }
-      document.addEventListener('touchstart', onStart, { passive: true, capture: true });
-      document.addEventListener('touchmove', onMove, { passive: false, capture: true });
-      document.addEventListener('touchend', onEnd, { passive: true, capture: true });
-      document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
-    }
-    try { bindInstallRemindSwipe(); } catch (eIrSw) {}
-
-
+      } catch (eCap) {}
+    })();
 
     function dismissUserRemindBar(ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       try {
-        window._urHomeDismissedSession = true;
+        window._remindDismissed = window._remindDismissed || { install: false, user: false };
+        window._remindDismissed.user = true;
       } catch (e) {}
       const bar = document.getElementById('userRemindBar');
       if (bar) {
@@ -24069,6 +24098,7 @@ if (item.type === 'recurring') {
       const bar = document.getElementById('userRemindBar');
       const body = document.getElementById('userRemindBanner');
       if (!bar || !body) return;
+      if (bar._dismissing) return; /* در حال انیمیشن بسته شدن */
       const dueSoon = getUserRemindDueSoon();
       if (!dueSoon.length || isUserRemindHomeDismissed()) {
         bar.style.display = 'none';
