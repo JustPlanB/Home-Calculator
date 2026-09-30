@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>حساب کتاب</title>
+  <!-- build-stamp: 2026-09-30-v180 -->
   <style>
 
     /* Vazirmatn embedded for offline APK */
@@ -8956,7 +8957,7 @@
 
     
 
-    /* build-stamp: 2026-09-29-v178-PENTA | arrow-taller-opacity-shadow */
+    /* build-stamp: 2026-09-30-v180-PENTA | palette-4-6-swap + install-swipe-session */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13109,6 +13110,14 @@ function onPeriodChange() {
         bar.style.display = 'none';
         bar.classList.remove('has-alerts');
         banner.innerHTML = '';
+        if (dot) dot.style.display = 'none';
+        requestAnimationFrame(syncChromeHeight);
+        return;
+      }
+      if (window._irHomeDismissedSession) {
+        bar.style.display = 'none';
+        bar.classList.remove('open');
+        bar.classList.remove('open-overlay');
         if (dot) dot.style.display = 'none';
         requestAnimationFrame(syncChromeHeight);
         return;
@@ -19537,9 +19546,9 @@ container.innerHTML = '';
       { id: 'purple', accent: '#d000ff', bg: 'rgba(208, 0, 255, 0.35)', glow: 'rgba(208, 0, 255, 0.35)' },
       { id: 'yellow', accent: '#f5ff33', bg: 'rgba(245, 255, 51, 0.35)', glow: 'rgba(245, 255, 51, 0.35)' },
       { id: 'blue', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.35)', glow: 'rgba(0, 232, 255, 0.35)' },
-      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.35)', glow: 'rgba(184, 255, 0, 0.35)' },
-      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.35)', glow: 'rgba(255, 45, 149, 0.35)' },
       { id: 'orange', accent: '#ff6a00', bg: 'rgba(255, 106, 0, 0.35)', glow: 'rgba(255, 106, 0, 0.35)' },
+      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.35)', glow: 'rgba(255, 45, 149, 0.35)' },
+      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.35)', glow: 'rgba(184, 255, 0, 0.35)' },
       { id: 'lime', accent: '#66ff66', bg: 'rgba(102, 255, 102, 0.35)', glow: 'rgba(102, 255, 102, 0.35)' },
       { id: 'cyan', accent: '#00ffd0', bg: 'rgba(0, 255, 208, 0.35)', glow: 'rgba(0, 255, 208, 0.35)' },
       { id: 'magenta', accent: '#ff00aa', bg: 'rgba(255, 0, 170, 0.35)', glow: 'rgba(255, 0, 170, 0.35)' },
@@ -23828,11 +23837,8 @@ if (item.type === 'recurring') {
       return list;
     }
     function isUserRemindHomeDismissed() {
-      try {
-        const t = getTodayPersian();
-        const key = t.y + '-' + t.m + '-' + t.d;
-        return localStorage.getItem(STORAGE_KEY + '_urHomeDismissed') === key;
-      } catch (e) { return false; }
+      /* فقط همین اجرای اپ — با ورود مجدد اگر موعد باشد دوباره نشان داده می‌شود */
+      try { return !!window._urHomeDismissedSession; } catch (e) { return false; }
     }
 
     function bindUserRemindSwipe() {
@@ -23917,12 +23923,103 @@ if (item.type === 'recurring') {
     }
     try { bindUserRemindSwipe(); } catch (eSw) {}
 
+    function dismissInstallRemindBar() {
+      try { window._irHomeDismissedSession = true; } catch (e) {}
+      var bar = document.getElementById('remindBar');
+      if (bar) {
+        bar.style.display = 'none';
+        bar.classList.remove('open');
+        bar.classList.remove('open-overlay');
+        bar.style.transform = '';
+        bar.style.opacity = '';
+        bar.style.transition = '';
+      }
+      try {
+        var bd = document.getElementById('remindBackdrop');
+        var ur = document.getElementById('userRemindBar');
+        var urOpen = ur && (ur.classList.contains('open') || ur.classList.contains('open-overlay'));
+        if (bd && !urOpen) bd.classList.remove('open');
+      } catch (e2) {}
+      try { if (typeof syncChromeHeight === 'function') syncChromeHeight(); } catch (e3) {}
+    }
+    function bindInstallRemindSwipe() {
+      if (window._irSwipeBound) return;
+      window._irSwipeBound = true;
+      var startX = 0, startY = 0, dx = 0, active = false, decided = false;
+      function barEl() { return document.getElementById('remindBar'); }
+      function onStart(e) {
+        var bar = barEl();
+        if (!bar || bar.style.display === 'none') return;
+        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
+        bar.classList.add('ir-swiping');
+        bar.style.transition = 'none';
+      }
+      function onMove(e) {
+        if (!active) return;
+        var bar = barEl();
+        if (!bar) return;
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        var x = t.clientX - startX, y = t.clientY - startY;
+        if (!decided) {
+          if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
+          if (Math.abs(y) > Math.abs(x)) {
+            active = false;
+            bar.classList.remove('ir-swiping');
+            bar.style.transform = '';
+            return;
+          }
+          decided = true;
+        }
+        dx = x;
+        try { e.preventDefault(); } catch (eP) {}
+        bar.style.transform = 'translateX(' + dx + 'px)';
+        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
+      }
+      function onEnd() {
+        if (!active && !decided) {
+          var b0 = barEl();
+          if (b0) { b0.classList.remove('ir-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
+          active = false; return;
+        }
+        active = false;
+        var bar = barEl();
+        if (!bar) return;
+        bar.classList.remove('ir-swiping');
+        var w = bar.getBoundingClientRect().width || 300;
+        if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
+          var dir = dx > 0 ? 1 : -1;
+          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
+          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
+          bar.style.opacity = '0';
+          setTimeout(function() {
+            try { dismissInstallRemindBar(); } catch (eD) {}
+          }, 280);
+        } else {
+          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+          bar.style.transform = 'translateX(0)';
+          bar.style.opacity = '1';
+          setTimeout(function() {
+            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eC) {}
+          }, 200);
+        }
+      }
+      document.addEventListener('touchstart', onStart, { passive: true, capture: true });
+      document.addEventListener('touchmove', onMove, { passive: false, capture: true });
+      document.addEventListener('touchend', onEnd, { passive: true, capture: true });
+      document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
+    }
+    try { bindInstallRemindSwipe(); } catch (eIrSw) {}
+
+
+
     function dismissUserRemindBar(ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       try {
-        const t = getTodayPersian();
-        const key = t.y + '-' + t.m + '-' + t.d;
-        localStorage.setItem(STORAGE_KEY + '_urHomeDismissed', key);
+        window._urHomeDismissedSession = true;
       } catch (e) {}
       const bar = document.getElementById('userRemindBar');
       if (bar) {
