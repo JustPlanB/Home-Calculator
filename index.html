@@ -23883,27 +23883,63 @@ if (item.type === 'recurring') {
       window._remindDismissed = window._remindDismissed || { install: false, user: false };
       window._remindDismissed[kind] = true;
       var w = bar.getBoundingClientRect().width || 300;
-      var imp = function (pn, v) { bar.style.setProperty(pn, v, 'important'); };
+      var imp = function (el, pn, v) { el.style.setProperty(pn, v, 'important'); };
+      var inChrome = !!(bar.closest && bar.closest('#stickyChrome'));
       /* ۱) پرواز به کنار */
-      imp('transition', 'transform 0.26s cubic-bezier(.4,0,1,1), opacity 0.26s ease-out');
-      imp('transform', 'translateX(' + (dir * (w + 40)) + 'px)');
-      imp('opacity', '0');
-      imp('pointer-events', 'none');
+      imp(bar, 'transition', 'transform 0.26s cubic-bezier(.4,0,1,1), opacity 0.26s ease-out');
+      imp(bar, 'transform', 'translateX(' + (dir * (w + 40)) + 'px)');
+      imp(bar, 'opacity', '0');
+      imp(bar, 'pointer-events', 'none');
       setTimeout(function () {
-        /* ۲) جمع شدن ارتفاع؛ محتوای زیر با همان سرعت بالا می‌آید */
-        var cs = getComputedStyle(bar);
+        var ease = 'cubic-bezier(.4,0,.2,1)', dur = 0.34;
+        if (!inChrome) {
+          /* ۲-الف) باکس داخل صفحهٔ خانه: عناصر زیرش را فقط با transform (GPU) بالا می‌بریم؛
+             فاصلهٔ gap و margin هم در مسافت حساب می‌شود تا در پایان هیچ پرشی نباشد */
+          var cs = getComputedStyle(bar), parent = bar.parentNode;
+          var pcs = parent ? getComputedStyle(parent) : null;
+          var gap = (pcs && /flex|grid/.test(pcs.display)) ? (parseFloat(pcs.rowGap) || 0) : 0;
+          var dist = bar.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0) + gap;
+          var sibs = [];
+          for (var n = bar.nextElementSibling; n; n = n.nextElementSibling) {
+            var ncs = getComputedStyle(n);
+            if (ncs.display === 'none' || ncs.position === 'fixed' || ncs.position === 'absolute') continue;
+            sibs.push(n);
+          }
+          sibs.forEach(function (n) {
+            n.style.willChange = 'transform';
+            n.style.transition = 'transform ' + dur + 's ' + ease;
+          });
+          void bar.offsetHeight;
+          sibs.forEach(function (n) { n.style.transform = 'translate3d(0,' + (-dist) + 'px,0)'; });
+          setTimeout(function () {
+            /* هم‌زمان: حذف باکس از جریان صفحه و برداشتن transform‌ها → بدون پرش */
+            bar.style.display = 'none';
+            try { bar.classList.remove('open'); bar.classList.remove('open-overlay'); } catch (e) {}
+            sibs.forEach(function (n) {
+              n.style.transition = 'none';
+              n.style.transform = '';
+              n.style.willChange = '';
+            });
+            void (sibs[0] && sibs[0].offsetHeight);
+            sibs.forEach(function (n) { n.style.transition = ''; });
+            resetRemindBarInline(bar);
+            try { if (onDone) onDone(); } catch (e) {}
+          }, dur * 1000 + 40);
+          return;
+        }
+        /* ۲-ب) باکس داخل sticky-chrome (اقساط): جمع شدن ارتفاع؛ صفحه با همان سرعت بالا می‌آید */
+        var cs2 = getComputedStyle(bar);
         var h = bar.offsetHeight;
-        imp('overflow', 'hidden');
-        imp('transition', 'none');
-        imp('height', h + 'px'); imp('min-height', h + 'px'); imp('max-height', h + 'px');
-        imp('margin-top', cs.marginTop); imp('margin-bottom', cs.marginBottom);
+        imp(bar, 'overflow', 'hidden');
+        imp(bar, 'transition', 'none');
+        imp(bar, 'height', h + 'px'); imp(bar, 'min-height', h + 'px'); imp(bar, 'max-height', h + 'px');
+        imp(bar, 'margin-top', cs2.marginTop); imp(bar, 'margin-bottom', cs2.marginBottom);
         void bar.offsetHeight; /* reflow */
-        var ease = 'cubic-bezier(.4,0,.2,1)', dur = '0.34s';
-        imp('transition', ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom', 'padding-top', 'padding-bottom']
-          .map(function (pn) { return pn + ' ' + dur + ' ' + ease; }).join(', '));
-        imp('height', '0px'); imp('min-height', '0px'); imp('max-height', '0px');
-        imp('margin-top', '0px'); imp('margin-bottom', '0px');
-        imp('padding-top', '0px'); imp('padding-bottom', '0px');
+        imp(bar, 'transition', ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom', 'padding-top', 'padding-bottom']
+          .map(function (pn) { return pn + ' ' + dur + 's ' + ease; }).join(', '));
+        imp(bar, 'height', '0px'); imp(bar, 'min-height', '0px'); imp(bar, 'max-height', '0px');
+        imp(bar, 'margin-top', '0px'); imp(bar, 'margin-bottom', '0px');
+        imp(bar, 'padding-top', '0px'); imp(bar, 'padding-bottom', '0px');
         var t0 = Date.now();
         (function tick() {
           try { syncChromeHeight(); } catch (e) {}
@@ -28993,7 +29029,7 @@ function openProjectRowPicker(secId) {
     loadSmsAccountBankMap();
     loadRecurring();
     try { loadUserReminders(); } catch (e) {}
-    try { setTimeout(function(){ checkUserReminders(true); }, 1200); } catch (e) {}
+    try { checkUserReminders(true); } catch (e) {} /* بدون تأخیر: باکس یادآور هم‌زمان با بقیهٔ صفحه ظاهر شود */
     loadArchive();
     loadCurrent();
     try { autoAdvancePersianMonthIfNeeded(); } catch (eAutoM) {}
@@ -29038,6 +29074,7 @@ function openProjectRowPicker(secId) {
       try { maybeShowFirstRunBankSetup(); } catch (e2) {}
     }
     checkInstallReminders();
+    try { checkUserReminders(true); } catch (eUr) {}
     /* startSyncLoop removed — بدون ابر */
 
     // ارتفاع هدر ثابت را با محتوا هم‌تراز کن
