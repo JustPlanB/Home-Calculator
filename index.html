@@ -23886,7 +23886,8 @@ if (item.type === 'recurring') {
       var imp = function (el, pn, v) { el.style.setProperty(pn, v, 'important'); };
       var inChrome = !!(bar.closest && bar.closest('#stickyChrome'));
       /* ۱) پرواز به کنار */
-      imp(bar, 'transition', 'transform 0.26s cubic-bezier(.4,0,1,1), opacity 0.26s ease-out');
+      void bar.offsetWidth; /* موقعیت فعلی (حین کشیدن) را ثبت کن */
+      imp(bar, 'transition', 'transform 0.26s cubic-bezier(.2,.7,.4,1), opacity 0.26s ease-out');
       imp(bar, 'transform', 'translateX(' + (dir * (w + 40)) + 'px)');
       imp(bar, 'opacity', '0');
       imp(bar, 'pointer-events', 'none');
@@ -24011,10 +24012,7 @@ if (item.type === 'recurring') {
         var w = bar.getBoundingClientRect().width || 300;
         if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
           var dir = dx > 0 ? 1 : -1;
-          /* از موقعیت فعلی ادامه بده تا پرش نداشته باشد */
-          bar.style.removeProperty('transform');
-          bar.style.removeProperty('opacity');
-          bar.style.removeProperty('transition');
+          /* transform/opacity فعلیِ حین کشیدن دست‌نخورده می‌ماند تا باکس از همان نقطه به مسیرش ادامه دهد (بدون برگشت به عقب) */
           collapseRemindBar(bar, kind, dir, function () {
             if (kind === 'user') {
               try {
