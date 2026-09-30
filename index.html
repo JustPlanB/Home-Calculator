@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>حساب کتاب</title>
-  <!-- build-stamp: 2026-09-30-v180 -->
   <style>
 
     /* Vazirmatn embedded for offline APK */
@@ -1946,22 +1945,6 @@
       gap: 0;
     }
     /* ستون اصلی: کارت ثابت زیر یادآور؛ باکس‌ها نزدیک هم */
-    .user-remind-bar.home-bar-collapsing,
-    .remind-bar.home-bar-collapsing {
-      overflow: hidden !important;
-      pointer-events: none !important;
-    }
-    .cro-mini {
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-    }
-    .cro-mini.dragging {
-      transition: none !important;
-      z-index: 5;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
-    }
-    #cardReorderStrip {
-      touch-action: pan-x;
-    }
     .home-stack {
       flex: 1 1 auto;
       min-height: 0;
@@ -2054,7 +2037,9 @@
       position: relative;
       overflow: hidden;
     }
+    #cardReorderStrip.cro-dragging { scroll-snap-type: none !important; }
     .cro-mini.dragging {
+      transition: none !important;
       opacity: 0.95;
       transform: scale(1.08);
       border-color: #08b5f5;
@@ -2201,259 +2186,6 @@
     .home-box.box3 .home-tile svg { width: 22px; height: 22px; }
     .home-box.box2 .home-tile span,
     .home-box.box3 .home-tile span { font-size: 0.68rem; }
-
-    /* ===== Phase After: box4 + card peek ===== */
-    .home-add-wrap { display: none !important; }
-    .home-box4-wrap {
-      flex: 0 0 auto;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
-      box-sizing: border-box;
-      margin-top: 10px;
-      margin-bottom: 2px;
-      position: relative;
-      z-index: 4;
-    }
-    .home-box.box4 {
-      width: 100%;
-      max-width: 100%;
-      min-height: 0;
-      height: auto;
-      border-radius: 12px;
-      background-color: #1b1b1b !important;
-      border: none !important;
-      box-shadow:
-        inset 4px 4px 12px rgba(0,0,0,0.72),
-        inset -3px -3px 8px rgba(255,255,255,0.14) !important;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: visible !important;
-      margin-top: 0;
-      padding: 10px 6px 8px;
-      box-sizing: border-box;
-    }
-    .box4-row {
-      width: 100%;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0;
-      direction: ltr;
-      position: relative;
-      min-height: 52px;
-      padding: 0 16px;
-      box-sizing: border-box;
-      pointer-events: none;
-    }
-    .box4-row > * { pointer-events: auto; }
-    .box4-side {
-      width: 46px;
-      height: 46px;
-      min-width: 46px;
-      min-height: 46px;
-      border-radius: 50%;
-      border: none;
-      outline: none;
-      background: #1b1b1b;
-      color: #08b5f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow:
-        inset 4px 4px 12px rgba(0,0,0,0.72),
-        inset -3px -3px 8px rgba(255,255,255,0.14),
-        0 4px 10px rgba(0,0,0,0.3);
-      flex-shrink: 0;
-      padding: 0;
-      align-self: center;
-      position: relative;
-      z-index: 1;
-    }
-    .box4-add { margin-left: 0; margin-right: 0; }
-    .box4-search { margin-right: 0; margin-left: 0; }
-    .box4-side svg {
-      width: 20px;
-      height: 20px;
-      stroke: #08b5f5;
-      fill: none;
-    }
-    .box4-add svg {
-      stroke: #08b5f5;
-      stroke-width: 2.4;
-      stroke-linecap: round;
-    }
-    .box4-add svg path { stroke: #08b5f5; fill: none; }
-    .box4-balance {
-      width: 78px;
-      height: 78px;
-      min-width: 78px;
-      min-height: 78px;
-      border-radius: 50%;
-      border: none;
-      outline: none;
-      background: #1b1b1b;
-      color: #9ee858;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0;
-      cursor: pointer;
-      box-shadow:
-        inset 4px 4px 12px rgba(0,0,0,0.72),
-        inset -3px -3px 8px rgba(255,255,255,0.14),
-        0 6px 14px rgba(0,0,0,0.35);
-      flex-shrink: 0;
-      padding: 14px 4px 6px;
-      z-index: 3;
-      /* بالاتر از باکس ۴؛ فاصله امن تا باکس ۳ */
-      margin-top: -48px;
-      margin-bottom: 8px;
-      align-self: center;
-      position: relative;
-    }
-    .box4-bal-label {
-      font-size: 0.7rem;
-      font-weight: 800;
-      color: #9ee858 !important;
-      line-height: 1;
-      margin-top: 6px;
-      margin-bottom: 0;
-      flex: 0 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-    .box4-bal-amount {
-      font-size: 0.68rem !important;
-      font-weight: 800;
-      color: #9ee858 !important;
-      line-height: 1 !important;
-      max-width: 70px;
-      overflow: hidden;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-      direction: ltr;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 1em;
-      position: absolute;
-      left: 50%;
-      top: 62%;
-      transform: translate(-50%, -50%);
-      transform-origin: center center;
-      animation: balAmtPulse 4.8s ease-in-out infinite;
-      pointer-events: none;
-    }
-    @keyframes balAmtPulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.06); }
-    }
-    .box4-bal-amount .od-col {
-      display: inline-block;
-      position: relative;
-      width: 0.62em;
-      height: 1em;
-      overflow: hidden;
-      vertical-align: middle;
-      font-size: 0.68rem !important;
-    }
-    .box4-bal-amount .od-col.od-sep {
-      width: auto;
-      overflow: visible;
-      font-size: 0.68rem !important;
-    }
-    .box4-bal-amount .od-strip {
-      display: block;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      will-change: transform;
-    }
-    .box4-bal-amount .od-strip span {
-      display: block;
-      height: 1em;
-      line-height: 1em;
-      text-align: center;
-      font-size: 0.68rem !important;
-    }
-    /* card carousel */
-    .home-cards-outer {
-      position: relative;
-      width: 100%;
-      flex: 0 0 auto;
-    }
-    .home-greet-strip {
-      position: absolute;
-      top: 6%;
-      bottom: 6%;
-      right: 0;
-      width: 28px;
-      background: rgba(220, 38, 38, 0.5);
-      border-radius: 10px 0 0 10px;
-      z-index: 6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      opacity: 1;
-      transition: opacity 0.28s ease;
-      will-change: opacity;
-    }
-    .home-greet-strip span {
-      color: rgba(255,255,255,0.7);
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
-    .home-cards {
-      padding-left: 14% !important;
-      padding-right: 14% !important;
-      scroll-padding-inline: 14%;
-      gap: 12px !important;
-      align-items: center;
-      scroll-snap-type: x mandatory !important;
-      -webkit-overflow-scrolling: touch;
-      scroll-behavior: smooth;
-    }
-    .home-cards .person-card {
-      flex: 0 0 72% !important;
-      width: 72% !important;
-      max-width: 72% !important;
-      scroll-snap-align: center !important;
-      scroll-snap-stop: always !important;
-      aspect-ratio: 1.72 / 1 !important;
-      border-radius: 16px !important;
-    }
-    .person-card .person-card-stats {
-      gap: 8px !important;
-      width: 100%;
-    }
-    .person-card .person-card-cols {
-      flex-direction: column !important;
-      gap: 8px !important;
-      width: 100% !important;
-    }
-    .person-card .person-stat-box {
-      width: 100% !important;
-      flex: 0 0 auto !important;
-      border-radius: 16px !important;
-      padding: 8px 12px !important;
-    }
-
-
-
     .home-add-wrap {
       flex: 0 0 auto;
       display: flex;
@@ -3006,15 +2738,14 @@
     }
     .person-card-cols {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      flex-direction: row;
+      gap: 8px; /* فاصله بین درآمد و مخارج بدون تغییر */
       direction: rtl;
-      width: 100%;
     }
     .person-stat-box {
       flex: 1;
       min-width: 0;
-      border-radius: 16px;
+      border-radius: 9px;
       border: none;
       padding: 7px 8px;
       background: rgba(0,0,0,0.22);
@@ -8671,6 +8402,112 @@
 
     #familyModal, #familyModal.open { display: none !important; visibility: hidden !important; pointer-events: none !important; }
     #syncStatus, .sync-status, [data-sync-status] { display: none !important; }
+
+    /* ===== فاز افتر: کاروسل کارت‌ها + باکس ۴ ===== */
+    #panel-home.active { overflow-x: visible !important; overflow-y: clip !important; }
+    /* در صفحهٔ خانه، والدهای برش‌دهنده تمام‌عرض می‌شوند (حاشیه منفی + padding هم‌اندازه → جای بقیهٔ محتوا تغییر نمی‌کند) */
+    body.tabs-main-hidden:has(#panel-home.active) .container,
+    body.tabs-main-hidden:has(#panel-home.active) .tab-viewport {
+      width: auto !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
+      margin-left: calc(-1 * var(--hc-il, 0px)) !important;
+      margin-right: calc(-1 * var(--hc-ir, 0px)) !important;
+      padding-left: var(--hc-il, 0px) !important;
+      padding-right: var(--hc-ir, 0px) !important;
+    }
+    .home-cards { position: relative; align-items: center; }
+    .home-cards .person-card {
+      transition: none !important;
+      will-change: transform;
+      transform-origin: 50% 50%;
+    }
+    .home-cards .person-card .person-card-name { font-size: 1.3rem !important; }
+    .home-cards .person-card .person-stat-line.em { font-size: 0.76rem; }
+    .home-cards .person-card .person-stat-line.paid,
+    .home-cards .person-card .person-stat-line.unpaid { font-size: 0.7rem; }
+
+    .home-tools .home-box.box4 {
+      position: relative;
+      overflow: visible !important;
+      direction: ltr;
+      height: 66px;
+      padding: 6px 14px;
+      box-sizing: border-box;
+      justify-content: center;
+      align-items: center;
+      gap: 26px;
+      margin-top: 30px;
+      margin-bottom: 14px;
+    }
+    .home-circle {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      min-width: 54px;
+      min-height: 54px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      outline: none;
+      border-radius: 50%;
+      background: #1b1b1b;
+      box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14);
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transform: translateZ(0);
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+    .home-circle:active { filter: brightness(0.92); transform: scale(0.96) translateZ(0); }
+    .home-circle svg {
+      width: 32px;
+      height: 32px;
+      fill: none;
+      stroke: #00b7ff;
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: plusStrokePulse 5.2s ease-in-out infinite;
+    }
+    .home-circle-search svg { width: 30px; height: 30px; stroke-width: 2.8; }
+    .home-circle-big {
+      width: 108px;
+      height: 108px;
+      min-width: 108px;
+      min-height: 108px;
+      flex-direction: column;
+      gap: 2px;
+      top: -14px;
+    }
+    .home-circle-big:active { transform: scale(0.97) translateZ(0); }
+    .hbc-label {
+      color: #00b7ff;
+      font-weight: 800;
+      font-size: 0.82rem;
+      line-height: 1.2;
+    }
+    .hbc-amt {
+      display: inline-flex;
+      direction: ltr;
+      unicode-bidi: isolate;
+      align-items: flex-start;
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.3;
+      height: 1.3em;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      color: #9ee858;
+    }
+    .rn-d { display: inline-block; height: 1.3em; overflow: hidden; }
+    .rn-strip { display: block; will-change: transform; }
+    .rn-strip i { display: block; height: 1.3em; line-height: 1.3em; font-style: normal; text-align: center; }
+    .rn-s { display: inline-block; height: 1.3em; line-height: 1.3em; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -8817,10 +8654,7 @@
         </div>
         <div class="user-remind-body" id="userRemindBanner"></div>
       </div>
-      <div class="home-cards-outer">
-        <div class="home-greet-strip" id="homeGreetStrip" aria-hidden="true"><span id="homeGreetText">روز بخیر</span></div>
-        <div class="home-cards" id="homeCards"></div>
-      </div>
+      <div class="home-cards" id="homeCards"></div>
       <div id="cardReorderOverlay" aria-hidden="true">
         <div class="cro-hint">کارت را بکشید تا جابجا شود</div>
         <div id="cardReorderStrip"></div>
@@ -8872,24 +8706,13 @@
             <span>سطل زباله</span>
           </button>
         </div>
-      </div><!-- /homeTools -->
-      <div class="home-box4-wrap">
         <div class="home-box box4" id="homeBox4">
-          <div class="box4-row">
-            <button type="button" class="box4-side box4-add" onclick="addPersonCard()" title="کاربر جدید" aria-label="کاربر جدید">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-            <button type="button" class="box4-balance" id="box4BalanceBtn" title="موجودی آنی" aria-label="موجودی آنی">
-              <span class="box4-bal-label">موجودی</span>
-              <span class="box4-bal-amount" id="box4BalAmount">۰</span>
-            </button>
-            <button type="button" class="box4-side box4-search" id="box4SearchBtn" title="مانده" aria-label="مانده">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-3.5-3.5"></path>
-              </svg>
-            </button>
-          </div>
+          <button type="button" class="home-circle home-circle-add" onclick="addPersonCard()" aria-label="ایجاد کارت"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" class="home-circle home-circle-big" id="homeBalanceCircle" onclick="openInstantBalance(getActiveHomeCardTitle())" aria-label="موجودی آنی">
+            <span class="hbc-label">موجودی</span>
+            <span class="hbc-amt" id="homeBalanceAmt" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="home-circle home-circle-search" onclick="openHomeMandeh()" aria-label="جستجو"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.9-4.9"/></svg></button>
         </div>
       </div>
       </div><!-- /home-stack -->
@@ -9246,7 +9069,7 @@
 
     
 
-    /* build-stamp: 2026-09-30-v187-AFTER | green-bal + greet-fade + snap + od-dir */
+    /* build-stamp: 2026-09-29-v178-PENTA | arrow-taller-opacity-shadow */
     /* VERSION: PENTA — rollback target: ZETA */
     const COLORS = [
       '#0a84ff', '#30d158', '#64d2ff', '#ff9f0a',
@@ -13386,6 +13209,7 @@ function onPeriodChange() {
       let items = [];
       try { items = getReminderItems() || []; } catch (e) { items = []; }
       if (!bar || !banner) return;
+      if (bar._dismissing) return; /* در حال انیمیشن بسته شدن */
       // یادآور باید داخل sticky-chrome بماند
       try {
         const chrome = document.getElementById('stickyChrome');
@@ -13395,18 +13219,20 @@ function onPeriodChange() {
           else chrome.appendChild(bar);
         }
       } catch (e) {}
-      if (!items.length) {
+      if (window._remindDismissed && window._remindDismissed.install) {
+        /* کاربر باکس اقساط را (موقتاً) بسته است؛ تا ورود دوباره به اپ نمایش داده نمی‌شود */
         bar.style.display = 'none';
         bar.classList.remove('has-alerts');
-        banner.innerHTML = '';
+        bar.classList.remove('open');
+        bar.classList.remove('open-overlay');
         if (dot) dot.style.display = 'none';
         requestAnimationFrame(syncChromeHeight);
         return;
       }
-      if (window._irHomeDismissedSession) {
+      if (!items.length) {
         bar.style.display = 'none';
-        bar.classList.remove('open');
-        bar.classList.remove('open-overlay');
+        bar.classList.remove('has-alerts');
+        banner.innerHTML = '';
         if (dot) dot.style.display = 'none';
         requestAnimationFrame(syncChromeHeight);
         return;
@@ -15777,13 +15603,6 @@ function openPdfPrintWindow(){
         plans = [];
         periodData = emptyPeriodData();
         try { recurringIncomes = []; saveRecurring(); } catch (e) {}
-        try { userReminders = []; if (typeof saveUserReminders === 'function') saveUserReminders(); } catch (eUr) {}
-        try { financialSubjects = []; if (typeof saveFinancialSubjects === 'function') saveFinancialSubjects(); else localStorage.removeItem((typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'hesabKetab') + '_subjects'); } catch (eFs) {}
-        try { selectedBankAccounts = []; if (typeof saveSelectedBankAccounts === 'function') saveSelectedBankAccounts(); } catch (eBa) {}
-        try { smsAccountBankMap = {}; } catch (eSm) {}
-        try { if (typeof cardMetaMap !== 'undefined') cardMetaMap = {}; } catch (eCm) {}
-        try { localStorage.removeItem(STORAGE_KEY + '_defaultCard'); } catch (eDc) {}
-        try { localStorage.removeItem(STORAGE_KEY + '_cardOrder'); } catch (eCo) {}
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_KEY + '_meta');
         try { localStorage.removeItem(familyStorageKey(familyCode)); } catch (e) {}
@@ -15792,9 +15611,7 @@ function openPdfPrintWindow(){
         localStorage.removeItem('hesabKetabArchive_v2');
         localStorage.removeItem('hesabKetabArchive_v1');
         renderAll();
-        try { renderPlans(); renderRecurringBar(); renderLedgerTab(); renderHomeCards(); } catch (e) {}
-        try { if (typeof renderUserRemindHomeBar === 'function') renderUserRemindHomeBar(); } catch (eR) {}
-        try { updateBox4Balance(true); updateHomeGreet(); } catch (eB) {}
+        try { renderPlans(); renderRecurringBar(); renderLedgerTab(); } catch (e) {}
         showToast('همه اطلاعات به سطل زباله منتقل شد');
       });
     }
@@ -16997,11 +16814,6 @@ function openPdfPrintWindow(){
       try { document.body.classList.remove('card-reorder-mode'); } catch (e) {}
       const ov = document.getElementById('cardReorderOverlay');
       if (ov) ov.setAttribute('aria-hidden', 'true');
-      try {
-        if (window._croHistPushed) {
-          window._croHistPushed = false;
-        }
-      } catch (eH) {}
     }
     function commitCardReorderMode() {
       if (_cardReorderOrder && _cardReorderOrder.length) {
@@ -17009,142 +16821,107 @@ function openPdfPrintWindow(){
       }
       closeCardReorderMode();
     }
-        function buildCardReorderStrip() {
+    /* ——— جابه‌جایی کارت‌ها: کشیدن نمونهٔ کوچک؛ DOM حین کشیدن بازسازی نمی‌شود، RTL هم درست کار می‌کند ——— */
+    function croReadOrderFromDom(strip) {
+      return Array.prototype.map.call(strip.children, function (c) { return c.dataset.title; });
+    }
+    function croPlace() {
+      const d = _cardReorderDrag;
+      if (!d || !d.el || !d.el.parentNode) return;
+      const el = d.el, strip = el.parentNode;
+      el.style.transform = '';
+      let r = el.getBoundingClientRect();
+      const center = (d.x - d.grab) + r.width / 2;
+      const rtl = getComputedStyle(strip).direction === 'rtl';
+      const others = Array.prototype.filter.call(strip.children, function (c) { return c !== el; });
+      let before = 0; /* چند کارت از نظر بصری سمت چپِ مرکز کارتِ در حال کشیدن‌اند */
+      others.forEach(function (o) {
+        const or = o.getBoundingClientRect();
+        if (or.left + or.width / 2 < center) before++;
+      });
+      const targetIdx = rtl ? (others.length - before) : before;
+      const curIdx = Array.prototype.indexOf.call(strip.children, el);
+      if (targetIdx !== curIdx) {
+        strip.insertBefore(el, others[targetIdx] || null);
+        _cardReorderOrder = croReadOrderFromDom(strip);
+        r = el.getBoundingClientRect();
+      }
+      const dx = (d.x - d.grab) - r.left;
+      el.style.transform = 'translateX(' + dx + 'px) scale(1.08)';
+    }
+    function croEdgeLoop() {
+      const d = _cardReorderDrag;
+      if (!d || !d.el || !d.el.parentNode) return;
+      const strip = d.el.parentNode;
+      const sr = strip.getBoundingClientRect();
+      const edge = 56;
+      let v = 0;
+      if (d.x < sr.left + edge) v = -Math.ceil((sr.left + edge - d.x) / 5);
+      else if (d.x > sr.right - edge) v = Math.ceil((d.x - (sr.right - edge)) / 5);
+      if (v) { strip.scrollLeft += v; croPlace(); }
+      d.raf = requestAnimationFrame(croEdgeLoop);
+    }
+    function croEndDrag() {
+      const d = _cardReorderDrag;
+      if (!d) return;
+      try { cancelAnimationFrame(d.raf); } catch (e) {}
+      const el = d.el;
+      if (el) {
+        el.classList.remove('dragging');
+        el.style.transform = '';
+        try { el.releasePointerCapture(d.pid); } catch (e2) {}
+        if (el.parentNode) {
+          el.parentNode.classList.remove('cro-dragging');
+          _cardReorderOrder = croReadOrderFromDom(el.parentNode);
+        }
+      }
+      _cardReorderDrag = null;
+    }
+    function buildCardReorderStrip() {
       const strip = document.getElementById('cardReorderStrip');
       if (!strip) return;
       strip.innerHTML = '';
-      _cardReorderOrder.forEach(function(title, idx) {
+      _cardReorderOrder.forEach(function (title) {
         const el = document.createElement('div');
         el.className = 'cro-mini';
         el.dataset.title = title;
-        el.dataset.idx = String(idx);
         el.textContent = title;
+        el.addEventListener('pointerdown', function (ev) {
+          if (!_cardReorderActive || _cardReorderDrag) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          try { el.setPointerCapture(ev.pointerId); } catch (eC) {}
+          const r0 = el.getBoundingClientRect();
+          _cardReorderDrag = { el: el, pid: ev.pointerId, grab: ev.clientX - r0.left, x: ev.clientX, raf: 0 };
+          el.classList.add('dragging', 'selected');
+          strip.classList.add('cro-dragging');
+          Array.prototype.forEach.call(strip.children, function (m) { if (m !== el) m.classList.remove('selected'); });
+          croPlace();
+          _cardReorderDrag.raf = requestAnimationFrame(croEdgeLoop);
+        });
+        el.addEventListener('pointermove', function (ev) {
+          const d = _cardReorderDrag;
+          if (!d || d.el !== el || ev.pointerId !== d.pid) return;
+          d.x = ev.clientX;
+          croPlace();
+        });
+        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (evn) {
+          el.addEventListener(evn, function (ev) {
+            const d = _cardReorderDrag;
+            if (d && d.el === el) croEndDrag();
+          });
+        });
         strip.appendChild(el);
       });
-      if (strip._croDragBound) return;
-      strip._croDragBound = true;
-      var holdT = null, ghost = null, origin = null, startX = 0, startY = 0, grabbing = false;
-
-      function clearHold() {
-        if (holdT) { clearTimeout(holdT); holdT = null; }
-      }
-      function minis() { return Array.from(strip.querySelectorAll('.cro-mini:not(.cro-ghost)')); }
-      function dropIndex(clientX) {
-        var list = minis().filter(function(m) { return m !== origin; });
-        if (!list.length) return 0;
-        for (var i = 0; i < list.length; i++) {
-          var r = list[i].getBoundingClientRect();
-          if (clientX < r.left + r.width / 2) return i;
-        }
-        return list.length;
-      }
-      function pickup(el, ev) {
-        origin = el;
-        grabbing = true;
-        var r = el.getBoundingClientRect();
-        el.classList.add('dragging', 'selected');
-        el.style.visibility = 'hidden';
-        ghost = el.cloneNode(true);
-        ghost.classList.add('cro-ghost');
-        ghost.style.visibility = 'visible';
-        ghost.style.position = 'fixed';
-        ghost.style.left = r.left + 'px';
-        ghost.style.top = r.top + 'px';
-        ghost.style.width = r.width + 'px';
-        ghost.style.height = r.height + 'px';
-        ghost.style.margin = '0';
-        ghost.style.zIndex = '10050';
-        ghost.style.pointerEvents = 'none';
-        ghost.style.transform = 'scale(1.12)';
-        ghost.style.boxShadow = '0 10px 24px rgba(0,0,0,0.5)';
-        document.body.appendChild(ghost);
-        startX = ev.clientX;
-        startY = ev.clientY;
-        ghost._offX = ev.clientX - r.left;
-        ghost._offY = ev.clientY - r.top;
-        try { if (typeof appVibrate === 'function') appVibrate(18); } catch (eV) {}
-      }
-      function moveGhost(ev) {
-        if (!ghost) return;
-        ghost.style.left = (ev.clientX - ghost._offX) + 'px';
-        ghost.style.top = (ev.clientY - ghost._offY) + 'px';
-        var idx = dropIndex(ev.clientX);
-        var others = minis().filter(function(m) { return m !== origin; });
-        var ref = others[idx] || null;
-        if (ref) strip.insertBefore(origin, ref);
-        else strip.appendChild(origin);
-      }
-      function drop() {
-        clearHold();
-        if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-        ghost = null;
-        if (origin) {
-          origin.classList.remove('dragging');
-          origin.style.visibility = '';
-          origin.style.transform = '';
-        }
-        grabbing = false;
-        origin = null;
-        _cardReorderOrder = minis().map(function(m) { return m.dataset.title; });
-        minis().forEach(function(m, i) { m.dataset.idx = String(i); m.classList.remove('selected'); });
-      }
-
-      strip.addEventListener('pointerdown', function(ev) {
-        if (!_cardReorderActive) return;
-        var el = ev.target && ev.target.closest ? ev.target.closest('.cro-mini') : null;
-        if (!el || !strip.contains(el)) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        try { strip.setPointerCapture(ev.pointerId); } catch (eC) {}
-        clearHold();
-        startX = ev.clientX; startY = ev.clientY;
-        var sx = ev.clientX, sy = ev.clientY;
-        holdT = setTimeout(function() {
-          holdT = null;
-          pickup(el, { clientX: sx, clientY: sy });
-        }, 280);
-      });
-      strip.addEventListener('pointermove', function(ev) {
-        if (holdT && (Math.abs(ev.clientX - startX) > 16 || Math.abs(ev.clientY - startY) > 16)) {
-          /* before pickup, ignore small move; after timeout we grab */
-        }
-        if (!grabbing) return;
-        ev.preventDefault();
-        moveGhost(ev);
-      });
-      strip.addEventListener('pointerup', function() {
-        if (holdT) { clearHold(); return; }
-        if (grabbing) drop();
-      });
-      strip.addEventListener('pointercancel', function() {
-        clearHold();
-        if (grabbing) drop();
-      });
     }
-function openCardReorderMode(focusTitle) {
+    function openCardReorderMode(focusTitle) {
       try {
         _cardReorderOrder = allPersonTitles().slice();
         if (!_cardReorderOrder.length) return;
         _cardReorderActive = true;
         document.body.classList.add('card-reorder-mode');
         const ov = document.getElementById('cardReorderOverlay');
-        if (ov) {
-          ov.setAttribute('aria-hidden', 'false');
-          if (!ov._outsideBound) {
-            ov._outsideBound = true;
-            ov.addEventListener('click', function(ev) {
-              if (ev.target === ov) {
-                try { closeCardReorderMode(); } catch (eX) {}
-              }
-            });
-          }
-        }
-        try {
-          if (!window._croHistPushed) {
-            window._croHistPushed = true;
-            history.pushState({ hesabCardReorder: true }, '', location.href);
-          }
-        } catch (eH) {}
+        if (ov) ov.setAttribute('aria-hidden', 'false');
         buildCardReorderStrip();
         bindCardReorderChrome();
         if (focusTitle) {
@@ -17420,187 +17197,6 @@ function openCardReorderMode(focusTitle) {
         if (ov) ov.classList.remove('open');
       } catch (e) {}
     }
-    
-    function getVisibleHomeCardTitle() {
-      try {
-        const box = document.getElementById('homeCards');
-        if (!box) return (allPersonTitles()[0] || '');
-        const cards = Array.from(box.querySelectorAll('.person-card'));
-        if (!cards.length) return '';
-        const mid = box.scrollLeft + box.clientWidth / 2;
-        let best = cards[0], bestD = 1e15;
-        cards.forEach(function(card) {
-          const r = card.getBoundingClientRect();
-          const br = box.getBoundingClientRect();
-          const cMid = (r.left - br.left) + box.scrollLeft + r.width / 2;
-          const d = Math.abs(cMid - mid);
-          if (d < bestD) { bestD = d; best = card; }
-        });
-        return (best && best.dataset && best.dataset.title) || (allPersonTitles()[0] || '');
-      } catch (e) { return (allPersonTitles()[0] || ''); }
-    }
-    function totalInstantBalanceValue(title) {
-      try {
-        const map = (typeof globalAccountBalances === 'function')
-          ? globalAccountBalances()
-          : (title ? personAccountBalances(title) : {});
-        let sum = 0;
-        Object.keys(map || {}).forEach(function(k) { sum += Number(map[k]) || 0; });
-        /* seed balances */
-        try {
-          (selectedBankAccounts || []).forEach(function(a) {
-            if (!a) return;
-            var seed = Number(a.seedBalance != null ? a.seedBalance : a.initialBalance) || 0;
-            sum += seed;
-          });
-        } catch (eS) {}
-        return sum;
-      } catch (e) { return 0; }
-    }
-    function renderOdometerAmount(el, value) {
-      if (!el) return;
-      var neg = Number(value) < 0;
-      var abs = Math.abs(Number(value) || 0);
-      var txt = (typeof formatNum === 'function') ? formatNum(abs) : String(abs);
-      if (neg) txt = txt + '-';
-      el.setAttribute('data-raw', txt);
-      el.innerHTML = '';
-      el.style.direction = 'ltr';
-      var fa = '۰۱۲۳۴۵۶۷۸۹';
-      var en = '0123456789';
-      for (var i = 0; i < txt.length; i++) {
-        var ch = txt.charAt(i);
-        if (/[0-9۰-۹]/.test(ch)) {
-          var col = document.createElement('span');
-          col.className = 'od-col';
-          var strip = document.createElement('span');
-          strip.className = 'od-strip';
-          var digit = fa.indexOf(ch);
-          if (digit < 0) digit = en.indexOf(ch);
-          if (digit < 0) digit = 0;
-          /* بزرگ→کوچک؛ جهت عمودی برعکس قبل: از پایین به بالا شروع و به digit می‌رسد */
-          var seq = [];
-          seq.push(digit);
-          for (var r = 0; r < 2; r++) {
-            for (var d = 0; d <= 9; d++) seq.push(d);
-          }
-          for (var s = 0; s < seq.length; s++) {
-            var sp = document.createElement('span');
-            sp.textContent = fa[seq[s]];
-            strip.appendChild(sp);
-          }
-          col.appendChild(strip);
-          el.appendChild(col);
-          var startIdx = seq.length - 1;
-          strip.style.transition = 'none';
-          strip.style.transform = 'translateY(-' + startIdx + 'em)';
-          (function(st, delay) {
-            requestAnimationFrame(function() {
-              requestAnimationFrame(function() {
-                st.style.transition = 'transform 0.72s cubic-bezier(0.22,1,0.36,1)';
-                st.style.transitionDelay = delay + 'ms';
-                st.style.transform = 'translateY(0)';
-              });
-            });
-          })(strip, i * 30);
-        } else {
-          var sep = document.createElement('span');
-          sep.className = 'od-col od-sep';
-          sep.textContent = ch;
-          el.appendChild(sep);
-        }
-      }
-    }
-    function updateBox4Balance(forceAnim) {
-      try {
-        var el = document.getElementById('box4BalAmount');
-        if (!el) return;
-        var title = getVisibleHomeCardTitle();
-        var val = totalInstantBalanceValue(title);
-        var prev = el.getAttribute('data-val');
-        var next = String(val);
-        if (forceAnim || prev !== next) {
-          renderOdometerAmount(el, val);
-          el.setAttribute('data-val', next);
-        } else if (!el.textContent) {
-          el.textContent = formatNum(Math.abs(val)) + (val < 0 ? '-' : '');
-        }
-      } catch (e) {}
-    }
-    function updateHomeGreet() {
-      try {
-        var el = document.getElementById('homeGreetText');
-        if (!el) return;
-        var h = new Date().getHours();
-        var t = 'روز بخیر';
-        if (h >= 17 && h < 21) t = 'عصر بخیر';
-        else if (h >= 21 || h < 5) t = 'شب بخیر';
-        else if (h >= 5 && h < 12) t = 'روز بخیر';
-        else t = 'روز بخیر';
-        el.textContent = t;
-      } catch (e) {}
-    }
-    function bindBox4Actions() {
-      var bal = document.getElementById('box4BalanceBtn');
-      if (bal && !bal._bound) {
-        bal._bound = true;
-        bal.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var title = getVisibleHomeCardTitle() || (allPersonTitles()[0] || 'نام کاربر');
-          try { openInstantBalance(title); } catch (e2) {}
-        });
-      }
-      var se = document.getElementById('box4SearchBtn');
-      if (se && !se._bound) {
-        se._bound = true;
-        se.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var title = getVisibleHomeCardTitle() || (allPersonTitles()[0] || 'نام کاربر');
-          try { openPersonDetail(title, 'balance'); } catch (e2) {}
-        });
-      }
-      var hc = document.getElementById('homeCards');
-      if (hc && !hc._box4ScrollBound) {
-        hc._box4ScrollBound = true;
-        var t = null;
-        function onHomeCardsScroll() {
-          try { updateHomeGreetFade(); } catch (eF) {}
-          if (t) clearTimeout(t);
-          t = setTimeout(function() { updateBox4Balance(true); }, 80);
-        }
-        hc.addEventListener('scroll', onHomeCardsScroll, { passive: true });
-        try { updateHomeGreetFade(); } catch (eF0) {}
-      }
-    }
-    function updateHomeGreetFade() {
-      try {
-        var strip = document.getElementById('homeGreetStrip');
-        var box = document.getElementById('homeCards');
-        if (!strip || !box) return;
-        var cards = box.querySelectorAll('.person-card');
-        if (!cards.length) {
-          strip.style.opacity = '0';
-          return;
-        }
-        var first = cards[0];
-        var br = box.getBoundingClientRect();
-        var fr = first.getBoundingClientRect();
-        /* وقتی کارت اول وسط است opacity=1؛ با اسکرول به کارت بعد محو شود */
-        var firstCenter = fr.left + fr.width / 2;
-        var viewCenter = br.left + br.width / 2;
-        var dist = Math.abs(firstCenter - viewCenter);
-        var fadeRange = Math.max(fr.width * 0.55, 80);
-        var op = 1 - (dist / fadeRange);
-        if (op < 0) op = 0;
-        if (op > 1) op = 1;
-        /* اگر کارت اول تقریباً از نما خارج شده */
-        if (fr.right < br.left + 8) op = 0;
-        strip.style.opacity = String(op);
-      } catch (e) {}
-    }
-
     function openInstantBalance(title) {
       try {
         const ov = document.getElementById('instantBalOverlay');
@@ -17795,9 +17391,8 @@ function openCardReorderMode(focusTitle) {
         const card = box.querySelector('.person-card[data-title="' + (window.CSS && CSS.escape ? CSS.escape(title) : title.replace(/"/g, '')) + '"]')
           || Array.from(box.querySelectorAll('.person-card')).find(function(el){ return (el.dataset.title || '') === title; });
         if (!card) return;
-        const left = card.offsetLeft;
-        if (smooth) box.scrollTo({ left: left, behavior: 'smooth' });
-        else box.scrollLeft = left;
+        homeCenterCard(box, card, !!smooth);
+        try { updateHomeCardScales(box); } catch (eU) {}
       } catch (e) {}
     }
     /** ورق زدن یکی‌یکی از کارت اول تا کارت هدف */
@@ -17811,7 +17406,7 @@ function openCardReorderMode(focusTitle) {
         // از کارت قبلی شروع کن و یک ورق بزن روی کارت جدید
         const fromIdx = Math.max(0, targetIdx - 1);
         if (cards[fromIdx]) {
-          try { box.scrollLeft = cards[fromIdx].offsetLeft; } catch (e0) {}
+          try { homeCenterCard(box, cards[fromIdx], false); } catch (e0) {}
         }
         if (targetIdx === fromIdx) {
           try { setActiveHomeCardTitle(title); } catch (e1) {}
@@ -17820,8 +17415,7 @@ function openCardReorderMode(focusTitle) {
         setTimeout(function() {
           const card = cards[targetIdx];
           if (card) {
-            try { box.scrollTo({ left: card.offsetLeft, behavior: 'smooth' }); }
-            catch (eS) { box.scrollLeft = card.offsetLeft; }
+            try { homeCenterCard(box, card, true); } catch (eS) {}
           }
           setTimeout(function() {
             try { setActiveHomeCardTitle(title); } catch (e2) {}
@@ -17968,12 +17562,175 @@ function openCardReorderMode(focusTitle) {
         document.body.style.touchAction = '';
       } catch (e) {}
     }
+    /* ===== فاز افتر: کاروسل کارت‌ها، دایرهٔ موجودی، جستجوی مانده ===== */
+    function sizeHomeCards(box) {
+      box = box || document.getElementById('homeCards');
+      if (!box) return;
+      /* کاروسل تمام‌عرض صفحه شود تا لبهٔ کارت‌های کناری تا کنار صفحه دیده شود */
+      var panel = document.getElementById('panel-home');
+      var pr = panel ? panel.getBoundingClientRect() : null;
+      if (!pr || !(pr.width > 0)) return;
+      var vw = document.documentElement.clientWidth || window.innerWidth;
+      var insL = Math.max(0, Math.round(pr.left)), insR = Math.max(0, Math.round(vw - pr.right));
+      document.documentElement.style.setProperty('--hc-il', insL + 'px');
+      document.documentElement.style.setProperty('--hc-ir', insR + 'px');
+      box.style.setProperty('margin-left', (-insL) + 'px', 'important');
+      box.style.setProperty('margin-right', (-insR) + 'px', 'important');
+      box.style.setProperty('width', vw + 'px', 'important');
+      box.style.setProperty('max-width', 'none', 'important');
+      var W = box.clientWidth || box.offsetWidth;
+      if (!(W > 0)) return;
+      var cw = Math.round(W * 0.74), gap = Math.round(W * 0.02), side = Math.floor((W - cw) / 2);
+      box.style.setProperty('padding-left', side + 'px', 'important');
+      box.style.setProperty('padding-right', side + 'px', 'important');
+      box.style.setProperty('gap', gap + 'px', 'important');
+      box._hcDist = cw + gap;
+      box.querySelectorAll('.person-card').forEach(function (c) {
+        c.style.setProperty('width', cw + 'px', 'important');
+        c.style.setProperty('min-width', cw + 'px', 'important');
+        c.style.setProperty('max-width', cw + 'px', 'important');
+        c.style.setProperty('flex', '0 0 ' + cw + 'px', 'important');
+      });
+    }
+    /* فاصلهٔ مرکز کارت (بدون اثر transform) تا مرکز کاروسل؛ مستقل از RTL/LTR */
+    function homeCardOffset(box, card) {
+      var br = box.getBoundingClientRect();
+      var W = card.offsetWidth, s0 = card._hs || 1, p0 = (card._hp == null) ? 0.5 : card._hp;
+      var r = card.getBoundingClientRect();
+      return (r.left - p0 * W * (1 - s0) + W / 2) - (br.left + br.width / 2);
+    }
+    function homeCenterCard(box, card, smooth) {
+      var left = box.scrollLeft + homeCardOffset(box, card);
+      try {
+        if (smooth) box.scrollTo({ left: left, behavior: 'smooth' });
+        else box.scrollLeft = left;
+      } catch (e) { box.scrollLeft = left; }
+    }
+    /* کارت وسط کامل؛ کارت‌های کناری کوچک‌تر و لبهٔ داخلی‌شان ثابت (فقط لبهٔ آن‌ها دیده می‌شود) */
+    function updateHomeCardScales(box) {
+      box = box || document.getElementById('homeCards');
+      if (!box) return null;
+      var cards = box.querySelectorAll('.person-card');
+      if (!cards.length) return null;
+      var br = box.getBoundingClientRect(), mid = br.left + br.width / 2;
+      var dist = box._hcDist || (cards[0].offsetWidth * 1.03) || 300;
+      var best = null, bestD = 1e9;
+      cards.forEach(function (c) {
+        var W = c.offsetWidth, s0 = c._hs || 1, p0 = (c._hp == null) ? 0.5 : c._hp;
+        var r = c.getBoundingClientRect();
+        var o = (r.left - p0 * W * (1 - s0) + W / 2) - mid;
+        var t = Math.min(1, Math.abs(o) / dist);
+        var sc = 1 - 0.155 * t;
+        var p = Math.max(0, Math.min(1, 0.5 - 0.5 * (o / dist)));
+        c._hs = sc; c._hp = p;
+        c.style.transformOrigin = (p * 100).toFixed(1) + '% 50%';
+        c.style.transform = 'scale(' + sc.toFixed(4) + ')';
+        if (Math.abs(o) < bestD) { bestD = Math.abs(o); best = c; }
+      });
+      return best;
+    }
+    (function () {
+      var rz = 0;
+      window.addEventListener('resize', function () {
+        clearTimeout(rz);
+        rz = setTimeout(function () {
+          try { sizeHomeCards(); updateHomeCardScales(); } catch (e) {}
+        }, 120);
+      });
+    })();
+
+    /* —— Rolling number: ارقام چرخان، سریع و ظریف —— */
+    var _HBC_SETS = ['0123456789', '۰۱۲۳۴۵۶۷۸۹', '٠١٢٣٤٥٦٧٨٩'];
+    function _digitInfo(ch) {
+      for (var k = 0; k < _HBC_SETS.length; k++) {
+        var i = _HBC_SETS[k].indexOf(ch);
+        if (i >= 0) return { idx: i, set: _HBC_SETS[k] };
+      }
+      return null;
+    }
+    function rollNumberInto(el, text, prev) {
+      var reduce = false;
+      try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+      var chars = Array.from(text), pchars = prev ? Array.from(prev) : [];
+      var n = chars.length, H = 1.3, anim = [];
+      el.innerHTML = '';
+      for (var i = 0; i < n; i++) {
+        var ch = chars[i], di = _digitInfo(ch);
+        if (!di) {
+          var sp = document.createElement('span');
+          sp.className = 'rn-s';
+          sp.textContent = ch;
+          el.appendChild(sp);
+          continue;
+        }
+        var pc = pchars[pchars.length - (n - i)];
+        var pdi = pc ? _digitInfo(pc) : null;
+        var from = pdi ? pdi.idx : 0;
+        var travel = ((di.idx - from) % 10 + 10) % 10;
+        if (!(pdi && travel === 0)) travel += 10;      /* یک دور کامل از بین اعداد عبور کند */
+        if (reduce) travel = ((di.idx - from) % 10 + 10) % 10;
+        var d = document.createElement('span');
+        d.className = 'rn-d';
+        var strip = document.createElement('span');
+        strip.className = 'rn-strip';
+        var html = '';
+        for (var k = 0; k < 30; k++) html += '<i>' + di.set.charAt(k % 10) + '</i>';
+        strip.innerHTML = html;
+        strip.style.transform = 'translate3d(0,' + (-from * H) + 'em,0)';
+        d.appendChild(strip);
+        el.appendChild(d);
+        if (travel) anim.push({ strip: strip, to: from + travel, delay: (n - 1 - i) * 26 });
+      }
+      /* اگر مبلغ بلند بود، فونت را کوچک کن تا داخل دایره جا شود */
+      try {
+        el.style.fontSize = '';
+        var w = el.getBoundingClientRect().width, maxW = 82;
+        if (w > maxW) {
+          var cur = parseFloat(getComputedStyle(el).fontSize) || 15;
+          el.style.fontSize = (cur * maxW / w).toFixed(2) + 'px';
+        }
+      } catch (e) {}
+      if (!anim.length) return;
+      void el.offsetWidth;
+      requestAnimationFrame(function () {
+        anim.forEach(function (a) {
+          a.strip.style.transition = 'transform 560ms cubic-bezier(.12,.8,.2,1) ' + a.delay + 'ms';
+          a.strip.style.transform = 'translate3d(0,' + (-a.to * H) + 'em,0)';
+        });
+      });
+    }
+    var _hbcLast = null;
+    function updateHomeBalanceCircle() {
+      var amt = document.getElementById('homeBalanceAmt');
+      if (!amt) return;
+      var iv = 0;
+      try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
+      var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
+      if (txt === _hbcLast) return;
+      var prev = _hbcLast;
+      _hbcLast = txt;
+      amt.style.color = iv < 0 ? '#ff6b4a' : '#9ee858';
+      var btn = document.getElementById('homeBalanceCircle');
+      if (btn) btn.setAttribute('aria-label', 'موجودی آنی ' + txt);
+      rollNumberInto(amt, txt, prev);
+    }
+    /* دایرهٔ جستجو: بخش مانده (فیلترها + جدول مانده به تفکیک) */
+    function openHomeMandeh() {
+      try {
+        var titles = allPersonTitles();
+        var t = getActiveHomeCardTitle();
+        if (!t || titles.indexOf(t) < 0) t = titles[0];
+        if (t) openPersonDetail(t, 'balance');
+      } catch (e) {}
+    }
+
     function renderHomeCards() {
       try { unlockPageScroll(); } catch (e) {}
       try { ensureDefaultPersonCard(); } catch (e) {}
       try { syncMatchCardWidth(); } catch (e) {}
       const box = document.getElementById('homeCards');
       if (!box) return;
+      try { updateHomeBalanceCircle(); } catch (eHB) {}
       box.innerHTML = '';
       const titles = allPersonTitles();
       titles.forEach(title => {
@@ -18042,6 +17799,7 @@ function openCardReorderMode(focusTitle) {
         cols.appendChild(boxInc);
         cols.appendChild(boxExp);
 
+        /* فیلدهای «مانده نهایی» و «موجودی آنی» از کارت حذف شدند (موجودی آنی به باکس ۴ رفت) */
         stats.appendChild(cols);
         inner.appendChild(top);
         inner.appendChild(stats);
@@ -18058,17 +17816,15 @@ function openCardReorderMode(focusTitle) {
             if (ev.target && ev.target.closest && (ev.target.closest('.btn-edit-title') || ev.target.closest('.btn-del-row') || ev.target.closest('button'))) return;
             startX = ev.clientX; startY = ev.clientY;
             clearLp();
-            try { cardEl.setPointerCapture(ev.pointerId); } catch (eCap) {}
             lpTimer = setTimeout(function() {
               lpTimer = null;
-              try { if (typeof appVibrate === 'function') appVibrate(30); } catch (eV) {}
-              try { ev.preventDefault(); } catch (eP) {}
+              try { window.appHaptic(30); } catch (eV) {}
               openCardReorderMode(cardTitle);
-            }, 420);
+            }, 480);
           });
           cardEl.addEventListener('pointermove', function(ev) {
             if (!lpTimer) return;
-            if (Math.abs(ev.clientX - startX) > 28 || Math.abs(ev.clientY - startY) > 28) clearLp();
+            if (Math.abs(ev.clientX - startX) > 12 || Math.abs(ev.clientY - startY) > 12) clearLp();
           });
           cardEl.addEventListener('pointerup', clearLp);
           cardEl.addEventListener('pointercancel', clearLp);
@@ -18076,34 +17832,21 @@ function openCardReorderMode(focusTitle) {
         box.appendChild(card);
       });
       try { bindCardReorderChrome(); } catch (eB) {}
-      try { bindBox4Actions(); updateBox4Balance(true); updateHomeGreet(); updateHomeGreetFade(); } catch (eB4) {}
       // اسکرول افقی: عرض هر کارت = عرض کانتینر؛ موقعیت کارت فعال حفظ شود
       try {
-        const w = box.clientWidth || box.offsetWidth;
-        if (w > 0) {
-          box.querySelectorAll('.person-card').forEach(function(card) {
-            card.style.width = w + 'px';
-            card.style.minWidth = w + 'px';
-            card.style.maxWidth = w + 'px';
-            card.style.flex = '0 0 ' + w + 'px';
-          });
-        }
+        sizeHomeCards(box);
         if (!box._homeScrollBound) {
           box._homeScrollBound = true;
+          let hcRaf = 0;
           box.addEventListener('scroll', function() {
-            try {
-              const cards = Array.from(box.querySelectorAll('.person-card'));
-              if (!cards.length) return;
-              const mid = box.scrollLeft + (box.clientWidth / 2);
-              let best = cards[0];
-              let bestDist = Infinity;
-              cards.forEach(function(card) {
-                const cmid = card.offsetLeft + card.offsetWidth / 2;
-                const d = Math.abs(cmid - mid);
-                if (d < bestDist) { bestDist = d; best = card; }
-              });
-              if (best && best.dataset.title) setActiveHomeCardTitle(best.dataset.title);
-            } catch (eS) {}
+            if (hcRaf) return;
+            hcRaf = requestAnimationFrame(function() {
+              hcRaf = 0;
+              try {
+                const best = updateHomeCardScales(box);
+                if (best && best.dataset.title) setActiveHomeCardTitle(best.dataset.title);
+              } catch (eS) {}
+            });
           }, { passive: true });
         }
         const active = getActiveHomeCardTitle();
@@ -18111,6 +17854,7 @@ function openCardReorderMode(focusTitle) {
           requestAnimationFrame(function(){ scrollHomeCardsToTitle(active, false); });
         } else {
           box.scrollLeft = 0;
+          requestAnimationFrame(function(){ updateHomeCardScales(box); });
         }
       } catch (e) {}
     }
@@ -18193,16 +17937,6 @@ function openCardReorderMode(focusTitle) {
         }
         if (isNew) {
           ensurePersonSections(name);
-          try {
-            var order = (typeof allPersonTitles === 'function') ? allPersonTitles().slice() : [];
-            var vis = '';
-            try { vis = (typeof getVisibleHomeCardTitle === 'function') ? getVisibleHomeCardTitle() : ''; } catch (eV) {}
-            order = order.filter(function(t) { return t !== name; });
-            var idx = vis ? order.indexOf(vis) : -1;
-            if (idx >= 0) order.splice(idx + 1, 0, name);
-            else order.push(name);
-            if (typeof applyPersonCardOrder === 'function') applyPersonCardOrder(order, { silent: true });
-          } catch (eOrd) {}
           try { setActiveHomeCardTitle(name); } catch (e) {}
         } else {
           const inc = findSectionByTitle('income', title);
@@ -24340,7 +24074,7 @@ if (item.type === 'recurring') {
           });
         }
         saveUserReminders();
-        try { localStorage.removeItem(STORAGE_KEY + '_urHomeDismissed'); } catch (eD) {}
+        try { (window._remindDismissed = window._remindDismissed || {}).user = false; } catch (eD) {}
         closeEd();
         renderUserRemindersList();
         showToast(existing ? 'ذخیره شد' : 'یادآور اضافه شد');
@@ -24365,27 +24099,127 @@ if (item.type === 'recurring') {
       list.sort(function(a, b) { return a.days - b.days; });
       return list;
     }
+    /* بسته شدن باکس‌ها فقط تا خروج از اپ معتبر است؛ با ورود دوباره اگر موعدشان باشد دوباره نمایش داده می‌شوند */
+    window._remindDismissed = window._remindDismissed || { install: false, user: false };
     function isUserRemindHomeDismissed() {
-      /* فقط همین اجرای اپ — با ورود مجدد اگر موعد باشد دوباره نشان داده می‌شود */
-      try { return !!window._urHomeDismissedSession; } catch (e) { return false; }
+      return !!(window._remindDismissed && window._remindDismissed.user);
     }
 
-    function bindUserRemindSwipe() {
-      if (window._urSwipeBound) return;
-      window._urSwipeBound = true;
+    /* بستن باکس‌ها با کشیدن به چپ/راست (مستقل از هم) + بالا آمدن نرم محتوای زیر */
+    var _REMIND_BAR_PROPS = ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom',
+      'padding-top', 'padding-bottom', 'overflow', 'transition', 'transform', 'opacity', 'pointer-events'];
+    function resetRemindBarInline(bar) {
+      if (!bar) return;
+      _REMIND_BAR_PROPS.forEach(function (pn) { try { bar.style.removeProperty(pn); } catch (e) {} });
+      bar._dismissing = false;
+    }
+    function collapseRemindBar(bar, kind, dir, onDone) {
+      if (!bar || bar._dismissing) return;
+      bar._dismissing = true;
+      window._remindDismissed = window._remindDismissed || { install: false, user: false };
+      window._remindDismissed[kind] = true;
+      var w = bar.getBoundingClientRect().width || 300;
+      var imp = function (el, pn, v) { el.style.setProperty(pn, v, 'important'); };
+      var inChrome = !!(bar.closest && bar.closest('#stickyChrome'));
+      /* ۱) پرواز به کنار */
+      void bar.offsetWidth; /* موقعیت فعلی (حین کشیدن) را ثبت کن */
+      imp(bar, 'transition', 'transform 0.26s cubic-bezier(.2,.7,.4,1), opacity 0.26s ease-out');
+      imp(bar, 'transform', 'translateX(' + (dir * (w + 40)) + 'px)');
+      imp(bar, 'opacity', '0');
+      imp(bar, 'pointer-events', 'none');
+      setTimeout(function () {
+        var ease = 'cubic-bezier(.4,0,.2,1)', dur = 0.34;
+        if (!inChrome) {
+          /* ۲-الف) باکس داخل صفحهٔ خانه: عناصر زیرش را فقط با transform (GPU) بالا می‌بریم؛
+             فاصلهٔ gap و margin هم در مسافت حساب می‌شود تا در پایان هیچ پرشی نباشد */
+          var cs = getComputedStyle(bar), parent = bar.parentNode;
+          var pcs = parent ? getComputedStyle(parent) : null;
+          var gap = (pcs && /flex|grid/.test(pcs.display)) ? (parseFloat(pcs.rowGap) || 0) : 0;
+          var dist = bar.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0) + gap;
+          var sibs = [];
+          for (var n = bar.nextElementSibling; n; n = n.nextElementSibling) {
+            var ncs = getComputedStyle(n);
+            if (ncs.display === 'none' || ncs.position === 'fixed' || ncs.position === 'absolute') continue;
+            sibs.push(n);
+          }
+          sibs.forEach(function (n) {
+            n.style.willChange = 'transform';
+            n.style.transition = 'transform ' + dur + 's ' + ease;
+          });
+          void bar.offsetHeight;
+          sibs.forEach(function (n) { n.style.transform = 'translate3d(0,' + (-dist) + 'px,0)'; });
+          setTimeout(function () {
+            /* هم‌زمان: حذف باکس از جریان صفحه و برداشتن transform‌ها → بدون پرش */
+            bar.style.display = 'none';
+            try { bar.classList.remove('open'); bar.classList.remove('open-overlay'); } catch (e) {}
+            sibs.forEach(function (n) {
+              n.style.transition = 'none';
+              n.style.transform = '';
+              n.style.willChange = '';
+            });
+            void (sibs[0] && sibs[0].offsetHeight);
+            sibs.forEach(function (n) { n.style.transition = ''; });
+            resetRemindBarInline(bar);
+            try { if (onDone) onDone(); } catch (e) {}
+          }, dur * 1000 + 40);
+          return;
+        }
+        /* ۲-ب) باکس داخل sticky-chrome (اقساط): جمع شدن ارتفاع؛ صفحه با همان سرعت بالا می‌آید */
+        var cs2 = getComputedStyle(bar);
+        var h = bar.offsetHeight;
+        imp(bar, 'overflow', 'hidden');
+        imp(bar, 'transition', 'none');
+        imp(bar, 'height', h + 'px'); imp(bar, 'min-height', h + 'px'); imp(bar, 'max-height', h + 'px');
+        imp(bar, 'margin-top', cs2.marginTop); imp(bar, 'margin-bottom', cs2.marginBottom);
+        void bar.offsetHeight; /* reflow */
+        imp(bar, 'transition', ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom', 'padding-top', 'padding-bottom']
+          .map(function (pn) { return pn + ' ' + dur + 's ' + ease; }).join(', '));
+        imp(bar, 'height', '0px'); imp(bar, 'min-height', '0px'); imp(bar, 'max-height', '0px');
+        imp(bar, 'margin-top', '0px'); imp(bar, 'margin-bottom', '0px');
+        imp(bar, 'padding-top', '0px'); imp(bar, 'padding-bottom', '0px');
+        var t0 = Date.now();
+        (function tick() {
+          try { syncChromeHeight(); } catch (e) {}
+          if (Date.now() - t0 < 380) requestAnimationFrame(tick);
+        })();
+        setTimeout(function () {
+          bar.style.display = 'none';
+          try { bar.classList.remove('open'); bar.classList.remove('open-overlay'); } catch (e) {}
+          resetRemindBarInline(bar);
+          try { if (onDone) onDone(); } catch (e) {}
+          try { syncChromeHeight(); } catch (e) {}
+        }, 390);
+      }, 270);
+    }
+    window.collapseRemindBar = collapseRemindBar;
+
+    function bindBarSwipeDismiss(barId, kind) {
+      var flag = '_swipeBound_' + barId;
+      if (window[flag]) return;
+      window[flag] = true;
       var startX = 0, startY = 0, dx = 0, active = false, decided = false;
-      function barEl() { return document.getElementById('userRemindBar'); }
+      function barEl() { return document.getElementById(barId); }
+      function usable(bar) {
+        return bar && bar.style.display !== 'none' && !bar._dismissing &&
+          !bar.classList.contains('open') && !bar.classList.contains('open-overlay');
+      }
       function onStart(e) {
         var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
-        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
-        var tgt = e.target;
-        if (!tgt || !bar.contains(tgt)) return;
+        if (!usable(bar)) return;
         var t = e.touches && e.touches[0];
         if (!t) return;
         startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
         bar.classList.add('ur-swiping');
-        bar.style.transition = 'none';
+        bar.style.setProperty('transition', 'none', 'important');
+      }
+      function reset(bar) {
+        if (!bar) return;
+        bar.classList.remove('ur-swiping');
+        if (!bar._dismissing) {
+          bar.style.removeProperty('transition');
+          bar.style.removeProperty('transform');
+          bar.style.removeProperty('opacity');
+        }
       }
       function onMove(e) {
         if (!active) return;
@@ -24396,198 +24230,99 @@ if (item.type === 'recurring') {
         var x = t.clientX - startX, y = t.clientY - startY;
         if (!decided) {
           if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
-          if (Math.abs(y) > Math.abs(x)) { active = false; bar.classList.remove('ur-swiping'); bar.style.transform = ''; return; }
+          if (Math.abs(y) > Math.abs(x)) { active = false; reset(bar); return; }
           decided = true;
         }
         dx = x;
         try { e.preventDefault(); } catch (eP) {}
-        bar.style.transform = 'translateX(' + dx + 'px)';
-        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
+        bar.style.setProperty('transform', 'translateX(' + dx + 'px)', 'important');
+        bar.style.setProperty('opacity', String(Math.max(0.25, 1 - Math.abs(dx) / 220)), 'important');
       }
       function onEnd() {
-        if (!active && !decided) {
-          var b0 = barEl();
-          if (b0) { b0.classList.remove('ur-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
-          active = false; return;
-        }
-        active = false;
         var bar = barEl();
+        if (!active) { return; }
+        active = false;
         if (!bar) return;
+        if (!decided) { reset(bar); return; }
         bar.classList.remove('ur-swiping');
         var w = bar.getBoundingClientRect().width || 300;
         if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
           var dir = dx > 0 ? 1 : -1;
-          bar.classList.add('ur-dismiss-fly');
-          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
-          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
-          bar.style.opacity = '0';
-          setTimeout(function() {
-            try { dismissUserRemindBar(null); } catch (eD) {}
-            try {
-              bar.classList.remove('ur-dismiss-fly');
-              bar.style.transform = '';
-              bar.style.opacity = '';
-              bar.style.transition = '';
-            } catch (eC) {}
-          }, 280);
+          /* transform/opacity فعلیِ حین کشیدن دست‌نخورده می‌ماند تا باکس از همان نقطه به مسیرش ادامه دهد (بدون برگشت به عقب) */
+          collapseRemindBar(bar, kind, dir, function () {
+            if (kind === 'user') {
+              try {
+                var bd = document.getElementById('remindBackdrop');
+                var rb = document.getElementById('remindBar');
+                var installOpen = rb && (rb.classList.contains('open') || rb.classList.contains('open-overlay'));
+                if (bd && !installOpen) bd.classList.remove('open');
+              } catch (eBd) {}
+            }
+          });
         } else {
-          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-          bar.style.transform = 'translateX(0)';
-          bar.style.opacity = '1';
-          setTimeout(function() {
-            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eR) {}
-          }, 220);
+          bar.style.setProperty('transition', 'transform 0.2s ease-out, opacity 0.2s ease-out', 'important');
+          bar.style.setProperty('transform', 'translateX(0)', 'important');
+          bar.style.setProperty('opacity', '1', 'important');
+          setTimeout(function () { reset(bar); }, 220);
         }
         dx = 0; decided = false;
       }
-      document.addEventListener('touchstart', function(e) {
+      document.addEventListener('touchstart', function (e) {
         var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
+        if (!usable(bar)) return;
         if (e.target && bar.contains(e.target)) onStart(e);
       }, { passive: true, capture: true });
-      document.addEventListener('touchmove', function(e) {
-        if (active && decided) onMove(e);
-        else if (active) onMove(e);
-      }, { passive: false, capture: true });
+      document.addEventListener('touchmove', function (e) { if (active) onMove(e); }, { passive: false, capture: true });
       document.addEventListener('touchend', onEnd, { passive: true, capture: true });
       document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
+    }
+    function bindUserRemindSwipe() {
+      bindBarSwipeDismiss('userRemindBar', 'user');
+      bindBarSwipeDismiss('remindBar', 'install');
     }
     try { bindUserRemindSwipe(); } catch (eSw) {}
 
-    function dismissInstallRemindBar() {
-      try { window._irHomeDismissedSession = true; } catch (e) {}
-      var bar = document.getElementById('remindBar');
-      if (bar) {
-        bar.classList.remove('open');
-        bar.classList.remove('open-overlay');
-        collapseHomeBarEl(bar);
+    /* ورود دوباره به اپ: هر دو باکس (اگر موعدشان باشد) دوباره ظاهر شوند */
+    function resetRemindDismissals() {
+      window._remindDismissed = { install: false, user: false };
+      ['remindBar', 'userRemindBar'].forEach(function (id) {
+        var b = document.getElementById(id);
+        if (b) resetRemindBarInline(b);
+      });
+      try { checkInstallReminders(); } catch (e1) {}
+      try { renderUserRemindHomeBar(); } catch (e2) {}
+      try { syncChromeHeight(); } catch (e3) {}
+    }
+    (function () {
+      var hiddenAt = 0;
+      function goneAway() { if (!hiddenAt) hiddenAt = Date.now(); }
+      function cameBack() {
+        var away = hiddenAt ? (Date.now() - hiddenAt) : 0;
+        hiddenAt = 0;
+        if (away >= 3000) resetRemindDismissals();
       }
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) goneAway(); else cameBack();
+      });
       try {
-        var bd = document.getElementById('remindBackdrop');
-        var ur = document.getElementById('userRemindBar');
-        var urOpen = ur && (ur.classList.contains('open') || ur.classList.contains('open-overlay'));
-        if (bd && !urOpen) bd.classList.remove('open');
-      } catch (e2) {}
-      try { if (typeof syncChromeHeight === 'function') syncChromeHeight(); } catch (e3) {}
-    }
-    function bindInstallRemindSwipe() {
-      if (window._irSwipeBound) return;
-      window._irSwipeBound = true;
-      var startX = 0, startY = 0, dx = 0, active = false, decided = false;
-      function barEl() { return document.getElementById('remindBar'); }
-      function onStart(e) {
-        var bar = barEl();
-        if (!bar || bar.style.display === 'none') return;
-        if (bar.classList.contains('open') || bar.classList.contains('open-overlay')) return;
-        var tgt = e.target;
-        if (!tgt || !bar.contains(tgt)) return;
-        var t = e.touches && e.touches[0];
-        if (!t) return;
-        startX = t.clientX; startY = t.clientY; dx = 0; active = true; decided = false;
-        bar.classList.add('ir-swiping');
-        bar.style.transition = 'none';
-      }
-      function onMove(e) {
-        if (!active) return;
-        var bar = barEl();
-        if (!bar) return;
-        var t = e.touches && e.touches[0];
-        if (!t) return;
-        var x = t.clientX - startX, y = t.clientY - startY;
-        if (!decided) {
-          if (Math.abs(x) < 10 && Math.abs(y) < 10) return;
-          if (Math.abs(y) > Math.abs(x)) {
-            active = false;
-            bar.classList.remove('ir-swiping');
-            bar.style.transform = '';
-            return;
-          }
-          decided = true;
+        var CapApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (CapApp && typeof CapApp.addListener === 'function') {
+          CapApp.addListener('appStateChange', function (st) {
+            if (st && st.isActive) cameBack(); else goneAway();
+          });
         }
-        dx = x;
-        try { e.preventDefault(); } catch (eP) {}
-        bar.style.transform = 'translateX(' + dx + 'px)';
-        bar.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / 220));
-      }
-      function onEnd() {
-        if (!active && !decided) {
-          var b0 = barEl();
-          if (b0) { b0.classList.remove('ir-swiping'); b0.style.transform = ''; b0.style.opacity = ''; }
-          active = false; return;
-        }
-        active = false;
-        var bar = barEl();
-        if (!bar) return;
-        bar.classList.remove('ir-swiping');
-        var w = bar.getBoundingClientRect().width || 300;
-        if (Math.abs(dx) > w * 0.38 || Math.abs(dx) > 110) {
-          var dir = dx > 0 ? 1 : -1;
-          bar.style.transition = 'transform 0.28s ease-out, opacity 0.28s ease-out';
-          bar.style.transform = 'translateX(' + (dir * (w + 40)) + 'px)';
-          bar.style.opacity = '0';
-          setTimeout(function() {
-            try { dismissInstallRemindBar(); } catch (eD) {}
-          }, 280);
-        } else {
-          bar.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-          bar.style.transform = 'translateX(0)';
-          bar.style.opacity = '1';
-          setTimeout(function() {
-            try { bar.style.transition = ''; bar.style.transform = ''; bar.style.opacity = ''; } catch (eC) {}
-          }, 200);
-        }
-      }
-      document.addEventListener('touchstart', onStart, { passive: true, capture: true });
-      document.addEventListener('touchmove', onMove, { passive: false, capture: true });
-      document.addEventListener('touchend', onEnd, { passive: true, capture: true });
-      document.addEventListener('touchcancel', onEnd, { passive: true, capture: true });
-    }
-    try { bindInstallRemindSwipe(); } catch (eIrSw) {}
+      } catch (eCap) {}
+    })();
 
-
-
-        function collapseHomeBarEl(bar, after) {
-      if (!bar || bar.style.display === 'none') { if (after) after(); return; }
-      try {
-        var h = Math.max(1, Math.round(bar.getBoundingClientRect().height));
-        bar.classList.add('home-bar-collapsing');
-        bar.style.boxSizing = 'border-box';
-        bar.style.overflow = 'hidden';
-        bar.style.maxHeight = h + 'px';
-        bar.style.willChange = 'max-height, opacity, margin';
-        void bar.offsetHeight;
-        bar.style.transition = 'max-height 0.42s cubic-bezier(0.22,1,0.36,1), opacity 0.32s ease, margin 0.42s cubic-bezier(0.22,1,0.36,1)';
-        bar.style.maxHeight = '0px';
-        bar.style.opacity = '0';
-        bar.style.marginTop = '0px';
-        bar.style.marginBottom = '0px';
-        setTimeout(function() {
-          bar.style.display = 'none';
-          bar.classList.remove('home-bar-collapsing', 'open', 'open-overlay', 'ur-swiping', 'ir-swiping');
-          bar.style.maxHeight = '';
-          bar.style.opacity = '';
-          bar.style.marginTop = '';
-          bar.style.marginBottom = '';
-          bar.style.transition = '';
-          bar.style.overflow = '';
-          bar.style.transform = '';
-          bar.style.willChange = '';
-          try { if (typeof syncChromeHeight === 'function') syncChromeHeight(); } catch (eS) {}
-          if (after) after();
-        }, 430);
-      } catch (eC) {
-        bar.style.display = 'none';
-        if (after) after();
-      }
-    }
-function dismissUserRemindBar(ev) {
+    function dismissUserRemindBar(ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       try {
-        window._urHomeDismissedSession = true;
+        window._remindDismissed = window._remindDismissed || { install: false, user: false };
+        window._remindDismissed.user = true;
       } catch (e) {}
       const bar = document.getElementById('userRemindBar');
       if (bar) {
-        collapseHomeBarEl(bar);
+        bar.style.display = 'none';
         bar.classList.remove('open');
         bar.classList.remove('open-overlay');
       }
@@ -24633,6 +24368,7 @@ function dismissUserRemindBar(ev) {
       const bar = document.getElementById('userRemindBar');
       const body = document.getElementById('userRemindBanner');
       if (!bar || !body) return;
+      if (bar._dismissing) return; /* در حال انیمیشن بسته شدن */
       const dueSoon = getUserRemindDueSoon();
       if (!dueSoon.length || isUserRemindHomeDismissed()) {
         bar.style.display = 'none';
@@ -28138,12 +27874,6 @@ function openProjectRowPicker(secId) {
       _backHandling=true;
       setTimeout(()=>{_backHandling=false;},250);
       try {
-        if (typeof _cardReorderActive !== 'undefined' && _cardReorderActive) {
-          closeCardReorderMode();
-          return;
-        }
-      } catch (eCro) {}
-      try {
         if (typeof _instantBalOpen !== 'undefined' && _instantBalOpen) {
           closeInstantBalance();
           return;
@@ -29533,9 +29263,7 @@ function openProjectRowPicker(secId) {
     loadSmsAccountBankMap();
     loadRecurring();
     try { loadUserReminders(); } catch (e) {}
-    try { renderUserRemindHomeBar(); } catch (eUr0) {}
-    try { bindBox4Actions(); updateBox4Balance(true); updateHomeGreet(); } catch (eB40) {}
-    try { checkUserReminders(true); } catch (eUr1) {}
+    try { checkUserReminders(true); } catch (e) {} /* بدون تأخیر: باکس یادآور هم‌زمان با بقیهٔ صفحه ظاهر شود */
     loadArchive();
     loadCurrent();
     try { autoAdvancePersianMonthIfNeeded(); } catch (eAutoM) {}
@@ -29580,6 +29308,7 @@ function openProjectRowPicker(secId) {
       try { maybeShowFirstRunBankSetup(); } catch (e2) {}
     }
     checkInstallReminders();
+    try { checkUserReminders(true); } catch (eUr) {}
     /* startSyncLoop removed — بدون ابر */
 
     // ارتفاع هدر ثابت را با محتوا هم‌تراز کن
