@@ -2776,8 +2776,8 @@
     }
     .person-stat-meter .m-exp { background: #950606; }
     .person-stat-meter .m-rem { background: #2a6b1f; }
-    .person-stat-meter .m-lab { font-size: 0.6rem; opacity: 0.95; }
-    .person-stat-meter .m-pct { font-size: 0.68rem; margin-top: 1px; }
+    .person-stat-meter .m-lab { font-size: 0.68rem; opacity: 0.95; }
+    .person-stat-meter .m-pct { font-size: 0.78rem; margin-top: 1px; }
     .person-card-cols {
       display: flex;
       flex-direction: column;
@@ -8619,7 +8619,7 @@
     .home-greet-on-card {
       position: absolute;
       top: 8%;
-      bottom: 8%;
+      bottom: 12px;
       right: -34px;
       width: 28px;
       background: rgba(220, 38, 38, 0.5);
@@ -8649,10 +8649,10 @@
     /* ===== card-fix-v2: ارتفاع باکس‌ها، مستطیل درصد، کارت شماتیک ===== */
     .home-cards .person-card .person-card-inner {
       padding-top: 8px !important;
-      padding-bottom: 9px !important;
+      padding-bottom: 12px !important;
       overflow: hidden !important;
     }
-    .home-cards .person-card .person-card-top { margin-bottom: 2px !important; }
+    .home-cards .person-card .person-card-top { margin-bottom: 6px !important; }
     .home-cards .person-card .person-card-stats {
       margin-top: auto !important;
       padding-bottom: 0 !important;
@@ -8672,8 +8672,8 @@
       width: auto !important;
     }
     .home-cards .person-card .person-stat-box {
-      padding: 4px 10px !important;
-      min-height: 0 !important;
+      padding: 7px 10px !important;
+      min-height: 58px !important;
       flex: 0 1 auto !important;
       overflow: hidden;
     }
@@ -18023,15 +18023,19 @@ function openPdfPrintWindow(){
       } catch (e) {}
     }
 
+    var _hbcReady = false;
     function updateHomeBalanceCircle(force) {
       var amt = document.getElementById('homeBalanceAmt');
       if (!amt) return;
+      /* تا پایان بوت، عدد موقت (جمع افتتاحیه بانک‌ها) نمایش داده نشود */
+      if (!_hbcReady && !force) return;
       if (!force && amt._hbcBusy) { amt._hbcPend = true; return; }
       var iv = 0;
       try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
       if (!isFinite(iv)) iv = 0;
       var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
       if (!force && txt === _hbcLast) return;
+      /* force: از null بچرخان روی عدد درست (افکت کامل حفظ شود؛ عدد موقت نشان داده نشود) */
       var prev = force ? null : _hbcLast;
       _hbcLast = txt;
       amt.style.color = iv < 0 ? '#ff6b4a' : '#9ee858';
@@ -29714,6 +29718,14 @@ function openProjectRowPicker(secId) {
       try { syncMatchCardWidth(); } catch (e2) {}
     } catch (e) { console.error('home boot', e); }
     renderAll();
+    /* بعد از بارگذاری کامل داده — فقط یک‌بار عدد نهایی موجودی */
+    try {
+      _hbcReady = true;
+      _hbcLast = null;
+      var _amtBoot = document.getElementById('homeBalanceAmt');
+      if (_amtBoot) _amtBoot._hbcBusy = false;
+      if (typeof updateHomeBalanceCircle === 'function') updateHomeBalanceCircle(true);
+    } catch (eHbcBoot) {}
     requestNotifPermission();
     try {
       // بعد از نوتیف (و پیامک در Capacitor)، منوی انتخاب حساب اولین‌بار
