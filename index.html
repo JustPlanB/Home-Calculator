@@ -2579,7 +2579,8 @@
     .instant-bal-row .ib-amt.neg { color: #ff6b4a; }
     /* legacy vertical home-cards removed */
     /* panel-home inset via --content-inline */
-    .person-card {
+    .person-card,
+    .home-create-card {
       position: relative;
       width: min(100%, var(--match-card-w, 100%)) !important;
       max-width: 100% !important;
@@ -2620,7 +2621,8 @@
       display: none !important;
       content: none !important;
     }
-    [data-theme="light"] .person-card {
+    [data-theme="light"] .person-card,
+    [data-theme="light"] .home-create-card {
       box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14);
       background-color: #1b1b1b !important;
     }
@@ -8641,10 +8643,7 @@
       letter-spacing: 0.06em;
       white-space: nowrap;
     }
-    #homeCards.home-cards {
-      padding-right: 36px !important;
-      box-sizing: border-box;
-    }
+    /* (نوار قدیمی وقت‌بخیر کنار کارت حذف شد؛ باکس وقت‌بخیر بالای صفحه جایگزین است) */
 
     /* ===== card-fix-v2: ارتفاع باکس‌ها، مستطیل درصد، کارت شماتیک ===== */
     .home-cards .person-card .person-card-inner {
@@ -8705,8 +8704,150 @@
       scroll-snap-type: none !important;
       touch-action: pan-y !important;
     }
-    .home-cards .person-card.person-card-ghost { pointer-events: none !important; }
 
+
+    /* =====================================================================
+       صفحه اصلی v2 — باکس «وقت بخیر»، کارت «+ ایجاد کاربر»، جدول ۲×۳، کپسول
+       ===================================================================== */
+    /* ناحیهٔ ثابت بالای کارت‌ها = ارتفاع یادآور + فاصله + ارتفاع اقساط */
+    .home-top-zone {
+      position: relative;
+      flex: 0 0 auto;
+      height: var(--hz-h, 92px);
+      min-height: var(--hz-h, 92px);
+      margin-top: -8px;
+      margin-bottom: 2px;
+      box-sizing: border-box;
+    }
+    /* باکس اقساط (داخل sticky-chrome) در صفحه اصلی از جریان خارج می‌شود تا ارتفاع chrome و جای کارت‌ها ثابت بماند */
+    body:has(#panel-home.active) #remindBar:not(.open):not(.open-overlay) {
+      position: absolute !important;
+      top: 100% !important;
+      left: var(--hz-l, 14px) !important;
+      right: var(--hz-r, 14px) !important;
+      width: auto !important;
+      margin: 0 !important;
+      z-index: 3 !important;
+    }
+    /* یادآورها: داخل ناحیه؛ اگر اقساط نمایش داده نشود، همان جای قبلی (بالا) می‌ماند */
+    .home-top-zone #userRemindBar:not(.open):not(.open-overlay) {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: 10px !important;
+      margin: 0 !important;
+    }
+    .home-top-zone[data-install="1"] #userRemindBar:not(.open):not(.open-overlay) {
+      top: 56px !important;
+    }
+    /* باکس وقت بخیر */
+    .home-greet-box {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 12px;
+      overflow: hidden;
+      background-color: #1b1b1b;
+      background-image:
+        radial-gradient(circle at 50% 50%, rgba(32, 201, 176, 0.34) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 50% 50%, rgba(150, 150, 150, 0.26) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 50% 50%, rgba(32, 201, 176, 0.22) 0.6px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(150, 150, 150, 0.18) 0.6px, transparent 1px);
+      background-size: 5px 5px, 7px 7px, 11px 11px, 13px 13px;
+      background-position: 0 0, 2px 3px, 5px 1px, 1px 6px;
+      box-shadow:
+        inset 4px 4px 12px rgba(0,0,0,0.72),
+        inset -3px -3px 8px rgba(255,255,255,0.14);
+      user-select: none;
+      -webkit-user-select: none;
+      pointer-events: none;
+    }
+    .home-top-zone[data-empty="1"] .home-greet-box { display: flex; }
+    .home-greet-box span {
+      position: relative;
+      font-weight: 800;
+      font-size: 1.9rem;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      color: rgba(200, 210, 206, 0.88);
+      text-shadow: 0 -1px 1px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.07);
+    }
+
+    /* کارت اصلی از لبهٔ راست هم‌راستا با سایر باکس‌ها؛ فقط کارت اول */
+    .home-cards .person-card:first-child {
+      scroll-snap-align: start;
+      scroll-margin-inline-start: var(--hc-ir, 0px);
+    }
+    /* کارت «+ ایجاد کاربر» */
+    .home-cards .home-create-card {
+      flex: 0 0 var(--cc-w, 140px) !important;
+      width: var(--cc-w, 140px) !important;
+      min-width: var(--cc-w, 140px) !important;
+      max-width: var(--cc-w, 140px) !important;
+      height: var(--cc-h, 130px) !important;
+      aspect-ratio: auto !important;
+      margin: 0 !important;
+      cursor: pointer;
+      scroll-snap-align: none;
+      scroll-snap-stop: normal;
+      opacity: 1 !important;
+      transform: none !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .home-create-card:active { filter: brightness(1.12); }
+    .home-create-card .cc-plus {
+      position: absolute;
+      top: 50%;
+      right: var(--cc-icon-r, 16px);
+      width: 44px;
+      height: 44px;
+      transform: translateY(-50%);
+      display: block;
+      z-index: 2;
+    }
+    .home-create-card .cc-plus::before,
+    .home-create-card .cc-plus::after {
+      content: '';
+      position: absolute;
+      background: #08b5f5;
+      border-radius: 2px;
+    }
+    .home-create-card .cc-plus::before { left: 0; right: 0; top: 17px; height: 10px; }
+    .home-create-card .cc-plus::after  { top: 0; bottom: 0; left: 17px; width: 10px; }
+
+    /* جدول فرضی ۲ ستون × ۳ سطر در کادرهای درآمد/مخارج */
+    .home-cards .person-card .person-stat-box {
+      display: grid !important;
+      grid-template-columns: max-content minmax(0, 1fr);
+      grid-auto-rows: auto;
+      align-content: center;
+      align-items: center;
+      column-gap: 8px;
+      row-gap: 2px;
+      direction: rtl;
+      padding: 7px 12px !important;
+    }
+    .home-cards .person-card .person-stat-box .person-stat-line.psl-l {
+      text-align: right;
+      white-space: nowrap;
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+    .home-cards .person-card .person-stat-box .person-stat-line.psl-v {
+      text-align: left;
+      direction: ltr;
+      white-space: nowrap;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      font-size: 0.72rem !important;
+      font-variant-numeric: tabular-nums;
+    }
+    .home-cards .person-card .person-stat-box .person-stat-line.psl-l.em { font-size: 0.82rem !important; }
+    .home-cards .person-card .person-stat-box .person-stat-line.psl-l.paid,
+    .home-cards .person-card .person-stat-box .person-stat-line.psl-l.unpaid { font-size: 0.72rem !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -8846,6 +8987,8 @@
     <div class="tab-viewport" id="tabViewport">
     <div id="panel-home" class="tab-panel active">
       <div class="home-stack" id="homeStack">
+      <div class="home-top-zone" id="homeTopZone" data-empty="1" data-install="0">
+        <div class="home-greet-box" id="homeGreetBox" aria-hidden="true"><span id="homeGreetBoxText">روز بخیر</span></div>
       <div class="user-remind-bar" id="userRemindBar" style="display:none;">
         <div class="user-remind-bar-head" onclick="toggleUserRemindBar(event)">
           <svg class="collapse-arrow" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -8853,6 +8996,7 @@
         </div>
         <div class="user-remind-body" id="userRemindBanner"></div>
       </div>
+      </div><!-- /home-top-zone -->
       <div class="home-cards-wrap" id="homeCardsWrap">
         <div class="home-cards" id="homeCards"></div>
       </div>
@@ -17819,17 +17963,30 @@ function openPdfPrintWindow(){
       box.style.setProperty('max-width', 'none', 'important');
       var W = box.clientWidth || box.offsetWidth;
       if (!(W > 0)) return;
-      var cw = Math.round(W * 0.74), gap = Math.round(W * 0.02), side = Math.floor((W - cw) / 2);
-      box.style.setProperty('padding-left', side + 'px', 'important');
-      box.style.setProperty('padding-right', side + 'px', 'important');
+      var cw = Math.round(W * 0.74), gap = Math.round(W * 0.02);
+      /* کارت اول دقیقاً از لبهٔ راست سایر باکس‌ها شروع می‌شود (insR)؛ سمت چپ کمی حاشیه برای کارت + */
+      box.style.setProperty('padding-left', Math.max(insL, 0) + 'px', 'important');
+      box.style.setProperty('padding-right', insR + 'px', 'important');
       box.style.setProperty('gap', gap + 'px', 'important');
       box._hcDist = cw + gap;
+      var firstH = 0;
       box.querySelectorAll('.person-card').forEach(function (c) {
         c.style.setProperty('width', cw + 'px', 'important');
         c.style.setProperty('min-width', cw + 'px', 'important');
         c.style.setProperty('max-width', cw + 'px', 'important');
         c.style.setProperty('flex', '0 0 ' + cw + 'px', 'important');
+        if (!firstH) firstH = c.offsetHeight;
       });
+      /* کارت ایجاد: کوچک‌تر از کارت اصلی، آیکون + در بخش نمایان */
+      var cc = box.querySelector('.home-create-card');
+      if (cc) {
+        var gw = Math.round(cw * 0.5);
+        var gh = Math.round((firstH || cw / 1.62) * 0.74);
+        var iconR = Math.max(6, Math.min(gw - 50, 10));
+        cc.style.setProperty('--cc-w', gw + 'px');
+        cc.style.setProperty('--cc-h', gh + 'px');
+        cc.style.setProperty('--cc-icon-r', iconR + 'px');
+      }
     }
     /* فاصلهٔ مرکز کارت (بدون اثر transform) تا مرکز کاروسل؛ مستقل از RTL/LTR */
     function homeCardOffset(box, card) {
@@ -17853,18 +18010,25 @@ function openPdfPrintWindow(){
       if (!cards.length) return null;
       var br = box.getBoundingClientRect(), mid = br.left + br.width / 2;
       var dist = box._hcDist || (cards[0].offsetWidth * 1.03) || 300;
+      var padR = parseFloat(box.style.paddingRight) || 0;
       var best = null, bestD = 1e9;
-      cards.forEach(function (c) {
+      cards.forEach(function (c, ci) {
         var W = c.offsetWidth, s0 = c._hs || 1, p0 = (c._hp == null) ? 0.5 : c._hp;
         var r = c.getBoundingClientRect();
-        var o = (r.left - p0 * W * (1 - s0) + W / 2) - mid;
+        var cx = r.left - p0 * W * (1 - s0) + W / 2;
+        /* کارت اول جای «فعال» خودش را لبهٔ راست هم‌راستا می‌داند؛ بقیه مرکز */
+        var focus = (ci === 0) ? (br.right - padR - W / 2) : mid;
+        var o = cx - focus;
         var t = Math.min(1, Math.abs(o) / dist);
         var sc = 1 - 0.155 * t;
         var p = Math.max(0, Math.min(1, 0.5 - 0.5 * (o / dist)));
         c._hs = sc; c._hp = p;
         c.style.transformOrigin = (p * 100).toFixed(1) + '% 50%';
         c.style.transform = 'scale(' + sc.toFixed(4) + ')';
-        if (Math.abs(o) < bestD) { bestD = Math.abs(o); best = c; }
+        /* کارت فعال کاملاً واضح؛ کارت‌های کناری به‌تدریج مات‌تر */
+        c.style.opacity = (1 - 0.62 * t).toFixed(3);
+        var d = Math.abs(cx - mid);
+        if (d < bestD) { bestD = d; best = c; }
       });
       return best;
     }
@@ -17966,6 +18130,66 @@ function openPdfPrintWindow(){
     }
     
     var _hbcLast = null;
+
+    /* ===== باکس «وقت بخیر» بالای صفحه اصلی ===== */
+    function homeGreetingNow() {
+      var h = new Date().getHours();
+      if (h >= 5 && h < 12) return 'صبح بخیر';
+      if (h >= 12 && h < 17) return 'روز بخیر';
+      if (h >= 17 && h < 21) return 'عصر بخیر';
+      return 'شب بخیر';
+    }
+    function updateHomeGreetBox() {
+      try {
+        var el = document.getElementById('homeGreetBoxText');
+        if (!el) return;
+        var t = homeGreetingNow();
+        if (el.textContent !== t) el.textContent = t;
+      } catch (e) {}
+    }
+    function syncHomeTopZone() {
+      try {
+        var z = document.getElementById('homeTopZone');
+        if (!z) return;
+        var rb = document.getElementById('remindBar');
+        var ub = document.getElementById('userRemindBar');
+        var vis = function (e) {
+          if (!e) return false;
+          if (e.classList.contains('open') || e.classList.contains('open-overlay')) return true;
+          return window.getComputedStyle(e).display !== 'none';
+        };
+        var a = vis(rb), b = vis(ub);
+        z.setAttribute('data-install', a ? '1' : '0');
+        z.setAttribute('data-empty', (!a && !b) ? '1' : '0');
+        updateHomeGreetBox();
+        var ch = document.getElementById('stickyChrome');
+        if (ch) {
+          var cs = window.getComputedStyle(ch);
+          var rs = document.documentElement.style;
+          rs.setProperty('--hz-l', cs.paddingLeft);
+          rs.setProperty('--hz-r', cs.paddingRight);
+        }
+      } catch (e) {}
+    }
+    (function initHomeTopZone() {
+      function go() {
+        try {
+          syncHomeTopZone();
+          if (window.MutationObserver) {
+            var mo = new MutationObserver(function () { syncHomeTopZone(); });
+            ['remindBar', 'userRemindBar'].forEach(function (id) {
+              var e = document.getElementById(id);
+              if (e) mo.observe(e, { attributes: true, attributeFilter: ['style', 'class'] });
+            });
+          }
+          window.addEventListener('resize', function () { syncHomeTopZone(); });
+          setInterval(updateHomeGreetBox, 30000);
+          document.addEventListener('visibilitychange', function () { if (!document.hidden) updateHomeGreetBox(); });
+        } catch (e) {}
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+      else go();
+    })();
     
     function updateHomeGreetText() {
       try {
@@ -18118,18 +18342,22 @@ function openPdfPrintWindow(){
 
         const boxInc = document.createElement('div');
         boxInc.className = 'person-stat-box';
+        const _row = function(cls, label, val) {
+          return '<span class="person-stat-line ' + cls + ' psl-l">' + label + '</span>' +
+                 '<span class="person-stat-line ' + cls + ' psl-v">' + val + '</span>';
+        };
         boxInc.innerHTML =
-          '<div class="person-stat-line em">درآمد کل: ' + formatNum(tot.incomeTotal) + '</div>' +
-          '<div class="person-stat-line paid">دریافت شده: ' + formatNum(tot.incomePaid) + '</div>' +
-          '<div class="person-stat-line unpaid">دریافت نشده: ' + formatNum(tot.incomeUnpaid) + '</div>';
+          _row('em', 'درآمد کل:', formatNum(tot.incomeTotal)) +
+          _row('paid', 'دریافت شده:', formatNum(tot.incomePaid)) +
+          _row('unpaid', 'دریافت نشده:', formatNum(tot.incomeUnpaid));
         boxInc.onclick = (e) => { e.stopPropagation(); openPersonDetail(title, 'income'); };
 
         const boxExp = document.createElement('div');
         boxExp.className = 'person-stat-box';
         boxExp.innerHTML =
-          '<div class="person-stat-line em">خرج کل: ' + formatNum(tot.expenseTotal) + '</div>' +
-          '<div class="person-stat-line paid">پرداخت شده: ' + formatNum(tot.expensePaid) + '</div>' +
-          '<div class="person-stat-line unpaid">پرداخت نشده: ' + formatNum(tot.expenseUnpaid) + '</div>';
+          _row('em', 'خرج کل:', formatNum(tot.expenseTotal)) +
+          _row('paid', 'پرداخت شده:', formatNum(tot.expensePaid)) +
+          _row('unpaid', 'پرداخت نشده:', formatNum(tot.expenseUnpaid));
         boxExp.onclick = (e) => { e.stopPropagation(); openPersonDetail(title, 'expense'); };
 
         cols.appendChild(boxInc);
@@ -18152,9 +18380,22 @@ function openPdfPrintWindow(){
           d.innerHTML = '<span class="m-lab">' + lab + '</span><span class="m-pct">' + toPersianDigits(String(pct)) + '٪</span>';
           return d;
         };
-        /* اگر درصد یک بخش صفر باشد، کل مستطیل با رنگ بخش دیگر پر می‌شود */
-        if (expPct > 0) meter.appendChild(_seg('m-exp', 'خرج', expPct));
-        if (remPct > 0) meter.appendChild(_seg('m-rem', 'مانده', remPct));
+        if (incT <= 0 && expT <= 0) {
+          /* هنوز هیچ داده‌ای ثبت نشده: دو نیمهٔ مساوی با «—» به‌جای درصد */
+          var _half = function(cls, lab) {
+            var d = document.createElement('div');
+            d.className = cls;
+            d.style.flex = '1 1 0';
+            d.innerHTML = '<span class="m-lab">' + lab + '</span><span class="m-pct">—</span>';
+            return d;
+          };
+          meter.appendChild(_half('m-exp', 'خرج'));
+          meter.appendChild(_half('m-rem', 'درآمد'));
+        } else {
+          /* اگر درصد یک بخش صفر باشد، کل مستطیل با رنگ بخش دیگر پر می‌شود */
+          if (expPct > 0) meter.appendChild(_seg('m-exp', 'خرج', expPct));
+          if (remPct > 0) meter.appendChild(_seg('m-rem', 'مانده', remPct));
+        }
         var statsWrap = document.createElement('div');
         statsWrap.className = 'person-card-stats-wrap';
         statsWrap.appendChild(meter);
@@ -18190,32 +18431,27 @@ function openPdfPrintWindow(){
           cardEl.addEventListener('pointerup', clearLp);
           cardEl.addEventListener('pointercancel', clearLp);
         })(card, title);
-        if (cardIdx === 0 && !isGhost) {
-          try {
-            card.classList.add('has-greet');
-            var gr = document.createElement('div');
-            gr.className = 'home-greet-on-card';
-            gr.setAttribute('aria-hidden', 'true');
-            var hh = new Date().getHours();
-            var gt = 'روز بخیر';
-            if (hh >= 17 && hh < 21) gt = 'عصر بخیر';
-            else if (hh >= 21 || hh < 5) gt = 'شب بخیر';
-            gr.innerHTML = '<span>' + gt + '</span>';
-            card.appendChild(gr);
-          } catch (eG) {}
-        }
         return card;
       };
       titles.forEach((title, cardIdx) => { box.appendChild(_buildCard(title, cardIdx, false)); });
-      /* اگر فقط یک کارت هست: تکه شماتیک کارت دوم (غیرقابل اسکرول) */
+      /* کارت «+ ایجاد کاربر»: همیشه آخرین (چپ‌ترین) آیتم و نیمه‌نمایان؛ همیشه واضح */
+      try {
+        var cc = document.createElement('div');
+        cc.className = 'home-create-card';
+        cc.setAttribute('role', 'button');
+        cc.setAttribute('tabindex', '0');
+        cc.setAttribute('aria-label', 'ایجاد کاربر');
+        cc.innerHTML = '<span class="cc-plus" aria-hidden="true"></span>';
+        cc.addEventListener('click', function (ev) { ev.preventDefault(); try { addPersonCard(); } catch (eAdd) {} });
+        cc.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); try { addPersonCard(); } catch (eAdd2) {} }
+        });
+        box.appendChild(cc);
+      } catch (eCc) {}
+      /* فقط یک کارت: کاروسل قفل (فقط کارت + نیمه‌نمایان است) */
       try {
         if (titles.length === 1) {
           box.classList.add('has-ghost');
-          var ghost = _buildCard('نام کاربر', 1, true);
-          ghost.classList.add('person-card-ghost');
-          ghost.setAttribute('aria-hidden', 'true');
-          try { ghost.inert = true; } catch (eIn) {}
-          box.appendChild(ghost);
           box.scrollLeft = 0;
         } else {
           box.classList.remove('has-ghost');
