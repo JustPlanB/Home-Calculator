@@ -8789,8 +8789,9 @@
        ===================================================================== */
     /* یادآوری اقساط و یادآورها در صفحهٔ اصلی فعلاً نمایش داده نمی‌شوند (کد و استایل حفظ شده) */
     #panel-home #homeTopZone { display: none !important; }
-    body:has(#panel-home.active) #remindBar,
-    body:has(#panel-home.active) #remindBackdrop { display: none !important; }
+    /* باکس یادآوری اقساط در هیچ صفحه‌ای (صفحه اصلی، درآمد، مخارج و …) نمایش داده نمی‌شود */
+    #remindBar,
+    #remindBackdrop { display: none !important; }
 
     /* پشته: کارت + چهار باکس، فاصله‌های برابر (ارتفاع و جابه‌جایی را layoutHomeStack تنظیم می‌کند) */
     #panel-home.active .home-stack {
@@ -8825,14 +8826,15 @@
     #panel-home .home-box.box4 .home-circle-big {
       position: absolute !important;
       left: 50%;
-      top: -18px;
-      margin: 0 0 0 -43px !important;
-      width: 86px; height: 86px; min-width: 86px; min-height: 86px;
-      padding-top: 15px;
+      /* بالاتر از کف باکس (فاصله از لبهٔ پایین)؛ مقدار دقیق را layoutHomeStack طوری تنظیم می‌کند که به باکس ۳ نرسد */
+      top: var(--hbc-top, -34px);
+      margin: 0 0 0 -47px !important;
+      width: 94px; height: 94px; min-width: 94px; min-height: 94px;
+      padding-top: 17px;
       padding-bottom: 8px;
       z-index: 2;
     }
-    #panel-home .home-box.box4 .hbc-label { font-size: 0.78rem; }
+    #panel-home .home-box.box4 .hbc-label { font-size: 0.8rem; }
     #panel-home .home-box.box4 .home-circle-big .hbc-amt { margin-bottom: 20%; }
 
     /* کارت کاربر: هم‌عرض باکس‌ها؛ کارت دوم/ایجاد دیده نمی‌شود */
@@ -8879,6 +8881,106 @@
       border: 1px solid rgba(255,255,255,0.22);
       box-sizing: border-box;
     }
+    /* پنل هوشمند داخل باکس — ابعاد باکس ثابت؛ فقط محتوای داخل جابه‌جا می‌شود */
+    #homeCards .person-card .pc-smart-box.sp-panel {
+      position: relative;
+      overflow: hidden;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+    }
+    .sp-view { position: absolute; inset: 0; direction: rtl; }
+    .sp-page {
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      padding: 7px 9px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      color: rgba(255,255,255,0.95);
+      font-weight: 700;
+      line-height: 1.3;
+      will-change: transform, opacity;
+    }
+    .sp-h {
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #08b5f5;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sp-big { font-size: 0.86rem; font-weight: 800; white-space: nowrap; }
+    .sp-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4px;
+      font-size: 0.62rem;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .sp-l { color: rgba(255,255,255,0.62); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .sp-v { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .sp-page .pos { color: #9ee858; }
+    .sp-page .neg { color: #ff6b4a; }
+    .sp-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 1px 0 2px; }
+    .sp-bar.thin { height: 3px; margin: 1px 0 3px; }
+    .sp-bar i { display: block; height: 100%; border-radius: 3px; background: #08b5f5; }
+    .sp-bar i.neg { background: #ff6b4a; }
+    .sp-hb { display: flex; align-items: center; gap: 5px; font-size: 0.6rem; }
+    .sp-hb .sp-l { flex: 0 0 2.4em; }
+    .sp-track { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; direction: rtl; }
+    .sp-track i { display: block; height: 100%; border-radius: 3px; }
+    .sp-track i.pos { background: #9ee858; }
+    .sp-track i.neg { background: #ff6b4a; }
+    .sp-cols {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 4px;
+      height: 30px;
+      margin-top: 4px;
+      direction: ltr;
+    }
+    .sp-cols i { flex: 1 1 0; display: block; border-radius: 2px 2px 0 0; background: #ff6b4a; opacity: 0.85; }
+    .sp-cap { font-size: 0.55rem; color: rgba(255,255,255,0.5); text-align: center; }
+    .sp-tip { font-size: 0.64rem; line-height: 1.55; color: rgba(255,255,255,0.92); }
+    .sp-tip + .sp-tip { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sp-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+      font-size: 0.62rem;
+      line-height: 1.6;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+    }
+    /* برگهٔ بازبینی دسته‌ها */
+    .sp-cat-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sp-cat-desc { flex: 1 1 auto; min-width: 0; font-size: 0.8rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-cat-select {
+      flex: 0 0 auto;
+      max-width: 48%;
+      background: #1b1b1b;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 0.76rem;
+      direction: rtl;
+    }
+
     /* شش عنوان راست‌چین و هم‌راستا؛ شش مبلغ چپ‌چین و هم‌راستا */
     #homeCards .person-card .person-stat-box .person-stat-line.psl-l { text-align: right; }
     #homeCards .person-card .person-stat-box .person-stat-line.psl-l.em { font-size: calc(0.92rem * var(--pc-fs, 1)) !important; }
@@ -18062,7 +18164,16 @@ function openPdfPrintWindow(){
       return (r.left - p0 * W * (1 - s0) + W / 2) - (br.left + br.width / 2);
     }
     function homeCenterCard(box, card, smooth) {
-      var left = box.scrollLeft + homeCardOffset(box, card);
+      var left;
+      if (card.offsetParent === box) {
+        /* موقعیت چیدمانی کارت (بدون اثر scale/transform) — دقیق و مستقل از انیمیشن */
+        left = card.offsetLeft + card.offsetWidth / 2 - box.clientWidth / 2;
+        var maxS = Math.max(0, box.scrollWidth - box.clientWidth);
+        var rtl = getComputedStyle(box).direction === 'rtl';
+        left = rtl ? Math.max(-maxS, Math.min(0, left)) : Math.max(0, Math.min(maxS, left));
+      } else {
+        left = box.scrollLeft + homeCardOffset(box, card);
+      }
       try {
         if (smooth) box.scrollTo({ left: left, behavior: 'smooth' });
         else box.scrollLeft = left;
@@ -18086,7 +18197,9 @@ function openPdfPrintWindow(){
         var focus = (ci === 0) ? (br.right - padR - W / 2) : mid;
         var o = cx - focus;
         var t = Math.min(1, Math.abs(o) / dist);
-        var sc = 1 - 0.155 * t;
+        /* کارت‌ها تمام‌عرض‌اند؛ scale حذف شد چون نقطهٔ اسنپ مرورگر از کادرِ transform‌شده
+           محاسبه می‌شود و کارت جدید چند پیکسل کج می‌ایستاد. فقط محو شدن حفظ شده است */
+        var sc = 1;
         var p = Math.max(0, Math.min(1, 0.5 - 0.5 * (o / dist)));
         c._hs = sc; c._hp = p;
         c.style.transformOrigin = (p * 100).toFixed(1) + '% 50%';
@@ -18358,7 +18471,7 @@ function openPdfPrintWindow(){
         /* «باکس هوشمند»: جای کپسول درصد قبلی (محتوا بعداً اضافه می‌شود) */
         var smart = document.createElement('div');
         smart.className = 'pc-smart-box';
-        smart.setAttribute('aria-hidden', 'true');
+        try { if (!isGhost) mountSmartPanel(smart, title, cardIdx); } catch (eSP) {}
         var statsWrap = document.createElement('div');
         statsWrap.className = 'person-card-stats-wrap';
         statsWrap.appendChild(smart);
@@ -18539,6 +18652,17 @@ function openPdfPrintWindow(){
       var mt = Math.round(tb.bottom - pr.top);
       stack.style.setProperty('margin-top', mt + 'px', 'important');
       stack.style.setProperty('height', Math.max(0, Math.round(screenBottom - gTop - tb.bottom)) + 'px', 'important');
+      /* دایرهٔ موجودی: ۱۰px بالاتر از کف باکس ۴، ولی حداقل ۱۰px فاصله تا کف باکس ۳ */
+      try {
+        var b3 = document.getElementById('homeBox3'), b4 = document.getElementById('homeBox4');
+        var circ = document.getElementById('homeBalanceCircle');
+        if (b3 && b4 && circ) {
+          var gap34 = b4.getBoundingClientRect().top - b3.getBoundingClientRect().bottom;
+          var d = circ.offsetHeight || 94, h4 = b4.offsetHeight || 70;
+          var rise = Math.min(d - h4 + 10, Math.max(0, gap34 - 10));
+          document.documentElement.style.setProperty('--hbc-top', (-Math.round(Math.max(d - h4, rise))) + 'px');
+        }
+      } catch (eC) {}
       try { fitHomeCardStats(); } catch (eF) {}
     }
     (function () {
@@ -18593,6 +18717,590 @@ function openPdfPrintWindow(){
         } catch (e3) {}
       };
       setTimeout(tick, 600);
+    }
+
+    /* =====================================================================
+       دسته‌بندی هوشمند مخارج (HKCategorizer)
+       ترتیب تشخیص: ۱) دیکشنری شخصی کاربر (localStorage)  ۲) دیکشنری داخلی
+       ۳) در آینده: سرویس امن بک‌اند (فقط برای شرح‌های ناشناخته).
+       هیچ کلید API یا secret در این فایل نیست و نباید باشد؛ کلید فقط روی سرور
+       بک‌اند نگه‌داری می‌شود و اپ فقط به آدرس آن درخواست می‌فرستد.
+       ===================================================================== */
+    var HKCategorizer = (function () {
+      /* آدرس سرویس بک‌اند دسته‌بندی (خالی = غیرفعال؛ هیچ درخواست شبکه‌ای ارسال نمی‌شود).
+         قرارداد پیشنهادی: POST {items:["شرح", ...]} → {results:[{text:"شرح", category:"food"}]} */
+      var REMOTE_URL = '';
+      var DICT_KEY = STORAGE_KEY + '_catDict';
+      var CATS = [
+        { id: 'food', label: 'خوراکی', kw: ['پیتزا', 'رستوران', 'فست فود', 'فستفود', 'ساندویچ', 'همبرگر', 'برگر', 'کباب', 'جوجه', 'غذا', 'نهار', 'ناهار', 'شام', 'صبحانه', 'کافه', 'قهوه', 'چای', 'شیرینی', 'کیک', 'بستنی', 'میوه', 'سبزی', 'نان', 'نانوایی', 'گوشت', 'مرغ', 'ماهی', 'برنج', 'روغن', 'لبنیات', 'شیر', 'ماست', 'پنیر', 'تخم مرغ', 'سوپرمارکت', 'سوپر مارکت', 'هایپر', 'افق کوروش', 'میوه فروشی', 'قصابی', 'خواربار', 'تنقلات', 'آجیل', 'اسنپ فود', 'اسنپفود', 'دلیوری', 'خوراکی', 'خرید روزانه'] },
+        { id: 'transport', label: 'حمل‌ونقل', kw: ['بنزین', 'سوخت', 'گازوئیل', 'cng', 'اسنپ', 'تپسی', 'تاکسی', 'آژانس', 'مترو', 'اتوبوس', 'بلیت', 'بلیط', 'قطار', 'هواپیما', 'پرواز', 'عوارض', 'پارکینگ', 'کارواش', 'تعمیر ماشین', 'تعمیرگاه', 'مکانیک', 'لاستیک', 'روغن موتور', 'بیمه بدنه', 'بیمه ثالث', 'جریمه', 'خودرو', 'ماشین', 'موتور'] },
+        { id: 'bills', label: 'قبوض', kw: ['قبض', 'برق', 'آب', 'گاز', 'تلفن', 'اینترنت', 'شارژ', 'بسته اینترنت', 'سیم کارت', 'ایرانسل', 'همراه اول', 'رایتل', 'مخابرات', 'عوارض شهرداری', 'شارژ ساختمان', 'آبونمان'] },
+        { id: 'housing', label: 'مسکن', kw: ['اجاره', 'رهن', 'ودیعه', 'تعمیرات', 'لوله کش', 'برقکار', 'نقاشی ساختمان', 'بنگاه', 'کمیسیون'] },
+        { id: 'clothing', label: 'پوشاک', kw: ['کفش', 'لباس', 'پیراهن', 'شلوار', 'مانتو', 'کت', 'کاپشن', 'جوراب', 'کیف', 'پوشاک', 'تیشرت', 'دامن', 'روسری', 'شال', 'کمربند'] },
+        { id: 'health', label: 'سلامت', kw: ['داروخانه', 'دارو', 'دکتر', 'پزشک', 'ویزیت', 'دندانپزشک', 'دندان', 'بیمارستان', 'آزمایش', 'سونوگرافی', 'عینک', 'بیمه تکمیلی', 'فیزیوتراپی', 'درمانگاه', 'کلینیک', 'آمپول'] },
+        { id: 'care', label: 'آرایش و بهداشت', kw: ['آرایشگاه', 'آرایشی', 'بهداشتی', 'شامپو', 'عطر', 'ادکلن', 'کرم', 'اصلاح', 'سالن زیبایی', 'مو'] },
+        { id: 'home', label: 'لوازم خانه', kw: ['یخچال', 'لباسشویی', 'ظرفشویی', 'مبل', 'فرش', 'لوازم خانگی', 'ظروف', 'شوینده', 'دستمال', 'پودر', 'جاروبرقی', 'تلویزیون', 'لامپ'] },
+        { id: 'education', label: 'آموزش', kw: ['شهریه', 'کلاس', 'کتاب', 'دانشگاه', 'مدرسه', 'آموزشگاه', 'دوره', 'لوازم التحریر', 'دفتر', 'کنکور'] },
+        { id: 'fun', label: 'تفریح', kw: ['سینما', 'تئاتر', 'کنسرت', 'سفر', 'هتل', 'مسافرت', 'شهربازی', 'باشگاه', 'استخر', 'بازی', 'فیلیمو', 'نماوا', 'اشتراک', 'گردش', 'کافی نت'] },
+        { id: 'gift', label: 'هدیه و کمک', kw: ['هدیه', 'کادو', 'عیدی', 'نذر', 'صدقه', 'خیریه', 'کمک به'] },
+        { id: 'debt', label: 'اقساط و وام', kw: ['قسط', 'اقساط', 'وام', 'بدهی', 'چک'] },
+        { id: 'tech', label: 'دیجیتال', kw: ['موبایل', 'گوشی', 'لپ تاپ', 'لپتاپ', 'کامپیوتر', 'هدفون', 'شارژر', 'کابل', 'دیجی کالا', 'دیجیکالا'] }
+      ];
+      var BY_ID = {};
+      CATS.forEach(function (c) { BY_ID[c.id] = c; });
+      var _dict = null;
+      var _pending = {};
+      function norm(s) {
+        s = String(s == null ? '' : s);
+        try { s = toEnglishDigits(s); } catch (e) {}
+        return s.replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[ة]/g, 'ه').replace(/[أإآ]/g, 'ا')
+          .replace(/[‌‏‎ً-ٟ]/g, ' ')
+          .replace(/[0-9.,،؛:!؟?()\[\]{}"'«»\-_/\\+*#@٪%]+/g, ' ')
+          .replace(/\s+/g, ' ').trim().toLowerCase();
+      }
+      /* کلیدواژه‌ها هم نرمال شوند (مثلاً «آب» → «اب») */
+      CATS.forEach(function (c) { c.nkw = c.kw.map(norm).filter(Boolean); });
+      function loadDict() {
+        if (_dict) return _dict;
+        _dict = { phrases: {}, words: {} };
+        try {
+          var raw = localStorage.getItem(DICT_KEY);
+          var o = raw ? JSON.parse(raw) : null;
+          if (o && typeof o === 'object') {
+            _dict.phrases = (o.phrases && typeof o.phrases === 'object') ? o.phrases : {};
+            _dict.words = (o.words && typeof o.words === 'object') ? o.words : {};
+          }
+        } catch (e) {}
+        return _dict;
+      }
+      function saveDict() { try { localStorage.setItem(DICT_KEY, JSON.stringify(loadDict())); } catch (e) {} }
+      var STOP = {};
+      ['از', 'با', 'به', 'در', 'برای', 'و', 'یا', 'که', 'این', 'اون', 'آن', 'ان', 'خرید', 'پرداخت', 'هزینه', 'بابت', 'مبلغ', 'واریز', 'کارت', 'نقد', 'قسط'].forEach(function (w) { STOP[norm(w)] = 1; });
+      function words(n) { return n.split(' ').filter(function (w) { return w.length >= 2 && !STOP[w]; }); }
+      /* تطابق کلیدواژه: کلمهٔ کامل یا ابتدای کلمه (برای «پیتزاها»)؛ کلیدواژهٔ بلندتر اولویت دارد */
+      function builtin(n) {
+        var best = null, bestLen = 0, padded = ' ' + n + ' ';
+        CATS.forEach(function (c) {
+          c.nkw.forEach(function (k) {
+            if (k.length <= bestLen) return;
+            if (padded.indexOf(' ' + k + ' ') >= 0 || (k.length >= 3 && padded.indexOf(' ' + k) >= 0)) { best = c.id; bestLen = k.length; }
+          });
+        });
+        return best;
+      }
+      /** دسته‌بندی یک شرح: {id, label, source} یا null (ناشناخته) */
+      function classify(text, row) {
+        if (row && row.fromPlanId) return { id: 'debt', label: BY_ID.debt.label, source: 'plan' };
+        var n = norm(text);
+        if (!n) return null;
+        var d = loadDict();
+        var p = d.phrases[n];
+        if (p && BY_ID[p.c]) return { id: p.c, label: BY_ID[p.c].label, source: p.s || 'user' };
+        var b = builtin(n);
+        if (b) return { id: b, label: BY_ID[b].label, source: 'builtin' };
+        /* کلماتی که کاربر حداقل دو بار در یک دسته قرار داده (فقط برای شرح‌هایی که دیکشنری داخلی نمی‌شناسد) */
+        var ws = words(n), wBest = null, wN = 1;
+        ws.forEach(function (w) { var e = d.words[w]; if (e && BY_ID[e.c] && e.n > wN) { wBest = e.c; wN = e.n; } });
+        if (wBest) return { id: wBest, label: BY_ID[wBest].label, source: 'user' };
+        _pending[n] = 1;
+        return null;
+      }
+      /** کاربر دسته را انتخاب/اصلاح کرد → در دیکشنری شخصی ذخیره شود */
+      function learn(text, catId) {
+        var n = norm(text);
+        if (!n) return;
+        var d = loadDict();
+        if (!catId || !BY_ID[catId]) {
+          delete d.phrases[n];
+        } else {
+          d.phrases[n] = { c: catId, s: 'user', t: Date.now() };
+          words(n).forEach(function (w) {
+            var e = d.words[w];
+            if (!e || e.c !== catId) d.words[w] = { c: catId, n: 1 };
+            else e.n = (e.n || 1) + 1;
+          });
+          delete _pending[n];
+        }
+        saveDict();
+      }
+      /* آماده برای آینده: فقط شرح‌های ناشناخته به سرویس امن ارسال می‌شوند و نتیجه ذخیره می‌شود */
+      var _remoteBusy = false;
+      function resolveUnknownRemote() {
+        var items = Object.keys(_pending);
+        if (!REMOTE_URL || _remoteBusy || !items.length || typeof fetch !== 'function') return Promise.resolve(0);
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(0);
+        _remoteBusy = true;
+        items = items.slice(0, 40);
+        return fetch(REMOTE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: items }) })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var cnt = 0, d = loadDict();
+            ((j && j.results) || []).forEach(function (x) {
+              var n = norm(x && x.text);
+              if (n && x.category && BY_ID[x.category] && !d.phrases[n]) { d.phrases[n] = { c: x.category, s: 'remote', t: Date.now() }; cnt++; }
+              delete _pending[n];
+            });
+            if (cnt) saveDict();
+            return cnt;
+          })
+          .catch(function () { return 0; })
+          .then(function (c) { _remoteBusy = false; return c; });
+      }
+      return { classify: classify, learn: learn, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); } };
+    })();
+
+    /* =====================================================================
+       پنل هوشمند داخل «باکس هوشمند» کارت کاربر (SmartPanel)
+       صفحه‌ها مستقل‌اند؛ هر صفحه اگر دادهٔ معنادار نداشته باشد null برمی‌گرداند
+       و از چرخه حذف می‌شود. از محاسبات موجود (personTotals، sectionPaidUnpaidTotal،
+       ledgerPairNets، plans، rowFinancialContext) استفاده می‌شود.
+       ===================================================================== */
+    var SMART_PANEL_INTERVAL = 10000;   /* جابه‌جایی خودکار */
+    var SMART_PANEL_IDLE = 15000;       /* توقف پس از تعامل کاربر */
+    var _smartPanelState = {};          /* title → { key, pausedUntil, nextAt } */
+
+    function spEsc(s) { try { return escapeHtml(String(s)); } catch (e) { return String(s); } }
+    function spFa(n) { try { return toPersianDigits(String(n)); } catch (e) { return String(n); } }
+    /* مبلغ فشرده برای فضای کوچک */
+    function spAmt(n) {
+      n = Number(n) || 0;
+      var a = Math.abs(n), sgn = n < 0 ? '-' : '';
+      var f = function (v) { var r = Math.round(v * 10) / 10; return spFa(String(r).replace('.', '٫')); };
+      if (a >= 1e9) return sgn + f(a / 1e9) + ' میلیارد';
+      if (a >= 1e6) return sgn + f(a / 1e6) + ' میلیون';
+      return sgn + formatNum(a);
+    }
+    /* عدد و ٪ داخل ایزولهٔ LTR تا در متن راست‌به‌چپ «۵۴٪» نمایش داده شود نه «٪۵۴» */
+    function spPct(v) { return '\u2066' + spFa(Math.round(v)) + '٪\u2069'; }
+    function spPrevSection(tab, title) {
+      try {
+        var p = prevYearMonth(currentYear, currentMonth);
+        var raw = archive[periodKey(p.y, p.m)];
+        if (!raw) return null;
+        var side = raw[tab];
+        var secs = (side && side.sections) || [];
+        var t = (title || '').trim();
+        for (var i = 0; i < secs.length; i++) if (((secs[i] && secs[i].title) || '').trim() === t) return secs[i];
+      } catch (e) {}
+      return null;
+    }
+    function spRows(sec) {
+      return ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && (Number(r.amount) || 0) > 0; });
+    }
+    /* مبلغ شخصی هر ردیف مخارج — همان قاعدهٔ sectionPaidUnpaidTotal */
+    function spPersonalExpense(r) {
+      var t = sectionPaidUnpaidTotal({ rows: [r] }, { personalExpenseOnly: true });
+      return t.total;
+    }
+    function spCategoryTotals(sec) {
+      var map = {}, total = 0, known = 0, rows = 0;
+      spRows(sec).forEach(function (r) {
+        var a = spPersonalExpense(r);
+        if (!a) return;
+        rows++;
+        total += a;
+        var c = HKCategorizer.classify(r.desc, r);
+        if (!c) return;
+        known += a;
+        map[c.id] = (map[c.id] || 0) + a;
+      });
+      var list = Object.keys(map).map(function (k) { return { id: k, label: HKCategorizer.byId[k].label, amount: map[k] }; })
+        .sort(function (x, y) { return y.amount - x.amount; });
+      return { list: list, total: total, known: known, rows: rows };
+    }
+    /* اقساط مربوط به این کارت: لینک‌شده به بخش مخارج همین کاربر؛ اقساط بدون لینک روی کارت اول */
+    function spPlansForTitle(title, cardIdx) {
+      var t = (title || '').trim();
+      return (plans || []).filter(function (p) {
+        if (!p) return false;
+        var lt = (p.expenseSectionTitle || '').trim();
+        if (!lt && p.expenseSectionId) {
+          var s = ((periodData.expense && periodData.expense.sections) || []).find(function (x) { return x && x.id === p.expenseSectionId; });
+          if (s) lt = (s.title || '').trim();
+        }
+        return lt ? lt === t : cardIdx === 0;
+      });
+    }
+    function spUpcomingInstallments(title, cardIdx) {
+      var out = [];
+      try {
+        var today = getTodayPersian();
+        var ti = dateToIndex(today.y, today.m, today.d);
+        spPlansForTitle(title, cardIdx).forEach(function (plan) {
+          var count = Math.max(0, parseInt(plan.count, 10) || 0);
+          var paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
+          for (var i = paid; i < count; i++) {
+            if (plan.paidEarlyMap && plan.paidEarlyMap[String(i)]) continue;
+            var due = dueDateForInstallment(plan, i);
+            var days = dateToIndex(due.y, due.m, due.d) - ti;
+            if (days > 31) break;
+            out.push({ name: plan.name || 'قسط', days: days, amount: planInstallmentAmount(plan) });
+          }
+        });
+      } catch (e) {}
+      return out.sort(function (a, b) { return a.days - b.days; });
+    }
+    function spLedger(title) {
+      var t = (title || '').trim(), debt = 0, credit = 0;
+      try {
+        (typeof ledgerPairNets === 'function' ? ledgerPairNets() : []).forEach(function (x) {
+          if ((x.debtor || '').trim() === t) debt += Number(x.amount) || 0;
+          if ((x.creditor || '').trim() === t) credit += Number(x.amount) || 0;
+        });
+      } catch (e) {}
+      return { debt: debt, credit: credit };
+    }
+    function spActiveProjects(title) {
+      var ids = {};
+      ['income', 'expense'].forEach(function (tab) {
+        spRows(findSectionByTitle(tab, title)).forEach(function (r) {
+          var fc = rowFinancialContext(r);
+          if (fc.subjectId && fc.subjectId !== 'personal') ids[fc.subjectId] = 1;
+        });
+      });
+      return Object.keys(ids).length;
+    }
+    /* همهٔ داده‌های لازم صفحه‌ها یک‌بار محاسبه می‌شود */
+    function spCollect(title, cardIdx) {
+      var tot = personTotals(title);
+      var expSec = findSectionByTitle('expense', title);
+      var prevInc = spPrevSection('income', title), prevExp = spPrevSection('expense', title);
+      var pInc = prevInc ? sectionPaidUnpaidTotal(prevInc, { personalIncomeOnly: true }).total : 0;
+      var pExp = prevExp ? sectionPaidUnpaidTotal(prevExp, { personalExpenseOnly: true }).total : 0;
+      return {
+        title: title,
+        inc: Number(tot.incomeTotal) || 0,
+        exp: Number(tot.expenseTotal) || 0,
+        expUnpaid: Number(tot.expenseUnpaid) || 0,
+        pInc: pInc, pExp: pExp,
+        cats: spCategoryTotals(expSec),
+        pCats: prevExp ? spCategoryTotals(prevExp) : null,
+        expRows: spRows(expSec),
+        inst: spUpcomingInstallments(title, cardIdx),
+        led: spLedger(title),
+        projects: spActiveProjects(title)
+      };
+    }
+    function spHead(t) { return '<div class="sp-h">' + t + '</div>'; }
+    function spLine(label, val, cls) {
+      return '<div class="sp-row"><span class="sp-l">' + label + '</span><span class="sp-v ' + (cls || '') + '">' + val + '</span></div>';
+    }
+    function spDaysLabel(d) {
+      if (d < 0) return spFa(-d) + ' روز تاخیر';
+      if (d === 0) return 'امروز';
+      if (d === 1) return 'فردا';
+      return spFa(d) + ' روز دیگر';
+    }
+
+    /* ۱) تحلیل وضعیت مالی */
+    function spPageOverview(D) {
+      if (D.inc <= 0 && D.exp <= 0) return null;
+      var rem = D.inc - D.exp;
+      var html = spHead('وضعیت این ماه');
+      if (D.inc > 0) {
+        var save = rem / D.inc * 100;
+        html += '<div class="sp-big ' + (save >= 0 ? 'pos' : 'neg') + '">' + (save >= 0 ? 'پس‌انداز ' : 'کسری ') + spPct(Math.abs(save)) + '</div>';
+        var ratio = Math.min(100, D.exp / D.inc * 100);
+        html += '<div class="sp-bar"><i class="neg" style="width:' + ratio.toFixed(1) + '%"></i></div>';
+        html += spLine('خرج از درآمد', spPct(D.exp / D.inc * 100));
+      } else {
+        html += '<div class="sp-big neg">بدون درآمد</div>';
+      }
+      html += spLine(rem >= 0 ? 'مانده' : 'کسری', spAmt(Math.abs(rem)), rem >= 0 ? 'pos' : 'neg');
+      if (D.pExp > 0 && D.exp > 0) {
+        var ch = (D.exp - D.pExp) / D.pExp * 100;
+        if (Math.abs(ch) >= 1) html += spLine('خرج / ماه قبل', (ch > 0 ? '▲ ' : '▼ ') + spPct(Math.abs(ch)), ch > 0 ? 'neg' : 'pos');
+      }
+      return html;
+    }
+    /* ۲) تعهدات مالی — نزدیک‌ترین سررسید اول؛ بخش‌های بدون داده نمایش داده نمی‌شوند */
+    function spPageObligations(D) {
+      var lines = [];
+      if (D.inst.length) {
+        var n = D.inst[0];
+        lines.push(spLine('قسط بعدی', spDaysLabel(n.days), n.days <= 3 ? 'neg' : ''));
+        lines.push(spLine('مبلغ قسط', spAmt(n.amount)));
+        if (D.inst.length > 1) lines.push(spLine('اقساط پیش‌رو', spFa(D.inst.length)));
+      }
+      if (D.led.credit > 0) lines.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
+      if (D.led.debt > 0) lines.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
+      if (D.projects > 0) lines.push(spLine('پروژهٔ فعال', spFa(D.projects)));
+      if (!lines.length) return null;
+      return spHead('تعهدات') + lines.slice(0, 5).join('');
+    }
+    /* ۳) آمار — مقایسهٔ درآمد/خرج + روند هفتگی مخارج (ستون‌های ساده) */
+    function spPageStats(D) {
+      if (!(D.inc > 0 && D.exp > 0) && D.expRows.length < 2) return null;
+      var html = spHead('آمار ماه');
+      var mx = Math.max(D.inc, D.exp, 1);
+      html += '<div class="sp-hb"><span class="sp-l">درآمد</span><span class="sp-track"><i class="pos" style="width:' + (D.inc / mx * 100).toFixed(1) + '%"></i></span></div>';
+      html += '<div class="sp-hb"><span class="sp-l">خرج</span><span class="sp-track"><i class="neg" style="width:' + (D.exp / mx * 100).toFixed(1) + '%"></i></span></div>';
+      var wk = [0, 0, 0, 0, 0], any = 0;
+      D.expRows.forEach(function (r) {
+        var d = parseInt(toEnglishDigits(r.day || ''), 10);
+        if (!(d >= 1 && d <= 31)) return;
+        var a = spPersonalExpense(r);
+        if (!a) return;
+        wk[Math.min(4, Math.floor((d - 1) / 7))] += a;
+        any++;
+      });
+      if (any >= 2) {
+        var wmx = Math.max.apply(null, wk) || 1;
+        html += '<div class="sp-cols">' + wk.map(function (v) {
+          return '<i style="height:' + Math.max(v > 0 ? 8 : 3, v / wmx * 100).toFixed(1) + '%"></i>';
+        }).join('') + '</div><div class="sp-cap">خرج هفتگی</div>';
+      }
+      return html;
+    }
+    /* ۴) دسته‌بندی هوشمند مخارج — سه دستهٔ اول */
+    function spPageCategories(D) {
+      if (!D.cats.list.length || D.cats.total <= 0) return null;
+      var html = spHead('دسته‌بندی مخارج');
+      D.cats.list.slice(0, 3).forEach(function (c) {
+        var p = c.amount / D.cats.total * 100;
+        html += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(c.label) + '</span><span class="sp-v">' + spPct(p) + '</span></div>' +
+          '<div class="sp-bar thin"><i style="width:' + p.toFixed(1) + '%"></i></div></div>';
+      });
+      return html;
+    }
+    /* ۵) نکتهٔ هوشمند — فقط وقتی دادهٔ کافی هست */
+    function spInsights(D) {
+      var out = [];
+      var soon = D.inst.filter(function (x) { return x.days >= 0 && x.days <= 7; }).length;
+      var late = D.inst.filter(function (x) { return x.days < 0; }).length;
+      if (late) out.push({ p: 100, t: spFa(late) + ' قسط از سررسیدش گذشته است.' });
+      if (soon) out.push({ p: 90, t: spFa(soon) + ' پرداخت قسط در ۷ روز آینده داری.' });
+      if (D.inc > 0 && D.exp > D.inc) out.push({ p: 80, t: 'مخارج این ماه ' + spPct((D.exp - D.inc) / D.inc * 100) + ' از درآمد بیشتر شده است.' });
+      if (D.cats.rows >= 3 && D.cats.list.length) {
+        var top = D.cats.list[0], share = top.amount / D.cats.total * 100;
+        if (share >= 25) out.push({ p: 60, t: 'بیشترین هزینهٔ این ماه مربوط به ' + top.label + ' بوده (' + spPct(share) + ' از مخارج).' });
+      }
+      if (D.pCats && D.pCats.list.length && D.cats.list.length) {
+        var best = null;
+        D.cats.list.forEach(function (c) {
+          var prev = 0;
+          D.pCats.list.forEach(function (pc) { if (pc.id === c.id) prev = pc.amount; });
+          if (prev <= 0) return;
+          var ch = (c.amount - prev) / prev * 100;
+          if (Math.abs(ch) >= 20 && (!best || Math.abs(ch) > Math.abs(best.ch))) best = { c: c, ch: ch };
+        });
+        if (best) out.push({ p: 70, t: 'مخارج ' + best.c.label + ' نسبت به ماه قبل ' + spPct(Math.abs(best.ch)) + (best.ch > 0 ? ' بیشتر' : ' کمتر') + ' شده است.' });
+      }
+      if (D.pExp > 0 && D.exp > 0 && D.inc > 0 && D.pInc > 0) {
+        var s1 = (D.inc - D.exp) / D.inc, s0 = (D.pInc - D.pExp) / D.pInc;
+        if (s1 - s0 >= 0.1) out.push({ p: 50, t: 'درصد پس‌اندازت نسبت به ماه قبل بهتر شده است.' });
+      }
+      if (D.exp > 0 && D.expUnpaid / D.exp >= 0.3) out.push({ p: 40, t: spAmt(D.expUnpaid) + ' از مخارج این ماه هنوز پرداخت نشده.' });
+      return out.sort(function (a, b) { return b.p - a.p; });
+    }
+    function spPageInsight(D) {
+      var ins = spInsights(D);
+      if (!ins.length) return null;
+      return spHead('نکته') + ins.slice(0, 2).map(function (x) { return '<div class="sp-tip">' + spEsc(x.t) + '</div>'; }).join('');
+    }
+    var SMART_PANEL_PAGES = [
+      { key: 'overview', build: spPageOverview },
+      { key: 'obligations', build: spPageObligations },
+      { key: 'stats', build: spPageStats },
+      { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
+      { key: 'insight', build: spPageInsight }
+    ];
+
+    function mountSmartPanel(el, title, cardIdx) {
+      var D = null;
+      try { D = spCollect(title, cardIdx); } catch (e) { D = null; }
+      var pages = [];
+      if (D) SMART_PANEL_PAGES.forEach(function (pg) {
+        var h = null;
+        try { h = pg.build(D); } catch (e) { h = null; }
+        if (h) pages.push({ key: pg.key, html: h, onTap: pg.onTap });
+      });
+      el.classList.add('sp-panel');
+      el._spTitle = title;
+      el._spPages = pages;
+      el.innerHTML = '';
+      var view = document.createElement('div');
+      view.className = 'sp-view';
+      el.appendChild(view);
+      if (!pages.length) {
+        view.innerHTML = '<div class="sp-empty">بعد از ثبت چند تراکنش، تحلیل وضعیت مالی اینجا نمایش داده می‌شود.</div>';
+        return;
+      }
+      var st = _smartPanelState[title] || (_smartPanelState[title] = { key: pages[0].key, pausedUntil: 0, nextAt: 0 });
+      var idx = 0;
+      pages.forEach(function (p, i) { if (p.key === st.key) idx = i; });
+      st.key = pages[idx].key;
+      if (!st.nextAt) st.nextAt = Date.now() + SMART_PANEL_INTERVAL;
+      el._spIdx = idx;
+      view.innerHTML = '<div class="sp-page">' + pages[idx].html + '</div>';
+      bindSmartPanelGestures(el);
+    }
+    /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
+    function smartPanelGo(el, dir, fromDx) {
+      var pages = el._spPages || [];
+      if (pages.length < 2) return;
+      var view = el.querySelector('.sp-view');
+      if (!view) return;
+      var cur = view.querySelector('.sp-page:not(.sp-out)');
+      var idx = (el._spIdx + dir + pages.length) % pages.length;
+      el._spIdx = idx;
+      var st = _smartPanelState[el._spTitle];
+      if (st) { st.key = pages[idx].key; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
+      var w = el.clientWidth || 100;
+      var nx = document.createElement('div');
+      nx.className = 'sp-page';
+      nx.innerHTML = pages[idx].html;
+      var reduce = false;
+      try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+      if (!cur || reduce || !nx.animate) { view.innerHTML = ''; view.appendChild(nx); return; }
+      var shift = Math.round(w * (fromDx != null ? 1 : 0.18)) * (dir > 0 ? 1 : -1);
+      view.querySelectorAll('.sp-out').forEach(function (o) { o.remove(); });
+      cur.classList.add('sp-out');
+      view.appendChild(nx);
+      var d = fromDx != null ? 220 : 380;
+      var startX = fromDx != null ? fromDx : 0;
+      cur.animate([{ transform: 'translateX(' + startX + 'px)', opacity: fromDx != null ? 1 : 1 }, { transform: 'translateX(' + (startX + shift) + 'px)', opacity: 0 }], { duration: d, easing: 'ease-out', fill: 'forwards' })
+        .onfinish = function () { try { cur.remove(); } catch (e) {} };
+      nx.animate([{ transform: 'translateX(' + (startX - shift) + 'px)', opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: d, easing: 'ease-out' });
+    }
+    function smartPanelPause(el) {
+      var st = _smartPanelState[el._spTitle];
+      if (st) { st.pausedUntil = Date.now() + SMART_PANEL_IDLE; st.nextAt = st.pausedUntil; }
+    }
+    function bindSmartPanelGestures(el) {
+      if (el._spBound) return;
+      el._spBound = true;
+      var sx = 0, sy = 0, dx = 0, drag = false, down = false, pid = null, cur = null;
+      el.addEventListener('pointerdown', function (ev) {
+        if (ev.button != null && ev.button !== 0) return;
+        down = true; drag = false; dx = 0; sx = ev.clientX; sy = ev.clientY; pid = ev.pointerId;
+        smartPanelPause(el);
+      });
+      el.addEventListener('pointermove', function (ev) {
+        if (!down || ev.pointerId !== pid) return;
+        var mx = ev.clientX - sx, my = ev.clientY - sy;
+        if (!drag) {
+          if (Math.abs(mx) < 8) return;
+          if (Math.abs(my) > Math.abs(mx)) { down = false; return; }
+          if ((el._spPages || []).length < 2) { down = false; return; }
+          drag = true;
+          try { el.setPointerCapture(pid); } catch (e) {}
+          cur = el.querySelector('.sp-page:not(.sp-out)');
+        }
+        dx = mx;
+        if (cur) { cur.style.transform = 'translateX(' + dx + 'px)'; cur.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / (el.clientWidth || 100))); }
+      });
+      var end = function (ev) {
+        if (!down) return;
+        down = false;
+        smartPanelPause(el);
+        if (!drag) {
+          if (ev.type === 'pointerup') {
+            var pg = (el._spPages || [])[el._spIdx];
+            if (pg && pg.onTap) { try { pg.onTap(el._spTitle); } catch (e) {} }
+          }
+          return;
+        }
+        drag = false;
+        var c = cur; cur = null;
+        if (Math.abs(dx) > Math.max(28, (el.clientWidth || 100) * 0.22)) {
+          if (c) { c.style.transform = ''; c.style.opacity = ''; }
+          smartPanelGo(el, dx > 0 ? 1 : -1, dx);
+        } else if (c) {
+          var from = dx;
+          c.style.transform = ''; c.style.opacity = '';
+          if (c.animate) c.animate([{ transform: 'translateX(' + from + 'px)' }, { transform: 'translateX(0)' }], { duration: 160, easing: 'ease-out' });
+        }
+      };
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+      /* لمس این باکس، کارت را روی صفحه اصلی جابه‌جا نکند */
+      el.addEventListener('click', function (ev) { ev.stopPropagation(); });
+    }
+    /* تایمر واحد: فقط پنل کارتِ فعالِ قابل‌مشاهده جابه‌جا می‌شود */
+    (function () {
+      setInterval(function () {
+        try {
+          if (document.hidden) return;
+          var panel = document.getElementById('panel-home');
+          if (!panel || !panel.classList.contains('active')) return;
+          if (document.body.classList.contains('card-reorder-mode')) return;
+          var t = getActiveHomeCardTitle();
+          var now = Date.now();
+          document.querySelectorAll('#homeCards .pc-smart-box.sp-panel').forEach(function (el) {
+            var st = _smartPanelState[el._spTitle];
+            if (!st || (el._spPages || []).length < 2) return;
+            if (t && el._spTitle !== t) return;
+            if (now < st.pausedUntil || now < st.nextAt) return;
+            var r = el.getBoundingClientRect();
+            if (!(r.width > 0) || r.right < 0 || r.left > window.innerWidth) return;
+            var hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            if (!hit || !el.contains(hit)) return; /* مودال یا لایه‌ای روی کارت است */
+            smartPanelGo(el, 1);
+          });
+        } catch (e) {}
+      }, 1000);
+    })();
+
+    /* برگهٔ بازبینی دسته‌ها: کاربر دستهٔ هر شرح را تأیید/اصلاح می‌کند → دیکشنری شخصی */
+    function openCategoryReviewSheet(title) {
+      var sec = findSectionByTitle('expense', title);
+      var seen = {}, items = [];
+      spRows(sec).forEach(function (r) {
+        var d = String(r.desc || '').trim();
+        var n = HKCategorizer.normalize(d);
+        if (!n || seen[n] || r.fromPlanId) return;
+        seen[n] = 1;
+        items.push(d);
+      });
+      var ov = document.createElement('div');
+      ov.className = 'modal-overlay open sp-cat-sheet';
+      ov.style.cssText = 'z-index:600;display:flex;align-items:center;justify-content:center;';
+      var box = document.createElement('div');
+      box.className = 'modal-box';
+      box.style.cssText = 'max-width:360px;width:min(360px,92vw);text-align:right;max-height:80vh;display:flex;flex-direction:column;';
+      var h = document.createElement('div');
+      h.style.cssText = 'font-weight:800;margin-bottom:6px;';
+      h.textContent = 'دسته‌بندی مخارج';
+      var sub = document.createElement('div');
+      sub.style.cssText = 'font-size:0.74rem;opacity:0.7;margin-bottom:10px;line-height:1.5;';
+      sub.textContent = items.length ? 'دستهٔ هر شرح را اصلاح کن؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
+      var list = document.createElement('div');
+      list.style.cssText = 'overflow-y:auto;flex:1 1 auto;min-height:0;';
+      items.forEach(function (d) {
+        var c = HKCategorizer.classify(d);
+        var row = document.createElement('div');
+        row.className = 'sp-cat-row';
+        var lab = document.createElement('span');
+        lab.className = 'sp-cat-desc';
+        lab.textContent = d;
+        var sel = document.createElement('select');
+        sel.className = 'sp-cat-select';
+        var o0 = document.createElement('option');
+        o0.value = ''; o0.textContent = 'نامشخص';
+        sel.appendChild(o0);
+        HKCategorizer.categories.forEach(function (cat) {
+          var o = document.createElement('option');
+          o.value = cat.id; o.textContent = cat.label;
+          sel.appendChild(o);
+        });
+        sel.value = c ? c.id : '';
+        sel.onchange = function () { HKCategorizer.learn(d, sel.value); };
+        row.appendChild(lab);
+        row.appendChild(sel);
+        list.appendChild(row);
+      });
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'modal-btn yes';
+      btn.style.cssText = 'margin-top:12px;width:100%;';
+      btn.textContent = 'بستن';
+      var close = function () { try { ov.remove(); } catch (e) {} try { renderHomeCards(); } catch (e2) {} };
+      btn.onclick = close;
+      ov.addEventListener('click', function (ev) { if (ev.target === ov) close(); });
+      box.appendChild(h); box.appendChild(sub); box.appendChild(list); box.appendChild(btn);
+      ov.appendChild(box);
+      document.body.appendChild(ov);
     }
 
     function addPersonCard() {
