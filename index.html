@@ -18090,7 +18090,9 @@ function openPdfPrintWindow(){
 
     let _activeHomeCardTitle = '';
     function setActiveHomeCardTitle(t) {
-      _activeHomeCardTitle = (t || '').trim();
+      t = (t || '').trim();
+      if (t && t === _activeHomeCardTitle) return;
+      _activeHomeCardTitle = t;
       try { if (_activeHomeCardTitle) sessionStorage.setItem('hesab_activeHomeCard', _activeHomeCardTitle); } catch (e) {}
     }
     function getActiveHomeCardTitle() {
@@ -18102,8 +18104,8 @@ function openPdfPrintWindow(){
       try {
         const box = document.getElementById('homeCards');
         if (!box || !title) return;
-        const card = box.querySelector('.person-card[data-title="' + (window.CSS && CSS.escape ? CSS.escape(title) : title.replace(/"/g, '')) + '"]')
-          || Array.from(box.querySelectorAll('.person-card')).find(function(el){ return (el.dataset.title || '') === title; });
+        const card = box.querySelector('.person-card:not(.hc-clone)[data-title="' + (window.CSS && CSS.escape ? CSS.escape(title) : title.replace(/"/g, '')) + '"]')
+          || Array.from(box.querySelectorAll('.person-card:not(.hc-clone)')).find(function(el){ return (el.dataset.title || '') === title; });
         if (!card) return;
         homeCenterCard(box, card, !!smooth);
         try { updateHomeCardScales(box); } catch (eU) {}
@@ -18353,10 +18355,12 @@ function openPdfPrintWindow(){
       var dist = box._hcDist || (cards[0].offsetWidth * 1.03) || 300;
       var padR = parseFloat(box.style.paddingRight) || 0;
       var best = null, bestD = 1e9;
+      /* اول همهٔ اندازه‌ها خوانده می‌شود، بعد استایل‌ها نوشته می‌شوند (بدون reflow تکراری در هر فریم = بدون لگ) */
+      var geo = [];
+      cards.forEach(function (c) { geo.push([c.offsetWidth, c.getBoundingClientRect().left]); });
       cards.forEach(function (c, ci) {
-        var W = c.offsetWidth, s0 = c._hs || 1, p0 = (c._hp == null) ? 0.5 : c._hp;
-        var r = c.getBoundingClientRect();
-        var cx = r.left - p0 * W * (1 - s0) + W / 2;
+        var W = geo[ci][0], s0 = c._hs || 1, p0 = (c._hp == null) ? 0.5 : c._hp;
+        var cx = geo[ci][1] - p0 * W * (1 - s0) + W / 2;
         /* کارت اول جای «فعال» خودش را لبهٔ راست هم‌راستا می‌داند؛ بقیه مرکز */
         var focus = (ci === 0) ? (br.right - padR - W / 2) : mid;
         var o = cx - focus;
@@ -18366,10 +18370,10 @@ function openPdfPrintWindow(){
         var sc = 1;
         var p = Math.max(0, Math.min(1, 0.5 - 0.5 * (o / dist)));
         c._hs = sc; c._hp = p;
-        c.style.transformOrigin = (p * 100).toFixed(1) + '% 50%';
-        c.style.transform = 'scale(' + sc.toFixed(4) + ')';
+        if (c.style.transform !== 'scale(1)') c.style.transform = 'scale(1)';
         /* کارت فعال کاملاً واضح؛ کارت‌های کناری به‌تدریج مات‌تر */
-        c.style.opacity = (1 - 0.62 * t).toFixed(3);
+        var op = (1 - 0.62 * t).toFixed(3);
+        if (c._op !== op || !c.style.opacity) { c._op = op; c.style.opacity = op; }
         var d = Math.abs(cx - mid);
         if (d < bestD) { bestD = d; best = c; }
       });
@@ -18560,6 +18564,7 @@ function openPdfPrintWindow(){
       const box = document.getElementById('homeCards');
       if (!box) return;
       try { updateHomeBalanceCircle(); } catch (eHB) {}
+      try { if (typeof HomeCarousel !== 'undefined') HomeCarousel.cancel(); } catch (eHC) {}
       box.innerHTML = '';
       const titles = allPersonTitles();
       const _ZERO_TOT = { incomeTotal: 0, incomePaid: 0, incomeUnpaid: 0, expenseTotal: 0, expensePaid: 0, expenseUnpaid: 0, remain: 0, instant: 0 };
@@ -18963,7 +18968,7 @@ function openPdfPrintWindow(){
         var dx = ev.clientX - st.sx, dy = ev.clientY - st.sy;
         if (!st.drag) {
           if (Math.abs(dx) < 8) return;
-          if (Math.abs(dy) > Math.abs(dx)) { end(); return; }
+          if (Math.abs(dy) > Math.abs(dx)) { end(); settle(b, 0); return; }
           st.drag = true; st.sx = ev.clientX; st.start = b.scrollLeft; dx = 0;
           st.dirHint = ev.clientX - st.sx0 > 0 ? 1 : -1;
         }
@@ -18987,7 +18992,13 @@ function openPdfPrintWindow(){
         if (!st || ev.pointerId !== st.pid) return;
         var b = box(), s = st;
         end();
-        if (!b || !s.drag) { if (b && b._hcClone) removeClone(b, nearestCard(b, b.scrollLeft, realCards(b))); return; }
+        if (!b) return;
+        if (!s.drag) {
+          /* لمس بدون کشیدن (مثلاً وسط حرکت برای توقف): هرگز کارت نصفه نماند */
+          if (s.wasAnim) blockClickUntil = Date.now() + 350;
+          settle(b, 0);
+          return;
+        }
         blockClickUntil = Date.now() + 350;
         var v = 0;
         if (s.samples.length >= 2) {
@@ -19003,19 +19014,51 @@ function openPdfPrintWindow(){
           var dir = Math.abs(delta) > 2 ? (delta < 0 ? -1 : 1) : (fingerDx > 0 ? -1 : 1);
           to = stepTarget(b, base, dir);
         }
-        animateTo(b, to, 0, -v, function () {
-          var c = b._hcClone;
-          if (!c) return;
-          /* روی نسخهٔ موقت ایستاد → همان کارت واقعی (اول/آخر) */
+        animateTo(b, to, 0, -v, function () { finalize(b); });
+      }
+      function onCancel(ev) {
+        if (!st || ev.pointerId !== st.pid) return;
+        var b = box();
+        end();
+        if (b) settle(b, 0);
+      }
+      /* پایان هر حرکت: دقیقاً روی نزدیک‌ترین کارت؛ نسخهٔ موقت (حلقه) با کارت واقعی جایگزین می‌شود */
+      function finalize(b) {
+        if (!b || !b.isConnected) return;
+        var c = b._hcClone;
+        if (c && !b.contains(c.el)) { b._hcClone = null; c = null; }
+        if (c) {
           var landed = nearestCard(b, b.scrollLeft);
           removeClone(b, landed === c.el ? c.of : landed);
-        });
+          return;
+        }
+        var n = nearestCard(b, b.scrollLeft, realCards(b));
+        if (n) { var t = targetOf(b, n); if (Math.abs(b.scrollLeft - t) > 0.5) b.scrollLeft = t; }
+      }
+      function offTarget(b) {
+        var n = nearestCard(b, b.scrollLeft);
+        return !!n && Math.abs(targetOf(b, n) - b.scrollLeft) > 2;
+      }
+      function settle(b, v) {
+        if (!b || !b.isConnected || st) return;
+        var n = nearestCard(b, b.scrollLeft);
+        if (!n) return;
+        var t = targetOf(b, n);
+        if (Math.abs(b.scrollLeft - t) < 1) { finalize(b); return; }
+        animateTo(b, t, 0, v || 0, function () { finalize(b); });
+      }
+      /* رندر دوباره یا تغییر چیدمان: حرکت نیمه‌کاره و نسخهٔ موقت پاک شود */
+      function cancel() {
+        stopAnim();
+        if (st) end();
+        var b = box();
+        if (b && b._hcClone) { try { b._hcClone.el.remove(); } catch (e) {} b._hcClone = null; }
       }
       function end() {
         st = null;
         window.removeEventListener('pointermove', onMove, true);
         window.removeEventListener('pointerup', onUp, true);
-        window.removeEventListener('pointercancel', onUp, true);
+        window.removeEventListener('pointercancel', onCancel, true);
       }
       function bind() {
         var b = box();
@@ -19024,13 +19067,21 @@ function openPdfPrintWindow(){
         b.addEventListener('pointerdown', function (ev) {
           if (ev.button != null && ev.button !== 0) return;
           if (!multi(b)) return;
+          if (st) end();
+          var wasAnim = !!animRaf;
           stopAnim();
-          if (b._hcClone) removeClone(b, nearestCard(b, b.scrollLeft, realCards(b)));
-          st = { pid: ev.pointerId, sx: ev.clientX, sx0: ev.clientX, sy: ev.clientY, start: b.scrollLeft, drag: false, samples: [],
-                 fromPanel: !!(ev.target && ev.target.closest && ev.target.closest('.sp-panel')), handoff: false };
+          /* نسخهٔ موقت فقط وقتی دقیقاً روی کارت هستیم حذف شود (بدون پرش)؛ وسط حرکت می‌ماند تا کشیدن ادامه یابد */
+          if (b._hcClone) {
+            if (!b.contains(b._hcClone.el)) b._hcClone = null;
+            else { var nc = nearestCard(b, b.scrollLeft); if (nc && Math.abs(targetOf(b, nc) - b.scrollLeft) < 2) finalize(b); }
+          }
+          /* کارت هنوز در حرکت یا جا نیفتاده → کشیدن مال کاروسل است، نه باکس هوشمند */
+          var unsettled = wasAnim || !!b._hcClone || offTarget(b);
+          st = { pid: ev.pointerId, sx: ev.clientX, sx0: ev.clientX, sy: ev.clientY, start: b.scrollLeft, drag: false, samples: [], wasAnim: wasAnim,
+                 fromPanel: !unsettled && !!(ev.target && ev.target.closest && ev.target.closest('.sp-panel')), handoff: false };
           window.addEventListener('pointermove', onMove, true);
           window.addEventListener('pointerup', onUp, true);
-          window.addEventListener('pointercancel', onUp, true);
+          window.addEventListener('pointercancel', onCancel, true);
         });
         /* کلیکِ پس از کشیدن (مثلاً روی کادر درآمد/مخارج) اجرا نشود */
         b.addEventListener('click', function (ev) {
@@ -19045,7 +19096,13 @@ function openPdfPrintWindow(){
         return true;
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
-      return { animateTo: animateTo, takeOver: takeOver, bind: bind, canDrag: function () { var b = box(); return !!b && multi(b); } };
+      /* محافظ: اگر به هر دلیلی (تغییر اندازه، برگشت به برنامه) کارت نصفه ماند، جا بیفتد */
+      function guard() { var b = box(); if (b && !st && !animRaf && b.offsetParent) settle(b, 0); }
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(guard, 60); });
+      window.addEventListener('resize', function () { setTimeout(guard, 200); });
+      return { animateTo: animateTo, takeOver: takeOver, bind: bind, cancel: cancel, settle: function () { guard(); },
+               busy: function () { var b = box(); return !!b && multi(b) && (!!animRaf || !!st && !!st.drag || !!b._hcClone || offTarget(b)); },
+               canDrag: function () { var b = box(); return !!b && multi(b); } };
     })();
 
     /* ===== راهنمای اسکرول کارت: فقط بار اولِ اجرای برنامه، یک رفت‌وبرگشت آهسته ===== */
@@ -19377,14 +19434,17 @@ function openPdfPrintWindow(){
       return out.sort(function (a, b) { return a.days - b.days; });
     }
     function spLedger(title) {
-      var t = (title || '').trim(), debt = 0, credit = 0;
+      var t = (title || '').trim(), debt = 0, credit = 0, list = [];
       try {
         (typeof ledgerPairNets === 'function' ? ledgerPairNets() : []).forEach(function (x) {
-          if ((x.debtor || '').trim() === t) debt += Number(x.amount) || 0;
-          if ((x.creditor || '').trim() === t) credit += Number(x.amount) || 0;
+          var a = Number(x.amount) || 0;
+          if (a <= 0) return;
+          if ((x.debtor || '').trim() === t) { debt += a; list.push({ who: (x.creditor || '').trim(), amount: a, type: 'debt' }); }
+          if ((x.creditor || '').trim() === t) { credit += a; list.push({ who: (x.debtor || '').trim(), amount: a, type: 'credit' }); }
         });
       } catch (e) {}
-      return { debt: debt, credit: credit };
+      list.sort(function (p, q) { return q.amount - p.amount; });
+      return { debt: debt, credit: credit, list: list };
     }
     function spActiveProjects(title) {
       var ids = {};
@@ -19694,11 +19754,23 @@ function openPdfPrintWindow(){
           '<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(x.amount) + ' تومان</div>');
       });
       if (!upcoming.length && late.length) items.push('<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(late[0].amount) + ' تومان</div>');
-      if (D.led.credit > 0) items.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
-      if (D.led.debt > 0) items.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
       if (D.projects > 0) items.push(spLine('پروژهٔ فعال', spFa(D.projects)));
       if (!items.length) return null;
       return spHead('تعهدات') + spItems(items);
+    }
+    /* طلب و بدهی: اسلاید جداگانه (جمع کل + طرف‌حساب‌های اصلی) */
+    function spPageLedger(D) {
+      var L = D.led || {};
+      if (!(L.credit > 0) && !(L.debt > 0)) return null;
+      var items = [];
+      if (L.credit > 0) items.push(spLine('طلب کل', spAmt(L.credit), 'pos'));
+      if (L.debt > 0) items.push(spLine('بدهی کل', spAmt(L.debt), 'neg'));
+      (L.list || []).slice(0, 3).forEach(function (x) {
+        /* نام طرف‌حساب یک خط، مبلغ زیرش (یکدست برای نام‌های کوتاه و بلند) */
+        var cr = x.type === 'credit';
+        items.push('<div class="sp-l">' + (cr ? 'طلب از' : 'بدهی به') + ' «' + spEsc(x.who) + '»</div><div class="sp-v sp-under ' + (cr ? 'pos' : 'neg') + '">' + spAmt(x.amount) + '</div>');
+      });
+      return spHead('طلب و بدهی') + spItems(items);
     }
     /* ۳) آمار: فقط مقایسهٔ این ماه با ماه قبل */
     function spBarRow(label, amount, max, cls) {
@@ -19759,6 +19831,7 @@ function openPdfPrintWindow(){
       { key: 'warn', build: spPageWarn, onTap: function (title) { spDismissDupPrompt(title); } },
       { key: 'overview', build: spPageOverview },
       { key: 'obligations', build: spPageObligations },
+      { key: 'ledger', build: spPageLedger },
       { key: 'stats', build: spPageStats },
       { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
       { key: 'projects', build: spPageProjects },
@@ -19934,6 +20007,9 @@ function openPdfPrintWindow(){
       var sx = 0, sy = 0, dx = 0, drag = false, down = false, pid = null, cur = null, moved = false;
       el.addEventListener('pointerdown', function (ev) {
         if (ev.button != null && ev.button !== 0) return;
+        down = false;
+        /* کارت‌ها در حال حرکت‌اند → این لمس برای کاروسل است (باکس هوشمند ورق نخورد) */
+        try { if (typeof HomeCarousel !== 'undefined' && HomeCarousel.busy()) { moved = true; return; } } catch (eB) {}
         down = true; drag = false; moved = false; dx = 0; sx = ev.clientX; sy = ev.clientY; pid = ev.pointerId;
         smartPanelPause(el);
       });
