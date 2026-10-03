@@ -8838,7 +8838,7 @@
     #panel-home .home-box.box4 .home-circle-big .hbc-amt { margin-bottom: 20%; }
 
     /* کارت کاربر: هم‌عرض باکس‌ها؛ کارت دوم/ایجاد دیده نمی‌شود */
-    #homeCards .person-card { aspect-ratio: 1.62 / 1; }
+    #homeCards .person-card { aspect-ratio: 1.62 / 1; height: var(--hc-card-h, auto) !important; }
     #homeCards .person-card .person-card-inner {
       padding: 10px 14px 24px !important;
     }
@@ -8891,66 +8891,82 @@
       cursor: default;
     }
     .sp-view { position: absolute; inset: 0; direction: rtl; }
+    /* همهٔ صفحه‌ها از بالا شروع می‌شوند (هم‌تراز «درآمد کل» در کادر کناری؛ --sp-pt با JS) */
     .sp-page {
       position: absolute;
       inset: 0;
       box-sizing: border-box;
-      padding: 7px 9px;
+      padding: var(--sp-pt, 8px) 9px 7px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 3px;
+      justify-content: flex-start;
+      gap: calc(4px * var(--sp-fs, 1));
       color: rgba(255,255,255,0.95);
       font-weight: 700;
       line-height: 1.3;
+      overflow: hidden;
       will-change: transform, opacity;
     }
     .sp-h {
-      font-size: 0.66rem;
+      font-size: calc(0.7rem * var(--sp-fs, 1));
       font-weight: 800;
       color: #08b5f5;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
       white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
+      flex-shrink: 0;
     }
-    .sp-big { font-size: 0.86rem; font-weight: 800; white-space: nowrap; }
+    /* سطر: عنوان راست، مقدار چپ؛ اگر جا نشد مقدار به سطر بعد می‌رود (هیچ نوشته‌ای بریده نمی‌شود) */
     .sp-row {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: baseline;
-      gap: 4px;
-      font-size: 0.62rem;
-      white-space: nowrap;
+      column-gap: 6px;
+      row-gap: 0;
+      font-size: calc(0.66rem * var(--sp-fs, 1));
       min-width: 0;
+      flex-shrink: 0;
     }
-    .sp-l { color: rgba(255,255,255,0.62); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-    .sp-v { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .sp-row-sm { font-size: calc(0.6rem * var(--sp-fs, 1)); }
+    .sp-l { color: rgba(255,255,255,0.62); white-space: nowrap; overflow: hidden; max-width: 100%; }
+    .sp-v { direction: rtl; unicode-bidi: isolate; white-space: nowrap; margin-right: auto; font-variant-numeric: tabular-nums; overflow: hidden; max-width: 100%; }
     .sp-page .pos { color: #9ee858; }
     .sp-page .neg { color: #ff6b4a; }
-    .sp-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 1px 0 2px; }
-    .sp-bar.thin { height: 3px; margin: 1px 0 3px; }
+    .sp-g { font-size: calc(0.62rem * var(--sp-fs, 1)); color: rgba(255,255,255,0.9); font-weight: 800; margin-top: 1px; flex-shrink: 0; }
+    .sp-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; flex-shrink: 0; }
+    .sp-bar.thin { height: 3px; }
     .sp-bar i { display: block; height: 100%; border-radius: 3px; background: #08b5f5; }
+    .sp-bar i.pos { background: #9ee858; }
     .sp-bar i.neg { background: #ff6b4a; }
-    .sp-hb { display: flex; align-items: center; gap: 5px; font-size: 0.6rem; }
-    .sp-hb .sp-l { flex: 0 0 2.4em; }
-    .sp-track { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; direction: rtl; }
-    .sp-track i { display: block; height: 100%; border-radius: 3px; }
-    .sp-track i.pos { background: #9ee858; }
-    .sp-track i.neg { background: #ff6b4a; }
-    .sp-cols {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 4px;
-      height: 30px;
-      margin-top: 4px;
-      direction: ltr;
+    .sp-bar i.dim { opacity: 0.45; }
+    /* دسته‌ها: هر صفحه ۳ دسته؛ اسکرول عمودی با توقف روی هر گروه */
+    .sp-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+      touch-action: pan-y;
+      margin-bottom: -7px;
     }
-    .sp-cols i { flex: 1 1 0; display: block; border-radius: 2px 2px 0 0; background: #ff6b4a; opacity: 0.85; }
-    .sp-cap { font-size: 0.55rem; color: rgba(255,255,255,0.5); text-align: center; }
-    .sp-tip { font-size: 0.64rem; line-height: 1.55; color: rgba(255,255,255,0.92); }
-    .sp-tip + .sp-tip { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sp-scroll::-webkit-scrollbar { display: none; }
+    .sp-grp {
+      height: 100%;
+      box-sizing: border-box;
+      padding-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: calc(5px * var(--sp-fs, 1));
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+    .sp-cat { display: flex; flex-direction: column; gap: 2px; }
+    .sp-scroll.sp-more { -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent); mask-image: linear-gradient(to bottom, #000 82%, transparent); }
+    .sp-tip { font-size: calc(0.66rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.92); flex-shrink: 0; }
+    .sp-tip + .sp-tip { margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); }
     .sp-empty {
       position: absolute;
       inset: 0;
@@ -8965,21 +8981,25 @@
       font-weight: 700;
       color: rgba(255,255,255,0.5);
     }
-    /* برگهٔ بازبینی دسته‌ها */
-    .sp-cat-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .sp-cat-desc { flex: 1 1 auto; min-width: 0; font-size: 0.8rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sp-cat-select {
-      flex: 0 0 auto;
-      max-width: 48%;
-      background: #1b1b1b;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.22);
-      border-radius: 8px;
-      padding: 5px 8px;
-      font-family: inherit;
-      font-size: 0.76rem;
-      direction: rtl;
+    /* برگهٔ دسته‌بندی مخارج */
+    .sp-cat-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; padding: 10px 2px; border: none; border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: transparent; color: #fff; font-family: inherit; text-align: right; direction: rtl; cursor: pointer;
     }
+    .sp-cat-row:active { background: rgba(255,255,255,0.05); }
+    .sp-cat-desc { flex: 1 1 auto; min-width: 0; font-size: 0.82rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-cat-chip {
+      flex: 0 0 auto; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(8,181,245,0.5); color: #08b5f5; background: rgba(8,181,245,0.08);
+    }
+    .sp-cat-chip.none { border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.6); background: transparent; }
+    .sp-pick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 2px 0 4px; }
+    .sp-pick {
+      padding: 10px 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.2); color: #fff; font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    }
+    .sp-pick.on { border-color: #08b5f5; color: #08b5f5; background: rgba(8,181,245,0.1); }
 
     /* شش عنوان راست‌چین و هم‌راستا؛ شش مبلغ چپ‌چین و هم‌راستا */
     #homeCards .person-card .person-stat-box .person-stat-line.psl-l { text-align: right; }
@@ -8990,6 +9010,28 @@
       text-align: left;
       justify-self: stretch;
       font-size: calc(0.84rem * var(--pc-fs, 1)) !important;
+    }
+
+    /* نشان عددی اقساط */
+    .home-tile .home-tile-badge {
+      position: absolute;
+      top: 2px;
+      right: 50%;
+      margin-right: -26px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      box-sizing: border-box;
+      border-radius: 8px;
+      background: #ff3b30;
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 800;
+      line-height: 16px;
+      text-align: center;
+      box-shadow: 0 0 0 2px #1b1b1b;
+      pointer-events: none;
+      z-index: 2;
     }
 
     /* نقاط شمارندهٔ کارت‌ها */
@@ -10569,6 +10611,8 @@
     };
     function openFeatureSheet(kind) {
       try { closeSideMenu(); } catch (e) {}
+      /* ورود به منوی اقساط = اعلان‌های قسط «خوانده‌شده» */
+      if (kind === 'install') { try { markInstallAlertsSeen(); } catch (eIA) {} }
       const sheet = document.getElementById('featureSheet');
       const body = document.getElementById('featureSheetBody');
       const title = document.getElementById('featureSheetTitle');
@@ -18555,6 +18599,7 @@ function openPdfPrintWindow(){
       } catch (e) {}
       try { layoutHomeStack(); } catch (eL) {}
       try { fitHomeCardStats(); } catch (eF) {}
+      try { updateInstallTileBadge(); } catch (eIB) {}
       try { maybeRunCardSwipeHint(); } catch (eH) {}
     }
 
@@ -18568,52 +18613,42 @@ function openPdfPrintWindow(){
         var over = function () {
           for (var i = 0; i < lines.length; i++) { if (lines[i].scrollWidth > lines[i].clientWidth + 1) return true; }
           var bxs = card.querySelectorAll('.person-stat-box');
-          for (var j = 0; j < bxs.length; j++) { if (bxs[j].scrollWidth > bxs[j].clientWidth + 1) return true; }
+          for (var j = 0; j < bxs.length; j++) { if (bxs[j].scrollWidth > bxs[j].clientWidth + 1 || bxs[j].scrollHeight > bxs[j].clientHeight + 1) return true; }
           return false;
         };
         var f = 1;
         card.style.setProperty('--pc-fs', '1');
-        while (f > 0.66 && over()) { f -= 0.04; card.style.setProperty('--pc-fs', f.toFixed(2)); }
+        while (f > 0.6 && over()) { f -= 0.04; card.style.setProperty('--pc-fs', f.toFixed(2)); }
+        try { fitSmartPanel(card.querySelector('.pc-smart-box')); } catch (eSp) {}
       });
     }
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { try { fitHomeCardStats(); } catch (e) {} }); } catch (eFr) {}
 
     /* ===== نقاط شمارندهٔ کارت‌ها (پایین کارت) ===== */
+    /* هر کارت نقاط خودش را دارد (نقطهٔ همان کارت روشن)؛ نقاط همراه کارت حرکت می‌کنند
+       و هنگام اسکرول بین دو کارت معلق نمی‌مانند */
     function renderHomeCardDots(box, count) {
-      var wrap = document.getElementById('homeCardsWrap');
-      if (!wrap) return;
-      var dots = wrap.querySelector('.home-card-dots');
-      if (!dots) {
-        dots = document.createElement('div');
-        dots.className = 'home-card-dots';
-        dots.setAttribute('aria-hidden', 'true');
-        wrap.appendChild(dots);
-      }
-      var n = Math.max(0, count | 0);
-      if (dots.childElementCount !== n) {
+      try { var old = document.querySelector('#homeCardsWrap > .home-card-dots'); if (old) old.remove(); } catch (e0) {}
+      if (!box) return;
+      var cards = box.querySelectorAll('.person-card');
+      var n = cards.length;
+      cards.forEach(function (card, idx) {
+        var dots = card.querySelector(':scope > .home-card-dots');
+        if (!dots) {
+          dots = document.createElement('div');
+          dots.className = 'home-card-dots';
+          dots.setAttribute('aria-hidden', 'true');
+          card.appendChild(dots);
+        }
         dots.innerHTML = '';
-        for (var i = 0; i < n; i++) dots.appendChild(document.createElement('i'));
-      }
-      updateHomeCardDots(box);
+        for (var i = 0; i < n; i++) {
+          var d = document.createElement('i');
+          if (i === idx) d.className = 'on';
+          dots.appendChild(d);
+        }
+      });
     }
-    function updateHomeCardDots(box, best) {
-      box = box || document.getElementById('homeCards');
-      var wrap = document.getElementById('homeCardsWrap');
-      var dots = wrap && wrap.querySelector('.home-card-dots');
-      if (!box || !dots) return;
-      var cards = Array.prototype.slice.call(box.querySelectorAll('.person-card'));
-      if (!cards.length) return;
-      var idx = best ? cards.indexOf(best) : -1;
-      if (idx < 0) {
-        var br = box.getBoundingClientRect(), mid = br.left + br.width / 2, bd = 1e9;
-        cards.forEach(function (c, i) {
-          var r = c.getBoundingClientRect();
-          var d = Math.abs(r.left + r.width / 2 - mid);
-          if (d < bd) { bd = d; idx = i; }
-        });
-      }
-      Array.prototype.forEach.call(dots.children, function (d, i) { d.classList.toggle('on', i === idx); });
-    }
+    function updateHomeCardDots() { /* نقاط داخل هر کارت ثابت‌اند؛ به‌روزرسانی هنگام اسکرول لازم نیست */ }
 
     /* ===== چیدمان عمودی صفحهٔ اصلی =====
        فاصلهٔ پایین باکس ۴ تا پایین صفحه = فاصلهٔ بالای نوار ماه/سال تا بالای صفحه؛
@@ -18643,24 +18678,41 @@ function openPdfPrintWindow(){
       if (b1 && b1.offsetHeight > 0) document.documentElement.style.setProperty('--home-box-h', b1.offsetHeight + 'px');
       var gTop = Math.max(0, Math.round(tb.top - cr.top));
       var screenBottom = vh - homeSafeBottom();
-      /* موقعیت پنل بدون اثر margin قبلی پشته */
+      /* پنل از بالای خودش محتوا را می‌بُرد؛ پس پشته از بالای پنل شروع می‌شود و فاصلهٔ
+         نوار بالا تا پنل (off) به همهٔ فاصله‌ها اضافه می‌شود تا فاصله‌ها برابر بمانند */
       stack.style.removeProperty('margin-top');
       var pr = panel.getBoundingClientRect();
       var panelH = Math.max(0, Math.round(screenBottom - pr.top));
       panel.style.setProperty('height', panelH + 'px', 'important');
       panel.style.setProperty('max-height', panelH + 'px', 'important');
-      var mt = Math.round(tb.bottom - pr.top);
-      stack.style.setProperty('margin-top', mt + 'px', 'important');
-      stack.style.setProperty('height', Math.max(0, Math.round(screenBottom - gTop - tb.bottom)) + 'px', 'important');
-      /* دایرهٔ موجودی: ۱۰px بالاتر از کف باکس ۴، ولی حداقل ۱۰px فاصله تا کف باکس ۳ */
+      var off = Math.max(0, Math.round(pr.top - tb.bottom));
+      var bottomY = Math.round(screenBottom - gTop);
+      stack.style.setProperty('margin-top', '0px', 'important');
+      stack.style.setProperty('padding-top', '0px', 'important');
+      stack.style.setProperty('gap', off + 'px', 'important');
+      stack.style.setProperty('height', Math.max(0, bottomY - Math.round(pr.top)) + 'px', 'important');
+      var root = document.documentElement.style;
+      root.removeProperty('--hc-card-h');
+      /* دایرهٔ موجودی: کفش هم‌تراز کف دو دایرهٔ کناری؛ اگر به باکس ۳ برسد،
+         کارت و سه باکس بالایی کمی بالاتر می‌روند (فاصلهٔ بالای باکس ۴ ثابت می‌شود) */
       try {
         var b3 = document.getElementById('homeBox3'), b4 = document.getElementById('homeBox4');
         var circ = document.getElementById('homeBalanceCircle');
-        if (b3 && b4 && circ) {
-          var gap34 = b4.getBoundingClientRect().top - b3.getBoundingClientRect().bottom;
-          var d = circ.offsetHeight || 94, h4 = b4.offsetHeight || 70;
-          var rise = Math.min(d - h4 + 10, Math.max(0, gap34 - 10));
-          document.documentElement.style.setProperty('--hbc-top', (-Math.round(Math.max(d - h4, rise))) + 'px');
+        var small = b4 && b4.querySelector('.home-circle-add');
+        if (b3 && b4 && circ && small) {
+          b4.style.removeProperty('margin-top');
+          var r4 = b4.getBoundingClientRect();
+          var smallBottom = small.getBoundingClientRect().bottom - r4.top;
+          var d = circ.offsetHeight || 94;
+          var rise = Math.round(d - smallBottom);
+          root.setProperty('--hbc-top', (-rise) + 'px');
+          var need = rise + 10;
+          var gap34 = r4.top - b3.getBoundingClientRect().bottom;
+          if (gap34 < need) b4.style.setProperty('margin-top', Math.max(0, need - off) + 'px', 'important');
+          /* صفحهٔ خیلی کوتاه: اگر باز هم جا نشد، فقط ارتفاع کارت کمی کم می‌شود (هیچ‌چیز بریده نشود) */
+          var overflow = Math.round(b4.getBoundingClientRect().bottom - bottomY);
+          var card0 = document.querySelector('#homeCards .person-card');
+          if (overflow > 0 && card0) root.setProperty('--hc-card-h', Math.max(170, card0.offsetHeight - overflow) + 'px');
         }
       } catch (eC) {}
       try { fitHomeCardStats(); } catch (eF) {}
@@ -18705,15 +18757,17 @@ function openPdfPrintWindow(){
         try {
           if (!card.animate) return;
           /* کارت بعدی سمت چپ است؛ کارت کمی به راست می‌رود و برمی‌گردد */
-          var dist = Math.round(Math.min(64, r.width * 0.16));
+          /* حرکت ظریف و دوبار: کمی جلو، مکث کوتاه، برگشت؛ سپس استراحت و تکرار */
+          var dist = Math.round(Math.min(30, r.width * 0.075));
           var base = card.style.transform || 'none';
           var moved = (base === 'none' ? '' : base + ' ') + 'translateX(' + dist + 'px)';
           card.animate([
-            { transform: base },
-            { transform: moved, offset: 0.45 },
-            { transform: moved, offset: 0.55 },
+            { transform: base, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+            { transform: moved, offset: 0.32, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+            { transform: moved, offset: 0.4, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+            { transform: base, offset: 0.72 },
             { transform: base }
-          ], { duration: 1900, easing: 'ease-in-out' });
+          ], { duration: 1500, iterations: 2 });
         } catch (e3) {}
       };
       setTimeout(tick, 600);
@@ -18861,17 +18915,17 @@ function openPdfPrintWindow(){
 
     function spEsc(s) { try { return escapeHtml(String(s)); } catch (e) { return String(s); } }
     function spFa(n) { try { return toPersianDigits(String(n)); } catch (e) { return String(n); } }
-    /* مبلغ فشرده برای فضای کوچک */
+    /* مبلغ فشرده برای فضای کوچک (اعداد فارسی) */
     function spAmt(n) {
       n = Number(n) || 0;
       var a = Math.abs(n), sgn = n < 0 ? '-' : '';
       var f = function (v) { var r = Math.round(v * 10) / 10; return spFa(String(r).replace('.', '٫')); };
       if (a >= 1e9) return sgn + f(a / 1e9) + ' میلیارد';
       if (a >= 1e6) return sgn + f(a / 1e6) + ' میلیون';
-      return sgn + formatNum(a);
+      return sgn + spFa(formatNum(a));
     }
     /* عدد و ٪ داخل ایزولهٔ LTR تا در متن راست‌به‌چپ «۵۴٪» نمایش داده شود نه «٪۵۴» */
-    function spPct(v) { return '\u2066' + spFa(Math.round(v)) + '٪\u2069'; }
+    function spPct(v) { return '⁦' + spFa(Math.round(v)) + '٪⁩'; }
     function spPrevSection(tab, title) {
       try {
         var p = prevYearMonth(currentYear, currentMonth);
@@ -18889,27 +18943,38 @@ function openPdfPrintWindow(){
     }
     /* مبلغ شخصی هر ردیف مخارج — همان قاعدهٔ sectionPaidUnpaidTotal */
     function spPersonalExpense(r) {
-      var t = sectionPaidUnpaidTotal({ rows: [r] }, { personalExpenseOnly: true });
-      return t.total;
+      return sectionPaidUnpaidTotal({ rows: [r] }, { personalExpenseOnly: true }).total;
+    }
+    /* درصدهای صحیح با جمع دقیقاً ۱۰۰ (روش بزرگ‌ترین باقی‌مانده) */
+    function spPercents100(amounts) {
+      var tot = amounts.reduce(function (s, a) { return s + a; }, 0);
+      if (!(tot > 0)) return amounts.map(function () { return 0; });
+      var raw = amounts.map(function (a) { return a / tot * 100; });
+      var fl = raw.map(Math.floor);
+      var rest = 100 - fl.reduce(function (s, a) { return s + a; }, 0);
+      raw.map(function (v, i) { return { i: i, r: v - fl[i] }; })
+        .sort(function (a, b) { return b.r - a.r; })
+        .slice(0, rest).forEach(function (x) { fl[x.i] += 1; });
+      return fl;
     }
     function spCategoryTotals(sec) {
-      var map = {}, total = 0, known = 0, rows = 0;
+      var map = {}, total = 0, known = 0, rows = 0, unknown = 0;
       spRows(sec).forEach(function (r) {
         var a = spPersonalExpense(r);
         if (!a) return;
         rows++;
         total += a;
         var c = HKCategorizer.classify(r.desc, r);
-        if (!c) return;
+        if (!c) { unknown += a; return; }
         known += a;
         map[c.id] = (map[c.id] || 0) + a;
       });
       var list = Object.keys(map).map(function (k) { return { id: k, label: HKCategorizer.byId[k].label, amount: map[k] }; })
         .sort(function (x, y) { return y.amount - x.amount; });
-      return { list: list, total: total, known: known, rows: rows };
+      return { list: list, total: total, known: known, unknown: unknown, rows: rows };
     }
-    /* اقساط مربوط به این کارت: لینک‌شده به بخش مخارج همین کاربر؛ اقساط بدون لینک روی کارت اول */
-    function spPlansForTitle(title, cardIdx) {
+    /* فقط اقساطی که در بخش اقساط به همین کاربر وصل شده‌اند */
+    function spPlansForTitle(title) {
       var t = (title || '').trim();
       return (plans || []).filter(function (p) {
         if (!p) return false;
@@ -18918,15 +18983,16 @@ function openPdfPrintWindow(){
           var s = ((periodData.expense && periodData.expense.sections) || []).find(function (x) { return x && x.id === p.expenseSectionId; });
           if (s) lt = (s.title || '').trim();
         }
-        return lt ? lt === t : cardIdx === 0;
+        return !!lt && lt === t;
       });
     }
-    function spUpcomingInstallments(title, cardIdx) {
+    /* اقساط پرداخت‌نشده: همهٔ معوق‌ها + سررسیدهای تا ۳۱ روز آینده */
+    function spInstallments(title) {
       var out = [];
       try {
         var today = getTodayPersian();
         var ti = dateToIndex(today.y, today.m, today.d);
-        spPlansForTitle(title, cardIdx).forEach(function (plan) {
+        spPlansForTitle(title).forEach(function (plan) {
           var count = Math.max(0, parseInt(plan.count, 10) || 0);
           var paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
           for (var i = paid; i < count; i++) {
@@ -18960,23 +19026,24 @@ function openPdfPrintWindow(){
       });
       return Object.keys(ids).length;
     }
-    /* همهٔ داده‌های لازم صفحه‌ها یک‌بار محاسبه می‌شود */
-    function spCollect(title, cardIdx) {
+    /* همهٔ داده‌های لازم صفحه‌ها یک‌بار محاسبه می‌شود (از توابع موجود پروژه) */
+    function spCollect(title) {
       var tot = personTotals(title);
       var expSec = findSectionByTitle('expense', title);
       var prevInc = spPrevSection('income', title), prevExp = spPrevSection('expense', title);
-      var pInc = prevInc ? sectionPaidUnpaidTotal(prevInc, { personalIncomeOnly: true }).total : 0;
-      var pExp = prevExp ? sectionPaidUnpaidTotal(prevExp, { personalExpenseOnly: true }).total : 0;
       return {
         title: title,
         inc: Number(tot.incomeTotal) || 0,
+        incPaid: Number(tot.incomePaid) || 0,
+        incUnpaid: Number(tot.incomeUnpaid) || 0,
         exp: Number(tot.expenseTotal) || 0,
+        expPaid: Number(tot.expensePaid) || 0,
         expUnpaid: Number(tot.expenseUnpaid) || 0,
-        pInc: pInc, pExp: pExp,
+        pInc: prevInc ? sectionPaidUnpaidTotal(prevInc, { personalIncomeOnly: true }).total : 0,
+        pExp: prevExp ? sectionPaidUnpaidTotal(prevExp, { personalExpenseOnly: true }).total : 0,
         cats: spCategoryTotals(expSec),
         pCats: prevExp ? spCategoryTotals(prevExp) : null,
-        expRows: spRows(expSec),
-        inst: spUpcomingInstallments(title, cardIdx),
+        inst: spInstallments(title),
         led: spLedger(title),
         projects: spActiveProjects(title)
       };
@@ -18992,76 +19059,80 @@ function openPdfPrintWindow(){
       return spFa(d) + ' روز دیگر';
     }
 
-    /* ۱) تحلیل وضعیت مالی */
+    /* ۱) وضعیت این ماه: پس‌انداز (با نمودار) و مانده؛ سبز = مثبت، قرمز = منفی */
     function spPageOverview(D) {
       if (D.inc <= 0 && D.exp <= 0) return null;
-      var rem = D.inc - D.exp;
+      var rem = D.inc - D.exp, pos = rem >= 0, cls = pos ? 'pos' : 'neg';
       var html = spHead('وضعیت این ماه');
       if (D.inc > 0) {
         var save = rem / D.inc * 100;
-        html += '<div class="sp-big ' + (save >= 0 ? 'pos' : 'neg') + '">' + (save >= 0 ? 'پس‌انداز ' : 'کسری ') + spPct(Math.abs(save)) + '</div>';
-        var ratio = Math.min(100, D.exp / D.inc * 100);
-        html += '<div class="sp-bar"><i class="neg" style="width:' + ratio.toFixed(1) + '%"></i></div>';
-        html += spLine('خرج از درآمد', spPct(D.exp / D.inc * 100));
-      } else {
-        html += '<div class="sp-big neg">بدون درآمد</div>';
+        html += spLine(pos ? 'پس‌انداز' : 'کسری', spPct(Math.abs(save)), cls);
+        html += '<div class="sp-bar"><i class="' + cls + '" style="width:' + Math.min(100, Math.abs(save)).toFixed(1) + '%"></i></div>';
       }
-      html += spLine(rem >= 0 ? 'مانده' : 'کسری', spAmt(Math.abs(rem)), rem >= 0 ? 'pos' : 'neg');
-      if (D.pExp > 0 && D.exp > 0) {
-        var ch = (D.exp - D.pExp) / D.pExp * 100;
-        if (Math.abs(ch) >= 1) html += spLine('خرج / ماه قبل', (ch > 0 ? '▲ ' : '▼ ') + spPct(Math.abs(ch)), ch > 0 ? 'neg' : 'pos');
-      }
+      html += spLine(pos ? 'مانده' : 'کسری', spAmt(Math.abs(rem)), cls);
       return html;
     }
-    /* ۲) تعهدات مالی — نزدیک‌ترین سررسید اول؛ بخش‌های بدون داده نمایش داده نمی‌شوند */
+    /* ۲) تعهدات: معوق‌ها و نزدیک‌ترین سررسید اول؛ بخش‌های بدون داده نمایش داده نمی‌شوند */
     function spPageObligations(D) {
       var lines = [];
-      if (D.inst.length) {
-        var n = D.inst[0];
-        lines.push(spLine('قسط بعدی', spDaysLabel(n.days), n.days <= 3 ? 'neg' : ''));
-        lines.push(spLine('مبلغ قسط', spAmt(n.amount)));
-        if (D.inst.length > 1) lines.push(spLine('اقساط پیش‌رو', spFa(D.inst.length)));
+      var late = D.inst.filter(function (x) { return x.days < 0; });
+      var next = D.inst.filter(function (x) { return x.days >= 0; })[0];
+      if (late.length) {
+        lines.push(spLine('قسط معوق', spFa(late.length) + ' قسط', 'neg'));
+        lines.push(spLine('بیشترین تاخیر', spFa(-late[0].days) + ' روز', 'neg'));
+      }
+      if (next) {
+        lines.push(spLine('قسط بعدی', spDaysLabel(next.days), next.days <= 1 ? 'neg' : ''));
+        lines.push(spLine('مبلغ قسط', spAmt(next.amount)));
+      } else if (late.length) {
+        lines.push(spLine('مبلغ قسط', spAmt(late[0].amount)));
       }
       if (D.led.credit > 0) lines.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
       if (D.led.debt > 0) lines.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
       if (D.projects > 0) lines.push(spLine('پروژهٔ فعال', spFa(D.projects)));
       if (!lines.length) return null;
-      return spHead('تعهدات') + lines.slice(0, 5).join('');
+      return spHead('تعهدات') + lines.join('');
     }
-    /* ۳) آمار — مقایسهٔ درآمد/خرج + روند هفتگی مخارج (ستون‌های ساده) */
+    /* ۳) آمار: مقایسهٔ این ماه با ماه قبل؛ اگر ماه قبل داده ندارد، وضعیت پرداخت این ماه */
+    function spBarRow(label, amount, max, cls) {
+      var w = max > 0 ? Math.max(amount > 0 ? 3 : 0, amount / max * 100) : 0;
+      return '<div class="sp-row sp-row-sm"><span class="sp-l">' + label + '</span><span class="sp-v">' + spAmt(amount) + '</span></div>' +
+        '<div class="sp-bar thin"><i class="' + cls + '" style="width:' + w.toFixed(1) + '%"></i></div>';
+    }
     function spPageStats(D) {
-      if (!(D.inc > 0 && D.exp > 0) && D.expRows.length < 2) return null;
-      var html = spHead('آمار ماه');
-      var mx = Math.max(D.inc, D.exp, 1);
-      html += '<div class="sp-hb"><span class="sp-l">درآمد</span><span class="sp-track"><i class="pos" style="width:' + (D.inc / mx * 100).toFixed(1) + '%"></i></span></div>';
-      html += '<div class="sp-hb"><span class="sp-l">خرج</span><span class="sp-track"><i class="neg" style="width:' + (D.exp / mx * 100).toFixed(1) + '%"></i></span></div>';
-      var wk = [0, 0, 0, 0, 0], any = 0;
-      D.expRows.forEach(function (r) {
-        var d = parseInt(toEnglishDigits(r.day || ''), 10);
-        if (!(d >= 1 && d <= 31)) return;
-        var a = spPersonalExpense(r);
-        if (!a) return;
-        wk[Math.min(4, Math.floor((d - 1) / 7))] += a;
-        any++;
-      });
-      if (any >= 2) {
-        var wmx = Math.max.apply(null, wk) || 1;
-        html += '<div class="sp-cols">' + wk.map(function (v) {
-          return '<i style="height:' + Math.max(v > 0 ? 8 : 3, v / wmx * 100).toFixed(1) + '%"></i>';
-        }).join('') + '</div><div class="sp-cap">خرج هفتگی</div>';
+      var html;
+      if ((D.pInc > 0 || D.pExp > 0) && (D.inc > 0 || D.exp > 0)) {
+        var mx = Math.max(D.inc, D.pInc, D.exp, D.pExp);
+        html = spHead('مقایسه با ماه قبل');
+        if (D.inc > 0 || D.pInc > 0) html += '<div class="sp-g">درآمد</div>' + spBarRow('این ماه', D.inc, mx, 'pos') + spBarRow('ماه قبل', D.pInc, mx, 'pos dim');
+        if (D.exp > 0 || D.pExp > 0) html += '<div class="sp-g">خرج</div>' + spBarRow('این ماه', D.exp, mx, 'neg') + spBarRow('ماه قبل', D.pExp, mx, 'neg dim');
+        return html;
       }
+      if (D.inc <= 0 && D.exp <= 0) return null;
+      if (!(D.incUnpaid > 0 || D.expUnpaid > 0)) return null; /* چیزی بیش از کادرهای کناری ندارد */
+      var m2 = Math.max(D.incPaid, D.incUnpaid, D.expPaid, D.expUnpaid);
+      html = spHead('وضعیت پرداخت');
+      if (D.inc > 0) html += spBarRow('دریافت‌شده', D.incPaid, m2, 'pos') + spBarRow('دریافت‌نشده', D.incUnpaid, m2, 'pos dim');
+      if (D.exp > 0) html += spBarRow('پرداخت‌شده', D.expPaid, m2, 'neg dim') + spBarRow('پرداخت‌نشده', D.expUnpaid, m2, 'neg');
       return html;
     }
-    /* ۴) دسته‌بندی هوشمند مخارج — سه دستهٔ اول */
+    /* ۴) دسته‌بندی مخارج: همهٔ دسته‌ها (جمع ۱۰۰٪)، هر بار ۳ تا؛ اسکرول عمودی برای ۳ تای بعد */
     function spPageCategories(D) {
       if (!D.cats.list.length || D.cats.total <= 0) return null;
-      var html = spHead('دسته‌بندی مخارج');
-      D.cats.list.slice(0, 3).forEach(function (c) {
-        var p = c.amount / D.cats.total * 100;
-        html += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(c.label) + '</span><span class="sp-v">' + spPct(p) + '</span></div>' +
-          '<div class="sp-bar thin"><i style="width:' + p.toFixed(1) + '%"></i></div></div>';
-      });
-      return html;
+      var items = D.cats.list.slice();
+      if (D.cats.unknown > 0) items.push({ id: '', label: 'نامشخص', amount: D.cats.unknown });
+      var pcts = spPercents100(items.map(function (c) { return c.amount; }));
+      var groups = '';
+      for (var g = 0; g < items.length; g += 3) {
+        groups += '<div class="sp-grp">';
+        for (var k = g; k < Math.min(items.length, g + 3); k++) {
+          groups += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(items[k].label) + '</span><span class="sp-v">' + spPct(pcts[k]) + '</span></div>' +
+            '<div class="sp-bar thin"><i style="width:' + pcts[k] + '%"></i></div></div>';
+        }
+        groups += '</div>';
+      }
+      var more = items.length > 3 ? ' sp-more' : '';
+      return spHead('دسته‌بندی مخارج') + '<div class="sp-scroll' + more + '">' + groups + '</div>';
     }
     /* ۵) نکتهٔ هوشمند — فقط وقتی دادهٔ کافی هست */
     function spInsights(D) {
@@ -19106,9 +19177,9 @@ function openPdfPrintWindow(){
       { key: 'insight', build: spPageInsight }
     ];
 
-    function mountSmartPanel(el, title, cardIdx) {
+    function mountSmartPanel(el, title) {
       var D = null;
-      try { D = spCollect(title, cardIdx); } catch (e) { D = null; }
+      try { D = spCollect(title); } catch (e) { D = null; }
       var pages = [];
       if (D) SMART_PANEL_PAGES.forEach(function (pg) {
         var h = null;
@@ -19132,8 +19203,39 @@ function openPdfPrintWindow(){
       st.key = pages[idx].key;
       if (!st.nextAt) st.nextAt = Date.now() + SMART_PANEL_INTERVAL;
       el._spIdx = idx;
-      view.innerHTML = '<div class="sp-page">' + pages[idx].html + '</div>';
+      view.appendChild(spMakePage(pages[idx]));
       bindSmartPanelGestures(el);
+    }
+    function spMakePage(pg) {
+      var d = document.createElement('div');
+      d.className = 'sp-page sp-k-' + pg.key;
+      d.innerHTML = pg.html;
+      return d;
+    }
+    /* شروع محتوا هم‌تراز «درآمد کل» در کادر کناری + کوچک‌کردن فونت تا هیچ نوشته‌ای نصفه نشود */
+    function fitSmartPanel(el) {
+      if (!el || !el.classList.contains('sp-panel')) return;
+      try {
+        var card = el.closest('.person-card');
+        var lab = card && card.querySelector('.person-stat-box .psl-l');
+        if (lab) {
+          var off = Math.round(lab.getBoundingClientRect().top - el.getBoundingClientRect().top - 1);
+          if (off >= 2 && off < 40) el.style.setProperty('--sp-pt', off + 'px');
+        }
+      } catch (e0) {}
+      el.querySelectorAll('.sp-page:not(.sp-out)').forEach(function (pg) { spFitPage(pg); });
+    }
+    function spFitPage(pg) {
+      var over = function () {
+        if (pg.scrollHeight > pg.clientHeight + 1) return true;
+        var cells = pg.querySelectorAll('.sp-l, .sp-v, .sp-h, .sp-tip');
+        for (var i = 0; i < cells.length; i++) if (cells[i].scrollWidth > cells[i].clientWidth + 1) return true;
+        return false;
+      };
+      var f = 1;
+      pg.style.setProperty('--sp-fs', '1');
+      if (!(pg.clientHeight > 0)) return;
+      while (f > 0.7 && over()) { f -= 0.05; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
     }
     /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
     function smartPanelGo(el, dir, fromDx) {
@@ -19147,19 +19249,18 @@ function openPdfPrintWindow(){
       var st = _smartPanelState[el._spTitle];
       if (st) { st.key = pages[idx].key; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
       var w = el.clientWidth || 100;
-      var nx = document.createElement('div');
-      nx.className = 'sp-page';
-      nx.innerHTML = pages[idx].html;
+      var nx = spMakePage(pages[idx]);
       var reduce = false;
       try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-      if (!cur || reduce || !nx.animate) { view.innerHTML = ''; view.appendChild(nx); return; }
-      var shift = Math.round(w * (fromDx != null ? 1 : 0.18)) * (dir > 0 ? 1 : -1);
       view.querySelectorAll('.sp-out').forEach(function (o) { o.remove(); });
+      if (!cur || reduce || !nx.animate) { view.innerHTML = ''; view.appendChild(nx); spFitPage(nx); return; }
+      var shift = Math.round(w * (fromDx != null ? 1 : 0.18)) * (dir > 0 ? 1 : -1);
       cur.classList.add('sp-out');
       view.appendChild(nx);
+      spFitPage(nx);
       var d = fromDx != null ? 220 : 380;
       var startX = fromDx != null ? fromDx : 0;
-      cur.animate([{ transform: 'translateX(' + startX + 'px)', opacity: fromDx != null ? 1 : 1 }, { transform: 'translateX(' + (startX + shift) + 'px)', opacity: 0 }], { duration: d, easing: 'ease-out', fill: 'forwards' })
+      cur.animate([{ transform: 'translateX(' + startX + 'px)', opacity: 1 }, { transform: 'translateX(' + (startX + shift) + 'px)', opacity: 0 }], { duration: d, easing: 'ease-out', fill: 'forwards' })
         .onfinish = function () { try { cur.remove(); } catch (e) {} };
       nx.animate([{ transform: 'translateX(' + (startX - shift) + 'px)', opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: d, easing: 'ease-out' });
     }
@@ -19170,18 +19271,19 @@ function openPdfPrintWindow(){
     function bindSmartPanelGestures(el) {
       if (el._spBound) return;
       el._spBound = true;
-      var sx = 0, sy = 0, dx = 0, drag = false, down = false, pid = null, cur = null;
+      var sx = 0, sy = 0, dx = 0, drag = false, down = false, pid = null, cur = null, moved = false;
       el.addEventListener('pointerdown', function (ev) {
         if (ev.button != null && ev.button !== 0) return;
-        down = true; drag = false; dx = 0; sx = ev.clientX; sy = ev.clientY; pid = ev.pointerId;
+        down = true; drag = false; moved = false; dx = 0; sx = ev.clientX; sy = ev.clientY; pid = ev.pointerId;
         smartPanelPause(el);
       });
       el.addEventListener('pointermove', function (ev) {
         if (!down || ev.pointerId !== pid) return;
         var mx = ev.clientX - sx, my = ev.clientY - sy;
+        if (Math.abs(mx) > 6 || Math.abs(my) > 6) moved = true;
         if (!drag) {
           if (Math.abs(mx) < 8) return;
-          if (Math.abs(my) > Math.abs(mx)) { down = false; return; }
+          if (Math.abs(my) > Math.abs(mx)) { down = false; return; } /* اسکرول عمودی (دسته‌ها) */
           if ((el._spPages || []).length < 2) { down = false; return; }
           drag = true;
           try { el.setPointerCapture(pid); } catch (e) {}
@@ -19190,17 +19292,11 @@ function openPdfPrintWindow(){
         dx = mx;
         if (cur) { cur.style.transform = 'translateX(' + dx + 'px)'; cur.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / (el.clientWidth || 100))); }
       });
-      var end = function (ev) {
+      var end = function () {
         if (!down) return;
         down = false;
         smartPanelPause(el);
-        if (!drag) {
-          if (ev.type === 'pointerup') {
-            var pg = (el._spPages || [])[el._spIdx];
-            if (pg && pg.onTap) { try { pg.onTap(el._spTitle); } catch (e) {} }
-          }
-          return;
-        }
+        if (!drag) return;
         drag = false;
         var c = cur; cur = null;
         if (Math.abs(dx) > Math.max(28, (el.clientWidth || 100) * 0.22)) {
@@ -19213,9 +19309,15 @@ function openPdfPrintWindow(){
         }
       };
       el.addEventListener('pointerup', end);
-      el.addEventListener('pointercancel', end);
-      /* لمس این باکس، کارت را روی صفحه اصلی جابه‌جا نکند */
-      el.addEventListener('click', function (ev) { ev.stopPropagation(); });
+      el.addEventListener('pointercancel', function () { down = false; drag = false; moved = true; if (cur) { cur.style.transform = ''; cur.style.opacity = ''; cur = null; } });
+      el.addEventListener('scroll', function () { smartPanelPause(el); }, true);
+      /* لمس ساده (بدون کشیدن): روی رویداد click تا کلیک بعدی روی برگهٔ تازه‌باز نیفتد */
+      el.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (moved) return;
+        var pg = (el._spPages || [])[el._spIdx];
+        if (pg && pg.onTap) { ev.preventDefault(); try { pg.onTap(el._spTitle); } catch (e) {} }
+      });
     }
     /* تایمر واحد: فقط پنل کارتِ فعالِ قابل‌مشاهده جابه‌جا می‌شود */
     (function () {
@@ -19242,8 +19344,23 @@ function openPdfPrintWindow(){
       }, 1000);
     })();
 
-    /* برگهٔ بازبینی دسته‌ها: کاربر دستهٔ هر شرح را تأیید/اصلاح می‌کند → دیکشنری شخصی */
+    /* برگهٔ دسته‌بندی مخارج: فهرست همهٔ شرح‌ها؛ با لمس هر شرح، انتخاب دستهٔ همان شرح باز می‌شود.
+       انتخاب کاربر در دیکشنری شخصی ذخیره می‌شود. دکمهٔ بازگشت اندروید: انتخاب دسته ← فهرست ← صفحه اصلی */
+    function closeCategoryReviewSheet() {
+      var ov = document.querySelector('.sp-cat-sheet');
+      if (!ov) return false;
+      try { ov.remove(); } catch (e) {}
+      try { renderHomeCards(); } catch (e2) {}
+      return true;
+    }
+    function categorySheetBack() {
+      var ov = document.querySelector('.sp-cat-sheet');
+      if (!ov) return false;
+      if (ov._spPicking) { ov._spShowList(); return true; }
+      return closeCategoryReviewSheet();
+    }
     function openCategoryReviewSheet(title) {
+      if (document.querySelector('.sp-cat-sheet')) return;
       var sec = findSectionByTitle('expense', title);
       var seen = {}, items = [];
       spRows(sec).forEach(function (r) {
@@ -19253,6 +19370,7 @@ function openPdfPrintWindow(){
         seen[n] = 1;
         items.push(d);
       });
+      var openedAt = Date.now();
       var ov = document.createElement('div');
       ov.className = 'modal-overlay open sp-cat-sheet';
       ov.style.cssText = 'z-index:600;display:flex;align-items:center;justify-content:center;';
@@ -19261,47 +19379,120 @@ function openPdfPrintWindow(){
       box.style.cssText = 'max-width:360px;width:min(360px,92vw);text-align:right;max-height:80vh;display:flex;flex-direction:column;';
       var h = document.createElement('div');
       h.style.cssText = 'font-weight:800;margin-bottom:6px;';
-      h.textContent = 'دسته‌بندی مخارج';
       var sub = document.createElement('div');
-      sub.style.cssText = 'font-size:0.74rem;opacity:0.7;margin-bottom:10px;line-height:1.5;';
-      sub.textContent = items.length ? 'دستهٔ هر شرح را اصلاح کن؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
-      var list = document.createElement('div');
-      list.style.cssText = 'overflow-y:auto;flex:1 1 auto;min-height:0;';
-      items.forEach(function (d) {
-        var c = HKCategorizer.classify(d);
-        var row = document.createElement('div');
-        row.className = 'sp-cat-row';
-        var lab = document.createElement('span');
-        lab.className = 'sp-cat-desc';
-        lab.textContent = d;
-        var sel = document.createElement('select');
-        sel.className = 'sp-cat-select';
-        var o0 = document.createElement('option');
-        o0.value = ''; o0.textContent = 'نامشخص';
-        sel.appendChild(o0);
-        HKCategorizer.categories.forEach(function (cat) {
-          var o = document.createElement('option');
-          o.value = cat.id; o.textContent = cat.label;
-          sel.appendChild(o);
-        });
-        sel.value = c ? c.id : '';
-        sel.onchange = function () { HKCategorizer.learn(d, sel.value); };
-        row.appendChild(lab);
-        row.appendChild(sel);
-        list.appendChild(row);
-      });
+      sub.style.cssText = 'font-size:0.74rem;opacity:0.7;margin-bottom:10px;line-height:1.6;';
+      var body = document.createElement('div');
+      body.style.cssText = 'overflow-y:auto;flex:1 1 auto;min-height:0;';
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'modal-btn yes';
       btn.style.cssText = 'margin-top:12px;width:100%;';
-      btn.textContent = 'بستن';
-      var close = function () { try { ov.remove(); } catch (e) {} try { renderHomeCards(); } catch (e2) {} };
-      btn.onclick = close;
-      ov.addEventListener('click', function (ev) { if (ev.target === ov) close(); });
-      box.appendChild(h); box.appendChild(sub); box.appendChild(list); box.appendChild(btn);
+      function showList() {
+        ov._spPicking = false;
+        h.textContent = 'دسته‌بندی مخارج';
+        sub.textContent = items.length ? 'روی هر شرح بزن تا دسته‌اش را انتخاب کنی؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
+        btn.textContent = 'بستن';
+        body.innerHTML = '';
+        items.forEach(function (d) {
+          var c = HKCategorizer.classify(d);
+          var row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'sp-cat-row';
+          var lab = document.createElement('span');
+          lab.className = 'sp-cat-desc';
+          lab.textContent = d;
+          var chip = document.createElement('span');
+          chip.className = 'sp-cat-chip' + (c ? '' : ' none');
+          chip.textContent = c ? c.label : 'نامشخص';
+          row.appendChild(lab);
+          row.appendChild(chip);
+          row.onclick = function () { showPicker(d, c ? c.id : ''); };
+          body.appendChild(row);
+        });
+        body.scrollTop = ov._spListScroll || 0;
+      }
+      function showPicker(desc, curId) {
+        ov._spListScroll = body.scrollTop;
+        ov._spPicking = true;
+        h.textContent = 'انتخاب دسته';
+        sub.textContent = '«' + desc + '»';
+        btn.textContent = 'بازگشت';
+        body.innerHTML = '';
+        var grid = document.createElement('div');
+        grid.className = 'sp-pick-grid';
+        HKCategorizer.categories.concat([{ id: '', label: 'نامشخص' }]).forEach(function (cat) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'sp-pick' + (cat.id === curId ? ' on' : '');
+          b.textContent = cat.label;
+          b.onclick = function () { HKCategorizer.learn(desc, cat.id); showList(); };
+          grid.appendChild(b);
+        });
+        body.appendChild(grid);
+        body.scrollTop = 0;
+      }
+      ov._spShowList = showList;
+      btn.onclick = function () { categorySheetBack(); };
+      ov.addEventListener('click', function (ev) {
+        if (ev.target !== ov) return;
+        if (Date.now() - openedAt < 450) return; /* کلیکِ همان لمسِ بازکننده */
+        closeCategoryReviewSheet();
+      });
+      box.appendChild(h); box.appendChild(sub); box.appendChild(body); box.appendChild(btn);
       ov.appendChild(box);
       document.body.appendChild(ov);
+      showList();
     }
+
+    /* ===== نشان عددی قرمز روی کاشی «اقساط» صفحه اصلی =====
+       اقساط معوق یا با سررسید امروز/فردا؛ پس از ورود به منوی اقساط، خوانده‌شده و برداشته می‌شود */
+    var INSTALL_SEEN_KEY = STORAGE_KEY + '_instAlertSeen';
+    function installAlertKeys() {
+      var keys = [];
+      try {
+        var today = getTodayPersian();
+        var ti = dateToIndex(today.y, today.m, today.d);
+        (plans || []).forEach(function (plan) {
+          if (!plan) return;
+          var count = Math.max(0, parseInt(plan.count, 10) || 0);
+          var paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
+          for (var i = paid; i < count; i++) {
+            if (plan.paidEarlyMap && plan.paidEarlyMap[String(i)]) continue;
+            var due = dueDateForInstallment(plan, i);
+            if (dateToIndex(due.y, due.m, due.d) - ti > 1) break;
+            keys.push(String(plan.id || plan.name || 'p') + ':' + i);
+          }
+        });
+      } catch (e) {}
+      return keys;
+    }
+    function loadInstallSeen() {
+      try { var a = JSON.parse(localStorage.getItem(INSTALL_SEEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+    }
+    function markInstallAlertsSeen() {
+      var keys = installAlertKeys();
+      try { localStorage.setItem(INSTALL_SEEN_KEY, JSON.stringify(keys)); } catch (e) {}
+      updateInstallTileBadge();
+    }
+    function updateInstallTileBadge() {
+      var tile = document.querySelector('#homeBox1 .home-tile[onclick*="install"]');
+      if (!tile) return;
+      var seen = {};
+      loadInstallSeen().forEach(function (k) { seen[k] = 1; });
+      var n = installAlertKeys().filter(function (k) { return !seen[k]; }).length;
+      var b = tile.querySelector('.home-tile-badge');
+      if (!n) { if (b) b.remove(); tile.removeAttribute('data-alerts'); return; }
+      if (!b) { b = document.createElement('span'); b.className = 'home-tile-badge'; b.setAttribute('aria-hidden', 'true'); tile.appendChild(b); }
+      b.textContent = n > 99 ? '+۹۹' : toPersianDigits(String(n));
+      tile.setAttribute('data-alerts', String(n));
+    }
+    (function () {
+      function go() { try { updateInstallTileBadge(); } catch (e) {} }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(go, 800); });
+      else setTimeout(go, 800);
+      setInterval(go, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) go(); });
+    })();
 
     function addPersonCard() {
       openPersonEditSheet('', true);
@@ -29357,6 +29548,8 @@ function openProjectRowPicker(secId) {
           return;
         }
       } catch (e) {}
+      /* برگهٔ دسته‌بندی مخارج (پنل هوشمند): انتخاب دسته ← فهرست شرح‌ها ← صفحه اصلی */
+      try { if (typeof categorySheetBack === 'function' && categorySheetBack()) return; } catch (eCat) {}
       try {
         const rb = document.getElementById('remindBar');
         if (rb && rb.classList.contains('open')) {
