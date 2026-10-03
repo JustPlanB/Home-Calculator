@@ -8885,7 +8885,8 @@
     #homeCards .person-card .pc-smart-box.sp-panel {
       position: relative;
       overflow: hidden;
-      touch-action: pan-y;
+      /* کشیدن افقی کاملاً با JS: مرورگر حرکت را نگیرد (قبلاً گاهی pointercancel می‌شد و اسلایدر گیر می‌کرد) */
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       cursor: default;
@@ -8963,7 +8964,9 @@
     .sp-scroll::-webkit-scrollbar { display: none; }
     .sp-cat { display: flex; flex-direction: column; justify-content: center; gap: 3px; box-sizing: border-box; }
     .sp-scroll.sp-more { -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent); mask-image: linear-gradient(to bottom, #000 88%, transparent); }
-    .sp-tip { font-size: calc(0.64rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.88); }
+    .sp-tip { font-size: calc(0.64rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.88); text-align: justify; text-justify: inter-word; }
+    /* وضعیت این ماه: لوله‌ها کل ارتفاع باکس را با فاصلهٔ برابر پوشش می‌دهند */
+    .sp-even { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; }
     .sp-empty {
       position: absolute;
       inset: 0;
@@ -9033,7 +9036,7 @@
     #panel-home.active #homeCards.has-ghost {
       overflow-x: hidden !important;
       scroll-snap-type: none !important;
-      touch-action: pan-y !important;
+      touch-action: none !important;
     }
 
     /* فیلتر شرح در سرچ باکس — هم‌ظاهر با باکس «حساب» */
@@ -13719,14 +13722,14 @@ function onPeriodChange() {
         labels.forEach(function(lb) {
           map[lb] = (typeof getAccountOpeningBalance === 'function' ? getAccountOpeningBalance(lb) : 0) || 0;
         });
-        // جمع تراکنش‌های paid همه کاربران روی هر حساب
+        // جمع تراکنش‌های paid همه کاربران روی هر حساب (فقط حساب‌های موجود به ماه بعد منتقل می‌شوند)
         ['income', 'expense'].forEach(function(tab) {
           const sign = tab === 'income' ? 1 : -1;
           ((periodData[tab] && periodData[tab].sections) || []).forEach(function(sec) {
             (sec && sec.rows || []).forEach(function(r) {
               if (!r || (r.status || 'paid') !== 'paid') return;
               const acc = (r.account || '').trim();
-              if (!acc) return;
+              if (!acc || !isLiveAccountLabel(acc)) return;
               const amt = Number(r.amount) || 0;
               map[acc] = (map[acc] || 0) + sign * amt;
             });
@@ -14808,6 +14811,9 @@ function askBackupUserCards(selectedParts) {
     function applyBackupData(data, mode) {
       // mode: 'replace' | 'merge'
       if (!data || typeof data !== 'object') return;
+      /* اعتبارسنجی پیش از ادغام: ساختار، حساب‌های تکراری، موجودی‌های اولیهٔ یتیم، سطل زبالهٔ تکراری */
+      var _restoreReport = null;
+      try { data = JSON.parse(JSON.stringify(data)); _restoreReport = sanitizeBackupData(data, mode); } catch (eSan) { _restoreReport = null; }
       if (mode === 'replace') {
         if (data.archive && typeof data.archive === 'object') archive = data.archive;
         if (Array.isArray(data.plans)) plans = data.plans;
@@ -14939,6 +14945,8 @@ function askBackupUserCards(selectedParts) {
         }
       }
       try { migrateAllBankNamesInData(); } catch (eMB) {}
+      /* دادهٔ محلیِ از قبل یتیم هم پاک‌سازی شود (همان مهاجرت بوت) */
+      try { cleanupOrphanedAccountOpenings({ noSave: true }); } catch (eCl) {}
       try { autoAdvancePersianMonthIfNeeded(); } catch (eAA) {}
       // اگر cardMeta فقط در root بکاپ بود و داخل ماه نبود
       if (data.cardMeta && typeof data.cardMeta === 'object') {
@@ -14977,6 +14985,11 @@ function askBackupUserCards(selectedParts) {
           });
         });
       } catch (eB4) {}
+      /* اگر چیزی نادیده گرفته شد، کوتاه و آرام به کاربر بگو (دادهٔ سالم وارد شده است) */
+      try {
+        var _msg = backupReportText(_restoreReport);
+        if (_msg) setTimeout(function () { try { showToast(_msg); } catch (eT) {} }, 900);
+      } catch (eMsg) {}
       /* بعد از ری‌استور، موجودی را چند بار با داده‌ی نهایی مقایسه کن تا هیچ تغییر دیرهنگامی جا نماند */
       [1600, 3400].forEach(function (ms) {
         setTimeout(function () {
@@ -17534,32 +17547,68 @@ function openPdfPrintWindow(){
         el.className = 'cro-mini';
         el.dataset.title = title;
         el.textContent = title;
+        /* کشیدن سریع = اسکرول نوار؛ نگه‌داشتن کوتاه (۲۲۰ms) روی کارت کوچک = برداشتن و جابه‌جایی */
         el.addEventListener('pointerdown', function (ev) {
           if (!_cardReorderActive || _cardReorderDrag) return;
+          if (ev.button != null && ev.button !== 0) return;
           ev.preventDefault();
           ev.stopPropagation();
-          try { el.setPointerCapture(ev.pointerId); } catch (eC) {}
-          const r0 = el.getBoundingClientRect();
-          _cardReorderDrag = { el: el, pid: ev.pointerId, grab: ev.clientX - r0.left, x: ev.clientX, raf: 0 };
-          el.classList.add('dragging', 'selected');
-          strip.classList.add('cro-dragging');
-          Array.prototype.forEach.call(strip.children, function (m) { if (m !== el) m.classList.remove('selected'); });
-          croPlace();
-          _cardReorderDrag.raf = requestAnimationFrame(croEdgeLoop);
-          /* حرکت/رهاکردن روی window دنبال می‌شود: جابه‌جایی DOM حین کشیدن، capture را می‌اندازد و
-             قبلاً کشیدن بعد از اولین جابه‌جایی تمام می‌شد؛ حالا با یک بار گرفتن تا هر جا می‌شود برد */
-          const pid = ev.pointerId;
+          const pid = ev.pointerId, sx = ev.clientX, sy = ev.clientY, s0 = strip.scrollLeft;
+          let mode = 'wait', timer = 0, samples = [{ t: performance.now(), x: sx }];
+          const startDrag = function (x) {
+            mode = 'drag';
+            const r0 = el.getBoundingClientRect();
+            _cardReorderDrag = { el: el, pid: pid, grab: sx - r0.left, x: x, raf: 0 };
+            el.classList.add('dragging', 'selected');
+            strip.classList.add('cro-dragging');
+            Array.prototype.forEach.call(strip.children, function (m) { if (m !== el) m.classList.remove('selected'); });
+            try { window.appHaptic(15); } catch (eH) {}
+            croPlace();
+            _cardReorderDrag.raf = requestAnimationFrame(croEdgeLoop);
+          };
+          timer = setTimeout(function () { if (mode === 'wait') startDrag(sx); }, 220);
+          /* حرکت/رهاکردن روی window دنبال می‌شود (جابه‌جایی DOM حین کشیدن capture را نمی‌اندازد) */
           const onMove = function (e2) {
+            if (e2.pointerId !== pid) return;
+            if (mode === 'wait') {
+              if (Math.abs(e2.clientX - sx) > 8 || Math.abs(e2.clientY - sy) > 8) { clearTimeout(timer); mode = 'scroll'; strip.classList.add('cro-dragging'); }
+              else return;
+            }
+            if (mode === 'scroll') {
+              strip.scrollLeft = s0 - (e2.clientX - sx);
+              samples.push({ t: performance.now(), x: e2.clientX });
+              if (samples.length > 6) samples.shift();
+              return;
+            }
             const d = _cardReorderDrag;
-            if (!d || d.el !== el || e2.pointerId !== pid) return;
+            if (!d || d.el !== el) return;
             d.x = e2.clientX;
             croPlace();
           };
           const onUp = function (e3) {
             if (e3.pointerId !== pid) return;
+            clearTimeout(timer);
             window.removeEventListener('pointermove', onMove, true);
             window.removeEventListener('pointerup', onUp, true);
             window.removeEventListener('pointercancel', onUp, true);
+            if (mode === 'scroll') {
+              /* کمی سُرخوردن پس از رها کردن */
+              const a0 = samples[0], z = samples[samples.length - 1];
+              let v = (z.t - a0.t) > 0 ? (z.x - a0.x) / (z.t - a0.t) : 0;
+              const glide = function () {
+                if (Math.abs(v) < 0.02) { strip.classList.remove('cro-dragging'); return; }
+                strip.scrollLeft -= v * 16;
+                v *= 0.92;
+                requestAnimationFrame(glide);
+              };
+              requestAnimationFrame(glide);
+              return;
+            }
+            if (mode === 'wait') {
+              /* لمس کوتاه: فقط انتخاب */
+              Array.prototype.forEach.call(strip.children, function (m) { m.classList.toggle('selected', m === el); });
+              return;
+            }
             const d = _cardReorderDrag;
             if (d && d.el === el) croEndDrag();
           };
@@ -17664,7 +17713,7 @@ function openPdfPrintWindow(){
         const openMap = (raw.accountOpeningInstant && typeof raw.accountOpeningInstant === 'object')
           ? raw.accountOpeningInstant : {};
         const labels = {};
-        Object.keys(openMap).forEach(function(k) { if (k) labels[k] = true; });
+        Object.keys(openMap).forEach(function(k) { if (k && isLiveAccountLabel(k)) labels[k] = true; });
         (selectedBankAccounts || []).forEach(function(a) {
           if (!a) return;
           const lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
@@ -17700,6 +17749,9 @@ function openPdfPrintWindow(){
     function getAccountOpeningBalance(label) {
       const lb = (label || '').trim();
       if (!lb) return 0;
+      /* موجودی اولیه/انتقالی فقط متعلق به حساب‌های موجود است؛ برچسب بدون حساب (حذف/تغییرنام‌شده) = ۰.
+         تراکنش‌های آن برچسب جداگانه و مستقیم در جمع می‌آیند */
+      if (!isLiveAccountLabel(lb)) return 0;
       function bankFallback() {
         let sum = 0;
         (selectedBankAccounts || []).forEach(function(a) {
@@ -17773,7 +17825,7 @@ function openPdfPrintWindow(){
       });
       try {
         const amap = (periodData && periodData.accountOpeningInstant) || {};
-        Object.keys(amap).forEach(function(k) { if (k) labels[k] = true; });
+        Object.keys(amap).forEach(function(k) { if (k && isLiveAccountLabel(k)) labels[k] = true; });
       } catch (eA) {}
       Object.keys(labels).forEach(function(lb) {
         map[lb] = (map[lb] || 0) + (getAccountOpeningBalance(lb) || 0);
@@ -17803,11 +17855,11 @@ function openPdfPrintWindow(){
         });
         try {
           const prev = (typeof getPrevMonthAccountEndings === 'function') ? getPrevMonthAccountEndings() : {};
-          Object.keys(prev || {}).forEach(function(k) { if (k) labels[k] = true; });
+          Object.keys(prev || {}).forEach(function(k) { if (k && isLiveAccountLabel(k)) labels[k] = true; });
         } catch (e0) {}
         try {
           const amap = (periodData && periodData.accountOpeningInstant) || {};
-          Object.keys(amap).forEach(function(k) { if (k) labels[k] = true; });
+          Object.keys(amap).forEach(function(k) { if (k && isLiveAccountLabel(k)) labels[k] = true; });
         } catch (e1) {}
         let s = 0;
         Object.keys(labels).forEach(function(lb) {
@@ -18486,6 +18538,7 @@ function openPdfPrintWindow(){
     }
     /* دایرهٔ جستجو: بخش مانده (فیلترها + جدول مانده به تفکیک) */
     function openHomeMandeh() {
+      try { resetBalanceSearch(); } catch (eRs) {}
       try {
         var titles = allPersonTitles();
         var t = getActiveHomeCardTitle();
@@ -18837,13 +18890,15 @@ function openPdfPrintWindow(){
         to = clampS(b, to);
         var from = b.scrollLeft, d = to - from;
         if (Math.abs(d) < 1) { b.scrollLeft = to; return; }
-        dur = dur || Math.min(520, 300 + Math.abs(d) * 0.35);
+        dur = dur || Math.min(680, 460 + Math.abs(d) * 0.4);
         var t0 = performance.now();
+        /* حرکت «وزن‌دار»: با تکانه می‌رسد، کمی (حدود ۳٪) جلوتر می‌رود و آرام سر جایش می‌نشیند */
+        var s = 0.75;
         var step = function (now) {
-          var k = Math.min(1, (now - t0) / dur);
-          var e = 1 - Math.pow(1 - k, 3); /* easeOutCubic: انتهای حرکت نرم */
+          var k = Math.min(1, (now - t0) / dur), q = k - 1;
+          var e = 1 + (s + 1) * q * q * q + s * q * q; /* easeOutBack ملایم */
           b.scrollLeft = from + d * e;
-          if (k < 1) animRaf = requestAnimationFrame(step); else animRaf = 0;
+          if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; }
         };
         animRaf = requestAnimationFrame(step);
       }
@@ -19149,11 +19204,13 @@ function openPdfPrintWindow(){
     /* مبلغ فشرده برای فضای کوچک (اعداد فارسی) */
     function spAmt(n) {
       n = Number(n) || 0;
-      var a = Math.abs(n), sgn = n < 0 ? '-' : '';
+      var a = Math.abs(n), neg = n < 0;
       var f = function (v) { var r = Math.round(v * 10) / 10; return spFa(String(r).replace('.', '٫')); };
-      if (a >= 1e9) return sgn + f(a / 1e9) + ' میلیارد';
-      if (a >= 1e6) return sgn + f(a / 1e6) + ' میلیون';
-      return sgn + spFa(formatNum(a));
+      /* منفی: علامت پشت عدد (سمت چپ) — عدد و علامت داخل ایزولهٔ LTR */
+      var num = function (t) { return neg ? '\u2066-' + t + '\u2069' : t; };
+      if (a >= 1e9) return num(f(a / 1e9)) + ' میلیارد';
+      if (a >= 1e6) return num(f(a / 1e6)) + ' میلیون';
+      return num(spFa(formatNum(a)));
     }
     /* عدد و ٪ داخل ایزولهٔ LTR تا در متن راست‌به‌چپ «۵۴٪» نمایش داده شود نه «٪۵۴» */
     function spPct(v) { return '⁦' + spFa(Math.round(v)) + '٪⁩'; }
@@ -19241,7 +19298,7 @@ function openPdfPrintWindow(){
             var due = dueDateForInstallment(plan, i);
             var days = dateToIndex(due.y, due.m, due.d) - ti;
             if (days > 31) break;
-            out.push({ name: plan.name || 'قسط', days: days, amount: planInstallmentAmount(plan) });
+            out.push({ pid: plan.id || plan.name || '', name: plan.name || 'قسط', days: days, amount: planInstallmentAmount(plan) });
           }
         });
       } catch (e) {}
@@ -19546,7 +19603,7 @@ function openPdfPrintWindow(){
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
     function spPageOverview(D) {
       if (D.inc <= 0 && D.exp <= 0) return null;
-      var html = spHead('وضعیت این ماه');
+      var html = spHead('وضعیت این ماه') + '<div class="sp-even">';
       var rem = D.inc - D.exp;
       if (D.inc > 0) {
         var save = rem / D.inc * 100, sc = save >= 0 ? 'pos' : 'neg';
@@ -19555,7 +19612,7 @@ function openPdfPrintWindow(){
       var cash = D.incPaid - D.expPaid, cc = cash >= 0 ? 'pos' : 'neg';
       var cashPct = D.incPaid > 0 ? Math.abs(cash) / D.incPaid * 100 : (cash !== 0 ? 100 : 0);
       html += '<div class="sp-blk">' + spLine('مانده کنونی', spAmt(cash), cc) + spTube(cashPct, cc) + '</div>';
-      return html;
+      return html + '</div>';
     }
     /* ۲) تعهدات: هر خبر جدا با خط جداکننده؛ مبلغ قسط زیر عنوانش */
     function spPageObligations(D) {
@@ -19563,9 +19620,14 @@ function openPdfPrintWindow(){
       var late = D.inst.filter(function (x) { return x.days < 0; });
       var next = D.inst.filter(function (x) { return x.days >= 0; })[0];
       if (late.length) items.push(spLine('قسط معوق', spFa(late.length) + ' قسط', 'neg') + spLine('بیشترین تاخیر', spFa(-late[0].days) + ' روز', 'neg'));
-      var basis = next || late[0];
-      if (next) items.push(spLine('قسط بعدی', spDaysLabel(next.days), next.days <= 1 ? 'neg' : ''));
-      if (basis) items.push('<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(basis.amount) + ' تومان</div>');
+      /* قسط بعدیِ هر وام جداگانه (دو وام با مبلغ و موعد یکسان هر دو نمایش داده می‌شوند) */
+      var seenPlan = {}, upcoming = [];
+      D.inst.forEach(function (x) { if (x.days >= 0 && !seenPlan[x.pid]) { seenPlan[x.pid] = 1; upcoming.push(x); } });
+      upcoming.slice(0, 3).forEach(function (x) {
+        items.push(spLine('قسط «' + spEsc(x.name) + '»', spDaysLabel(x.days), x.days <= 1 ? 'neg' : '') +
+          '<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(x.amount) + ' تومان</div>');
+      });
+      if (!upcoming.length && late.length) items.push('<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(late[0].amount) + ' تومان</div>');
       if (D.led.credit > 0) items.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
       if (D.led.debt > 0) items.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
       if (D.projects > 0) items.push(spLine('پروژهٔ فعال', spFa(D.projects)));
@@ -19623,7 +19685,7 @@ function openPdfPrintWindow(){
       var ins = spInsights(D);
       if (!ins.length) return null;
       /* هر نکته یک نمای کامل؛ نکتهٔ دوم با اسکرول عمودی (خودکار پس از ۵ ثانیه یا با دست) */
-      return spHead('نکته') + '<div class="sp-scroll sp-tips">' + ins.slice(0, 2).map(function (x) {
+      return spHead('نکات') + '<div class="sp-scroll sp-tips">' + ins.slice(0, 5).map(function (x) {
         return '<div class="sp-tipbox">' + (x.h ? '<div class="sp-t">' + spEsc(x.h) + '</div>' : '') + '<div class="sp-tip">' + spEsc(x.t) + '</div></div>';
       }).join('') + '</div>';
     }
@@ -19680,9 +19742,29 @@ function openPdfPrintWindow(){
       bindSmartPanelGestures(el);
     }
     /* صفحهٔ نکته با دو نکته: ۵ ثانیه اولی، اسکرول عمودی، ۵ ثانیه دومی، سپس صفحهٔ بعد */
+    var SMART_TIP_MS = 5000;
     function spArmTips(st, pg) {
-      var multiTip = pg && pg.key === 'insight' && (pg.html.split('sp-tipbox').length - 1) > 1;
-      st.subAt = multiTip ? Date.now() + SMART_PANEL_INTERVAL / 2 : 0;
+      var n = pg && pg.key === 'insight' ? (pg.html.split('sp-tipbox').length - 1) : 0;
+      st.tipIdx = 0; st.tipCount = n;
+      if (n > 1) {
+        /* هر نکته ۵ ثانیه؛ زمان صفحه به تعداد نکات بستگی دارد (نه ۱۰ ثانیهٔ ثابت) */
+        st.subAt = Date.now() + SMART_TIP_MS;
+        st.nextAt = Date.now() + SMART_TIP_MS * n;
+      } else st.subAt = 0;
+    }
+    /* اسکرول عمودی با همان سرعت و منحنی جابه‌جایی افقی صفحه‌ها (۳۸۰ms، ease-out) */
+    function spAnimScrollTop(el, to, dur) {
+      var from = el.scrollTop, d = to - from;
+      if (Math.abs(d) < 1) return;
+      dur = dur || 380;
+      var t0 = performance.now(), snap = el.style.scrollSnapType;
+      el.style.scrollSnapType = 'none';
+      var step = function (now) {
+        var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.scrollTop = from + d * e;
+        if (k < 1) requestAnimationFrame(step); else el.style.scrollSnapType = snap;
+      };
+      requestAnimationFrame(step);
     }
     function spMakePage(pg) {
       var d = document.createElement('div');
@@ -19721,6 +19803,10 @@ function openPdfPrintWindow(){
         pg.style.setProperty('--sp-fs', '1');
         var overT = function () { for (var i = 0; i < boxes.length; i++) if (boxes[i].scrollHeight > boxes[i].clientHeight + 1) return true; return false; };
         while (f2 > 0.7 && overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); }
+        /* جای خالی بود → فونت بزرگ‌تر تا متن باکس را پر کند */
+        if (!overT()) {
+          while (f2 < 1.45) { f2 += 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); if (overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); break; } }
+        }
         return;
       }
       var sc = pg.querySelector('.sp-scroll');
@@ -19740,6 +19826,10 @@ function openPdfPrintWindow(){
       var f = 1;
       pg.style.setProperty('--sp-fs', '1');
       while (f > 0.66 && over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
+      /* صفحه‌های متنی (هشدار/پروژه‌ها): اگر جا هست، فونت بزرگ‌تر شود */
+      if (pg.querySelector('.sp-tip') && !over()) {
+        while (f < 1.45) { f += 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); if (over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); break; } }
+      }
     }
     /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
     function smartPanelGo(el, dir, fromDx) {
@@ -19850,11 +19940,13 @@ function openPdfPrintWindow(){
             if (t && el._spTitle !== t) return;
             if (now < st.pausedUntil) return;
             if (st.subAt && now >= st.subAt) {
-              st.subAt = 0;
+              st.tipIdx = (st.tipIdx || 0) + 1;
+              st.subAt = st.tipIdx < (st.tipCount || 0) - 1 ? now + SMART_TIP_MS : 0;
               var tp = el.querySelector('.sp-page:not(.sp-out) .sp-tips');
-              if (tp && tp.children[1] && tp.scrollTop < 4) {
+              var tgt = tp && tp.children[st.tipIdx];
+              if (tgt) {
                 el._spAutoUntil = now + 1200; /* اسکرول خودکار = تعامل کاربر حساب نشود */
-                try { tp.scrollTo({ top: tp.children[1].offsetTop - tp.children[0].offsetTop, behavior: 'smooth' }); } catch (eT) { tp.scrollTop = tp.clientHeight; }
+                spAnimScrollTop(tp, tgt.offsetTop - tp.children[0].offsetTop, 380);
               }
               return;
             }
@@ -20530,7 +20622,16 @@ function openPdfPrintWindow(){
       bar.appendChild(back);
     }
 
+    function resetBalanceSearch() {
+      try {
+        var inp = document.getElementById('balanceSearchInput');
+        if (inp && inp.value) { inp.value = ''; }
+        renderBalanceSearch();
+      } catch (e) {}
+    }
     function closePersonDetail() {
+      /* خروج از سرچ باکس: عبارت جستجو پاک و جدول مانده دوباره نمایش داده شود */
+      try { resetBalanceSearch(); } catch (eRs) {}
       try { setTimeout(() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }, 30); } catch (e) {}
       _detailContext = null;
       try { document.body.classList.remove('detail-open'); } catch (e) {}
@@ -25227,6 +25328,159 @@ function confirmSmsEntry() {
       return (selectedBankAccounts || []).map(accountLabel).filter(Boolean);
     }
 
+    /* =====================================================================
+       یکپارچگی دادهٔ حساب‌های بانکی
+       مرجع هر «موجودی اولیه/انتقالی» (accountOpeningInstant ماه‌ها) فقط یک حساب موجود در
+       selectedBankAccounts است (کلید = برچسب حساب). ورودیِ این نقشه برای برچسبی که حسابش
+       وجود ندارد «یتیم» است: در UI دیده نمی‌شود ولی قبلاً وارد جمع موجودی می‌شد.
+       تراکنش‌ها (ردیف‌ها) هرگز حذف نمی‌شوند؛ فقط موجودی‌های اولیهٔ بی‌صاحب کنار گذاشته می‌شوند.
+       ===================================================================== */
+    function liveAccountLabelSet() {
+      var set = Object.create(null);
+      selectedAccountLabels().forEach(function (l) { set[l] = true; });
+      return set;
+    }
+    function isLiveAccountLabel(lb) {
+      lb = (lb || '').trim();
+      return !!lb && selectedAccountLabels().indexOf(lb) >= 0;
+    }
+    /** حذف ورودی‌های یتیم از نقشهٔ موجودی اولیهٔ همهٔ ماه‌ها؛ مقادیر حذف‌شده برای بازیابی نگه داشته می‌شوند */
+    function cleanupOrphanedAccountOpenings(opts) {
+      opts = opts || {};
+      var live = liveAccountLabelSet();
+      /* ایمنی: اگر هیچ حسابی بارگذاری نشده، چیزی پاک نکن (فقط محاسبات آن‌ها را نادیده می‌گیرند) */
+      if (!Object.keys(live).length && !opts.allowEmpty) return { labels: 0, entries: 0 };
+      var removed = {}, labels = Object.create(null), entries = 0;
+      var walk = function (pd, key) {
+        if (!pd || !pd.accountOpeningInstant || typeof pd.accountOpeningInstant !== 'object') return;
+        Object.keys(pd.accountOpeningInstant).forEach(function (lb) {
+          if (live[(lb || '').trim()]) return;
+          (removed[key] = removed[key] || {})[lb] = pd.accountOpeningInstant[lb];
+          delete pd.accountOpeningInstant[lb];
+          labels[lb] = true; entries++;
+        });
+      };
+      try { walk(periodData, periodKey(currentYear, currentMonth)); } catch (e0) {}
+      try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k], k); }); } catch (e1) {}
+      if (entries) {
+        try {
+          var KEY = STORAGE_KEY + '_orphanOpenings';
+          var prev = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+          Object.keys(removed).forEach(function (k) { prev[k] = Object.assign(prev[k] || {}, removed[k]); });
+          localStorage.setItem(KEY, JSON.stringify(prev));
+        } catch (eS) {}
+        if (!opts.noSave) { try { persistCurrent(); saveArchive(); } catch (eP) {} }
+      }
+      return { labels: Object.keys(labels).length, entries: entries };
+    }
+    /** تغییر نام حساب: همهٔ ارجاع‌های برچسب قدیم (موجودی اولیهٔ ماه‌ها، تراکنش‌ها، درآمد ثابت، نگاشت پیامک) منتقل می‌شوند */
+    function migrateAccountLabel(oldLb, newLb) {
+      oldLb = (oldLb || '').trim(); newLb = (newLb || '').trim();
+      if (!oldLb || !newLb || oldLb === newLb) return;
+      var fix = function (pd) {
+        if (!pd) return;
+        var m = pd.accountOpeningInstant;
+        if (m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, oldLb)) {
+          if (m[newLb] == null || m[newLb] === '') m[newLb] = m[oldLb];
+          delete m[oldLb];
+        }
+        ['income', 'expense'].forEach(function (tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+            (sec && sec.rows || []).forEach(function (r) { if (r && (r.account || '').trim() === oldLb) r.account = newLb; });
+          });
+        });
+      };
+      try { fix(periodData); } catch (e0) {}
+      try { Object.keys(archive || {}).forEach(function (k) { fix(archive[k]); }); } catch (e1) {}
+      try { (recurringIncomes || []).forEach(function (r) { if (r && (r.account || '').trim() === oldLb) r.account = newLb; }); if (typeof saveRecurring === 'function') saveRecurring(); } catch (e2) {}
+      try {
+        var ch = false;
+        Object.keys(smsAccountBankMap || {}).forEach(function (k) { if (smsAccountBankMap[k] === oldLb) { smsAccountBankMap[k] = newLb; ch = true; } });
+        if (ch) saveSmsAccountBankMap();
+      } catch (e3) {}
+      try { persistCurrent(); saveArchive(); } catch (e4) {}
+    }
+    /** اعتبارسنجی فایل پشتیبان قبل از ادغام؛ فقط دادهٔ واقعاً نامعتبر/یتیم کنار گذاشته می‌شود */
+    function sanitizeBackupData(data, mode) {
+      var rep = { orphanAccounts: 0, orphanEntries: 0, invalidRecords: 0, mergedAccounts: 0, dupTrash: 0 };
+      if (!data || typeof data !== 'object') return rep;
+      var lbOf = function (a) { return accountLabel(a); };
+      /* ۱) حساب‌های فایل: بدون برچسب = نامعتبر؛ هم‌شناسه یا هم‌برچسب با حساب موجود = ادغام (بدون تکرار موجودی اولیه) */
+      var incomingAccounts = [];
+      if (Array.isArray(data.selectedBankAccounts)) {
+        var localIds = Object.create(null), localLabels = Object.create(null);
+        if (mode !== 'replace') (selectedBankAccounts || []).forEach(function (a) { if (a && a.id) localIds[a.id] = true; var l = lbOf(a); if (l) localLabels[l] = true; });
+        var seenL = Object.create(null);
+        data.selectedBankAccounts.forEach(function (a) {
+          var l = lbOf(a);
+          if (!a || !l) { rep.invalidRecords++; return; }
+          if (seenL[l]) { rep.mergedAccounts++; return; }
+          seenL[l] = true;
+          if (typeof a === 'object' && a.id && localIds[a.id]) return;           /* همان حساب، قبلاً موجود */
+          if (localLabels[l]) { rep.mergedAccounts++; return; }                   /* هم‌نام → حساب محلی حفظ می‌شود */
+          incomingAccounts.push(a);
+        });
+        data.selectedBankAccounts = incomingAccounts;
+      }
+      /* برچسب‌های معتبر بعد از ادغام */
+      var valid = Object.create(null);
+      /* ادغام: حساب‌های فعلی + حساب‌های پذیرفته‌شدهٔ فایل · جایگزینی: فقط حساب‌های فایل (اگر فایل حساب ندارد، حساب‌های فعلی می‌مانند) */
+      if (mode !== 'replace' || !Array.isArray(data.selectedBankAccounts)) selectedAccountLabels().forEach(function (l) { valid[l] = true; });
+      (Array.isArray(data.selectedBankAccounts) ? data.selectedBankAccounts : []).forEach(function (a) { var l = lbOf(a); if (l) valid[l] = true; });
+      /* ۲) ساختار ماه‌ها + حذف موجودی‌های اولیهٔ یتیم */
+      var orphanLabels = Object.create(null);
+      if (data.archive && typeof data.archive === 'object') {
+        Object.keys(data.archive).forEach(function (k) {
+          var pd = data.archive[k];
+          if (!/^\d{4}-\d{1,2}$/.test(k) || !pd || typeof pd !== 'object') { delete data.archive[k]; rep.invalidRecords++; return; }
+          ['income', 'expense'].forEach(function (tab) {
+            var side = pd[tab];
+            if (side == null) return;
+            if (typeof side !== 'object' || !Array.isArray(side.sections)) { pd[tab] = { sections: [], nextId: 1 }; rep.invalidRecords++; return; }
+            side.sections = side.sections.filter(function (sec) {
+              if (!sec || typeof sec !== 'object') { rep.invalidRecords++; return false; }
+              if (!Array.isArray(sec.rows)) sec.rows = [];
+              sec.rows = sec.rows.filter(function (r) {
+                if (!r || typeof r !== 'object') { rep.invalidRecords++; return false; }
+                if (r.amount != null && r.amount !== '' && !isFinite(Number(r.amount))) { rep.invalidRecords++; return false; }
+                return true;
+              });
+              return true;
+            });
+          });
+          var m = pd.accountOpeningInstant;
+          if (m && typeof m === 'object') {
+            Object.keys(m).forEach(function (lb) {
+              if (valid[(lb || '').trim()]) return;
+              orphanLabels[lb] = true; rep.orphanEntries++;
+              delete m[lb];
+            });
+          } else if (m != null) { delete pd.accountOpeningInstant; }
+        });
+      }
+      rep.orphanAccounts = Object.keys(orphanLabels).length;
+      /* ۳) سطل زباله: موارد هم‌شناسه دوباره اضافه نشوند */
+      if (Array.isArray(data.trash) && mode !== 'replace') {
+        var tIds = Object.create(null);
+        try { loadTrash(); } catch (eT) {}
+        (trashItems || []).forEach(function (t) { if (t && t.id) tIds[t.id] = true; });
+        data.trash = data.trash.filter(function (t) {
+          if (t && t.id && tIds[t.id]) { rep.dupTrash++; return false; }
+          if (t && t.id) tIds[t.id] = true;
+          return !!t;
+        });
+      }
+      return rep;
+    }
+    function backupReportText(rep) {
+      if (!rep) return '';
+      var parts = [];
+      if (rep.orphanAccounts) parts.push(toPersianDigits(String(rep.orphanAccounts)) + ' حساب حذف‌شده' + (rep.orphanEntries ? ' و ' + toPersianDigits(String(rep.orphanEntries)) + ' رکورد وابسته' : ''));
+      if (rep.invalidRecords) parts.push(toPersianDigits(String(rep.invalidRecords)) + ' رکورد ناسازگار');
+      if (!parts.length) return '';
+      return 'بخشی از اطلاعات فایل پشتیبان ناسازگار بود و وارد نشد: ' + parts.join('، ') + ' نادیده گرفته شد.';
+    }
+
     function ensureBankAccountSelected(nameOrLabel) {
       const label = (nameOrLabel || '').trim();
       if (!label) return label;
@@ -25908,6 +26162,9 @@ if (item.type === 'recurring') {
               try {
                 if (typeof saveArchive === 'function') { persistCurrent(); saveArchive(); }
               } catch (e3) {}
+              /* هر موجودی اولیهٔ دیگری که دیگر صاحب ندارد (مثلاً با نام قدیمِ همین حساب) */
+              try { cleanupOrphanedAccountOpenings({ allowEmpty: true }); } catch (eCl) {}
+              try { renderHomeCards(); } catch (eRh) {}
               try {
                 if (typeof smsAccountBankMap !== 'undefined' && rmLabel && smsAccountBankMap[rmLabel]) {
                   delete smsAccountBankMap[rmLabel];
@@ -26057,7 +26314,10 @@ if (item.type === 'recurring') {
         if (isEdit) {
           const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
+          const oldLabelForMigrate = accountLabel(acc);
           acc.label = name;
+          /* قبلاً فقط نام عوض می‌شد و موجودی اولیهٔ ثبت‌شده با نام قدیم «یتیم» می‌ماند (دوبار شمرده می‌شد) */
+          try { if (oldLabelForMigrate && oldLabelForMigrate !== name) { saveBankAccountsSelection(); migrateAccountLabel(oldLabelForMigrate, name); } } catch (eMig) {}
           acc.openingBalance = openingBalance;
           if (!acc.createdAt || !acc.createdAt.y) {
             try {
@@ -31344,13 +31604,30 @@ function openProjectRowPicker(secId) {
       if (!inp || !boxR || !body) return;
       var norm = (typeof HKCategorizer !== 'undefined') ? HKCategorizer.normalize : function (x) { return String(x || '').trim(); };
       var q = norm(inp.value);
-      if (!q) { boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = ''; return; }
+      var sb = document.getElementById('balanceScrollBody');
+      var balSec = sb ? sb.querySelector(':scope > .summary-section:not(#dayDetailBox):not(#searchResultBox)') : null;
+      var hint = sb ? sb.querySelector(':scope > .balance-hint') : null;
+      var dayBoxEl = document.getElementById('dayDetailBox');
+      if (!q) {
+        boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = '';
+        if (balSec) balSec.style.display = '';
+        if (hint) hint.style.display = '';
+        if (dayBoxEl && dayBoxEl.dataset.srHidden) { dayBoxEl.style.display = dayBoxEl.dataset.srHidden === 'show' ? '' : 'none'; delete dayBoxEl.dataset.srHidden; }
+        return;
+      }
+      if (balSec) balSec.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+      if (dayBoxEl && dayBoxEl.style.display !== 'none') { dayBoxEl.dataset.srHidden = 'show'; dayBoxEl.style.display = 'none'; }
+      /* روز انتخاب‌شده: فقط نتایج همان روز از ماه جاری */
+      var dayF = 0;
+      try { dayF = parseInt(toEnglishDigits((document.getElementById('balanceDayFilter') || {}).value || '').replace(/[^0-9]/g, '') || '0', 10) || 0; } catch (eD) {}
       var accF = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
       var sel = (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles) ? balanceSelectedTitles : [];
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};
       iterAllPeriodData(function (pd, key) {
         if (key === curKey && pd !== periodData) return;
+        if (dayF && key !== curKey) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         ['income', 'expense'].forEach(function (tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
@@ -31360,13 +31637,15 @@ function openProjectRowPicker(secId) {
               if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
               if (accF && (r.account || '').trim() !== accF) return;
               if (norm(r.desc).indexOf(q) < 0) return;
+              if (dayF && dayNum(r) !== dayF) return;
               titles[t] = 1;
               list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t });
             });
           });
         });
       });
-      list.sort(function (a, b) { return (b.y - a.y) || (b.m - a.m) || (b.d - a.d); });
+      /* تاریخ زودتر بالای جدول */
+      list.sort(function (a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); });
       var many = Object.keys(titles).length > 1;
       body.innerHTML = '';
       var sumI = 0, sumE = 0;
@@ -31537,7 +31816,6 @@ function openProjectRowPicker(secId) {
       balEl.textContent = formatNum(gRemain);
       balEl.style.color = gRemain > 0 ? '#16a34a' : (gRemain < 0 ? '#dc2626' : 'var(--text)');
 
-      try { renderBalanceSearch(); } catch (eSr) {}
       // day detail
       const dayBox = document.getElementById('dayDetailBox');
       const dayBody = document.getElementById('day-detail-body');
@@ -31603,6 +31881,8 @@ function openProjectRowPicker(secId) {
       } else {
         dayBox.style.display = 'none';
       }
+      /* حین جستجو: جدول مانده و جزئیات روز پنهان؛ نتیجهٔ جستجو به‌جایشان */
+      try { renderBalanceSearch(); } catch (eSr2) {}
       // ارتفاع/اسکرول balance-scroll-body بعد از تغییر فیلتر تازه شود
       try {
         const sb = document.getElementById('balanceScrollBody');
@@ -31651,6 +31931,8 @@ function openProjectRowPicker(secId) {
     loadCurrent();
     try { autoAdvancePersianMonthIfNeeded(); } catch (eAutoM) {}
     try { migrateAllBankNamesInData(); } catch (e) {}
+    /* مهاجرت ایمن: موجودی‌های اولیهٔ بی‌صاحب (حساب حذف/تغییرنام‌شده) کنار گذاشته و برای بازیابی نگه داشته می‌شوند */
+    try { cleanupOrphanedAccountOpenings({ reason: 'boot' }); } catch (eOrph) {}
     initSelectors();
     updateTabUI();
     ensureLocalUid();
