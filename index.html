@@ -9039,6 +9039,11 @@
       touch-action: none !important;
     }
 
+    /* سرچ باکس: هینت زیر جدول مانده حذف؛ پنل بالای نوار ناوبری اندروید تمام شود */
+    #panel-balance .balance-hint { display: none !important; }
+    body.detail-open #panel-balance.active { bottom: env(safe-area-inset-bottom, 0px) !important; }
+    #panel-balance .balance-scroll-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
+
     /* فیلتر شرح در سرچ باکس — هم‌ظاهر با باکس «حساب» */
     .balance-search-input {
       width: 100%; height: 36px; min-height: 36px; box-sizing: border-box;
@@ -9406,8 +9411,8 @@
             <thead>
               <tr>
                 <th style="width:22%; text-align:right; padding-right:12px;">بخش</th>
-                <th style="width:26%;">موجودی کل</th>
-                <th style="width:26%;">مخارج</th>
+                <th style="width:26%;">درآمد کل</th>
+                <th style="width:26%;">خرج کل</th>
                 <th style="width:26%;">مانده</th>
               </tr>
             </thead>
@@ -18874,30 +18879,46 @@ function openPdfPrintWindow(){
         cardsOf(b).forEach(function (c) { var t = targetOf(b, c), d = Math.abs(t - at); if (d < bd) { bd = d; best = t; } });
         return best == null ? at : best;
       }
+      /* کارت بعدی در جهت dir؛ از کارت آخر به کارت اول (و برعکس) می‌چرخد */
       function stepTarget(b, from, dir) {
-        var best = null;
+        var best = null, all = [];
         cardsOf(b).forEach(function (c) {
           var t = targetOf(b, c);
+          all.push(t);
           if (dir < 0 ? t < from - 1 : t > from + 1) { if (best == null || Math.abs(t - from) < Math.abs(best - from)) best = t; }
         });
+        if (best == null && all.length > 1) {
+          /* انتهای ردیف → حلقه */
+          best = dir < 0 ? Math.max.apply(null, all) : Math.min.apply(null, all);
+          if (Math.abs(best - from) < 2) best = null;
+        }
         return best == null ? from : best;
       }
       function stopAnim() { if (animRaf) { cancelAnimationFrame(animRaf); animRaf = 0; } }
-      function animateTo(b, to, dur) {
+      /* حرکت «رهاشده»: با سرعت انگشت (v0، پیکسل بر میلی‌ثانیه در واحد اسکرول) شروع می‌شود و
+         با کاهش یکنواخت سرعت، دقیقاً روی کارت می‌ایستد (منحنی هرمیت با سرعت اولیه = v0 و سرعت پایانی = ۰) */
+      function animateTo(b, to, dur, v0) {
         stopAnim();
         b = b || box();
         if (!b) return;
         to = clampS(b, to);
         var from = b.scrollLeft, d = to - from;
         if (Math.abs(d) < 1) { b.scrollLeft = to; return; }
-        dur = dur || Math.min(680, 460 + Math.abs(d) * 0.4);
+        v0 = Number(v0) || 0;
+        if (v0 * d < 0) v0 = 0;                    /* سرعت خلاف جهت → از صفر */
+        if (!dur) {
+          /* زمان ترمز یکنواخت: T = 2d / v0 ؛ بدون سرعت، مدت متناسب با فاصله */
+          dur = Math.abs(v0) > 0.05 ? (2 * Math.abs(d) / Math.abs(v0)) : (380 + Math.abs(d) * 0.3);
+          dur = Math.max(260, Math.min(720, dur));
+        }
+        var m0 = v0 * dur;                          /* شیب اولیه بر حسب فاصله */
+        if (Math.abs(m0) > Math.abs(d) * 2.2) m0 = d * 2.2; /* بدون عبور از کارت مقصد */
+        if (!v0) m0 = d * 1.6;                      /* شروع نرم ولی پرانرژی، پایان آرام */
         var t0 = performance.now();
-        /* حرکت «وزن‌دار»: با تکانه می‌رسد، کمی (حدود ۳٪) جلوتر می‌رود و آرام سر جایش می‌نشیند */
-        var s = 0.75;
         var step = function (now) {
-          var k = Math.min(1, (now - t0) / dur), q = k - 1;
-          var e = 1 + (s + 1) * q * q * q + s * q * q; /* easeOutBack ملایم */
-          b.scrollLeft = from + d * e;
+          var k = Math.min(1, (now - t0) / dur);
+          var h10 = k * k * k - 2 * k * k + k, h01 = -2 * k * k * k + 3 * k * k;
+          b.scrollLeft = from + h10 * m0 + h01 * d;
           if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; }
         };
         animRaf = requestAnimationFrame(step);
@@ -18930,15 +18951,19 @@ function openPdfPrintWindow(){
           if (z.t - a.t > 0) v = (z.x - a.x) / (z.t - a.t);
         }
         var delta = b.scrollLeft - s.start;
+        var fingerDx = (s.samples.length ? s.samples[s.samples.length - 1].x : s.sx) - s.sx;
         var base = nearestTarget(b, s.start);
         var to;
-        if (Math.abs(delta) > b.clientWidth * 0.18 || Math.abs(v) > 0.3) {
-          var dir = Math.abs(delta) > 2 ? (delta < 0 ? -1 : 1) : (v > 0 ? -1 : 1);
+        /* در لبه‌ها اسکرول قفل است (delta=0)؛ جهت از حرکت انگشت خوانده می‌شود تا حلقه کار کند */
+        if (Math.abs(fingerDx) > b.clientWidth * 0.18 || Math.abs(v) > 0.3) {
+          var dir = Math.abs(delta) > 2 ? (delta < 0 ? -1 : 1) : (fingerDx > 0 ? -1 : 1);
           to = stepTarget(b, base, dir);
         } else {
           to = base;
         }
-        animateTo(b, to);
+        /* حلقه (پرش بلند از آخر به اول) با سرعت انگشت شروع نشود */
+        var far = Math.abs(to - b.scrollLeft) > b.clientWidth * 1.5;
+        animateTo(b, to, far ? 560 : 0, far ? 0 : -v);
       }
       function end() {
         st = null;
@@ -19372,11 +19397,10 @@ function openPdfPrintWindow(){
               var sms = (!!a.viaSms) !== (!!b.viaSms);
               var dd = (da && db) ? Math.abs(da - db) : (da || db ? 99 : 0);
               var sameDay = da && db && da === db;
-              var simil = similarDesc(a.desc, b.desc);
-              var hit = false;
-              if (sameDay && (simil || (sms && (isGeneric(a) || isGeneric(b))))) hit = true;
-              else if (dd <= 2 && simil && A === B) hit = true;
-              else if (dd <= 2 && sms && (isGeneric(a) || isGeneric(b) || simil)) hit = true;
+              /* فقط وقتی متن شرح‌ها دقیقاً یکی باشد (پس از یکسان‌سازی فاصله و حروف عربی/فارسی) */
+              var na = HKCategorizer.normalize(a.desc), nb = HKCategorizer.normalize(b.desc);
+              if (!na || na !== nb) continue;
+              var hit = sameDay || dd <= 2;
               if (!hit) continue;
               var id = 'dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j);
               if (dis[id]) continue;
@@ -19485,7 +19509,7 @@ function openPdfPrintWindow(){
           var net = rec - exp, lines = [], p = 35, state = '';
           if (exp > rec) {
             lines.push('مخارج پروژه از مبلغ دریافتی بیشتر شده است.');
-            lines.push(spAmt(exp - rec) + ' تومان طلب باقی مانده.');
+            lines.push(spAmt(exp - rec) + ' تومان بدهکار است.');
             p = 55; state = 'over';
             if (rec > 0 && (exp - rec) <= exp * 0.1) { lines.push('نزدیک به تسویه است.'); state = 'near'; }
           } else if (rec > 0 && exp > 0) {
@@ -19521,12 +19545,7 @@ function openPdfPrintWindow(){
         });
         Object.keys(shown).forEach(function (k) { if (!active[k]) delete shown[k]; });
         saveMap(SHOWN_KEY, shown);
-        if (fresh) {
-          try { showToast(fresh.toast); } catch (e) {}
-          try {
-            if ('Notification' in window && Notification.permission === 'granted') new Notification(fresh.title, { body: fresh.text, dir: 'rtl' });
-          } catch (e2) {}
-        }
+        /* هشدار تکرار فقط داخل باکس هوشمند نمایش داده می‌شود (بدون پیام پایین صفحه) */
         return fresh;
       }
       function dismiss(id) { var d = loadMap(DISMISS_KEY); d[id] = Date.now(); saveMap(DISMISS_KEY, d); }
@@ -20275,9 +20294,14 @@ function openPdfPrintWindow(){
           const exists = allPersonTitles().some(t => t === name && t !== title);
           if (exists) { showToast('اسم تکراری است'); return; }
         }
+        var _prevActiveTitle = '';
+        try { _prevActiveTitle = getActiveHomeCardTitle() || (allPersonTitles()[0] || ''); } catch (ePa) {}
         if (isNew) {
           ensurePersonSections(name);
-          try { setActiveHomeCardTitle(name); } catch (e) {}
+          /* کارت جدید سمت راستِ کارت اول (اولین کارت در ترتیب RTL) */
+          try { applyPersonCardOrder([name].concat(allPersonTitles().filter(function (x) { return x !== name; })), { silent: true }); } catch (eOrd) {}
+          /* اول روی کارت قبلی بماند تا اسکرول به کارت جدید دیده شود */
+          try { if (_prevActiveTitle) setActiveHomeCardTitle(_prevActiveTitle); } catch (e) {}
         } else {
           const inc = findSectionByTitle('income', title);
           const exp = findSectionByTitle('expense', title);
@@ -20297,10 +20321,17 @@ function openPdfPrintWindow(){
         renderHomeCards();
         try {
           if (isNew) {
-            // اول کارت اول، بعد با سرعت متوسط برو روی کارت جدید
+            /* از روی کارتی که کاربر رویش بود، با اسکرول روی کارت جدید (سمت راست) برو */
             var boxHC = document.getElementById('homeCards');
-            if (boxHC) boxHC.scrollLeft = 0;
-            setTimeout(function(){ animateHomeCardsToTitle(name, 550); }, 60);
+            setTimeout(function(){
+              try {
+                var cards = Array.prototype.slice.call(boxHC.querySelectorAll('.person-card'));
+                var from = cards.find(function (c) { return c.dataset.title === _prevActiveTitle; }) || cards[1];
+                var to = cards.find(function (c) { return c.dataset.title === name; });
+                if (from) homeCenterCard(boxHC, from, false);
+                setTimeout(function () { if (to) homeCenterCard(boxHC, to, true); }, 80);
+              } catch (eAn) {}
+            }, 60);
           } else {
             requestAnimationFrame(function(){ scrollHomeCardsToTitle(name, true); });
           }
@@ -30438,6 +30469,8 @@ function openProjectRowPicker(secId) {
           return;
         }
       } catch (e) {}
+      /* حالت جابه‌جایی کارت‌ها (لانگ‌پرس): بک اندروید نوار را می‌بندد (چیدمانِ انجام‌شده حفظ می‌شود) */
+      try { if (typeof _cardReorderActive !== 'undefined' && _cardReorderActive) { commitCardReorderMode(); return; } } catch (eCro) {}
       /* برگهٔ دسته‌بندی مخارج (پنل هوشمند): انتخاب دسته ← فهرست شرح‌ها ← صفحه اصلی */
       try { if (typeof categorySheetBack === 'function' && categorySheetBack()) return; } catch (eCat) {}
       try {
@@ -31664,7 +31697,7 @@ function openProjectRowPicker(secId) {
         var tdV = document.createElement('td');
         tdV.className = 'val';
         tdV.textContent = formatNum(it.amount);
-        tdV.style.color = it.tab === 'income' ? '#16a34a' : '#dc2626';
+        tdV.style.setProperty('color', it.tab === 'income' ? '#16a34a' : '#dc2626', 'important');
         tr.appendChild(td); tr.appendChild(tdD); tr.appendChild(tdV);
         body.appendChild(tr);
       });
@@ -31750,12 +31783,9 @@ function openProjectRowPicker(secId) {
       function addSec(tab, sec, isInc) {
         const title = (sec.title || '').trim() || '—';
         if (balanceSelectedTitles.length && !balanceSelectedTitles.includes(title)) return;
-        let sum = 0;
-        sec.rows.forEach(r => {
-          if (dayF && dayNum(r) !== dayF) return;
-          if (accF && (r.account || '').trim() !== accF) return;
-          sum += Number(r.amount) || 0;
-        });
+        /* همان قاعدهٔ «درآمد کل / خرج کل» کارت کاربر (sectionPaidUnpaidTotal)، با فیلتر روز و حساب */
+        const fRows = (sec.rows || []).filter(r => r && (!dayF || dayNum(r) === dayF) && (!accF || (r.account || '').trim() === accF));
+        const sum = sectionPaidUnpaidTotal({ rows: fRows }, isInc ? { personalIncomeOnly: true } : { personalExpenseOnly: true }).total;
         if (isInc) incMap[title] = (incMap[title] || 0) + sum;
         else expMap[title] = (expMap[title] || 0) + sum;
         if (!order.includes(title)) order.push(title);
@@ -31805,8 +31835,8 @@ function openProjectRowPicker(secId) {
         tr.appendChild(tdRem);
         tbody.appendChild(tr);
       });
-      /* جمع کل موجودی = جمع درآمدها + موجودی ماه قبل */
-      const gBal = gIncOnly + openingBal;
+      /* جمع درآمد کل (بدون موجودی ماه قبل) − جمع خرج کل */
+      const gBal = gIncOnly;
       const gRemain = gBal - gExp;
       document.getElementById('balIncome').textContent = formatNum(gBal);
       document.getElementById('balExpense').textContent = formatNum(gExp);
@@ -31849,7 +31879,9 @@ function openProjectRowPicker(secId) {
           const tr = document.createElement('tr');
           const td = document.createElement('td');
           td.className = 'sec-name';
-          const full = (r.desc || '—') + (title ? (' (' + title + ')') : '');
+          /* نام کاربر در پرانتز فقط وقتی «همه بخش‌ها» انتخاب است */
+          const showTitle = title && !balanceSelectedTitles.length;
+          const full = (r.desc || '—') + (showTitle ? (' (' + title + ')') : '');
           td.textContent = full;
           td.title = full;
           td.onclick = (e) => {
@@ -31863,6 +31895,8 @@ function openProjectRowPicker(secId) {
           const tdV = document.createElement('td');
           tdV.className = 'val';
           tdV.textContent = formatNum(r.amount || 0);
+          /* مخارج پرداخت‌نشده قرمز؛ بقیه بدون تغییر */
+          if (label === 'مخارج' && (r.status || 'paid') !== 'paid') tdV.style.setProperty('color', '#ff453a', 'important');
           tr.appendChild(tdV);
           dayBody.appendChild(tr);
           return tr;
