@@ -8447,23 +8447,25 @@
       margin-top: 0 !important;
     }
 
-    /* ===== آیکون‌های باکس‌های صفحهٔ اصلی: بدون کادر؛ سفید با اپسیتی ~۶۰٪ و بافت شیشهٔ مات «سفید برفی» ===== */
+    /* ===== آیکون‌های باکس‌های صفحهٔ اصلی: شیشهٔ تخت (بدون سه‌بعدی) =====
+       بدنهٔ هر شکل: گرادیان سفیدِ نیمه‌شفاف (بالا روشن‌تر) تا رنگ باکس از زیرش دیده شود؛
+       لبه: خط روشن و تمیز. هشدار حذف در باکس سوم قرمز می‌ماند */
     .hk-icon-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
-    #homeTools .home-tile .tile-ico {
-      display: block;
-      width: 30px;
-      height: 30px;
-      flex-shrink: 0;
-    }
+    #homeTools .home-tile .tile-ico { display: block; width: 34px; height: 34px; flex-shrink: 0; }
     #homeTools .home-tile .tile-ico svg {
       display: block !important;
-      width: 30px !important;
-      height: 30px !important;
-      stroke: none !important;
-      opacity: 0.62;
+      width: 34px !important;
+      height: 34px !important;
       overflow: visible;
+      fill: none !important;
+      stroke: none !important;
     }
-    #homeTools .home-tile .tile-ico .frost { fill: url(#hkSnow); filter: url(#hkFrost); }
+    #homeTools .tile-ico .g { fill: url(#hkGF); stroke: url(#hkGS); stroke-width: 1.35; stroke-linejoin: round; }
+    #homeTools .tile-ico .l { fill: none; stroke: rgba(255,255,255,0.92); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    #homeTools .tile-ico .g.r { fill: url(#hkRF); stroke: url(#hkRS); }
+    #homeTools .tile-ico .l.r { stroke: #ff6b60; }
+    #homeTools .tile-ico .b { fill: #ff3b30; stroke: #1c1c1e; stroke-width: 1.4; }
+    #homeTools .tile-ico .bx { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
     #homeTools .home-tile:active .tile-ico svg { opacity: 0.8; }
     /* درِ سطل زباله: همان تکان دوره‌ای قبلی */
     #homeTools .home-tile .tile-ico .lid {
@@ -9052,9 +9054,55 @@
     .sp-cat { display: flex; flex-direction: column; justify-content: center; gap: 3px; box-sizing: border-box; }
     .sp-scroll.sp-free { scroll-snap-type: none; display: flex; flex-direction: column; gap: 8px; }
     .sp-scroll.sp-more { -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent); mask-image: linear-gradient(to bottom, #000 88%, transparent); }
-    .sp-tip { font-size: calc(0.64rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.88); text-align: justify; text-justify: inter-word; }
+    .sp-tip { font-size: calc(0.64rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.88); text-align: right; }
     /* وضعیت این ماه: لوله‌ها کل ارتفاع باکس را با فاصلهٔ برابر پوشش می‌دهند */
     .sp-even { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; }
+    /* اسلاید + آبی (افزودن کار) */
+    .sp-plus { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .sp-plus svg { width: 38px; height: 38px; fill: none; stroke: #08b5f5; stroke-width: 2.4; stroke-linecap: round; }
+    .sp-todo { display: flex; align-items: flex-start; gap: 6px; font-size: calc(0.66rem * var(--sp-fs, 1)); color: rgba(255,255,255,0.92); line-height: 1.5; }
+    .sp-todo i { flex: 0 0 auto; width: 9px; height: 9px; margin-top: 0.35em; border-radius: 50%; border: 1.5px solid #08b5f5; box-sizing: border-box; }
+    .sp-todo span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .sp-todo.done span { color: rgba(255,255,255,0.4); text-decoration: line-through; }
+    .sp-todo.done i { background: #08b5f5; }
+    /* پنجرهٔ کارها: وسط صفحه، پشتش همه‌جا مات */
+    .todo-overlay {
+      position: fixed; inset: 0; z-index: 9500;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; box-sizing: border-box;
+      background: rgba(0,0,0,0.38);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      opacity: 0; transition: opacity 0.2s ease;
+      direction: rtl;
+    }
+    .todo-overlay.open { opacity: 1; }
+    .todo-box {
+      width: 100%; max-width: 380px; max-height: min(74vh, 560px);
+      display: flex; flex-direction: column; gap: 10px;
+      background: #1c1c1e; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px;
+      padding: 16px; box-sizing: border-box; box-shadow: 0 18px 50px rgba(0,0,0,0.5);
+      transform: translateY(10px) scale(0.98); transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .todo-overlay.open .todo-box { transform: none; }
+    .todo-title { font-size: 1rem; font-weight: 800; color: #08b5f5; }
+    .todo-list { flex: 1 1 auto; min-height: 60px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; }
+    .todo-empty { color: rgba(255,255,255,0.4); font-size: 0.85rem; font-weight: 700; text-align: center; padding: 18px 0; }
+    .todo-row { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .todo-check { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #08b5f5; background: transparent; padding: 0; position: relative; cursor: pointer; }
+    .todo-row.done .todo-check { background: #08b5f5; }
+    .todo-row.done .todo-check::after { content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border: solid #1c1c1e; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .todo-text { flex: 1 1 auto; min-width: 0; color: #fff; font-size: 0.9rem; font-weight: 700; overflow-wrap: anywhere; cursor: pointer; }
+    .todo-row.done .todo-text { color: rgba(255,255,255,0.4); text-decoration: line-through; }
+    .todo-del { flex: 0 0 auto; width: 28px; height: 28px; border: none; background: transparent; color: #ff453a; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+    .todo-new { display: flex; gap: 8px; }
+    .todo-input { flex: 1 1 auto; min-width: 0; background: #2c2c2e; color: #fff; border: 1px solid #3a3a3c; border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 0.9rem; direction: rtl; outline: none; }
+    .todo-input:focus { border-color: #08b5f5; }
+    .todo-add { flex: 0 0 auto; width: 42px; border-radius: 10px; border: 1px solid rgba(8,181,245,0.5); background: rgba(8,181,245,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .todo-add svg { width: 20px; height: 20px; fill: none; stroke: #08b5f5; stroke-width: 2.4; stroke-linecap: round; }
+    .todo-actions { display: flex; gap: 8px; }
+    .todo-actions button { flex: 1 1 0; padding: 11px 0; border-radius: 10px; border: none; font-family: inherit; font-size: 0.92rem; font-weight: 800; cursor: pointer; }
+    .todo-cancel { background: #2c2c2e; color: #fff; }
+    .todo-save { background: #08b5f5; color: #fff; }
     .sp-empty {
       position: absolute;
       inset: 0;
@@ -9347,46 +9395,46 @@
         <button type="button" class="cro-done" id="cardReorderDone">تمام</button>
       </div>
       <div class="home-tools" id="homeTools">
-        <svg class="hk-icon-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="hkSnow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dce3eb"/></linearGradient><filter id="hkFrost" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.7" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 0.82" result="g"/><feComposite in="SourceGraphic" in2="g" operator="in"/></filter><mask id="hkDbMask" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="17.6" cy="17.6" r="5.5" fill="#000"/></mask></defs></svg>
+        <svg class="hk-icon-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="hkGF" gradientUnits="userSpaceOnUse" x1="0" y1="3" x2="0" y2="21"><stop offset="0" stop-color="#fff" stop-opacity=".46"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient><linearGradient id="hkGS" gradientUnits="userSpaceOnUse" x1="0" y1="3" x2="0" y2="21"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient><linearGradient id="hkRF" gradientUnits="userSpaceOnUse" x1="0" y1="3" x2="0" y2="21"><stop offset="0" stop-color="#ff453a" stop-opacity=".55"/><stop offset="1" stop-color="#ff453a" stop-opacity=".16"/></linearGradient><linearGradient id="hkRS" gradientUnits="userSpaceOnUse" x1="0" y1="3" x2="0" y2="21"><stop offset="0" stop-color="#ff7a70"/><stop offset="1" stop-color="#ff453a" stop-opacity=".75"/></linearGradient></defs></svg>
         <div class="home-box box1" id="homeBox1">
           <button type="button" class="home-tile icon-green" onclick="openSubjectsModal()" title="پروژه‌ها">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M5.8 7.5h12.4A2.8 2.8 0 0 1 21 10.3v6.9a2.8 2.8 0 0 1-2.8 2.8H5.8A2.8 2.8 0 0 1 3 17.2v-6.9a2.8 2.8 0 0 1 2.8-2.8zM3 12.4h18v1.4H3z"/><path d="M9.2 4.4h5.6a1.7 1.7 0 0 1 1.7 1.7v1.4h-1.7V6.1H8.9v1.4H7.5V6.1a1.7 1.7 0 0 1 1.7-1.7z"/><rect x="10.5" y="11.2" width="3" height="4.2" rx=".8"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="g" d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h4l1.8 2h7.8a1.7 1.7 0 0 1 1.7 1.7v8.6a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/><path class="l" d="M3.5 10.3h17"/></svg></span>
             <span>پروژه‌ها</span>
           </button>
           <button type="button" class="home-tile icon-purple" onclick="switchTabFromMenu('install')" title="اقساط">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5zM4 9.3h16v1.3H4zM8.5 14.7l1.15-1.15 1.85 1.85 3.85-3.85 1.15 1.15-5 5z"/><rect x="7.3" y="2.6" width="1.9" height="3.8" rx=".95"/><rect x="14.8" y="2.6" width="1.9" height="3.8" rx=".95"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="g" x="3.5" y="5" width="14.5" height="13.5" rx="2.2"/><path class="l" d="M3.5 9h14.5M7.3 3.3v3.2M14.2 3.3v3.2"/><circle class="g" cx="17" cy="16.6" r="4.3"/><circle class="l" cx="17" cy="16.6" r="2.1"/></svg></span>
             <span>اقساط</span>
           </button>
           <button type="button" class="home-tile icon-yellow" onclick="switchTabFromMenu('ledger')" title="قرض">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path d="M4 7.2h11.2V4.6L20 8.5l-4.8 3.9V9.8H4z"/><path d="M20 14.2H8.8v-2.6L4 15.5l4.8 3.9v-2.6H20z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="g" cx="15.5" cy="6.8" r="3.9"/><circle class="l" cx="15.5" cy="6.8" r="1.9"/><rect class="g" x="2.8" y="13.4" width="2.6" height="6.8" rx=".6"/><path class="l" d="M5.4 14.6l3.1-1.2a2.6 2.6 0 0 1 1.9 0l3.4 1.3h1.7a1.4 1.4 0 0 1 0 2.8h-3.6M5.4 19.4h6.8c.9 0 1.7-.3 2.3-.9l4.8-4a1.5 1.5 0 0 0-2-2.3l-3 2.3"/></svg></span>
             <span>قرض</span>
           </button>
         </div>
         <div class="home-box box2" id="homeBox2">
           <button type="button" class="home-tile" onclick="askBackupParts()" title="پشتیبان‌گیری">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M7 19.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6a4.95 4.95 0 0 1-.4 9.9zM12 10.6l3.4 3.4h-2.3v3.8h-2.2v-3.8H8.6z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="g" d="M7 18.5a4.3 4.3 0 0 1-.55-8.56A5.6 5.6 0 0 1 17.3 8.9a4.8 4.8 0 0 1-.4 9.6z"/><path class="l" d="M12 16.4v-5.2M9.8 13.3 12 11.1l2.2 2.2"/></svg></span>
             <span>پشتیبان‌گیری</span>
           </button>
           <button type="button" class="home-tile" onclick="triggerImportBackup()" title="بازیابی از پشتیبان">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path d="M4.48 9.66A8 8 0 1 1 6.86 18.53L8.21 16.92A5.9 5.9 0 1 0 6.46 10.38Z"/><path d="M4.37 13.03L2.46 8.93L8.48 11.12Z"/><path d="M11.15 8.4h1.7v3.7l2.5 1.45-.85 1.47-3.35-1.97z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="g" d="M7 18.5a4.3 4.3 0 0 1-.55-8.56A5.6 5.6 0 0 1 17.3 8.9a4.8 4.8 0 0 1-.4 9.6z"/><path class="l" d="M12 11v5.2M9.8 14.1 12 16.3l2.2-2.2"/></svg></span>
             <span>بازیابی</span>
           </button>
           <button type="button" class="home-tile" onclick="askExport()" title="خروجی اکسل / PDF">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M7.5 3h6.6L19 7.9v10.6A2.5 2.5 0 0 1 16.5 21h-9A2.5 2.5 0 0 1 5 18.5v-13A2.5 2.5 0 0 1 7.5 3zM13.3 3v4a1.6 1.6 0 0 0 1.6 1.6H19V7.9L14.1 3zM12 10.8l3.4 3.4h-2.3v3.8h-2.2v-3.8H8.6z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="g" d="M7 3.5h6.5L18 8v10.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z"/><path class="l" d="M13.5 3.5V8H18"/><rect class="l" x="7.9" y="11" width="7.2" height="6.2" rx=".7"/><path class="l" d="M7.9 14.1h7.2M11.5 11v6.2"/></svg></span>
             <span>خروجی</span>
           </button>
         </div>
         <div class="home-box box3" id="homeBox3">
           <button type="button" class="home-tile icon-red" onclick="askResetCurrentMonth()" title="حذف ماه">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5zM4 9.3h16v1.3H4zM8.6 14.6h6.8v1.9H8.6z"/><rect x="7.3" y="2.6" width="1.9" height="3.8" rx=".95"/><rect x="14.8" y="2.6" width="1.9" height="3.8" rx=".95"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="g" x="3.5" y="5" width="15" height="14" rx="2.2"/><path class="l" d="M3.5 9h15M7.5 3.3v3.2M14.5 3.3v3.2M7 12.5h1.8M10.6 12.5h1.8M7 15.6h1.8"/><circle class="b" cx="18" cy="18" r="4.4"/><path class="bx" d="M16.5 16.5l3 3M19.5 16.5l-3 3"/></svg></span>
             <span>حذف ماه</span>
           </button>
           <button type="button" class="home-tile icon-red" onclick="askResetAllData()" title="حذف کلی">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><g mask="url(#hkDbMask)"><ellipse cx="10.5" cy="5.6" rx="6.5" ry="2.5"/><path d="M4 8.4c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v3c0 1.4-2.9 2.5-6.5 2.5S4 12.8 4 11.4z"/><path d="M4 13.6c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v3c0 1.4-2.9 2.5-6.5 2.5S4 18 4 16.6z"/></g><path fill-rule="evenodd" d="M17.6 13.3a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6zM18.68 15.64L19.56 16.52L18.48 17.60L19.56 18.68L18.68 19.56L17.60 18.48L16.52 19.56L15.64 18.68L16.72 17.60L15.64 16.52L16.52 15.64L17.60 16.72z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="g" d="M4 6v11c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5V6"/><ellipse class="g" cx="10.5" cy="6" rx="6.5" ry="2.5"/><path class="l" d="M4 11.5c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5"/><circle class="b" cx="18" cy="18" r="4.4"/><path class="bx" d="M16.5 16.5l3 3M19.5 16.5l-3 3"/></svg></span>
             <span>حذف کلی</span>
           </button>
           <button type="button" class="home-tile icon-red" onclick="openTrashModal()" title="سطل زباله">
-            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><g class="lid"><rect x="4" y="5.6" width="16" height="2" rx="1"/><path d="M9.4 6.2V4.4c0-.6.5-1 1-1h3.2c.6 0 1 .4 1 1v1.8h-1.6V5h-2v1.2z"/></g><path fill-rule="evenodd" d="M5.9 8.7h12.2l-.85 10.5A2 2 0 0 1 15.26 21H8.74a2 2 0 0 1-1.99-1.8zM9.3 11h1.5v7H9.3zM13.2 11h1.5v7h-1.5z"/></g></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="lid"><path class="l r" d="M4.5 7h15M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/></g><path class="g r" d="M6.3 7l.9 11.6a1.8 1.8 0 0 0 1.8 1.6h6a1.8 1.8 0 0 0 1.8-1.6L17.7 7z"/><path class="l r" d="M10.2 10.5v6.5M13.8 10.5v6.5"/></svg></span>
             <span>سطل زباله</span>
           </button>
         </div>
@@ -9720,10 +9768,10 @@
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
       var n = 0;
-      /* راهنمای کشیدن: سه نقطهٔ ثابت که به سمت «پروژه» پررنگ‌تر می‌شوند (جهت) + هر چند ثانیه دایره کمی به همان سمت سر می‌خورد */
+      /* راهنمای کشیدن: فقط «هل» دوره‌ای دایره به سمت «پروژه» (بدون فلش/نقطه) */
       window.rowAddArrowSvg = function () {
         n++;
-        return '<span class="row-add-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
+        return '';
       };
     })();
 
@@ -19848,8 +19896,8 @@ function openPdfPrintWindow(){
       var L = D.led || {};
       if (!(L.credit > 0) && !(L.debt > 0)) return null;
       var items = [];
-      if (L.credit > 0) items.push(spLine('طلب کل', spAmt(L.credit), 'pos'));
-      if (L.debt > 0) items.push(spLine('بدهی کل', spAmt(L.debt), 'neg'));
+      if (L.credit > 0) items.push('<div class="sp-row"><span class="sp-l pos">طلب کل</span><span class="sp-v pos">' + spAmt(L.credit) + '</span></div>');
+      if (L.debt > 0) items.push('<div class="sp-row"><span class="sp-l neg">بدهی کل</span><span class="sp-v neg">' + spAmt(L.debt) + '</span></div>');
       (L.list || []).forEach(function (x) {
         /* نام طرف‌حساب یک خط، مبلغ زیرش (یکدست برای نام‌های کوتاه و بلند) */
         var cr = x.type === 'credit';
@@ -19865,11 +19913,14 @@ function openPdfPrintWindow(){
         '<div class="sp-bar thin"><i class="' + cls + '" data-w="' + w.toFixed(1) + '"></i></div>';
     }
     function spPageStats(D) {
-      if (!((D.pInc > 0 || D.pExp > 0) && (D.inc > 0 || D.exp > 0))) return null;
+      /* همیشه جزو اسلایدهاست (اگر این ماه یا ماه قبل ثبتی داشته باشد)؛ ماه قبلِ خالی = صفر */
+      if (!(D.pInc > 0 || D.pExp > 0 || D.inc > 0 || D.exp > 0)) return null;
       var mx = Math.max(D.inc, D.pInc, D.exp, D.pExp);
       var html = spHead('مقایسه با ماه قبل');
+      if (!(D.inc > 0 || D.pInc > 0) && !(D.exp > 0 || D.pExp > 0)) return null;
       if (D.inc > 0 || D.pInc > 0) html += '<div class="sp-blk"><div class="sp-g">درآمد</div>' + spBarRow('این ماه', D.inc, mx, 'pos') + spBarRow('ماه قبل', D.pInc, mx, 'pos dim') + '</div>';
       if (D.exp > 0 || D.pExp > 0) html += '<div class="sp-blk"><div class="sp-g">خرج</div>' + spBarRow('این ماه', D.exp, mx, 'neg') + spBarRow('ماه قبل', D.pExp, mx, 'neg dim') + '</div>';
+      if (!(D.pInc > 0 || D.pExp > 0)) html += '<div class="sp-l">ماه قبل ثبتی ندارد.</div>';
       return html;
     }
     /* ۴) دسته‌بندی مخارج: همهٔ دسته‌ها (جمع ۱۰۰٪)؛ هر نما ۴ مورد و اسکرول عمودی پیوسته */
@@ -19913,15 +19964,114 @@ function openPdfPrintWindow(){
         return '<div class="sp-tipbox">' + (x.h ? '<div class="sp-t">' + spEsc(x.h) + '</div>' : '') + '<div class="sp-tip">' + spEsc(x.t) + '</div></div>';
       }).join('') + '</div>';
     }
+    /* ===== کارهای من (to-do) در باکس هوشمند — جدا برای هر کارت ===== */
+    var TODO_KEY = STORAGE_KEY + '_todos';
+    function loadTodos(title) {
+      try { var m = JSON.parse(localStorage.getItem(TODO_KEY) || '{}'); var a = m && m[(title || '').trim()]; return Array.isArray(a) ? a.filter(function (x) { return x && x.t; }) : []; } catch (e) { return []; }
+    }
+    function saveTodos(title, list) {
+      try {
+        var m = JSON.parse(localStorage.getItem(TODO_KEY) || '{}') || {};
+        var k = (title || '').trim();
+        if (list && list.length) m[k] = list; else delete m[k];
+        localStorage.setItem(TODO_KEY, JSON.stringify(m));
+      } catch (e) {}
+    }
+    /* اسلاید خالی: فقط یک + آبی */
+    function spPageTodoAdd() {
+      return '<div class="sp-plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></div>';
+    }
+    /* اسلاید کارها (بعد از ثبت اولین کار) */
+    function spPageTodo(D) {
+      var list = loadTodos(D.title);
+      if (!list.length) return null;
+      return spHead('کارهای من') + spItems(list.map(function (x) {
+        return '<div class="sp-todo' + (x.done ? ' done' : '') + '"><i></i><span>' + spEsc(x.t) + '</span></div>';
+      }));
+    }
+    function refreshSmartPanelsFor(title, focusKey) {
+      var t = (title || '').trim();
+      try {
+        var st = _smartPanelState[t];
+        if (st && focusKey) { st.key = focusKey; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
+        document.querySelectorAll('#homeCards .person-card:not(.hc-clone) .pc-smart-box').forEach(function (el) {
+          if ((el._spTitle || '').trim() === t) { mountSmartPanel(el, t); try { fitSmartPanel(el); } catch (eF) {} }
+        });
+      } catch (e) {}
+    }
+    function closeTodoEditor() {
+      var ov = document.getElementById('todoEditorOverlay');
+      if (!ov) return;
+      try { if (ov._kbOff) ov._kbOff(); } catch (e) {}
+      ov.classList.remove('open');
+      setTimeout(function () { try { ov.remove(); } catch (e) {} }, 200);
+    }
+    function openTodoEditor(title) {
+      closeTodoEditor();
+      var t = (title || '').trim();
+      var list = loadTodos(t).map(function (x) { return { t: x.t, done: !!x.done }; });
+      var ov = document.createElement('div');
+      ov.id = 'todoEditorOverlay';
+      ov.className = 'todo-overlay';
+      ov.innerHTML = '<div class="todo-box" role="dialog" aria-label="کارهای من">' +
+        '<div class="todo-title">کارهای من</div>' +
+        '<div class="todo-list"></div>' +
+        '<div class="todo-new"><input type="text" class="todo-input" maxlength="120" placeholder="کار جدید…" enterkeyhint="done">' +
+        '<button type="button" class="todo-add" aria-label="افزودن"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>' +
+        '<div class="todo-actions"><button type="button" class="todo-cancel">انصراف</button><button type="button" class="todo-save">ثبت</button></div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      var box = ov.querySelector('.todo-box'), lst = ov.querySelector('.todo-list'), inp = ov.querySelector('.todo-input');
+      function draw() {
+        lst.innerHTML = '';
+        if (!list.length) { lst.innerHTML = '<div class="todo-empty">هنوز کاری ننوشته‌ای</div>'; return; }
+        list.forEach(function (x, i) {
+          var row = document.createElement('div');
+          row.className = 'todo-row' + (x.done ? ' done' : '');
+          row.innerHTML = '<button type="button" class="todo-check" aria-label="انجام شد"></button><span class="todo-text"></span><button type="button" class="todo-del" aria-label="حذف">×</button>';
+          row.querySelector('.todo-text').textContent = x.t;
+          row.querySelector('.todo-check').onclick = function () { x.done = !x.done; draw(); };
+          row.querySelector('.todo-text').onclick = function () { x.done = !x.done; draw(); };
+          row.querySelector('.todo-del').onclick = function () { list.splice(i, 1); draw(); };
+          lst.appendChild(row);
+        });
+      }
+      function addFromInput() {
+        var v = (inp.value || '').trim();
+        if (!v) return false;
+        list.push({ t: v, done: false });
+        inp.value = '';
+        draw();
+        lst.scrollTop = lst.scrollHeight;
+        return true;
+      }
+      draw();
+      ov.querySelector('.todo-add').onclick = function () { addFromInput(); try { inp.focus(); } catch (e) {} };
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addFromInput(); } });
+      ov.querySelector('.todo-cancel').onclick = closeTodoEditor;
+      ov.querySelector('.todo-save').onclick = function () {
+        addFromInput();   /* متنِ نوشته‌شده‌ای که هنوز + نخورده هم ثبت شود */
+        saveTodos(t, list);
+        closeTodoEditor();
+        refreshSmartPanelsFor(t, list.length ? 'todo' : 'todoAdd');
+      };
+      ov.addEventListener('click', function (e) { if (e.target === ov) closeTodoEditor(); });
+      try { ov._kbOff = attachKeyboardLift(box); } catch (eK) {}
+      requestAnimationFrame(function () { ov.classList.add('open'); });
+    }
+    try { window.openTodoEditor = openTodoEditor; window.closeTodoEditor = closeTodoEditor; } catch (eW) {}
+
     var SMART_PANEL_PAGES = [
       { key: 'warn', build: spPageWarn, onTap: function (title) { spDismissDupPrompt(title); } },
       { key: 'overview', build: spPageOverview },
+      { key: 'stats', build: spPageStats },
+      { key: 'todo', build: spPageTodo, onTap: function (title) { openTodoEditor(title); } },
       { key: 'obligations', build: spPageObligations },
       { key: 'ledger', build: spPageLedger },
-      { key: 'stats', build: spPageStats },
       { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
       { key: 'projects', build: spPageProjects },
-      { key: 'insight', build: spPageInsight }
+      { key: 'insight', build: spPageInsight },
+      { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoEditor(title); } }
     ];
     function spDismissDupPrompt(title) {
       var d = HKAlerts.duplicates(title)[0];
@@ -30746,6 +30896,7 @@ function openProjectRowPicker(secId) {
         var prp = document.getElementById('projectRowPickerOverlay');
         if (prp) { prp.remove(); return; }
       } catch (ePr) {}
+      try { if (document.getElementById('todoEditorOverlay')) { closeTodoEditor(); return; } } catch (eTd) {}
       if(closeTopOverlayOrMenu()) return;
       // از صفحه درآمد/مخارج/مانده کارت به خانه
       try {
