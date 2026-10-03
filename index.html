@@ -1281,6 +1281,19 @@
     .theme-switch:not(.on) .theme-icon-moon { opacity: 0; }
     .theme-switch:not(.on)::after { left: 32px; }
 
+
+    /* ===== کلید حالت شب/روز: مینیمال (دستگیره با آیکون خطی) ===== */
+    .theme-switch.ts-min { width: 52px; height: 30px; border-radius: 15px; border: none; background: #2c2c2e; overflow: visible; }
+    .theme-switch.ts-min::after { content: none; display: none; }
+    .ts-min .ts-knob { position: absolute; top: 3px; left: 25px; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease; display: grid; place-items: center; }
+    .ts-min .ts-knob svg { grid-area: 1 / 1; width: 15px; height: 15px; fill: none; stroke: #8e8e93; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.25s ease, transform 0.35s ease; }
+    .ts-min .ts-moon { opacity: 0; transform: rotate(-40deg) scale(0.7); }
+    .theme-switch.ts-min.on { background: #2c2c2e; }
+    .theme-switch.ts-min.on .ts-knob { left: 3px; background: #3a3a3c; }
+    .theme-switch.ts-min.on .ts-moon { opacity: 1; transform: none; stroke: #e5e5ea; }
+    .theme-switch.ts-min.on .ts-sun { opacity: 0; transform: rotate(40deg) scale(0.7); }
+    html[data-theme="light"] .theme-switch.ts-min { background: #e5e5ea !important; }
     .sticky-chrome .tabs {
       margin-bottom: 0;
       position: relative;
@@ -9021,6 +9034,49 @@
     /* لانگ‌پرس روی منوها/کارت‌ها/نمودارها نوشته‌ای را انتخاب نکند؛ فقط فیلدهای قابل ویرایش متن‌پذیرند */
     body, body * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     input:not([readonly]), textarea:not([readonly]), [contenteditable="true"], [contenteditable="true"] * { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+
+    .help-intro { font-size: 0.86rem; line-height: 1.9; color: var(--text); margin-bottom: 10px; text-align: right; }
+    .help-tour-btn { width: 100%; margin-top: 6px; }
+    /* ===== تور آموزشی بار اول ===== */
+    .tour-root { position: fixed; inset: 0; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .tour-root.on { opacity: 1; }
+    .tour-root.out { opacity: 0; pointer-events: none; }
+    .tour-spot { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.72); pointer-events: none;
+      transition: left 0.45s cubic-bezier(0.25,0.8,0.25,1), top 0.45s cubic-bezier(0.25,0.8,0.25,1), width 0.45s cubic-bezier(0.25,0.8,0.25,1), height 0.45s cubic-bezier(0.25,0.8,0.25,1); }
+    .tour-root.no-target .tour-spot { border-radius: 50%; }
+    .tour-pulse { position: absolute; inset: -4px; border-radius: inherit; border: 2px solid rgba(158,232,88,0.85); animation: tourPulse 1.6s ease-out infinite; }
+    .tour-root.no-target .tour-pulse { display: none; }
+    @keyframes tourPulse { 0% { opacity: 0.95; transform: scale(1); } 100% { opacity: 0; transform: scale(1.06); } }
+    .tour-swipe { display: none; position: absolute; top: 50%; left: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+      background: rgba(255,255,255,0.85); box-shadow: 0 0 0 8px rgba(255,255,255,0.18), 0 6px 18px rgba(0,0,0,0.35); }
+    .tour-spot.swipe .tour-swipe { display: block; animation: tourSwipe 1.9s cubic-bezier(0.45,0,0.25,1) infinite; }
+    @keyframes tourSwipe { 0% { transform: translateX(60px) scale(0.8); opacity: 0; } 15% { opacity: 1; transform: translateX(60px) scale(1); }
+      65% { transform: translateX(-60px) scale(1); opacity: 1; } 85%,100% { transform: translateX(-60px) scale(0.8); opacity: 0; } }
+    .tour-bubble { position: absolute; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; box-sizing: border-box; padding: 16px 16px 12px; border-radius: 20px;
+      background: rgba(32,32,34,0.92); border: 1px solid rgba(255,255,255,0.12); color: #f2f2f2; direction: rtl; text-align: right;
+      -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 18px 44px rgba(0,0,0,0.45);
+      opacity: 0; transform: translateY(10px) scale(0.98); transition: opacity 0.32s ease, transform 0.38s cubic-bezier(0.25,0.8,0.25,1), top 0.4s cubic-bezier(0.25,0.8,0.25,1); }
+    .tour-bubble.in { opacity: 1; transform: none; }
+    .tour-step { font-size: 11px; color: #9ee858; margin-bottom: 4px; }
+    .tour-title { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+    .tour-text { font-size: 13px; line-height: 1.9; color: rgba(255,255,255,0.82); }
+    .tour-dots { display: flex; gap: 5px; justify-content: center; margin: 12px 0 10px; }
+    .tour-dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.22); transition: width 0.3s ease, background 0.3s ease; }
+    .tour-dots i.on { width: 18px; background: #9ee858; }
+    .tour-actions { display: flex; align-items: center; gap: 8px; }
+    .tour-sp { flex: 1; }
+    .tour-actions button { font-family: inherit; font-size: 13px; border: 0; border-radius: 12px; padding: 8px 14px; cursor: pointer; }
+    .tour-skip { background: transparent; color: rgba(255,255,255,0.6); padding-right: 4px !important; }
+    .tour-prev { background: rgba(255,255,255,0.1); color: #f2f2f2; }
+    .tour-next { background: #9ee858; color: #111; font-weight: 800; min-width: 74px; }
+    html[data-theme="light"] .tour-bubble { background: rgba(255,255,255,0.95); color: #1c1c1e; border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .tour-text { color: rgba(0,0,0,0.72); }
+    html[data-theme="light"] .tour-step { color: #3f8f12; }
+    html[data-theme="light"] .tour-dots i { background: rgba(0,0,0,0.15); }
+    html[data-theme="light"] .tour-dots i.on { background: #6fc22f; }
+    html[data-theme="light"] .tour-skip { color: rgba(0,0,0,0.5); }
+    html[data-theme="light"] .tour-prev { background: rgba(0,0,0,0.06); color: #1c1c1e; }
+    html[data-theme="light"] .tour-spot { box-shadow: 0 0 0 9999px rgba(0,0,0,0.55); }
     /* ===== صفحهٔ آمار ===== */
     .stats-sheet { z-index: 270; --st-inc: #9ee858; --st-exp: #ff6b4a; --st-unpaid: #ff9f0a; --st-other: #6e6e73; --st-line: #0a84ff; --st-grid: rgba(255,255,255,0.08); --st-surface: var(--card); }
     [data-theme="light"] .stats-sheet { --st-inc: #9ee858; --st-exp: #ff6b4a; --st-unpaid: #d97706; --st-other: #a1a1aa; --st-line: #007aff; --st-grid: rgba(60,60,67,0.12); }
@@ -9090,6 +9146,23 @@
     .st-stack { display: flex; gap: 2px; height: 12px; border-radius: 6px; overflow: hidden; margin: 4px 0 10px; background: var(--st-grid); }
     .st-stack i { display: block; height: 100%; }
     .st-stack i.paid { background: var(--st-inc); } .st-stack i.unpaid { background: var(--st-unpaid); }
+    /* ===== نمودارهای لوله‌ای (هم‌سبک لوله‌های باکس هوشمند) ===== */
+    .st-trk { fill: rgba(255,255,255,0.045); }
+    [data-theme="light"] .st-trk { fill: rgba(60,60,67,0.06); }
+    .st-tf { transform-box: fill-box; transform-origin: 50% 100%; animation: stTubeY 1.3s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+    @keyframes stTubeY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .st-hb-bar.st-tube { height: 8px; border-radius: 4px; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); }
+    .st-hb-bar.st-tube i { border-radius: 4px; transform-origin: right center; animation: stTubeX 1.3s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+    @keyframes stTubeX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    .st-stack { height: 10px !important; border-radius: 5px !important; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); animation: stTubeClip 1.3s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+    .st-stack i:first-child { border-radius: 0 5px 5px 0; } .st-stack i:last-child { border-radius: 5px 0 0 5px; }
+    @keyframes stTubeClip { from { clip-path: inset(0 0 0 100% round 5px); } to { clip-path: inset(0 0 0 0 round 5px); } }
+    [data-theme="light"] .stats-sheet .st-hb-bar.st-tube, [data-theme="light"] .st-stack { box-shadow: inset 0 1px 2px rgba(0,0,0,0.12); }
+    .st-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: stDraw 1.4s cubic-bezier(0.45, 0, 0.25, 1) 0.1s forwards; stroke-width: 2.5 !important; }
+    @keyframes stDraw { to { stroke-dashoffset: 0; } }
+    .st-area { animation: stFade 1s ease 0.6s both; }
+    @keyframes stFade { from { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .st-tf, .st-hb-bar.st-tube i, .st-stack, .st-area { animation: none; } .st-line { animation: none; stroke-dashoffset: 0; } }
     .st-empty { color: var(--muted); font-size: 0.8rem; font-weight: 700; text-align: center; padding: 14px 0; }
     .st-empty.big { padding: 4px 0 18px; }
 
@@ -9099,7 +9172,7 @@
     .st-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
     .st-bg i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; }
     .st-bg i:nth-child(1) { width: 75vw; height: 75vw; top: -12vw; right: -20vw; background: #1f7a6b; }
-    .st-bg i:nth-child(2) { width: 70vw; height: 70vw; top: 40%; left: -25vw; background: #6b3fa0; }
+    .st-bg i:nth-child(2) { width: 70vw; height: 70vw; top: 40%; left: -25vw; background: #1d3347; }
     .st-bg i:nth-child(3) { width: 60vw; height: 60vw; bottom: -10vw; right: -10vw; background: #b5652b; }
     .st-bg i:nth-child(4) { width: 50vw; height: 50vw; top: 18%; left: 30vw; background: #2f5fa8; opacity: 0.35; }
     [data-theme="light"] .st-bg i { opacity: 0.45; }
@@ -9323,7 +9396,7 @@
 
 
     /* ===== اقساط / قرض / درآمد ثابت: دکمهٔ + مثل دایرهٔ باکس چهارم + بکگراند واحد برای باکس‌های ایجادشده ===== */
-    :root { --entry-bg: #1f1f21; --entry-bd: rgba(255,255,255,0.10); --field-bg: #2c2c2e; --field-bd: #3a3a3c; }
+    :root { --entry-bg: #1b1b1b; --entry-bd: rgba(255,255,255,0.10); --field-bg: #2c2c2e; --field-bd: #3a3a3c; }
     html[data-theme="light"] { --entry-bg: #ffffff; --entry-bd: #e4e4e9; --field-bg: #f4f4f7; --field-bd: #dcdce1; }
     #panel-install .table-add-tab, #panel-ledger .table-add-tab, #panel-ledger .section > .table-add-tab,
     #panel-recurring .table-add-tab, #recurringBox .table-add-tab, .recurring-box > .table-add-tab {
@@ -9356,6 +9429,18 @@
     #panel-ledger .section .section-header,
     #panel-ledger .section-header { background: var(--entry-bg) !important; border-color: var(--entry-bd) !important; }
     .recurring-row, [data-theme="dark"] .recurring-row { background: var(--field-bg) !important; border-color: var(--field-bd) !important; }
+
+    /* جدول‌های قرض، اقساط، درآمد ثابت و پروژه‌ها: یک بکگراند واحد = رنگ دایرهٔ ایجاد کارت (#1b1b1b) */
+    #installSummarySection, #installSummarySection .summary-table tbody td, #installSummarySection .summary-table tfoot td,
+    #panel-ledger .ledger-summary, #panel-ledger .shaped-card.ledger-summary, .shaped-card.ledger-summary,
+    #panel-ledger .ledger-summary .summary-table tbody td, #panel-ledger .ledger-summary .summary-table tfoot td,
+    .shaped-card.ledger-summary .summary-table tbody td, .shaped-card.ledger-summary .summary-table tfoot td,
+    #panel-ledger .section .section-body, #panel-ledger .section .section-body table, #panel-ledger .section .section-body tbody,
+    #panel-ledger .section .section-body tbody td,
+    #projectReportModal .proj-summary, #projectReportModal .proj-table-scroll, #projectReportModal .proj-table thead th {
+      background: var(--entry-bg) !important;
+      background-color: var(--entry-bg) !important;
+    }
     /* فیلدهای ورودی هر سه بخش هم‌رنگ */
     #panel-install .plan-field input, #panel-install .plan-field select, #panel-install .plan-field .dark-select-btn,
     #panel-install .plan-readonly,
@@ -9738,9 +9823,8 @@
         <button type="button" class="menu-item" id="menuSubjectsBtn" onclick="event.stopPropagation(); openSubjectsModal();">پروژه‌ها</button>
         <button type="button" class="menu-theme-row" onclick="event.stopPropagation(); toggleTheme();">
           <span>حالت شب / روز</span>
-          <span class="theme-switch" id="themeSwitch" aria-hidden="true">
-            <span class="theme-sun" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" fill="#f5c542"/><g stroke="#f5c542" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.4v2.4M12 19.2v2.4M2.4 12h2.4M19.2 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M5.2 18.8l1.7-1.7M17.1 6.9l1.7-1.7"/></g></svg></span>
-            <span class="theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 28 20" fill="none"><path d="M11.2 16.8c-3.1-1.1-5.2-4-5.2-7.5 0-4.3 3.5-7.8 7.8-7.8 1.2 0 2.4.3 3.4.8C14.8 3.4 12.6 5.8 12.6 8.8c0 3.7 2.6 6.8 6.1 7.6-1.1.6-2.4.9-3.8.9-1.3 0-2.5-.2-3.7-.5z" fill="#f5c542"/><path d="M20.2 4.1l.55 1.2 1.32.2-1 .82.24 1.32-1.11-.7-1.11.7.24-1.32-1-.82 1.32-.2.55-1.2z" fill="#f5c542"/><path d="M24.4 7.2l.35.75.83.12-.62.52.15.83-.7-.44-.7.44.15-.83-.62-.52.83-.12.35-.75z" fill="#f5c542"/><path d="M22.6 11.6l.45 1 .1.02 1.08.16-.82.67.2 1.08-.91-.58-.91.58.2-1.08-.82-.67 1.08-.16.45-1z" fill="#f5c542"/></svg></span>
+          <span class="theme-switch ts-min" id="themeSwitch" aria-hidden="true">
+            <span class="ts-knob"><svg class="ts-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6"/></svg><svg class="ts-moon" viewBox="0 0 24 24"><path d="M19 14.6A7.5 7.5 0 0 1 9.4 5a7.5 7.5 0 1 0 9.6 9.6z"/></svg></span>
           </span>
         </button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openSecurityModal();">امنیت و قفل برنامه</button>
@@ -14895,7 +14979,8 @@ function onPeriodChange() {
         { key: 'recurringIncomes', label: 'درآمدهای ثابت' },
         { key: 'selectedBankAccounts', label: 'حساب‌های بانکی' },
         { key: 'subjects', label: 'پروژه‌ها' },
-        { key: 'userReminders', label: 'یادآورها' }
+        { key: 'userReminders', label: 'یادآورها' },
+        { key: 'categories', label: 'دسته‌بندی مخارج' }
       ];
       var ov = document.createElement('div');
       ov.id = 'backupPickOverlay';
@@ -15033,6 +15118,10 @@ function onPeriodChange() {
             try {
               payload.financialSubjects = (typeof loadFinancialSubjects === 'function') ? loadFinancialSubjects() : [];
             } catch (eS) { payload.financialSubjects = []; }
+          }
+          /* دسته‌بندی مخارج: دیکشنری شخصی (اصلاح‌های کاربر) + دسته‌های سفارشی */
+          if (want('categories')) {
+            try { payload.categoryData = HKCategorizer.exportData(); } catch (eC) {}
           }
         } catch (e) {}
         const textOut = JSON.stringify(payload);
@@ -15460,6 +15549,10 @@ function askBackupUserCards(selectedParts) {
         } catch (e) {}
       }
 
+      /* بازیابی دسته‌بندی مخارج */
+      if (data.categoryData && typeof data.categoryData === 'object') {
+        try { HKCategorizer.importData(data.categoryData, mode); } catch (eCat) {}
+      }
       /* بازیابی پروژه‌ها (financialSubjects) */
       if (Array.isArray(data.financialSubjects)) {
         try {
@@ -16338,6 +16431,40 @@ function askBackupUserCards(selectedParts) {
         }
         B.push({ html: lh + '</div>', split: true });
       }
+      /* ---- پروژه‌ها: واریزی‌ها، مخارج و وضعیت طلب/بدهی هر پروژه (همهٔ ماه‌ها) ---- */
+      var subs = [];
+      try { subs = (loadFinancialSubjects() || []).filter(function (x) { return x && x.id && x.id !== 'personal'; }); } catch (e) {}
+      var rowDate = function (r) {
+        var parts = String(r.key || '').split('-'), y = parts[0] || '', m = parseInt(parts[1], 10) || 0, d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0;
+        if (!y) return '—';
+        return toPersianDigits(y + '/' + String(m).padStart(2, '0') + (d >= 1 && d <= 31 ? '/' + String(d).padStart(2, '0') : ''));
+      };
+      var txTable = function (list, cap, cls) {
+        var sumT = 0;
+        var h = '<div class="pb"><div class="st ' + cls + '" style="font-size:11px">' + cap + '</div>';
+        if (!list.length) return h + '<div class="empty">موردی ثبت نشده</div></div>';
+        h += '<table><thead><tr><th style="width:16%">تاریخ</th><th>شرح</th><th style="width:20%">بانک</th><th style="width:20%">مبلغ</th></tr></thead><tbody>';
+        list.slice().sort(function (x, y) { return String(x.key).localeCompare(String(y.key)) || ((parseInt(x.day, 10) || 0) - (parseInt(y.day, 10) || 0)); }).forEach(function (r) {
+          sumT += Number(r.amt) || 0;
+          h += '<tr><td class="c">' + rowDate(r) + '</td><td>' + E(r.desc || '—') + '</td><td class="c">' + E(r.bank || '—') + '</td><td class="n">' + pdfMoney(r.amt) + '</td></tr>';
+        });
+        return h + '<tr class="t"><td colspan="3">جمع ' + cap + '</td><td class="n">' + pdfMoney(sumT) + '</td></tr></tbody></table></div>';
+      };
+      subs.forEach(function (sub, si) {
+        var rep = null; try { rep = computeSubjectReport(sub.id); } catch (e) {}
+        if (!rep) return;
+        var dep = Number(rep.received) || 0, ex = Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0, net = dep - ex;
+        var status = net > 0 ? 'پروژه ' + pdfMoney(net) + ' تومان طلب دارد' : net < 0 ? 'پروژه ' + pdfMoney(-net) + ' تومان بدهکار است' : 'پروژه تسویه است';
+        var head = '<div class="st" style="border-right-color:#5b6b7a">پروژهٔ ' + E(sub.name || '—') + ' <small>همهٔ ماه‌ها</small></div>' +
+          '<div class="kpis" style="margin-bottom:6px"><div class="kpi"><div class="l">جمع واریزی</div><div class="v">' + pdfMoney(dep) + '</div></div>' +
+          '<div class="kpi"><div class="l">جمع مخارج</div><div class="v">' + pdfMoney(ex) + '</div></div>' +
+          '<div class="kpi" style="flex:1.6"><div class="l">وضعیت</div><div class="v" style="direction:rtl;text-align:right;font-size:12px">' + status + '</div></div></div>';
+        var ins = (rep.rows || []).filter(function (x) { return x.tab === 'income'; });
+        var outs = (rep.rows || []).filter(function (x) { return x.tab === 'expense'; });
+        var depT = txTable(ins, 'واریزی‌ها', 'inc');
+        B.push({ html: depT.replace('<div class="pb">', '<div class="pb">' + head), split: ins.length > 0 });
+        B.push({ html: txTable(outs, 'مخارج پروژه', 'exp'), split: outs.length > 0 });
+      });
       return B;
     }
     /* اندازه‌گیری در iframe ایزوله (استایل‌های اپ روی گزارش اثر نگذارند) */
@@ -16818,7 +16945,7 @@ async function openPdfPrintWindow(){
         b.forEach(function (x) { if (showInc) mx = Math.max(mx, x.inc); if (showExp) mx = Math.max(mx, x.exp); });
         var top = niceMax(mx), plotW = W - padL - padR, plotH = H - padT - padB;
         var n = b.length, slot = plotW / n, groups = (showInc ? 1 : 0) + (showExp ? 1 : 0);
-        var bw = Math.max(2, Math.min(18, (slot - 4) / groups - 2));
+        var bw = Math.max(3, Math.min(12, (slot - 4) / groups - 3));
         var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">';
         for (var g = 0; g <= 3; g++) {
           var gy = padT + plotH - plotH * g / 3;
@@ -16828,10 +16955,17 @@ async function openPdfPrintWindow(){
         var step = n > 16 ? Math.ceil(n / 8) : 1;
         b.forEach(function (x, i) {
           var cx = W - padR - slot * (i + 0.5);   /* RTL: اولین سطل سمت راست */
-          var x0 = cx - (groups * bw + (groups - 1) * 2) / 2, k = 0;
+          var x0 = cx - (groups * bw + (groups - 1) * 3) / 2, k = 0;
           svg += '<rect class="st-hit" data-i="' + i + '" x="' + (cx - slot / 2) + '" y="' + padT + '" width="' + slot + '" height="' + plotH + '"/>';
-          if (showInc) { var h1 = plotH * x.inc / top; svg += '<path class="st-inc" d="' + topRound(x0, padT + plotH - h1, bw, h1, 3) + '"/>'; k++; }
-          if (showExp) { var h2 = plotH * x.exp / top; svg += '<path class="st-exp" d="' + topRound(x0 + k * (bw + 2), padT + plotH - h2, bw, h2, 3) + '"/>'; }
+          /* لوله: شیار تیرهٔ تمام‌قد + پرشدن از پایین با انیمیشن (مثل لوله‌های باکس هوشمند) */
+          var tube = function (tx, v, c) {
+            var h = v > 0 ? Math.max(bw, plotH * v / top) : 0, rr = (bw / 2).toFixed(2);
+            var o = '<rect class="st-trk" x="' + tx.toFixed(2) + '" y="' + padT + '" width="' + bw.toFixed(2) + '" height="' + plotH + '" rx="' + rr + '"/>';
+            if (h > 0) o += '<rect class="st-tf ' + c + '" style="animation-delay:' + Math.min(600, i * 35) + 'ms" x="' + tx.toFixed(2) + '" y="' + (padT + plotH - h).toFixed(2) + '" width="' + bw.toFixed(2) + '" height="' + h.toFixed(2) + '" rx="' + rr + '"/>';
+            return o;
+          };
+          if (showInc) { svg += tube(x0, x.inc, 'st-inc'); k++; }
+          if (showExp) { svg += tube(x0 + k * (bw + 3), x.exp, 'st-exp'); }
           if (i % step === 0) svg += '<text class="st-ax" x="' + cx + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(x.label) + '</text>';
         });
         svg += '<line class="st-base" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + (padT + plotH) + '" y2="' + (padT + plotH) + '"/></svg>';
@@ -16865,7 +16999,7 @@ async function openPdfPrintWindow(){
         if (lo < 0) svg += '<line class="st-zero" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>';
         var d = pts.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); }).join('');
         svg += '<path class="st-area" d="' + d + 'L' + X(n - 1).toFixed(1) + ' ' + Y(Math.max(lo, 0)) + 'L' + X(0).toFixed(1) + ' ' + Y(Math.max(lo, 0)) + 'Z"/>';
-        svg += '<path class="st-line" d="' + d + '"/>';
+        svg += '<path class="st-line" pathLength="1" d="' + d + '"/>';
         var step = n > 16 ? Math.ceil(n / 8) : 1;
         b.forEach(function (x, i) { if (i % step === 0) svg += '<text class="st-ax" x="' + X(i) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(x.label) + '</text>'; });
         svg += '<line class="st-cross" x1="0" x2="0" y1="' + padT + '" y2="' + (padT + plotH) + '" style="display:none"/><circle class="st-mark" r="4.5" style="display:none"/></svg>';
@@ -16916,9 +17050,9 @@ async function openPdfPrintWindow(){
       /* افقی: فهرست مقایسه‌ای (کارت‌ها / روزهای هفته / بیشترین خرج‌ها) */
       function hbars(wrap, list, cls) {
         var mx = list.reduce(function (s, x) { return Math.max(s, x.amount); }, 0) || 1;
-        wrap.innerHTML = list.map(function (x) {
+        wrap.innerHTML = list.map(function (x, k) {
           return '<div class="st-hb"><div class="st-hb-row"><span class="st-hb-l">' + esc(x.label) + '</span><span class="st-hb-v">' + money(x.amount) + '</span></div>' +
-            '<div class="st-hb-bar"><i class="' + (x.cls || cls || 'exp') + '" style="width:' + Math.max(x.amount > 0 ? 2 : 0, x.amount / mx * 100).toFixed(1) + '%"></i></div></div>';
+            '<div class="st-hb-bar st-tube"><i class="' + (x.cls || cls || 'exp') + '" style="animation-delay:' + Math.min(700, k * 90) + 'ms;width:' + Math.max(x.amount > 0 ? 2 : 0, x.amount / mx * 100).toFixed(1) + '%"></i></div></div>';
         }).join('') || '<div class="st-empty">داده‌ای برای نمایش نیست</div>';
       }
       /* ---- ساخت صفحه ---- */
@@ -19621,6 +19755,7 @@ async function openPdfPrintWindow(){
       try { fitHomeCardStats(); } catch (eF) {}
       try { updateInstallTileBadge(); } catch (eIB) {}
       try { HKAlerts.notify(titles); } catch (eAl) {}
+      try { maybeStartAppTour(); } catch (eTour) {}
       try { maybeRunCardSwipeHint(); } catch (eH) {}
     }
 
@@ -19999,11 +20134,132 @@ async function openPdfPrintWindow(){
                canDrag: function () { var b = box(); return !!b && multi(b); } };
     })();
 
+    /* =====================================================================
+       تور آموزشی بار اول: نورافکن روی هر بخش + حباب توضیح با انیمیشن نرم
+       فقط یک بار به‌صورت خودکار؛ از «راهنما» دوباره قابل نمایش است.
+       ===================================================================== */
+    var APP_TOUR_KEY = STORAGE_KEY + '_tourDone';
+    var _tourPolling = false;
+    function appTourSteps() {
+      var q = function (sel) { return function () { return document.querySelector(sel); }; };
+      var activeCard = function () {
+        var box = document.getElementById('homeCards'), best = null, bd = 1e9;
+        if (!box) return null;
+        var br = box.getBoundingClientRect(), mid = br.left + br.width / 2;
+        box.querySelectorAll('.person-card:not(.hc-clone)').forEach(function (c) { var r = c.getBoundingClientRect(); var d = Math.abs(r.left + r.width / 2 - mid); if (d < bd) { bd = d; best = c; } });
+        return best;
+      };
+      var inCard = function (sel) { return function () { var c = activeCard(); return c ? c.querySelector(sel) : null; }; };
+      return [
+        { title: 'به حساب‌کتاب خوش آمدید 👋', text: 'در چند قدم کوتاه بخش‌های اصلی اپ را با هم می‌بینیم. هر وقت خواستید با «رد کردن» تور را ببندید.' },
+        { el: function () { return [document.getElementById('monthSelectWrap'), document.getElementById('yearSelectWrap')]; }, title: 'ماه و سال', text: 'هر ماه دفتر جداگانه دارد. با انتخاب ماه و سال، درآمدها و مخارج همان ماه نمایش داده می‌شود.' },
+        { el: q('#menuBtn'), title: 'منوی اصلی', text: 'همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت، پشتیبان‌گیری و راهنما از این‌جا در دسترس است.' },
+        { el: activeCard, title: 'کارت‌ها', text: 'هر کارت برای یک نفر یا یک حساب است. با کشیدن افقی بین کارت‌ها بروید و با نگه داشتن انگشت، ترتیبشان را عوض کنید.', swipe: true },
+        { el: inCard('.person-stat-box'), title: 'درآمد کل', text: '«درآمد کل» جمع درآمدهای ماه است؛ «دریافت‌شده» یعنی به حساب آمده و «دریافت‌نشده» هنوز نرسیده. روی کادر بزنید تا ردیف‌ها را ببینید و ثبت کنید.' },
+        { el: function () { var c = activeCard(); var b = c ? c.querySelectorAll('.person-stat-box') : []; return b[1] || null; }, title: 'خرج کل', text: 'جمع مخارج ماه، جدا به پرداخت‌شده و پرداخت‌نشده. در جدول مخارج، دوبار ضربه روی هر فیلد آن را ویرایش می‌کند.' },
+        { el: inCard('.pc-smart-box'), title: 'باکس هوشمند', text: 'خلاصه‌ها و هشدارها خودکار ورق می‌خورند: وضعیت ماه، اقساط نزدیک، طلب و بدهی، دسته‌بندی مخارج و «کارهای من».' },
+        { el: q('#homeBox1'), title: 'پروژه‌ها، اقساط، قرض', text: 'با کشیدن این باکس به اسلاید دوم می‌رسید: درآمد ثابت، یادآور و آمار.', swipe: true },
+        { el: q('#homeBox2'), title: 'پشتیبان و خروجی', text: 'پشتیبان‌گیری، بازیابی و خروجی PDF و Excel؛ در اسلاید دوم انتخاب حساب و ثبت دستی پیامک.', swipe: true },
+        { el: q('#homeBox3'), title: 'حذف و سطل زباله', text: 'پاک کردن ماه یا همهٔ اطلاعات. ردیف‌های حذف‌شده تا مدتی در سطل زباله قابل برگشت‌اند.' },
+        { el: q('#homeBox4'), title: 'کارت جدید، موجودی، جستجو', text: '+ کارت تازه می‌سازد، دایرهٔ وسط موجودی لحظه‌ای حساب‌هاست و ذره‌بین برای جستجو و ماندهٔ هر بخش.' },
+        { title: 'آماده‌اید! 🎉', text: 'از «منو ← راهنما» می‌توانید این تور را دوباره ببینید.', last: true }
+      ];
+    }
+    function startAppTour(force) {
+      if (document.getElementById('appTour')) return;
+      try { if (!force && localStorage.getItem(APP_TOUR_KEY) === '1') return; } catch (e) {}
+      try { localStorage.setItem(APP_TOUR_KEY, '1'); localStorage.setItem(STORAGE_KEY + '_cardSwipeHintDone', '1'); } catch (e2) {}
+      try { if (currentTab !== 'home') switchTab('home'); } catch (e3) {}
+      var steps = appTourSteps(), i = 0;
+      var root = document.createElement('div');
+      root.id = 'appTour';
+      root.className = 'tour-root';
+      root.innerHTML = '<div class="tour-spot"><i class="tour-pulse"></i><i class="tour-swipe"></i></div>' +
+        '<div class="tour-bubble" role="dialog" aria-live="polite"><div class="tour-step"></div><div class="tour-title"></div><div class="tour-text"></div>' +
+        '<div class="tour-dots"></div><div class="tour-actions"><button type="button" class="tour-skip">رد کردن</button><span class="tour-sp"></span><button type="button" class="tour-prev">قبلی</button><button type="button" class="tour-next">بعدی</button></div></div>';
+      document.body.appendChild(root);
+      var spot = root.querySelector('.tour-spot'), bubble = root.querySelector('.tour-bubble');
+      var dots = root.querySelector('.tour-dots');
+      steps.forEach(function () { dots.appendChild(document.createElement('i')); });
+      function rectOf(st) {
+        if (!st.el) return null;
+        var els = st.el(); els = Array.isArray(els) ? els : [els];
+        var l = 1e9, t = 1e9, r = -1e9, b = -1e9, any = false;
+        els.forEach(function (e) { if (!e) return; var x = e.getBoundingClientRect(); if (!x.width) return; any = true; l = Math.min(l, x.left); t = Math.min(t, x.top); r = Math.max(r, x.right); b = Math.max(b, x.bottom); });
+        if (!any) return null;
+        var pad = 6;
+        return { left: l - pad, top: t - pad, width: r - l + pad * 2, height: b - t + pad * 2 };
+      }
+      function show() {
+        var st = steps[i], R = rectOf(st), W = window.innerWidth, H = window.innerHeight;
+        root.classList.toggle('no-target', !R);
+        if (R) {
+          spot.style.left = R.left + 'px'; spot.style.top = R.top + 'px'; spot.style.width = R.width + 'px'; spot.style.height = R.height + 'px';
+        } else {
+          spot.style.left = (W / 2) + 'px'; spot.style.top = (H / 2) + 'px'; spot.style.width = '0px'; spot.style.height = '0px';
+        }
+        spot.classList.toggle('swipe', !!st.swipe);
+        bubble.classList.remove('in');
+        void bubble.offsetWidth;
+        root.querySelector('.tour-step').textContent = toPersianDigits(i + 1) + ' از ' + toPersianDigits(steps.length);
+        root.querySelector('.tour-title').textContent = st.title;
+        root.querySelector('.tour-text').textContent = st.text;
+        Array.prototype.forEach.call(dots.children, function (d, k) { d.classList.toggle('on', k === i); });
+        root.querySelector('.tour-prev').style.visibility = i === 0 ? 'hidden' : 'visible';
+        root.querySelector('.tour-next').textContent = st.last ? 'شروع' : 'بعدی';
+        root.querySelector('.tour-skip').style.visibility = st.last ? 'hidden' : 'visible';
+        /* حباب زیر یا بالای هدف، هر کدام جای بیشتری دارد */
+        var bh = bubble.offsetHeight || 170, top;
+        if (!R) top = Math.max(16, (H - bh) / 2);
+        else if (R.top + R.height + bh + 24 < H) top = R.top + R.height + 14;
+        else top = Math.max(12, R.top - bh - 14);
+        bubble.style.top = top + 'px';
+        requestAnimationFrame(function () { bubble.classList.add('in'); });
+      }
+      function close() {
+        root.classList.add('out');
+        setTimeout(function () { try { root.remove(); } catch (e) {} }, 320);
+        window.removeEventListener('resize', show);
+      }
+      root.querySelector('.tour-next').onclick = function () { if (i >= steps.length - 1) { close(); return; } i++; show(); };
+      root.querySelector('.tour-prev').onclick = function () { if (i > 0) { i--; show(); } };
+      root.querySelector('.tour-skip').onclick = close;
+      root._close = close;
+      window.addEventListener('resize', show);
+      requestAnimationFrame(function () { root.classList.add('on'); show(); });
+    }
+    function closeAppTour() { var r = document.getElementById('appTour'); if (r && r._close) { r._close(); return true; } return false; }
+    /* شروع خودکار: وقتی صفحهٔ اصلی واقعاً دیده می‌شود (هیچ پنجره/قفلی رویش نیست) */
+    function maybeStartAppTour() {
+      try { if (localStorage.getItem(APP_TOUR_KEY) === '1') return; } catch (e) { return; }
+      if (_tourPolling) return;
+      _tourPolling = true;
+      var stable = 0, tries = 0;
+      var tick = function () {
+        tries++;
+        if (tries > 600) { _tourPolling = false; return; }
+        try { if (localStorage.getItem(APP_TOUR_KEY) === '1') { _tourPolling = false; return; } } catch (e0) {}
+        var card = document.querySelector('#homeCards .person-card'), panel = document.getElementById('panel-home'), ok = false;
+        if (card && panel && panel.classList.contains('active') && !document.hidden && !document.body.classList.contains('card-reorder-mode')) {
+          var r = card.getBoundingClientRect();
+          if (r.width > 0) { var hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); ok = !!(hit && card.contains(hit)); }
+        }
+        stable = ok ? stable + 1 : 0;
+        if (stable < 3) { setTimeout(tick, 400); return; }
+        _tourPolling = false;
+        startAppTour(false);
+      };
+      setTimeout(tick, 900);
+    }
+    try { window.startAppTour = startAppTour; } catch (eW) {}
+
     /* ===== راهنمای اسکرول کارت: فقط بار اولِ اجرای برنامه، یک رفت‌وبرگشت آهسته ===== */
     var _cardHintPolling = false;
     function maybeRunCardSwipeHint() {
       var KEY = STORAGE_KEY + '_cardSwipeHintDone';
       try { if (localStorage.getItem(KEY) === '1') return; } catch (e) { return; }
+      /* تور بار اول خودش کشیدن کارت را آموزش می‌دهد */
+      try { if (localStorage.getItem(STORAGE_KEY + '_tourDone') !== '1') return; } catch (eT) {}
       if (_cardHintPolling) return;
       _cardHintPolling = true;
       var stable = 0, tries = 0;
@@ -20086,6 +20342,12 @@ async function openPdfPrintWindow(){
           .replace(/\s+/g, ' ').trim().toLowerCase();
       }
       /* کلیدواژه‌ها هم نرمال شوند (مثلاً «آب» → «اب») */
+      /* بانک گسترش‌یافتهٔ کلیدواژه‌ها (بدون تکرار) */
+      var EXTRA_KW = {"food": ["نانوایی سنگک", "بربری", "لواش", "تافتون", "کره", "خامه", "دوغ", "کشک", "عسل", "مربا", "شکر", "قند", "نمک", "ادویه", "زعفران", "حبوبات", "لوبیا", "عدس", "نخود", "ماکارونی", "رب", "کنسرو", "تن ماهی", "سوسیس", "کالباس", "همبرگر", "چیپس", "پفک", "نوشابه", "آبمیوه", "آب معدنی", "شیرینی فروشی", "قنادی", "کافی شاپ", "فلافل", "کبابی", "حلیم", "آش", "جگرکی", "طباخی", "پیتزا فروشی", "سوشی", "فست فود", "سبزیجات", "صیفی", "گوجه", "سیب زمینی", "پیاز", "خیار", "هندوانه", "پرتقال", "سیب", "موز", "خرما", "گردو", "پسته", "بادام", "تخمه", "کلوچه", "بیسکویت", "شکلات", "کیک", "ژله", "بستنی فروشی", "سوپر", "هایپرمارکت", "فروشگاه رفاه", "شهروند", "هایپر استار", "جانبو", "اکالا", "دیجی فرش", "اسنپ مارکت", "تپسی فود", "بوقلمون", "میگو", "گوشت قرمز", "گوساله", "گوسفند", "مرغ و تخم مرغ", "پنیر پیتزا", "نهار اداره"], "transport": ["کرایه", "تاکسی اینترنتی", "اسنپ باکس", "الوپیک", "پیک", "دوچرخه", "اسکوتر", "بلیط اتوبوس", "بلیط هواپیما", "بلیط قطار", "رجا", "فلای تودی", "علی بابا", "عوارض آزادراه", "طرح ترافیک", "پلاک", "معاینه فنی", "تعویض روغن", "فیلتر", "باتری ماشین", "لنت", "تعمیر موتور", "صافکاری", "نقاشی ماشین", "کارواش", "پمپ بنزین", "جایگاه سوخت", "گاز cng", "کارت سوخت", "مترو کارت", "شارژ کارت مترو", "قطار شهری", "بیمه خودرو", "خلافی"], "bills": ["آب و فاضلاب", "برق منطقه", "گاز شهری", "تلفن ثابت", "موبایل", "شارژ همراه", "بسته اینترنت", "اینترنت خانگی", "وای فای", "adsl", "فیبر نوری", "مبین نت", "شاتل", "های وب", "پارس آنلاین", "آسیاتک", "قبض آب", "قبض گاز", "قبض تلفن", "قبض موبایل", "مالیات", "عوارض نوسازی", "شارژ آپارتمان", "حق شارژ"], "housing": ["اجاره خانه", "اجاره بها", "پیش پرداخت اجاره", "ودیعه مسکن", "تعمیر لوله", "لوله کشی", "کابینت", "کاشی", "سرامیک", "گچ کاری", "بنایی", "نقاش", "کاغذ دیواری", "پرده", "ایزوگام", "آسانسور", "نگهبانی", "سرایداری", "بیمه آتش سوزی", "مصالح", "سیمان", "آجر", "در و پنجره"], "clothing": ["کتونی", "صندل", "دمپایی", "بوت", "پالتو", "سویشرت", "هودی", "بلوز", "تاپ", "ژاکت", "کراوات", "لباس زیر", "جین", "مایو", "چادر", "کیف پول", "ساعت مچی", "عینک آفتابی", "زیورآلات", "طلا", "نقره", "خیاطی", "خشکشویی", "اتوشویی"], "health": ["داروی", "قرص", "شربت", "واکسن", "رادیولوژی", "ام آر آی", "سی تی اسکن", "نوار قلب", "چشم پزشک", "اپتومتری", "لنز", "ارتودنسی", "جراحی", "بستری", "پرستار", "مشاوره", "روانشناس", "روانپزشک", "تغذیه", "مکمل", "ویتامین", "بیمه درمان", "فرانشیز", "آزمایشگاه", "سونو", "دندانساز"], "care": ["آرایشگر", "سلمانی", "پیرایش", "کوتاهی مو", "رنگ مو", "کراتین", "ناخن", "مانیکور", "پدیکور", "اپیلاسیون", "لیزر", "فیشیال", "ماسک", "ضد آفتاب", "لوسیون", "صابون", "خمیر دندان", "مسواک", "دئودورانت", "ژیلت", "تیغ", "نوار بهداشتی", "پوشک"], "home": ["مبلمان", "میز", "صندلی", "تخت", "کمد", "بخاری", "کولر", "پنکه", "اتو", "مایکروویو", "اجاق", "گاز رومیزی", "هود", "سماور", "کتری", "چای ساز", "قهوه ساز", "آبمیوه گیری", "مخلوط کن", "غذاساز", "جارو", "سطل", "ظرف", "قابلمه", "ماهیتابه", "بشقاب", "لیوان", "قاشق", "ملافه", "پتو", "بالشت", "حوله", "مایع ظرفشویی", "سفید کننده", "دستمال کاغذی", "کیسه زباله", "لامپ ال ای دی", "ابزار", "پیچ گوشتی"], "education": ["کتاب درسی", "کتابفروشی", "نوشت افزار", "خودکار", "مداد", "کیف مدرسه", "سرویس مدرسه", "کلاس زبان", "آموزشگاه زبان", "کلاس کنکور", "کلاس خصوصی", "معلم خصوصی", "دوره آنلاین", "کورس", "یودمی", "فرادرس", "مکتب خونه", "آزمون", "ثبت نام", "شهریه دانشگاه", "پایان نامه", "ترجمه", "تایپ"], "fun": ["کافه گردی", "رستوران گردی", "تفریحی", "پارک آبی", "بولینگ", "بیلیارد", "کارتینگ", "پینت بال", "اتاق فرار", "موزه", "بلیت کنسرت", "تئاتر شهر", "فیلم", "نتفلیکس", "اسپاتیفای", "یوتیوب پریمیوم", "بازی کامپیوتری", "پلی استیشن", "ایکس باکس", "گیفت کارت", "اقامتگاه", "ویلا", "کمپ", "تور", "بلیط تور", "کیش", "شمال", "مشهد", "ورزش", "بدنسازی", "یوگا", "شنا", "فوتبال", "سالن ورزشی"], "gift": ["هدیه عروسی", "کادوی تولد", "شیرینی عید", "گل فروشی", "دسته گل", "تاج گل", "کمک مالی", "قرض الحسنه", "زکات", "خمس", "فطریه", "کفاره", "نذری", "هیئت", "مسجد", "موسسه خیریه", "بهزیستی", "محک", "کمیته امداد"], "debt": ["اقساط وام", "قسط وام", "بازپرداخت", "لیزینگ", "کارت اعتباری", "بدهی کارت", "جریمه دیرکرد", "سود وام", "اصل وام", "چک برگشتی", "ضمانت"], "tech": ["تبلت", "آیپد", "آیفون", "سامسونگ", "شیائومی", "لوازم جانبی", "قاب گوشی", "گلس", "پاوربانک", "فلش", "هارد", "مموری", "کیبورد", "ماوس", "مانیتور", "پرینتر", "کارتریج", "مودم", "روتر", "اسپیکر", "ایرپاد", "ساعت هوشمند", "اپلیکیشن", "نرم افزار", "لایسنس", "آنتی ویروس", "vpn", "فیلترشکن", "هاست", "دامنه", "سرور", "اشتراک ابری", "گوگل وان", "آیکلود", "تعمیر موبایل", "تعمیر لپ تاپ"]};
+      CATS.forEach(function (c) {
+        var add = EXTRA_KW[c.id];
+        if (add) add.forEach(function (w) { if (c.kw.indexOf(w) < 0) c.kw.push(w); });
+      });
       CATS.forEach(function (c) { c.nkw = c.kw.map(norm).filter(Boolean); });
       /* دسته‌های ساخت کاربر: کنار دسته‌های پیش‌فرض؛ نام دسته خودش کلیدواژه است
          (اگر کلمه‌ای از شرح با نام دسته یکی باشد، در همان دسته حساب می‌شود) */
@@ -20094,6 +20356,7 @@ async function openPdfPrintWindow(){
         if (!c || !c.id || !c.label || BY_ID[c.id]) return null;
         var cat = { id: c.id, label: c.label, kw: [c.label], custom: true };
         cat.nkw = cat.kw.map(norm).filter(Boolean);
+        try { _bcache = {}; } catch (eB) {}
         CATS.push(cat);
         BY_ID[cat.id] = cat;
         return cat;
@@ -20129,7 +20392,14 @@ async function openPdfPrintWindow(){
       ['از', 'با', 'به', 'در', 'برای', 'و', 'یا', 'که', 'این', 'اون', 'آن', 'ان', 'خرید', 'پرداخت', 'هزینه', 'بابت', 'مبلغ', 'واریز', 'کارت', 'نقد', 'قسط'].forEach(function (w) { STOP[norm(w)] = 1; });
       function words(n) { return n.split(' ').filter(function (w) { return w.length >= 2 && !STOP[w]; }); }
       /* تطابق کلیدواژه: کلمهٔ کامل یا ابتدای کلمه (برای «پیتزاها»)؛ کلیدواژهٔ بلندتر اولویت دارد */
+      var _bcache = {};
       function builtin(n) {
+        if (n in _bcache) return _bcache[n];
+        var r = builtinScan(n);
+        _bcache[n] = r;
+        return r;
+      }
+      function builtinScan(n) {
         var best = null, bestLen = 0, padded = ' ' + n + ' ';
         CATS.forEach(function (c) {
           c.nkw.forEach(function (k) {
@@ -20209,7 +20479,28 @@ async function openPdfPrintWindow(){
           .catch(function () { return 0; })
           .then(function (c) { _remoteBusy = false; return c; });
       }
-      return { classify: classify, learn: learn, addCustom: addCustom, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); } };
+      /* پشتیبان‌گیری/بازیابی دسته‌بندی‌ها */
+      function exportData() {
+        var custom = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
+        var d = loadDict();
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} } };
+      }
+      function importData(o, mode) {
+        if (!o || typeof o !== 'object') return;
+        (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
+        try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; }))); } catch (e0) {}
+        var src = (o.dict && typeof o.dict === 'object') ? o.dict : {};
+        var d = loadDict();
+        if (mode === 'replace') { d.phrases = {}; d.words = {}; }
+        Object.keys(src.phrases || {}).forEach(function (k) { d.phrases[k] = src.phrases[k]; });
+        Object.keys(src.words || {}).forEach(function (k) {
+          var a = d.words[k], b = src.words[k];
+          d.words[k] = (a && b && a.c === b.c) ? { c: a.c, n: Math.max(a.n || 0, b.n || 0) } : b;
+        });
+        saveDict();
+        _bcache = {};
+      }
+      return { classify: classify, learn: learn, addCustom: addCustom, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); }, exportData: exportData, importData: importData };
     })();
 
     /* =====================================================================
@@ -21442,14 +21733,10 @@ async function openPdfPrintWindow(){
         track.appendChild(cl);
         var idxOf = function (k) { return 1 + (n - 1 - k); };
         var k = 0, pos = idxOf(0), W = 0, drag = null, blockUntil = 0;
-        var dots = document.createElement('div');
-        dots.className = 'hb-dots';
-        for (var i = 0; i < n; i++) dots.appendChild(document.createElement('i'));
-        box.appendChild(dots);
-        function paint() { Array.prototype.forEach.call(dots.children, function (d, i) { d.classList.toggle('on', i === k); }); }
+        function paint() {}
         function place(px, anim) {
           W = box.clientWidth || W;
-          track.style.transition = anim ? 'transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+          track.style.transition = anim ? 'transform 0.62s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none';
           track.style.transform = 'translateX(' + (-pos * W + (px || 0)) + 'px)';
         }
         function go(dir) {   /* dir=+1 اسلاید بعدی (از چپ)، -1 قبلی */
@@ -31324,103 +31611,35 @@ function openProjectRowPicker(secId) {
       const body = document.getElementById('helpModalBody');
       if (body) {
         body.innerHTML = `
-<div class="help-section">
-  <h4>شروع سریع</h4>
-  <ul>
-    <li>از بالا <strong>ماه</strong> و <strong>سال</strong> را انتخاب کنید؛ هر ماه آرشیو جدا دارد.</li>
-    <li>با دکمه <strong>≡</strong> (یا کشیدن از لبه راست/چپ) منو باز می‌شود.</li>
-    <li>تب‌ها را عوض کنید تا بین درآمد، مخارج، مانده، اقساط و بده‌بستان جابه‌جا شوید.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>تب درآمد</h4>
-  <ul>
-    <li>هر <strong>بخش</strong> یک دسته درآمد است (مثلاً حقوق، اجاره).</li>
-    <li>آیکون <strong>＋</strong> آبی (بزرگ) بخش جدید می‌سازد؛ با آیکون مداد نام را عوض کنید.</li>
-    <li>آیکون <strong>＋</strong> آبی زیر آخرین ردیف هر بخش، ردیف جدید می‌سازد؛ روز ماه، شرح، مبلغ و حساب بانکی را پر کنید.</li>
-    <li>روی ستون <strong>وضع</strong> بزنید تا «دریافت‌شده / نشده» عوض شود.</li>
-    <li>جعبه <strong>درآمدهای ثابت</strong>: هنگام افزودن درآمد ثابت می‌توانید بخش مقصد را هم انتخاب کنید تا مستقیم اضافه شود. برای افزودن چندتایی: روی یک ردیف <strong>لمس طولانی</strong> کنید، بقیه را هم انتخاب کنید، سپس «افزودن به بخش» را بزنید.</li>
-    <li>برای ویرایش سلول پرشده <strong>دو بار</strong> روی آن بزنید.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>تب مخارج</h4>
-  <ul>
-    <li>مثل درآمد کار می‌کند؛ وضع = پرداخت‌شده / نشده.</li>
-    <li>ردیف‌های قسط که خودکار از تب اقساط می‌آیند قابل ویرایش مستقیم نیستند؛ از تب اقساط مدیریت کنید.</li>
-    <li>می‌توانید حساب بانکی هر هزینه را مشخص کنید.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>تب مانده</h4>
-  <ul>
-    <li>برای هر بخش، جمع درآمد منهای مخارج نشان داده می‌شود.</li>
-    <li>فیلتر <strong>بخش‌ها</strong> با تراشه‌های بالای صفحه.</li>
-    <li>باکس <strong>روز</strong>: یک روز خاص از ماه را ببینید؛ یا «همه روزها».</li>
-    <li>فیلتر <strong>حساب</strong>: فقط تراکنش‌های یک حساب بانکی.</li>
-    <li>با انتخاب روز، جدول جزئیات همان روز هم ظاهر می‌شود.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>تب اقساط</h4>
-  <ul>
-    <li>「＋ قسط جدید」: نام، مبلغ کل، سود، تعداد قسط، تاریخ شروع بازپرداخت.</li>
-    <li>بخش مخارج مقصد را وصل کنید تا هر ماه ردیف قسط در مخارج ساخته شود.</li>
-    <li>با افزایش «پرداخت‌شده» یا علامت پرداخت در مخارج، پیشرفت قسط جلو می‌رود.</li>
-    <li>یادآوری سررسید نزدیک بالای صفحه ظاهر می‌شود.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>تب بده‌بستان</h4>
-  <ul>
-    <li>「＋ رابطه جدید」 بین دو نفر (مثلاً شما و دوست).</li>
-    <li>ردیف‌ها: روز، شرح، مبلغ و <strong>وضع</strong> (بدهکار / بستانکار).</li>
-    <li>روی ستون وضع بزنید و نوع را انتخاب کنید.</li>
-    <li>خلاصه پایین صفحه مانده خالص هر رابطه را نشان می‌دهد.</li>
-    <li>با تراشه افراد می‌توانید خلاصه را فیلتر کنید.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>حساب‌های بانکی</h4>
-  <ul>
-    <li>منو → تنظیمات → <strong>حساب‌(ها)</strong>.</li>
-    <li>بانک‌هایی که حساب دارید را تیک بزنید تا در ردیف‌ها قابل انتخاب باشند.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>همگام‌سازی و خانواده</h4>
-  <ul>
-    <li><strong>ساخت حساب مشترک</strong>: یک نفر کد می‌سازد و به بقیه می‌دهد.</li>
-    <li>با همان کد داده‌ها مشترک می‌شود.</li>
-    <li>آدرس فایربیس (اختیاری) برای همگام بین گوشی‌ها.</li>
-    <li>「ارسال به ابر」 / 「دریافت از ابر」 برای همگام دستی.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>خروجی و پشتیبان</h4>
-  <ul>
-    <li><strong>خروجی اکسل / PDF</strong>: گزارش ماه جاری.</li>
-    <li><strong>پشتیبان‌گیری</strong>: ذخیره و اشتراک فایل JSON آرشیو.</li>
-    <li><strong>بازیابی از پشتیبان</strong>: بارگذاری همان فایل JSON.</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>حذف داده</h4>
-  <ul>
-    <li><strong>پاک کردن این ماه</strong>: فقط درآمد و مخارج ماه انتخاب‌شده.</li>
-    <li><strong>پاک کردن همه آرشیو</strong>: همه ماه‌ها و اقساط (برگشت‌ناپذیر).</li>
-  </ul>
-</div>
-<div class="help-section">
-  <h4>نکته‌های کاربردی</h4>
-  <ul>
-    <li>منو از <strong>سمت راست</strong> باز می‌شود؛ بیرون منو را لمس کنید تا بسته شود.</li>
-    <li>حالت شب/روز از تنظیمات منو با کلید خورشید/ماه.</li>
-    <li>بخش‌ها را با دستگیره جابه‌جا کنید؛ هدر را بزنید تا جمع شود.</li>
-    <li>برای خروج از اپ، دکمه بازگشت گوشی را <strong>دو بار</strong> بزنید.</li>
-    <li>داده‌ها روی همین دستگاه ذخیره می‌شوند؛ پشتیبان منظم بگیرید.</li>
-  </ul>
-</div>`;
+<div class="help-intro">حساب‌کتاب دفتر مالی ماهانهٔ شماست: درآمدها، مخارج، اقساط، قرض‌ها و پروژه‌ها را ثبت می‌کنید و اپ جمع‌ها، مانده و تحلیل‌ها را خودش حساب می‌کند. همه‌چیز آفلاین و روی همین گوشی ذخیره می‌شود.</div>
+<div class="help-section"><h4>بالای صفحه</h4><ul>
+  <li><strong>ماه و سال:</strong> هر ماه دفتر جداگانه دارد؛ با عوض کردن ماه، اطلاعات همان ماه نمایش داده می‌شود.</li>
+  <li><strong>منو (≡):</strong> دسترسی به همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت و خروجی‌ها.</li>
+</ul></div>
+<div class="help-section"><h4>کارت‌ها</h4><ul>
+  <li>هر کارت برای یک نفر یا یک حساب است. با کشیدن افقی بین کارت‌ها جابه‌جا شوید؛ بعد از کارت آخر دوباره به کارت اول می‌رسید.</li>
+  <li>روی کادر <strong>درآمد</strong> یا <strong>مخارج</strong> بزنید تا جدول ردیف‌ها باز شود. با نگه داشتن انگشت روی کارت، ترتیب کارت‌ها را عوض کنید.</li>
+  <li><strong>باکس هوشمند</strong> (سمت چپ کارت) اسلایدهای خودکار دارد: وضعیت ماه، مقایسه با ماه قبل، تعهدات، طلب و بدهی، دسته‌بندی مخارج، نکات و «کارهای من» (با دکمهٔ + آبی).</li>
+</ul></div>
+<div class="help-section"><h4>جدول درآمد و مخارج</h4><ul>
+  <li>دکمهٔ <strong>+</strong> ردیف جدید می‌سازد؛ اگر دایره را تا «پروژه» بکشید، ردیف پروژه ساخته می‌شود.</li>
+  <li>برای ویرایش روز، شرح یا مبلغ روی آن <strong>دوبار ضربه</strong> بزنید. وضعیت پرداخت با لمس مبلغ عوض می‌شود.</li>
+</ul></div>
+<div class="help-section"><h4>باکس‌های منوی صفحهٔ اصلی</h4><ul>
+  <li>هر باکس با کشیدن افقی اسلاید دوم دارد.</li>
+  <li><strong>پروژه‌ها:</strong> واریزی‌ها و مخارج هر پروژه و طلب یا بدهی آن.</li>
+  <li><strong>اقساط:</strong> وام‌ها، قسط ماهانه، سررسید بعدی و ثبت پرداخت؛ قسط‌های نزدیک با عدد قرمز و قاب قرمز مشخص می‌شوند.</li>
+  <li><strong>قرض:</strong> بده‌بستان با دیگران و خلاصهٔ اینکه چه کسی به چه کسی بدهکار است.</li>
+  <li><strong>درآمد ثابت، یادآور و آمار:</strong> درآمدهای تکراری ماهانه، یادآوری پرداخت‌ها، و نمودارهای روزانه تا سالانه با فیلتر.</li>
+  <li><strong>پشتیبان‌گیری، بازیابی، خروجی:</strong> ذخیرهٔ کامل اطلاعات در فایل، برگرداندن آن، و گزارش PDF یا Excel ماه.</li>
+  <li><strong>انتخاب حساب و ثبت دستی پیامک:</strong> تعریف حساب‌های بانکی، و ثبت تراکنش با چسباندن متن پیامک بانک.</li>
+  <li><strong>حذف ماه، حذف کلی، سطل زباله:</strong> پاک کردن اطلاعات؛ ردیف‌های حذف‌شده تا مدتی در سطل زباله قابل برگشت‌اند.</li>
+</ul></div>
+<div class="help-section"><h4>باکس پایین</h4><ul>
+  <li><strong>+</strong> کارت جدید می‌سازد، دایرهٔ وسط <strong>موجودی</strong> لحظه‌ای حساب‌ها را نشان می‌دهد و <strong>ذره‌بین</strong> برای جستجو و ماندهٔ هر بخش است.</li>
+</ul></div>
+<button type="button" class="modal-btn yes help-tour-btn" onclick="closeHelpModal(); setTimeout(function(){ startAppTour(true); }, 250);">نمایش دوبارهٔ تور آموزشی</button>
+`;
       }
       document.getElementById('helpModal').classList.add('open');
       try { syncModalOverlaysToViewport(); } catch (e) {}
@@ -31752,6 +31971,7 @@ function openProjectRowPicker(secId) {
       if(_backHandling) return;
       _backHandling=true;
       setTimeout(()=>{_backHandling=false;},250);
+      try { if (closeAppTour()) return; } catch (eTour) {}
       try {
         if (typeof _instantBalOpen !== 'undefined' && _instantBalOpen) {
           closeInstantBalance();
