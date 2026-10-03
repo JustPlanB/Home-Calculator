@@ -3629,6 +3629,7 @@
       background: transparent !important;
     }
     .row-add-fab-wrap.is-armed .row-add-arrow { display: none !important; }
+    /* نقطه‌های جهت (ثابت و بی‌چشمک؛ حس «لودینگ» ندارند) */
     .row-add-dots {
       position: absolute;
       z-index: 1;
@@ -3636,26 +3637,28 @@
       top: 50%;
       transform: translateY(-50%);
       display: flex;
+      align-items: center;
       gap: 5px;
       direction: ltr;
       transition: opacity 0.18s ease;
     }
-    .row-add-dots i {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #8e8e93;
-      opacity: 0.25;
-      animation: rowAddDot 1.8s ease-in-out infinite;
-    }
-    .row-add-dots i:nth-child(2) { animation-delay: 0.2s; }
-    .row-add-dots i:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes rowAddDot {
-      0%, 60%, 100% { opacity: 0.25; transform: scale(1); }
-      25% { opacity: 0.9; transform: scale(1.15); }
-    }
+    .row-add-dots i { width: 4px; height: 4px; border-radius: 50%; background: #8e8e93; }
+    .row-add-dots i:nth-child(1) { opacity: 0.22; }
+    .row-add-dots i:nth-child(2) { opacity: 0.45; }
+    .row-add-dots i:nth-child(3) { opacity: 0.75; }
     .row-add-fab-wrap.is-dragging .row-add-dots,
     .row-add-fab-wrap.is-armed .row-add-dots { opacity: 0; }
+    /* دایره هر ۵ ثانیه یک «هل» کوچک به راست می‌خورد = قابل کشیدن است (هنگام کشیدن خاموش) */
+    @keyframes rowAddNudge {
+      0%, 76%, 100% { transform: translateX(0); }
+      83% { transform: translateX(9px); }
+      89% { transform: translateX(0); }
+      93% { transform: translateX(3px); }
+      97% { transform: translateX(0); }
+    }
+    .row-add-fab-wrap:not(.is-dragging):not(.is-armed) .row-add-fab {
+      animation: rowAddNudge 5s cubic-bezier(0.4, 0, 0.2, 1) 1.2s infinite;
+    }
     .row-add-fab-wrap.is-armed .row-add-track-label {
       opacity: 1 !important;
       transform: translateX(-60px);
@@ -8444,67 +8447,26 @@
       margin-top: 0 !important;
     }
 
-    /* ===== آیکون‌های باکس‌های صفحهٔ اصلی: مینیمال، خطی سفید روی شیشهٔ مایع (liquid glass) ===== */
-    #homeTools .home-tile .tile-glass {
-      position: relative;
-      width: 38px;
-      height: 38px;
-      border-radius: 13px;
-      display: grid;
-      place-items: center;
+    /* ===== آیکون‌های باکس‌های صفحهٔ اصلی: بدون کادر؛ سفید با اپسیتی ~۶۰٪ و بافت شیشهٔ مات «سفید برفی» ===== */
+    .hk-icon-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+    #homeTools .home-tile .tile-ico {
+      display: block;
+      width: 30px;
+      height: 30px;
       flex-shrink: 0;
-      overflow: hidden;
-      isolation: isolate;
-      background:
-        linear-gradient(150deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.10) 100%);
-      border: 1px solid rgba(255,255,255,0.16);
-      box-shadow:
-        inset 0 1px 0.5px rgba(255,255,255,0.45),
-        inset 0 -1px 1px rgba(0,0,0,0.35),
-        inset 0 0 8px rgba(255,255,255,0.05),
-        0 6px 14px rgba(0,0,0,0.38);
-      -webkit-backdrop-filter: blur(10px) saturate(170%);
-      backdrop-filter: blur(10px) saturate(170%);
     }
-    /* برق شیشه: هایلایت بیضی بالا + انعکاس کم‌رنگ پایین */
-    #homeTools .home-tile .tile-glass::before {
-      content: '';
-      position: absolute;
-      left: 8%; right: 8%; top: 3%;
-      height: 46%;
-      border-radius: 11px 11px 50% 50% / 11px 11px 100% 100%;
-      background: linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0));
-      pointer-events: none;
-      z-index: 0;
-    }
-    #homeTools .home-tile .tile-glass::after {
-      content: '';
-      position: absolute;
-      inset: auto 22% 2px 22%;
-      height: 5px;
-      border-radius: 50%;
-      background: radial-gradient(ellipse at center, rgba(255,255,255,0.18), rgba(255,255,255,0) 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    #homeTools .home-tile .tile-glass svg {
-      position: relative;
-      z-index: 1;
+    #homeTools .home-tile .tile-ico svg {
       display: block !important;
-      width: 21px !important;
-      height: 21px !important;
-      fill: none !important;
-      stroke: rgba(255,255,255,0.95) !important;
-      stroke-width: 1.7 !important;
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-      filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45));
+      width: 30px !important;
+      height: 30px !important;
+      stroke: none !important;
+      opacity: 0.62;
+      overflow: visible;
     }
-    /* فقط علامت حذف کمی قرمز (بقیه سفید/خنثی) */
-    #homeTools .home-tile .tile-glass svg .acc { stroke: #ff6b6b !important; }
-    #homeTools .home-tile:active .tile-glass { background: linear-gradient(150deg, rgba(255,255,255,0.26), rgba(255,255,255,0.10)); }
+    #homeTools .home-tile .tile-ico .frost { fill: url(#hkSnow); filter: url(#hkFrost); }
+    #homeTools .home-tile:active .tile-ico svg { opacity: 0.8; }
     /* درِ سطل زباله: همان تکان دوره‌ای قبلی */
-    #homeTools .home-tile .tile-glass svg .lid {
+    #homeTools .home-tile .tile-ico .lid {
       transform-box: fill-box;
       transform-origin: 50% 100%;
       animation: trashLidRock 15s ease-in-out infinite;
@@ -9385,45 +9347,46 @@
         <button type="button" class="cro-done" id="cardReorderDone">تمام</button>
       </div>
       <div class="home-tools" id="homeTools">
+        <svg class="hk-icon-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="hkSnow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dce3eb"/></linearGradient><filter id="hkFrost" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.7" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 0.82" result="g"/><feComposite in="SourceGraphic" in2="g" operator="in"/></filter><mask id="hkDbMask" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="17.6" cy="17.6" r="5.5" fill="#000"/></mask></defs></svg>
         <div class="home-box box1" id="homeBox1">
           <button type="button" class="home-tile icon-green" onclick="openSubjectsModal()" title="پروژه‌ها">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="7.5" width="17" height="12" rx="2.6"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M5.8 7.5h12.4A2.8 2.8 0 0 1 21 10.3v6.9a2.8 2.8 0 0 1-2.8 2.8H5.8A2.8 2.8 0 0 1 3 17.2v-6.9a2.8 2.8 0 0 1 2.8-2.8zM3 12.4h18v1.4H3z"/><path d="M9.2 4.4h5.6a1.7 1.7 0 0 1 1.7 1.7v1.4h-1.7V6.1H8.9v1.4H7.5V6.1a1.7 1.7 0 0 1 1.7-1.7z"/><rect x="10.5" y="11.2" width="3" height="4.2" rx=".8"/></g></svg></span>
             <span>پروژه‌ها</span>
           </button>
           <button type="button" class="home-tile icon-purple" onclick="switchTabFromMenu('install')" title="اقساط">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.6"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M9.4 14.9l1.8 1.8 3.4-3.6"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5zM4 9.3h16v1.3H4zM8.5 14.7l1.15-1.15 1.85 1.85 3.85-3.85 1.15 1.15-5 5z"/><rect x="7.3" y="2.6" width="1.9" height="3.8" rx=".95"/><rect x="14.8" y="2.6" width="1.9" height="3.8" rx=".95"/></g></svg></span>
             <span>اقساط</span>
           </button>
           <button type="button" class="home-tile icon-yellow" onclick="switchTabFromMenu('ledger')" title="قرض">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5.5 8.5h13M15.3 5.3l3.2 3.2-3.2 3.2"/><path d="M18.5 15.5h-13M8.7 12.3l-3.2 3.2 3.2 3.2"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path d="M4 7.2h11.2V4.6L20 8.5l-4.8 3.9V9.8H4z"/><path d="M20 14.2H8.8v-2.6L4 15.5l4.8 3.9v-2.6H20z"/></g></svg></span>
             <span>قرض</span>
           </button>
         </div>
         <div class="home-box box2" id="homeBox2">
           <button type="button" class="home-tile" onclick="askBackupParts()" title="پشتیبان‌گیری">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7.4 18.5h9.8a3.9 3.9 0 0 0 .5-7.8 5.6 5.6 0 0 0-10.9-.4A4.1 4.1 0 0 0 7.4 18.5z"/><path d="M12 16.2V11M9.8 13.1 12 10.9l2.2 2.2"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M7 19.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6a4.95 4.95 0 0 1-.4 9.9zM12 10.6l3.4 3.4h-2.3v3.8h-2.2v-3.8H8.6z"/></g></svg></span>
             <span>پشتیبان‌گیری</span>
           </button>
           <button type="button" class="home-tile" onclick="triggerImportBackup()" title="بازیابی از پشتیبان">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.6 12a7.4 7.4 0 1 0 2.2-5.25"/><path d="M4.6 4.4v3.8h3.8"/><path d="M12 8.6V12l2.5 1.6"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path d="M4.48 9.66A8 8 0 1 1 6.86 18.53L8.21 16.92A5.9 5.9 0 1 0 6.46 10.38Z"/><path d="M4.37 13.03L2.46 8.93L8.48 11.12Z"/><path d="M11.15 8.4h1.7v3.7l2.5 1.45-.85 1.47-3.35-1.97z"/></g></svg></span>
             <span>بازیابی</span>
           </button>
           <button type="button" class="home-tile" onclick="askExport()" title="خروجی اکسل / PDF">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13.5 3.5H8A2.5 2.5 0 0 0 5.5 6v12A2.5 2.5 0 0 0 8 20.5h8a2.5 2.5 0 0 0 2.5-2.5V8.5z"/><path d="M13.5 3.5v5h5"/><path d="M12 17.2v-5.4M9.7 14 12 11.7l2.3 2.3"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M7.5 3h6.6L19 7.9v10.6A2.5 2.5 0 0 1 16.5 21h-9A2.5 2.5 0 0 1 5 18.5v-13A2.5 2.5 0 0 1 7.5 3zM13.3 3v4a1.6 1.6 0 0 0 1.6 1.6H19V7.9L14.1 3zM12 10.8l3.4 3.4h-2.3v3.8h-2.2v-3.8H8.6z"/></g></svg></span>
             <span>خروجی</span>
           </button>
         </div>
         <div class="home-box box3" id="homeBox3">
           <button type="button" class="home-tile icon-red" onclick="askResetCurrentMonth()" title="حذف ماه">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.6"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path class="acc" d="M9.5 15h5"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><path fill-rule="evenodd" d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5zM4 9.3h16v1.3H4zM8.6 14.6h6.8v1.9H8.6z"/><rect x="7.3" y="2.6" width="1.9" height="3.8" rx=".95"/><rect x="14.8" y="2.6" width="1.9" height="3.8" rx=".95"/></g></svg></span>
             <span>حذف ماه</span>
           </button>
           <button type="button" class="home-tile icon-red" onclick="askResetAllData()" title="حذف کلی">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="11" cy="6.2" rx="6.5" ry="2.4"/><path d="M4.5 6.2v11.4c0 1.3 2.9 2.4 6.5 2.4M17.5 6.2v4.6"/><path d="M4.5 11.9c0 1.3 2.9 2.4 6.5 2.4"/><path class="acc" d="M15.6 15.4l3.8 3.8M19.4 15.4l-3.8 3.8"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><g mask="url(#hkDbMask)"><ellipse cx="10.5" cy="5.6" rx="6.5" ry="2.5"/><path d="M4 8.4c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v3c0 1.4-2.9 2.5-6.5 2.5S4 12.8 4 11.4z"/><path d="M4 13.6c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v3c0 1.4-2.9 2.5-6.5 2.5S4 18 4 16.6z"/></g><path fill-rule="evenodd" d="M17.6 13.3a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6zM18.68 15.64L19.56 16.52L18.48 17.60L19.56 18.68L18.68 19.56L17.60 18.48L16.52 19.56L15.64 18.68L16.72 17.60L15.64 16.52L16.52 15.64L17.60 16.72z"/></g></svg></span>
             <span>حذف کلی</span>
           </button>
           <button type="button" class="home-tile icon-red" onclick="openTrashModal()" title="سطل زباله">
-            <span class="tile-glass" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="lid"><path d="M4.5 7h15"/><path d="M9.5 7V5.3c0-.7.5-1.3 1.3-1.3h2.4c.8 0 1.3.6 1.3 1.3V7"/></g><path d="M6.5 7l.9 11.3a2 2 0 0 0 2 1.7h5.2a2 2 0 0 0 2-1.7L17.5 7"/><path d="M10.2 11v5.4M13.8 11v5.4"/></svg></span>
+            <span class="tile-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="frost"><g class="lid"><rect x="4" y="5.6" width="16" height="2" rx="1"/><path d="M9.4 6.2V4.4c0-.6.5-1 1-1h3.2c.6 0 1 .4 1 1v1.8h-1.6V5h-2v1.2z"/></g><path fill-rule="evenodd" d="M5.9 8.7h12.2l-.85 10.5A2 2 0 0 1 15.26 21H8.74a2 2 0 0 1-1.99-1.8zM9.3 11h1.5v7H9.3zM13.2 11h1.5v7h-1.5z"/></g></svg></span>
             <span>سطل زباله</span>
           </button>
         </div>
@@ -9757,7 +9720,7 @@
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
       var n = 0;
-      /* راهنمای کشیدن: سه نقطهٔ کوچک که به‌ترتیب (در جهت کشیدن) روشن می‌شوند */
+      /* راهنمای کشیدن: سه نقطهٔ ثابت که به سمت «پروژه» پررنگ‌تر می‌شوند (جهت) + هر چند ثانیه دایره کمی به همان سمت سر می‌خورد */
       window.rowAddArrowSvg = function () {
         n++;
         return '<span class="row-add-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
@@ -20096,6 +20059,25 @@ function openPdfPrintWindow(){
       };
       var f = 1;
       pg.style.setProperty('--sp-fs', '1');
+      /* اطلاعات زیاد (ارتفاع): به‌جای ریز کردن متن، محتوا مثل اسلاید طلب/بدهی اسکرول عمودی می‌شود */
+      if (pg.scrollHeight > pg.clientHeight + 1 && !pg.querySelector('.sp-even')) {
+        var fr2 = document.createElement('div');
+        fr2.className = 'sp-scroll sp-free';
+        Array.prototype.slice.call(pg.children).forEach(function (ch) { if (!ch.classList.contains('sp-h')) fr2.appendChild(ch); });
+        pg.appendChild(fr2);
+        var wOver = function () {
+          var cells = pg.querySelectorAll('.sp-l, .sp-v, .sp-tip, .sp-t');
+          for (var i = 0; i < cells.length; i++) if (cells[i].scrollWidth > cells[i].clientWidth + 1) return true;
+          return false;
+        };
+        /* فقط اگر نوشته‌ای در عرض جا نشد کمی کوچک شود */
+        while (f > 0.8 && wOver()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
+        var mark2 = function () { fr2.classList.toggle('sp-more', fr2.scrollHeight - fr2.clientHeight - fr2.scrollTop > 2); };
+        fr2.scrollTop = 0;
+        mark2();
+        fr2._spMark = true; fr2.addEventListener('scroll', mark2, { passive: true });
+        return;
+      }
       while (f > 0.66 && over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
       /* صفحه‌های متنی (هشدار/پروژه‌ها): اگر جا هست، فونت بزرگ‌تر شود */
       if (pg.querySelector('.sp-tip') && !over()) {
