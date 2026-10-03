@@ -6386,6 +6386,7 @@
       z-index: 100;
     }
     .toast.show { opacity: 1; }
+    .toast.toast-long { white-space: normal; overflow: visible; text-overflow: clip; text-align: center; line-height: 1.7; width: max-content; max-width: 90vw; box-sizing: border-box; }
 
     .family-bar {
       display: flex;
@@ -14993,7 +14994,7 @@ function askBackupUserCards(selectedParts) {
       /* اگر چیزی نادیده گرفته شد، کوتاه و آرام به کاربر بگو (دادهٔ سالم وارد شده است) */
       try {
         var _msg = backupReportText(_restoreReport);
-        if (_msg) setTimeout(function () { try { showToast(_msg); } catch (eT) {} }, 900);
+        if (_msg) setTimeout(function () { try { showToastLong(_msg); } catch (eT) {} }, 900);
       } catch (eMsg) {}
       /* بعد از ری‌استور، موجودی را چند بار با داده‌ی نهایی مقایسه کن تا هیچ تغییر دیرهنگامی جا نماند */
       [1600, 3400].forEach(function (ms) {
@@ -18770,7 +18771,7 @@ function openPdfPrintWindow(){
       var wrap = document.getElementById('homeCardsWrap');
       var dots = wrap && wrap.querySelector(':scope > .home-card-dots');
       if (!box || !dots) return;
-      var cards = Array.prototype.slice.call(box.querySelectorAll('.person-card'));
+      var cards = Array.prototype.slice.call(box.querySelectorAll('.person-card:not(.hc-clone)'));
       if (!cards.length) return;
       var idx = best ? cards.indexOf(best) : -1;
       if (idx < 0) {
@@ -18868,62 +18869,93 @@ function openPdfPrintWindow(){
       var st = null, animRaf = 0, blockClickUntil = 0;
       function box() { return document.getElementById('homeCards'); }
       function cardsOf(b) { return Array.prototype.slice.call(b.querySelectorAll('.person-card')); }
+      function realCards(b) { return Array.prototype.slice.call(b.querySelectorAll('.person-card:not(.hc-clone)')); }
       function isRtl(b) { return getComputedStyle(b).direction === 'rtl'; }
       function clampS(b, v) {
         var m = Math.max(0, b.scrollWidth - b.clientWidth);
         return isRtl(b) ? Math.max(-m, Math.min(0, v)) : Math.max(0, Math.min(m, v));
       }
       function targetOf(b, c) { return clampS(b, c.offsetLeft + c.offsetWidth / 2 - b.clientWidth / 2); }
-      function nearestTarget(b, at) {
+      function nearestCard(b, at, list) {
         var best = null, bd = 1e9;
-        cardsOf(b).forEach(function (c) { var t = targetOf(b, c), d = Math.abs(t - at); if (d < bd) { bd = d; best = t; } });
-        return best == null ? at : best;
+        (list || cardsOf(b)).forEach(function (c) { var d = Math.abs(targetOf(b, c) - at); if (d < bd) { bd = d; best = c; } });
+        return best;
       }
-      /* کارت بعدی در جهت dir؛ از کارت آخر به کارت اول (و برعکس) می‌چرخد */
       function stepTarget(b, from, dir) {
-        var best = null, all = [];
+        var best = null;
         cardsOf(b).forEach(function (c) {
           var t = targetOf(b, c);
-          all.push(t);
           if (dir < 0 ? t < from - 1 : t > from + 1) { if (best == null || Math.abs(t - from) < Math.abs(best - from)) best = t; }
         });
-        if (best == null && all.length > 1) {
-          /* انتهای ردیف → حلقه */
-          best = dir < 0 ? Math.max.apply(null, all) : Math.min.apply(null, all);
-          if (Math.abs(best - from) < 2) best = null;
-        }
         return best == null ? from : best;
       }
+      /* جهت «جلو» (به سمت کارت بعدی) در واحد scrollLeft */
+      function fwdSign(b) {
+        var rc = realCards(b);
+        if (rc.length < 2) return -1;
+        return targetOf(b, rc[rc.length - 1]) < targetOf(b, rc[0]) ? -1 : 1;
+      }
+      /* ===== حلقهٔ بی‌پایان: نسخهٔ موقتِ کارت اول بعد از کارت آخر (یا کارت آخر قبل از کارت اول) =====
+         کاربر طبیعی به «کارت بعدی» می‌رود؛ پس از ایستادن، نسخهٔ موقت با کارت واقعی جایگزین می‌شود (بدون پرش دیداری) */
+      function addClone(b, where) {
+        if (b._hcClone && !b.contains(b._hcClone.el)) b._hcClone = null; /* کارت‌ها دوباره رندر شده‌اند */
+        if (b._hcClone) return 0;
+        var rc = realCards(b);
+        if (rc.length < 2) return 0;
+        var src = where === 'end' ? rc[0] : rc[rc.length - 1];
+        var cl = src.cloneNode(true);
+        cl.classList.add('hc-clone');
+        cl.setAttribute('aria-hidden', 'true');
+        cl.style.transform = ''; cl.style.opacity = '';
+        var shift = 0;
+        if (where === 'end') {
+          b.insertBefore(cl, rc[rc.length - 1].nextSibling);
+        } else {
+          var ref = rc[0], before = ref.getBoundingClientRect().left;
+          b.insertBefore(cl, rc[0]);
+          var after = ref.getBoundingClientRect().left;
+          shift = after - before;
+          b.scrollLeft += shift;                     /* نما ثابت بماند */
+        }
+        b._hcClone = { el: cl, where: where, of: src };
+        return shift;
+      }
+      function removeClone(b, landOn) {
+        var c = b._hcClone;
+        if (!c) return;
+        b._hcClone = null;
+        try { c.el.remove(); } catch (e) {}
+        if (landOn) b.scrollLeft = targetOf(b, landOn);
+        try { if (typeof updateHomeCardScales === 'function') { var best = updateHomeCardScales(b); if (best && best.dataset.title) setActiveHomeCardTitle(best.dataset.title); updateHomeCardDots(b, best); } } catch (e2) {}
+      }
       function stopAnim() { if (animRaf) { cancelAnimationFrame(animRaf); animRaf = 0; } }
-      /* حرکت «رهاشده»: با سرعت انگشت (v0، پیکسل بر میلی‌ثانیه در واحد اسکرول) شروع می‌شود و
-         با کاهش یکنواخت سرعت، دقیقاً روی کارت می‌ایستد (منحنی هرمیت با سرعت اولیه = v0 و سرعت پایانی = ۰) */
-      function animateTo(b, to, dur, v0) {
+      /* حرکت «رهاشده»: با سرعت انگشت (v0) شروع و با کاهش یکنواخت سرعت دقیقاً روی کارت می‌ایستد */
+      function animateTo(b, to, dur, v0, done) {
         stopAnim();
         b = b || box();
         if (!b) return;
         to = clampS(b, to);
         var from = b.scrollLeft, d = to - from;
-        if (Math.abs(d) < 1) { b.scrollLeft = to; return; }
+        if (Math.abs(d) < 1) { b.scrollLeft = to; if (done) done(); return; }
         v0 = Number(v0) || 0;
-        if (v0 * d < 0) v0 = 0;                    /* سرعت خلاف جهت → از صفر */
+        if (v0 * d < 0) v0 = 0;
         if (!dur) {
-          /* زمان ترمز یکنواخت: T = 2d / v0 ؛ بدون سرعت، مدت متناسب با فاصله */
           dur = Math.abs(v0) > 0.05 ? (2 * Math.abs(d) / Math.abs(v0)) : (380 + Math.abs(d) * 0.3);
           dur = Math.max(260, Math.min(720, dur));
         }
-        var m0 = v0 * dur;                          /* شیب اولیه بر حسب فاصله */
-        if (Math.abs(m0) > Math.abs(d) * 2.2) m0 = d * 2.2; /* بدون عبور از کارت مقصد */
-        if (!v0) m0 = d * 1.6;                      /* شروع نرم ولی پرانرژی، پایان آرام */
+        var m0 = v0 * dur;
+        if (Math.abs(m0) > Math.abs(d) * 2.2) m0 = d * 2.2;
+        if (!v0) m0 = d * 1.6;
         var t0 = performance.now();
         var step = function (now) {
           var k = Math.min(1, (now - t0) / dur);
           var h10 = k * k * k - 2 * k * k + k, h01 = -2 * k * k * k + 3 * k * k;
           b.scrollLeft = from + h10 * m0 + h01 * d;
-          if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; }
+          if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; if (done) done(); }
         };
         animRaf = requestAnimationFrame(step);
       }
-      function multi(b) { return cardsOf(b).length > 1 && !document.body.classList.contains('card-reorder-mode'); }
+      function multi(b) { return realCards(b).length > 1 && !document.body.classList.contains('card-reorder-mode'); }
       function onMove(ev) {
         if (!st || ev.pointerId !== st.pid) return;
         if (st.fromPanel && !st.handoff) return;
@@ -18933,37 +18965,51 @@ function openPdfPrintWindow(){
           if (Math.abs(dx) < 8) return;
           if (Math.abs(dy) > Math.abs(dx)) { end(); return; }
           st.drag = true; st.sx = ev.clientX; st.start = b.scrollLeft; dx = 0;
+          st.dirHint = ev.clientX - st.sx0 > 0 ? 1 : -1;
         }
+        ensureWrap(b, -(ev.clientX - st.sx0));
         b.scrollLeft = clampS(b, st.start - dx);
         var now = performance.now();
         st.samples.push({ t: now, x: ev.clientX });
         while (st.samples.length > 2 && now - st.samples[0].t > 100) st.samples.shift();
       }
+      /* اگر روی کارت آخر به جلو (یا روی کارت اول به عقب) کشیده شد، نسخهٔ موقت ساخته شود */
+      function ensureWrap(b, scrollDir) {
+        if (b._hcClone && !b.contains(b._hcClone.el)) b._hcClone = null;
+        if (b._hcClone || !scrollDir) return;
+        var rc = realCards(b);
+        var cur = nearestCard(b, st.start, rc);
+        var f = fwdSign(b), dir = scrollDir < 0 ? -1 : 1;
+        if (cur === rc[rc.length - 1] && dir === f) addClone(b, 'end');
+        else if (cur === rc[0] && dir === -f) { var sh = addClone(b, 'start'); st.start += sh; }
+      }
       function onUp(ev) {
         if (!st || ev.pointerId !== st.pid) return;
         var b = box(), s = st;
         end();
-        if (!b || !s.drag) return;
+        if (!b || !s.drag) { if (b && b._hcClone) removeClone(b, nearestCard(b, b.scrollLeft, realCards(b))); return; }
         blockClickUntil = Date.now() + 350;
         var v = 0;
         if (s.samples.length >= 2) {
           var a = s.samples[0], z = s.samples[s.samples.length - 1];
           if (z.t - a.t > 0) v = (z.x - a.x) / (z.t - a.t);
         }
-        var delta = b.scrollLeft - s.start;
         var fingerDx = (s.samples.length ? s.samples[s.samples.length - 1].x : s.sx) - s.sx;
-        var base = nearestTarget(b, s.start);
-        var to;
-        /* در لبه‌ها اسکرول قفل است (delta=0)؛ جهت از حرکت انگشت خوانده می‌شود تا حلقه کار کند */
+        var baseCard = nearestCard(b, s.start);
+        var base = baseCard ? targetOf(b, baseCard) : s.start;
+        var to = base;
         if (Math.abs(fingerDx) > b.clientWidth * 0.18 || Math.abs(v) > 0.3) {
+          var delta = b.scrollLeft - s.start;
           var dir = Math.abs(delta) > 2 ? (delta < 0 ? -1 : 1) : (fingerDx > 0 ? -1 : 1);
           to = stepTarget(b, base, dir);
-        } else {
-          to = base;
         }
-        /* حلقه (پرش بلند از آخر به اول) با سرعت انگشت شروع نشود */
-        var far = Math.abs(to - b.scrollLeft) > b.clientWidth * 1.5;
-        animateTo(b, to, far ? 560 : 0, far ? 0 : -v);
+        animateTo(b, to, 0, -v, function () {
+          var c = b._hcClone;
+          if (!c) return;
+          /* روی نسخهٔ موقت ایستاد → همان کارت واقعی (اول/آخر) */
+          var landed = nearestCard(b, b.scrollLeft);
+          removeClone(b, landed === c.el ? c.of : landed);
+        });
       }
       function end() {
         st = null;
@@ -18979,7 +19025,8 @@ function openPdfPrintWindow(){
           if (ev.button != null && ev.button !== 0) return;
           if (!multi(b)) return;
           stopAnim();
-          st = { pid: ev.pointerId, sx: ev.clientX, sy: ev.clientY, start: b.scrollLeft, drag: false, samples: [],
+          if (b._hcClone) removeClone(b, nearestCard(b, b.scrollLeft, realCards(b)));
+          st = { pid: ev.pointerId, sx: ev.clientX, sx0: ev.clientX, sy: ev.clientY, start: b.scrollLeft, drag: false, samples: [],
                  fromPanel: !!(ev.target && ev.target.closest && ev.target.closest('.sp-panel')), handoff: false };
           window.addEventListener('pointermove', onMove, true);
           window.addEventListener('pointerup', onUp, true);
@@ -19643,7 +19690,7 @@ function openPdfPrintWindow(){
       var seenPlan = {}, upcoming = [];
       D.inst.forEach(function (x) { if (x.days >= 0 && !seenPlan[x.pid]) { seenPlan[x.pid] = 1; upcoming.push(x); } });
       upcoming.slice(0, 3).forEach(function (x) {
-        items.push(spLine('قسط «' + spEsc(x.name) + '»', spDaysLabel(x.days), x.days <= 1 ? 'neg' : '') +
+        items.push('<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under' + (x.days <= 1 ? ' neg' : '') + '">' + spDaysLabel(x.days) + '</div>' +
           '<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(x.amount) + ' تومان</div>');
       });
       if (!upcoming.length && late.length) items.push('<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(late[0].amount) + ' تومان</div>');
@@ -20202,7 +20249,10 @@ function openPdfPrintWindow(){
       if (!tile) return;
       var seen = {};
       loadInstallSeen().forEach(function (k) { seen[k] = 1; });
-      var n = installAlertKeys().filter(function (k) { return !seen[k]; }).length;
+      /* تعداد وام‌هایی که قسط معوق/نزدیک دارند (نه تعداد قسط‌ها) */
+      var plansWith = {};
+      installAlertKeys().forEach(function (k) { if (!seen[k]) plansWith[k.slice(0, k.lastIndexOf(':'))] = 1; });
+      var n = Object.keys(plansWith).length;
       var b = tile.querySelector('.home-tile-badge');
       if (!n) { if (b) b.remove(); tile.removeAttribute('data-alerts'); return; }
       if (!b) { b = document.createElement('span'); b.className = 'home-tile-badge'; b.setAttribute('aria-hidden', 'true'); tile.appendChild(b); }
@@ -20298,8 +20348,7 @@ function openPdfPrintWindow(){
         try { _prevActiveTitle = getActiveHomeCardTitle() || (allPersonTitles()[0] || ''); } catch (ePa) {}
         if (isNew) {
           ensurePersonSections(name);
-          /* کارت جدید سمت راستِ کارت اول (اولین کارت در ترتیب RTL) */
-          try { applyPersonCardOrder([name].concat(allPersonTitles().filter(function (x) { return x !== name; })), { silent: true }); } catch (eOrd) {}
+          /* کارت جدید سمت چپِ کارت قبلی (انتهای ردیف) */
           /* اول روی کارت قبلی بماند تا اسکرول به کارت جدید دیده شود */
           try { if (_prevActiveTitle) setActiveHomeCardTitle(_prevActiveTitle); } catch (e) {}
         } else {
@@ -20321,12 +20370,12 @@ function openPdfPrintWindow(){
         renderHomeCards();
         try {
           if (isNew) {
-            /* از روی کارتی که کاربر رویش بود، با اسکرول روی کارت جدید (سمت راست) برو */
+            /* از روی کارتی که کاربر رویش بود، با اسکرول روی کارت جدید برو */
             var boxHC = document.getElementById('homeCards');
             setTimeout(function(){
               try {
                 var cards = Array.prototype.slice.call(boxHC.querySelectorAll('.person-card'));
-                var from = cards.find(function (c) { return c.dataset.title === _prevActiveTitle; }) || cards[1];
+                var from = cards.find(function (c) { return c.dataset.title === _prevActiveTitle; }) || cards[cards.length - 2];
                 var to = cards.find(function (c) { return c.dataset.title === name; });
                 if (from) homeCenterCard(boxHC, from, false);
                 setTimeout(function () { if (to) homeCenterCard(boxHC, to, true); }, 80);
@@ -29860,6 +29909,7 @@ function openProjectRowPicker(secId) {
         if (/supabase|firebase|همگام|ابر|sync|offline|آنلاین|آفلاین —|در صف همگام/i.test(_m)) return;
       } catch (eFilt) {}
       t.textContent = msg;
+      t.classList.remove('toast-long');
       // همیشه بالاتر از مودال‌های مات
       try {
         t.style.zIndex = '99999';
@@ -29871,6 +29921,16 @@ function openProjectRowPicker(secId) {
       window._toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
     }
 
+    /* پیام چندخطی (کامل و بدون «…») برای گزارش‌های بلندتر مثل نتیجهٔ بازیابی */
+    function showToastLong(msg) {
+      showToast(msg);
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.classList.add('toast-long');
+      clearTimeout(window._toastTimer);
+      const ms = Math.min(9000, 2500 + String(msg || '').length * 45);
+      window._toastTimer = setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.remove('toast-long'), 350); }, ms);
+    }
     window.addEventListener('resize', () => {
       moveTabIndicator();
       syncChromeHeight();
@@ -31697,7 +31757,8 @@ function openProjectRowPicker(secId) {
         var tdV = document.createElement('td');
         tdV.className = 'val';
         tdV.textContent = formatNum(it.amount);
-        tdV.style.setProperty('color', it.tab === 'income' ? '#16a34a' : '#dc2626', 'important');
+        /* نتیجهٔ جستجو: مبلغ‌ها سفید (فارغ از درآمد/خرج) */
+        tdV.style.setProperty('color', '#ffffff', 'important');
         tr.appendChild(td); tr.appendChild(tdD); tr.appendChild(tdV);
         body.appendChild(tr);
       });
@@ -31711,8 +31772,8 @@ function openProjectRowPicker(secId) {
           tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td class="val" style="color:' + color + '">' + formatNum(v) + '</td>';
           foot.appendChild(tr);
         };
-        if (sumI) addF('جمع درآمد', sumI, '#16a34a');
-        if (sumE) addF('جمع مخارج', sumE, '#dc2626');
+        if (sumI) addF('جمع درآمد', sumI, '#ffffff');
+        if (sumE) addF('جمع مخارج', sumE, '#ffffff');
       }
       document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو (' + toPersianDigits(String(list.length)) + ' مورد)';
       boxR.style.display = '';
