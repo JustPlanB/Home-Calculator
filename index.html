@@ -8840,7 +8840,7 @@
     /* کارت کاربر: هم‌عرض باکس‌ها؛ کارت دوم/ایجاد دیده نمی‌شود */
     #homeCards .person-card { aspect-ratio: 1.62 / 1; height: var(--hc-card-h, auto) !important; }
     #homeCards .person-card .person-card-inner {
-      padding: 10px 14px 24px !important;
+      padding: 10px 14px 14px !important;
     }
     #homeCards .person-card .person-card-stats {
       flex: 1 1 auto !important;
@@ -8891,19 +8891,20 @@
       cursor: default;
     }
     .sp-view { position: absolute; inset: 0; direction: rtl; }
-    /* همهٔ صفحه‌ها از بالا شروع می‌شوند (هم‌تراز «درآمد کل» در کادر کناری؛ --sp-pt با JS) */
+    /* همهٔ صفحه‌ها از بالا شروع می‌شوند (هم‌تراز «درآمد کل» در کادر کناری؛ --sp-pt با JS).
+       فاصله‌ها بازتر؛ اگر جا نشد spFitPage فونت و فاصله را با هم کوچک می‌کند (بیرون‌زدگی نداریم) */
     .sp-page {
       position: absolute;
       inset: 0;
       box-sizing: border-box;
-      padding: var(--sp-pt, 8px) 9px 7px;
+      padding: var(--sp-pt, 8px) 9px 8px;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      gap: calc(4px * var(--sp-fs, 1));
+      gap: calc(8px * var(--sp-fs, 1));
       color: rgba(255,255,255,0.95);
       font-weight: 700;
-      line-height: 1.3;
+      line-height: 1.35;
       overflow: hidden;
       will-change: transform, opacity;
     }
@@ -8911,11 +8912,11 @@
       font-size: calc(0.7rem * var(--sp-fs, 1));
       font-weight: 800;
       color: #08b5f5;
-      margin-bottom: 1px;
       white-space: nowrap;
       overflow: hidden;
       flex-shrink: 0;
     }
+    .sp-h.neg { color: #ff6b4a; }
     /* سطر: عنوان راست، مقدار چپ؛ اگر جا نشد مقدار به سطر بعد می‌رود (هیچ نوشته‌ای بریده نمی‌شود) */
     .sp-row {
       display: flex;
@@ -8929,18 +8930,27 @@
       flex-shrink: 0;
     }
     .sp-row-sm { font-size: calc(0.6rem * var(--sp-fs, 1)); }
-    .sp-l { color: rgba(255,255,255,0.62); white-space: nowrap; overflow: hidden; max-width: 100%; }
+    .sp-l { color: rgba(255,255,255,0.62); white-space: nowrap; overflow: hidden; max-width: 100%; font-size: calc(0.66rem * var(--sp-fs, 1)); }
+    .sp-row .sp-l, .sp-row .sp-v { font-size: inherit; }
     .sp-v { direction: rtl; unicode-bidi: isolate; white-space: nowrap; margin-right: auto; font-variant-numeric: tabular-nums; overflow: hidden; max-width: 100%; }
+    .sp-under { display: block; margin: 2px 0 0; text-align: left; font-size: calc(0.68rem * var(--sp-fs, 1)); }
     .sp-page .pos { color: #9ee858; }
     .sp-page .neg { color: #ff6b4a; }
-    .sp-g { font-size: calc(0.62rem * var(--sp-fs, 1)); color: rgba(255,255,255,0.9); font-weight: 800; margin-top: 1px; flex-shrink: 0; }
+    .sp-blk { display: flex; flex-direction: column; gap: calc(4px * var(--sp-fs, 1)); flex-shrink: 0; }
+    .sp-g { font-size: calc(0.62rem * var(--sp-fs, 1)); color: rgba(255,255,255,0.9); font-weight: 800; flex-shrink: 0; }
+    .sp-t { font-size: calc(0.66rem * var(--sp-fs, 1)); font-weight: 800; color: rgba(255,255,255,0.95); }
+    .sp-t.neg { color: #ff6b4a; }
+    /* خبرها جدا از هم با خط جداکننده (مثل صفحهٔ نکته) */
+    .sp-item { display: flex; flex-direction: column; gap: calc(3px * var(--sp-fs, 1)); flex-shrink: 0; }
+    .sp-item + .sp-item { padding-top: calc(7px * var(--sp-fs, 1)); border-top: 1px solid rgba(255,255,255,0.1); }
     .sp-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; flex-shrink: 0; }
     .sp-bar.thin { height: 3px; }
-    .sp-bar i { display: block; height: 100%; border-radius: 3px; background: #08b5f5; }
+    .sp-bar.sp-tube { height: 8px; border-radius: 4px; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6); }
+    .sp-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: #08b5f5; transition: width 0.9s cubic-bezier(0.22, 0.8, 0.3, 1); }
     .sp-bar i.pos { background: #9ee858; }
     .sp-bar i.neg { background: #ff6b4a; }
     .sp-bar i.dim { opacity: 0.45; }
-    /* دسته‌ها: هر صفحه ۳ دسته؛ اسکرول عمودی با توقف روی هر گروه */
+    /* دسته‌ها: هر نما ۴ مورد با ارتفاع یکسان؛ اسکرول عمودی پیوسته با توقف روی هر ۴ مورد */
     .sp-scroll {
       flex: 1 1 auto;
       min-height: 0;
@@ -8949,24 +8959,11 @@
       scroll-snap-type: y mandatory;
       scrollbar-width: none;
       touch-action: pan-y;
-      margin-bottom: -7px;
     }
     .sp-scroll::-webkit-scrollbar { display: none; }
-    .sp-grp {
-      height: 100%;
-      box-sizing: border-box;
-      padding-bottom: 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      gap: calc(5px * var(--sp-fs, 1));
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-    }
-    .sp-cat { display: flex; flex-direction: column; gap: 2px; }
-    .sp-scroll.sp-more { -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent); mask-image: linear-gradient(to bottom, #000 82%, transparent); }
-    .sp-tip { font-size: calc(0.66rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.92); flex-shrink: 0; }
-    .sp-tip + .sp-tip { margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sp-cat { display: flex; flex-direction: column; justify-content: center; gap: 3px; box-sizing: border-box; }
+    .sp-scroll.sp-more { -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent); mask-image: linear-gradient(to bottom, #000 88%, transparent); }
+    .sp-tip { font-size: calc(0.64rem * var(--sp-fs, 1)); line-height: 1.6; color: rgba(255,255,255,0.88); }
     .sp-empty {
       position: absolute;
       inset: 0;
@@ -8989,8 +8986,11 @@
     }
     .sp-cat-row:active { background: rgba(255,255,255,0.05); }
     .sp-cat-desc { flex: 1 1 auto; min-width: 0; font-size: 0.82rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* بیضی‌ها هم‌اندازه */
     .sp-cat-chip {
-      flex: 0 0 auto; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+      flex: 0 0 auto; width: 104px; box-sizing: border-box; text-align: center;
+      font-size: 0.72rem; font-weight: 700; padding: 4px 6px; border-radius: 999px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       border: 1px solid rgba(8,181,245,0.5); color: #08b5f5; background: rgba(8,181,245,0.08);
     }
     .sp-cat-chip.none { border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.6); background: transparent; }
@@ -9039,7 +9039,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 9px;
+      bottom: -15px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -18600,6 +18600,7 @@ function openPdfPrintWindow(){
       try { layoutHomeStack(); } catch (eL) {}
       try { fitHomeCardStats(); } catch (eF) {}
       try { updateInstallTileBadge(); } catch (eIB) {}
+      try { HKAlerts.notify(titles); } catch (eAl) {}
       try { maybeRunCardSwipeHint(); } catch (eH) {}
     }
 
@@ -18625,30 +18626,43 @@ function openPdfPrintWindow(){
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { try { fitHomeCardStats(); } catch (e) {} }); } catch (eFr) {}
 
     /* ===== نقاط شمارندهٔ کارت‌ها (پایین کارت) ===== */
-    /* هر کارت نقاط خودش را دارد (نقطهٔ همان کارت روشن)؛ نقاط همراه کارت حرکت می‌کنند
-       و هنگام اسکرول بین دو کارت معلق نمی‌مانند */
+    /* ===== نقاط شمارندهٔ کارت‌ها: یک ردیف ثابت، بیرون و زیر کارت ===== */
     function renderHomeCardDots(box, count) {
-      try { var old = document.querySelector('#homeCardsWrap > .home-card-dots'); if (old) old.remove(); } catch (e0) {}
-      if (!box) return;
-      var cards = box.querySelectorAll('.person-card');
-      var n = cards.length;
-      cards.forEach(function (card, idx) {
-        var dots = card.querySelector(':scope > .home-card-dots');
-        if (!dots) {
-          dots = document.createElement('div');
-          dots.className = 'home-card-dots';
-          dots.setAttribute('aria-hidden', 'true');
-          card.appendChild(dots);
-        }
+      var wrap = document.getElementById('homeCardsWrap');
+      if (!wrap) return;
+      try { (box || document).querySelectorAll('.person-card > .home-card-dots').forEach(function (x) { x.remove(); }); } catch (e0) {}
+      var dots = wrap.querySelector(':scope > .home-card-dots');
+      if (!dots) {
+        dots = document.createElement('div');
+        dots.className = 'home-card-dots';
+        dots.setAttribute('aria-hidden', 'true');
+        wrap.appendChild(dots);
+      }
+      var n = Math.max(0, count | 0);
+      if (dots.childElementCount !== n) {
         dots.innerHTML = '';
-        for (var i = 0; i < n; i++) {
-          var d = document.createElement('i');
-          if (i === idx) d.className = 'on';
-          dots.appendChild(d);
-        }
-      });
+        for (var i = 0; i < n; i++) dots.appendChild(document.createElement('i'));
+      }
+      updateHomeCardDots(box);
     }
-    function updateHomeCardDots() { /* نقاط داخل هر کارت ثابت‌اند؛ به‌روزرسانی هنگام اسکرول لازم نیست */ }
+    function updateHomeCardDots(box, best) {
+      box = box || document.getElementById('homeCards');
+      var wrap = document.getElementById('homeCardsWrap');
+      var dots = wrap && wrap.querySelector(':scope > .home-card-dots');
+      if (!box || !dots) return;
+      var cards = Array.prototype.slice.call(box.querySelectorAll('.person-card'));
+      if (!cards.length) return;
+      var idx = best ? cards.indexOf(best) : -1;
+      if (idx < 0) {
+        var br = box.getBoundingClientRect(), mid = br.left + br.width / 2, bd = 1e9;
+        cards.forEach(function (c, i) {
+          var r = c.getBoundingClientRect();
+          var d = Math.abs(r.left + r.width / 2 - mid);
+          if (d < bd) { bd = d; idx = i; }
+        });
+      }
+      Array.prototype.forEach.call(dots.children, function (d, i) { d.classList.toggle('on', i === idx); });
+    }
 
     /* ===== چیدمان عمودی صفحهٔ اصلی =====
        فاصلهٔ پایین باکس ۴ تا پایین صفحه = فاصلهٔ بالای نوار ماه/سال تا بالای صفحه؛
@@ -18842,37 +18856,49 @@ function openPdfPrintWindow(){
         });
         return best;
       }
-      /** دسته‌بندی یک شرح: {id, label, source} یا null (ناشناخته) */
+      /* نتیجهٔ یک یا چند دسته: {id (اولی), ids, label, source} */
+      function mk(ids, source) {
+        ids = ids.filter(function (x, i) { return BY_ID[x] && ids.indexOf(x) === i; });
+        if (!ids.length) return null;
+        return { id: ids[0], ids: ids, label: ids.map(function (x) { return BY_ID[x].label; }).join('، '), source: source };
+      }
+      /** دسته‌بندی یک شرح؛ یک شرح می‌تواند چند دسته داشته باشد (مثلاً «کیسه زباله و لواشک») */
       function classify(text, row) {
-        if (row && row.fromPlanId) return { id: 'debt', label: BY_ID.debt.label, source: 'plan' };
+        if (row && row.fromPlanId) return mk(['debt'], 'plan');
         var n = norm(text);
         if (!n) return null;
         var d = loadDict();
         var p = d.phrases[n];
-        if (p && BY_ID[p.c]) return { id: p.c, label: BY_ID[p.c].label, source: p.s || 'user' };
+        if (p) {
+          var r0 = mk(Array.isArray(p.cs) && p.cs.length ? p.cs : [p.c], p.s || 'user');
+          if (r0) return r0;
+        }
         var b = builtin(n);
-        if (b) return { id: b, label: BY_ID[b].label, source: 'builtin' };
+        if (b) return mk([b], 'builtin');
         /* کلماتی که کاربر حداقل دو بار در یک دسته قرار داده (فقط برای شرح‌هایی که دیکشنری داخلی نمی‌شناسد) */
         var ws = words(n), wBest = null, wN = 1;
         ws.forEach(function (w) { var e = d.words[w]; if (e && BY_ID[e.c] && e.n > wN) { wBest = e.c; wN = e.n; } });
-        if (wBest) return { id: wBest, label: BY_ID[wBest].label, source: 'user' };
+        if (wBest) return mk([wBest], 'user');
         _pending[n] = 1;
         return null;
       }
-      /** کاربر دسته را انتخاب/اصلاح کرد → در دیکشنری شخصی ذخیره شود */
-      function learn(text, catId) {
+      /** کاربر دسته(ها) را انتخاب/اصلاح کرد → در دیکشنری شخصی ذخیره شود (catIds: رشته یا آرایه) */
+      function learn(text, catIds) {
         var n = norm(text);
         if (!n) return;
+        var ids = (Array.isArray(catIds) ? catIds : [catIds]).filter(function (x) { return x && BY_ID[x]; });
         var d = loadDict();
-        if (!catId || !BY_ID[catId]) {
+        if (!ids.length) {
           delete d.phrases[n];
         } else {
-          d.phrases[n] = { c: catId, s: 'user', t: Date.now() };
-          words(n).forEach(function (w) {
-            var e = d.words[w];
-            if (!e || e.c !== catId) d.words[w] = { c: catId, n: 1 };
-            else e.n = (e.n || 1) + 1;
-          });
+          d.phrases[n] = { c: ids[0], cs: ids, s: 'user', t: Date.now() };
+          if (ids.length === 1) {
+            words(n).forEach(function (w) {
+              var e = d.words[w];
+              if (!e || e.c !== ids[0]) d.words[w] = { c: ids[0], n: 1 };
+              else e.n = (e.n || 1) + 1;
+            });
+          }
           delete _pending[n];
         }
         saveDict();
@@ -18926,21 +18952,23 @@ function openPdfPrintWindow(){
     }
     /* عدد و ٪ داخل ایزولهٔ LTR تا در متن راست‌به‌چپ «۵۴٪» نمایش داده شود نه «٪۵۴» */
     function spPct(v) { return '⁦' + spFa(Math.round(v)) + '٪⁩'; }
-    function spPrevSection(tab, title) {
+    function spPrevSection(tab, title, back) {
       try {
-        var p = prevYearMonth(currentYear, currentMonth);
-        var raw = archive[periodKey(p.y, p.m)];
+        var y = currentYear, m = currentMonth;
+        for (var i = 0; i < (back || 1); i++) { var p = prevYearMonth(y, m); y = p.y; m = p.m; }
+        var raw = archive[periodKey(y, m)];
         if (!raw) return null;
         var side = raw[tab];
         var secs = (side && side.sections) || [];
         var t = (title || '').trim();
-        for (var i = 0; i < secs.length; i++) if (((secs[i] && secs[i].title) || '').trim() === t) return secs[i];
+        for (var k = 0; k < secs.length; k++) if (((secs[k] && secs[k].title) || '').trim() === t) return secs[k];
       } catch (e) {}
       return null;
     }
     function spRows(sec) {
       return ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && (Number(r.amount) || 0) > 0; });
     }
+    function spDay(r) { var d = parseInt(toEnglishDigits(String((r && r.day) || '')), 10); return d >= 1 && d <= 31 ? d : 0; }
     /* مبلغ شخصی هر ردیف مخارج — همان قاعدهٔ sectionPaidUnpaidTotal */
     function spPersonalExpense(r) {
       return sectionPaidUnpaidTotal({ rows: [r] }, { personalExpenseOnly: true }).total;
@@ -18957,21 +18985,29 @@ function openPdfPrintWindow(){
         .slice(0, rest).forEach(function (x) { fl[x.i] += 1; });
       return fl;
     }
-    function spCategoryTotals(sec) {
-      var map = {}, total = 0, known = 0, rows = 0, unknown = 0;
+    /* جمع هر دسته؛ شرحِ چنددسته‌ای به‌طور مساوی بین دسته‌هایش تقسیم می‌شود.
+       maxDay: فقط ردیف‌های تا این روز (برای مقایسهٔ «تا امروز») */
+    function spCategoryTotals(sec, maxDay) {
+      var map = {}, cnt = {}, total = 0, unknown = 0, rows = 0;
       spRows(sec).forEach(function (r) {
+        if (maxDay && maxDay < 31) { var d = spDay(r); if (!d || d > maxDay) return; }
         var a = spPersonalExpense(r);
         if (!a) return;
         rows++;
         total += a;
         var c = HKCategorizer.classify(r.desc, r);
         if (!c) { unknown += a; return; }
-        known += a;
-        map[c.id] = (map[c.id] || 0) + a;
+        var share = a / c.ids.length;
+        c.ids.forEach(function (id) { map[id] = (map[id] || 0) + share; cnt[id] = (cnt[id] || 0) + 1; });
       });
-      var list = Object.keys(map).map(function (k) { return { id: k, label: HKCategorizer.byId[k].label, amount: map[k] }; })
+      var list = Object.keys(map).map(function (k) { return { id: k, label: HKCategorizer.byId[k].label, amount: map[k], count: cnt[k] }; })
         .sort(function (x, y) { return y.amount - x.amount; });
-      return { list: list, total: total, known: known, unknown: unknown, rows: rows };
+      /* درصدها یک‌بار و یکسان برای همهٔ صفحه‌ها (جمع ۱۰۰؛ «نامشخص» هم حساب می‌شود) */
+      var items = list.slice();
+      if (unknown > 0) items.push({ id: '', label: 'نامشخص', amount: unknown, count: 0 });
+      var pcts = spPercents100(items.map(function (x) { return x.amount; }));
+      items.forEach(function (x, i) { x.pct = pcts[i]; });
+      return { list: list, items: items, total: total, unknown: unknown, rows: rows };
     }
     /* فقط اقساطی که در بخش اقساط به همین کاربر وصل شده‌اند */
     function spPlansForTitle(title) {
@@ -19026,31 +19062,265 @@ function openPdfPrintWindow(){
       });
       return Object.keys(ids).length;
     }
+
+    /* =====================================================================
+       اعلان‌های هوشمند (HKAlerts) — کاملاً محلی و قطعی، بدون AI
+       سه نوع: dup (تشخیص تکرار/خطا، مهم‌ترین) · analysis (تحلیل مالی) · project (پروژه)
+       هر اعلان شناسهٔ ثابتِ رویداد دارد؛ هر بار از روی داده‌ها دوباره محاسبه می‌شود،
+       پس اگر شرطش دیگر برقرار نباشد خودبه‌خود حذف می‌شود. نمایشِ «یک‌باره» (toast)
+       با دفتر alertsShown در localStorage کنترل می‌شود تا با هر بار باز شدن اپ تکرار نشود.
+       ===================================================================== */
+    var HKAlerts = (function () {
+      var SHOWN_KEY = STORAGE_KEY + '_alertsShown';
+      var DISMISS_KEY = STORAGE_KEY + '_alertsDismissed';
+      var GENERIC = {};
+      ['برداشت بانکی', 'واریز بانکی'].forEach(function (g) { GENERIC[HKCategorizer.normalize(g)] = 1; });
+      function loadMap(k) { try { var o = JSON.parse(localStorage.getItem(k) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
+      function saveMap(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} }
+      function rowKey(tab, r, i) {
+        return tab + ':' + (r.id || ('i' + i + '_' + spDay(r) + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc)));
+      }
+      function tokens(n) { return n.split(' ').filter(function (w) { return w.length >= 2; }); }
+      function similarDesc(a, b) {
+        var na = HKCategorizer.normalize(a), nb = HKCategorizer.normalize(b);
+        if (!na || !nb) return false;
+        if (na === nb) return true;
+        if (na.length >= 3 && nb.length >= 3 && (na.indexOf(nb) >= 0 || nb.indexOf(na) >= 0)) return true;
+        var ta = tokens(na), tb = tokens(nb);
+        if (!ta.length || !tb.length) return false;
+        var inter = ta.filter(function (w) { return tb.indexOf(w) >= 0; }).length;
+        return inter / Math.min(ta.length, tb.length) >= 0.6;
+      }
+      function isGeneric(r) { return !!GENERIC[HKCategorizer.normalize(r.desc)]; }
+
+      /* ۳) تکرار/خطا: مبلغ + شرح + روز + کاربر (بخش همان کاربر) + حساب + نوع (درآمد/مخارج) */
+      function duplicates(title) {
+        var out = [], dis = loadMap(DISMISS_KEY);
+        ['expense', 'income'].forEach(function (tab) {
+          var rows = spRows(findSectionByTitle(tab, title));
+          for (var i = 0; i < rows.length; i++) {
+            for (var j = i + 1; j < rows.length; j++) {
+              var a = rows[i], b = rows[j];
+              if (a.fromPlanId && b.fromPlanId) continue;
+              var A = Number(a.amount) || 0, B = Number(b.amount) || 0;
+              if (A < 1000 || Math.abs(A - B) > Math.max(A, B) * 0.01) continue;
+              var accA = (a.account || '').trim(), accB = (b.account || '').trim();
+              if (accA && accB && accA !== accB) continue;
+              var da = spDay(a), db = spDay(b);
+              var sms = (!!a.viaSms) !== (!!b.viaSms);
+              var dd = (da && db) ? Math.abs(da - db) : (da || db ? 99 : 0);
+              var sameDay = da && db && da === db;
+              var simil = similarDesc(a.desc, b.desc);
+              var hit = false;
+              if (sameDay && (simil || (sms && (isGeneric(a) || isGeneric(b))))) hit = true;
+              else if (dd <= 2 && simil && A === B) hit = true;
+              else if (dd <= 2 && sms && (isGeneric(a) || isGeneric(b) || simil)) hit = true;
+              if (!hit) continue;
+              var id = 'dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j);
+              if (dis[id]) continue;
+              var label = (isGeneric(a) && !isGeneric(b) ? b.desc : a.desc) || (tab === 'income' ? 'درآمد' : 'هزینه');
+              out.push({
+                id: id, type: 'dup', p: 100,
+                title: 'احتمال ثبت تکراری',
+                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
+                          : ('تراکنش «' + label + '» با همین مبلغ ' + (sameDay ? 'در همان روز' : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
+                toast: 'احتمال ثبت تکراری: «' + label + '»'
+              });
+            }
+          }
+        });
+        return out;
+      }
+
+      /* ۱) تحلیل مالی: فقط بر اساس سابقهٔ خود کاربر؛ بدون دادهٔ کافی هیچ اعلانی ساخته نمی‌شود */
+      function analysis(title) {
+        var out = [];
+        var today = getTodayPersian();
+        var isNow = today.y === currentYear && today.m === currentMonth;
+        var cut = isNow ? today.d : 31;
+        var cur = findSectionByTitle('expense', title), prev = spPrevSection('expense', title, 1);
+        var sumTo = function (sec) {
+          var s = 0, n = 0;
+          spRows(sec).forEach(function (r) {
+            if (cut < 31) { var d = spDay(r); if (!d || d > cut) return; }
+            var a = spPersonalExpense(r); if (a) { s += a; n++; }
+          });
+          return { s: s, n: n };
+        };
+        var key = periodKey(currentYear, currentMonth);
+        if (prev) {
+          var t = sumTo(cur), p = sumTo(prev);
+          if (p.n >= 3 && p.s > 0 && t.n >= 2) {
+            var ch = (t.s - p.s) / p.s * 100;
+            if (ch >= 20) out.push({ id: 'mom:' + title + ':' + key, type: 'analysis', p: 60, title: 'خرجت افزایش پیدا کرده',
+              text: 'مخارج این ماه ' + (cut < 31 ? 'تا امروز ' : '') + spPct(ch) + ' بیشتر از ماه قبل است.' });
+          }
+          var ct = spCategoryTotals(cur, cut), cp = spCategoryTotals(prev, cut), best = null;
+          ct.list.forEach(function (c) {
+            var pc = null;
+            cp.list.forEach(function (x) { if (x.id === c.id) pc = x; });
+            if (!pc || pc.count < 2 || pc.amount <= 0 || c.count < 2) return;
+            var g = (c.amount - pc.amount) / pc.amount;
+            if (g >= 0.3 && c.amount >= ct.total * 0.1 && (!best || g > best.g)) best = { c: c, g: g };
+          });
+          if (best) out.push({ id: 'cat:' + title + ':' + key + ':' + best.c.id, type: 'analysis', p: 50, title: 'هزینهٔ ' + best.c.label + ' افزایش داشته',
+            text: 'این ماه ' + spAmt(best.c.amount) + ' تومان برای ' + best.c.label + ' ثبت کرده‌ای.' });
+        }
+        /* هزینهٔ غیرعادی: نسبت به سابقهٔ همین کاربر (میانه و صدک ۷۵)، نه یک عدد ثابت */
+        var hist = [], older = [];
+        for (var k = 1; k <= 6; k++) {
+          spRows(spPrevSection('expense', title, k)).forEach(function (r) {
+            if (r.fromPlanId) return;
+            var a = spPersonalExpense(r); if (a) { hist.push(a); older.push({ a: a, d: r.desc }); }
+          });
+        }
+        var curRows = spRows(cur).filter(function (r) { return !r.fromPlanId && spPersonalExpense(r) > 0; });
+        curRows.forEach(function (r) { hist.push(spPersonalExpense(r)); });
+        if (hist.length >= 13) {
+          var cand = null;
+          curRows.forEach(function (r, ri) {
+            var a = spPersonalExpense(r);
+            var others = hist.slice(); others.splice(others.indexOf(a), 1);
+            others.sort(function (x, y) { return x - y; });
+            var med = others[Math.floor(others.length / 2)] || 0;
+            var p75 = others[Math.floor(others.length * 0.75)] || 0;
+            if (!(med > 0) || a < med * 4 || a < p75 * 2) return;
+            /* هزینهٔ تکرارشونده (مثل اجاره) غیرعادی نیست */
+            var recurring = older.some(function (o) { return Math.abs(o.a - a) <= a * 0.25 && similarDesc(o.d, r.desc); });
+            if (recurring) return;
+            if (!cand || a / med > cand.ratio) cand = { r: r, i: ri, a: a, ratio: a / med };
+          });
+          if (cand) out.push({ id: 'odd:' + title + ':' + key + ':' + rowKey('expense', cand.r, cand.i), type: 'analysis', p: 70, title: 'هزینهٔ غیرعادی ثبت شد',
+            text: '«' + (cand.r.desc || 'هزینه') + '» با ' + spAmt(cand.a) + ' تومان نسبت به هزینه‌های معمولت مبلغ بالایی دارد.' });
+        }
+        return out;
+      }
+
+      /* ۲) پروژه‌ها: مستقیماً از computeSubjectReport (همان محاسبهٔ گزارش پروژه) */
+      function projects(title) {
+        var ids = {}, t = (title || '').trim();
+        try {
+          iterAllPeriodData(function (pd) {
+            ['income', 'expense'].forEach(function (tab) {
+              ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+                if (((sec && sec.title) || '').trim() !== t) return;
+                (sec.rows || []).forEach(function (r) {
+                  if (!r) return;
+                  var fc = rowFinancialContext(r);
+                  if (fc.subjectId && fc.subjectId !== 'personal' && (fc.classification === 'third_party' || fc.accountType === 'project')) ids[fc.subjectId] = 1;
+                });
+              });
+            });
+          });
+        } catch (e) {}
+        var out = [];
+        Object.keys(ids).forEach(function (sid) {
+          var sub = getSubjectById(sid);
+          if (!sub || sub.id === 'personal') return;
+          var rep = computeSubjectReport(sid);
+          var rec = Number(rep.received) || 0, exp = Number(rep.totalExpense) || 0;
+          if (!rec && !exp) return;
+          var net = rec - exp, lines = [], p = 35, state = '';
+          if (exp > rec) {
+            lines.push('مخارج پروژه از مبلغ دریافتی بیشتر شده است.');
+            lines.push(spAmt(exp - rec) + ' تومان طلب باقی مانده.');
+            p = 55; state = 'over';
+            if (rec > 0 && (exp - rec) <= exp * 0.1) { lines.push('نزدیک به تسویه است.'); state = 'near'; }
+          } else if (rec > 0 && exp > 0) {
+            lines.push(spPct(exp / rec * 100) + ' از مبلغ دریافتی خرج شده.');
+            if (net > 0) lines.push(spAmt(net) + ' تومان از واریزی باقی مانده.');
+            else { lines.push('پروژه تسویه است.'); state = 'even'; }
+            state = state || 'spent';
+          } else if (rec > 0) {
+            lines.push(spAmt(rec) + ' تومان دریافت شده و هنوز خرجی ثبت نشده.');
+            state = 'recv';
+          }
+          if (!lines.length) return;
+          out.push({ id: 'proj:' + sid + ':' + state, type: 'project', p: p, abs: Math.abs(net), title: 'پروژه ' + sub.name, text: lines.join(' ') });
+        });
+        return out.sort(function (a, b) { return b.p - a.p || b.abs - a.abs; }).slice(0, 3);
+      }
+
+      function forCard(title) {
+        var a = [];
+        try { a = a.concat(duplicates(title)); } catch (e1) {}
+        try { a = a.concat(analysis(title)); } catch (e2) {}
+        try { a = a.concat(projects(title)); } catch (e3) {}
+        return a.sort(function (x, y) { return y.p - x.p; });
+      }
+      /* اعلان مهم (تکرار) فقط یک بار به‌صورت toast؛ دفترِ نمایش با رویدادهای فعال هرس می‌شود */
+      function notify(titles) {
+        var shown = loadMap(SHOWN_KEY), active = {}, fresh = null;
+        (titles || []).forEach(function (t) {
+          duplicates(t).forEach(function (al) {
+            active[al.id] = 1;
+            if (!shown[al.id]) { shown[al.id] = Date.now(); if (!fresh) fresh = al; }
+          });
+        });
+        Object.keys(shown).forEach(function (k) { if (!active[k]) delete shown[k]; });
+        saveMap(SHOWN_KEY, shown);
+        if (fresh) {
+          try { showToast(fresh.toast); } catch (e) {}
+          try {
+            if ('Notification' in window && Notification.permission === 'granted') new Notification(fresh.title, { body: fresh.text, dir: 'rtl' });
+          } catch (e2) {}
+        }
+        return fresh;
+      }
+      function dismiss(id) { var d = loadMap(DISMISS_KEY); d[id] = Date.now(); saveMap(DISMISS_KEY, d); }
+      /* پیش از ثبت پیامک: آیا همین تراکنش قبلاً (دستی یا پیامکی) ثبت شده؟ */
+      function findSimilarBeforeSave(pd, tab, amount, day, account, desc) {
+        var hit = null;
+        ((pd && pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+          spRows(sec).forEach(function (r) {
+            if (hit) return;
+            var A = Number(r.amount) || 0;
+            if (Math.abs(A - amount) > Math.max(A, amount) * 0.01) return;
+            var acc = (r.account || '').trim();
+            if (acc && account && acc !== account) return;
+            var d = spDay(r), dd = parseInt(day, 10) || 0;
+            if (d && dd && Math.abs(d - dd) > 1) return;
+            if (!d && dd && !similarDesc(r.desc, desc)) return;
+            hit = { row: r, section: sec.title || '' };
+          });
+        });
+        return hit;
+      }
+      return { forCard: forCard, duplicates: duplicates, analysis: analysis, projects: projects, notify: notify, dismiss: dismiss, findSimilarBeforeSave: findSimilarBeforeSave };
+    })();
+
     /* همهٔ داده‌های لازم صفحه‌ها یک‌بار محاسبه می‌شود (از توابع موجود پروژه) */
     function spCollect(title) {
       var tot = personTotals(title);
       var expSec = findSectionByTitle('expense', title);
       var prevInc = spPrevSection('income', title), prevExp = spPrevSection('expense', title);
+      var alerts = HKAlerts.forCard(title);
       return {
         title: title,
         inc: Number(tot.incomeTotal) || 0,
         incPaid: Number(tot.incomePaid) || 0,
-        incUnpaid: Number(tot.incomeUnpaid) || 0,
         exp: Number(tot.expenseTotal) || 0,
         expPaid: Number(tot.expensePaid) || 0,
         expUnpaid: Number(tot.expenseUnpaid) || 0,
         pInc: prevInc ? sectionPaidUnpaidTotal(prevInc, { personalIncomeOnly: true }).total : 0,
         pExp: prevExp ? sectionPaidUnpaidTotal(prevExp, { personalExpenseOnly: true }).total : 0,
         cats: spCategoryTotals(expSec),
-        pCats: prevExp ? spCategoryTotals(prevExp) : null,
         inst: spInstallments(title),
         led: spLedger(title),
-        projects: spActiveProjects(title)
+        projects: spActiveProjects(title),
+        alerts: alerts
       };
     }
-    function spHead(t) { return '<div class="sp-h">' + t + '</div>'; }
+    function spHead(t, cls) { return '<div class="sp-h' + (cls ? ' ' + cls : '') + '">' + t + '</div>'; }
     function spLine(label, val, cls) {
       return '<div class="sp-row"><span class="sp-l">' + label + '</span><span class="sp-v ' + (cls || '') + '">' + val + '</span></div>';
+    }
+    /* لوله‌ای که با انیمیشن تا درصد مشخص پر می‌شود */
+    function spTube(pct, cls) {
+      return '<div class="sp-bar sp-tube"><i class="' + (cls || '') + '" data-w="' + Math.max(0, Math.min(100, pct)).toFixed(1) + '"></i></div>';
+    }
+    function spItems(list) {
+      return list.map(function (h) { return '<div class="sp-item">' + h + '</div>'; }).join('');
     }
     function spDaysLabel(d) {
       if (d < 0) return spFa(-d) + ' روز تاخیر';
@@ -19059,123 +19329,115 @@ function openPdfPrintWindow(){
       return spFa(d) + ' روز دیگر';
     }
 
-    /* ۱) وضعیت این ماه: پس‌انداز (با نمودار) و مانده؛ سبز = مثبت، قرمز = منفی */
+    /* ۰) هشدار تکرار/خطا — مهم‌ترین؛ با لمس می‌توان نادیده گرفت */
+    function spPageWarn(D) {
+      var dups = D.alerts.filter(function (a) { return a.type === 'dup'; });
+      if (!dups.length) return null;
+      return spHead('هشدار', 'neg') + spItems(dups.slice(0, 2).map(function (a) {
+        return '<div class="sp-t neg">' + spEsc(a.title) + '</div><div class="sp-tip">' + spEsc(a.text) + '</div>';
+      }));
+    }
+    /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
+       پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
     function spPageOverview(D) {
       if (D.inc <= 0 && D.exp <= 0) return null;
-      var rem = D.inc - D.exp, pos = rem >= 0, cls = pos ? 'pos' : 'neg';
       var html = spHead('وضعیت این ماه');
+      var rem = D.inc - D.exp;
       if (D.inc > 0) {
-        var save = rem / D.inc * 100;
-        html += spLine(pos ? 'پس‌انداز' : 'کسری', spPct(Math.abs(save)), cls);
-        html += '<div class="sp-bar"><i class="' + cls + '" style="width:' + Math.min(100, Math.abs(save)).toFixed(1) + '%"></i></div>';
+        var save = rem / D.inc * 100, sc = save >= 0 ? 'pos' : 'neg';
+        html += '<div class="sp-blk">' + spLine(save >= 0 ? 'پس‌انداز' : 'کسری', spPct(Math.abs(save)), sc) + spTube(Math.abs(save), sc) + '</div>';
       }
-      html += spLine(pos ? 'مانده' : 'کسری', spAmt(Math.abs(rem)), cls);
+      var cash = D.incPaid - D.expPaid, cc = cash >= 0 ? 'pos' : 'neg';
+      var cashPct = D.incPaid > 0 ? Math.abs(cash) / D.incPaid * 100 : (cash !== 0 ? 100 : 0);
+      html += '<div class="sp-blk">' + spLine('مانده', spAmt(cash), cc) + spTube(cashPct, cc) + '</div>';
       return html;
     }
-    /* ۲) تعهدات: معوق‌ها و نزدیک‌ترین سررسید اول؛ بخش‌های بدون داده نمایش داده نمی‌شوند */
+    /* ۲) تعهدات: هر خبر جدا با خط جداکننده؛ مبلغ قسط زیر عنوانش */
     function spPageObligations(D) {
-      var lines = [];
+      var items = [];
       var late = D.inst.filter(function (x) { return x.days < 0; });
       var next = D.inst.filter(function (x) { return x.days >= 0; })[0];
-      if (late.length) {
-        lines.push(spLine('قسط معوق', spFa(late.length) + ' قسط', 'neg'));
-        lines.push(spLine('بیشترین تاخیر', spFa(-late[0].days) + ' روز', 'neg'));
-      }
-      if (next) {
-        lines.push(spLine('قسط بعدی', spDaysLabel(next.days), next.days <= 1 ? 'neg' : ''));
-        lines.push(spLine('مبلغ قسط', spAmt(next.amount)));
-      } else if (late.length) {
-        lines.push(spLine('مبلغ قسط', spAmt(late[0].amount)));
-      }
-      if (D.led.credit > 0) lines.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
-      if (D.led.debt > 0) lines.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
-      if (D.projects > 0) lines.push(spLine('پروژهٔ فعال', spFa(D.projects)));
-      if (!lines.length) return null;
-      return spHead('تعهدات') + lines.join('');
+      if (late.length) items.push(spLine('قسط معوق', spFa(late.length) + ' قسط', 'neg') + spLine('بیشترین تاخیر', spFa(-late[0].days) + ' روز', 'neg'));
+      var basis = next || late[0];
+      if (next) items.push(spLine('قسط بعدی', spDaysLabel(next.days), next.days <= 1 ? 'neg' : ''));
+      if (basis) items.push('<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(basis.amount) + ' تومان</div>');
+      if (D.led.credit > 0) items.push(spLine('طلب', spAmt(D.led.credit), 'pos'));
+      if (D.led.debt > 0) items.push(spLine('بدهی', spAmt(D.led.debt), 'neg'));
+      if (D.projects > 0) items.push(spLine('پروژهٔ فعال', spFa(D.projects)));
+      if (!items.length) return null;
+      return spHead('تعهدات') + spItems(items);
     }
-    /* ۳) آمار: مقایسهٔ این ماه با ماه قبل؛ اگر ماه قبل داده ندارد، وضعیت پرداخت این ماه */
+    /* ۳) آمار: فقط مقایسهٔ این ماه با ماه قبل */
     function spBarRow(label, amount, max, cls) {
       var w = max > 0 ? Math.max(amount > 0 ? 3 : 0, amount / max * 100) : 0;
       return '<div class="sp-row sp-row-sm"><span class="sp-l">' + label + '</span><span class="sp-v">' + spAmt(amount) + '</span></div>' +
-        '<div class="sp-bar thin"><i class="' + cls + '" style="width:' + w.toFixed(1) + '%"></i></div>';
+        '<div class="sp-bar thin"><i class="' + cls + '" data-w="' + w.toFixed(1) + '"></i></div>';
     }
     function spPageStats(D) {
-      var html;
-      if ((D.pInc > 0 || D.pExp > 0) && (D.inc > 0 || D.exp > 0)) {
-        var mx = Math.max(D.inc, D.pInc, D.exp, D.pExp);
-        html = spHead('مقایسه با ماه قبل');
-        if (D.inc > 0 || D.pInc > 0) html += '<div class="sp-g">درآمد</div>' + spBarRow('این ماه', D.inc, mx, 'pos') + spBarRow('ماه قبل', D.pInc, mx, 'pos dim');
-        if (D.exp > 0 || D.pExp > 0) html += '<div class="sp-g">خرج</div>' + spBarRow('این ماه', D.exp, mx, 'neg') + spBarRow('ماه قبل', D.pExp, mx, 'neg dim');
-        return html;
-      }
-      if (D.inc <= 0 && D.exp <= 0) return null;
-      if (!(D.incUnpaid > 0 || D.expUnpaid > 0)) return null; /* چیزی بیش از کادرهای کناری ندارد */
-      var m2 = Math.max(D.incPaid, D.incUnpaid, D.expPaid, D.expUnpaid);
-      html = spHead('وضعیت پرداخت');
-      if (D.inc > 0) html += spBarRow('دریافت‌شده', D.incPaid, m2, 'pos') + spBarRow('دریافت‌نشده', D.incUnpaid, m2, 'pos dim');
-      if (D.exp > 0) html += spBarRow('پرداخت‌شده', D.expPaid, m2, 'neg dim') + spBarRow('پرداخت‌نشده', D.expUnpaid, m2, 'neg');
+      if (!((D.pInc > 0 || D.pExp > 0) && (D.inc > 0 || D.exp > 0))) return null;
+      var mx = Math.max(D.inc, D.pInc, D.exp, D.pExp);
+      var html = spHead('مقایسه با ماه قبل');
+      if (D.inc > 0 || D.pInc > 0) html += '<div class="sp-blk"><div class="sp-g">درآمد</div>' + spBarRow('این ماه', D.inc, mx, 'pos') + spBarRow('ماه قبل', D.pInc, mx, 'pos dim') + '</div>';
+      if (D.exp > 0 || D.pExp > 0) html += '<div class="sp-blk"><div class="sp-g">خرج</div>' + spBarRow('این ماه', D.exp, mx, 'neg') + spBarRow('ماه قبل', D.pExp, mx, 'neg dim') + '</div>';
       return html;
     }
-    /* ۴) دسته‌بندی مخارج: همهٔ دسته‌ها (جمع ۱۰۰٪)، هر بار ۳ تا؛ اسکرول عمودی برای ۳ تای بعد */
+    /* ۴) دسته‌بندی مخارج: همهٔ دسته‌ها (جمع ۱۰۰٪)؛ هر نما ۴ مورد و اسکرول عمودی پیوسته */
     function spPageCategories(D) {
       if (!D.cats.list.length || D.cats.total <= 0) return null;
-      var items = D.cats.list.slice();
-      if (D.cats.unknown > 0) items.push({ id: '', label: 'نامشخص', amount: D.cats.unknown });
-      var pcts = spPercents100(items.map(function (c) { return c.amount; }));
-      var groups = '';
-      for (var g = 0; g < items.length; g += 3) {
-        groups += '<div class="sp-grp">';
-        for (var k = g; k < Math.min(items.length, g + 3); k++) {
-          groups += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(items[k].label) + '</span><span class="sp-v">' + spPct(pcts[k]) + '</span></div>' +
-            '<div class="sp-bar thin"><i style="width:' + pcts[k] + '%"></i></div></div>';
-        }
-        groups += '</div>';
-      }
-      var more = items.length > 3 ? ' sp-more' : '';
-      return spHead('دسته‌بندی مخارج') + '<div class="sp-scroll' + more + '">' + groups + '</div>';
+      var html = '';
+      D.cats.items.forEach(function (c) {
+        html += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(c.label) + '</span><span class="sp-v">' + spPct(c.pct) + '</span></div>' +
+          '<div class="sp-bar thin"><i data-w="' + c.pct + '"></i></div></div>';
+      });
+      return spHead('دسته‌بندی مخارج') + '<div class="sp-scroll' + (D.cats.items.length > 4 ? ' sp-more' : '') + '">' + html + '</div>';
     }
-    /* ۵) نکتهٔ هوشمند — فقط وقتی دادهٔ کافی هست */
+    /* ۵) پروژه‌ها — از گزارش پروژه */
+    function spPageProjects(D) {
+      var ps = D.alerts.filter(function (a) { return a.type === 'project'; });
+      if (!ps.length) return null;
+      return spHead('پروژه‌ها') + spItems(ps.slice(0, 2).map(function (a) {
+        return '<div class="sp-t">' + spEsc(a.title) + '</div><div class="sp-tip">' + spEsc(a.text) + '</div>';
+      }));
+    }
+    /* ۶) نکته: اعلان‌های تحلیلی + نکته‌های کوتاه؛ درصدها همان درصدهای صفحهٔ دسته‌بندی */
     function spInsights(D) {
-      var out = [];
+      var out = D.alerts.filter(function (a) { return a.type === 'analysis'; }).map(function (a) { return { p: a.p, h: a.title, t: a.text }; });
       var soon = D.inst.filter(function (x) { return x.days >= 0 && x.days <= 7; }).length;
       var late = D.inst.filter(function (x) { return x.days < 0; }).length;
-      if (late) out.push({ p: 100, t: spFa(late) + ' قسط از سررسیدش گذشته است.' });
+      if (late) out.push({ p: 95, t: spFa(late) + ' قسط از سررسیدش گذشته است.' });
       if (soon) out.push({ p: 90, t: spFa(soon) + ' پرداخت قسط در ۷ روز آینده داری.' });
       if (D.inc > 0 && D.exp > D.inc) out.push({ p: 80, t: 'مخارج این ماه ' + spPct((D.exp - D.inc) / D.inc * 100) + ' از درآمد بیشتر شده است.' });
-      if (D.cats.rows >= 3 && D.cats.list.length) {
-        var top = D.cats.list[0], share = top.amount / D.cats.total * 100;
-        if (share >= 25) out.push({ p: 60, t: 'بیشترین هزینهٔ این ماه مربوط به ' + top.label + ' بوده (' + spPct(share) + ' از مخارج).' });
+      if (D.cats.rows >= 3 && D.cats.items.length && D.cats.items[0].id) {
+        var top = D.cats.items[0];
+        if (top.pct >= 25) out.push({ p: 45, t: 'بیشترین هزینهٔ این ماه مربوط به ' + top.label + ' بوده (' + spPct(top.pct) + ' از مخارج).' });
       }
-      if (D.pCats && D.pCats.list.length && D.cats.list.length) {
-        var best = null;
-        D.cats.list.forEach(function (c) {
-          var prev = 0;
-          D.pCats.list.forEach(function (pc) { if (pc.id === c.id) prev = pc.amount; });
-          if (prev <= 0) return;
-          var ch = (c.amount - prev) / prev * 100;
-          if (Math.abs(ch) >= 20 && (!best || Math.abs(ch) > Math.abs(best.ch))) best = { c: c, ch: ch };
-        });
-        if (best) out.push({ p: 70, t: 'مخارج ' + best.c.label + ' نسبت به ماه قبل ' + spPct(Math.abs(best.ch)) + (best.ch > 0 ? ' بیشتر' : ' کمتر') + ' شده است.' });
-      }
-      if (D.pExp > 0 && D.exp > 0 && D.inc > 0 && D.pInc > 0) {
-        var s1 = (D.inc - D.exp) / D.inc, s0 = (D.pInc - D.pExp) / D.pInc;
-        if (s1 - s0 >= 0.1) out.push({ p: 50, t: 'درصد پس‌اندازت نسبت به ماه قبل بهتر شده است.' });
-      }
-      if (D.exp > 0 && D.expUnpaid / D.exp >= 0.3) out.push({ p: 40, t: spAmt(D.expUnpaid) + ' از مخارج این ماه هنوز پرداخت نشده.' });
+      if (D.exp > 0 && D.expUnpaid / D.exp >= 0.3) out.push({ p: 40, t: spAmt(D.expUnpaid) + ' تومان از مخارج این ماه هنوز پرداخت نشده.' });
       return out.sort(function (a, b) { return b.p - a.p; });
     }
     function spPageInsight(D) {
       var ins = spInsights(D);
       if (!ins.length) return null;
-      return spHead('نکته') + ins.slice(0, 2).map(function (x) { return '<div class="sp-tip">' + spEsc(x.t) + '</div>'; }).join('');
+      return spHead('نکته') + spItems(ins.slice(0, 2).map(function (x) {
+        return (x.h ? '<div class="sp-t">' + spEsc(x.h) + '</div>' : '') + '<div class="sp-tip">' + spEsc(x.t) + '</div>';
+      }));
     }
     var SMART_PANEL_PAGES = [
+      { key: 'warn', build: spPageWarn, onTap: function (title) { spDismissDupPrompt(title); } },
       { key: 'overview', build: spPageOverview },
       { key: 'obligations', build: spPageObligations },
       { key: 'stats', build: spPageStats },
       { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
+      { key: 'projects', build: spPageProjects },
       { key: 'insight', build: spPageInsight }
     ];
+    function spDismissDupPrompt(title) {
+      var d = HKAlerts.duplicates(title)[0];
+      if (!d) return;
+      askConfirm('اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
+        HKAlerts.dismiss(d.id);
+        try { renderHomeCards(); } catch (e) {}
+      });
+    }
 
     function mountSmartPanel(el, title) {
       var D = null;
@@ -19197,7 +19459,11 @@ function openPdfPrintWindow(){
         view.innerHTML = '<div class="sp-empty">بعد از ثبت چند تراکنش، تحلیل وضعیت مالی اینجا نمایش داده می‌شود.</div>';
         return;
       }
-      var st = _smartPanelState[title] || (_smartPanelState[title] = { key: pages[0].key, pausedUntil: 0, nextAt: 0 });
+      var st = _smartPanelState[title] || (_smartPanelState[title] = { key: pages[0].key, pausedUntil: 0, nextAt: 0, warnSig: '' });
+      /* هشدار تکرارِ تازه: یک بار مستقیم روی صفحهٔ هشدار برو */
+      var sig = (D.alerts.filter(function (a) { return a.type === 'dup'; }).map(function (a) { return a.id; })).join(',');
+      if (sig && sig !== st.warnSig) { st.key = 'warn'; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
+      st.warnSig = sig;
       var idx = 0;
       pages.forEach(function (p, i) { if (p.key === st.key) idx = i; });
       st.key = pages[idx].key;
@@ -19210,6 +19476,12 @@ function openPdfPrintWindow(){
       var d = document.createElement('div');
       d.className = 'sp-page sp-k-' + pg.key;
       d.innerHTML = pg.html;
+      /* نمودارها خالی شروع می‌شوند و نرم پر می‌شوند */
+      var bars = d.querySelectorAll('i[data-w]');
+      bars.forEach(function (b) { b.style.width = '0%'; });
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        bars.forEach(function (b, k) { b.style.transitionDelay = (k * 90) + 'ms'; b.style.width = b.getAttribute('data-w') + '%'; });
+      }); });
       return d;
     }
     /* شروع محتوا هم‌تراز «درآمد کل» در کادر کناری + کوچک‌کردن فونت تا هیچ نوشته‌ای نصفه نشود */
@@ -19226,16 +19498,24 @@ function openPdfPrintWindow(){
       el.querySelectorAll('.sp-page:not(.sp-out)').forEach(function (pg) { spFitPage(pg); });
     }
     function spFitPage(pg) {
+      if (!(pg.clientHeight > 0)) return;
+      var sc = pg.querySelector('.sp-scroll');
+      if (sc) {
+        /* دسته‌ها: هر نما دقیقاً ۴ مورد؛ ارتفاع موردها یکسان تا اسکرول پیوسته دیده شود */
+        var cats = sc.querySelectorAll('.sp-cat');
+        var h = Math.floor(sc.clientHeight / 4);
+        if (h > 10) cats.forEach(function (c, i) { c.style.height = h + 'px'; c.style.scrollSnapAlign = (i % 4 === 0) ? 'start' : 'none'; });
+        return;
+      }
       var over = function () {
         if (pg.scrollHeight > pg.clientHeight + 1) return true;
-        var cells = pg.querySelectorAll('.sp-l, .sp-v, .sp-h, .sp-tip');
+        var cells = pg.querySelectorAll('.sp-l, .sp-v, .sp-h, .sp-tip, .sp-t');
         for (var i = 0; i < cells.length; i++) if (cells[i].scrollWidth > cells[i].clientWidth + 1) return true;
         return false;
       };
       var f = 1;
       pg.style.setProperty('--sp-fs', '1');
-      if (!(pg.clientHeight > 0)) return;
-      while (f > 0.7 && over()) { f -= 0.05; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
+      while (f > 0.66 && over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); }
     }
     /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
     function smartPanelGo(el, dir, fromDx) {
@@ -19344,8 +19624,9 @@ function openPdfPrintWindow(){
       }, 1000);
     })();
 
-    /* برگهٔ دسته‌بندی مخارج: فهرست همهٔ شرح‌ها؛ با لمس هر شرح، انتخاب دستهٔ همان شرح باز می‌شود.
-       انتخاب کاربر در دیکشنری شخصی ذخیره می‌شود. دکمهٔ بازگشت اندروید: انتخاب دسته ← فهرست ← صفحه اصلی */
+    /* برگهٔ دسته‌بندی مخارج: فهرست همهٔ شرح‌ها؛ با لمس هر شرح، انتخاب دسته(های) همان شرح باز می‌شود.
+       هر شرح می‌تواند چند دسته داشته باشد؛ مبلغش مساوی بین آن‌ها تقسیم می‌شود.
+       دکمهٔ بازگشت اندروید: انتخاب دسته ← فهرست ← صفحه اصلی */
     function closeCategoryReviewSheet() {
       var ov = document.querySelector('.sp-cat-sheet');
       if (!ov) return false;
@@ -19390,7 +19671,7 @@ function openPdfPrintWindow(){
       function showList() {
         ov._spPicking = false;
         h.textContent = 'دسته‌بندی مخارج';
-        sub.textContent = items.length ? 'روی هر شرح بزن تا دسته‌اش را انتخاب کنی؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
+        sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
         body.innerHTML = '';
         items.forEach(function (d) {
@@ -19403,32 +19684,45 @@ function openPdfPrintWindow(){
           lab.textContent = d;
           var chip = document.createElement('span');
           chip.className = 'sp-cat-chip' + (c ? '' : ' none');
-          chip.textContent = c ? c.label : 'نامشخص';
+          chip.textContent = c ? (c.ids.length > 1 ? c.ids.length.toLocaleString('fa-IR') + ' دسته' : c.label) : 'نامشخص';
           row.appendChild(lab);
           row.appendChild(chip);
-          row.onclick = function () { showPicker(d, c ? c.id : ''); };
+          row.onclick = function () { showPicker(d, c ? c.ids.slice() : []); };
           body.appendChild(row);
         });
         body.scrollTop = ov._spListScroll || 0;
       }
-      function showPicker(desc, curId) {
+      function showPicker(desc, sel) {
         ov._spListScroll = body.scrollTop;
         ov._spPicking = true;
         h.textContent = 'انتخاب دسته';
-        sub.textContent = '«' + desc + '»';
-        btn.textContent = 'بازگشت';
+        sub.textContent = '«' + desc + '» — یک یا چند دسته';
+        btn.textContent = 'تأیید';
         body.innerHTML = '';
         var grid = document.createElement('div');
         grid.className = 'sp-pick-grid';
+        var paint = function () {
+          grid.querySelectorAll('.sp-pick').forEach(function (b) {
+            var id = b.getAttribute('data-id');
+            b.classList.toggle('on', id ? sel.indexOf(id) >= 0 : !sel.length);
+          });
+        };
         HKCategorizer.categories.concat([{ id: '', label: 'نامشخص' }]).forEach(function (cat) {
           var b = document.createElement('button');
           b.type = 'button';
-          b.className = 'sp-pick' + (cat.id === curId ? ' on' : '');
+          b.className = 'sp-pick';
+          b.setAttribute('data-id', cat.id);
           b.textContent = cat.label;
-          b.onclick = function () { HKCategorizer.learn(desc, cat.id); showList(); };
+          b.onclick = function () {
+            if (!cat.id) sel = [];
+            else { var k = sel.indexOf(cat.id); if (k >= 0) sel.splice(k, 1); else sel.push(cat.id); }
+            HKCategorizer.learn(desc, sel);
+            paint();
+          };
           grid.appendChild(b);
         });
         body.appendChild(grid);
+        paint();
         body.scrollTop = 0;
       }
       ov._spShowList = showList;
@@ -22972,6 +23266,21 @@ function confirmSmsEntry() {
       const tab = type;
       const descInp = document.getElementById('smsConfirmDesc');
       let desc = ((descInp && descInp.value) || '').trim() || (type === 'income' ? 'واریز بانکی' : 'برداشت بانکی');
+      /* تشخیص تکرار پیش از ثبت: همین مبلغ (±۱٪) در همان روز/روز مجاور و همان حساب قبلاً (دستی یا پیامکی) ثبت شده؟
+         کاربر تصمیم می‌گیرد؛ چیزی خودکار دوباره ثبت نمی‌شود */
+      try {
+        var _pbAttr = descInp ? (descInp.getAttribute('data-plan-batch') || '') : '';
+        var _isPlanPay = !!(descInp && descInp.getAttribute('data-plan-id')) || (_pbAttr && _pbAttr !== '[]');
+        if (!window._smsDupBypass && !_isPlanPay) {
+          var _dupHit = HKAlerts.findSimilarBeforeSave(targetPd, tab, amount, day, bank, desc);
+          if (_dupHit) {
+            askConfirm('احتمال ثبت تکراری: تراکنش «' + (_dupHit.row.desc || '—') + '» با مبلغ ' + formatNum(amount) + ' تومان' +
+              (_dupHit.row.day ? ' (روز ' + toPersianDigits(_dupHit.row.day) + ')' : '') + ' قبلاً ثبت شده. باز هم ثبت شود؟',
+              function () { window._smsDupBypass = true; try { confirmSmsEntry(); } finally { window._smsDupBypass = false; } });
+            return;
+          }
+        }
+      } catch (eDupChk) {}
       const planIdLink = descInp && descInp.getAttribute('data-plan-id');
       const planIdxLink = descInp && descInp.getAttribute('data-plan-index');
       let batchItems = [];
@@ -23356,6 +23665,7 @@ function confirmSmsEntry() {
           row.fromPlanId = linkedPlan.id;
           row.fromPlanIndex = linkedIdx;
           row.desc = baseDesc;
+          row.viaSms = true;
           row.allowPlanFieldEdit = true;
           try { row.financialContext = readSmsFinancialContext('expense'); } catch (eFcP) {}
           const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
@@ -23373,6 +23683,7 @@ function confirmSmsEntry() {
         row.amount = amount;
         row.status = 'paid';
         row.account = bank;
+        row.viaSms = true; /* برای تشخیص «پیامک بانکی در برابر ثبت دستی» */
         try {
           row.financialContext = readSmsFinancialContext(tab);
           // تخصیص خودکار مخارج پروژه — amount همین تومان canonical است
@@ -23420,6 +23731,7 @@ function confirmSmsEntry() {
         safety.amount = amount;
         safety.status = 'paid';
         safety.account = bank || '';
+        safety.viaSms = true;
         try {
           safety.financialContext = readSmsFinancialContext(tab);
           if (tab === 'expense' && safety.financialContext && safety.financialContext.accountType === 'project' &&
