@@ -383,6 +383,10 @@ public class NativeFileExportPlugin extends Plugin {
         web.getSettings().setLoadWithOverviewMode(false);
         web.getSettings().setUseWideViewPort(false);
         web.getSettings().setDomStorageEnabled(true);
+        // امنیت: این WebView فقط HTML گزارش را نشان می‌دهد؛ دسترسی به فایل/محتوای گوشی لازم نیست
+        web.getSettings().setAllowFileAccess(false);
+        web.getSettings().setAllowContentAccess(false);
+        web.getSettings().setGeolocationEnabled(false);
         web.setInitialScale(100);
         host.addView(web,new FrameLayout.LayoutParams(viewW, 1600));
 
@@ -1100,6 +1104,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -1112,12 +1118,19 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import java.util.ArrayList;
 
+/**
+ * گفتار به متن با سه تلاش پشت‌سرهم (هر کدام بعد از مکث کوتاه، چون ساختن فوری recognizer جدید داخل onError
+ * روی خیلی از گوشی‌ها با خطای CLIENT/BUSY رد می‌شود):
+ *   ۱) تشخیص روی خود دستگاه (اندروید ۱۲+)   ۲) سرویس پیش‌فرض با ترجیح آفلاین   ۳) سرویس پیش‌فرض آنلاین
+ */
 @CapacitorPlugin(name="HkSpeech", permissions={@Permission(strings={Manifest.permission.RECORD_AUDIO},alias="mic")})
 public class HkSpeechPlugin extends Plugin {
   private SpeechRecognizer rec;
   private PluginCall pending;
   private String lang="fa-IR";
-  private boolean triedFallback=false;
+  private int attempt=0;
+  private boolean gotSpeech=false;
+  private final Handler ui=new Handler(Looper.getMainLooper());
 
   @com.getcapacitor.PluginMethod public void isAvailable(PluginCall call){
     JSObject r=new JSObject();
@@ -1133,31 +1146,47 @@ public class HkSpeechPlugin extends Plugin {
     begin(call);
   }
   @PermissionCallback private void micPerm(PluginCall call){
-    if(getPermissionState("mic")==PermissionState.GRANTED) begin(call); else call.reject("permission_denied");
+    if(getPermissionState("mic")==PermissionState.GRANTED){
+      /* بعد از دیالوگ اجازه، اکتیویتی دوباره فعال می‌شود؛ کمی صبر تا میکروفون آزاد شود */
+      final PluginCall c=call;
+      ui.postDelayed(new Runnable(){ @Override public void run(){ begin(c); }}, 450);
+    } else call.reject("permission_denied");
+  }
+  private boolean onDeviceOk(){
+    if(Build.VERSION.SDK_INT<31) return false;
+    try{ return SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext()); }catch(Exception e){ return false; }
   }
   private void begin(final PluginCall call){
     if(pending!=null){ try{ pending.reject("replaced"); }catch(Exception ignored){} }
-    pending=call; triedFallback=false;
-    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){ createAndListen(true); }});
+    pending=call; gotSpeech=false;
+    attempt = onDeviceOk() ? 0 : 1;
+    ui.post(new Runnable(){ @Override public void run(){ listen(); }});
   }
-  private void createAndListen(boolean preferOnDevice){
+  private void nextAttempt(final int err){
+    destroyRec();
+    if(attempt<2 && !gotSpeech){
+      attempt++;
+      ui.postDelayed(new Runnable(){ @Override public void run(){ if(pending!=null) listen(); }}, 350);
+      return;
+    }
+    PluginCall c=pending; pending=null;
+    if(c!=null) c.reject("speech_error_"+err, String.valueOf(err));
+  }
+  private void listen(){
     destroyRec();
     try{
-      boolean onDev=false;
-      if(preferOnDevice && Build.VERSION.SDK_INT>=31){ try{ onDev=SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext()); }catch(Exception ignored){} }
-      rec = onDev && Build.VERSION.SDK_INT>=31 ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext()) : SpeechRecognizer.createSpeechRecognizer(getContext());
-      final boolean usedOnDevice=onDev;
+      final boolean onDev = attempt==0 && Build.VERSION.SDK_INT>=31;
+      rec = onDev ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext()) : SpeechRecognizer.createSpeechRecognizer(getContext());
       rec.setRecognitionListener(new RecognitionListener(){
-        @Override public void onReadyForSpeech(Bundle b){ notifyListeners("state",new JSObject().put("state","ready").put("onDevice",usedOnDevice)); }
-        @Override public void onBeginningOfSpeech(){ notifyListeners("state",new JSObject().put("state","speaking")); }
+        @Override public void onReadyForSpeech(Bundle b){ notifyListeners("state",new JSObject().put("state","ready").put("engine",attempt)); }
+        @Override public void onBeginningOfSpeech(){ gotSpeech=true; notifyListeners("state",new JSObject().put("state","speaking")); }
         @Override public void onRmsChanged(float v){ notifyListeners("level",new JSObject().put("rms",(double)v)); }
         @Override public void onBufferReceived(byte[] b){}
         @Override public void onEndOfSpeech(){ notifyListeners("state",new JSObject().put("state","processing")); }
         @Override public void onError(int err){
-          // روی خود گوشی زبان فارسی نبود → یک بار با سرویس عادی (باز هم با ترجیح آفلاین)
-          if(usedOnDevice && !triedFallback && (err==12 || err==13 || err==5 || err==11)){ triedFallback=true; createAndListen(false); return; }
-          PluginCall c=pending; pending=null; destroyRec();
-          if(c!=null) c.reject("speech_error_"+err, String.valueOf(err));
+          /* ۶: سکوت، ۷: چیزی تشخیص داده نشد → خطای کاربر است، نه موتور؛ تلاش بعدی لازم نیست */
+          if(err==6 || err==7){ destroyRec(); PluginCall c=pending; pending=null; if(c!=null) c.reject("speech_error_"+err, String.valueOf(err)); return; }
+          nextAttempt(err);
         }
         @Override public void onResults(Bundle b){
           ArrayList<String> m=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
@@ -1174,21 +1203,22 @@ public class HkSpeechPlugin extends Plugin {
       i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
       i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,lang);
       i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,lang);
-      i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE,true);
+      i.putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE,lang);
+      i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, attempt<2);
       i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
       i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
+      i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE,getContext().getPackageName());
       rec.startListening(i);
     }catch(Exception e){
-      PluginCall c=pending; pending=null; destroyRec();
-      if(c!=null) c.reject("speech_start_failed",e);
+      nextAttempt(5);
     }
   }
   @com.getcapacitor.PluginMethod public void stop(PluginCall call){
-    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){ try{ if(rec!=null) rec.stopListening(); }catch(Exception ignored){} }});
+    ui.post(new Runnable(){ @Override public void run(){ try{ if(rec!=null) rec.stopListening(); }catch(Exception ignored){} }});
     call.resolve();
   }
   @com.getcapacitor.PluginMethod public void cancel(PluginCall call){
-    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){
+    ui.post(new Runnable(){ @Override public void run(){
       PluginCall c=pending; pending=null; destroyRec();
       if(c!=null){ try{ c.reject("cancelled"); }catch(Exception ignored){} }
     }});
@@ -1226,6 +1256,17 @@ public class AppChromePlugin extends Plugin {
     WindowInsetsControllerCompat ic=WindowCompat.getInsetsController(w,decor);
     ic.setAppearanceLightStatusBars(light);
     ic.setAppearanceLightNavigationBars(light);
+  }
+  /** وقتی قفل برنامه فعال است: جلوگیری از اسکرین‌شات و نمایش محتوای مالی در پیش‌نمایش «برنامه‌های اخیر» */
+  @com.getcapacitor.PluginMethod public void setSecure(final PluginCall call){
+    final boolean on=Boolean.TRUE.equals(call.getBoolean("on",false));
+    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){
+      try{
+        if(on) getActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        else getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        call.resolve();
+      }catch(Exception e){ call.reject("secure_failed",e); }
+    }});
   }
   @com.getcapacitor.PluginMethod public void setTheme(final PluginCall call){
     final String hex=call.getString("color","#1b1b1b");
@@ -1325,16 +1366,12 @@ if(fs.existsSync(manifest)){
 const xmlDir=path.join(base,'app/src/main/res/xml');
 fs.mkdirSync(xmlDir,{recursive:true});
 const filePaths=path.join(xmlDir,'file_paths.xml');
-if(!fs.existsSync(filePaths)){
-  fs.writeFileSync(filePaths,
+// امنیت: FileProvider فقط پوشهٔ موقت اشتراک‌گذاری را در اختیار دیگر برنامه‌ها می‌گذارد (نه کل حافظهٔ اپ/حافظهٔ خارجی)
+fs.writeFileSync(filePaths,
 `<?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="share_cache" path="share/" />
-    <cache-path name="cache_root" path="." />
-    <files-path name="files_root" path="." />
-    <external-files-path name="external_files" path="." />
 </paths>
 `);
-}
 
 console.log('Android SMS + Downloads/PDF + FileProvider Share bridge patched');
