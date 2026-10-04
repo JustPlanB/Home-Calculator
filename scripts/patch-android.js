@@ -1093,6 +1093,112 @@ public class HkBootReceiver extends BroadcastReceiver {
 }
 `;
 
+// گفتار به متن (برای فیلد شرح): ترجیح پردازش روی خود گوشی (بدون اینترنت)
+const hkSpeech=`package ${pkg};
+
+import android.Manifest;
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+import java.util.ArrayList;
+
+@CapacitorPlugin(name="HkSpeech", permissions={@Permission(strings={Manifest.permission.RECORD_AUDIO},alias="mic")})
+public class HkSpeechPlugin extends Plugin {
+  private SpeechRecognizer rec;
+  private PluginCall pending;
+  private String lang="fa-IR";
+  private boolean triedFallback=false;
+
+  @com.getcapacitor.PluginMethod public void isAvailable(PluginCall call){
+    JSObject r=new JSObject();
+    boolean any=SpeechRecognizer.isRecognitionAvailable(getContext());
+    boolean onDev=false;
+    if(Build.VERSION.SDK_INT>=31){ try{ onDev=SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext()); }catch(Exception ignored){} }
+    r.put("available",any||onDev); r.put("onDevice",onDev);
+    call.resolve(r);
+  }
+  @com.getcapacitor.PluginMethod public void start(PluginCall call){
+    lang=call.getString("lang","fa-IR");
+    if(getPermissionState("mic")!=PermissionState.GRANTED){ requestPermissionForAlias("mic",call,"micPerm"); return; }
+    begin(call);
+  }
+  @PermissionCallback private void micPerm(PluginCall call){
+    if(getPermissionState("mic")==PermissionState.GRANTED) begin(call); else call.reject("permission_denied");
+  }
+  private void begin(final PluginCall call){
+    if(pending!=null){ try{ pending.reject("replaced"); }catch(Exception ignored){} }
+    pending=call; triedFallback=false;
+    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){ createAndListen(true); }});
+  }
+  private void createAndListen(boolean preferOnDevice){
+    destroyRec();
+    try{
+      boolean onDev=false;
+      if(preferOnDevice && Build.VERSION.SDK_INT>=31){ try{ onDev=SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext()); }catch(Exception ignored){} }
+      rec = onDev && Build.VERSION.SDK_INT>=31 ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext()) : SpeechRecognizer.createSpeechRecognizer(getContext());
+      final boolean usedOnDevice=onDev;
+      rec.setRecognitionListener(new RecognitionListener(){
+        @Override public void onReadyForSpeech(Bundle b){ notifyListeners("state",new JSObject().put("state","ready").put("onDevice",usedOnDevice)); }
+        @Override public void onBeginningOfSpeech(){ notifyListeners("state",new JSObject().put("state","speaking")); }
+        @Override public void onRmsChanged(float v){ notifyListeners("level",new JSObject().put("rms",(double)v)); }
+        @Override public void onBufferReceived(byte[] b){}
+        @Override public void onEndOfSpeech(){ notifyListeners("state",new JSObject().put("state","processing")); }
+        @Override public void onError(int err){
+          // روی خود گوشی زبان فارسی نبود → یک بار با سرویس عادی (باز هم با ترجیح آفلاین)
+          if(usedOnDevice && !triedFallback && (err==12 || err==13 || err==5 || err==11)){ triedFallback=true; createAndListen(false); return; }
+          PluginCall c=pending; pending=null; destroyRec();
+          if(c!=null) c.reject("speech_error_"+err, String.valueOf(err));
+        }
+        @Override public void onResults(Bundle b){
+          ArrayList<String> m=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+          PluginCall c=pending; pending=null; destroyRec();
+          if(c!=null) c.resolve(new JSObject().put("text",(m!=null&&!m.isEmpty())?m.get(0):""));
+        }
+        @Override public void onPartialResults(Bundle b){
+          ArrayList<String> m=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+          if(m!=null && !m.isEmpty()) notifyListeners("partial",new JSObject().put("text",m.get(0)));
+        }
+        @Override public void onEvent(int t, Bundle b){}
+      });
+      Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+      i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+      i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,lang);
+      i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,lang);
+      i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE,true);
+      i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
+      i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
+      rec.startListening(i);
+    }catch(Exception e){
+      PluginCall c=pending; pending=null; destroyRec();
+      if(c!=null) c.reject("speech_start_failed",e);
+    }
+  }
+  @com.getcapacitor.PluginMethod public void stop(PluginCall call){
+    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){ try{ if(rec!=null) rec.stopListening(); }catch(Exception ignored){} }});
+    call.resolve();
+  }
+  @com.getcapacitor.PluginMethod public void cancel(PluginCall call){
+    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){
+      PluginCall c=pending; pending=null; destroyRec();
+      if(c!=null){ try{ c.reject("cancelled"); }catch(Exception ignored){} }
+    }});
+    call.resolve();
+  }
+  private void destroyRec(){ try{ if(rec!=null){ rec.cancel(); rec.destroy(); } }catch(Exception ignored){} rec=null; }
+  @Override protected void handleOnDestroy(){ destroyRec(); }
+}
+`;
+
 // رنگ زمینهٔ نوارهای سیستم (پشت نوار وضعیت و ناوبری) هم‌رنگ تم اپ + رنگ آیکن‌های نوار
 const appChrome=`package ${pkg};
 
@@ -1147,6 +1253,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(AppLockPlugin.class);
     registerPlugin(AppChromePlugin.class);
     registerPlugin(HkRemindersPlugin.class);
+    registerPlugin(HkSpeechPlugin.class);
     super.onCreate(savedInstanceState);
     // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض اپ پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
@@ -1167,6 +1274,7 @@ fs.writeFileSync(path.join(javaDir,'AppChromePlugin.java'),appChrome);
 fs.writeFileSync(path.join(javaDir,'HkRemindersPlugin.java'),hkReminders);
 fs.writeFileSync(path.join(javaDir,'HkReminderReceiver.java'),hkReminderReceiver);
 fs.writeFileSync(path.join(javaDir,'HkBootReceiver.java'),hkBootReceiver);
+fs.writeFileSync(path.join(javaDir,'HkSpeechPlugin.java'),hkSpeech);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -1183,6 +1291,9 @@ if(fs.existsSync(manifest)){
   }
   const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
+  if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
+  // اندروید ۱۱+: برای پیدا کردن سرویس تشخیص گفتار باید اعلام شود
+  if(!s.includes('android.speech.RecognitionService')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n    </queries>\n</manifest>');
   if(!s.includes('android.permission.RECEIVE_BOOT_COMPLETED')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>');
   if(!s.includes('.HkReminderReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkReminderReceiver" android:exported="false"/>\n    </application>');
   if(!s.includes('.HkBootReceiver')) s=s.replace('</application>',
