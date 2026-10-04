@@ -46,18 +46,29 @@ public class BankSmsReceiver extends BroadcastReceiver {
         JSONObject x=q.optJSONObject(i);
         if(x!=null && text.equals(x.optString("text")) && now-x.optLong("receivedAt",0)<60000) return;
       }
-      JSONObject item=new JSONObject(); item.put("text",text); item.put("sender",sender==null?"":sender); item.put("receivedAt",ts>0?ts:now);
+      int nid=(int)(now&0x7fffffff);
+      JSONObject item=new JSONObject(); item.put("text",text); item.put("sender",sender==null?"":sender); item.put("receivedAt",ts>0?ts:now); item.put("nid",nid);
       q.put(item);
       while(q.length()>20){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
       sp.edit().putString(QUEUE,q.toString()).apply();
-      postNotification(context,text);
+      postNotification(context,text,nid);
     }catch(Exception ignored){}
   }
 
   static String normFa(String s){
     if(s==null) return "";
     String r=s.toLowerCase(java.util.Locale.ROOT);
-    return r.replace('\\u0643','\\u06a9').replace('\\u064a','\\u06cc').replace('\\u0649','\\u06cc');
+    r=r.replace('\\u0643','\\u06a9').replace('\\u064a','\\u06cc').replace('\\u0649','\\u06cc')
+       .replace('\\u0629','\\u0647').replace('\\u06c0','\\u0647').replace('\\u0623','\\u0627').replace('\\u0625','\\u0627')
+       .replace('\\u066c',',').replace('\\u066b','.').replace("\\u200c"," ").replace("\\u0640","");
+    StringBuilder b=new StringBuilder(r.length());
+    for(int i=0;i<r.length();i++){
+      char c=r.charAt(i);
+      if(c>='\\u06f0'&&c<='\\u06f9') c=(char)('0'+(c-'\\u06f0'));
+      else if(c>='\\u0660'&&c<='\\u0669') c=(char)('0'+(c-'\\u0660'));
+      b.append(c);
+    }
+    return b.toString();
   }
 
   static boolean looksLikeBankTransaction(String s, String sender){
@@ -88,6 +99,14 @@ public class BankSmsReceiver extends BroadcastReceiver {
     if(t.contains("شارژ") && !bankCharge && !t.contains("مانده") && !t.contains("موجودی") && !t.contains("حساب")) {
       return false;
     }
+    // تراکنش ناموفق ثبت نشود
+    if(t.contains("ناموفق") || t.contains("عدم موفق") || t.contains("انجام نشد") || t.contains("رد شد")
+        || t.contains("کافی نیست") || t.contains("عدم کفایت")) return false;
+    boolean hasBal0 = t.contains("مانده") || t.contains("موجودی");
+    // اطلاعیه/یادآوری/تبلیغ بدون خط مانده → تراکنش نیست
+    if(!hasBal0 && (t.contains("یادآوری") || t.contains("سررسید") || t.contains("اطلاعیه") || t.contains("مهلت")
+        || t.contains("http") || t.contains("www.") || t.contains("لغو") || t.contains("جشنواره") || t.contains("قرعه")
+        || t.contains("تخفیف") || t.contains("جایزه") || t.contains("نصب") || t.contains("ثبت نام"))) return false;
     // فقط پیامک‌های واقعی بانکی
     boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
         || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
@@ -112,7 +131,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     return false;
   }
 
-  static void postNotification(Context c,String text){
+  static void postNotification(Context c,String text,int nid){
     if(Build.VERSION.SDK_INT>=33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return;
     NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
     if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); nm.createNotificationChannel(ch); }
@@ -121,7 +140,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     PendingIntent pi=PendingIntent.getActivity(c,1001,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     String shortText=text.replace('\\n',' '); if(shortText.length()>110) shortText=shortText.substring(0,110)+"…";
     NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("تراکنش بانکی جدید").setContentText(shortText).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setContentIntent(pi).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
-    nm.notify((int)(System.currentTimeMillis()&0x7fffffff),b.build());
+    nm.notify(nid,b.build());
   }
 }
 `;
@@ -150,11 +169,36 @@ public class BankSmsPlugin extends Plugin {
   @PermissionCallback private void smsPerm(PluginCall call){ call.resolve(new JSObject().put("granted",getPermissionState("sms")==com.getcapacitor.PermissionState.GRANTED)); }
   @com.getcapacitor.PluginMethod public void getPendingSms(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    try{ JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); if(q.length()==0){call.resolve(new JSObject().put("has",false));return;} JSONObject x=q.getJSONObject(0); JSObject r=new JSObject(); r.put("has",true); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); call.resolve(r); }catch(Exception e){call.reject("pending_sms_error",e);}
+    try{ JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); if(q.length()==0){call.resolve(new JSObject().put("has",false));return;} JSONObject x=q.getJSONObject(0); JSObject r=new JSObject(); r.put("has",true); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); r.put("nid",x.optInt("nid",0)); r.put("count",q.length()); call.resolve(r); }catch(Exception e){call.reject("pending_sms_error",e);}
   }
   @com.getcapacitor.PluginMethod public void markHandled(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     try{ JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); JSONArray n=new JSONArray(); for(int i=1;i<q.length();i++) n.put(q.get(i)); sp.edit().putString(QUEUE,n.toString()).apply(); call.resolve(); }catch(Exception e){call.reject("pending_sms_error",e);}
+  }
+  /** هماهنگی خوانده/نخوانده: وقتی پیامک داخل اپ نمایش داده شد، نوتیف همان پیامک (و عدد روی آیکن) حذف شود */
+  @com.getcapacitor.PluginMethod public void cancelNotification(PluginCall call){
+    try{
+      int id=call.getInt("id",0);
+      android.app.NotificationManager nm=(android.app.NotificationManager)getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      if(nm!=null && id!=0) nm.cancel(id);
+      call.resolve();
+    }catch(Exception e){ call.reject("cancel_failed",e); }
+  }
+  /** همهٔ نوتیف‌های تراکنش بانکی که دیگر در صف نیستند پاک شوند (مثلاً بعد از خواندن همه داخل اپ) */
+  @com.getcapacitor.PluginMethod public void cancelHandledNotifications(PluginCall call){
+    try{
+      android.app.NotificationManager nm=(android.app.NotificationManager)getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+      SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+      JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
+      java.util.HashSet<Integer> keep=new java.util.HashSet<>();
+      for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null) keep.add(x.optInt("nid",0)); }
+      if(nm!=null && android.os.Build.VERSION.SDK_INT>=23){
+        for(android.service.notification.StatusBarNotification sbn: nm.getActiveNotifications()){
+          if(sbn.getNotification()!=null && BankSmsReceiver.CHANNEL.equals(android.os.Build.VERSION.SDK_INT>=26?sbn.getNotification().getChannelId():BankSmsReceiver.CHANNEL) && !keep.contains(sbn.getId())) nm.cancel(sbn.getId());
+        }
+      }
+      call.resolve();
+    }catch(Exception e){ call.reject("cancel_failed",e); }
   }
   @com.getcapacitor.PluginMethod public void clearPending(PluginCall call){ getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().remove(QUEUE).apply(); call.resolve(); }
 }
@@ -895,6 +939,199 @@ public class AppLockPlugin extends Plugin {
 }
 `;
 
+// یادآورهای کاربر: نوتیف سیستمی زمان‌بندی‌شده (AlarmManager) + تنظیم دوباره بعد از ری‌استارت/آپدیت
+const hkReminders=`package ${pkg};
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+@CapacitorPlugin(name="HkReminders")
+public class HkRemindersPlugin extends Plugin {
+  static final String PREFS="hk_reminders";
+  static final String KEY="items";
+  static final String ACTION="ir.hesabketab.app.USER_REMINDER";
+
+  @com.getcapacitor.PluginMethod public void schedule(PluginCall call){
+    try{
+      JSArray arr=call.getArray("items");
+      Context c=getContext();
+      cancelAll(c);
+      JSONArray keep=new JSONArray();
+      long now=System.currentTimeMillis();
+      if(arr!=null){
+        for(int i=0;i<arr.length() && keep.length()<64;i++){
+          JSONObject o=arr.optJSONObject(i);
+          if(o==null) continue;
+          long at=o.optLong("at",0);
+          if(at<=now) continue;
+          JSONObject x=new JSONObject();
+          x.put("id",o.optInt("id",1000+i)); x.put("at",at);
+          x.put("title",o.optString("title","یادآور")); x.put("body",o.optString("body",""));
+          keep.put(x);
+        }
+      }
+      c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().putString(KEY,keep.toString()).apply();
+      armAll(c);
+      JSObject r=new JSObject(); r.put("scheduled",keep.length()); call.resolve(r);
+    }catch(Exception e){ call.reject("reminder_schedule_failed",e); }
+  }
+
+  static JSONArray load(Context c){
+    try{ return new JSONArray(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString(KEY,"[]")); }catch(Exception e){ return new JSONArray(); }
+  }
+  static PendingIntent pending(Context c,JSONObject x){
+    Intent i=new Intent(c,HkReminderReceiver.class);
+    i.setAction(ACTION);
+    i.putExtra("id",x.optInt("id")); i.putExtra("title",x.optString("title")); i.putExtra("body",x.optString("body"));
+    return PendingIntent.getBroadcast(c,x.optInt("id"),i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+  }
+  static void cancelAll(Context c){
+    AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+    if(am==null) return;
+    JSONArray q=load(c);
+    for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null){ try{ am.cancel(pending(c,x)); }catch(Exception ignored){} } }
+  }
+  static void armAll(Context c){
+    AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+    if(am==null) return;
+    JSONArray q=load(c);
+    long now=System.currentTimeMillis();
+    for(int i=0;i<q.length();i++){
+      JSONObject x=q.optJSONObject(i);
+      if(x==null) continue;
+      long at=x.optLong("at",0);
+      if(at<=now) continue;
+      PendingIntent pi=pending(c,x);
+      try{
+        boolean exact=Build.VERSION.SDK_INT<31 || am.canScheduleExactAlarms();
+        if(exact && Build.VERSION.SDK_INT>=23) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,at,pi);
+        else if(Build.VERSION.SDK_INT>=23) am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,at,pi);
+        else am.set(AlarmManager.RTC_WAKEUP,at,pi);
+      }catch(Exception e){
+        try{ am.set(AlarmManager.RTC_WAKEUP,at,pi); }catch(Exception ignored){}
+      }
+    }
+  }
+  static void forget(Context c,int id){
+    try{
+      JSONArray q=load(c), n=new JSONArray();
+      for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null && x.optInt("id")!=id) n.put(x); }
+      c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().putString(KEY,n.toString()).apply();
+    }catch(Exception ignored){}
+  }
+}
+`;
+
+const hkReminderReceiver=`package ${pkg};
+
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.core.app.NotificationCompat;
+
+/** فقط آلارم‌های خود اپ (exported=false) */
+public class HkReminderReceiver extends BroadcastReceiver {
+  static final String CHANNEL="user_reminders";
+  @Override public void onReceive(Context c, Intent in){
+    if(in==null || !HkRemindersPlugin.ACTION.equals(in.getAction())) return;
+    int id=in.getIntExtra("id",0);
+    HkRemindersPlugin.forget(c,id);
+    if(Build.VERSION.SDK_INT>=33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return;
+    NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
+    if(nm==null) return;
+    if(Build.VERSION.SDK_INT>=26){ nm.createNotificationChannel(new NotificationChannel(CHANNEL,"یادآورها",NotificationManager.IMPORTANCE_HIGH)); }
+    Intent open=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+    PendingIntent pi=null;
+    if(open!=null){ open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); pi=PendingIntent.getActivity(c,2002,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE); }
+    String title=in.getStringExtra("title"); String body=in.getStringExtra("body");
+    NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL)
+      .setSmallIcon(android.R.drawable.ic_popup_reminder)
+      .setContentTitle(title==null?"یادآور":title)
+      .setContentText(body==null?"":body)
+      .setStyle(new NotificationCompat.BigTextStyle().bigText(body==null?"":body))
+      .setAutoCancel(true)
+      .setCategory(NotificationCompat.CATEGORY_REMINDER)
+      .setPriority(NotificationCompat.PRIORITY_HIGH);
+    if(pi!=null) b.setContentIntent(pi);
+    nm.notify(id,b.build());
+  }
+}
+`;
+
+const hkBootReceiver=`package ${pkg};
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+
+/** بعد از روشن شدن گوشی یا به‌روزرسانی اپ، آلارم‌های یادآور دوباره تنظیم شوند (آلارم‌ها با ری‌استارت پاک می‌شوند) */
+public class HkBootReceiver extends BroadcastReceiver {
+  @Override public void onReceive(Context c, Intent in){
+    String a=in==null?null:in.getAction();
+    if(Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)
+        || "android.intent.action.QUICKBOOT_POWERON".equals(a)){
+      try{ HkRemindersPlugin.armAll(c); }catch(Exception ignored){}
+    }
+  }
+}
+`;
+
+// رنگ زمینهٔ نوارهای سیستم (پشت نوار وضعیت و ناوبری) هم‌رنگ تم اپ + رنگ آیکن‌های نوار
+const appChrome=`package ${pkg};
+
+import android.graphics.Color;
+import android.view.View;
+import android.view.Window;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+@CapacitorPlugin(name="AppChrome")
+public class AppChromePlugin extends Plugin {
+  static void apply(android.app.Activity act, int color, boolean light){
+    if(act==null) return;
+    Window w=act.getWindow();
+    View decor=w.getDecorView();
+    decor.setBackgroundColor(color);
+    try{
+      View wv=null;
+      try{ wv=((com.getcapacitor.BridgeActivity)act).getBridge().getWebView(); }catch(Exception ignored){}
+      if(wv!=null){ wv.setBackgroundColor(color); if(wv.getParent() instanceof View) ((View)wv.getParent()).setBackgroundColor(color); }
+    }catch(Exception ignored){}
+    WindowInsetsControllerCompat ic=WindowCompat.getInsetsController(w,decor);
+    ic.setAppearanceLightStatusBars(light);
+    ic.setAppearanceLightNavigationBars(light);
+  }
+  @com.getcapacitor.PluginMethod public void setTheme(final PluginCall call){
+    final String hex=call.getString("color","#1b1b1b");
+    final boolean light=Boolean.TRUE.equals(call.getBoolean("light",false));
+    getActivity().runOnUiThread(new Runnable(){ @Override public void run(){
+      try{ apply(getActivity(), Color.parseColor(hex), light); call.resolve(); }
+      catch(Exception e){ call.reject("app_chrome_failed",e); }
+    }});
+  }
+}
+`;
+
 const main=`package ${pkg};
 
 import android.Manifest;
@@ -908,7 +1145,11 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(BankSmsPlugin.class);
     registerPlugin(NativeFileExportPlugin.class);
     registerPlugin(AppLockPlugin.class);
+    registerPlugin(AppChromePlugin.class);
+    registerPlugin(HkRemindersPlugin.class);
     super.onCreate(savedInstanceState);
+    // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض اپ پشت نوارهای سیستم (جلوگیری از نوار سفید)
+    try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
     java.util.ArrayList<String> needed=new java.util.ArrayList<>();
     if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
     if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.POST_NOTIFICATIONS);
@@ -922,6 +1163,10 @@ fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
 fs.writeFileSync(path.join(javaDir,'AppLockPlugin.java'),appLockPlugin);
 fs.writeFileSync(path.join(javaDir,'NativeFileExportPlugin.java'),nativeExport);
 fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
+fs.writeFileSync(path.join(javaDir,'AppChromePlugin.java'),appChrome);
+fs.writeFileSync(path.join(javaDir,'HkRemindersPlugin.java'),hkReminders);
+fs.writeFileSync(path.join(javaDir,'HkReminderReceiver.java'),hkReminderReceiver);
+fs.writeFileSync(path.join(javaDir,'HkBootReceiver.java'),hkBootReceiver);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -938,6 +1183,16 @@ if(fs.existsSync(manifest)){
   }
   const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
+  if(!s.includes('android.permission.RECEIVE_BOOT_COMPLETED')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>');
+  if(!s.includes('.HkReminderReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkReminderReceiver" android:exported="false"/>\n    </application>');
+  if(!s.includes('.HkBootReceiver')) s=s.replace('</application>',
+    '        <receiver android:name=".HkBootReceiver" android:exported="true">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n' +
+    '                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n' +
+    '                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n' +
+    '            </intent-filter>\n' +
+    '        </receiver>\n    </application>');
   // FileProvider for Sharesheet
   if(!s.includes('.fileprovider')){
     const providerTag =
