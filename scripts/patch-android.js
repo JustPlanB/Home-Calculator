@@ -372,7 +372,8 @@ public class NativeFileExportPlugin extends Plugin {
         host.setBackgroundColor(android.graphics.Color.WHITE);
         final int viewW = 794; // A4 width at 96dpi CSS px
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 1600);
-        root.addView(host,hp);
+        // پشت محتوای اپ (اندیس ۰): همان چیدمان و رندر قبلی، ولی صفحه‌های گزارش روی صفحه دیده نمی‌شوند
+        root.addView(host,0,hp);
 
         final WebView web=new WebView(getContext());
         web.setBackgroundColor(android.graphics.Color.WHITE);
@@ -1279,6 +1280,110 @@ public class AppChromePlugin extends Plugin {
 }
 `;
 
+const hkUpdater=`package ${pkg};
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
+import androidx.core.content.FileProvider;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+/** بروزرسانی داخل اپ: دانلود APK امضاشده از Releases با گزارش درصد، سپس باز کردن نصب‌کنندهٔ اندروید */
+@CapacitorPlugin(name="HkUpdater")
+public class HkUpdaterPlugin extends Plugin {
+  private volatile boolean busy=false;
+
+  private static boolean allowed(String u){
+    return u!=null && u.startsWith("https://") && (u.startsWith("https://github.com/") || u.startsWith("https://objects.githubusercontent.com/") || u.startsWith("https://release-assets.githubusercontent.com/"));
+  }
+
+  @com.getcapacitor.PluginMethod public void download(final PluginCall call){
+    final String url=call.getString("url","");
+    if(!allowed(url)){ call.reject("bad_url"); return; }
+    if(busy){ call.reject("busy"); return; }
+    busy=true;
+    new Thread(new Runnable(){ @Override public void run(){
+      HttpURLConnection c=null;
+      try{
+        File dir=new File(getContext().getCacheDir(),"updates");
+        if(!dir.exists()) dir.mkdirs();
+        File out=new File(dir,"hesab-ketab.apk");
+        File tmp=new File(dir,"hesab-ketab.apk.part");
+        String cur=url;
+        for(int hop=0; hop<6; hop++){
+          c=(HttpURLConnection)new URL(cur).openConnection();
+          c.setInstanceFollowRedirects(false);
+          c.setConnectTimeout(15000);
+          c.setReadTimeout(30000);
+          c.setRequestProperty("User-Agent","HesabKetab-Updater");
+          int code=c.getResponseCode();
+          if(code>=300 && code<400){
+            String loc=c.getHeaderField("Location");
+            c.disconnect(); c=null;
+            if(loc==null || !allowed(loc)) throw new Exception("bad_redirect");
+            cur=loc; continue;
+          }
+          if(code!=200) throw new Exception("http_"+code);
+          break;
+        }
+        if(c==null) throw new Exception("too_many_redirects");
+        long total=c.getContentLengthLong();
+        InputStream in=c.getInputStream();
+        FileOutputStream fo=new FileOutputStream(tmp);
+        byte[] buf=new byte[65536];
+        long got=0; int last=-1; int n;
+        while((n=in.read(buf))!=-1){
+          fo.write(buf,0,n); got+=n;
+          int pct= total>0 ? (int)Math.min(100, (got*100)/total) : -1;
+          if(pct!=last){ last=pct; JSObject ev=new JSObject(); ev.put("percent",pct); ev.put("received",got); ev.put("total",total); notifyListeners("progress",ev); }
+        }
+        fo.close(); in.close();
+        if(total>0 && got!=total) throw new Exception("incomplete");
+        if(out.exists()) out.delete();
+        if(!tmp.renameTo(out)) throw new Exception("rename_failed");
+        JSObject r=new JSObject(); r.put("path",out.getAbsolutePath()); r.put("size",got);
+        call.resolve(r);
+      }catch(Exception e){
+        call.reject(e.getMessage()==null?"download_failed":e.getMessage());
+      }finally{
+        try{ if(c!=null) c.disconnect(); }catch(Exception ignored){}
+        busy=false;
+      }
+    }}).start();
+  }
+
+  /** اگر اجازهٔ «نصب برنامه‌های ناشناس» برای این اپ داده نشده باشد، صفحهٔ تنظیمات همان اجازه باز می‌شود */
+  @com.getcapacitor.PluginMethod public void install(final PluginCall call){
+    try{
+      File f=new File(getContext().getCacheDir(),"updates/hesab-ketab.apk");
+      if(!f.exists()){ call.reject("no_file"); return; }
+      if(Build.VERSION.SDK_INT>=26 && !getContext().getPackageManager().canRequestPackageInstalls()){
+        Intent s=new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:"+getContext().getPackageName()));
+        s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(s);
+        call.reject("need_permission");
+        return;
+      }
+      Uri u=FileProvider.getUriForFile(getContext(), getContext().getPackageName()+".fileprovider", f);
+      Intent i=new Intent(Intent.ACTION_VIEW);
+      i.setDataAndType(u,"application/vnd.android.package-archive");
+      i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(i);
+      call.resolve();
+    }catch(Exception e){ call.reject("install_failed",e); }
+  }
+}
+`;
+
 const main=`package ${pkg};
 
 import android.Manifest;
@@ -1295,6 +1400,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(AppChromePlugin.class);
     registerPlugin(HkRemindersPlugin.class);
     registerPlugin(HkSpeechPlugin.class);
+    registerPlugin(HkUpdaterPlugin.class);
     super.onCreate(savedInstanceState);
     // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض اپ پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
@@ -1316,6 +1422,7 @@ fs.writeFileSync(path.join(javaDir,'HkRemindersPlugin.java'),hkReminders);
 fs.writeFileSync(path.join(javaDir,'HkReminderReceiver.java'),hkReminderReceiver);
 fs.writeFileSync(path.join(javaDir,'HkBootReceiver.java'),hkBootReceiver);
 fs.writeFileSync(path.join(javaDir,'HkSpeechPlugin.java'),hkSpeech);
+fs.writeFileSync(path.join(javaDir,'HkUpdaterPlugin.java'),hkUpdater);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -1335,6 +1442,8 @@ if(fs.existsSync(manifest)){
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
   // اندروید ۱۱+: برای پیدا کردن سرویس تشخیص گفتار باید اعلام شود
   if(!s.includes('android.speech.RecognitionService')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n    </queries>\n</manifest>');
+  // بروزرسانی داخل اپ: باز کردن نصب‌کنندهٔ اندروید برای APK دانلودشده
+  if(!s.includes('android.permission.REQUEST_INSTALL_PACKAGES')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>');
   if(!s.includes('android.permission.RECEIVE_BOOT_COMPLETED')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>');
   if(!s.includes('.HkReminderReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkReminderReceiver" android:exported="false"/>\n    </application>');
   if(!s.includes('.HkBootReceiver')) s=s.replace('</application>',
@@ -1371,6 +1480,7 @@ fs.writeFileSync(filePaths,
 `<?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="share_cache" path="share/" />
+    <cache-path name="updates" path="updates/" />
 </paths>
 `);
 

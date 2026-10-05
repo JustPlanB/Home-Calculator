@@ -10166,7 +10166,43 @@
     /* جستجو: ستون بانک — یک خط، با سه‌نقطه اگر بلند بود */
     #searchResultBox td.sr-bank { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
     .upd-hint { font-size: 0.75rem; line-height: 1.7; color: var(--muted); margin: 8px 2px 4px; text-align: right; }
-    #updDlg .upd-go { display: block; width: 100%; min-height: 48px; border: none !important; border-radius: 12px !important; font-family: inherit; font-weight: 800; font-size: 0.95rem; margin: 6px 0; }
+    /* یادآور دارای نشان: همان استروک قرمز چرخان اقساط */
+    #userRemindersModal .ur-item.ur-alert { position: relative; isolation: isolate; border-color: transparent !important; }
+    #userRemindersModal .ur-item.ur-alert::before {
+      content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 2px; box-sizing: border-box;
+      background: conic-gradient(from var(--inst-spin, 0deg), transparent 0deg, transparent 250deg, rgba(255, 59, 48, 0.22) 280deg, #ff3b30 310deg, #ff8a80 330deg, #c62828 350deg, transparent 360deg);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude;
+      animation: instAlertSpin 2.4s linear infinite; pointer-events: none; z-index: 3;
+    }
+    /* پنجرهٔ بروزرسانی: دکمه‌ها هم‌سبک باکس‌های اپ (سطح فرورفته با اینرشدو) + لولهٔ درصد دانلود */
+    #updDlg .upd-go {
+      display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 54px; margin: 8px 0;
+      border: none !important; border-radius: 14px !important; cursor: pointer; -webkit-tap-highlight-color: transparent;
+      background: #1b1b1b !important; color: #ffffff !important; font-family: inherit; font-weight: 800; font-size: 0.95rem;
+      box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
+    }
+    #updDlg .upd-go.upd-dl { color: #00b7ff !important; }
+    #updDlg .upd-go svg { width: 22px; height: 22px; fill: none; stroke: #00b7ff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    #updDlg .upd-go:active { transform: scale(0.98); }
+    html[data-theme="light"] #updDlg .upd-go { background: var(--lt-surface) !important; color: var(--text) !important; box-shadow: var(--lt-neu-in) !important; }
+    html[data-theme="light"] #updDlg .upd-go.upd-dl { color: #0086c3 !important; }
+    #updDlg .upd-progress { margin: 10px 0 4px; }
+    #updDlg .upd-pct { text-align: center; font-weight: 800; font-size: 1.05rem; color: #00b7ff; margin-bottom: 8px; min-height: 1.4em; }
+    #updDlg .upd-tube {
+      position: relative; height: 16px; border-radius: 8px; overflow: hidden; background: #1b1b1b;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.75), inset -1px -1px 3px rgba(255,255,255,0.10);
+    }
+    #updDlg .upd-tube i {
+      position: absolute; top: 0; bottom: 0; right: 0; width: 0%; border-radius: 8px;
+      background: linear-gradient(to left, #00b7ff, #4fd1ff); box-shadow: 0 0 8px rgba(0,183,255,0.45); transition: width 0.25s ease;
+    }
+    #updDlg .upd-progress.indet .upd-tube i { width: 35% !important; animation: updIndet 1.2s ease-in-out infinite; }
+    @keyframes updIndet { 0% { right: -35%; } 100% { right: 100%; } }
+    #updDlg .upd-progress.err .upd-tube i { background: #ff6b4a; box-shadow: none; }
+    #updDlg .upd-status { margin-top: 10px; font-size: 0.82rem; line-height: 1.7; color: var(--muted); text-align: center; }
+    html[data-theme="light"] #updDlg .upd-tube { background: var(--lt-sunken); box-shadow: inset 1px 1px 3px rgba(0,0,0,0.15); }
+    #updDlg [hidden] { display: none !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -10519,9 +10555,9 @@
             <thead>
               <tr>
                 <th style="text-align:right;padding-right:12px;width:34%;">شرح</th>
-                <th style="width:20%;">بانک</th>
                 <th style="width:21%;">تاریخ</th>
                 <th style="width:25%;">مبلغ</th>
+                <th style="width:20%;">بانک</th>
               </tr>
             </thead>
             <tbody id="search-result-body"></tbody>
@@ -10908,7 +10944,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۱';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۲';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -20975,6 +21011,10 @@ async function openPdfPrintWindow(){
       root.querySelector('.tour-prev').onclick = function () { if (i > 0) { i--; show(); } };
       root.querySelector('.tour-skip').onclick = close;
       root._close = close;
+      /* لمس بیرون از دکمه‌های تور: هیچ کاری نکند و به صفحهٔ زیر نرسد */
+      ['click', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(function (ev) {
+        root.addEventListener(ev, function (e) { if (!(e.target.closest && e.target.closest('.tour-actions button'))) e.stopPropagation(); }, false);
+      });
       window.addEventListener('resize', show);
       requestAnimationFrame(function () { root.classList.add('on'); show(); });
     }
@@ -28967,8 +29007,15 @@ if (item.type === 'recurring') {
       else setTimeout(go, 2500);
       document.addEventListener('visibilitychange', function () { if (!document.hidden) go(); });
     })();
+    /* یادآورهایی که نشان عددی داشتند: استروک قرمز چرخان (مثل اقساط) تا وقتی منو باز است */
+    var _remindFlash = {};
     function openUserRemindersModal() {
       try { closeSideMenu(); } catch (e) {}
+      try {
+        var _seenR = {}; (JSON.parse(localStorage.getItem(REMIND_SEEN_KEY) || '[]') || []).forEach(function (k) { _seenR[k] = 1; });
+        _remindFlash = {};
+        remindAlertKeys().forEach(function (k) { if (!_seenR[k]) _remindFlash[k.slice(0, k.lastIndexOf(':'))] = 1; });
+      } catch (eF) { _remindFlash = {}; }
       try { markRemindAlertsSeen(); } catch (eS) {}
       loadUserReminders();
       renderUserRemindersList();
@@ -28976,6 +29023,8 @@ if (item.type === 'recurring') {
       if (m) m.classList.add('open');
     }
     function closeUserRemindersModal() {
+      _remindFlash = {};
+      try { document.querySelectorAll('#userRemindersModal .ur-item.ur-alert').forEach(function (c) { c.classList.remove('ur-alert'); }); } catch (eC) {}
       const m = document.getElementById('userRemindersModal');
       if (m) m.classList.remove('open');
     }
@@ -29062,6 +29111,7 @@ if (item.type === 'recurring') {
         else badge = '<span class="ur-badge">' + toPersianDigits(days) + ' روز مانده</span>';
         const el = document.createElement('div');
         el.className = 'ur-item';
+        try { if (_remindFlash[String(r.id || r.title || 'r')]) el.classList.add('ur-alert'); } catch (eUA) {}
         el.innerHTML =
           '<div class="ur-title">' + escapeHtml(r.title || 'بدون عنوان') + '</div>' +
           '<div class="ur-meta">سررسید: ' + formatReminderDue(due) + ' · ' + reminderRepeatLabel(r) +
@@ -32707,13 +32757,63 @@ function openProjectRowPicker(secId) {
       ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">نسخهٔ جدید ' + escapeHtml(toPersianDigits(String(m.versionName || ''))) + ' آماده است</div>' +
         '<div class="upd-cur">نسخهٔ نصب‌شده: ' + escapeHtml(toPersianDigits(inst.name || '—')) + '</div>' +
         (notes.length ? '<ul class="upd-notes">' + notes.slice(0, 12).map(function (n) { return '<li>' + escapeHtml(String(n)) + '</li>'; }).join('') + '</ul>' : '') +
-        '<div class="upd-links">' + links.map(function (l, i) { return '<button type="button" class="backup-pick-ok upd-go" data-i="' + i + '">' + escapeHtml(l[0]) + '</button>'; }).join('') + '</div>' +
-        (m.apk ? '<div class="upd-hint">بعد از دانلود، روی فایل در اعلان‌ها بزنید و «نصب» را انتخاب کنید. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
+        '<div class="upd-links">' + links.map(function (l, i) {
+          var isApk = (l[1] === m.apk);
+          return '<button type="button" class="upd-go' + (isApk ? ' upd-dl' : '') + '" data-i="' + i + '">' +
+            (isApk ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>' : '') + '<span>' + escapeHtml(l[0]) + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="upd-progress" hidden><div class="upd-pct">۰٪</div><div class="upd-tube"><i></i></div><div class="upd-status">در حال دانلود…</div><div class="upd-more"></div></div>' +
+        (m.apk ? '<div class="upd-hint">نسخهٔ جدید داخل همین پنجره دانلود و نصب می‌شود. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
         '<div class="backup-pick-actions"><button type="button" class="backup-pick-cancel" id="updLater">بعداً</button></div></div>';
       document.body.appendChild(ov);
-      ov.querySelectorAll('.upd-go').forEach(function (b) { b.onclick = function () { openUpdateLink(links[+b.getAttribute('data-i')][1]); }; });
+      ov.querySelectorAll('.upd-go').forEach(function (b) { b.onclick = function () {
+        var url = links[+b.getAttribute('data-i')][1];
+        if (url === m.apk) startInAppUpdate(ov, url); else openUpdateLink(url);
+      }; });
       ov.querySelector('#updLater').onclick = function () { ov.remove(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    }
+    /* دانلود داخل اپ با لولهٔ درصد (افزونهٔ نیتیو HkUpdater)؛ اگر در دسترس نبود: دانلود با مرورگر */
+    function startInAppUpdate(ov, url) {
+      var C = window.Capacitor, P = C && C.Plugins && C.Plugins.HkUpdater;
+      var native = false; try { native = !!(C && C.isNativePlatform && C.isNativePlatform()); } catch (e) {}
+      if (!native || !P || typeof P.download !== 'function') { openUpdateLink(url); return; }
+      var box = ov.querySelector('.upd-progress'), links = ov.querySelector('.upd-links'), hint = ov.querySelector('.upd-hint');
+      var fill = box.querySelector('.upd-tube i'), pct = box.querySelector('.upd-pct'), st = box.querySelector('.upd-status'), more = box.querySelector('.upd-more');
+      links.hidden = true; if (hint) hint.hidden = true; box.hidden = false; more.innerHTML = '';
+      box.classList.remove('err', 'indet'); fill.style.width = '0%'; pct.textContent = toPersianDigits('0') + '٪'; st.textContent = 'در حال دانلود…';
+      var set = function (v) {
+        if (v < 0) { box.classList.add('indet'); pct.textContent = ''; return; }
+        box.classList.remove('indet'); v = Math.max(0, Math.min(100, v));
+        fill.style.width = v + '%'; pct.textContent = toPersianDigits(String(v)) + '٪';
+      };
+      var handle = null;
+      var cleanup = function () { try { handle && handle.remove && handle.remove(); } catch (e) {} handle = null; };
+      var btn = function (label, fn, cls) { var b = document.createElement('button'); b.type = 'button'; b.className = 'upd-go ' + (cls || ''); b.innerHTML = '<span>' + label + '</span>'; b.onclick = fn; more.appendChild(b); };
+      var install = function () {
+        more.innerHTML = ''; st.textContent = 'در حال باز کردن نصب‌کننده…';
+        Promise.resolve(P.install()).then(function () {
+          st.textContent = 'در پنجرهٔ اندروید «نصب» را بزنید.';
+        }).catch(function (e) {
+          var msg = String((e && (e.message || e.code)) || e || '');
+          if (/need_permission/.test(msg)) {
+            st.textContent = 'در صفحهٔ بازشده اجازهٔ «نصب برنامه‌های ناشناس» را برای حساب‌کتاب روشن کنید، برگردید و «نصب» را بزنید.';
+            btn('نصب', install, 'upd-dl');
+            var onVis = function () { if (!document.hidden) { document.removeEventListener('visibilitychange', onVis); setTimeout(install, 400); } };
+            document.addEventListener('visibilitychange', onVis);
+          } else {
+            st.textContent = 'باز کردن نصب‌کننده ممکن نشد.'; box.classList.add('err');
+            btn('تلاش دوباره', install, 'upd-dl'); btn('دانلود با مرورگر', function () { openUpdateLink(url); });
+          }
+        });
+      };
+      Promise.resolve(P.addListener('progress', function (e) { set(e && typeof e.percent === 'number' ? e.percent : -1); })).then(function (h) { handle = h; }).catch(function () {});
+      Promise.resolve(P.download({ url: url })).then(function () {
+        cleanup(); set(100); box.classList.add('done'); install();
+      }).catch(function () {
+        cleanup(); box.classList.add('err'); st.textContent = 'دانلود کامل نشد. اتصال اینترنت را بررسی کنید.';
+        btn('تلاش دوباره', function () { startInAppUpdate(ov, url); }, 'upd-dl'); btn('دانلود با مرورگر', function () { openUpdateLink(url); });
+      });
     }
     function setUpdateBadge(on) {
       document.querySelectorAll('.menu-update-btn').forEach(function (b) { b.classList.toggle('has-update', !!on); });
@@ -33053,7 +33153,8 @@ function openProjectRowPicker(secId) {
       if(_backHandling) return;
       _backHandling=true;
       setTimeout(()=>{_backHandling=false;},250);
-      try { if (closeAppTour()) return; } catch (eTour) {}
+      /* تور فقط با «رد کردن» بسته می‌شود؛ بازگشت گوشی آن را نمی‌بندد */
+      try { if (document.getElementById('appTour')) return; } catch (eTour) {}
       try { if (closeVoiceInput(true)) return; } catch (eVoice) {}
       try {
         if (typeof _instantBalOpen !== 'undefined' && _instantBalOpen) {
@@ -34297,7 +34398,7 @@ function openProjectRowPicker(secId) {
         tdV.textContent = formatNum(it.amount);
         /* نتیجهٔ جستجو: مبلغ‌ها سفید (فارغ از درآمد/خرج) */
         tdV.style.setProperty('color', '#ffffff', 'important');
-        tr.appendChild(td); tr.appendChild(tdB); tr.appendChild(tdD); tr.appendChild(tdV);
+        tr.appendChild(td); tr.appendChild(tdD); tr.appendChild(tdV); tr.appendChild(tdB);
         body.appendChild(tr);
       });
       if (!list.length) {
@@ -34307,7 +34408,7 @@ function openProjectRowPicker(secId) {
         foot.innerHTML = '';
         var addF = function (label, v, color) {
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td></td><td class="val" style="color:' + color + '">' + formatNum(v) + '</td>';
+          tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td class="val" style="color:' + color + '">' + formatNum(v) + '</td><td></td>';
           foot.appendChild(tr);
         };
         if (sumI) addF('جمع درآمد', sumI, '#ffffff');
