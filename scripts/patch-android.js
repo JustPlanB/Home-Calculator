@@ -1596,6 +1596,11 @@ final class HkWidgetDraw {
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
+    /* هر کارت پس‌زمینهٔ خودش را دارد (کارت‌های StackView روی هم می‌لغزند) */
+    Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG);
+    bg.setColor(d.light?Color.parseColor("#FFFFFF"):Color.parseColor("#1B1B1B"));
+    float rr=Math.min(22*k, H/2f);
+    cv.drawRoundRect(new android.graphics.RectF(0,0,W,H), rr, rr, bg);
     float padX=16*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-10*k;
     String label=page==0?"موجودی":"خرج امروز";
     String val; boolean num=true; Typeface vf=BOLD; float vr=1.9f; int vc=text(d);
@@ -1691,7 +1696,8 @@ import android.widget.RemoteViews;
 
 /** ویجت یک‌خطی: موجودی؛ با اسکرول عمودی خرج امروز */
 public class HkWidgetSmallProvider extends AppWidgetProvider {
-  static final int LOOP_COUNT=2000;
+  /* دو کارت (موجودی، خرج امروز) در StackView با چرخش حلقه‌ای: هر کشیدن بالا/پایین دقیقاً یک کارت جابه‌جا می‌شود */
+  static final int LOOP_COUNT=2;
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
   }
@@ -1712,13 +1718,11 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
-      v.setInt(R.id.hk_ws_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       Intent svc=new Intent(ctx, HkWidgetListService.class);
       svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
       v.setRemoteAdapter(R.id.hk_ws_list, svc);
       v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
-      v.setScrollPosition(R.id.hk_ws_list, LOOP_COUNT/2);
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
       mgr.updateAppWidget(id, v);
       mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_ws_list);
@@ -1747,7 +1751,7 @@ public class HkWidgetListService extends RemoteViewsService {
       public void onCreate(){}
       public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); cache[0]=null; cache[1]=null; }
       public void onDestroy(){}
-      /* اسکرول بی‌پایان: صفحه‌ها پشت‌سرهم تکرار می‌شوند (زوج = موجودی، فرد = خرج امروز) */
+      /* ۰ = موجودی، ۱ = خرج امروز */
       public int getCount(){ return HkWidgetSmallProvider.LOOP_COUNT; }
       public RemoteViews getViewAt(int pos){
         if(d==null) d=HkWidgetDraw.load(ctx);
@@ -1941,10 +1945,9 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hk_ws_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/hk_widget_bg">
-    <ListView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none" android:listSelector="@android:color/transparent"/>
+    android:layout_height="match_parent">
+    <StackView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:loopViews="true"/>
 </FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
@@ -1952,8 +1955,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
 <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hk_wi_img"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:adjustViewBounds="true"
+    android:layout_height="match_parent"
     android:scaleType="fitXY"
     android:contentDescription="حساب‌کتاب"/>
 `);
