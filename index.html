@@ -10363,6 +10363,10 @@
     #smsConfirmMeta .sms-pro-block > .family-label:first-child { margin-top: 0 !important; }
     #smsConfirmMeta .sms-pro-block .sms-seg { margin-bottom: 0 !important; }
     #smsConfirmMeta > .fancy-select-wrap { margin-bottom: 7px !important; }
+    /* تفکیک موجودی هر حساب در پنل موجودی آنی */
+    .ib-acc-detail { font-size: 0.68rem; color: var(--muted); direction: rtl; text-align: right; padding: 0 34px 6px 8px; margin-top: -4px; line-height: 1.6; }
+    .ib-acc-detail .pos { color: #9ee858; } .ib-acc-detail .neg { color: #ff6b4a; }
+    html[data-theme="light"] .ib-acc-detail .pos { color: #2f7d32; } html[data-theme="light"] .ib-acc-detail .neg { color: #c62828; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -11120,7 +11124,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۳.۰';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۳.۱';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -20002,6 +20006,77 @@ async function openPdfPrintWindow(){
       if (prevVal != null) return prevVal;
       return bankFallback();
     }
+    /* —— همگام‌سازی «موجودی اولیهٔ بانک» با موجودی‌های اول‌ماهِ ذخیره‌شده ——
+       موجودی اول هر ماه (accountOpeningInstant) یک بار ذخیره می‌شود؛ قبلاً ویرایش موجودی اولیهٔ بانک
+       روی آن‌ها اثری نداشت و دو عدد متفاوت «پنهانی» کنار هم می‌ماندند. حالا ویرایش، ماه ایجاد حساب و
+       ماه‌های بعد را با همان اختلاف جابه‌جا می‌کند — فقط بعد از نمایش دقیق تغییرات و تأیید کاربر. */
+    function _openingPdOf(k) {
+      var cur = periodKey(currentYear, currentMonth);
+      return k === cur ? periodData : (archive && archive[k]);
+    }
+    function accountCreationYM(acc) {
+      var c = acc && acc.createdAt;
+      var y = c && parseInt(c.y, 10), m = c && parseInt(c.m, 10);
+      if (!y || !m) { y = currentYear; m = currentMonth; }
+      return { y: y, m: m };
+    }
+    /** مقدار ذخیره‌شدهٔ موجودی اول ماه ایجاد حساب (یا null) */
+    function storedCreationOpening(acc, label) {
+      try {
+        var c = accountCreationYM(acc); var pd = _openingPdOf(periodKey(c.y, c.m));
+        var v = pd && pd.accountOpeningInstant ? pd.accountOpeningInstant[label] : null;
+        if (v == null || v === '') return null;
+        return Number(v) || 0;
+      } catch (e) { return null; }
+    }
+    function planAccountOpeningSync(acc, label, newVal) {
+      var c = accountCreationYM(acc), ck = periodKey(c.y, c.m), startKey = c.y * 100 + c.m;
+      var stored = storedCreationOpening(acc, label);
+      var base = stored != null ? stored : (Number(acc && acc.openingBalance) || 0);
+      var delta = (Number(newVal) || 0) - base;
+      var plan = { delta: delta, changes: [], ck: ck, y: c.y, m: c.m };
+      if (!delta) return plan;
+      var cur = periodKey(currentYear, currentMonth);
+      var keys = Object.keys(archive || {}); if (keys.indexOf(cur) < 0) keys.push(cur);
+      keys.forEach(function (k) {
+        var pr = String(k).split('-'), y = parseInt(pr[0], 10), m = parseInt(pr[1], 10);
+        if (!y || !m || y * 100 + m < startKey) return;
+        var pd = _openingPdOf(k); if (!pd || !pd.accountOpeningInstant) return;
+        var v = pd.accountOpeningInstant[label]; if (v == null || v === '') return;
+        var from = Number(v) || 0;
+        plan.changes.push({ k: k, y: y, m: m, from: from, to: k === ck ? (Number(newVal) || 0) : from + delta });
+      });
+      plan.changes.sort(function (a, b) { return (a.y * 100 + a.m) - (b.y * 100 + b.m); });
+      return plan;
+    }
+    function applyAccountOpeningSync(label, plan) {
+      if (!plan || !plan.changes || !plan.changes.length) return;
+      var cur = periodKey(currentYear, currentMonth), touchedCur = false;
+      plan.changes.forEach(function (ch) {
+        var pd = _openingPdOf(ch.k); if (!pd) return;
+        if (!pd.accountOpeningInstant || typeof pd.accountOpeningInstant !== 'object') pd.accountOpeningInstant = {};
+        pd.accountOpeningInstant[label] = ch.to;
+        if (ch.k === cur) touchedCur = true;
+      });
+      try { if (touchedCur) persistCurrent(); } catch (e1) {}
+      try { saveArchive(); } catch (e2) {}
+    }
+    /** ورودی/خروجی پرداخت‌شدهٔ ماه جاری برای یک حساب (فقط نمایش) */
+    function accountMonthFlow(label) {
+      var inc = 0, exp = 0;
+      try {
+        ['income', 'expense'].forEach(function (tab) {
+          ((periodData && periodData[tab] && periodData[tab].sections) || []).forEach(function (sec) {
+            (sec && sec.rows || []).forEach(function (r) {
+              if (!r || (r.status || 'paid') !== 'paid') return;
+              if ((r.account || '').trim() !== label) return;
+              var a = Number(r.amount) || 0; if (tab === 'income') inc += a; else exp += a;
+            });
+          });
+        });
+      } catch (e) {}
+      return { inc: inc, exp: exp };
+    }
     function totalOpeningBalances() {
       let s = 0;
       (selectedBankAccounts || []).forEach(function(a) {
@@ -20147,6 +20222,12 @@ async function openPdfPrintWindow(){
             '<span class="ib-name">' + escapeHtml(k) + '</span>' +
             '</div>' +
             '<span class="ib-amt ib-amt-click ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
+          /* تفکیک شفاف: موجودی اول ماه + ورودی − خروجی = موجودی */
+          try {
+            var _op = Number(getAccountOpeningBalance(k)) || 0, _fl = accountMonthFlow(k);
+            html += '<div class="ib-acc-detail">اول ' + MONTHS[currentMonth - 1] + ' ' + formatNum(_op) +
+              ' <span class="pos">+ ' + formatNum(_fl.inc) + '</span> <span class="neg">− ' + formatNum(_fl.exp) + '</span></div>';
+          } catch (eDt) {}
         });
         if (!shown) {
           html += '<div class="instant-bal-row"><span class="ib-name">حسابی با موجودی نیست</span><span class="ib-amt">۰</span></div>';
@@ -29329,6 +29410,20 @@ if (item.type === 'recurring') {
       document.body.appendChild(editor);
       const inp = editor.querySelector('#bankAddNameInput');
       const balInp = editor.querySelector('#bankAddBalInput');
+      /* مغایرت: اگر موجودی اول ماهِ ذخیره‌شده با موجودی اولیهٔ این حساب فرق دارد، آشکارا نشان بده */
+      try {
+        if (isEdit && balInp) {
+          const _lb = accountLabel(acc), _st = storedCreationOpening(acc, _lb), _cy = accountCreationYM(acc);
+          if (_st != null && _st !== initBal) {
+            const note = document.createElement('div');
+            note.className = 'bank-open-mismatch';
+            note.style.cssText = 'margin:-4px 0 10px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,197,49,0.45);background:rgba(255,197,49,0.08);color:var(--text);font-size:0.76rem;line-height:1.75;';
+            note.textContent = 'اپ برای اول ' + MONTHS[_cy.m - 1] + ' ' + toPersianDigits(String(_cy.y)) + ' موجودی این حساب را ' + formatNum(_st) +
+              ' حساب می‌کند (نه ' + formatNum(initBal) + '). برای یکی شدن بدون تغییر موجودی‌ها، همان ' + formatNum(_st) + ' را ثبت کنید.';
+            balInp.insertAdjacentElement('afterend', note);
+          }
+        }
+      } catch (eMm) {}
       if (balInp) {
         balInp.addEventListener('input', function() {
           if (balInp.readOnly) return;
@@ -29389,16 +29484,38 @@ if (item.type === 'recurring') {
           const exists = selectedBankAccounts.some((a, i) => i !== idx && accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
           const oldLabelForMigrate = accountLabel(acc);
-          acc.label = name;
-          /* قبلاً فقط نام عوض می‌شد و موجودی اولیهٔ ثبت‌شده با نام قدیم «یتیم» می‌ماند (دوبار شمرده می‌شد) */
-          try { if (oldLabelForMigrate && oldLabelForMigrate !== name) { saveBankAccountsSelection(); migrateAccountLabel(oldLabelForMigrate, name); } } catch (eMig) {}
-          acc.openingBalance = openingBalance;
-          if (!acc.createdAt || !acc.createdAt.y) {
-            try {
-              var _tEdit = getTodayPersian();
-              acc.createdAt = { y: _tEdit.y, m: _tEdit.m, d: _tEdit.d };
-            } catch (eE) {}
+          /* تغییر موجودی اولیه → موجودی‌های اول‌ماهِ ذخیره‌شده هم هم‌گام شوند (با نمایش دقیق و تأیید) */
+          var _syncPlan = null;
+          try { if (openingBalance !== (Number(acc.openingBalance) || 0)) _syncPlan = planAccountOpeningSync(acc, oldLabelForMigrate, openingBalance); } catch (ePl) { _syncPlan = null; }
+          const _doEditSave = () => {
+            acc.label = name;
+            /* قبلاً فقط نام عوض می‌شد و موجودی اولیهٔ ثبت‌شده با نام قدیم «یتیم» می‌ماند (دوبار شمرده می‌شد) */
+            try { if (oldLabelForMigrate && oldLabelForMigrate !== name) { saveBankAccountsSelection(); migrateAccountLabel(oldLabelForMigrate, name); } } catch (eMig) {}
+            acc.openingBalance = openingBalance;
+            if (!acc.createdAt || !acc.createdAt.y) {
+              try {
+                var _tEdit = getTodayPersian();
+                acc.createdAt = { y: _tEdit.y, m: _tEdit.m, d: _tEdit.d };
+              } catch (eE) {}
+            }
+            try { if (_syncPlan && _syncPlan.changes.length) applyAccountOpeningSync(name, _syncPlan); } catch (eAp) {}
+            saveBankAccountsSelection();
+            closeEd();
+            renderBankAccountsList();
+            try { renderHomeCards(); } catch (eR) {}
+            try { updateHomeBalanceCircle(); } catch (eU) {}
+            if (_syncPlan && _syncPlan.changes.length) showToast('موجودی اولیه و موجودی‌های بعد از آن به‌روز شد');
+          };
+          if (_syncPlan && _syncPlan.changes.length) {
+            const d = _syncPlan.delta, first = _syncPlan.changes[0];
+            const msg = 'موجودی اول ' + MONTHS[first.m - 1] + ' ' + toPersianDigits(String(first.y)) + ' این حساب از ' + formatNum(first.from) + ' به ' + formatNum(first.to) + ' تغییر می‌کند' +
+              (_syncPlan.changes.length > 1 ? ' و موجودی اول ' + toPersianDigits(String(_syncPlan.changes.length - 1)) + ' ماه بعد هم به همین اندازه جابه‌جا می‌شود' : '') +
+              '؛ موجودی فعلی حساب ' + formatNum(Math.abs(d)) + (d > 0 ? ' بیشتر' : ' کمتر') + ' می‌شود. ادامه؟';
+            askConfirm(msg, () => { try { safetyBackupThen('bank-opening', _doEditSave); } catch (eB) { _doEditSave(); } });
+            return;
           }
+          _doEditSave();
+          return;
         } else {
           const exists = selectedBankAccounts.some(a => accountLabel(a) === name);
           if (exists) { showToast('نام تکراریست'); return; }
