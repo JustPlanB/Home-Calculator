@@ -1606,8 +1606,8 @@ final class HkWidgetDraw {
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    /* سمت چپ ۴۰dp جای دکمهٔ جابه‌جایی (فلش‌ها) است */
-    float btnW=40*k;
+    /* سمت چپ فقط دو نقطهٔ کوچک نشانگر صفحه (اسکرول بی‌پایان با کشیدن عمودی) */
+    float btnW=16*k;
     float padX=14*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-btnW;
     String label=page==0?"موجودی":"خرج امروز";
     String val; boolean num=true; Typeface vf=BOLD; float vr=1.9f; int vc=text(d);
@@ -1621,22 +1621,14 @@ final class HkWidgetDraw {
     cv.drawText(label, W-padX, padY+TXT_A*u, paint(REG,s,muted(d),Paint.Align.RIGHT));
     float y=padY+u*b1+gap*u, vs=vr*u, a=num?NUM_A:TXT_A;
     s=fit(vf,vs,val,aw);
-    if(num) cv.drawText(val, btnW+4*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
+    if(num) cv.drawText(val, btnW+6*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
     else cv.drawText(val, W-padX, y+a*vs, paint(vf,s,vc,Paint.Align.RIGHT));
-    /* دکمهٔ جابه‌جایی: فلش بالا و پایین با دو نقطهٔ صفحه در وسط */
-    float cx=btnW/2f, cy=H/2f, r=2.3f*k;
+    float cx=10*k, cy=H/2f, r=2.2f*k;
     for(int i=0;i<2;i++){
       Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
       p.setColor(i==page?text(d):(d.light?Color.parseColor("#c7c7cc"):Color.parseColor("#48484a")));
       cv.drawCircle(cx, cy+(i==0?-1:1)*4.5f*k, r, p);
     }
-    Paint ar=new Paint(Paint.ANTI_ALIAS_FLAG);
-    ar.setStyle(Paint.Style.STROKE); ar.setStrokeWidth(2f*k); ar.setStrokeCap(Paint.Cap.ROUND); ar.setStrokeJoin(Paint.Join.ROUND);
-    ar.setColor(muted(d));
-    float aw2=5f*k, ah2=3.2f*k, off=Math.min(H*0.32f, 15*k);
-    android.graphics.Path up=new android.graphics.Path(); up.moveTo(cx-aw2, cy-off+ah2); up.lineTo(cx, cy-off-ah2+1*k); up.lineTo(cx+aw2, cy-off+ah2);
-    android.graphics.Path dn=new android.graphics.Path(); dn.moveTo(cx-aw2, cy+off-ah2); dn.lineTo(cx, cy+off+ah2-1*k); dn.lineTo(cx+aw2, cy+off-ah2);
-    cv.drawPath(up, ar); cv.drawPath(dn, ar);
     return bm;
   }
 }
@@ -1699,41 +1691,25 @@ public class HkWidgetProvider extends AppWidgetProvider {
 
 const hkWidgetSmall=`package ${pkg};
 
-import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-/** ویجت یک‌خطی: دو کارت (موجودی، خرج امروز) در ViewFlipper؛ لمس فلش‌های کنار، کارت بعدی را با لغزش عمودی می‌آورد */
+/** ویجت یک‌خطی: موجودی و خرج امروز پشت‌سرهم در یک فهرست بی‌پایان؛ با کشیدن عمودی (در هر جهت) بینشان جابه‌جا می‌شوی */
 public class HkWidgetSmallProvider extends AppWidgetProvider {
-  static final String ACTION_FLIP="ir.hesabketab.app.WIDGET_FLIP";
+  static final int LOOP_COUNT=2000;
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
   }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
   }
-  /* کارت فعلی هر ویجت ذخیره می‌شود؛ جابه‌جایی = به‌روزرسانی کامل با setDisplayedChild (روی همهٔ لانچرها قابل‌اعتماد؛ انیمیشن لغزش هم اجرا می‌شود) */
-  static int page(Context ctx, int id){ return ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getInt("small_page_"+id, 0); }
-  static void setPage(Context ctx, int id, int p){ ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit().putInt("small_page_"+id, p).apply(); }
-  @Override public void onReceive(Context ctx, Intent intent){
-    if(intent!=null && ACTION_FLIP.equals(intent.getAction())){
-      int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-      if(id!=AppWidgetManager.INVALID_APPWIDGET_ID){
-        try{
-          setPage(ctx, id, page(ctx, id)==0 ? 1 : 0);
-          render(ctx, AppWidgetManager.getInstance(ctx), id);
-        }catch(Exception ignored){}
-      }
-      return;
-    }
-    super.onReceive(ctx, intent);
-  }
+  /* پاک‌کردن کلید صفحهٔ نسخهٔ قبلی (دکمهٔ جابه‌جایی) */
   @Override public void onDeleted(Context ctx, int[] ids){
     try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids) e.remove("small_page_"+id); e.apply(); }catch(Exception ignored){}
   }
@@ -1746,27 +1722,67 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
     }catch(Exception ignored){}
   }
 
+  @SuppressWarnings("deprecation")
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
-      float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 60);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
       v.setInt(R.id.hk_ws_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
-      v.setImageViewBitmap(R.id.hk_ws_p0, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 0));
-      v.setImageViewBitmap(R.id.hk_ws_p1, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 1));
-      v.setDisplayedChild(R.id.hk_ws_flip, page(ctx, id));
+      Intent svc=new Intent(ctx, HkWidgetListService.class);
+      svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+      svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
+      v.setRemoteAdapter(R.id.hk_ws_list, svc);
+      v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
+      v.setScrollPosition(R.id.hk_ws_list, LOOP_COUNT/2);
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
-      Intent flip=new Intent(ctx, HkWidgetSmallProvider.class);
-      flip.setAction(ACTION_FLIP);
-      flip.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
-      int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?PendingIntent.FLAG_IMMUTABLE:0);
-      v.setOnClickPendingIntent(R.id.hk_ws_flipbtn, PendingIntent.getBroadcast(ctx, 7000+id, flip, fl));
       mgr.updateAppWidget(id, v);
+      mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_ws_list);
     }catch(Exception ignored){}
   }
 }
 `;
 
+const hkWidgetList=`package ${pkg};
+
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.RemoteViews;
+import android.widget.RemoteViewsService;
+
+/** دو صفحهٔ ویجت یک‌خطی (موجودی، خرج امروز) به اندازهٔ خود ویجت */
+public class HkWidgetListService extends RemoteViewsService {
+  @Override public RemoteViewsFactory onGetViewFactory(Intent intent){
+    final int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+    final Context ctx=getApplicationContext();
+    return new RemoteViewsFactory(){
+      HkWidgetDraw.Data d;
+      final android.graphics.Bitmap[] cache=new android.graphics.Bitmap[2];
+      int cw=0, ch=0;
+      public void onCreate(){}
+      public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); cache[0]=null; cache[1]=null; }
+      public void onDestroy(){}
+      /* اسکرول بی‌پایان: صفحه‌ها پشت‌سرهم تکرار می‌شوند (زوج = موجودی، فرد = خرج امروز) */
+      public int getCount(){ return HkWidgetSmallProvider.LOOP_COUNT; }
+      public RemoteViews getViewAt(int pos){
+        if(d==null) d=HkWidgetDraw.load(ctx);
+        float[] sz=HkWidgetDraw.size(ctx, AppWidgetManager.getInstance(ctx), id, 250, 60);
+        int pg=pos%2;
+        if((int)sz[0]!=cw || (int)sz[1]!=ch){ cache[0]=null; cache[1]=null; cw=(int)sz[0]; ch=(int)sz[1]; }
+        if(cache[pg]==null) cache[pg]=HkWidgetDraw.page(ctx, cw, ch, sz[2], d, pg);
+        RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_item);
+        v.setImageViewBitmap(R.id.hk_wi_img, cache[pg]);
+        v.setOnClickFillInIntent(R.id.hk_wi_img, new Intent());
+        return v;
+      }
+      public RemoteViews getLoadingView(){ return null; }
+      public int getViewTypeCount(){ return 1; }
+      public long getItemId(int pos){ return pos; }
+      public boolean hasStableIds(){ return true; }
+    };
+  }
+}
+`;
 
 const hkWidgetPlugin=`package ${pkg};
 
@@ -1841,6 +1857,7 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetProvider.java'),hkWidget);
 fs.writeFileSync(path.join(javaDir,'HkWidgetPlugin.java'),hkWidgetPlugin);
 fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
 fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
+fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -1888,6 +1905,8 @@ if(fs.existsSync(manifest)){
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_small_info"/>\n' +
     '        </receiver>\n    </application>');
+  if(!s.includes('.HkWidgetListService')) s=s.replace('</application>',
+    '        <service android:name=".HkWidgetListService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
   // FileProvider for Sharesheet
   if(!s.includes('.fileprovider')){
     const providerTag =
@@ -1940,29 +1959,19 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/hk_widget_bg">
-    <ViewFlipper android:id="@+id/hk_ws_flip" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:inAnimation="@anim/hk_in_up" android:outAnimation="@anim/hk_out_up" android:measureAllChildren="true">
-        <ImageView android:id="@+id/hk_ws_p0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="موجودی"/>
-        <ImageView android:id="@+id/hk_ws_p1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="خرج امروز"/>
-    </ViewFlipper>
-    <FrameLayout android:id="@+id/hk_ws_flipbtn" android:layout_width="64dp" android:layout_height="match_parent" android:layout_gravity="left" android:clickable="true" android:focusable="true" android:contentDescription="کارت بعدی"/>
+    <ListView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none" android:listSelector="@android:color/transparent" android:overScrollMode="never" android:fadingEdge="none"/>
 </FrameLayout>
 `);
-// انیمیشن لغزش عمودی کارت‌های ویجت یک‌خطی
-fs.mkdirSync(path.join(resDir,'anim'),{recursive:true});
-fs.writeFileSync(path.join(resDir,'anim','hk_in_up.xml'),
+fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android" android:interpolator="@android:anim/decelerate_interpolator">
-    <translate android:fromYDelta="100%" android:toYDelta="0" android:duration="280"/>
-    <alpha android:fromAlpha="0.0" android:toAlpha="1.0" android:duration="220"/>
-</set>
-`);
-fs.writeFileSync(path.join(resDir,'anim','hk_out_up.xml'),
-`<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android" android:interpolator="@android:anim/accelerate_interpolator">
-    <translate android:fromYDelta="0" android:toYDelta="-100%" android:duration="280"/>
-    <alpha android:fromAlpha="1.0" android:toAlpha="0.0" android:duration="220"/>
-</set>
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_wi_img"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:adjustViewBounds="true"
+    android:scaleType="fitXY"
+    android:contentDescription="حساب‌کتاب"/>
 `);
 // فونت وزیرمتن برای متن ویجت
 fs.mkdirSync(path.join(resDir,'font'),{recursive:true});
