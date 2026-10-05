@@ -10239,8 +10239,9 @@
     #savingsModal .sv-lot-qty { font-weight: 700; font-size: 0.86rem; }
     #savingsModal .sv-lot-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; line-height: 1.5; word-break: break-word; }
     #savingsModal .sv-lot-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    #savingsModal .sv-lot-actions button { border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 8px; padding: 4px 10px; min-height: 32px; font-family: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-    #savingsModal .sv-lot-actions .sv-del { color: #ff6b4a; }
+    #savingsModal .sv-lot-actions { align-items: center; gap: 2px; }
+    #savingsModal .sv-lot-actions .sv-edit { background: transparent !important; border: none !important; box-shadow: none !important; min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; color: var(--text); cursor: pointer; }
+    #savingsModal .sv-lot-actions .sv-del { color: #ff1744 !important; -webkit-text-fill-color: #ff1744 !important; text-shadow: 0 0 4px rgba(255,23,68,0.55); -webkit-text-stroke: 0.3px #ff1744; font-weight: 900; font-size: 1.4rem; background: transparent !important; border: none !important; box-shadow: none !important; line-height: 1; min-width: 36px; min-height: 36px; cursor: pointer; }
     .sv-dim { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 470; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
     .sv-editor { position: fixed; left: 16px; right: 16px; top: 8%; z-index: 480; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 12px 40px rgba(0,0,0,0.4); max-height: 84vh; overflow-y: auto; font-family: Vazirmatn, Tahoma, sans-serif; text-align: right; max-width: 440px; margin: 0 auto; }
     .sv-editor .sv-ed-title { font-weight: 800; font-size: 1rem; margin-bottom: 10px; }
@@ -10266,7 +10267,20 @@
     html[data-theme="light"] #savingsModal .sv-up { color: #2f7d32; }
     html[data-theme="light"] #savingsModal .sv-down { color: #c62828; }
     html[data-theme="light"] #savingsModal .sv-price-btn.empty { color: #1d4ed8; }
-    html[data-theme="light"] #savingsModal .sv-lot-actions .sv-del { color: #c62828; }
+    /* منوی کناری: هر گزینه در باکس فرورفته مثل دکمهٔ ایجاد (+) */
+    #menuDropdown .menu-scroll { padding-left: 12px; padding-right: 12px; box-sizing: border-box; }
+    #menuDropdown .menu-scroll > .menu-item,
+    #menuDropdown .menu-scroll > .menu-theme-row {
+      background: #1b1b1b !important; border-radius: 12px !important; margin: 0 0 8px; width: 100%; box-sizing: border-box;
+      box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
+      padding-top: 11px; padding-bottom: 11px; min-height: 46px;
+    }
+    #menuDropdown .menu-scroll > .menu-item:active,
+    #menuDropdown .menu-scroll > .menu-theme-row:active { box-shadow: inset 6px 6px 14px rgba(0,0,0,0.8), inset -2px -2px 6px rgba(255,255,255,0.10) !important; }
+    #menuDropdown .menu-scroll > .menu-item:hover { background: #1b1b1b !important; }
+    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-item,
+    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-theme-row,
+    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-item:hover { background: var(--lt-surface) !important; box-shadow: var(--lt-neu-in) !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -11024,7 +11038,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۳';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۴';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -16767,6 +16781,20 @@ function askBackupUserCards(selectedParts) {
         '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/></worksheet>';
       return out;
     }
+    /* پس‌انداز برای خروجی: خلاصهٔ هر نوع + ردیف‌های خرید (اگر چیزی ثبت نشده، null) */
+    function savingsExportData() {
+      var groups = [];
+      try { groups = (typeof _savGroups === 'function') ? _savGroups() : []; } catch (e) { groups = []; }
+      if (!groups.length) return null;
+      var tot = { cost: 0, value: 0, pnl: 0, anyP: false, missing: 0 };
+      groups.forEach(function (G) {
+        tot.cost += G.cost;
+        if (G.price) tot.value += G.value; else tot.missing++;
+        if (G.pnl != null) { tot.pnl += G.pnl; tot.anyP = true; }
+      });
+      var dateOf = function (it) { return it.y ? toPersianDigits(String(it.y)) + '/' + toPersianPad2(it.m || 1) + '/' + toPersianPad2(it.d || 1) : ''; };
+      return { groups: groups, tot: tot, dateOf: dateOf, unitOf: _savUnit, qty: _savFmtQty };
+    }
     function buildXlsxSheets() {
       var periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
       var H = function (t) { return { v: t, s: 1 }; }, T = function (t) { return { v: t, s: 2 }; }, N = function (n) { return { v: Math.round(Number(n) || 0), s: 3 }; };
@@ -16892,6 +16920,24 @@ function askBackupUserCards(selectedParts) {
           pr.push([TT('جمع مخارج'), TT(''), TT(''), TT(''), TT(''), TN(ex)]);
         });
         sheets.push({ name: 'پروژه‌ها', rows: pr, widths: [20, 10, 13, 34, 16, 18], freeze: 1 });
+      }
+      /* پس‌انداز (ارز و طلا): خلاصهٔ هر نوع + ردیف‌های خرید */
+      var sv = savingsExportData();
+      if (sv) {
+        var srows = [[H('نوع'), H('مقدار'), H('قیمت خرید کل'), H('قیمت روز هر واحد'), H('ارزش روز'), H('سود / زیان')]];
+        sv.groups.forEach(function (G) {
+          srows.push([T(G.name), T(sv.qty(G.qty) + ' ' + G.unit), G.cost ? N(G.cost) : T('—'), G.price ? N(G.price) : T('وارد نشده'), G.price ? N(G.value) : T('—'), G.pnl != null ? N(G.pnl) : T('—')]);
+        });
+        srows.push([TT('جمع'), TT(''), TN(sv.tot.cost), TT(''), TN(sv.tot.value), sv.tot.anyP ? TN(sv.tot.pnl) : TT('—')]);
+        srows.push([]);
+        srows.push([H('نوع'), H('تاریخ خرید'), H('مقدار'), H('قیمت خرید هر واحد'), H('قیمت خرید کل'), H('یادداشت')]);
+        sv.groups.forEach(function (G) {
+          G.items.forEach(function (it) {
+            var q = Number(it.qty) || 0, b = Number(it.buy) || 0;
+            srows.push([T(G.name), T(sv.dateOf(it)), T(sv.qty(q) + ' ' + sv.unitOf(it)), b ? N(b) : T('—'), b ? N(q * b) : T('—'), T(it.note || '')]);
+          });
+        });
+        sheets.push({ name: 'پس‌انداز', rows: srows, widths: [20, 14, 16, 18, 18, 24], freeze: 1 });
       }
       return { sheets: sheets, periodLabel: periodLabel };
     }
@@ -17039,6 +17085,7 @@ function askBackupUserCards(selectedParts) {
         '.st{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin:0 0 5px 0;padding-right:7px;border-right:4px solid #444;}' +
         '.st small{font-size:9px;color:#666;font-weight:400;}' +
         '.st.inc{border-right-color:#2e9e5b;}.st.exp{border-right-color:#d9534f;}.st.ins{border-right-color:#7e57c2;}.st.led{border-right-color:#c49000;}.st.acc{border-right-color:#1f7fbf;}' +
+        '.st.sav{border-right-color:#b8860b;}' +
         'table{width:100%;border-collapse:collapse;table-layout:fixed;}' +
         'th{background:#2b2b2b;color:#fff;font-weight:700;font-size:9.5px;padding:4px 3px;border:0.75px solid #2b2b2b;text-align:center;}' +
         'td{border:0.75px solid #a5a5a5;padding:3px 4px;vertical-align:middle;word-break:break-word;}' +
@@ -17237,6 +17284,26 @@ function askBackupUserCards(selectedParts) {
         B.push({ html: depT.replace('<div class="pb">', '<div class="pb sec">' + head), split: ins.length > 0 });
         B.push({ html: txTable(outs, 'مخارج پروژه', 'exp'), split: outs.length > 0 });
       });
+      /* ---- پس‌انداز (ارز و طلا): جدا از موجودی کل ---- */
+      var sv = savingsExportData();
+      if (sv) {
+        var sh = '<div class="pb sec"><div class="st sav">پس‌انداز (ارز و طلا) <small>جدا از موجودی حساب‌ها؛ قیمت روز را کاربر وارد کرده</small></div>' +
+          '<table><thead><tr><th style="width:20%">نوع</th><th style="width:15%">مقدار</th><th>قیمت خرید کل</th><th>قیمت روز هر واحد</th><th>ارزش روز</th><th style="width:15%">سود / زیان</th></tr></thead><tbody>';
+        sv.groups.forEach(function (G) {
+          sh += '<tr><td>' + E(G.name) + '</td><td class="c">' + E(sv.qty(G.qty) + ' ' + G.unit) + '</td><td class="n">' + (G.cost ? pdfMoney(G.cost) : '—') + '</td><td class="n">' + (G.price ? pdfMoney(G.price) : 'وارد نشده') + '</td><td class="n">' + (G.price ? pdfMoney(G.value) : '—') + '</td><td class="n">' + (G.pnl != null ? pdfMoney(G.pnl) : '—') + '</td></tr>';
+        });
+        sh += '<tr class="T"><td colspan="2">جمع</td><td class="n">' + pdfMoney(sv.tot.cost) + '</td><td></td><td class="n">' + pdfMoney(sv.tot.value) + '</td><td class="n">' + (sv.tot.anyP ? pdfMoney(sv.tot.pnl) : '—') + '</td></tr></tbody></table>' +
+          (sv.tot.missing ? '<div class="note">قیمت روز ' + toPersianDigits(sv.tot.missing) + ' مورد وارد نشده و ارزش آن در جمع نیامده است.</div>' : '') + '</div>';
+        B.push({ html: sh });
+        var dh = '<div class="pb sec"><div class="st sav" style="font-size:11px">ردیف‌های خرید پس‌انداز</div><table><thead><tr><th style="width:18%">نوع</th><th style="width:14%">تاریخ خرید</th><th style="width:15%">مقدار</th><th>قیمت خرید هر واحد</th><th>قیمت خرید کل</th><th style="width:20%">یادداشت</th></tr></thead><tbody>';
+        sv.groups.forEach(function (G) {
+          G.items.forEach(function (it) {
+            var q = Number(it.qty) || 0, b = Number(it.buy) || 0;
+            dh += '<tr><td>' + E(G.name) + '</td><td class="c">' + (sv.dateOf(it) || '—') + '</td><td class="c">' + E(sv.qty(q) + ' ' + sv.unitOf(it)) + '</td><td class="n">' + (b ? pdfMoney(b) : '—') + '</td><td class="n">' + (b ? pdfMoney(q * b) : '—') + '</td><td>' + E(it.note || '') + '</td></tr>';
+          });
+        });
+        B.push({ html: dh + '</tbody></table></div>', split: true });
+      }
       return B;
     }
     /* اندازه‌گیری در iframe ایزوله (استایل‌های اپ روی گزارش اثر نگذارند) */
@@ -20443,6 +20510,8 @@ async function openPdfPrintWindow(){
           var locked = false; try { locked = !!(await lockIsEnabled()); } catch (eL) {}
           await P.update({
             title: 'حساب‌کتاب · ' + MONTHS[t.m - 1],
+            month: MONTHS[t.m - 1] + ' ' + toPersianDigits(String(t.y)),
+            todayNone: !(spent > 0),
             balance: (bal < 0 ? '-' : '') + formatNum(Math.abs(bal)),
             today: formatNum(spent),
             negative: bal < 0,
@@ -29273,7 +29342,8 @@ if (item.type === 'recurring') {
           row.innerHTML = '<div class="sv-lot-main"><div class="sv-lot-qty">' + _savFmtQty(Number(it.qty) || 0) + ' ' + escapeHtml(_savUnit(it)) + '</div>' +
             (meta.length ? '<div class="sv-lot-meta">' + meta.join(' · ') + '</div>' : '') +
             (it.note ? '<div class="sv-lot-meta">' + escapeHtml(it.note) + '</div>' : '') + '</div>' +
-            '<div class="sv-lot-actions"><button type="button" class="sv-edit" aria-label="ویرایش">ویرایش</button><button type="button" class="sv-del" aria-label="حذف">حذف</button></div>';
+            '<div class="sv-lot-actions"><button type="button" class="btn-edit-title sv-edit" title="ویرایش" aria-label="ویرایش"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>' +
+            '<button type="button" class="btn btn-del-row sv-del" title="حذف" aria-label="حذف">×</button></div>';
           row.querySelector('.sv-edit').onclick = function (e) { e.stopPropagation(); openSavingsEditor(it.id); };
           row.querySelector('.sv-del').onclick = function (e) {
             e.stopPropagation();
@@ -29329,6 +29399,18 @@ if (item.type === 'recurring') {
         inp.value = n ? toPersianDigits(Number(n).toLocaleString('en-US')) : '';
       });
     }
+    /* ورودی مقدار: ارقام فارسی، جداکنندهٔ هزارگان و ممیز «٫» */
+    function _savQtyInput(inp) {
+      inp.addEventListener('input', function () {
+        var raw = toEnglishDigits(inp.value).replace(/[٫/.]/g, '.').replace(/[^0-9.]/g, '');
+        var i = raw.indexOf('.');
+        var ip = i >= 0 ? raw.slice(0, i) : raw, fp = i >= 0 ? raw.slice(i + 1).replace(/\./g, '').slice(0, 3) : null;
+        ip = ip.replace(/^0+(?=\d)/, '');
+        var out = ip ? toPersianDigits(Number(ip).toLocaleString('en-US')) : (fp !== null ? '۰' : '');
+        if (fp !== null) out += '٫' + toPersianDigits(fp);
+        inp.value = out;
+      });
+    }
     function openSavingsEditor(id) {
       var sv = loadSavings();
       var ex = id ? sv.items.find(function (x) { return x.id === id; }) : null;
@@ -29341,7 +29423,7 @@ if (item.type === 'recurring') {
           '<div><div class="sv-lbl">واحد</div><input id="svUnit" class="sv-inp" type="text" maxlength="12" placeholder="مثلاً فرانک" value="' + escapeHtml(init.unit || '') + '"></div>' +
         '</div>' +
         '<div class="sv-lbl">مقدار (<span id="svUnitLbl"></span>)</div>' +
-        '<input id="svQty" class="sv-inp sv-num" type="text" inputmode="decimal" placeholder="مثلاً ۵۰۰ یا ۲٫۵" value="' + (init.qty ? _savFmtQty(Number(init.qty)).replace(/,/g, '') : '') + '">' +
+        '<input id="svQty" class="sv-inp sv-num" type="text" inputmode="decimal" placeholder="مثلاً ۵۰۰ یا ۲٫۵" value="' + (init.qty ? _savFmtQty(Number(init.qty)) : '') + '">' +
         '<div class="sv-lbl">قیمت خرید هر واحد — تومان (اختیاری)</div>' +
         '<input id="svBuy" class="sv-inp sv-num" type="text" inputmode="numeric" placeholder="برای محاسبهٔ سود و زیان" value="' + (Number(init.buy) > 0 ? toPersianDigits(Number(init.buy).toLocaleString('en-US')) : '') + '">' +
         '<div class="sv-lbl">تاریخ خرید</div>' +
@@ -29368,6 +29450,7 @@ if (item.type === 'recurring') {
       } catch (eS) {}
       syncUnit();
       _savMoneyInput(ed.querySelector('#svBuy'));
+      _savQtyInput(ed.querySelector('#svQty'));
       ed.querySelector('.sv-ok').onclick = function () {
         var qty = _savQty(ed.querySelector('#svQty').value);
         if (!qty) { try { showToast('مقدار را وارد کنید'); } catch (e) {} return; }
