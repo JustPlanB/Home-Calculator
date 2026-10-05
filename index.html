@@ -10190,11 +10190,11 @@
       background: #1b1b1b !important; color: #ffffff !important; font-family: inherit; font-weight: 800; font-size: 0.95rem;
       box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
     }
-    #updDlg .upd-go.upd-dl { color: #00b7ff !important; }
+    /* دکمهٔ دانلود: همان ظاهر قبلی (آبی توپر با متن سفید) */
+    #updDlg .upd-go.upd-dl, html[data-theme="light"] #updDlg .upd-go.upd-dl { background: #0090d4 !important; color: #ffffff !important; box-shadow: none !important; min-height: 48px; border-radius: 12px !important; }
     #updDlg .upd-go svg { width: 22px; height: 22px; fill: none; stroke: #00b7ff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     #updDlg .upd-go:active { transform: scale(0.98); }
     html[data-theme="light"] #updDlg .upd-go { background: var(--lt-surface) !important; color: var(--text) !important; box-shadow: var(--lt-neu-in) !important; }
-    html[data-theme="light"] #updDlg .upd-go.upd-dl { color: #0086c3 !important; }
     #updDlg .upd-progress { margin: 10px 0 4px; }
     #updDlg .upd-pct { text-align: center; font-weight: 800; font-size: 1.05rem; color: #00b7ff; margin-bottom: 8px; min-height: 1.4em; }
     #updDlg .upd-tube {
@@ -10292,8 +10292,18 @@
     /* پشتیبان خودکار در پنجرهٔ پشتیبان‌گیری */
     .bk-auto-wrap { margin: 10px 0 2px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12); }
     .bk-auto-wrap .bk-auto-row { border-bottom: none !important; font-weight: 800; }
-    .bk-auto-hint { font-size: 0.74rem; line-height: 1.8; color: var(--muted); padding: 0 4px 2px; }
-    .bk-auto-hint b { color: var(--text); font-weight: 700; }
+    .bk-auto-line { display: flex; align-items: center; gap: 8px; }
+    .bk-auto-line > .backup-pick-item, .bk-auto-line > .bk-pwd-label { flex: 0 1 auto; min-width: 0; }
+    .bk-auto-txt { display: flex; flex-direction: column; gap: 1px; }
+    .bk-auto-last { font-size: 0.7rem; font-weight: 400; color: #8e8e93; }
+    .bk-info-btn { flex-shrink: 0; width: 22px; height: 22px; min-width: 22px; padding: 0; border-radius: 50%; border: 1.5px solid #8e8e93; background: transparent; color: #8e8e93; font: italic 700 0.78rem/1 Georgia, 'Times New Roman', serif; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+    .bk-info-btn::after { content: ''; position: absolute; inset: -11px; }
+    .bk-info-btn.on { border-color: #00b7ff; color: #00b7ff; }
+    .bk-info-box { font-size: 0.74rem; line-height: 1.8; color: var(--text); background: rgba(0,183,255,0.08); border: 1px solid rgba(0,183,255,0.28); border-radius: 10px; padding: 8px 10px; margin: 4px 0 6px; }
+    .bk-info-box[hidden] { display: none !important; }
+    #searchResultBox td.sr-date { font-size: 0.74rem; white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+    .export-choice-btn .ex-ico { width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.16); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 2px rgba(0,0,0,0.12); }
+    .export-choice-btn .ex-ico svg { width: 24px; height: 24px; display: block; }
     html[data-theme="light"] .bk-auto-wrap { border-top-color: var(--lt-line); }
     #backupPickOverlay .backup-pick-panel { max-height: 90vh; max-height: 90dvh; }
     #backupPickOverlay .backup-pick-item { padding-top: 8px; padding-bottom: 8px; }
@@ -10653,8 +10663,8 @@
           <table class="summary-table">
             <thead>
               <tr>
-                <th style="text-align:right;padding-right:12px;width:40%;">شرح</th>
-                <th style="width:19%;">تاریخ</th>
+                <th style="text-align:right;padding-right:12px;width:45%;">شرح</th>
+                <th style="width:15%;">تاریخ</th>
                 <th style="width:16%;">بانک</th>
                 <th style="width:25%;">مبلغ</th>
               </tr>
@@ -11054,7 +11064,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۵';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۶';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15644,11 +15654,15 @@ function onPeriodChange() {
           '<input type="checkbox" data-bk="' + p.key + '"' + (p.key === 'all' ? ' id="bkCheckAll"' : ' class="bk-part"') + ' checked />' +
           '<span>' + p.label + '</span></label>';
       });
-      html += '<div class="bk-auto-wrap"><label class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn"' + (autoBkState().enabled === false ? '' : ' checked') + ' /><span>پشتیبان خودکار روزانه</span></label>' +
-        '<div class="bk-auto-hint">' + (autoBkPlugin() ? 'هر روز یک نسخهٔ کامل در پوشهٔ Downloads/HesabKetab ذخیره می‌شود (۷ روز اخیر و ۴ هفتهٔ قبل). قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.<br><b>' + escapeHtml(autoBkLastText()) + '</b>' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.') + '</div></div>';
-      html += '<div class="bk-pwd-wrap"><label class="bk-pwd-label" for="bkPwd">رمز فایل پشتیبان (اختیاری)</label>' +
-        hkPwdFieldHtml('bkPwd', 'new-password', 'خالی = بدون رمز') +
-        '<div class="bk-pwd-hint">با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.</div></div>';
+      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل در پوشهٔ Downloads/HesabKetab ذخیره می‌شود (۷ روز اخیر و ۴ هفتهٔ قبل). قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
+      html += '<div class="bk-auto-wrap"><div class="bk-auto-line"><label class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn"' + (autoBkState().enabled === false ? '' : ' checked') + ' /><span class="bk-auto-txt">پشتیبان خودکار روزانه' +
+        (autoBkPlugin() ? '<small class="bk-auto-last">(' + escapeHtml(autoBkLastText()) + ')</small>' : '') + '</span></label>' +
+        '<button type="button" class="bk-info-btn" data-info="bkAutoInfo" aria-label="توضیح" title="توضیح">i</button></div>' +
+        '<div class="bk-info-box" id="bkAutoInfo" hidden>' + autoInfo + '</div></div>';
+      html += '<div class="bk-pwd-wrap"><div class="bk-auto-line"><label class="bk-pwd-label" for="bkPwd">رمز فایل پشتیبان (اختیاری)</label>' +
+        '<button type="button" class="bk-info-btn" data-info="bkPwdInfo" aria-label="توضیح" title="توضیح">i</button></div>' +
+        '<div class="bk-info-box" id="bkPwdInfo" hidden>با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.</div>' +
+        hkPwdFieldHtml('bkPwd', 'new-password', 'خالی = بدون رمز') + '</div>';
       html += '<div class="backup-pick-actions">' +
         '<button type="button" class="backup-pick-ok" id="bkDoExport">پشتیبان‌گیری</button>' +
         '<button type="button" class="backup-pick-cancel" id="bkCancel">انصراف</button>' +
@@ -15668,6 +15682,17 @@ function onPeriodChange() {
         allCb.checked = allOn;
       }
       if (allCb) allCb.addEventListener('change', syncFromAll);
+      ov.querySelectorAll('.bk-info-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var box = ov.querySelector('#' + btn.getAttribute('data-info'));
+          if (!box) return;
+          var open = box.hidden;
+          ov.querySelectorAll('.bk-info-box').forEach(function (b) { b.hidden = true; });
+          ov.querySelectorAll('.bk-info-btn').forEach(function (b) { b.classList.remove('on'); });
+          box.hidden = !open; btn.classList.toggle('on', open);
+        });
+      });
       var autoCb = ov.querySelector('#bkAutoOn');
       if (autoCb) autoCb.addEventListener('change', function () {
         var st = autoBkState(); st.enabled = !!autoCb.checked; autoBkSave(st);
@@ -16630,22 +16655,23 @@ function askBackupUserCards(selectedParts) {
         '<div class="export-choice-title">خروجی این ماه</div>' +
         '<div class="export-choice-actions">' +
           '<button type="button" class="export-choice-btn excel" id="exportExcelBtn">' +
-            '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
-              '<rect x="6" y="4" width="28" height="36" rx="3" fill="#fff" opacity="0.95"/>' +
-              '<path d="M10 14h20M10 20h20M10 26h14" stroke="#1d6f42" stroke-width="2.2" stroke-linecap="round"/>' +
-              '<rect x="18" y="22" width="24" height="20" rx="2" fill="#217346"/>' +
-              '<text x="30" y="36" text-anchor="middle" fill="#fff" font-size="12" font-weight="700" font-family="Arial,sans-serif">X</text>' +
-            '</svg>' +
+            '<span class="ex-ico" aria-hidden="true"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
+              '<path d="M14 5h16l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="#fff"/>' +
+              '<path d="M30 5v7a2 2 0 0 0 2 2h7z" fill="#cfe5d7"/>' +
+              '<path d="M24 22h10M24 28h10M24 34h10" stroke="#7fb896" stroke-width="2.4" stroke-linecap="round"/>' +
+              '<rect x="4" y="19" width="19" height="19" rx="3.5" fill="#12502d"/>' +
+              '<path d="M9 24l9 9M18 24l-9 9" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>' +
+            '</svg></span>' +
             '<span>اکسل</span>' +
           '</button>' +
           '<button type="button" class="export-choice-btn pdf" id="exportPdfBtn">' +
-            '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
-              '<rect x="8" y="4" width="28" height="36" rx="3" fill="#fff" opacity="0.95"/>' +
-              '<path d="M30 4v10h10" fill="#f5f5f5"/>' +
-              '<path d="M30 4l10 10H30V4z" fill="#e0e0e0"/>' +
-              '<rect x="14" y="24" width="24" height="14" rx="2" fill="#e74c3c"/>' +
-              '<text x="26" y="34" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="Arial,sans-serif">PDF</text>' +
-            '</svg>' +
+            '<span class="ex-ico" aria-hidden="true"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
+              '<path d="M14 5h16l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="#fff"/>' +
+              '<path d="M30 5v7a2 2 0 0 0 2 2h7z" fill="#f3d1cc"/>' +
+              '<path d="M17 15h9M17 20h15" stroke="#e3a59c" stroke-width="2.4" stroke-linecap="round"/>' +
+              '<rect x="4" y="25" width="31" height="14" rx="3.5" fill="#8e2318"/>' +
+              '<text x="19.5" y="35.6" text-anchor="middle" fill="#fff" font-size="10" font-weight="800" font-family="Arial,sans-serif" letter-spacing="0.4">PDF</text>' +
+            '</svg></span>' +
             '<span>PDF</span>' +
           '</button>' +
         '</div>';
@@ -17708,6 +17734,8 @@ async function openPdfPrintWindow(){
       const menu = document.getElementById('menuDropdown');
       if (!menu || !menu.classList.contains('open')) return;
       if (menu.contains(e.target)) return;
+      /* پنجره‌های روی منو (بروزرسانی، پشتیبان و …) لمس خودشان را بگیرند */
+      try { if (e.target && e.target.closest && e.target.closest('.backup-pick-overlay')) return; } catch (eO) {}
       const btn = document.getElementById('menuBtn');
       if (btn && btn.contains(e.target)) return;
       // تاچ/کلیک بیرون منو: جلوگیری از عبور به اپ
@@ -33366,6 +33394,8 @@ function openProjectRowPicker(secId) {
       try { window.open(url, '_system'); } catch (e) { try { location.href = url; } catch (e2) {} }
     }
     function showUpdateDialog(m, inst) {
+      /* منوی کناری زیر پنجره باز نماند (وگرنه اولین لمس دکمه را منو می‌گیرد و دو بار زدن لازم می‌شود) */
+      try { closeSideMenu(); } catch (eM) {}
       var old = document.getElementById('updDlg'); if (old) old.remove();
       var notes = Array.isArray(m.notes) ? m.notes : (m.notes ? [m.notes] : []);
       var st = m.stores || {};
@@ -33382,7 +33412,7 @@ function openProjectRowPicker(secId) {
         '<div class="upd-links">' + links.map(function (l, i) {
           var isApk = (l[1] === m.apk);
           return '<button type="button" class="upd-go' + (isApk ? ' upd-dl' : '') + '" data-i="' + i + '">' +
-            (isApk ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>' : '') + '<span>' + escapeHtml(l[0]) + '</span></button>';
+            '<span>' + escapeHtml(l[0]) + '</span></button>';
         }).join('') + '</div>' +
         '<div class="upd-progress" hidden><div class="upd-pct">۰٪</div><div class="upd-tube"><i></i></div><div class="upd-status">در حال دانلود…</div><div class="upd-more"></div></div>' +
         (m.apk ? '<div class="upd-hint">نسخهٔ جدید داخل همین پنجره دانلود و نصب می‌شود. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
@@ -35034,6 +35064,7 @@ function openProjectRowPicker(secId) {
         tdB.textContent = it.bank ? toPersianDigits(it.bank) : '—';
         tdB.title = it.bank || '';
         var tdD = document.createElement('td');
+        tdD.className = 'sr-date';
         tdD.textContent = toPersianDigits(String(it.y)) + '/' + p2(it.m) + (it.d ? '/' + p2(it.d) : '');
         var tdV = document.createElement('td');
         tdV.className = 'val';
