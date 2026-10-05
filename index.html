@@ -10267,20 +10267,36 @@
     html[data-theme="light"] #savingsModal .sv-up { color: #2f7d32; }
     html[data-theme="light"] #savingsModal .sv-down { color: #c62828; }
     html[data-theme="light"] #savingsModal .sv-price-btn.empty { color: #1d4ed8; }
-    /* منوی کناری: هر گزینه در باکس فرورفته مثل دکمهٔ ایجاد (+) */
-    #menuDropdown .menu-scroll { padding-left: 12px; padding-right: 12px; box-sizing: border-box; }
-    #menuDropdown .menu-scroll > .menu-item,
-    #menuDropdown .menu-scroll > .menu-theme-row {
-      background: #1b1b1b !important; border-radius: 12px !important; margin: 0 0 8px; width: 100%; box-sizing: border-box;
+    /* آیکون‌های باکس‌های صفحهٔ اصلی: دایرهٔ فرورفته مثل دکمهٔ «+» ایجاد ردیف */
+    #homeTools .home-tile .tile-ico.ti2 { width: 46px; height: 46px; }
+    #homeTools .tile-ico.ti2::before { display: none !important; }
+    #homeTools .home-tile .tile-ico.ti2 .ti-disc,
+    html:not([data-theme="light"]) #homeTools .home-tile .tile-ico.ti2 .ti-disc {
+      border-radius: 50% !important; background: #1b1b1b !important;
       box-shadow: inset 4px 4px 12px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.14) !important;
-      padding-top: 11px; padding-bottom: 11px; min-height: 46px;
+      color: #d8dbe0 !important;
     }
-    #menuDropdown .menu-scroll > .menu-item:active,
-    #menuDropdown .menu-scroll > .menu-theme-row:active { box-shadow: inset 6px 6px 14px rgba(0,0,0,0.8), inset -2px -2px 6px rgba(255,255,255,0.10) !important; }
-    #menuDropdown .menu-scroll > .menu-item:hover { background: #1b1b1b !important; }
-    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-item,
-    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-theme-row,
-    html[data-theme="light"] #menuDropdown .menu-scroll > .menu-item:hover { background: var(--lt-surface) !important; box-shadow: var(--lt-neu-in) !important; }
+    html:not([data-theme="light"]) #homeTools .home-tile .tile-ico.ti2 svg [stroke="#fff"] { stroke: #1b1b1b !important; }
+    #homeTools .home-tile.icon-red .tile-ico.ti2 .ti-disc,
+    html:not([data-theme="light"]) #homeTools .home-tile.icon-red .tile-ico.ti2 .ti-disc { color: #e36d6a !important; }
+    #homeTools .home-tile:active .tile-ico.ti2 .ti-disc,
+    html:not([data-theme="light"]) #homeTools .home-tile:active .tile-ico.ti2 .ti-disc { box-shadow: inset 6px 6px 14px rgba(0,0,0,0.8), inset -2px -2px 6px rgba(255,255,255,0.10) !important; }
+    html[data-theme="light"] #homeTools .home-tile .tile-ico.ti2 .ti-disc { background: var(--lt-surface) !important; box-shadow: var(--lt-neu-in) !important; color: #2f3e4e !important; }
+    html[data-theme="light"] #homeTools .home-tile.icon-red .tile-ico.ti2 .ti-disc { color: #c0392b !important; }
+    html[data-theme="light"] #homeTools .home-tile .tile-ico.ti2 svg [stroke="#fff"] { stroke: var(--lt-surface) !important; }
+    html[data-theme="light"] #homeTools .home-tile:active .tile-ico.ti2 .ti-disc { box-shadow: inset 6px 6px 14px rgba(0,0,0,0.14), inset -2px -2px 6px rgba(255,255,255,0.9) !important; }
+    /* لولهٔ دانلود بروزرسانی: پر شدن از چپ به راست */
+    #updDlg .upd-tube i { right: auto !important; left: 0; background: linear-gradient(to right, #00b7ff, #4fd1ff) !important; }
+    @keyframes updIndetLtr { 0% { left: -35%; } 100% { left: 100%; } }
+    #updDlg .upd-progress.indet .upd-tube i { animation-name: updIndetLtr !important; }
+    /* پشتیبان خودکار در پنجرهٔ پشتیبان‌گیری */
+    .bk-auto-wrap { margin: 10px 0 2px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12); }
+    .bk-auto-wrap .bk-auto-row { border-bottom: none !important; font-weight: 800; }
+    .bk-auto-hint { font-size: 0.74rem; line-height: 1.8; color: var(--muted); padding: 0 4px 2px; }
+    .bk-auto-hint b { color: var(--text); font-weight: 700; }
+    html[data-theme="light"] .bk-auto-wrap { border-top-color: var(--lt-line); }
+    #backupPickOverlay .backup-pick-panel { max-height: 90vh; max-height: 90dvh; }
+    #backupPickOverlay .backup-pick-item { padding-top: 8px; padding-bottom: 8px; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -11038,7 +11054,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۴';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۵';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15628,6 +15644,8 @@ function onPeriodChange() {
           '<input type="checkbox" data-bk="' + p.key + '"' + (p.key === 'all' ? ' id="bkCheckAll"' : ' class="bk-part"') + ' checked />' +
           '<span>' + p.label + '</span></label>';
       });
+      html += '<div class="bk-auto-wrap"><label class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn"' + (autoBkState().enabled === false ? '' : ' checked') + ' /><span>پشتیبان خودکار روزانه</span></label>' +
+        '<div class="bk-auto-hint">' + (autoBkPlugin() ? 'هر روز یک نسخهٔ کامل در پوشهٔ Downloads/HesabKetab ذخیره می‌شود (۷ روز اخیر و ۴ هفتهٔ قبل). قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.<br><b>' + escapeHtml(autoBkLastText()) + '</b>' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.') + '</div></div>';
       html += '<div class="bk-pwd-wrap"><label class="bk-pwd-label" for="bkPwd">رمز فایل پشتیبان (اختیاری)</label>' +
         hkPwdFieldHtml('bkPwd', 'new-password', 'خالی = بدون رمز') +
         '<div class="bk-pwd-hint">با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.</div></div>';
@@ -15650,6 +15668,12 @@ function onPeriodChange() {
         allCb.checked = allOn;
       }
       if (allCb) allCb.addEventListener('change', syncFromAll);
+      var autoCb = ov.querySelector('#bkAutoOn');
+      if (autoCb) autoCb.addEventListener('change', function () {
+        var st = autoBkState(); st.enabled = !!autoCb.checked; autoBkSave(st);
+        if (autoCb.checked) { maybeDailyAutoBackup(false); try { showToast('پشتیبان خودکار روشن شد'); } catch (e) {} }
+        else { try { showToast('پشتیبان خودکار خاموش شد'); } catch (e) {} }
+      });
       partCbs.forEach(function(cb) { cb.addEventListener('change', syncToAll); });
       ov.querySelector('#bkCancel').onclick = function() { ov.remove(); };
       ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
@@ -15736,95 +15760,100 @@ function onPeriodChange() {
       ov.querySelector('#bkPwdOk').onclick = go;
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
     }
+    /* ساخت محتوای پشتیبان (همان محتوای دکمهٔ پشتیبان‌گیری؛ sel=null یعنی همه‌چیز و همهٔ ماه‌ها) */
+    function buildBackupPayload(selectedParts) {
+      var sel = selectedParts || null;
+      function want(k) { return !sel || !!sel[k]; }
+      const payload = {
+        version: 1,
+        app: 'hesab-ketab',
+        exportedAt: new Date().toISOString(),
+        currentYear: currentYear,
+        currentMonth: currentMonth,
+        familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
+        theme: document.documentElement.getAttribute('data-theme') || 'dark',
+        backupParts: sel || { all: true }
+      };
+      if (want('archive')) {
+        var cardList = null, monthList = null;
+        try {
+          if (sel && Array.isArray(sel.selectedUserCards) && sel.selectedUserCards.length && !sel._allUserCards)
+            cardList = sel.selectedUserCards.slice();
+        } catch (eCL) {}
+        try {
+          if (sel && Array.isArray(sel.selectedMonths) && sel.selectedMonths.length && !sel._allMonths)
+            monthList = sel.selectedMonths.slice();
+        } catch (eML) {}
+        var srcArch = archive;
+        if (monthList && monthList.length) {
+          srcArch = {};
+          monthList.forEach(function(k) {
+            if (archive && archive[k]) {
+              try { srcArch[k] = JSON.parse(JSON.stringify(archive[k])); }
+              catch (e) { srcArch[k] = archive[k]; }
+            }
+          });
+          try {
+            var ck = periodKey(currentYear, currentMonth);
+            if (monthList.indexOf(ck) >= 0 && !srcArch[ck] && periodData) {
+              try { srcArch[ck] = JSON.parse(JSON.stringify(periodData)); }
+              catch (e2) { srcArch[ck] = periodData; }
+            }
+          } catch (eCur) {}
+        }
+        if (cardList && cardList.length) {
+          payload.archive = filterArchiveByUserCards(srcArch, cardList);
+          payload.selectedUserCards = cardList.slice();
+        } else {
+          payload.archive = srcArch;
+          try { payload.selectedUserCards = (typeof allPersonTitles === 'function') ? allPersonTitles() : []; }
+          catch (eA) { payload.selectedUserCards = []; }
+        }
+        if (monthList && monthList.length) payload.selectedMonths = monthList.slice();
+        try {
+          var order = [];
+          if (periodData && Array.isArray(periodData.personCardOrder) && periodData.personCardOrder.length)
+            order = periodData.personCardOrder.slice();
+          else if (typeof loadGlobalCardOrder === 'function') order = loadGlobalCardOrder();
+          if (cardList && cardList.length) {
+            var setO = {};
+            cardList.forEach(function(t) { setO[String(t || '').trim()] = true; });
+            order = order.filter(function(t) { return setO[String(t || '').trim()]; });
+          }
+          payload.personCardOrder = order;
+        } catch (eO) {}
+      }
+      if (want('plans')) payload.plans = plans;
+      if (want('recurringIncomes')) payload.recurringIncomes = recurringIncomes;
+      try {
+        if (want('selectedBankAccounts')) {
+          payload.selectedBankAccounts = selectedBankAccounts;
+          payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+        }
+        if (want('userReminders')) {
+          try { payload.userReminders = typeof userReminders !== 'undefined' ? userReminders : []; } catch (eR) {}
+        }
+        if (want('savings')) {
+          try { payload.savings = loadSavings(); } catch (eSv) {}
+        }
+        if (want('subjects')) {
+          try {
+            payload.financialSubjects = (typeof loadFinancialSubjects === 'function') ? loadFinancialSubjects() : [];
+          } catch (eS) { payload.financialSubjects = []; }
+        }
+        /* دسته‌بندی مخارج: دیکشنری شخصی (اصلاح‌های کاربر) + دسته‌های سفارشی */
+        if (want('categories')) {
+          try { payload.categoryData = HKCategorizer.exportData(); } catch (eC) {}
+        }
+      } catch (e) {}
+      return payload;
+    }
     async function exportFullBackup(selectedParts) {
       closeSideMenu();
       try {
         persistCurrent();
         saveArchive();
-        var sel = selectedParts || null;
-        function want(k) { return !sel || !!sel[k]; }
-        const payload = {
-          version: 1,
-          app: 'hesab-ketab',
-          exportedAt: new Date().toISOString(),
-          currentYear: currentYear,
-          currentMonth: currentMonth,
-          familyCode: typeof familyCode !== 'undefined' ? familyCode : '',
-          theme: document.documentElement.getAttribute('data-theme') || 'dark',
-          backupParts: sel || { all: true }
-        };
-        if (want('archive')) {
-          var cardList = null, monthList = null;
-          try {
-            if (sel && Array.isArray(sel.selectedUserCards) && sel.selectedUserCards.length && !sel._allUserCards)
-              cardList = sel.selectedUserCards.slice();
-          } catch (eCL) {}
-          try {
-            if (sel && Array.isArray(sel.selectedMonths) && sel.selectedMonths.length && !sel._allMonths)
-              monthList = sel.selectedMonths.slice();
-          } catch (eML) {}
-          var srcArch = archive;
-          if (monthList && monthList.length) {
-            srcArch = {};
-            monthList.forEach(function(k) {
-              if (archive && archive[k]) {
-                try { srcArch[k] = JSON.parse(JSON.stringify(archive[k])); }
-                catch (e) { srcArch[k] = archive[k]; }
-              }
-            });
-            try {
-              var ck = periodKey(currentYear, currentMonth);
-              if (monthList.indexOf(ck) >= 0 && !srcArch[ck] && periodData) {
-                try { srcArch[ck] = JSON.parse(JSON.stringify(periodData)); }
-                catch (e2) { srcArch[ck] = periodData; }
-              }
-            } catch (eCur) {}
-          }
-          if (cardList && cardList.length) {
-            payload.archive = filterArchiveByUserCards(srcArch, cardList);
-            payload.selectedUserCards = cardList.slice();
-          } else {
-            payload.archive = srcArch;
-            try { payload.selectedUserCards = (typeof allPersonTitles === 'function') ? allPersonTitles() : []; }
-            catch (eA) { payload.selectedUserCards = []; }
-          }
-          if (monthList && monthList.length) payload.selectedMonths = monthList.slice();
-          try {
-            var order = [];
-            if (periodData && Array.isArray(periodData.personCardOrder) && periodData.personCardOrder.length)
-              order = periodData.personCardOrder.slice();
-            else if (typeof loadGlobalCardOrder === 'function') order = loadGlobalCardOrder();
-            if (cardList && cardList.length) {
-              var setO = {};
-              cardList.forEach(function(t) { setO[String(t || '').trim()] = true; });
-              order = order.filter(function(t) { return setO[String(t || '').trim()]; });
-            }
-            payload.personCardOrder = order;
-          } catch (eO) {}
-        }
-        if (want('plans')) payload.plans = plans;
-        if (want('recurringIncomes')) payload.recurringIncomes = recurringIncomes;
-        try {
-          if (want('selectedBankAccounts')) {
-            payload.selectedBankAccounts = selectedBankAccounts;
-            payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
-          }
-          if (want('userReminders')) {
-            try { payload.userReminders = typeof userReminders !== 'undefined' ? userReminders : []; } catch (eR) {}
-          }
-          if (want('savings')) {
-            try { payload.savings = loadSavings(); } catch (eSv) {}
-          }
-          if (want('subjects')) {
-            try {
-              payload.financialSubjects = (typeof loadFinancialSubjects === 'function') ? loadFinancialSubjects() : [];
-            } catch (eS) { payload.financialSubjects = []; }
-          }
-          /* دسته‌بندی مخارج: دیکشنری شخصی (اصلاح‌های کاربر) + دسته‌های سفارشی */
-          if (want('categories')) {
-            try { payload.categoryData = HKCategorizer.exportData(); } catch (eC) {}
-          }
-        } catch (e) {}
+        const payload = buildBackupPayload(selectedParts || null);
         let textOut = JSON.stringify(payload);
         const name = 'hesab-backup-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.json';
         if (_pendingBackupPassword) {
@@ -15872,6 +15901,117 @@ function onPeriodChange() {
         showToast('پشتیبان‌گیری ناموفق بود');
       }
     }
+
+    /* ===== پشتیبان خودکار (اندروید ۱۰ به بالا) =====
+       روزانه: یک نسخهٔ کامل در Downloads/HesabKetab (نسخهٔ امروز با هر بار رفتن اپ به پس‌زمینه تازه می‌شود)؛ ۷ روز اخیر + ۴ هفتهٔ قبل نگه داشته می‌شود.
+       ایمنی: قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید؛ ۵ نسخهٔ آخر نگه داشته می‌شود. */
+    var AUTO_BK_KEY = STORAGE_KEY + '_autoBackup';
+    function autoBkState() {
+      try { var o = JSON.parse(localStorage.getItem(AUTO_BK_KEY) || 'null'); if (o && typeof o === 'object') return o; } catch (e) {}
+      return { enabled: true };
+    }
+    function autoBkSave(o) { try { localStorage.setItem(AUTO_BK_KEY, JSON.stringify(o)); } catch (e) {} }
+    function autoBkPlugin() {
+      var C = window.Capacitor, P = C && C.Plugins && C.Plugins.NativeFileExport, native = false;
+      try { native = !!(C && C.isNativePlatform && C.isNativePlatform()); } catch (e) {}
+      return (native && P && typeof P.saveAutoBackup === 'function') ? P : null;
+    }
+    function _bkStamp() {
+      var t = getTodayPersian(), d = new Date(), p2 = function (n) { return String(n).padStart(2, '0'); };
+      return { day: t.y + '-' + p2(t.m) + '-' + p2(t.d), time: p2(d.getHours()) + p2(d.getMinutes()) + p2(d.getSeconds()) };
+    }
+    /* پشتیبان خالی، پشتیبان‌های قبلی را از چرخه بیرون نکند */
+    function _bkHasData(payload) {
+      try {
+        var any = false;
+        var scan = function (pd) {
+          if (any || !pd) return;
+          ['income', 'expense'].forEach(function (tab) {
+            ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r && !r.deletedAt && (Number(r.amount) > 0 || r.desc)) any = true; }); });
+          });
+        };
+        Object.keys(payload.archive || {}).forEach(function (k) { scan(payload.archive[k]); });
+        if (!any && (payload.plans || []).length) any = true;
+        if (!any && (payload.recurringIncomes || []).length) any = true;
+        if (!any && payload.savings && (payload.savings.items || []).length) any = true;
+        if (!any && (payload.financialSubjects || []).length) any = true;
+        return any;
+      } catch (e) { return true; }
+    }
+    var _autoBkBusy = null;
+    function writeAutoBackup(kind, tag) {
+      var P = autoBkPlugin();
+      if (!P) return Promise.resolve(false);
+      if (_autoBkBusy) return _autoBkBusy;
+      var job = (async function () {
+        try {
+          try { persistCurrent(); saveArchive(); } catch (e0) {}
+          var payload = buildBackupPayload(null);
+          if (kind === 'daily' && !_bkHasData(payload)) return false;
+          payload.autoBackup = { kind: kind, tag: tag || '' };
+          var st = _bkStamp();
+          var name = kind === 'daily' ? 'hesab-auto-' + st.day + '.json' : 'hesab-safety-' + st.day + '-' + st.time + (tag ? '-' + tag : '') + '.json';
+          await P.saveAutoBackup({ filename: name, data: utf8ToBase64(JSON.stringify(payload)) });
+          var s = autoBkState();
+          s.lastAt = Date.now(); s.lastName = name; s.lastError = '';
+          if (kind === 'daily') s.lastDaily = st.day;
+          autoBkSave(s);
+          try { await pruneAutoBackups(P); } catch (eP) {}
+          return true;
+        } catch (e) {
+          var s2 = autoBkState(); s2.lastError = String((e && (e.message || e.code)) || e); autoBkSave(s2);
+          return false;
+        }
+      })();
+      _autoBkBusy = job;
+      var clear = function () { if (_autoBkBusy === job) _autoBkBusy = null; };
+      job.then(clear, clear);
+      return job;
+    }
+    async function pruneAutoBackups(P) {
+      var r = await P.listAutoBackups(), files = (r && r.files) || [];
+      var byNameDesc = function (a, b) { return String(b.name).localeCompare(String(a.name)); };
+      var daily = files.filter(function (f) { return /^hesab-auto-/.test(f.name); }).sort(byNameDesc);
+      var safety = files.filter(function (f) { return /^hesab-safety-/.test(f.name); }).sort(byNameDesc);
+      var keep = {}, weeks = {}, nw = 0;
+      daily.slice(0, 7).forEach(function (f) { keep[f.name] = 1; });
+      daily.slice(7).forEach(function (f) { var w = Math.floor((Number(f.modified) || 0) / 604800); if (!weeks[w] && nw < 4) { weeks[w] = 1; nw++; keep[f.name] = 1; } });
+      safety.slice(0, 5).forEach(function (f) { keep[f.name] = 1; });
+      for (var i = 0; i < files.length; i++) {
+        if (!keep[files[i].name]) { try { await P.deleteAutoBackup({ name: files[i].name }); } catch (e) {} }
+      }
+    }
+    function maybeDailyAutoBackup(refreshToday) {
+      try {
+        var s = autoBkState();
+        if (s.enabled === false || !autoBkPlugin()) return;
+        if (s.lastDaily === _bkStamp().day) {
+          if (!refreshToday || Date.now() - (Number(s.lastAt) || 0) < 10 * 60 * 1000) return;
+        }
+        writeAutoBackup('daily');
+      } catch (e) {}
+    }
+    /* قبل از کار پرخطر: اول پشتیبان ایمنی (حداکثر ۶ ثانیه صبر)، بعد خود کار؛ اگر پشتیبان ممکن نبود، کار مثل قبل انجام می‌شود */
+    function safetyBackupThen(tag, fn) {
+      if (!autoBkPlugin() || autoBkState().enabled === false) return fn();
+      var done = false;
+      var go = function () { if (done) return; done = true; try { fn(); } catch (e) { console.error(e); } };
+      try { showToast('در حال گرفتن پشتیبان ایمنی…'); } catch (eT) {}
+      Promise.race([writeAutoBackup('safety', tag), new Promise(function (r) { setTimeout(r, 6000); })]).then(go, go);
+    }
+    function autoBkLastText() {
+      var s = autoBkState();
+      if (!s.lastAt) return 'هنوز پشتیبان خودکاری گرفته نشده';
+      var d = new Date(Number(s.lastAt)), now = new Date();
+      var hm = toPersianDigits(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+      var days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+      return 'آخرین پشتیبان خودکار: ' + (days <= 0 ? 'امروز ساعت ' + hm : days === 1 ? 'دیروز ساعت ' + hm : toPersianDigits(String(days)) + ' روز پیش');
+    }
+    setTimeout(function () { maybeDailyAutoBackup(false); }, 12000);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) maybeDailyAutoBackup(true);
+      else setTimeout(function () { maybeDailyAutoBackup(false); }, 4000);
+    });
 
     async function shareFullBackup() {
       return exportFullBackup();
@@ -16407,23 +16547,27 @@ function askBackupUserCards(selectedParts) {
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
       document.getElementById('backupReplaceBtn').onclick = () => {
         close();
-        try {
-          applyBackupData(data, 'replace');
-          showToast('بازیابی با جایگزینی انجام شد');
-        } catch (err) {
-          console.error(err);
-          showToast('خطا در بازیابی');
-        }
+        safetyBackupThen('restore', () => {
+          try {
+            applyBackupData(data, 'replace');
+            showToast('بازیابی با جایگزینی انجام شد');
+          } catch (err) {
+            console.error(err);
+            showToast('خطا در بازیابی');
+          }
+        });
       };
       document.getElementById('backupMergeBtn').onclick = () => {
         close();
-        try {
-          applyBackupData(data, 'merge');
-          showToast('بازیابی با ادغام انجام شد');
-        } catch (err) {
-          console.error(err);
-          showToast('خطا در ادغام');
-        }
+        safetyBackupThen('restore', () => {
+          try {
+            applyBackupData(data, 'merge');
+            showToast('بازیابی با ادغام انجام شد');
+          } catch (err) {
+            console.error(err);
+            showToast('خطا در ادغام');
+          }
+        });
       };
     }
 
@@ -17430,6 +17574,19 @@ function askBackupUserCards(selectedParts) {
       return buildSimpleImagePdf(out, 595.28, 841.89);
     }
 
+/* بعد از ذخیره: فهرست اپ‌های نمایش PDF باز می‌شود و فایل با اپ انتخاب‌شده نشان داده می‌شود */
+function openPdfWithChooser(uri) {
+  try {
+    var P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeFileExport;
+    if (!P || typeof P.openUri !== 'function' || !uri) return;
+    setTimeout(function () {
+      Promise.resolve(P.openUri({ uri: String(uri), mimeType: 'application/pdf', title: 'باز کردن PDF با' })).catch(function (e) {
+        var m = String((e && (e.message || e.code)) || e || '');
+        if (/no_app/.test(m)) { try { showToast('برنامه‌ای برای باز کردن PDF پیدا نشد؛ فایل در Downloads است'); } catch (eT) {} }
+      });
+    }, 350);
+  } catch (e) {}
+}
 async function exportPdf(){
       try{
         persistCurrent();
@@ -17447,6 +17604,7 @@ async function exportPdf(){
             const result = await native.exportHtmlToPdf({ html: html, filename: name });
             if (result && result.uri) {
               showToast('PDF در Downloads ذخیره شد');
+              openPdfWithChooser(result.uri);
               return;
             }
             throw new Error('no uri');
@@ -17462,7 +17620,7 @@ async function exportPdf(){
           if (isNative) {
             const b64 = await blobToBase64(blob);
             const saved = await nativeSaveBase64(name, 'application/pdf', b64);
-            if (saved && saved.uri) { showToast('PDF ذخیره شد'); return; }
+            if (saved && saved.uri) { showToast('PDF ذخیره شد'); openPdfWithChooser(saved.uri); return; }
             throw new Error('save fail');
           }
           const saved = await shareExportFile(blob, name, 'application/pdf');
@@ -17601,6 +17759,7 @@ async function openPdfPrintWindow(){
 
     function openSideMenu() {
       try { updateProfessionalModeUI(); } catch (e) {}
+      try { if (typeof silentUpdateCheck === 'function') silentUpdateCheck(2 * 60 * 1000); } catch (eU) {}
       const menu = document.getElementById('menuDropdown');
       const bd = document.getElementById('menuBackdrop');
       if (menu) menu.classList.add('open');
@@ -18135,7 +18294,7 @@ async function openPdfPrintWindow(){
 
     function askResetCurrentMonth() {
       closeSideMenu();
-      askConfirm('اطلاعات این ماه حذف شود؟', () => {
+      askConfirm('اطلاعات این ماه حذف شود؟', () => safetyBackupThen('reset-month', () => {
         try {
           // کل ماه جاری به سطل
           var _mName = (MONTHS[currentMonth - 1] || ('ماه ' + currentMonth));
@@ -18152,12 +18311,12 @@ async function openPdfPrintWindow(){
         saveArchive();
         renderAll();
         showToast('این ماه به سطل زباله منتقل شد');
-      });
+      }));
     }
 
     function askResetAllData() {
       closeSideMenu();
-      askConfirm('تمامی اطلاعات حذف شود؟', () => {
+      askConfirm('تمامی اطلاعات حذف شود؟', () => safetyBackupThen('reset-all', () => {
         try {
           pushToTrash('full_backup', 'کل اطلاعات', {
             sourceLabel: 'پاک کردن همه آرشیو',
@@ -18183,7 +18342,7 @@ async function openPdfPrintWindow(){
         renderAll();
         try { renderPlans(); renderRecurringBar(); renderLedgerTab(); } catch (e) {}
         showToast('همه اطلاعات به سطل زباله منتقل شد');
-      });
+      }));
     }
 
     /* —— Plans UI —— */
@@ -33241,6 +33400,7 @@ function openProjectRowPicker(secId) {
       var C = window.Capacitor, P = C && C.Plugins && C.Plugins.HkUpdater;
       var native = false; try { native = !!(C && C.isNativePlatform && C.isNativePlatform()); } catch (e) {}
       if (!native || !P || typeof P.download !== 'function') { openUpdateLink(url); return; }
+      try { if (autoBkState().enabled !== false) writeAutoBackup('safety', 'update'); } catch (eBk) {}
       var box = ov.querySelector('.upd-progress'), links = ov.querySelector('.upd-links'), hint = ov.querySelector('.upd-hint');
       var fill = box.querySelector('.upd-tube i'), pct = box.querySelector('.upd-pct'), st = box.querySelector('.upd-status'), more = box.querySelector('.upd-more');
       links.hidden = true; if (hint) hint.hidden = true; box.hidden = false; more.innerHTML = '';
@@ -33302,20 +33462,25 @@ function openProjectRowPicker(secId) {
       });
     }
     /* بررسی بی‌صدا (هر بار باز شدن اپ / برگشتن به اپ، حداکثر هر ۳ ساعت)؛ فقط نقطهٔ قرمز روی منو و دکمهٔ «بروزرسانی» نشان می‌دهد */
-    function silentUpdateCheck() {
+    var _updChecking = false;
+    function silentUpdateCheck(minGapMs) {
       try {
         if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
+        if (_updChecking) return;
         var last = +localStorage.getItem(UPDATE_CHECK_KEY) || 0;
-        if (Date.now() - last > 3 * 3600 * 1000) checkAppUpdate(true);
-      } catch (e) {}
+        if (Date.now() - last < (minGapMs == null ? 30 * 60 * 1000 : minGapMs)) return;
+        _updChecking = true;
+        Promise.resolve(checkAppUpdate(true)).then(function () { _updChecking = false; }, function () { _updChecking = false; });
+      } catch (e) { _updChecking = false; }
     }
     /* نشان قبلی تا بررسی بعدی حفظ می‌شود (بعد از نصب نسخهٔ جدید خودبه‌خود خاموش است) */
     try {
       var _knownRemote = +localStorage.getItem(UPDATE_REMOTE_KEY) || 0;
       if (_knownRemote > 0) getInstalledVersion().then(function (v) { if (v && v.code > 0 && _knownRemote > v.code) setUpdateBadge(true); });
     } catch (e) {}
-    setTimeout(silentUpdateCheck, 8000);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(silentUpdateCheck, 1500); });
+    /* هر بار باز شدن اپ (بدون فاصلهٔ حداقل)، برگشتن به اپ (هر ۳۰ دقیقه) و باز کردن منو (هر ۲ دقیقه) */
+    setTimeout(function () { silentUpdateCheck(0); }, 6000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(function () { silentUpdateCheck(30 * 60 * 1000); }, 1500); });
     (function initAppVersionLabel() {
       const el = document.getElementById('appVersionLabel');
       if (el) el.textContent = APP_VERSION_FA;

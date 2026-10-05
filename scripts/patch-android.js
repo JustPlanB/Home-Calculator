@@ -320,6 +320,83 @@ public class NativeFileExportPlugin extends Plugin {
     }catch(Exception e){ call.reject("save_download_failed",e); }
   }
 
+  /* ===== پشتیبان خودکار: پوشهٔ Downloads/HesabKetab (اندروید ۱۰ به بالا؛ بعد از حذف اپ هم می‌ماند) ===== */
+  private static final String AUTO_DIR="HesabKetab";
+  private String autoRel(){ return Environment.DIRECTORY_DOWNLOADS+"/"+AUTO_DIR+"/"; }
+  private boolean autoSafeName(String n){ return n!=null && n.matches("hesab-(auto|safety)-[0-9A-Za-z._-]{1,80}[.]json"); }
+
+  @com.getcapacitor.PluginMethod public void saveAutoBackup(PluginCall call){
+    if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
+    try{
+      String name=call.getString("filename","");
+      if(!autoSafeName(name)){ call.reject("bad_name"); return; }
+      byte[] bytes=decodeBase64(call.getString("data",""));
+      ContentResolver cr=getContext().getContentResolver();
+      /* همان نام در پوشه (مثلاً پشتیبان امروز) جایگزین می‌شود */
+      try{ cr.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, MediaStore.Downloads.DISPLAY_NAME+"=? AND "+MediaStore.Downloads.RELATIVE_PATH+"=?", new String[]{name, autoRel()}); }catch(Exception ignored){}
+      ContentValues v=new ContentValues();
+      v.put(MediaStore.Downloads.DISPLAY_NAME,name);
+      v.put(MediaStore.Downloads.MIME_TYPE,"application/json");
+      v.put(MediaStore.Downloads.RELATIVE_PATH,autoRel());
+      v.put(MediaStore.Downloads.IS_PENDING,1);
+      Uri u=cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,v);
+      if(u==null){ call.reject("insert_failed"); return; }
+      try(OutputStream out=cr.openOutputStream(u)){
+        if(out==null) throw new Exception("open output failed");
+        out.write(bytes); out.flush();
+      }catch(Exception we){ try{ cr.delete(u,null,null); }catch(Exception ignored){} throw we; }
+      finishPending(u);
+      call.resolve(new JSObject().put("ok",true).put("uri",u.toString()).put("filename",name).put("folder","Download/"+AUTO_DIR));
+    }catch(Exception e){ call.reject("auto_backup_failed",e); }
+  }
+
+  @com.getcapacitor.PluginMethod public void listAutoBackups(PluginCall call){
+    if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
+    android.database.Cursor c=null;
+    try{
+      com.getcapacitor.JSArray arr=new com.getcapacitor.JSArray();
+      c=getContext().getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+        new String[]{MediaStore.Downloads.DISPLAY_NAME, MediaStore.Downloads.SIZE, MediaStore.Downloads.DATE_MODIFIED},
+        MediaStore.Downloads.RELATIVE_PATH+"=?", new String[]{autoRel()}, null);
+      while(c!=null && c.moveToNext()){
+        String n=c.getString(0);
+        if(!autoSafeName(n)) continue;
+        arr.put(new JSObject().put("name",n).put("size",c.getLong(1)).put("modified",c.getLong(2)));
+      }
+      call.resolve(new JSObject().put("files",arr));
+    }catch(Exception e){ call.reject("list_failed",e); }
+    finally{ if(c!=null) c.close(); }
+  }
+
+  @com.getcapacitor.PluginMethod public void deleteAutoBackup(PluginCall call){
+    if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
+    try{
+      String name=call.getString("name","");
+      if(!autoSafeName(name)){ call.reject("bad_name"); return; }
+      int n=getContext().getContentResolver().delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+        MediaStore.Downloads.DISPLAY_NAME+"=? AND "+MediaStore.Downloads.RELATIVE_PATH+"=?", new String[]{name, autoRel()});
+      call.resolve(new JSObject().put("deleted",n));
+    }catch(Exception e){ call.reject("delete_failed",e); }
+  }
+
+  /** باز کردن فایل ذخیره‌شده با انتخاب اپ (فهرست اپ‌های سازگار، مثلاً نمایشگرهای PDF) */
+  @com.getcapacitor.PluginMethod public void openUri(PluginCall call){
+    try{
+      String uri=call.getString("uri","");
+      String mime=call.getString("mimeType","application/pdf");
+      String title=call.getString("title","باز کردن با");
+      if(uri==null || !uri.startsWith("content://")){ call.reject("bad_uri"); return; }
+      Intent view=new Intent(Intent.ACTION_VIEW);
+      view.setDataAndType(Uri.parse(uri), mime);
+      view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      Intent chooser=Intent.createChooser(view, title);
+      chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      getActivity().startActivity(chooser);
+      call.resolve(new JSObject().put("ok", true));
+    }catch(android.content.ActivityNotFoundException e){ call.reject("no_app",e); }
+    catch(Exception e){ call.reject("open_failed",e); }
+  }
+
   @com.getcapacitor.PluginMethod public void shareBase64File(PluginCall call){
     try{
       String filename=call.getString("filename","share.bin");
@@ -1483,7 +1560,7 @@ final class HkWidgetDraw {
     L.add(new Line(false,false,REG,0.95f,0.5f,"خرج امروز",muted(d)));
     if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، اپ را باز کنید",text(d)));
     else if(d.none) L.add(new Line(false,false,REG,1.05f,0.12f,"هنوز خرجی نداشتی",text(d)));
-    else L.add(new Line(false,true,BOLD,1.5f,0.12f,d.today,text(d)));
+    else L.add(new Line(false,true,BOLD,1.5f,0.12f,d.today,Color.parseColor("#ff6b4a")));
     float units=0, gaps=0;
     for(int i=0;i<L.size();i++){ units+=L.get(i).r*L.get(i).box(); if(i>0) gaps+=L.get(i).gap; }
     float u=ah/(units+gaps), umax=19*k, extra=0;
@@ -1503,7 +1580,9 @@ final class HkWidgetDraw {
         continue;
       }
       float s=fit(l.tf,size,l.t,aw);
-      cv.drawText(l.t, W-padX, y+l.asc()*size+(size-s)*l.asc()*0.5f, paint(l.tf,s,l.col,Paint.Align.RIGHT));
+      /* مبالغ چپ‌چین، برچسب‌ها راست‌چین */
+      if(l.num) cv.drawText(l.t, padX, y+l.asc()*size+(size-s)*l.asc()*0.5f, paint(l.tf,s,l.col,Paint.Align.LEFT));
+      else cv.drawText(l.t, W-padX, y+l.asc()*size+(size-s)*l.asc()*0.5f, paint(l.tf,s,l.col,Paint.Align.RIGHT));
       y+=size*l.box();
     }
     return bm;
@@ -1520,14 +1599,15 @@ final class HkWidgetDraw {
     if(page==0){ val=d.locked?"••••••":d.balance; vc=balColor(d); }
     else if(d.locked){ val="اپ را باز کنید"; num=false; vf=REG; vr=1.1f; }
     else if(d.none){ val="هنوز خرجی نداشتی"; num=false; vf=REG; vr=1.1f; }
-    else val=d.today;
+    else{ val=d.today; vc=Color.parseColor("#ff6b4a"); }
     float b1=TXT_A+TXT_D, b2=num?(NUM_A+NUM_D):(TXT_A+TXT_D), gap=0.1f;
     float u=ah/(b1+vr*b2+gap);
     float s=fit(REG,u,label,aw);
     cv.drawText(label, W-padX, padY+TXT_A*u, paint(REG,s,muted(d),Paint.Align.RIGHT));
     float y=padY+u*b1+gap*u, vs=vr*u, a=num?NUM_A:TXT_A;
     s=fit(vf,vs,val,aw);
-    cv.drawText(val, W-padX, y+a*vs, paint(vf,s,vc,Paint.Align.RIGHT));
+    if(num) cv.drawText(val, padX+10*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
+    else cv.drawText(val, W-padX, y+a*vs, paint(vf,s,vc,Paint.Align.RIGHT));
     /* نشانگر دو صفحه (کنار چپ) */
     float r=2.6f*k, cx=padX*0.55f;
     for(int i=0;i<2;i++){
