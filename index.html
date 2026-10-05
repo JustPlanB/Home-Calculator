@@ -10342,6 +10342,13 @@
     html:not([data-theme="light"]) .st-bg i:nth-child(4) { background: #3f6a1f; opacity: 0.22; }
     html:not([data-theme="light"]) .stats-sheet > .feature-sheet-bar { background: rgba(27,27,27,0.55) !important; }
     html:not([data-theme="light"]) .stats-sheet { --glass-bg: rgba(255,255,255,0.06); --glass-bd: rgba(255,255,255,0.11); }
+    /* میکروفون همیشه وسط خود فیلد (نه قاب) */
+    .desc-mic-wrap > .desc-mic-btn { top: 3px; bottom: auto; transform: none; margin-top: 0; height: calc(100% - 11px); max-height: 40px; }
+    /* ثبت تراکنش از پیامک: عنوان، شرح و دکمه‌ها همیشه دیده می‌شوند؛ فقط باکس فیلدهای بالا در صورت نیاز اسکرول می‌خورد (ترتیب فیلدها همان است) */
+    #smsConfirmModal .modal-box { display: flex !important; flex-direction: column !important; overflow: hidden !important; max-height: min(92vh, 680px) !important; max-height: min(92dvh, 680px) !important; }
+    #smsConfirmModal .modal-box > * { flex-shrink: 0; }
+    #smsConfirmModal .modal-box > #smsConfirmMeta { flex: 1 1 auto !important; min-height: 110px; overflow-y: auto !important; overflow-x: hidden !important; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    #smsConfirmModal.modal-overlay { padding-top: 3vh !important; padding-bottom: 3vh !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -11099,7 +11106,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۸';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۹';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15674,8 +15681,7 @@ function onPeriodChange() {
       document.removeEventListener('pointerdown', hkInfoOutside, true);
     }
     function hkInfoOutside(e) {
-      var t = document.getElementById('hkInfoTip');
-      if (t && t.contains(e.target)) return;
+      /* لمس هر جا، حتی خود باکس، آن را می‌بندد (آیکون خودش باز/بسته می‌کند) */
       if (e.target && e.target.closest && e.target.closest('.hk-info-btn')) return;
       hkCloseInfoTip();
     }
@@ -26170,7 +26176,9 @@ function getProjectBalance(subjectId) {
           sugBox = document.createElement('div');
           sugBox.id = 'smsPlanSuggest';
           sugBox.style.cssText = 'display:none;margin:4px 0 10px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1c1c1e;max-height:180px;overflow:auto;position:relative;z-index:20;';
-          if (desc.parentNode) desc.parentNode.insertBefore(sugBox, desc.nextSibling);
+          /* بیرون از قاب میکروفون، تا با باز شدن پیشنهادها آیکون جابه‌جا/پنهان نشود */
+          var _anc = desc._micWrap || desc;
+          if (_anc.parentNode) _anc.parentNode.insertBefore(sugBox, _anc.nextSibling);
         }
         sugBox.style.display = 'none';
         sugBox.innerHTML = '';
@@ -27277,10 +27285,12 @@ function confirmSmsEntry() {
           openVoiceInput(inp);
         });
       }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
-      setTimeout(function () {
-        try { if (voiceCanUse()) document.documentElement.classList.add('hk-voice'); } catch (e) {}
-      }, 3600);
+      function syncVoiceClass() {
+        try { document.documentElement.classList.toggle('hk-voice', !!voiceCanUse()); } catch (e) {}
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setup(); syncVoiceClass(); }); else { setup(); syncVoiceClass(); }
+      /* بعد از بررسی سرویس گفتار گوشی دوباره (اگر سرویس نبود، آیکون پنهان می‌شود) */
+      setTimeout(syncVoiceClass, 3600);
     })();
     /* امنیت: پیامک «بانکی» که از یک شمارهٔ موبایل شخصی آمده احتمالاً جعلی است (بانک‌ها با سرشماره/نام می‌فرستند) */
     function smsSenderLooksPersonal(sender) {
