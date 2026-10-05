@@ -1384,6 +1384,94 @@ public class HkUpdaterPlugin extends Plugin {
 }
 `;
 
+const hkWidget=`package ${pkg};
+
+import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
+import android.widget.RemoteViews;
+
+/** ویجت صفحهٔ اصلی گوشی: موجودی و خرج امروز (داده را خود اپ با HkWidget.update می‌فرستد) */
+public class HkWidgetProvider extends AppWidgetProvider {
+  static final String PREFS="hk_widget";
+
+  @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
+    for(int id: ids) render(ctx, mgr, id);
+  }
+
+  static void refreshAll(Context ctx){
+    try{
+      AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
+      int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetProvider.class));
+      for(int id: ids) render(ctx, mgr, id);
+    }catch(Exception ignored){}
+  }
+
+  static void render(Context ctx, AppWidgetManager mgr, int id){
+    SharedPreferences sp=ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    String title=sp.getString("title","حساب‌کتاب");
+    String balance=sp.getString("balance","—");
+    String today=sp.getString("today","—");
+    boolean neg=sp.getBoolean("neg",false);
+    boolean locked=sp.getBoolean("locked",false);
+    boolean light=sp.getBoolean("light",false);
+    RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget);
+    v.setInt(R.id.hk_w_root,"setBackgroundResource", light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+    v.setTextViewText(R.id.hk_w_title, title);
+    v.setTextColor(R.id.hk_w_title, light ? Color.parseColor("#3c3c43") : Color.parseColor("#b8b8bf"));
+    v.setTextColor(R.id.hk_w_label, light ? Color.parseColor("#6e6e76") : Color.parseColor("#98989f"));
+    v.setTextColor(R.id.hk_w_today, light ? Color.parseColor("#3c3c43") : Color.parseColor("#d1d1d6"));
+    if(locked){
+      v.setTextViewText(R.id.hk_w_balance, "••••••");
+      v.setTextViewText(R.id.hk_w_today, "برای دیدن مبالغ، اپ را باز کنید");
+      v.setTextColor(R.id.hk_w_balance, light ? Color.parseColor("#1c1c1e") : Color.WHITE);
+    }else{
+      v.setTextViewText(R.id.hk_w_balance, balance);
+      v.setTextViewText(R.id.hk_w_today, "خرج امروز: " + today);
+      v.setTextColor(R.id.hk_w_balance, neg ? Color.parseColor("#ff6b4a") : (light ? Color.parseColor("#3f9a5c") : Color.parseColor("#9ee858")));
+    }
+    Intent open=new Intent(ctx, MainActivity.class);
+    open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?PendingIntent.FLAG_IMMUTABLE:0);
+    v.setOnClickPendingIntent(R.id.hk_w_root, PendingIntent.getActivity(ctx, 0, open, fl));
+    mgr.updateAppWidget(id, v);
+  }
+}
+`;
+
+const hkWidgetPlugin=`package ${pkg};
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+@CapacitorPlugin(name="HkWidget")
+public class HkWidgetPlugin extends Plugin {
+  @com.getcapacitor.PluginMethod public void update(PluginCall call){
+    try{
+      SharedPreferences.Editor e=getContext().getSharedPreferences(HkWidgetProvider.PREFS, Context.MODE_PRIVATE).edit();
+      e.putString("title", call.getString("title","حساب‌کتاب"));
+      e.putString("balance", call.getString("balance","—"));
+      e.putString("today", call.getString("today","—"));
+      e.putBoolean("neg", Boolean.TRUE.equals(call.getBoolean("negative",false)));
+      e.putBoolean("locked", Boolean.TRUE.equals(call.getBoolean("locked",false)));
+      e.putBoolean("light", Boolean.TRUE.equals(call.getBoolean("light",false)));
+      e.apply();
+      HkWidgetProvider.refreshAll(getContext());
+      call.resolve();
+    }catch(Exception ex){ call.reject("widget_failed",ex); }
+  }
+}
+`;
+
 const main=`package ${pkg};
 
 import android.Manifest;
@@ -1401,6 +1489,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(HkRemindersPlugin.class);
     registerPlugin(HkSpeechPlugin.class);
     registerPlugin(HkUpdaterPlugin.class);
+    registerPlugin(HkWidgetPlugin.class);
     super.onCreate(savedInstanceState);
     // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض اپ پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
@@ -1423,6 +1512,8 @@ fs.writeFileSync(path.join(javaDir,'HkReminderReceiver.java'),hkReminderReceiver
 fs.writeFileSync(path.join(javaDir,'HkBootReceiver.java'),hkBootReceiver);
 fs.writeFileSync(path.join(javaDir,'HkSpeechPlugin.java'),hkSpeech);
 fs.writeFileSync(path.join(javaDir,'HkUpdaterPlugin.java'),hkUpdater);
+fs.writeFileSync(path.join(javaDir,'HkWidgetProvider.java'),hkWidget);
+fs.writeFileSync(path.join(javaDir,'HkWidgetPlugin.java'),hkWidgetPlugin);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -1454,6 +1545,14 @@ if(fs.existsSync(manifest)){
     '                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n' +
     '            </intent-filter>\n' +
     '        </receiver>\n    </application>');
+  // ویجت صفحهٔ اصلی گوشی
+  if(!s.includes('.HkWidgetProvider')) s=s.replace('</application>',
+    '        <receiver android:name=".HkWidgetProvider" android:exported="true" android:label="حساب‌کتاب">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
+    '            </intent-filter>\n' +
+    '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_info"/>\n' +
+    '        </receiver>\n    </application>');
   // FileProvider for Sharesheet
   if(!s.includes('.fileprovider')){
     const providerTag =
@@ -1482,6 +1581,60 @@ fs.writeFileSync(filePaths,
     <cache-path name="share_cache" path="share/" />
     <cache-path name="updates" path="updates/" />
 </paths>
+`);
+
+// منابع ویجت (چیدمان، پس‌زمینه، مشخصات)
+const resDir=path.join(base,'app/src/main/res');
+fs.mkdirSync(path.join(resDir,'layout'),{recursive:true});
+fs.mkdirSync(path.join(resDir,'drawable'),{recursive:true});
+fs.writeFileSync(path.join(resDir,'layout','hk_widget.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_w_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="14dp"
+    android:layoutDirection="rtl"
+    android:background="@drawable/hk_widget_bg">
+    <TextView android:id="@+id/hk_w_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textSize="13sp" android:textStyle="bold" android:text="حساب‌کتاب" android:maxLines="1"/>
+    <TextView android:id="@+id/hk_w_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textSize="11sp" android:layout_marginTop="6dp" android:text="موجودی"/>
+    <TextView android:id="@+id/hk_w_balance" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textSize="24sp" android:textStyle="bold" android:text="—" android:maxLines="1" android:autoSizeTextType="uniform"/>
+    <TextView android:id="@+id/hk_w_today" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:textSize="12sp" android:layout_marginTop="4dp" android:text="" android:maxLines="1"/>
+</LinearLayout>
+`);
+fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#F21B1B1B"/>
+    <corners android:radius="22dp"/>
+    <stroke android:width="1dp" android:color="#22FFFFFF"/>
+</shape>
+`);
+fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg_light.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#F7FFFFFF"/>
+    <corners android:radius="22dp"/>
+    <stroke android:width="1dp" android:color="#1A000000"/>
+</shape>
+`);
+fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/hk_widget"/>
 `);
 
 console.log('Android SMS + Downloads/PDF + FileProvider Share bridge patched');

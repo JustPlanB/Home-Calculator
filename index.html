@@ -20317,6 +20317,7 @@ async function openPdfPrintWindow(){
       try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
       if (!isFinite(iv)) iv = 0;
       var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
+      try { pushHomeWidget(); } catch (eW) {}
       if (!force && txt === _hbcLast) return;
       /* force: از null بچرخان روی عدد درست (افکت کامل حفظ شود؛ عدد موقت نشان داده نشود) */
       var prev = force ? null : _hbcLast;
@@ -20332,6 +20333,37 @@ async function openPdfPrintWindow(){
         try { if (amt._hbcPend) { amt._hbcPend = false; updateHomeBalanceCircle(); } } catch(e2){}
       }, 1400);
     }
+    /* ویجت صفحهٔ اصلی گوشی: موجودی + خرج امروز؛ با قفل برنامه مبالغ نمایش داده نمی‌شوند */
+    var _widgetT = null;
+    function pushHomeWidget() {
+      clearTimeout(_widgetT);
+      _widgetT = setTimeout(async function () {
+        try {
+          var C = window.Capacitor, P = C && C.Plugins && C.Plugins.HkWidget;
+          if (!P || typeof P.update !== 'function' || !(C.isNativePlatform && C.isNativePlatform())) return;
+          var bal = 0; try { bal = Number(sumGlobalAccountBalances()) || 0; } catch (e0) {}
+          var t = getTodayPersian(), spent = 0;
+          var key = periodKey(t.y, t.m);
+          var pd = (key === periodKey(currentYear, currentMonth)) ? periodData : (archive && archive[key]);
+          (((pd && pd.expense && pd.expense.sections) || [])).forEach(function (sec) {
+            (sec.rows || []).forEach(function (r) {
+              if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+              if (dayNum(r) === t.d) spent += Number(r.amount) || 0;
+            });
+          });
+          var locked = false; try { locked = !!(await lockIsEnabled()); } catch (eL) {}
+          await P.update({
+            title: 'حساب‌کتاب · ' + MONTHS[t.m - 1],
+            balance: (bal < 0 ? '-' : '') + formatNum(Math.abs(bal)),
+            today: formatNum(spent),
+            negative: bal < 0,
+            locked: locked,
+            light: document.documentElement.getAttribute('data-theme') === 'light'
+          });
+        } catch (e) {}
+      }, 600);
+    }
+    document.addEventListener('visibilitychange', function () { if (document.hidden) pushHomeWidget(); });
     /* دایرهٔ جستجو: بخش مانده (فیلترها + جدول مانده به تفکیک) */
     function openHomeMandeh() {
       try { resetBalanceSearch(); } catch (eRs) {}
