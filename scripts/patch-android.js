@@ -1170,6 +1170,8 @@ public class HkBootReceiver extends BroadcastReceiver {
     if(Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)
         || "android.intent.action.QUICKBOOT_POWERON".equals(a)){
       try{ HkRemindersPlugin.armAll(c); }catch(Exception ignored){}
+      /* بعد از به‌روزرسانی اپ، ویجت‌ها با چیدمان جدید دوباره کشیده شوند */
+      try{ HkWidgetProvider.refreshAll(c); }catch(Exception ignored){}
     }
   }
 }
@@ -1716,19 +1718,24 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
   }
+  /* کارت فعلی هر ویجت ذخیره می‌شود؛ جابه‌جایی = به‌روزرسانی کامل با setDisplayedChild (روی همهٔ لانچرها قابل‌اعتماد؛ انیمیشن لغزش هم اجرا می‌شود) */
+  static int page(Context ctx, int id){ return ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getInt("small_page_"+id, 0); }
+  static void setPage(Context ctx, int id, int p){ ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit().putInt("small_page_"+id, p).apply(); }
   @Override public void onReceive(Context ctx, Intent intent){
     if(intent!=null && ACTION_FLIP.equals(intent.getAction())){
       int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
       if(id!=AppWidgetManager.INVALID_APPWIDGET_ID){
         try{
-          RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
-          v.showNext(R.id.hk_ws_flip);
-          AppWidgetManager.getInstance(ctx).partiallyUpdateAppWidget(id, v);
+          setPage(ctx, id, page(ctx, id)==0 ? 1 : 0);
+          render(ctx, AppWidgetManager.getInstance(ctx), id);
         }catch(Exception ignored){}
       }
       return;
     }
     super.onReceive(ctx, intent);
+  }
+  @Override public void onDeleted(Context ctx, int[] ids){
+    try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids) e.remove("small_page_"+id); e.apply(); }catch(Exception ignored){}
   }
 
   static void refreshAll(Context ctx){
@@ -1747,6 +1754,7 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
       v.setInt(R.id.hk_ws_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_ws_p0, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 0));
       v.setImageViewBitmap(R.id.hk_ws_p1, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 1));
+      v.setDisplayedChild(R.id.hk_ws_flip, page(ctx, id));
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
       Intent flip=new Intent(ctx, HkWidgetSmallProvider.class);
       flip.setAction(ACTION_FLIP);
@@ -1937,7 +1945,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
         <ImageView android:id="@+id/hk_ws_p0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="موجودی"/>
         <ImageView android:id="@+id/hk_ws_p1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="خرج امروز"/>
     </ViewFlipper>
-    <FrameLayout android:id="@+id/hk_ws_flipbtn" android:layout_width="44dp" android:layout_height="match_parent" android:layout_gravity="left" android:contentDescription="کارت بعدی"/>
+    <FrameLayout android:id="@+id/hk_ws_flipbtn" android:layout_width="64dp" android:layout_height="match_parent" android:layout_gravity="left" android:clickable="true" android:focusable="true" android:contentDescription="کارت بعدی"/>
 </FrameLayout>
 `);
 // انیمیشن لغزش عمودی کارت‌های ویجت یک‌خطی
