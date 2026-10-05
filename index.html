@@ -10143,6 +10143,30 @@
     html .theme-switch.ts-min .ts-knob::before { width: 6px; height: 6px; left: 12px; top: 6px; }
     html .theme-switch.ts-min .ts-knob::after { width: 4px; height: 4px; left: 6px; top: 13px; box-shadow: 8px 3px 0 -0.5px rgba(120,128,145,0.45); }
     html .theme-switch.ts-min.on .ts-knob::before, html .theme-switch.ts-min.on .ts-knob::after { opacity: 1; }
+    /* قرض — جدول هر رابطهٔ دونفره هماهنگ با باکسش: فاصله از لبه‌ها، گوشه‌های گرد، بدون خط‌های لبهٔ بیرونی */
+    #panel-ledger #sections-ledger .section-body { padding: 0 10px !important; box-sizing: border-box; }
+    #panel-ledger #sections-ledger .section-body table {
+      width: 100% !important; border-collapse: separate !important; border-spacing: 0 !important;
+      border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 12px !important; overflow: hidden !important;
+    }
+    #panel-ledger #sections-ledger .section-body table :is(th, td) { border: none !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; border-left: 1px solid rgba(255,255,255,0.08) !important; }
+    #panel-ledger #sections-ledger .section-body table tr > :last-child { border-left: none !important; }
+    #panel-ledger #sections-ledger .section-body table tbody tr:last-child > td { border-bottom: none !important; }
+    html[data-theme="light"] #panel-ledger #sections-ledger .section-body table { border-color: rgba(0,0,0,0.10) !important; }
+    html[data-theme="light"] #panel-ledger #sections-ledger .section-body table :is(th, td) { border-bottom-color: rgba(0,0,0,0.07) !important; border-left-color: rgba(0,0,0,0.07) !important; }
+    /* باکس داخل سلول: استروک فقط وقتی خالی است یا در حال ویرایش/فوکوس؛ پرشده و قفل = بدون استروک */
+    #panel-ledger #sections-ledger .section-body tbody td .cell.locked:not(:focus) { border-color: transparent !important; }
+    /* ضربدر حذف رابطه در حالت بسته هم‌اندازهٔ حالت باز */
+    #panel-ledger #sections-ledger .section.collapsed .section-header .btn-del-row { font-size: 1.45rem !important; }
+    /* پروژه‌ها: آیکون‌های ضربدر و ویرایش بدون باکس دورشان */
+    #subjectsList .project-card-actions :is(.btn-del-row, .btn-edit-title),
+    html[data-theme="light"] #subjectsList .project-card-actions :is(.btn-del-row, .btn-edit-title) {
+      background: transparent !important; border: none !important; box-shadow: none !important;
+    }
+    /* جستجو: ستون بانک — یک خط، با سه‌نقطه اگر بلند بود */
+    #searchResultBox td.sr-bank { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+    .upd-hint { font-size: 0.75rem; line-height: 1.7; color: var(--muted); margin: 8px 2px 4px; text-align: right; }
+    #updDlg .upd-go { display: block; width: 100%; min-height: 48px; border: none !important; border-radius: 12px !important; font-family: inherit; font-weight: 800; font-size: 0.95rem; margin: 6px 0; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -10494,9 +10518,10 @@
           <table class="summary-table">
             <thead>
               <tr>
-                <th style="text-align:right;padding-right:12px;width:46%;">شرح</th>
-                <th style="width:24%;">تاریخ</th>
-                <th style="width:30%;">مبلغ</th>
+                <th style="text-align:right;padding-right:12px;width:34%;">شرح</th>
+                <th style="width:20%;">بانک</th>
+                <th style="width:21%;">تاریخ</th>
+                <th style="width:25%;">مبلغ</th>
               </tr>
             </thead>
             <tbody id="search-result-body"></tbody>
@@ -10883,7 +10908,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۰';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۱';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -32637,7 +32662,9 @@ function openProjectRowPicker(secId) {
     /* ===== بروزرسانی واقعی =====
        نسخهٔ نصب‌شده از خود اندروید (versionName/versionCode) خوانده می‌شود و با فایل version.json روی سرور مقایسه می‌گردد.
        آدرس سرور را در UPDATE_MANIFEST_URL بگذارید (مثلاً GitHub Pages یا سایت خودتان؛ باید عمومی و HTTPS باشد). */
-    var UPDATE_MANIFEST_URL = 'https://raw.githubusercontent.com/JustPlanB/Home-Calculator/main/version.json';
+    /* هر بیلد امضاشدهٔ main این فایل را در شاخهٔ update-feed به‌روز می‌کند؛ اگر در دسترس نبود، فایل شاخهٔ main خوانده می‌شود */
+    var UPDATE_MANIFEST_URL = 'https://raw.githubusercontent.com/JustPlanB/Home-Calculator/update-feed/version.json';
+    var UPDATE_MANIFEST_FALLBACK = 'https://raw.githubusercontent.com/JustPlanB/Home-Calculator/main/version.json';
     var UPDATE_CHECK_KEY = STORAGE_KEY + '_updCheck';
     var _appInfo = null;
     function getInstalledVersion() {
@@ -32648,14 +32675,22 @@ function openProjectRowPicker(secId) {
       } catch (e) {}
       return Promise.resolve({ name: '', code: 0 });
     }
-    function fetchUpdateManifest() {
+    function fetchUpdateManifestFrom(url) {
       var ctl = ('AbortController' in window) ? new AbortController() : null;
       var t = setTimeout(function () { try { ctl && ctl.abort(); } catch (e) {} }, 9000);
-      return fetch(UPDATE_MANIFEST_URL + (UPDATE_MANIFEST_URL.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store', signal: ctl ? ctl.signal : undefined })
-        .then(function (r) { clearTimeout(t); if (!r.ok) throw new Error('http_' + r.status); return r.json(); });
+      return fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+        .then(function (r) { clearTimeout(t); if (!r.ok) throw new Error('http_' + r.status); return r.json(); },
+              function (e) { clearTimeout(t); throw e; });
+    }
+    function fetchUpdateManifest() {
+      return fetchUpdateManifestFrom(UPDATE_MANIFEST_URL).catch(function () { return fetchUpdateManifestFrom(UPDATE_MANIFEST_FALLBACK); });
     }
     function openUpdateLink(url) {
       if (!/^(https:|bazaar:|myket:|market:)/i.test(String(url || ''))) return;   /* فقط پیوندهای امن/فروشگاه */
+      /* روی اندروید: پیمایش به آدرس بیرونی را Capacitor به مرورگر/استور گوشی می‌سپارد (دانلود APK در مرورگر) */
+      var native = false;
+      try { native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch (eN) {}
+      if (native) { try { location.href = url; return; } catch (e0) {} }
       try { window.open(url, '_system'); } catch (e) { try { location.href = url; } catch (e2) {} }
     }
     function showUpdateDialog(m, inst) {
@@ -32666,13 +32701,14 @@ function openProjectRowPicker(secId) {
       if (st.bazaar) links.push(['کافه‌بازار', st.bazaar]);
       if (st.myket) links.push(['مایکت', st.myket]);
       if (st.play) links.push(['گوگل‌پلی', st.play]);
-      if (m.apk) links.push(['دانلود مستقیم', m.apk]);
+      if (m.apk) links.push(['دانلود نسخهٔ جدید', m.apk]);
       var ov = document.createElement('div');
       ov.id = 'updDlg'; ov.className = 'backup-pick-overlay';
       ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">نسخهٔ جدید ' + escapeHtml(toPersianDigits(String(m.versionName || ''))) + ' آماده است</div>' +
         '<div class="upd-cur">نسخهٔ نصب‌شده: ' + escapeHtml(toPersianDigits(inst.name || '—')) + '</div>' +
         (notes.length ? '<ul class="upd-notes">' + notes.slice(0, 12).map(function (n) { return '<li>' + escapeHtml(String(n)) + '</li>'; }).join('') + '</ul>' : '') +
         '<div class="upd-links">' + links.map(function (l, i) { return '<button type="button" class="backup-pick-ok upd-go" data-i="' + i + '">' + escapeHtml(l[0]) + '</button>'; }).join('') + '</div>' +
+        (m.apk ? '<div class="upd-hint">بعد از دانلود، روی فایل در اعلان‌ها بزنید و «نصب» را انتخاب کنید. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
         '<div class="backup-pick-actions"><button type="button" class="backup-pick-cancel" id="updLater">بعداً</button></div></div>';
       document.body.appendChild(ov);
       ov.querySelectorAll('.upd-go').forEach(function (b) { b.onclick = function () { openUpdateLink(links[+b.getAttribute('data-i')][1]); }; });
@@ -34230,7 +34266,7 @@ function openProjectRowPicker(secId) {
               if (norm(r.desc).indexOf(q) < 0) return;
               if (dayF && dayNum(r) !== dayF) return;
               titles[t] = 1;
-              list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t });
+              list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t, bank: (r.account || '').trim() });
             });
           });
         });
@@ -34250,6 +34286,10 @@ function openProjectRowPicker(secId) {
         td.textContent = full;
         td.title = full;
         td.onclick = function (e) { e.stopPropagation(); try { showCellTextPopup(td, full); } catch (err) {} };
+        var tdB = document.createElement('td');
+        tdB.className = 'sr-bank';
+        tdB.textContent = it.bank ? toPersianDigits(it.bank) : '—';
+        tdB.title = it.bank || '';
         var tdD = document.createElement('td');
         tdD.textContent = toPersianDigits(String(it.y)) + '/' + p2(it.m) + (it.d ? '/' + p2(it.d) : '');
         var tdV = document.createElement('td');
@@ -34257,17 +34297,17 @@ function openProjectRowPicker(secId) {
         tdV.textContent = formatNum(it.amount);
         /* نتیجهٔ جستجو: مبلغ‌ها سفید (فارغ از درآمد/خرج) */
         tdV.style.setProperty('color', '#ffffff', 'important');
-        tr.appendChild(td); tr.appendChild(tdD); tr.appendChild(tdV);
+        tr.appendChild(td); tr.appendChild(tdB); tr.appendChild(tdD); tr.appendChild(tdV);
         body.appendChild(tr);
       });
       if (!list.length) {
-        body.innerHTML = '<tr><td colspan="3" style="text-align:center;opacity:0.7;">نتیجه‌ای پیدا نشد</td></tr>';
+        body.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.7;">نتیجه‌ای پیدا نشد</td></tr>';
       }
       if (foot) {
         foot.innerHTML = '';
         var addF = function (label, v, color) {
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td class="val" style="color:' + color + '">' + formatNum(v) + '</td>';
+          tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td></td><td class="val" style="color:' + color + '">' + formatNum(v) + '</td>';
           foot.appendChild(tr);
         };
         if (sumI) addF('جمع درآمد', sumI, '#ffffff');
@@ -34602,7 +34642,7 @@ function openProjectRowPicker(secId) {
       <div class="modal-title">پروژه‌ها</div>
       <div id="subjectsList" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
       <label class="family-label">نام پروژه</label>
-      <input id="subjectNewName" class="family-input" placeholder="مثلاً سهراب" dir="rtl" style="margin-bottom:8px;">
+      <input id="subjectNewName" class="family-input" placeholder="مثلاً سهراب/ساختمان آسمان" dir="rtl" style="margin-bottom:8px;">
       <div style="display:flex;gap:8px;">
         <button type="button" class="modal-btn primary" onclick="addSubjectFromModal()">افزودن</button>
         <button type="button" class="modal-btn" onclick="closeSubjectsModal()">بستن</button>
