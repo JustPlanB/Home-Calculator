@@ -1556,15 +1556,18 @@ final class HkWidgetDraw {
     java.util.ArrayList<Line> L=new java.util.ArrayList<>();
     L.add(new Line(true,false,BOLD,1.0f,0,"حساب‌کتاب",text(d)));
     L.add(new Line(false,false,REG,0.95f,0.55f,"موجودی",muted(d)));
-    L.add(new Line(false,true,BOLD,2.3f,0.12f,d.locked?"••••••":d.balance,balColor(d)));
+    L.add(new Line(false,true,BOLD,1.7f,0.12f,d.locked?"••••••":d.balance,balColor(d)));
     L.add(new Line(false,false,REG,0.95f,0.5f,"خرج امروز",muted(d)));
     if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، اپ را باز کنید",text(d)));
     else if(d.none) L.add(new Line(false,false,REG,1.05f,0.12f,"هنوز خرجی نداشتی",text(d)));
-    else L.add(new Line(false,true,BOLD,1.5f,0.12f,d.today,Color.parseColor("#ff6b4a")));
+    else L.add(new Line(false,true,BOLD,1.7f,0.12f,d.today,Color.parseColor("#ff6b4a")));
     float units=0, gaps=0;
     for(int i=0;i<L.size();i++){ units+=L.get(i).r*L.get(i).box(); if(i>0) gaps+=L.get(i).gap; }
     float u=ah/(units+gaps), umax=19*k, extra=0;
     if(u>umax){ extra=ah-umax*(units+gaps); u=umax; }
+    /* مبلغ موجودی و مبلغ خرج امروز هم‌اندازه (کوچک‌ترینِ اندازهٔ جاشونده) */
+    float numS=Float.MAX_VALUE;
+    for(Line l: L) if(l.num) numS=Math.min(numS, fit(l.tf, l.r*u, l.t, aw));
     float y=padY;
     for(int i=0;i<L.size();i++){
       Line l=L.get(i);
@@ -1579,7 +1582,7 @@ final class HkWidgetDraw {
         y+=size*(TXT_A+TXT_D);
         continue;
       }
-      float s=fit(l.tf,size,l.t,aw);
+      float s=l.num?numS:fit(l.tf,size,l.t,aw);
       /* مبالغ چپ‌چین، برچسب‌ها راست‌چین */
       if(l.num) cv.drawText(l.t, padX, y+l.asc()*size+(size-s)*l.asc()*0.5f, paint(l.tf,s,l.col,Paint.Align.LEFT));
       else cv.drawText(l.t, W-padX, y+l.asc()*size+(size-s)*l.asc()*0.5f, paint(l.tf,s,l.col,Paint.Align.RIGHT));
@@ -1688,6 +1691,7 @@ import android.widget.RemoteViews;
 
 /** ویجت یک‌خطی: موجودی؛ با اسکرول عمودی خرج امروز */
 public class HkWidgetSmallProvider extends AppWidgetProvider {
+  static final int LOOP_COUNT=2000;
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
   }
@@ -1714,6 +1718,7 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
       v.setRemoteAdapter(R.id.hk_ws_list, svc);
       v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
+      v.setScrollPosition(R.id.hk_ws_list, LOOP_COUNT/2);
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
       mgr.updateAppWidget(id, v);
       mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_ws_list);
@@ -1737,15 +1742,21 @@ public class HkWidgetListService extends RemoteViewsService {
     final Context ctx=getApplicationContext();
     return new RemoteViewsFactory(){
       HkWidgetDraw.Data d;
+      final android.graphics.Bitmap[] cache=new android.graphics.Bitmap[2];
+      int cw=0, ch=0;
       public void onCreate(){}
-      public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); }
+      public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); cache[0]=null; cache[1]=null; }
       public void onDestroy(){}
-      public int getCount(){ return 2; }
+      /* اسکرول بی‌پایان: صفحه‌ها پشت‌سرهم تکرار می‌شوند (زوج = موجودی، فرد = خرج امروز) */
+      public int getCount(){ return HkWidgetSmallProvider.LOOP_COUNT; }
       public RemoteViews getViewAt(int pos){
         if(d==null) d=HkWidgetDraw.load(ctx);
         float[] sz=HkWidgetDraw.size(ctx, AppWidgetManager.getInstance(ctx), id, 250, 60);
+        int pg=pos%2;
+        if((int)sz[0]!=cw || (int)sz[1]!=ch){ cache[0]=null; cache[1]=null; cw=(int)sz[0]; ch=(int)sz[1]; }
+        if(cache[pg]==null) cache[pg]=HkWidgetDraw.page(ctx, cw, ch, sz[2], d, pg);
         RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_item);
-        v.setImageViewBitmap(R.id.hk_wi_img, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, pos));
+        v.setImageViewBitmap(R.id.hk_wi_img, cache[pg]);
         v.setOnClickFillInIntent(R.id.hk_wi_img, new Intent());
         return v;
       }
