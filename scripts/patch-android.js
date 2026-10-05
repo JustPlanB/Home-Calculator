@@ -1234,14 +1234,22 @@ public class HkSpeechPlugin extends Plugin {
     if(Build.VERSION.SDK_INT<31) return false;
     try{ return SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext()); }catch(Exception e){ return false; }
   }
+  /* موتوری که آخرین بار جواب داده ذخیره می‌شود تا دفعهٔ بعد مستقیم همان شروع شود
+     (هر تلاشِ ناموفق یک بوق اضافه می‌زد؛ استاندارد یک بوق در شروع است) */
+  private int savedEngine(){ try{ return getContext().getSharedPreferences("hk_speech",android.content.Context.MODE_PRIVATE).getInt("engine",-1); }catch(Exception e){ return -1; } }
+  private void saveEngine(int a){ try{ getContext().getSharedPreferences("hk_speech",android.content.Context.MODE_PRIVATE).edit().putInt("engine",a).apply(); }catch(Exception ignored){} }
   private void begin(final PluginCall call){
     if(pending!=null){ try{ pending.reject("replaced"); }catch(Exception ignored){} }
     pending=call; gotSpeech=false;
-    attempt = onDeviceOk() ? 0 : 1;
+    int se=savedEngine();
+    if(se==0 && !onDeviceOk()) se=-1;
+    attempt = se>=0 ? se : (onDeviceOk() ? 0 : 1);
     ui.post(new Runnable(){ @Override public void run(){ listen(); }});
   }
   private void nextAttempt(final int err){
     destroyRec();
+    /* موتور ذخیره‌شده دیگر کار نمی‌کند: از اول ترتیب عادی */
+    if(savedEngine()==attempt) saveEngine(-1);
     if(attempt<2 && !gotSpeech){
       attempt++;
       ui.postDelayed(new Runnable(){ @Override public void run(){ if(pending!=null) listen(); }}, 350);
@@ -1256,7 +1264,7 @@ public class HkSpeechPlugin extends Plugin {
       final boolean onDev = attempt==0 && Build.VERSION.SDK_INT>=31;
       rec = onDev ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext()) : SpeechRecognizer.createSpeechRecognizer(getContext());
       rec.setRecognitionListener(new RecognitionListener(){
-        @Override public void onReadyForSpeech(Bundle b){ notifyListeners("state",new JSObject().put("state","ready").put("engine",attempt)); }
+        @Override public void onReadyForSpeech(Bundle b){ saveEngine(attempt); notifyListeners("state",new JSObject().put("state","ready").put("engine",attempt)); }
         @Override public void onBeginningOfSpeech(){ gotSpeech=true; notifyListeners("state",new JSObject().put("state","speaking")); }
         @Override public void onRmsChanged(float v){ notifyListeners("level",new JSObject().put("rms",(double)v)); }
         @Override public void onBufferReceived(byte[] b){}
@@ -1596,12 +1604,9 @@ final class HkWidgetDraw {
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    /* هر کارت پس‌زمینهٔ خودش را دارد (کارت‌های StackView روی هم می‌لغزند) */
-    Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG);
-    bg.setColor(d.light?Color.parseColor("#FFFFFF"):Color.parseColor("#1B1B1B"));
-    float rr=Math.min(22*k, H/2f);
-    cv.drawRoundRect(new android.graphics.RectF(0,0,W,H), rr, rr, bg);
-    float padX=16*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-10*k;
+    /* سمت چپ ۴۰dp جای دکمهٔ جابه‌جایی (فلش‌ها) است */
+    float btnW=40*k;
+    float padX=14*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-btnW;
     String label=page==0?"موجودی":"خرج امروز";
     String val; boolean num=true; Typeface vf=BOLD; float vr=1.9f; int vc=text(d);
     if(page==0){ val=d.locked?"••••••":d.balance; vc=balColor(d); }
@@ -1614,15 +1619,22 @@ final class HkWidgetDraw {
     cv.drawText(label, W-padX, padY+TXT_A*u, paint(REG,s,muted(d),Paint.Align.RIGHT));
     float y=padY+u*b1+gap*u, vs=vr*u, a=num?NUM_A:TXT_A;
     s=fit(vf,vs,val,aw);
-    if(num) cv.drawText(val, padX+10*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
+    if(num) cv.drawText(val, btnW+4*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
     else cv.drawText(val, W-padX, y+a*vs, paint(vf,s,vc,Paint.Align.RIGHT));
-    /* نشانگر دو صفحه (کنار چپ) */
-    float r=2.6f*k, cx=padX*0.55f;
+    /* دکمهٔ جابه‌جایی: فلش بالا و پایین با دو نقطهٔ صفحه در وسط */
+    float cx=btnW/2f, cy=H/2f, r=2.3f*k;
     for(int i=0;i<2;i++){
       Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
       p.setColor(i==page?text(d):(d.light?Color.parseColor("#c7c7cc"):Color.parseColor("#48484a")));
-      cv.drawCircle(cx, H/2f+(i==0?-1:1)*5*k, r, p);
+      cv.drawCircle(cx, cy+(i==0?-1:1)*4.5f*k, r, p);
     }
+    Paint ar=new Paint(Paint.ANTI_ALIAS_FLAG);
+    ar.setStyle(Paint.Style.STROKE); ar.setStrokeWidth(2f*k); ar.setStrokeCap(Paint.Cap.ROUND); ar.setStrokeJoin(Paint.Join.ROUND);
+    ar.setColor(muted(d));
+    float aw2=5f*k, ah2=3.2f*k, off=Math.min(H*0.32f, 15*k);
+    android.graphics.Path up=new android.graphics.Path(); up.moveTo(cx-aw2, cy-off+ah2); up.lineTo(cx, cy-off-ah2+1*k); up.lineTo(cx+aw2, cy-off+ah2);
+    android.graphics.Path dn=new android.graphics.Path(); dn.moveTo(cx-aw2, cy+off-ah2); dn.lineTo(cx, cy+off+ah2-1*k); dn.lineTo(cx+aw2, cy+off-ah2);
+    cv.drawPath(up, ar); cv.drawPath(dn, ar);
     return bm;
   }
 }
@@ -1685,24 +1697,38 @@ public class HkWidgetProvider extends AppWidgetProvider {
 
 const hkWidgetSmall=`package ${pkg};
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-/** ویجت یک‌خطی: موجودی؛ با اسکرول عمودی خرج امروز */
+/** ویجت یک‌خطی: دو کارت (موجودی، خرج امروز) در ViewFlipper؛ لمس فلش‌های کنار، کارت بعدی را با لغزش عمودی می‌آورد */
 public class HkWidgetSmallProvider extends AppWidgetProvider {
-  /* دو کارت (موجودی، خرج امروز) در StackView با چرخش حلقه‌ای: هر کشیدن بالا/پایین دقیقاً یک کارت جابه‌جا می‌شود */
-  static final int LOOP_COUNT=2;
+  static final String ACTION_FLIP="ir.hesabketab.app.WIDGET_FLIP";
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
   }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
+  }
+  @Override public void onReceive(Context ctx, Intent intent){
+    if(intent!=null && ACTION_FLIP.equals(intent.getAction())){
+      int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+      if(id!=AppWidgetManager.INVALID_APPWIDGET_ID){
+        try{
+          RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
+          v.showNext(R.id.hk_ws_flip);
+          AppWidgetManager.getInstance(ctx).partiallyUpdateAppWidget(id, v);
+        }catch(Exception ignored){}
+      }
+      return;
+    }
+    super.onReceive(ctx, intent);
   }
 
   static void refreshAll(Context ctx){
@@ -1713,65 +1739,26 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
     }catch(Exception ignored){}
   }
 
-  @SuppressWarnings("deprecation")
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 60);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
-      Intent svc=new Intent(ctx, HkWidgetListService.class);
-      svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
-      svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
-      v.setRemoteAdapter(R.id.hk_ws_list, svc);
-      v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
+      v.setInt(R.id.hk_ws_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      v.setImageViewBitmap(R.id.hk_ws_p0, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 0));
+      v.setImageViewBitmap(R.id.hk_ws_p1, HkWidgetDraw.page(ctx, (int)sz[0], (int)sz[1], sz[2], d, 1));
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
+      Intent flip=new Intent(ctx, HkWidgetSmallProvider.class);
+      flip.setAction(ACTION_FLIP);
+      flip.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+      int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?PendingIntent.FLAG_IMMUTABLE:0);
+      v.setOnClickPendingIntent(R.id.hk_ws_flipbtn, PendingIntent.getBroadcast(ctx, 7000+id, flip, fl));
       mgr.updateAppWidget(id, v);
-      mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_ws_list);
     }catch(Exception ignored){}
   }
 }
 `;
 
-const hkWidgetList=`package ${pkg};
-
-import android.appwidget.AppWidgetManager;
-import android.content.Context;
-import android.content.Intent;
-import android.widget.RemoteViews;
-import android.widget.RemoteViewsService;
-
-/** دو صفحهٔ ویجت یک‌خطی (موجودی، خرج امروز) به اندازهٔ خود ویجت */
-public class HkWidgetListService extends RemoteViewsService {
-  @Override public RemoteViewsFactory onGetViewFactory(Intent intent){
-    final int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-    final Context ctx=getApplicationContext();
-    return new RemoteViewsFactory(){
-      HkWidgetDraw.Data d;
-      final android.graphics.Bitmap[] cache=new android.graphics.Bitmap[2];
-      int cw=0, ch=0;
-      public void onCreate(){}
-      public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); cache[0]=null; cache[1]=null; }
-      public void onDestroy(){}
-      /* ۰ = موجودی، ۱ = خرج امروز */
-      public int getCount(){ return HkWidgetSmallProvider.LOOP_COUNT; }
-      public RemoteViews getViewAt(int pos){
-        if(d==null) d=HkWidgetDraw.load(ctx);
-        float[] sz=HkWidgetDraw.size(ctx, AppWidgetManager.getInstance(ctx), id, 250, 60);
-        int pg=pos%2;
-        if((int)sz[0]!=cw || (int)sz[1]!=ch){ cache[0]=null; cache[1]=null; cw=(int)sz[0]; ch=(int)sz[1]; }
-        if(cache[pg]==null) cache[pg]=HkWidgetDraw.page(ctx, cw, ch, sz[2], d, pg);
-        RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_item);
-        v.setImageViewBitmap(R.id.hk_wi_img, cache[pg]);
-        v.setOnClickFillInIntent(R.id.hk_wi_img, new Intent());
-        return v;
-      }
-      public RemoteViews getLoadingView(){ return null; }
-      public int getViewTypeCount(){ return 1; }
-      public long getItemId(int pos){ return pos; }
-      public boolean hasStableIds(){ return true; }
-    };
-  }
-}
-`;
 
 const hkWidgetPlugin=`package ${pkg};
 
@@ -1846,7 +1833,6 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetProvider.java'),hkWidget);
 fs.writeFileSync(path.join(javaDir,'HkWidgetPlugin.java'),hkWidgetPlugin);
 fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
 fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
-fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
@@ -1893,8 +1879,7 @@ if(fs.existsSync(manifest)){
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_small_info"/>\n' +
-    '        </receiver>\n' +
-    '        <service android:name=".HkWidgetListService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
+    '        </receiver>\n    </application>');
   // FileProvider for Sharesheet
   if(!s.includes('.fileprovider')){
     const providerTag =
@@ -1945,19 +1930,31 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hk_ws_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <StackView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:loopViews="true"/>
+    android:layout_height="match_parent"
+    android:background="@drawable/hk_widget_bg">
+    <ViewFlipper android:id="@+id/hk_ws_flip" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:inAnimation="@anim/hk_in_up" android:outAnimation="@anim/hk_out_up" android:measureAllChildren="true">
+        <ImageView android:id="@+id/hk_ws_p0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="موجودی"/>
+        <ImageView android:id="@+id/hk_ws_p1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="خرج امروز"/>
+    </ViewFlipper>
+    <FrameLayout android:id="@+id/hk_ws_flipbtn" android:layout_width="44dp" android:layout_height="match_parent" android:layout_gravity="left" android:contentDescription="کارت بعدی"/>
 </FrameLayout>
 `);
-fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
+// انیمیشن لغزش عمودی کارت‌های ویجت یک‌خطی
+fs.mkdirSync(path.join(resDir,'anim'),{recursive:true});
+fs.writeFileSync(path.join(resDir,'anim','hk_in_up.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
-<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/hk_wi_img"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:scaleType="fitXY"
-    android:contentDescription="حساب‌کتاب"/>
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:interpolator="@android:anim/decelerate_interpolator">
+    <translate android:fromYDelta="100%" android:toYDelta="0" android:duration="280"/>
+    <alpha android:fromAlpha="0.0" android:toAlpha="1.0" android:duration="220"/>
+</set>
+`);
+fs.writeFileSync(path.join(resDir,'anim','hk_out_up.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:interpolator="@android:anim/accelerate_interpolator">
+    <translate android:fromYDelta="0" android:toYDelta="-100%" android:duration="280"/>
+    <alpha android:fromAlpha="1.0" android:toAlpha="0.0" android:duration="220"/>
+</set>
 `);
 // فونت وزیرمتن برای متن ویجت
 fs.mkdirSync(path.join(resDir,'font'),{recursive:true});

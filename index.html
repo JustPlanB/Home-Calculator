@@ -9958,7 +9958,9 @@
     .menu-update-btn.has-update::after { width: 10px; height: 10px; animation: updDotPulse 1.6s ease-in-out infinite; }
     @keyframes updDotPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
     .menu-btn { position: relative; }
-    .menu-btn.has-update::after { content: ''; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 2px #1b1b1b; pointer-events: none; }
+    .menu-btn.has-update { overflow: visible !important; }
+    html[data-theme="light"] .menu-btn.has-update::after { box-shadow: 0 0 0 2px var(--bg); }
+    .menu-btn.has-update::after { content: ''; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 2px #1b1b1b; pointer-events: none; }
     @media (prefers-reduced-motion: reduce) { .menu-update-btn.has-update::after { animation: none; } }
     .upd-cur { font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px; text-align: right; }
     .upd-notes { margin: 0 18px 10px 0; padding: 0; font-size: 0.82rem; line-height: 1.9; text-align: right; color: var(--text); }
@@ -10291,8 +10293,14 @@
     @keyframes updIndetLtr { 0% { left: -35%; } 100% { left: 100%; } }
     #updDlg .upd-progress.indet .upd-tube i { animation-name: updIndetLtr !important; }
     /* پشتیبان خودکار در پنجرهٔ پشتیبان‌گیری */
-    .bk-auto-wrap { margin: 2px 0 2px; }
-    .bk-auto-wrap .bk-auto-row { border-bottom: none !important; font-weight: 800; }
+    /* خط کلفت: پشتیبان خودکار آیتمی جدا از بخش‌های بالاست */
+    .bk-auto-wrap { margin: 6px 0 2px; border-top: 3px solid rgba(255,255,255,0.22); padding-top: 4px; }
+    html[data-theme="light"] .bk-auto-wrap { border-top-color: rgba(0,0,0,0.16); }
+    #backupPickOverlay .backup-pick-item:has(+ .bk-auto-wrap) { border-bottom: none; }
+    .bk-auto-wrap .bk-auto-row { border-bottom: none !important; font-weight: 800; cursor: default; align-items: flex-start; }
+    /* وسط چک‌باکس هم‌تراز وسط سطر عنوان (مثل آیتم‌های بالا) */
+    .bk-auto-wrap .bk-auto-row input { cursor: pointer; margin-top: calc((1.6em - 18px) / 2); }
+    .bk-auto-wrap .bk-ttl { line-height: 1.6em; min-height: 1.6em; }
     .bk-auto-txt { display: flex; flex-direction: column; gap: 1px; }
     .bk-ttl, .bk-pwd-label { display: inline-flex; align-items: center; gap: 6px; }
     .bk-auto-last { font-size: 0.7rem; font-weight: 400; color: #8e8e93; }
@@ -10305,7 +10313,7 @@
     html[data-theme="light"] .hk-info-btn .ii-c { fill: #3a3a3c; }
     html[data-theme="light"] .hk-info-btn .ii-g { fill: #ffffff; }
     html[data-theme="light"] .hk-info-btn .ii-s { stroke: #ffffff; }
-    .hk-info-tip { position: fixed; z-index: 100700; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: #2c2c2e; color: #f2f2f7; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Vazirmatn', Tahoma, sans-serif; font-size: 0.76rem; line-height: 1.8; text-align: right; direction: rtl; animation: hkTipIn 0.14s ease-out; }
+    .hk-info-tip { white-space: pre-line; position: fixed; z-index: 100700; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: #2c2c2e; color: #f2f2f7; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Vazirmatn', Tahoma, sans-serif; font-size: 0.76rem; line-height: 1.8; text-align: right; direction: rtl; animation: hkTipIn 0.14s ease-out; }
     html[data-theme="light"] .hk-info-tip { background: #ffffff; color: #1c1c1e; border-color: rgba(0,0,0,0.10); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
     @keyframes hkTipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
     #searchResultBox td.sr-date { font-size: 0.74rem; white-space: nowrap; padding-left: 2px; padding-right: 2px; }
@@ -10315,6 +10323,25 @@
     #backupPickOverlay .backup-pick-item { padding-top: 8px; padding-bottom: 8px; }
     /* تغییر تم: محو نرم ۰٫۴۵ ثانیه */
     ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.45s; animation-timing-function: ease-in-out; }
+    /* آیکون چشم رمز: پنهان = خط‌خورده و طوسی؛ دیده‌شدن = چشم باز و آبی (پشتیبان و امنیت) */
+    .bk-pwd-eye, #appLockOverlay .lock-eye-btn, #pinSetupOverlay .lock-eye-btn, .lock-eye-btn { color: #8e8e93 !important; }
+    .bk-pwd-eye.on, #appLockOverlay .lock-eye-btn.on, #pinSetupOverlay .lock-eye-btn.on, .lock-eye-btn.on { color: #00b7ff !important; }
+    /* فیلد شرح ثبت پیامک: میکروفون سمت چپ داخل باکس */
+    .desc-mic-wrap { position: relative; }
+    .desc-mic-btn { display: none; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); margin-top: -2.5px; width: 34px; height: 34px; padding: 0; border: none; border-radius: 50%; background: transparent; color: #00b7ff; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .desc-mic-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    .desc-mic-btn:active { background: rgba(0,183,255,0.14); }
+    html.hk-voice .desc-mic-btn { display: inline-flex; }
+    html.hk-voice .desc-mic-wrap > #smsConfirmDesc { padding-left: 42px !important; }
+    /* آمار، تم شب: پس‌زمینهٔ هم‌رنگ اپ (#1b1b1b) با هالهٔ محو رنگ‌های خود اپ (آبی/سبز/قرمز)؛ کارت‌ها همچنان شیشهٔ مات */
+    html:not([data-theme="light"]) .stats-sheet { background: #1b1b1b; }
+    html:not([data-theme="light"]) .st-bg i { opacity: 0.30; filter: blur(80px); }
+    html:not([data-theme="light"]) .st-bg i:nth-child(1) { background: #0b6f99; }
+    html:not([data-theme="light"]) .st-bg i:nth-child(2) { background: #2e2f33; opacity: 0.6; }
+    html:not([data-theme="light"]) .st-bg i:nth-child(3) { background: #7a3326; opacity: 0.26; }
+    html:not([data-theme="light"]) .st-bg i:nth-child(4) { background: #3f6a1f; opacity: 0.22; }
+    html:not([data-theme="light"]) .stats-sheet > .feature-sheet-bar { background: rgba(27,27,27,0.55) !important; }
+    html:not([data-theme="light"]) .stats-sheet { --glass-bg: rgba(255,255,255,0.06); --glass-bd: rgba(255,255,255,0.11); }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -11072,7 +11099,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۲.۷';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۲.۸';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15696,13 +15723,15 @@ function onPeriodChange() {
           '<input type="checkbox" data-bk="' + p.key + '"' + (p.key === 'all' ? ' id="bkCheckAll"' : ' class="bk-part"') + ' checked />' +
           '<span>' + p.label + '</span></label>';
       });
-      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل در پوشهٔ Downloads/HesabKetab ذخیره می‌شود (۷ روز اخیر و ۴ هفتهٔ قبل). قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
-      var pwdInfo = 'با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.';
-      html += '<div class="bk-auto-wrap"><label class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn"' + (autoBkState().enabled === false ? '' : ' checked') + ' />' +
+      /* مسیر پوشه در سطر جدا (متن فارسی با آدرس لاتین بلند وسط جمله، سطر اول را نصفه می‌کرد) */
+      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.\nمحل ذخیره: Downloads/HesabKetab' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
+      var pwdInfo = 'اگر رمز نگذارید، فایل بدون رمز ذخیره می‌شود. با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.';
+      /* فقط خود چک‌باکس روشن/خاموش می‌کند (متن و فضای اطراف نه) */
+      html += '<div class="bk-auto-wrap"><div class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn" aria-label="پشتیبان خودکار روزانه"' + (autoBkState().enabled === false ? '' : ' checked') + ' />' +
         '<span class="bk-auto-txt"><span class="bk-ttl">پشتیبان خودکار روزانه' + hkInfoBtnHtml(autoInfo) + '</span>' +
-        (autoBkPlugin() ? '<small class="bk-auto-last">(' + escapeHtml(autoBkLastText()) + ')</small>' : '') + '</span></label></div>';
+        (autoBkPlugin() ? '<small class="bk-auto-last">(' + escapeHtml(autoBkLastText()) + ')</small>' : '') + '</span></div></div>';
       html += '<div class="bk-pwd-wrap"><div class="bk-pwd-label"><label for="bkPwd">رمز فایل پشتیبان (اختیاری)</label>' + hkInfoBtnHtml(pwdInfo) + '</div>' +
-        hkPwdFieldHtml('bkPwd', 'new-password', 'خالی = بدون رمز') + '</div>';
+        hkPwdFieldHtml('bkPwd', 'new-password', '') + '</div>';
       html += '<div class="backup-pick-actions">' +
         '<button type="button" class="backup-pick-ok" id="bkDoExport">پشتیبان‌گیری</button>' +
         '<button type="button" class="backup-pick-cancel" id="bkCancel">انصراف</button>' +
@@ -15781,7 +15810,7 @@ function onPeriodChange() {
     var HK_EYE_OFF_SVG = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
     function hkPwdFieldHtml(id, ac, ph) {
       return '<div class="bk-pwd-box"><input type="password" id="' + id + '" class="bk-pwd" autocomplete="' + ac + '" placeholder="' + ph + '" dir="ltr">' +
-        '<button type="button" class="bk-pwd-eye" data-for="' + id + '" aria-label="نمایش رمز" title="نمایش رمز">' + HK_EYE_SVG + '</button></div>';
+        '<button type="button" class="bk-pwd-eye" data-for="' + id + '" aria-label="نمایش رمز" title="نمایش رمز">' + HK_EYE_OFF_SVG + '</button></div>';
     }
     (function () {
       function eyeOf(t) { return t && t.closest ? t.closest('.bk-pwd-eye') : null; }
@@ -15794,7 +15823,8 @@ function onPeriodChange() {
         var show = inp.type === 'password';
         try { inp.type = show ? 'text' : 'password'; } catch (eT) {}
         b.classList.toggle('on', show);
-        b.innerHTML = show ? HK_EYE_OFF_SVG : HK_EYE_SVG;
+        /* رمز دیده می‌شود = چشم باز (آبی)؛ پنهان = چشم خط‌خورده (طوسی) */
+        b.innerHTML = show ? HK_EYE_SVG : HK_EYE_OFF_SVG;
         var lbl = show ? 'پنهان کردن رمز' : 'نمایش رمز';
         b.setAttribute('aria-label', lbl); b.title = lbl;
       });
@@ -27027,7 +27057,8 @@ function confirmSmsEntry() {
       if (currentTab !== tab) switchTab(tab);
       else renderAll();
       var secNote = (sec && sec.title) ? (' — ' + sec.title) : '';
-      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote + secNote);
+      /* کوتاه: تا انیمیشن چرخش عدد موجودی دیده شود */
+      showToast((tab === 'income' ? 'واریز' : 'برداشت') + ' ثبت شد: ' + formatNum(amount) + periodNote + secNote, 900);
       try {
         if (sec) {
           const el = document.getElementById('sec-' + tab + '-' + sec.id);
@@ -27223,16 +27254,33 @@ function confirmSmsEntry() {
       }
       return true;
     }
+    /* آیکون میکروفون داخل سمت چپ فیلد شرح: فقط لمس آیکون → دستیار صوتی؛ بقیهٔ فیلد → کیبورد عادی */
     (function () {
-      function onTouch(e) {
-        var t = e.target;
-        if (!t || t.id !== 'smsConfirmDesc' || _voice.skipNext || _voice.open || !voiceCanUse()) return;
-        if (document.activeElement === t) return;   /* در حال تایپ با کیبورد است */
-        e.preventDefault();
-        openVoiceInput(t);
+      var MIC = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
+      function setup() {
+        var inp = document.getElementById('smsConfirmDesc');
+        if (!inp || inp._micWrap || !inp.parentNode) return;
+        var w = document.createElement('div');
+        w.className = 'desc-mic-wrap';
+        inp.parentNode.insertBefore(w, inp);
+        w.appendChild(inp);
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'desc-mic-btn'; b.setAttribute('aria-label', 'گفتن با صدا'); b.title = 'گفتن با صدا';
+        b.innerHTML = MIC;
+        w.appendChild(b);
+        inp._micWrap = w;
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          if (_voice.open) return;
+          if (!voiceCanUse()) { try { showToast('ورودی صوتی در این گوشی در دسترس نیست'); } catch (eT) {} return; }
+          openVoiceInput(inp);
+        });
       }
-      document.addEventListener('touchstart', onTouch, { capture: true, passive: false });
-      document.addEventListener('mousedown', onTouch, true);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+      setTimeout(function () {
+        try { if (voiceCanUse()) document.documentElement.classList.add('hk-voice'); } catch (e) {}
+      }, 3600);
     })();
     /* امنیت: پیامک «بانکی» که از یک شمارهٔ موبایل شخصی آمده احتمالاً جعلی است (بانک‌ها با سرشماره/نام می‌فرستند) */
     function smsSenderLooksPersonal(sender) {
@@ -27549,6 +27597,7 @@ function confirmSmsEntry() {
         if (off) off.style.display = '';
         if (on) on.style.display = 'none';
       }
+      btn.classList.toggle('on', !!show);
     }
     function resetPinEyeHidden(inputId, btnId) {
       setPinEyeState(document.getElementById(inputId), document.getElementById(btnId), false);
@@ -27696,6 +27745,7 @@ function confirmSmsEntry() {
           var on = eyeBtn.querySelector('.eye-open');
           if (off) off.style.display = '';
           if (on) on.style.display = 'none';
+          eyeBtn.classList.remove('on');
         }
       }
       var bioOn = await lockIsBiometricEnabled();
@@ -33136,7 +33186,7 @@ function openProjectRowPicker(secId) {
       balEl.style.color = gRemain > 0 ? '#16a34a' : (gRemain < 0 ? '#dc2626' : '#1a1a1a');
     }
 
-    function showToast(msg) {
+    function showToast(msg, opt) {
       const t = document.getElementById('toast');
       if (!t) return;
       try {
@@ -33153,7 +33203,8 @@ function openProjectRowPicker(secId) {
       } catch (e) {}
       t.classList.add('show');
       clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+      /* opt عددی = مدت نمایش (میلی‌ثانیه) */
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), (typeof opt === 'number' && opt > 0) ? opt : 2500);
     }
 
     /* پیام چندخطی (کامل و بدون «…») برای گزارش‌های بلندتر مثل نتیجهٔ بازیابی */
