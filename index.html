@@ -9097,6 +9097,7 @@
     .st-nav { display: flex; align-items: center; justify-content: center; gap: 14px; }
     .st-nav-l { font-weight: 800; font-size: 0.92rem; color: var(--text); min-width: 110px; text-align: center; }
     .st-nav-b { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+    .st-skip-note { font-size: 0.68rem; line-height: 1.7; color: var(--text-muted, #9a9a9a); margin: -4px 2px 10px; }
     .st-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
     .st-tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .st-tile small { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
@@ -10313,6 +10314,7 @@
     html[data-theme="light"] .hk-info-btn .ii-c { fill: #3a3a3c; }
     html[data-theme="light"] .hk-info-btn .ii-g { fill: #ffffff; }
     html[data-theme="light"] .hk-info-btn .ii-s { stroke: #ffffff; }
+    .hk-info-shield { position: fixed; inset: 0; z-index: 100699; background: transparent; touch-action: none; -webkit-tap-highlight-color: transparent; }
     .hk-info-tip { white-space: pre-line; position: fixed; z-index: 100700; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: #2c2c2e; color: #f2f2f7; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Vazirmatn', Tahoma, sans-serif; font-size: 0.76rem; line-height: 1.8; text-align: right; direction: rtl; animation: hkTipIn 0.14s ease-out; }
     html[data-theme="light"] .hk-info-tip { background: #ffffff; color: #1c1c1e; border-color: rgba(0,0,0,0.10); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
     @keyframes hkTipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
@@ -10375,7 +10377,9 @@
     .export-choice-box { max-width: 330px !important; }
     .export-choice-actions { gap: 10px !important; }
     .export-choice-btn { padding: 10px 14px !important; min-height: 46px !important; }
-    .export-choice-btn .ex-ico { width: 54px !important; }
+    /* لوگوی اکسل/PDF بدون کادر پشتش و بزرگ‌تر */
+    .export-choice-btn .ex-ico { width: 36px !important; height: 36px !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }
+    .export-choice-btn .ex-ico svg { width: 36px !important; height: 36px !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)); }
     /* باکس اعلان بروزرسانی */
     #updPrompt .upd-prompt-panel { text-align: center; padding: 18px 16px 14px; }
     #updPrompt .upd-prompt-ico { width: 54px; height: 54px; margin: 0 auto 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0,183,255,0.12); }
@@ -11165,7 +11169,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۳.۲';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۳.۳';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15737,19 +15741,36 @@ function onPeriodChange() {
     }
     function hkCloseInfoTip() {
       var t = document.getElementById('hkInfoTip'); if (t) t.remove();
-      document.removeEventListener('pointerdown', hkInfoOutside, true);
+      var sh = document.getElementById('hkInfoShield'); if (sh) sh.remove();
     }
-    function hkInfoOutside(e) {
-      /* لمس هر جا، حتی خود باکس، آن را می‌بندد (آیکون خودش باز/بسته می‌کند) */
-      if (e.target && e.target.closest && e.target.closest('.hk-info-btn')) return;
-      /* لمس روی خود باکس فقط آن را می‌بندد؛ کلیک به عنصر زیرش (مثلاً اینفوی بعدی) نمی‌رسد */
-      if (e.target && e.target.closest && e.target.closest('#hkInfoTip')) {
-        var swallow = function (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); };
-        window.addEventListener('click', swallow, { capture: true, once: true });
-        setTimeout(function () { window.removeEventListener('click', swallow, true); }, 700);
+    /* تا باکس باز است، یک لایهٔ شفاف کل صفحه را می‌پوشاند؛ پس یک لمس (روی باکس یا بیرونش) فقط باکس را می‌بندد
+       و به فیلد/دکمهٔ زیرش نمی‌رسد (نه کیبورد بالا می‌آید، نه دکمه‌ای زده می‌شود). لمس روی آیکون اطلاعاتِ دیگر همان را باز می‌کند. */
+    function hkInfoShieldUp() {
+      var sh = document.createElement('div');
+      sh.id = 'hkInfoShield'; sh.className = 'hk-info-shield';
+      var done = false, timer = 0;
+      function finish(ev) {
+        if (done) return; done = true; clearTimeout(timer);
+        var x = ev && ev.clientX, y = ev && ev.clientY, next = null;
+        var t0 = document.getElementById('hkInfoTip'), owner = t0 && t0._for;
+        hkCloseInfoTip();
+        if (ev && typeof x === 'number' && document.elementsFromPoint) {
+          try { var el = document.elementFromPoint(x, y); next = el && el.closest ? el.closest('.hk-info-btn') : null; } catch (e0) {}
+        }
+        if (next && next !== owner) setTimeout(function () { next.click(); }, 0);
       }
-      hkCloseInfoTip();
+      function eat(ev) { ev.preventDefault(); ev.stopPropagation(); }
+      sh.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); var t = document.getElementById('hkInfoTip'); if (t) t.style.opacity = '0'; }, true);
+      ['touchstart', 'touchend', 'mouseup'].forEach(function (n) { sh.addEventListener(n, function (ev) { ev.stopPropagation(); }); });
+      sh.addEventListener('mousedown', function (ev) { if (ev.cancelable) ev.preventDefault(); ev.stopPropagation(); });
+      sh.addEventListener('click', function (ev) { eat(ev); finish(ev); });
+      /* اگر کلیکی نیامد (مثلاً کشیدن انگشت)، باز هم ببند */
+      sh.addEventListener('pointerup', function (ev) { var e2 = { clientX: ev.clientX, clientY: ev.clientY }; timer = setTimeout(function () { finish(e2); }, 450); });
+      sh.addEventListener('pointercancel', function () { timer = setTimeout(function () { finish(null); }, 50); });
+      document.body.appendChild(sh);
+      return sh;
     }
+    function hkInfoOutside() { hkCloseInfoTip(); }
     document.addEventListener('click', function (e) {
       var b = e.target && e.target.closest ? e.target.closest('.hk-info-btn') : null;
       if (!b) return;
@@ -15767,7 +15788,15 @@ function onPeriodChange() {
       var top = r.bottom + 8, h = tip.offsetHeight;
       if (top + h > vh - 12) top = Math.max(12, r.top - h - 8);
       tip.style.left = left + 'px'; tip.style.top = top + 'px';
-      setTimeout(function () { document.addEventListener('pointerdown', hkInfoOutside, true); }, 0);
+      /* لایهٔ محافظ پشت باکس؛ لمس خود باکس هم فقط آن را می‌بندد */
+      hkInfoShieldUp();
+      ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(function (n) {
+        tip.addEventListener(n, function (ev) {
+          if (ev.cancelable && (n === 'mousedown' || n === 'click')) ev.preventDefault();
+          ev.stopPropagation();
+          if (n === 'click') hkCloseInfoTip();
+        });
+      });
     }, true);
     function askBackupParts() {
       closeSideMenu();
@@ -18033,6 +18062,29 @@ async function openPdfPrintWindow(){
         });
         return out;
       }
+      /* ماهِ «فعال» = ماهی که گذشته (نه آینده) و کاربر در آن دست‌کم یک ثبتِ واقعی (غیر از قسطِ خودکار) دارد.
+         در آمار ماهانه/سالانه فقط ماه‌های فعال جمع زده می‌شوند تا اقساطِ خودکارِ آینده یا ماه‌های بی‌استفاده عدد را باد نکنند. */
+      var _actCache = null;
+      function monthActive(y, m) {
+        var t = getTodayPersian();
+        if (y > t.y || (y === t.y && m > t.m)) return false;
+        var k = y + '-' + m;
+        if (!_actCache) _actCache = {};
+        if (k in _actCache) return _actCache[k];
+        var pd = monthData(y, m), on = false;
+        if (pd) ['income', 'expense'].forEach(function (kind) {
+          ((pd[kind] && pd[kind].sections) || []).forEach(function (sec) {
+            ((sec && sec.rows) || []).forEach(function (r) {
+              if (on || !r || r.deletedAt || !(Number(r.amount) > 0)) return;
+              if (kind === 'income' || r.fromPlanId == null) on = true;
+            });
+          });
+        });
+        if (y === t.y && m === t.m) on = true;
+        _actCache[k] = on;
+        return on;
+      }
+      var _skipped = 0;
       function filtered(list) {
         return list.filter(function (x) {
           if (st.card && x.title !== st.card) return false;
@@ -18049,6 +18101,8 @@ async function openPdfPrintWindow(){
       /* ---- سطل‌های زمانی برای هر حالت ---- */
       function buckets() {
         var b = [], rows = [];
+        _actCache = null; _skipped = 0;
+        var skip = function (list) { list.forEach(function (x) { _skipped += amt(x) * (x.kind === 'expense' ? 1 : 0); }); return []; };
         if (st.mode === 'daily') {
           var n = monthLen(st.y, st.m);
           for (var d = 1; d <= n; d++) b.push({ label: fa(d), full: fa(d) + ' ' + MONTHS[st.m - 1], inc: 0, exp: 0 });
@@ -18068,6 +18122,7 @@ async function openPdfPrintWindow(){
           for (var m = 1; m <= 12; m++) {
             b.push({ label: MONTHS[m - 1].slice(0, 3), full: MONTHS[m - 1] + ' ' + fa(st.y), inc: 0, exp: 0 });
             var rm = filtered(rowsOf(st.y, m));
+            if (!monthActive(st.y, m)) { b[m - 1].off = 1; rm = skip(rm); }
             rm.forEach(function (x) { b[m - 1][x.kind === 'income' ? 'inc' : 'exp'] += amt(x); });
             rows = rows.concat(rm);
           }
@@ -18078,6 +18133,7 @@ async function openPdfPrintWindow(){
             var it = { label: fa(y), full: 'سال ' + fa(y), inc: 0, exp: 0 };
             for (var m2 = 1; m2 <= 12; m2++) {
               var ry = filtered(rowsOf(y, m2));
+              if (!monthActive(y, m2)) ry = skip(ry);
               ry.forEach(function (x) { it[x.kind === 'income' ? 'inc' : 'exp'] += amt(x); });
               rows = rows.concat(ry);
             }
@@ -18285,7 +18341,7 @@ async function openPdfPrintWindow(){
       }
       /* مقایسه با دورهٔ قبل: روزانه/هفتگی → ماه قبل، ماهانه → سال قبل، سالانه → سال آخر در برابر سال پیش از آن */
       function sumRows(list) { var o = { inc: 0, exp: 0 }; list.forEach(function (x) { o[x.kind === 'income' ? 'inc' : 'exp'] += amt(x); }); return o; }
-      function yearRows(y) { var r = []; for (var m = 1; m <= 12; m++) r = r.concat(filtered(rowsOf(y, m))); return r; }
+      function yearRows(y) { var r = []; for (var m = 1; m <= 12; m++) if (monthActive(y, m)) r = r.concat(filtered(rowsOf(y, m))); return r; }
       function comparePrev() {
         var cur, prev, prevLabel;
         if (st.mode === 'daily' || st.mode === 'weekly') {
@@ -18348,8 +18404,9 @@ async function openPdfPrintWindow(){
         if (showExp) tiles.push(['خرج کل', money(exp), 'neg']);
         if (showInc && showExp) tiles.push(['مانده کل', (inc - exp < 0 ? '−' : '') + money(Math.abs(inc - exp)), inc - exp < 0 ? 'neg' : 'pos']);
         if (showExp && days) tiles.push(['میانگین خرج روزانه', money(exp / days), '']);
-        if (showExp && st.mode === 'monthly') tiles.push(['میانگین خرج ماهانه', money(exp / Math.max(1, b.filter(function (x) { return x.exp > 0; }).length)), '']);
+        if (showExp && st.mode === 'monthly') tiles.push(['میانگین خرج ماهانه', money(exp / Math.max(1, b.filter(function (x) { return !x.off && (x.exp > 0 || x.inc > 0); }).length)), '']);
         html += '<div class="st-tiles">' + tiles.map(function (t) { return '<div class="st-tile"><small>' + t[0] + '</small><b class="' + t[2] + '">' + t[1] + '</b></div>'; }).join('') + '</div>';
+        if (_skipped > 0 && showExp && (st.mode === 'monthly' || st.mode === 'yearly')) html += '<div class="st-skip-note">' + money(_skipped) + ' اقساطِ خودکارِ ماه‌های آینده یا ماه‌هایی که در آن‌ها ثبتی نداشته‌اید، در این جمع‌ها حساب نشده است.</div>';
         var any = inc > 0 || exp > 0;
         var legend = '<div class="st-keys">' + (showInc ? '<span><i class="st-dot inc"></i>درآمد</span>' : '') + (showExp ? '<span><i class="st-dot exp"></i>مخارج</span>' : '') + '</div>';
         var titles = { daily: 'روزهای ماه', weekly: 'هفته‌های ماه', monthly: 'ماه‌های سال', yearly: 'سال‌ها' };
@@ -19167,16 +19224,22 @@ async function openPdfPrintWindow(){
       if (!el || typeof el.value !== 'string') return;
       var put = function () {
         try {
-          if (document.activeElement !== el || el.readOnly) return;
+          if (document.activeElement !== el || el.readOnly || !el._caretEndUntil || Date.now() > el._caretEndUntil) return;
           var n = el.value.length;
           el.setSelectionRange(n, n);
           if (el.tagName === 'TEXTAREA') el.scrollTop = el.scrollHeight;
         } catch (e) {}
       };
-      put(); setTimeout(put, 0); setTimeout(put, 60); setTimeout(put, 180); setTimeout(put, 350); setTimeout(put, 600);
+      el._caretEndUntil = Date.now() + 1600;
+      put(); setTimeout(put, 0); setTimeout(put, 60); setTimeout(put, 180); setTimeout(put, 350); setTimeout(put, 600); setTimeout(put, 1000); setTimeout(put, 1500);
       /* اندروید با دوبار ضربه کلمه را انتخاب می‌کند یا نشانگر را دیرتر جابه‌جا می‌کند؛
-         تا ۸۰۰ میلی‌ثانیه بعد از شروع ویرایش هر جابه‌جایی نشانگر به انتهای متن برگردانده می‌شود */
-      el._caretEndUntil = Date.now() + 800;
+         تا ۱.۶ ثانیه بعد از شروع ویرایش هر جابه‌جایی نشانگر به انتهای متن برگردانده می‌شود */
+      /* باز شدن کیبورد اندروید گاهی تا یک ثانیه بعد نشانگر را به محل لمس می‌برد؛ پس تا اولین تایپ کاربر، نشانگر آخرِ مبلغ می‌ماند */
+      if (!el._caretEndHooked) {
+        el._caretEndHooked = true;
+        var stop = function () { el._caretEndUntil = 0; };
+        el.addEventListener('keydown', stop); el.addEventListener('beforeinput', stop); el.addEventListener('blur', stop);
+      }
     }
     try { window.caretToEnd = caretToEnd; } catch (eW) {}
     document.addEventListener('selectionchange', function () {
@@ -27394,7 +27457,7 @@ function confirmSmsEntry() {
         var code = (m.match(/speech_error_(\d+)/) || [])[1];
         var msg = /permission/.test(m) ? 'اجازهٔ میکروفون داده نشد. از تنظیمات گوشی اجازه را فعال کنید یا با کیبورد بنویسید.'
           : code === '6' || code === '7' ? 'صدایی تشخیص داده نشد. نزدیک‌تر و واضح‌تر بگویید و دوباره امتحان کنید.'
-          : code === '2' || code === '1' ? 'اینترنت در دسترس نیست و بستهٔ گفتار فارسی آفلاین هم روی گوشی نصب نیست. با دانلود این بسته (یک بار، حدود ۵۰ مگابایت)، دستیار صوتی بدون اینترنت هم کار می‌کند.'
+          : code === '2' || code === '1' ? 'تبدیل گفتار الان به اینترنت نیاز دارد، چون بستهٔ گفتار فارسیِ آفلاین روی این گوشی نصب نیست. اگر این بسته را یک بار (با اینترنت) دانلود کنید، از آن به بعد دستیار صوتی بدون اینترنت هم کار می‌کند.'
           : code === '12' || code === '13' ? 'زبان فارسی در سرویس گفتار این گوشی نصب نیست. از تنظیمات «تایپ صوتی گوگل»، فارسی (و بستهٔ آفلاین آن) را اضافه کنید.'
           : code === '9' ? 'سرویس گفتار گوشی اجازهٔ میکروفون ندارد (خطای ۹).'
           : 'تبدیل گفتار ممکن نشد' + (code ? ' (خطای ' + toPersianDigits(code) + ')' : '') + '. دوباره امتحان کنید یا با کیبورد بنویسید.';
@@ -27410,9 +27473,35 @@ function confirmSmsEntry() {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'vo-offline'; b.textContent = 'دانلود بستهٔ گفتار فارسی آفلاین';
         b.onclick = function (e) {
           e.stopPropagation();
+          /* دانلود بسته خودش اینترنت می‌خواهد */
+          if (navigator.onLine === false) { _voiceStatus('برای دانلود بسته، اول اینترنت گوشی را روشن کنید و بعد دوباره این دکمه را بزنید.'); return; }
+          b.disabled = true; b.textContent = 'در حال بررسی…';
+          var reset = function (txt) { b.disabled = false; b.textContent = txt || 'دانلود بستهٔ گفتار فارسی آفلاین'; };
+          try {
+            if (!_voice.dlHooked && P.addListener) {
+              _voice.dlHooked = true;
+              P.addListener('offlineDl', function (ev) {
+                var stt = ev && ev.state;
+                var bb = _voice.el && _voice.el.querySelector('.vo-offline');
+                if (stt === 'progress') { if (bb) bb.textContent = 'در حال دانلود… ' + toPersianDigits(String(ev.progress || 0)) + '٪'; }
+                else if (stt === 'done') { _voiceStatus('بستهٔ گفتار فارسی نصب شد ✓ حالا «دوباره» را بزنید؛ از این به بعد بدون اینترنت هم کار می‌کند.'); if (bb) bb.remove(); }
+                else if (stt === 'scheduled') { _voiceStatus('دانلود در صف گوشی قرار گرفت (معمولاً وقتی به وای‌فای وصل باشید انجام می‌شود). بعد از اتمام، دوباره امتحان کنید.'); if (bb) bb.remove(); }
+                else if (stt === 'error') { _voiceStatus('دانلود بسته کامل نشد' + (ev.code != null ? ' (کد ' + toPersianDigits(String(ev.code)) + ')' : '') + '. اینترنت را بررسی و دوباره امتحان کنید.'); if (bb) { bb.disabled = false; bb.textContent = 'تلاش دوباره برای دانلود'; } }
+              });
+            }
+          } catch (eL) {}
           P.downloadOffline({ lang: 'fa-IR' }).then(function (r) {
-            _voiceStatus(r && r.method === 'ondevice' ? 'دانلود بستهٔ فارسی شروع شد؛ بعد از اتمام، دوباره میکروفون را بزنید.' : 'در صفحهٔ بازشده «زبان‌ها / تشخیص گفتار آفلاین» را باز کنید و «فارسی» را دانلود کنید.');
-          }).catch(function () { _voiceStatus('باز کردن تنظیمات گفتار ممکن نشد؛ از تنظیمات گوشی › زبان و ورودی › ورودی صوتی، فارسی آفلاین را دانلود کنید.'); });
+            var stt = r && r.status;
+            if (stt === 'installed') { _voiceStatus('بستهٔ گفتار فارسی از قبل روی گوشی نصب است ✓ «دوباره» را بزنید.'); b.remove(); }
+            else if (stt === 'pending') { _voiceStatus('دانلود بستهٔ فارسی قبلاً شروع شده و در جریان است؛ کمی بعد دوباره امتحان کنید.'); b.remove(); }
+            else if (stt === 'downloading') { _voiceStatus('دانلود بستهٔ فارسی شروع شد. تا پایان دانلود اینترنت را روشن نگه دارید' + (r.progressEvents ? '.' : '؛ بعد از چند دقیقه دوباره میکروفون را بزنید.')); b.textContent = 'در حال دانلود…'; }
+            else {
+              var why = String((r && r.why) || '');
+              _voiceStatus((why === 'unsupported' ? 'سرویس گفتار داخلی این گوشی بستهٔ آفلاین فارسی ندارد؛ ' : '') +
+                'صفحهٔ تنظیمات گفتار باز شد: «زبان‌ها» یا «تشخیص گفتار آفلاین» را باز کنید، «فارسی» را انتخاب و دانلود کنید، سپس به اپ برگردید و «دوباره» را بزنید.');
+              reset();
+            }
+          }).catch(function () { reset(); _voiceStatus('باز کردن تنظیمات گفتار ممکن نشد؛ از تنظیمات گوشی › زبان و ورودی › ورودی صوتی، فارسی آفلاین را دانلود کنید.'); });
         };
         var btns = _voice.el.querySelector('.vo-btns');
         if (btns && btns.parentNode) btns.parentNode.insertBefore(b, btns); else _voice.el.appendChild(b);
@@ -29614,7 +29703,9 @@ if (item.type === 'recurring') {
         }
         inp.value = cand;
       }
-      try { inp.focus(); caretToEnd(inp); } catch (e) {}
+      if (!isEdit) { try { inp.focus(); caretToEnd(inp); } catch (e) {} }
+      /* لمس کادر مبلغ: اگر نام در حال تایپ است، اول از آن خارج شو تا دوبار زدن روی مبلغ فوراً کار کند */
+      if (balInp) balInp.addEventListener('pointerdown', function () { try { if (document.activeElement === inp) inp.blur(); } catch (eB) {} });
       editor.querySelector('#bankAddOk').onclick = (e) => {
         e.stopPropagation();
         const name = (inp.value || '').trim();
