@@ -18,6 +18,10 @@ const feed = {
   versionName: pkg.version || base.versionName || '',
   notes: Array.isArray(base.notes) ? base.notes : [],
   stores: base.stores || {},
+  /* critical: بروزرسانی ضروری — اپ تا نصب نسخهٔ جدید قفل می‌ماند (دکمهٔ «بعداً» ندارد)
+     minVersionCode: هر نسخهٔ پایین‌تر از این عدد هم اجباری حساب می‌شود */
+  critical: base.critical === true,
+  minVersionCode: parseInt(base.minVersionCode, 10) || 0,
   apk: `https://github.com/${repo}/releases/latest/download/hesab-ketab.apk`,
   publishedAt: new Date().toISOString()
 };
