@@ -1314,36 +1314,71 @@ public class HkSpeechPlugin extends Plugin {
   }
   /* دانلود بستهٔ گفتار فارسی آفلاین: اندروید ۱۳+ با موتور روی دستگاه (پنجرهٔ دانلود سیستم)؛
      در غیر این صورت تنظیمات «ورودی صوتی» گوشی باز می‌شود تا کاربر خودش بستهٔ فارسی را دانلود کند */
+  /* بستهٔ گفتار فارسی آفلاین:
+     ۱) اندروید ۱۳+: اول از سرویس گفتارِ روی دستگاه می‌پرسد فارسی نصب است / قابل دانلود است یا نه؛
+        اگر قابل دانلود بود دانلود را واقعاً شروع می‌کند و پیشرفتش را (اندروید ۱۴+) با رویداد offlineDl خبر می‌دهد.
+     ۲) اگر این راه نبود یا فارسی را پشتیبانی نمی‌کرد: صفحهٔ بستهٔ زبان آفلاینِ گوگل، وگرنه تنظیمات ورودی صوتی. */
   @com.getcapacitor.PluginMethod public void downloadOffline(final PluginCall call){
     final String lg=call.getString("lang","fa-IR");
     ui.post(new Runnable(){ @Override public void run(){
       if(Build.VERSION.SDK_INT>=33 && onDeviceOk()){
-        try{
-          SpeechRecognizer r=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
-          Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-          i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-          i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,lg);
-          r.triggerModelDownload(i);
-          final SpeechRecognizer rr=r;
-          ui.postDelayed(new Runnable(){ @Override public void run(){ try{ rr.destroy(); }catch(Exception ignored){} }}, 4000);
-          call.resolve(new JSObject().put("started",true).put("method","ondevice"));
-          return;
-        }catch(Exception ignored){}
+        try{ checkAndDownload(call,lg); return; }catch(Throwable ignored){}
       }
-      try{
-        Intent s=new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS);
-        s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        getContext().startActivity(s);
-        call.resolve(new JSObject().put("started",true).put("method","settings"));
-      }catch(Exception e1){
-        try{
-          Intent s2=new Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS);
-          s2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          getContext().startActivity(s2);
-          call.resolve(new JSObject().put("started",true).put("method","ime"));
-        }catch(Exception e2){ call.reject("unavailable"); }
-      }
+      openOfflineSettings(call,"no_ondevice");
     }});
+  }
+  private static boolean hasLang(java.util.List<String> l,String lg){
+    if(l==null) return false;
+    String p=lg.length()>=2 ? lg.substring(0,2).toLowerCase() : lg.toLowerCase();
+    for(String x:l){ if(x!=null && x.toLowerCase().startsWith(p)) return true; }
+    return false;
+  }
+  @android.annotation.TargetApi(33) private void checkAndDownload(final PluginCall call,final String lg){
+    final SpeechRecognizer r=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
+    final Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+    i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+    i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,lg);
+    final java.util.concurrent.Executor ex=getContext().getMainExecutor();
+    final boolean[] done=new boolean[]{false};
+    /* اگر سرویس جواب نداد، بعد از ۶ ثانیه سراغ تنظیمات برو */
+    ui.postDelayed(new Runnable(){ @Override public void run(){ if(done[0]) return; done[0]=true; try{ r.destroy(); }catch(Exception ignored){} openOfflineSettings(call,"timeout"); }}, 6000);
+    r.checkRecognitionSupport(i,ex,new android.speech.RecognitionSupportCallback(){
+      @Override public void onSupportResult(android.speech.RecognitionSupport s){
+        if(done[0]) return; done[0]=true;
+        if(hasLang(s.getInstalledOnDeviceLanguages(),lg)){ try{ r.destroy(); }catch(Exception ignored){} call.resolve(new JSObject().put("status","installed")); return; }
+        if(hasLang(s.getPendingOnDeviceLanguages(),lg)){ try{ r.destroy(); }catch(Exception ignored){} call.resolve(new JSObject().put("status","pending")); return; }
+        if(!hasLang(s.getSupportedOnDeviceLanguages(),lg)){ try{ r.destroy(); }catch(Exception ignored){} openOfflineSettings(call,"unsupported"); return; }
+        try{
+          if(Build.VERSION.SDK_INT>=34){
+            r.triggerModelDownload(i,ex,new android.speech.ModelDownloadListener(){
+              @Override public void onProgress(int p){ notifyListeners("offlineDl",new JSObject().put("state","progress").put("progress",p)); }
+              @Override public void onSuccess(){ notifyListeners("offlineDl",new JSObject().put("state","done")); try{ r.destroy(); }catch(Exception ignored){} }
+              @Override public void onScheduled(){ notifyListeners("offlineDl",new JSObject().put("state","scheduled")); try{ r.destroy(); }catch(Exception ignored){} }
+              @Override public void onError(int e){ notifyListeners("offlineDl",new JSObject().put("state","error").put("code",e)); try{ r.destroy(); }catch(Exception ignored){} }
+            });
+          } else {
+            r.triggerModelDownload(i);
+            ui.postDelayed(new Runnable(){ @Override public void run(){ try{ r.destroy(); }catch(Exception ignored){} }}, 8000);
+          }
+          call.resolve(new JSObject().put("status","downloading").put("progressEvents",Build.VERSION.SDK_INT>=34));
+        }catch(Throwable t){ try{ r.destroy(); }catch(Exception ignored){} openOfflineSettings(call,"trigger_failed"); }
+      }
+      @Override public void onError(int e){
+        if(done[0]) return; done[0]=true;
+        try{ r.destroy(); }catch(Exception ignored){}
+        openOfflineSettings(call,"check_error_"+e);
+      }
+    });
+  }
+  private boolean startAct(Intent s){
+    try{ s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(s); return true; }catch(Throwable t){ return false; }
+  }
+  private void openOfflineSettings(PluginCall call,String why){
+    Intent g=new Intent(); g.setClassName("com.google.android.googlequicksearchbox","com.google.android.voicesearch.greco3.languagepack.InstallActivity");
+    if(startAct(g)){ call.resolve(new JSObject().put("status","settings").put("method","google_pack").put("why",why)); return; }
+    if(startAct(new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS))){ call.resolve(new JSObject().put("status","settings").put("method","voice").put("why",why)); return; }
+    if(startAct(new Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS))){ call.resolve(new JSObject().put("status","settings").put("method","ime").put("why",why)); return; }
+    call.reject("unavailable");
   }
   private void destroyRec(){ try{ if(rec!=null){ rec.cancel(); rec.destroy(); } }catch(Exception ignored){} rec=null; }
   @Override protected void handleOnDestroy(){ destroyRec(); }
