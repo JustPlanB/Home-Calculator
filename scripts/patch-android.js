@@ -881,7 +881,7 @@ public class AppLockPlugin extends Plugin {
       String pin = call.getString("pin", "");
       if (pin == null) pin = "";
       pin = pin.replaceAll("[^0-9]", "");
-      if (!(pin.length() == 4 || pin.length() == 6)) {
+      if (pin.length() < 4 || pin.length() > 6) {
         call.reject("pin_invalid_length");
         return;
       }
@@ -1311,6 +1311,39 @@ public class HkSpeechPlugin extends Plugin {
       if(c!=null){ try{ c.reject("cancelled"); }catch(Exception ignored){} }
     }});
     call.resolve();
+  }
+  /* دانلود بستهٔ گفتار فارسی آفلاین: اندروید ۱۳+ با موتور روی دستگاه (پنجرهٔ دانلود سیستم)؛
+     در غیر این صورت تنظیمات «ورودی صوتی» گوشی باز می‌شود تا کاربر خودش بستهٔ فارسی را دانلود کند */
+  @com.getcapacitor.PluginMethod public void downloadOffline(final PluginCall call){
+    final String lg=call.getString("lang","fa-IR");
+    ui.post(new Runnable(){ @Override public void run(){
+      if(Build.VERSION.SDK_INT>=33 && onDeviceOk()){
+        try{
+          SpeechRecognizer r=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
+          Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+          i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+          i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,lg);
+          r.triggerModelDownload(i);
+          final SpeechRecognizer rr=r;
+          ui.postDelayed(new Runnable(){ @Override public void run(){ try{ rr.destroy(); }catch(Exception ignored){} }}, 4000);
+          call.resolve(new JSObject().put("started",true).put("method","ondevice"));
+          return;
+        }catch(Exception ignored){}
+      }
+      try{
+        Intent s=new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS);
+        s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(s);
+        call.resolve(new JSObject().put("started",true).put("method","settings"));
+      }catch(Exception e1){
+        try{
+          Intent s2=new Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS);
+          s2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          getContext().startActivity(s2);
+          call.resolve(new JSObject().put("started",true).put("method","ime"));
+        }catch(Exception e2){ call.reject("unavailable"); }
+      }
+    }});
   }
   private void destroyRec(){ try{ if(rec!=null){ rec.cancel(); rec.destroy(); } }catch(Exception ignored){} rec=null; }
   @Override protected void handleOnDestroy(){ destroyRec(); }
