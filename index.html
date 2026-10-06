@@ -6445,6 +6445,7 @@
       z-index: 100;
     }
     .toast.show { opacity: 1; }
+    .toast:not(.toast-long) { max-width: 96vw !important; padding-left: 12px !important; padding-right: 12px !important; text-overflow: clip !important; box-sizing: border-box; }
     .toast.toast-long { white-space: normal; overflow: visible; text-overflow: clip; text-align: center; line-height: 1.7; width: max-content; max-width: 90vw; box-sizing: border-box; }
 
     .family-bar {
@@ -10326,6 +10327,11 @@
     .hk-recon-grid b { direction: ltr; font-variant-numeric: tabular-nums; }
     .hk-recon-grid .hk-recon-diff { color: #ffc531; }
     .hk-recon-txt { font-size: 0.76rem; line-height: 1.8; opacity: 0.9; margin-bottom: 12px; }
+    .sms-acc-need .fancy-select-btn, select.sms-acc-need { border-color: #ffc531 !important; box-shadow: 0 0 0 1px rgba(255,197,49,0.45) !important; }
+    .sms-acc-new { font-size: 0.72rem; line-height: 1.75; color: #ffc531; margin: -4px 0 10px; }
+    html[data-theme="light"] .sms-acc-new { color: #9a6b00; }
+    .hk-recon-warn { font-size: 0.74rem; line-height: 1.8; color: #ffc531; margin: -4px 0 12px; }
+    html[data-theme="light"] .hk-recon-warn { color: #9a6b00; }
     .hk-recon-btns { display: flex; gap: 8px; }
     .hk-recon-btns button { flex: 1; min-height: 42px; border-radius: 9px; font-family: inherit; font-weight: 700; font-size: 0.84rem; cursor: pointer; }
     .hk-recon-add { border: 0; background: #ffc531; color: #1c1c1e; }
@@ -10395,7 +10401,12 @@
     /* منوی خروجی: دکمه‌های اکسل/PDF پهن‌تر، کادر پشت کمی پهن‌تر */
     .export-choice-box { max-width: 330px !important; }
     .export-choice-actions { gap: 10px !important; }
-    .export-choice-btn { padding: 3px 14px !important; min-height: 36px !important; }
+    /* دکمهٔ استاندارد لمسی: ارتفاع ۴۸، کمی باریک‌تر؛ زمینه کمی تیره‌تر تا لوگوی اصلی متمایز باشد */
+    .export-choice-actions { gap: 16px !important; }
+    .export-choice-btn { padding: 0 12px !important; min-height: 48px !important; height: 48px; }
+    .export-choice-btn.excel { background: #17603a !important; }
+    .export-choice-btn.pdf { background: #a93226 !important; }
+    .export-choice-box { padding-top: 22px !important; padding-bottom: 24px !important; }
     /* لوگوی اکسل/PDF بدون کادر پشتش و بزرگ‌تر */
     .export-choice-btn .ex-ico { width: 31px !important; height: 31px !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }
     .export-choice-btn .ex-ico svg { width: 31px !important; height: 31px !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)); }
@@ -11188,7 +11199,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۳.۴';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۳.۵';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -15843,7 +15854,7 @@ function onPeriodChange() {
           '<span>' + p.label + '</span></label>';
       });
       /* مسیر پوشه در سطر جدا (متن فارسی با آدرس لاتین بلند وسط جمله، سطر اول را نصفه می‌کرد) */
-      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.\nمحل ذخیره: Downloads/HesabKetab' : 'پشتیبان خودکار فقط در اپ اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
+      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.\nمحل ذخیره: Downloads/HesabKetab' : 'پشتیبان خودکار فقط در نرم‌افزار اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
       var pwdInfo = 'اگر رمز نگذارید، فایل بدون رمز ذخیره می‌شود. با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.';
       /* فقط خود چک‌باکس روشن/خاموش می‌کند (متن و فضای اطراف نه) */
       html += '<div class="bk-auto-wrap"><div class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn" aria-label="پشتیبان خودکار روزانه"' + (autoBkState().enabled === false ? '' : ' checked') + ' />' +
@@ -16861,8 +16872,8 @@ function askBackupUserCards(selectedParts) {
               '<path d="M14 5h16l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="#fff"/>' +
               '<path d="M30 5v7a2 2 0 0 0 2 2h7z" fill="#cfe5d7"/>' +
               '<path d="M24 22h10M24 28h10M24 34h10" stroke="#7fb896" stroke-width="2.4" stroke-linecap="round"/>' +
-              '<rect x="4" y="19" width="19" height="19" rx="3.5" fill="#1c1c1e"/>' +
-              '<path d="M9 24l9 9M18 24l-9 9" stroke="#5ee38f" stroke-width="2.8" stroke-linecap="round"/>' +
+              '<rect x="4" y="19" width="19" height="19" rx="3.5" fill="#12502d"/>' +
+              '<path d="M9 24l9 9M18 24l-9 9" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>' +
             '</svg></span>' +
             '<span>اکسل</span>' +
           '</button>' +
@@ -16871,8 +16882,8 @@ function askBackupUserCards(selectedParts) {
               '<path d="M14 5h16l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="#fff"/>' +
               '<path d="M30 5v7a2 2 0 0 0 2 2h7z" fill="#f3d1cc"/>' +
               '<path d="M17 15h9M17 20h15" stroke="#e3a59c" stroke-width="2.4" stroke-linecap="round"/>' +
-              '<rect x="4" y="25" width="31" height="14" rx="3.5" fill="#1c1c1e"/>' +
-              '<text x="19.5" y="35.6" text-anchor="middle" fill="#ff8a7a" font-size="10" font-weight="800" font-family="Arial,sans-serif" letter-spacing="0.4">PDF</text>' +
+              '<rect x="4" y="25" width="31" height="14" rx="3.5" fill="#8e2318"/>' +
+              '<text x="19.5" y="35.6" text-anchor="middle" fill="#fff" font-size="10" font-weight="800" font-family="Arial,sans-serif" letter-spacing="0.4">PDF</text>' +
             '</svg></span>' +
             '<span>PDF</span>' +
           '</button>' +
@@ -19250,6 +19261,28 @@ async function openPdfPrintWindow(){
         } catch (e) {}
       };
       el._caretEndUntil = Date.now() + 1600;
+      /* مبلغ در فیلد راست‌به‌چپ: نشانگرِ «آخر متن» سمت چپ عدد (پشت رقم بزرگ) دیده می‌شد.
+         تا وقتی فیلد در حال ویرایش است جهتش چپ‌به‌راست شود (چینش ظاهری همان قبلی) تا نشانگر بعد از یکان دیده شود */
+      try {
+        var vv = String(el.value || '');
+        var amountLike = (el.inputMode === 'numeric' || el.getAttribute('inputmode') === 'numeric') || (vv && /^[0-9۰-۹,٬.\s\-−]+$/.test(vv));
+        if (amountLike && el.tagName === 'INPUT' && !el._ltrEdit) {
+          var cs = getComputedStyle(el);
+          if (cs.direction === 'rtl') {
+            el._ltrEdit = { d: el.style.getPropertyValue('direction'), dp: el.style.getPropertyPriority('direction'), a: el.style.getPropertyValue('text-align'), ap: el.style.getPropertyPriority('text-align') };
+            var ta = cs.textAlign === 'start' ? 'right' : cs.textAlign === 'end' ? 'left' : cs.textAlign;
+            el.style.setProperty('text-align', ta, 'important');
+            el.style.setProperty('direction', 'ltr', 'important');
+            var restore = function () {
+              el.removeEventListener('blur', restore);
+              var o = el._ltrEdit; el._ltrEdit = null; if (!o) return;
+              if (o.d) el.style.setProperty('direction', o.d, o.dp); else el.style.removeProperty('direction');
+              if (o.a) el.style.setProperty('text-align', o.a, o.ap); else el.style.removeProperty('text-align');
+            };
+            el.addEventListener('blur', restore);
+          }
+        }
+      } catch (eLtr) {}
       put(); setTimeout(put, 0); setTimeout(put, 60); setTimeout(put, 180); setTimeout(put, 350); setTimeout(put, 600); setTimeout(put, 1000); setTimeout(put, 1500);
       /* اندروید با دوبار ضربه کلمه را انتخاب می‌کند یا نشانگر را دیرتر جابه‌جا می‌کند؛
          تا ۱.۶ ثانیه بعد از شروع ویرایش هر جابه‌جایی نشانگر به انتهای متن برگردانده می‌شود */
@@ -21620,7 +21653,7 @@ async function openPdfPrintWindow(){
       };
       var inCard = function (sel) { return function () { var c = activeCard(); return c ? c.querySelector(sel) : null; }; };
       return [
-        { title: 'به حساب‌کتاب خوش آمدید 👋', text: 'در چند قدم کوتاه بخش‌های اصلی اپ را با هم می‌بینیم. هر وقت خواستید با «رد کردن» تور را ببندید.' },
+        { title: 'به حساب‌کتاب خوش آمدید 👋', text: 'در چند قدم کوتاه بخش‌های اصلی نرم‌افزار را با هم می‌بینیم. هر وقت خواستید با «رد کردن» تور را ببندید.' },
         { el: function () { return [document.getElementById('monthSelectWrap'), document.getElementById('yearSelectWrap')]; }, title: 'ماه و سال', text: 'هر ماه دفتر جداگانه دارد. با انتخاب ماه و سال، درآمدها و مخارج همان ماه نمایش داده می‌شود.' },
         { el: q('#menuBtn'), title: 'منوی اصلی', text: 'همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت، پشتیبان‌گیری و راهنما از این‌جا در دسترس است.' },
         { el: activeCard, title: 'کارت‌ها', text: 'هر کارت برای یک نفر یا یک حساب است. با کشیدن افقی بین کارت‌ها بروید و با نگه داشتن انگشت، ترتیبشان را عوض کنید.', swipe: true },
@@ -22986,7 +23019,7 @@ async function openPdfPrintWindow(){
       function showList() {
         ov._spPicking = false;
         h.textContent = 'دسته‌بندی مخارج';
-        sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ اپ دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
+        sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ نرم‌افزار دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
         body.innerHTML = '';
         var cw = chipWidths();
@@ -23914,7 +23947,11 @@ container.innerHTML = '';
         dayInp.readOnly = isFilledVal(row.day);
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
         /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پررنگ و روزش «؟» */
-        if (row.reconGap) { tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟'; }
+        if (row.reconGap) {
+          tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟';
+          /* کاربر ردیف را ویرایش کرد (هر فیلدی) → ردیف معمولی شود */
+          tr.addEventListener('input', function () { if (!row.reconGap) return; row.reconGap = false; tr.classList.remove('recon-gap'); try { scheduleSave(); } catch (eS) {} }, true);
+        }
         dayInp.oninput = () => {
           if (row.reconGap) row.reconGapDayEdited = true;
           const eng = toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '');
@@ -27414,11 +27451,14 @@ function confirmSmsEntry() {
         '<div class="hk-recon-head"><span class="hk-recon-tri">' + tri + '</span><b>مغایرت موجودی «' + escapeHtml(snap.bank) + '»</b></div>' +
         '<div class="hk-recon-grid">' +
           '<span>مانده در پیامک بانک</span><b>' + sg(Number(snap.balance) || 0) + '</b>' +
-          '<span>موجودی در اپ بعد از این تراکنش</span><b>' + sg(appBal) + '</b>' +
+          '<span>موجودی در نرم‌افزار بعد از این تراکنش</span><b>' + sg(appBal) + '</b>' +
           '<span>اختلاف</span><b class="hk-recon-diff">' + formatNum(amt) + '</b>' +
         '</div>' +
-        '<div class="hk-recon-txt">یعنی احتمالاً حدود ' + formatNum(amt) + ' تومان ' + miss + ' از این حساب، بین آخرین ثبت و همین تراکنش، در اپ ثبت نشده است' +
+        '<div class="hk-recon-txt">یعنی احتمالاً حدود ' + formatNum(amt) + ' تومان ' + miss + ' از این حساب، بین آخرین ثبت و همین تراکنش، در نرم‌افزار ثبت نشده است' +
           (amt <= 2000 && diff < 0 ? ' (اختلاف کم معمولاً کارمزد بانک است)' : '') + '.</div>' +
+        /* جهت اختلاف با نوع تراکنش جور نیست (برداشت ولی موجودی بیشتر، یا برعکس) */
+        ((snap.type === 'expense' && diff > 0) || (snap.type === 'income' && diff < 0)
+          ? '<div class="hk-recon-warn">جهت این اختلاف با نوع تراکنش جور نیست؛ ممکن است این پیامک مربوط به حساب دیگری (مثلاً حساب دیگری از همین بانک) باشد.</div>' : '') +
         '<div class="hk-recon-btns"><button type="button" class="hk-recon-add">ثبت ردیف اختلاف</button><button type="button" class="hk-recon-skip">نادیده بگیر</button></div>' +
       '</div>';
       document.body.appendChild(ov);
@@ -27445,15 +27485,33 @@ function confirmSmsEntry() {
         try { if (typeof stampRowOwner === 'function') stampRowOwner(row); } catch (eS) {}
         /* درست قبل از ردیف همین تراکنش (اگر در همان جدول است) */
         var placed = false;
-        if (tab === snap.type) {
-          var hit = null, hitSec = null;
-          ((periodData[tab] && periodData[tab].sections) || []).forEach(function (sec) {
-            ((sec && sec.rows) || []).forEach(function (r) {
-              if (r && !r.deletedAt && (r.account || '').trim() === snap.bank && Number(r.amount) === Number(snap.amount) &&
-                  String(r.day || '') === String(snap.day || '')) { hit = r; hitSec = sec; }
-            });
+        /* ردیف همین تراکنش (و کارتی که در آن ثبت شده) */
+        var hit = null, hitSec = null;
+        ((periodData[snap.type] && periodData[snap.type].sections) || []).forEach(function (sec) {
+          ((sec && sec.rows) || []).forEach(function (r) {
+            if (r && !r.deletedAt && (r.account || '').trim() === snap.bank && Number(r.amount) === Number(snap.amount) &&
+                String(r.day || '') === String(snap.day || '')) { hit = r; hitSec = sec; }
           });
-          if (hit && hitSec) { hitSec.rows.splice(hitSec.rows.indexOf(hit), 0, row); placed = true; }
+        });
+        if (tab === snap.type && hit && hitSec) { hitSec.rows.splice(hitSec.rows.indexOf(hit), 0, row); placed = true; }
+        /* نوع مخالف (مثلاً پیامک برداشت ولی اختلاف درآمد): در همان کارت، جدول دیگر — نه کارت تازه */
+        if (!placed && hitSec && (hitSec.title || '').trim()) {
+          var ttl = (hitSec.title || '').trim();
+          if (!periodData[tab]) periodData[tab] = { sections: [], nextId: 1 };
+          if (!Array.isArray(periodData[tab].sections)) periodData[tab].sections = [];
+          var same = periodData[tab].sections.find(function (sc) { return sc && (sc.title || '').trim() === ttl; });
+          if (!same) {
+            var nid = periodData[tab].nextId || (periodData[tab].sections.length + 1);
+            same = { id: 's' + nid + '_rc', title: ttl, color: hitSec.color || tabAccentColor(tab), collapsed: false, rows: [] };
+            periodData[tab].sections.push(same); periodData[tab].nextId = nid + 1;
+          }
+          if (!Array.isArray(same.rows)) same.rows = [];
+          var ei0 = same.rows.findIndex(function (r) { return r && !r.desc && !r.amount && !r.day && !r.fromPlanId; });
+          if (ei0 >= 0) same.rows.splice(ei0, 1);
+          same.rows.push(row);
+          same.rows.sort(function (a, b) { return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99); });
+          same.collapsed = false;
+          placed = true;
         }
         if (!placed) {
           var sec2 = ensureSmsSection(tab, tab === 'income' ? 'واریز بانکی' : 'برداشت بانکی', periodData);
@@ -27467,7 +27525,7 @@ function confirmSmsEntry() {
         try { persistCurrent(); } catch (e1) {}
         try { scheduleSave(); } catch (e2) {}
         try { renderAll(); } catch (e3) {}
-        showToast('ردیف اختلاف ثبت شد؛ بعداً می‌توانید آن را ویرایش یا به چند ردیف تقسیم کنید');
+        showToast('ردیف اختلاف ثبت شد؛ می‌توانید ویرایشش کنید');
       } catch (e) { try { showToast('ثبت ردیف اختلاف ممکن نشد'); } catch (e4) {} }
     }
     (function () {
@@ -27502,6 +27560,128 @@ function confirmSmsEntry() {
       wrapped._hkRecon = true;
       confirmSmsEntry = wrapped;
       try { window.confirmSmsEntry = wrapped; } catch (eW) {}
+    })();
+    /* ===== تشخیص حساب از رقم‌های آخر شماره حساب/کارت در پیامک (لایهٔ جدا) =====
+       اگر چهار رقم آخر قبلاً به حسابی وصل شده، همان حساب انتخاب می‌شود.
+       اگر شماره‌ای تازه از بانکی بیاید که در نرم‌افزار حساب دارد (و نمی‌شود مطمئن بود کدام است)،
+       انتخاب حساب خالی می‌ماند، فهرست حساب‌ها باز می‌شود و تا حساب انتخاب نشود ثبت انجام نمی‌شود. */
+    function hkSmsAcc4(raw) {
+      try {
+        var t = normalizeSmsText(raw || '');
+        /* «6037-99**-****-2222» → «603799******2222» */
+        t = t.replace(/([0-9*xX×•])[\-\s](?=[0-9*xX×•])/g, '$1');
+        var m = t.match(/[0-9]{0,8}[*xX×•.]{2,}[0-9]{3,}/);
+        var tok = m ? m[0] : '';
+        if (!tok) {
+          var m2 = t.match(/(?:حساب|کارت|سپرده|شماره)\s*(?:شماره)?\s*[:：]?\s*([0-9][0-9\-]{3,})/);
+          tok = m2 ? m2[1] : '';
+        }
+        var d = String(tok).replace(/[^0-9]/g, '');
+        var tail = String(tok).match(/([0-9]+)\D*$/);
+        var last = tail ? tail[1] : d;
+        if (last.length < 3) return '';
+        return last.slice(-4);
+      } catch (e) { return ''; }
+    }
+    function hkAcc4Label(acc4) {
+      if (!acc4 || typeof smsAccountBankMap !== 'object' || !smsAccountBankMap) return '';
+      var live = function (lb) { return lb && (typeof isLiveAccountLabel !== 'function' || isLiveAccountLabel(lb)) ? lb : ''; };
+      var v = live(smsAccountBankMap['L4:' + acc4]);
+      if (v) return v;
+      var found = '';
+      Object.keys(smsAccountBankMap).forEach(function (k) {
+        if (found || k.indexOf('L4:') === 0) return;
+        var dk = String(k).replace(/[^0-9]/g, '');
+        if (dk.length >= 4 && dk.slice(-4) === acc4) found = live(smsAccountBankMap[k]);
+      });
+      return found;
+    }
+    function hkLabelHasAcc(label) {
+      var has = false;
+      try { Object.keys(smsAccountBankMap || {}).forEach(function (k) { if (smsAccountBankMap[k] === label && /[0-9]{3,}/.test(k)) has = true; }); } catch (e) {}
+      return has;
+    }
+    function hkSmsAccountRoute(parsed) {
+      var out = { label: '', need: false, acc4: '' };
+      try {
+        var raw = parsed && parsed.raw; if (!raw) return out;
+        var acc4 = hkSmsAcc4(raw); out.acc4 = acc4;
+        if (!acc4) return out;
+        var mapped = hkAcc4Label(acc4);
+        if (mapped) { out.label = mapped; return out; }
+        var bankName = '';
+        try { bankName = detectBankFromSms(raw) || ''; } catch (eB) {}
+        if (!bankName) return out;
+        var short = bankShortLabel(bankName);
+        var same = (selectedBankAccounts || []).filter(function (a) {
+          var b = accountBank(a), l = accountLabel(a);
+          return b === bankName || bankShortLabel(b) === short || bankShortLabel(l) === short || (short && b && b.indexOf(short) >= 0);
+        }).map(function (a) { return accountLabel(a); });
+        if (!same.length) return out;
+        if (same.length === 1 && !hkLabelHasAcc(same[0])) { out.label = same[0]; return out; }
+        out.need = true;
+      } catch (e) {}
+      return out;
+    }
+    (function () {
+      if (typeof openSmsConfirmModal !== 'function' || openSmsConfirmModal._hkAcc) return;
+      var _origOpen = openSmsConfirmModal;
+      var wrappedOpen = function (parsed) {
+        var route = hkSmsAccountRoute(parsed);
+        if (parsed) { parsed._acc4 = route.acc4; parsed._needAccount = route.need; if (route.label) parsed.bank = route.label; }
+        var res = _origOpen.apply(this, arguments);
+        try {
+          var sel = document.getElementById('smsConfirmBank');
+          if (sel && (route.label || route.need)) {
+            sel.value = route.need ? '' : route.label;
+            try { if (sel._fancyRender) sel._fancyRender(); } catch (eF) {}
+          }
+          var old = document.getElementById('smsAccNewNote'); if (old) old.remove();
+          if (sel && route.need) {
+            var note = document.createElement('div');
+            note.id = 'smsAccNewNote'; note.className = 'sms-acc-new';
+            note.textContent = 'شماره حساب …' + toPersianDigits(route.acc4) + ' برای این بانک تازه است. حساب را انتخاب کنید؛ اگر در فهرست نیست، «＋ افزودن حساب» را بزنید و بعد آن را انتخاب کنید.';
+            var anchorEl = (sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+            anchorEl.classList.add('sms-acc-need');
+            anchorEl.insertAdjacentElement('afterend', note);
+            /* فهرست حساب‌ها را باز کن */
+            setTimeout(function () {
+              try { var btn = anchorEl.querySelector && anchorEl.querySelector('.fancy-select-btn'); if (btn) btn.click(); } catch (eC) {}
+            }, 450);
+          }
+        } catch (eR) {}
+        return res;
+      };
+      wrappedOpen._hkAcc = true;
+      openSmsConfirmModal = wrappedOpen;
+      try { window.openSmsConfirmModal = wrappedOpen; } catch (eW) {}
+    })();
+    (function () {
+      if (typeof confirmSmsEntry !== 'function' || confirmSmsEntry._hkAccGate) return;
+      var _prev = confirmSmsEntry;
+      var gated = function () {
+        var pe = pendingSmsEntry, sel = document.getElementById('smsConfirmBank');
+        var chosen = sel ? String(sel.value || '').trim() : '';
+        if (chosen === '__add_account__') chosen = '';
+        if (pe && pe._needAccount && !chosen) {
+          showToast('اول حساب این پیامک را انتخاب کنید');
+          try { var w = sel && sel.parentNode; var btn = w && w.querySelector && w.querySelector('.fancy-select-btn'); if (btn) btn.click(); } catch (eB) {}
+          return;
+        }
+        var acc4 = pe && pe._acc4;
+        var res = _prev.apply(this, arguments);
+        try {
+          var mdl = document.getElementById('smsConfirmModal');
+          if (acc4 && chosen && mdl && !mdl.classList.contains('open')) {
+            smsAccountBankMap['L4:' + acc4] = chosen;
+            saveSmsAccountBankMap();
+          }
+        } catch (eS) {}
+        return res;
+      };
+      gated._hkAccGate = true; gated._hkRecon = true;
+      confirmSmsEntry = gated;
+      try { window.confirmSmsEntry = gated; } catch (eW) {}
     })();
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
@@ -27682,7 +27862,7 @@ function confirmSmsEntry() {
             else {
               var why = String((r && r.why) || '');
               _voiceStatus((why === 'unsupported' ? 'سرویس گفتار داخلی این گوشی بستهٔ آفلاین فارسی ندارد؛ ' : '') +
-                'صفحهٔ تنظیمات گفتار باز شد: «زبان‌ها» یا «تشخیص گفتار آفلاین» را باز کنید، «فارسی» را انتخاب و دانلود کنید، سپس به اپ برگردید و «دوباره» را بزنید.');
+                'صفحهٔ تنظیمات گفتار باز شد: «زبان‌ها» یا «تشخیص گفتار آفلاین» را باز کنید، «فارسی» را انتخاب و دانلود کنید، سپس به نرم‌افزار برگردید و «دوباره» را بزنید.');
               reset();
             }
           }).catch(function () { reset(); _voiceStatus('باز کردن تنظیمات گفتار ممکن نشد؛ از تنظیمات گوشی › زبان و ورودی › ورودی صوتی، فارسی آفلاین را دانلود کنید.'); });
@@ -27757,7 +27937,7 @@ function confirmSmsEntry() {
       var w = document.createElement('div');
       w.id = 'smsSenderWarn';
       w.className = 'sms-sender-warn';
-      w.textContent = '⚠️ این پیامک از یک شمارهٔ موبایل شخصی (' + toPersianDigits(entry.sender) + ') آمده، نه از سرشمارهٔ بانک. ممکن است جعلی باشد؛ قبل از ثبت بررسی کنید.';
+      w.textContent = '⚠️ این پیامک از یک شمارهٔ موبایل شخصی (\u2066' + toPersianDigits(entry.sender) + '\u2069) آمده، نه از سرشمارهٔ بانک. ممکن است جعلی باشد؛ قبل از ثبت بررسی کنید.';
       box.insertBefore(w, box.firstChild);
     }
     function cancelNativeSmsNotification(nid) {
@@ -29789,7 +29969,8 @@ if (item.type === 'recurring') {
       if (editor) editor.remove();
       editor = document.createElement('div');
       editor.id = 'bankAddEditor';
-      editor.style.cssText = 'position:fixed;left:16px;right:16px;top:30%;z-index:100260;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
+      /* بالای صفحه ثابت (پیکسلی، نه درصدی) تا با باز/بسته شدن کیبورد جابه‌جا نشود و لمس‌ها جای درست بخورند */
+      editor.style.cssText = 'position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top, 0px) + 64px);z-index:100260;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);';
       const isEdit = !!acc;
       const initial = isEdit ? acc.label : (defaultLabel || '');
       const initBal = isEdit ? (Number(acc.openingBalance) || 0) : 0;
@@ -29831,7 +30012,7 @@ if (item.type === 'recurring') {
             const note = document.createElement('div');
             note.className = 'bank-open-mismatch';
             note.style.cssText = 'margin:-4px 0 10px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,197,49,0.45);background:rgba(255,197,49,0.08);color:var(--text);font-size:0.76rem;line-height:1.75;';
-            note.textContent = 'اپ برای اول ' + MONTHS[_cy.m - 1] + ' ' + toPersianDigits(String(_cy.y)) + ' موجودی این حساب را ' + formatNum(_st) +
+            note.textContent = 'نرم‌افزار برای اول ' + MONTHS[_cy.m - 1] + ' ' + toPersianDigits(String(_cy.y)) + ' موجودی این حساب را ' + formatNum(_st) +
               ' حساب می‌کند (نه ' + formatNum(initBal) + '). برای یکی شدن بدون تغییر موجودی‌ها، همان ' + formatNum(_st) + ' را ثبت کنید.';
             balInp.insertAdjacentElement('afterend', note);
           }
@@ -32588,7 +32769,11 @@ field('حساب بانکی', accSelRec);
       dayInp.setAttribute('enterkeyhint', 'next');
       dayInp.value = row.day ? toPersianDigits(row.day) : '';
       /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پررنگ و روزش «؟» تا کاربر بداند تاریخ دقیقش معلوم نیست */
-      if (row.reconGap) { tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟'; }
+      if (row.reconGap) {
+        tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟';
+        /* کاربر ردیف را ویرایش کرد (هر فیلدی) → ردیف معمولی شود */
+        tr.addEventListener('input', function () { if (!row.reconGap) return; row.reconGap = false; tr.classList.remove('recon-gap'); try { scheduleSave(); } catch (eS) {} }, true);
+      }
       dayInp.oninput = () => {
         if (row.reconGap) row.reconGapDayEdited = true;
         if (!row.fromPlanId && !canEditRow(row)) return;
@@ -33766,6 +33951,15 @@ function openProjectRowPicker(secId) {
       balEl.style.color = gRemain > 0 ? '#16a34a' : (gRemain < 0 ? '#dc2626' : '#1a1a1a');
     }
 
+    /* متن پیام‌ها: «اپ» → «نرم‌افزار»؛ شمارهٔ تلفن (+98…) همیشه چپ‌به‌راست تا «+» اول شماره بماند */
+    function hkMsgFix(msg) {
+      var m = String(msg == null ? '' : msg);
+      try {
+        m = m.replace(/(^|[^\u0600-\u06FF])اپ(?![\u0621-\u064A\u067E\u0686\u0698\u06A9\u06AF\u06CC])/g, '$1نرم‌افزار');
+        m = m.replace(/\+[0-9۰-۹][0-9۰-۹\s\-]{5,}[0-9۰-۹]/g, function (x) { return '\u2066' + x + '\u2069'; });
+      } catch (e) {}
+      return m;
+    }
     function showToast(msg, opt) {
       const t = document.getElementById('toast');
       if (!t) return;
@@ -33773,8 +33967,9 @@ function openProjectRowPicker(secId) {
         var _m = String(msg || '');
         if (/supabase|firebase|همگام|ابر|sync|offline|آنلاین|آفلاین —|در صف همگام/i.test(_m)) return;
       } catch (eFilt) {}
-      t.textContent = msg;
+      t.textContent = hkMsgFix(msg);
       t.classList.remove('toast-long');
+      t.style.fontSize = '';
       // همیشه بالاتر از مودال‌های مات
       try {
         t.style.zIndex = '99999';
@@ -33782,6 +33977,11 @@ function openProjectRowPicker(secId) {
         else document.body.appendChild(t); // به انتهای DOM ببر
       } catch (e) {}
       t.classList.add('show');
+      /* یک‌خطی و کامل: اگر جا نشد، فونت کم‌کم کوچک شود (بدون «…») */
+      try {
+        var fs = parseFloat(getComputedStyle(t).fontSize) || 14, guard = 0;
+        while (t.scrollWidth > t.clientWidth + 1 && fs > 9 && guard++ < 14) { fs -= 0.5; t.style.fontSize = fs + 'px'; }
+      } catch (eFit) {}
       clearTimeout(window._toastTimer);
       /* opt عددی = مدت نمایش (میلی‌ثانیه) */
       window._toastTimer = setTimeout(() => t.classList.remove('show'), (typeof opt === 'number' && opt > 0) ? opt : 2500);
@@ -33792,6 +33992,7 @@ function openProjectRowPicker(secId) {
       showToast(msg);
       const t = document.getElementById('toast');
       if (!t) return;
+      t.style.fontSize = '';
       t.classList.add('toast-long');
       clearTimeout(window._toastTimer);
       const ms = Math.min(9000, 2500 + String(msg || '').length * 45);
@@ -33976,7 +34177,7 @@ function openProjectRowPicker(secId) {
       const body = document.getElementById('helpModalBody');
       if (body) {
         body.innerHTML = `
-<div class="help-intro">حساب‌کتاب دفتر مالی ماهانهٔ شماست: درآمدها، مخارج، اقساط، قرض‌ها و پروژه‌ها را ثبت می‌کنید و اپ جمع‌ها، مانده و تحلیل‌ها را خودش حساب می‌کند. همه‌چیز آفلاین و روی همین گوشی ذخیره می‌شود.</div>
+<div class="help-intro">حساب‌کتاب دفتر مالی ماهانهٔ شماست: درآمدها، مخارج، اقساط، قرض‌ها و پروژه‌ها را ثبت می‌کنید و نرم‌افزار جمع‌ها، مانده و تحلیل‌ها را خودش حساب می‌کند. همه‌چیز آفلاین و روی همین گوشی ذخیره می‌شود.</div>
 <div class="help-section"><h4>بالای صفحه</h4><ul>
   <li><strong>ماه و سال:</strong> هر ماه دفتر جداگانه دارد؛ با عوض کردن ماه، اطلاعات همان ماه نمایش داده می‌شود.</li>
   <li><strong>منو (≡):</strong> دسترسی به همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت و خروجی‌ها.</li>
@@ -34076,7 +34277,7 @@ function openProjectRowPicker(secId) {
         }).join('') + '</div>' +
         '<div class="upd-progress" hidden><div class="upd-pct">۰٪</div><div class="upd-tube"><i></i></div><div class="upd-status">در حال دانلود…</div><div class="upd-more"></div></div>' +
         (m.apk ? '<div class="upd-hint">نسخهٔ جدید داخل همین پنجره دانلود و نصب می‌شود. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
-        (m._critical ? '<div class="upd-hint upd-crit-hint">این بروزرسانی ضروری است؛ برای ادامهٔ کار با اپ، نسخهٔ جدید را نصب کنید. اطلاعات شما سر جایش می‌ماند.</div>'
+        (m._critical ? '<div class="upd-hint upd-crit-hint">این بروزرسانی ضروری است؛ برای ادامهٔ کار با نرم‌افزار، نسخهٔ جدید را نصب کنید. اطلاعات شما سر جایش می‌ماند.</div>'
           : '<div class="backup-pick-actions"><button type="button" class="backup-pick-cancel" id="updLater">بعداً</button></div>') + '</div>';
       document.body.appendChild(ov);
       ov.querySelectorAll('.upd-go').forEach(function (b) { b.onclick = function () {
@@ -34112,7 +34313,7 @@ function openProjectRowPicker(secId) {
         '<div class="backup-pick-title upd-prompt-title">' + (critical ? 'بروزرسانی ضروری' : 'بروزرسانی جدید داریم') + '</div>' +
         '<div class="upd-cur">نسخهٔ ' + escapeHtml(toPersianDigits(String(m.versionName || ''))) + ' آماده است' + (inst && inst.name ? ' (نسخهٔ فعلی شما: ' + escapeHtml(toPersianDigits(inst.name)) + ')' : '') + '</div>' +
         (notes.length ? '<ul class="upd-notes">' + notes.slice(0, 4).map(function (n) { return '<li>' + escapeHtml(String(n)) + '</li>'; }).join('') + '</ul>' : '') +
-        (critical ? '<div class="upd-hint upd-crit-hint">این نسخه شامل اصلاحات مهم است و تا نصب آن، کار با اپ ممکن نیست. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
+        (critical ? '<div class="upd-hint upd-crit-hint">این نسخه شامل اصلاحات مهم است و تا نصب آن، کار با نرم‌افزار ممکن نیست. اطلاعات شما سر جایش می‌ماند.</div>' : '') +
         '<div class="upd-prompt-actions"><button type="button" class="upd-prompt-go" id="updPromptGo">بروزرسانی</button>' +
         (critical ? '' : '<button type="button" class="backup-pick-cancel upd-prompt-later" id="updPromptLater">بعداً</button>') + '</div></div>';
       document.body.appendChild(ov);
