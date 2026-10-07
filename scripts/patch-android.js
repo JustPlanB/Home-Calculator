@@ -47,9 +47,11 @@ public class BankSmsReceiver extends BroadcastReceiver {
         if(x!=null && text.equals(x.optString("text")) && now-x.optLong("receivedAt",0)<60000) return;
       }
       int nid=(int)(now&0x7fffffff);
+      /* شناسهٔ یکتا حتی برای چند پیامکِ هم‌زمان */
+      boolean clash=true; while(clash){ clash=false; for(int i=0;i<q.length();i++){ JSONObject y=q.optJSONObject(i); if(y!=null && y.optInt("nid",0)==nid){ nid++; clash=true; break; } } }
       JSONObject item=new JSONObject(); item.put("text",text); item.put("sender",sender==null?"":sender); item.put("receivedAt",ts>0?ts:now); item.put("nid",nid);
       q.put(item);
-      while(q.length()>20){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
+      while(q.length()>200){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
       sp.edit().putString(QUEUE,q.toString()).apply();
       postNotification(context,text,nid);
     }catch(Exception ignored){}
@@ -173,7 +175,32 @@ public class BankSmsPlugin extends Plugin {
   }
   @com.getcapacitor.PluginMethod public void markHandled(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    try{ JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); JSONArray n=new JSONArray(); for(int i=1;i<q.length();i++) n.put(q.get(i)); sp.edit().putString(QUEUE,n.toString()).apply(); call.resolve(); }catch(Exception e){call.reject("pending_sms_error",e);}
+    try{
+      int nid=call.getInt("nid",0);
+      JSONArray q=new JSONArray(sp.getString(QUEUE,"[]")); JSONArray n=new JSONArray();
+      boolean removed=false;
+      for(int i=0;i<q.length();i++){
+        JSONObject x=q.optJSONObject(i);
+        boolean hit = nid!=0 ? (x!=null && x.optInt("nid",0)==nid) : (i==0);
+        if(hit && !removed){ removed=true; continue; }
+        n.put(q.get(i));
+      }
+      sp.edit().putString(QUEUE,n.toString()).apply(); call.resolve();
+    }catch(Exception e){call.reject("pending_sms_error",e);}
+  }
+  /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */
+  @com.getcapacitor.PluginMethod public void getAllPending(PluginCall call){
+    SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+    try{
+      JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
+      com.getcapacitor.JSArray out=new com.getcapacitor.JSArray();
+      for(int i=0;i<q.length();i++){
+        JSONObject x=q.optJSONObject(i); if(x==null) continue;
+        JSObject r=new JSObject(); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); r.put("nid",x.optInt("nid",0));
+        out.put(r);
+      }
+      call.resolve(new JSObject().put("items",out).put("count",out.length()));
+    }catch(Exception e){call.reject("pending_sms_error",e);}
   }
   /** هماهنگی خوانده/نخوانده: وقتی پیامک داخل اپ نمایش داده شد، نوتیف همان پیامک (و عدد روی آیکن) حذف شود */
   @com.getcapacitor.PluginMethod public void cancelNotification(PluginCall call){
@@ -199,6 +226,52 @@ public class BankSmsPlugin extends Plugin {
       }
       call.resolve();
     }catch(Exception e){ call.reject("cancel_failed",e); }
+  }
+  /** وضعیت دسترسی‌ها برای کلیدهای منوی همبرگری */
+  @com.getcapacitor.PluginMethod public void permStatus(PluginCall call){
+    JSObject r=new JSObject();
+    try{
+      boolean sms = android.os.Build.VERSION.SDK_INT<23 || getContext().checkSelfPermission(Manifest.permission.RECEIVE_SMS)==android.content.pm.PackageManager.PERMISSION_GRANTED;
+      boolean notif = androidx.core.app.NotificationManagerCompat.from(getContext()).areNotificationsEnabled();
+      if(android.os.Build.VERSION.SDK_INT>=33) notif = notif && getContext().checkSelfPermission("android.permission.POST_NOTIFICATIONS")==android.content.pm.PackageManager.PERMISSION_GRANTED;
+      r.put("sms",sms); r.put("notif",notif);
+    }catch(Exception e){ r.put("sms",false); r.put("notif",false); }
+    call.resolve(r);
+  }
+  /** درخواست دوبارهٔ دسترسی اعلان (اندروید ۱۳+) */
+  @com.getcapacitor.PluginMethod public void requestNotif(PluginCall call){
+    try{
+      if(android.os.Build.VERSION.SDK_INT>=33 && getActivity()!=null) getActivity().requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},4202);
+      call.resolve();
+    }catch(Exception e){ call.resolve(); }
+  }
+  /** باز کردن صفحهٔ مربوط در تنظیمات گوشی (اعلان‌ها یا مجوزهای برنامه؛ ردیف «مجوزها» در برخی گوشی‌ها برجسته می‌شود) */
+  @com.getcapacitor.PluginMethod public void openPermSettings(PluginCall call){
+    String which=call.getString("which","sms");
+    try{
+      android.content.Intent i;
+      if("notif".equals(which) && android.os.Build.VERSION.SDK_INT>=26){
+        i=new android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        i.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getContext().getPackageName());
+      } else {
+        i=new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        i.setData(android.net.Uri.fromParts("package",getContext().getPackageName(),null));
+        android.os.Bundle b=new android.os.Bundle(); b.putString(":settings:fragment_args_key","permission_settings");
+        i.putExtra(":settings:fragment_args_key","permission_settings");
+        i.putExtra(":settings:show_fragment_args",b);
+      }
+      i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(i);
+      call.resolve();
+    }catch(Exception e){
+      try{
+        android.content.Intent j=new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        j.setData(android.net.Uri.fromParts("package",getContext().getPackageName(),null));
+        j.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(j);
+        call.resolve();
+      }catch(Exception e2){ call.reject("unavailable"); }
+    }
   }
   @com.getcapacitor.PluginMethod public void clearPending(PluginCall call){ getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().remove(QUEUE).apply(); call.resolve(); }
 }
