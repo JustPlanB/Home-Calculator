@@ -1807,7 +1807,7 @@ final class HkWidgetDraw {
     return bm;
   }
 
-  /** ویجت حساب‌ها: موجودی تک‌تک حساب‌ها (کارت‌ها) و خرج امروز */
+  /** ویجت حساب‌ها: موجودی تک‌تک حساب‌ها (کارت‌ها)، موجودی کل و خرج امروز — ردیف‌ها کل ارتفاع را پر می‌کنند */
   static Bitmap accounts(Context c, int W, int H, float k, Data d){
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
@@ -1816,33 +1816,43 @@ final class HkWidgetDraw {
     java.util.ArrayList<String[]> rows=new java.util.ArrayList<>();
     try{
       org.json.JSONArray a=new org.json.JSONArray(d.accounts==null?"[]":d.accounts);
-      for(int i=0;i<a.length();i++){ org.json.JSONObject o=a.optJSONObject(i); if(o!=null) rows.add(new String[]{o.optString("l",""), o.optString("b","—"), o.optBoolean("n",false)?"1":"0"}); }
+      for(int i=0;i<a.length();i++){ org.json.JSONObject o=a.optJSONObject(i); if(o!=null) rows.add(new String[]{o.optString("l",""), o.optString("b","—"), o.optBoolean("n",false)?"1":"0", o.optBoolean("t",false)?"1":"0"}); }
     }catch(Exception ignored){}
-    int n=rows.size()+1; /* + خرج امروز */
+    boolean empty=rows.isEmpty();
+    int n=(empty?1:rows.size())+1; /* + خرج امروز */
     float hdr=1.0f, rowR=1.0f, gap=0.45f;
     float units=hdr*(TXT_A+TXT_D)+n*rowR*(NUM_A+NUM_D)+n*gap;
     float u=Math.min(ah/units, 17*k);
+    /* فضای خالیِ باقی‌مانده بین فاصله‌ها پخش می‌شود تا ردیف‌ها کل باکس را پر کنند */
+    float extra=Math.max(0f, ah-u*units)/n;
     float y=padY;
     float hs=fit(BOLD,u,"حساب‌کتاب",aw*0.55f);
     cv.drawText("حساب‌کتاب", W-padX, y+TXT_A*u, paint(BOLD,hs,text(d),Paint.Align.RIGHT));
     String m=d.month==null?"":d.month;
     cv.drawText(m, padX, y+TXT_A*u, paint(REG,fit(REG,u*0.9f,m,aw*0.42f),muted(d),Paint.Align.LEFT));
     y+=u*(TXT_A+TXT_D);
-    if(rows.isEmpty() && !d.locked){
-      y+=gap*u;
+    if(empty && !d.locked){
+      y+=gap*u+extra;
       cv.drawText("حسابی ثبت نشده", W-padX, y+TXT_A*u, paint(REG,fit(REG,u,"حسابی ثبت نشده",aw),muted(d),Paint.Align.RIGHT));
       y+=u*(NUM_A+NUM_D);
-    }
+    } else if(empty){ y+=gap*u+extra+u*(NUM_A+NUM_D); }
     for(String[] r: rows){
-      y+=gap*u;
-      float ls=fit(REG,u*rowR,r[0],aw*0.45f);
-      cv.drawText(r[0], W-padX, y+NUM_A*u, paint(REG,ls,muted(d),Paint.Align.RIGHT));
+      float g=gap*u+extra;
+      boolean tot="1".equals(r[3]);
+      if(tot){
+        /* خط نازک جداکننده بالای موجودی کل */
+        Paint lp=new Paint(Paint.ANTI_ALIAS_FLAG); lp.setColor(muted(d)); lp.setAlpha(70); lp.setStrokeWidth(Math.max(1f,0.8f*k));
+        float ly=y+g*0.5f; cv.drawLine(padX, ly, W-padX, ly, lp);
+      }
+      y+=g;
+      float ls=fit(tot?BOLD:REG,u*rowR,r[0],aw*0.45f);
+      cv.drawText(r[0], W-padX, y+NUM_A*u, paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT));
       String val=d.locked?"••••••":r[1];
       int col=d.locked?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
       cv.drawText(val, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT));
       y+=u*rowR*(NUM_A+NUM_D);
     }
-    y+=gap*u;
+    y+=gap*u+extra;
     cv.drawText("خرج امروز", W-padX, y+NUM_A*u, paint(REG,fit(REG,u,"خرج امروز",aw*0.45f),muted(d),Paint.Align.RIGHT));
     String tv=d.locked?"••••••":(d.none?"۰":d.today);
     cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.locked?text(d):Color.parseColor("#ff6b4a"),Paint.Align.LEFT));

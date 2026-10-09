@@ -6589,6 +6589,13 @@
       border-radius: 5px !important;
       padding: 0 4px !important;
     }
+    /* ردیفِ ثبت‌شده (مبلغ دارد) ولی بدون حساب → قاب زرد تا کاربر متوجه شود */
+    td.col-acc .dark-select-btn.is-empty-acc.acc-missing,
+    [data-theme="light"] td.col-acc .dark-select-btn.is-empty-acc.acc-missing {
+      border: 1.5px solid #ffc531 !important;
+      opacity: 1 !important;
+    }
+    .pd-acc-btn.acc-missing { border: 1.5px solid #ffc531 !important; }
     /* وقتی مقدار دارد — مثل سلول پر */
     td.col-acc .dark-select-btn:not(.is-empty-acc),
     [data-theme="light"] td.col-acc .dark-select-btn:not(.is-empty-acc) {
@@ -9019,6 +9026,10 @@
     .sp-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: #08b5f5; transition: width 1.3s cubic-bezier(0.22, 0.8, 0.3, 1); }
     .sp-bar i.pos { background: #9ee858; }
     .sp-bar i.neg { background: #ff6b4a; }
+    .sp-page .def { color: #ff9f0a; }
+    .sp-bar i.def { background: #ff9f0a; }
+    html[data-theme="light"] .sp-page .def { color: #c56a00 !important; }
+    html[data-theme="light"] .sp-bar i.def { background: #c56a00 !important; }
     .sp-bar i.dim { opacity: 0.45; }
     /* دسته‌ها: هر نما ۴ مورد با ارتفاع یکسان؛ اسکرول عمودی پیوسته با توقف روی هر ۴ مورد */
     .sp-scroll {
@@ -11265,7 +11276,7 @@
     let supabaseClient = null;
 
     const APP_VERSION = '5.1.0';
-    const APP_VERSION_FA = '۱.۳.۹';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
+    const APP_VERSION_FA = '۱.۳.۱۰';   /* فقط اگر نسخهٔ واقعی از اندروید خوانده نشد */
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
@@ -21144,6 +21155,8 @@ async function openPdfPrintWindow(){
           try {
             var gb = globalAccountBalances() || {};
             selectedAccountLabels().forEach(function (lb) { var v = Number(gb[lb]) || 0; accs.push({ l: lb, b: (v < 0 ? '-' : '') + formatNum(Math.abs(v)), n: v < 0 }); });
+            /* موجودی کل (همان جمع نرم‌افزار، شامل ردیف‌های بدون حساب) — آخرین عضو با t:true */
+            if (accs.length) { var tot = 0; Object.keys(gb).forEach(function (k) { tot += Number(gb[k]) || 0; }); accs.push({ l: 'موجودی کل', b: (tot < 0 ? '-' : '') + formatNum(Math.abs(tot)), n: tot < 0, t: true }); }
           } catch (eA) {}
           await P.update({
             accounts: JSON.stringify(accs),
@@ -22547,7 +22560,9 @@ async function openPdfPrintWindow(){
       }
       var cash = D.incPaid - D.expPaid, cc = cash >= 0 ? 'pos' : 'neg';
       var cashPct = D.incPaid > 0 ? Math.abs(cash) / D.incPaid * 100 : (cash !== 0 ? 100 : 0);
-      html += '<div class="sp-blk">' + spLine('مانده کنونی', spAmt(cash), cc) + spTube(cashPct, cc) + '</div>';
+      /* منفی = خرجِ این ماه از موجودی ماه قبل → «کسری این ماه» بدون علامت منفی، نارنجی */
+      if (cash < 0) html += '<div class="sp-blk">' + spLine('کسری این ماه', spAmt(-cash), 'def') + spTube(cashPct, 'def') + '</div>';
+      else html += '<div class="sp-blk">' + spLine('مانده کنونی', spAmt(cash), cc) + spTube(cashPct, cc) + '</div>';
       return html + '</div>';
     }
     /* ۲) تعهدات: هر خبر جدا با خط جداکننده؛ مبلغ قسط زیر عنوانش */
@@ -24440,7 +24455,7 @@ container.innerHTML = '';
         const tdAcc = document.createElement('td');
         const accBtn = document.createElement('button');
         accBtn.type = 'button';
-        accBtn.className = 'pd-acc-btn' + (isFilledVal(row.account) ? ' pd-filled' : '');
+        accBtn.className = 'pd-acc-btn' + (isFilledVal(row.account) ? ' pd-filled' : '') + ((Number(row.amount) || 0) > 0 && !(row.account || '').trim() ? ' acc-missing' : '');
         accBtn.textContent = row.account ? shortBankDisplay(row.account) : 'انتخاب';
         accBtn.onclick = (e) => {
           e.stopPropagation();
@@ -34051,6 +34066,7 @@ field('حساب بانکی', accSelRec);
             if (v) accSel._btn.classList.remove('is-empty-acc');
             else accSel._btn.classList.add('is-empty-acc');
           }
+          syncAccMissing();
           if (!row.fromPlanId && (row.day || row.desc || row.amount || row.account)) stampRowOwner(row);
           scheduleSave();
         }
@@ -34071,6 +34087,12 @@ field('حساب بانکی', accSelRec);
         }, true);
       }
       tdAcc.appendChild(accSel);
+      /* مبلغ ثبت شده ولی حساب انتخاب نشده → قاب زرد دور منوی حساب */
+      function syncAccMissing() {
+        try { if (accSel._btn) accSel._btn.classList.toggle('acc-missing', (Number(row.amount) || 0) > 0 && !(row.account || '').trim()); } catch (eAm) {}
+      }
+      syncAccMissing();
+      try { amtInp.addEventListener('blur', function () { setTimeout(syncAccMissing, 60); }); } catch (eAb) {}
 
       const tdAct = document.createElement('td');
       tdAct.className = 'actions-cell col-actions';
