@@ -112,6 +112,9 @@ public class BankSmsReceiver extends BroadcastReceiver {
     // فقط پیامک‌های واقعی بانکی
     boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
         || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
+    /* «قسط» فقط وقتی تراکنش است که نشانه‌های مالی دیگر هم باشد (مانده/موجودی، یا حساب/کارت) — تنها کلمهٔ قسط ملاک نیست */
+    boolean installTx = t.contains("قسط") && (t.contains("مانده") || t.contains("موجودی") || t.contains("حساب") || t.contains("کارت"));
+    if(installTx) strongTx = true;
     boolean weakTx = t.contains("خرید") || t.contains("خرید شارژ") || t.contains("شارژ") || t.contains("پرداخت") || t.contains("انتقال") || t.contains("تراکنش");
     boolean hasBalance = t.contains("موجودی") || t.contains("مانده") || t.contains("موجودي");
     boolean bankHint = t.contains("بانک") || t.contains("کارت") || t.contains("حساب") || t.contains("atm") || t.contains("pos");
@@ -1168,6 +1171,7 @@ public class HkRemindersPlugin extends Plugin {
           JSONObject x=new JSONObject();
           x.put("id",o.optInt("id",1000+i)); x.put("at",at);
           x.put("title",o.optString("title","یادآور")); x.put("body",o.optString("body",""));
+          x.put("target",o.optString("target",""));
           keep.put(x);
         }
       }
@@ -1183,7 +1187,7 @@ public class HkRemindersPlugin extends Plugin {
   static PendingIntent pending(Context c,JSONObject x){
     Intent i=new Intent(c,HkReminderReceiver.class);
     i.setAction(ACTION);
-    i.putExtra("id",x.optInt("id")); i.putExtra("title",x.optString("title")); i.putExtra("body",x.optString("body"));
+    i.putExtra("id",x.optInt("id")); i.putExtra("title",x.optString("title")); i.putExtra("body",x.optString("body")); i.putExtra("target",x.optString("target",""));
     return PendingIntent.getBroadcast(c,x.optInt("id"),i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
   }
   static void cancelAll(Context c){
@@ -1212,6 +1216,26 @@ public class HkRemindersPlugin extends Plugin {
         try{ am.set(AlarmManager.RTC_WAKEUP,at,pi); }catch(Exception ignored){}
       }
     }
+  }
+  /** لمس نوتیف (قسط/یادآور) → نرم‌افزار باز شود و همان منو نشان داده شود */
+  static final String LAUNCH_PREFS="hk_launch";
+  static void saveTarget(Context c, Intent in){
+    try{
+      if(in==null) return;
+      String t=in.getStringExtra("hk_target");
+      if(t==null || t.isEmpty()) return;
+      c.getSharedPreferences(LAUNCH_PREFS,Context.MODE_PRIVATE).edit().putString("target",t).putLong("at",System.currentTimeMillis()).apply();
+      in.removeExtra("hk_target");
+    }catch(Exception ignored){}
+  }
+  @com.getcapacitor.PluginMethod public void takeLaunchTarget(PluginCall call){
+    try{
+      SharedPreferences sp=getContext().getSharedPreferences(LAUNCH_PREFS,Context.MODE_PRIVATE);
+      String t=sp.getString("target",""); long at=sp.getLong("at",0);
+      sp.edit().remove("target").remove("at").apply();
+      if(System.currentTimeMillis()-at>10*60*1000L) t="";
+      call.resolve(new JSObject().put("target",t));
+    }catch(Exception e){ call.resolve(new JSObject().put("target","")); }
   }
   static void forget(Context c,int id){
     try{
@@ -1249,7 +1273,12 @@ public class HkReminderReceiver extends BroadcastReceiver {
     if(Build.VERSION.SDK_INT>=26){ nm.createNotificationChannel(new NotificationChannel(CHANNEL,"یادآورها",NotificationManager.IMPORTANCE_HIGH)); }
     Intent open=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
     PendingIntent pi=null;
-    if(open!=null){ open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); pi=PendingIntent.getActivity(c,2002,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE); }
+    String target=in.getStringExtra("target");
+    if(open!=null){
+      open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+      if(target!=null && !target.isEmpty()) open.putExtra("hk_target",target);
+      pi=PendingIntent.getActivity(c,id,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+    }
     String title=in.getStringExtra("title"); String body=in.getStringExtra("body");
     NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL)
       .setSmallIcon(android.R.drawable.ic_popup_reminder)
@@ -1667,7 +1696,7 @@ final class HkWidgetDraw {
   /* کادر فشردهٔ متن نسبت به اندازهٔ فونت (اندازه‌گیری‌شده برای وزیرمتن) */
   private static final float TXT_A=0.74f, TXT_D=0.36f, NUM_A=0.70f, NUM_D=0.20f;
 
-  static final class Data { String month, balance, today; boolean neg, locked, light, none; }
+  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none; }
 
   static Data load(Context c){
     SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -1679,6 +1708,7 @@ final class HkWidgetDraw {
     d.locked=sp.getBoolean("locked",false);
     d.light=sp.getBoolean("light",false);
     d.none=sp.getBoolean("todayNone",false);
+    d.accounts=sp.getString("accounts","[]");
     return d;
   }
 
@@ -1777,6 +1807,48 @@ final class HkWidgetDraw {
     return bm;
   }
 
+  /** ویجت حساب‌ها: موجودی تک‌تک حساب‌ها (کارت‌ها) و خرج امروز */
+  static Bitmap accounts(Context c, int W, int H, float k, Data d){
+    fonts(c);
+    Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+    Canvas cv=new Canvas(bm);
+    float padX=14*k, padY=11*k, aw=W-2*padX, ah=H-2*padY;
+    java.util.ArrayList<String[]> rows=new java.util.ArrayList<>();
+    try{
+      org.json.JSONArray a=new org.json.JSONArray(d.accounts==null?"[]":d.accounts);
+      for(int i=0;i<a.length();i++){ org.json.JSONObject o=a.optJSONObject(i); if(o!=null) rows.add(new String[]{o.optString("l",""), o.optString("b","—"), o.optBoolean("n",false)?"1":"0"}); }
+    }catch(Exception ignored){}
+    int n=rows.size()+1; /* + خرج امروز */
+    float hdr=1.0f, rowR=1.0f, gap=0.45f;
+    float units=hdr*(TXT_A+TXT_D)+n*rowR*(NUM_A+NUM_D)+n*gap;
+    float u=Math.min(ah/units, 17*k);
+    float y=padY;
+    float hs=fit(BOLD,u,"حساب‌کتاب",aw*0.55f);
+    cv.drawText("حساب‌کتاب", W-padX, y+TXT_A*u, paint(BOLD,hs,text(d),Paint.Align.RIGHT));
+    String m=d.month==null?"":d.month;
+    cv.drawText(m, padX, y+TXT_A*u, paint(REG,fit(REG,u*0.9f,m,aw*0.42f),muted(d),Paint.Align.LEFT));
+    y+=u*(TXT_A+TXT_D);
+    if(rows.isEmpty() && !d.locked){
+      y+=gap*u;
+      cv.drawText("حسابی ثبت نشده", W-padX, y+TXT_A*u, paint(REG,fit(REG,u,"حسابی ثبت نشده",aw),muted(d),Paint.Align.RIGHT));
+      y+=u*(NUM_A+NUM_D);
+    }
+    for(String[] r: rows){
+      y+=gap*u;
+      float ls=fit(REG,u*rowR,r[0],aw*0.45f);
+      cv.drawText(r[0], W-padX, y+NUM_A*u, paint(REG,ls,muted(d),Paint.Align.RIGHT));
+      String val=d.locked?"••••••":r[1];
+      int col=d.locked?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
+      cv.drawText(val, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT));
+      y+=u*rowR*(NUM_A+NUM_D);
+    }
+    y+=gap*u;
+    cv.drawText("خرج امروز", W-padX, y+NUM_A*u, paint(REG,fit(REG,u,"خرج امروز",aw*0.45f),muted(d),Paint.Align.RIGHT));
+    String tv=d.locked?"••••••":(d.none?"۰":d.today);
+    cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.locked?text(d):Color.parseColor("#ff6b4a"),Paint.Align.LEFT));
+    return bm;
+  }
+
   /** ویجت یک‌خطی: صفحهٔ ۰ = موجودی، صفحهٔ ۱ = خرج امروز (با اسکرول عمودی) */
   static Bitmap page(Context c, int W, int H, float k, Data d, int page){
     fonts(c);
@@ -1840,6 +1912,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
       for(int id: ids) render(ctx, mgr, id);
     }catch(Exception ignored){}
     HkWidgetSmallProvider.refreshAll(ctx);
+    try{ HkWidgetAccountsProvider.refreshAll(ctx); }catch(Exception ignored){}
   }
 
   static PendingIntent openApp(Context ctx, boolean mutable){
@@ -1859,6 +1932,40 @@ public class HkWidgetProvider extends AppWidgetProvider {
       v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.full(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, openApp(ctx, false));
+      mgr.updateAppWidget(id, v);
+    }catch(Exception ignored){}
+  }
+}
+`;
+
+const hkWidgetAccounts=`package ${pkg};
+
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
+import android.content.Context;
+import android.os.Bundle;
+import android.widget.RemoteViews;
+
+/** ویجت حساب‌ها: موجودی هر حساب بانکی (کارت) جدا + خرج امروز */
+public class HkWidgetAccountsProvider extends AppWidgetProvider {
+  @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
+  @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
+  static void refreshAll(Context ctx){
+    try{
+      AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
+      int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetAccountsProvider.class));
+      for(int id: ids) render(ctx, mgr, id);
+    }catch(Exception ignored){}
+  }
+  static void render(Context ctx, AppWidgetManager mgr, int id){
+    try{
+      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 200);
+      RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget);
+      v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.accounts(ctx, (int)sz[0], (int)sz[1], sz[2], d));
+      v.setOnClickPendingIntent(R.id.hk_w_root, HkWidgetProvider.openApp(ctx, false));
       mgr.updateAppWidget(id, v);
     }catch(Exception ignored){}
   }
@@ -1981,6 +2088,7 @@ public class HkWidgetPlugin extends Plugin {
       e.putBoolean("neg", Boolean.TRUE.equals(call.getBoolean("negative",false)));
       e.putBoolean("locked", Boolean.TRUE.equals(call.getBoolean("locked",false)));
       e.putBoolean("light", Boolean.TRUE.equals(call.getBoolean("light",false)));
+      e.putString("accounts", call.getString("accounts","[]"));
       e.apply();
       HkWidgetProvider.refreshAll(getContext());
       call.resolve();
@@ -2014,6 +2122,11 @@ public class MainActivity extends BridgeActivity {
     if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
     if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.POST_NOTIFICATIONS);
     if(!needed.isEmpty()) requestPermissions(needed.toArray(new String[0]),4201);
+    try{ HkRemindersPlugin.saveTarget(this,getIntent()); }catch(Exception ignored){}
+  }
+  @Override public void onNewIntent(android.content.Intent intent){
+    super.onNewIntent(intent);
+    try{ HkRemindersPlugin.saveTarget(this,intent); }catch(Exception ignored){}
   }
 }
 `;
@@ -2033,6 +2146,7 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetProvider.java'),hkWidget);
 fs.writeFileSync(path.join(javaDir,'HkWidgetPlugin.java'),hkWidgetPlugin);
 fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
 fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
+fs.writeFileSync(path.join(javaDir,'HkWidgetAccountsProvider.java'),hkWidgetAccounts);
 fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
 
 const gradle=path.join(base,'app/build.gradle');
@@ -2082,6 +2196,14 @@ if(fs.existsSync(manifest)){
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_small_info"/>\n' +
+    '        </receiver>\n    </application>');
+  // ویجت حساب‌ها (موجودی هر کارت + خرج امروز)
+  if(!s.includes('.HkWidgetAccountsProvider')) s=s.replace('</application>',
+    '        <receiver android:name=".HkWidgetAccountsProvider" android:exported="true" android:label="حساب‌کتاب (حساب‌ها)">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
+    '            </intent-filter>\n' +
+    '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_accounts_info"/>\n' +
     '        </receiver>\n    </application>');
   if(!s.includes('.HkWidgetListService')) s=s.replace('</application>',
     '        <service android:name=".HkWidgetListService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
@@ -2195,6 +2317,19 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_small_info.xml'),
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:initialLayout="@layout/hk_widget_small"/>
+`);
+
+fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/hk_widget"/>
 `);
 
 console.log('Android SMS + Downloads/PDF + FileProvider Share bridge patched');
