@@ -90,4 +90,53 @@ jobs:
           "$AAPT" dump xmltree --file AndroidManifest.xml "$APK" > manifest.txt
           if grep -q 'android:debuggable.*=.*true\|debuggable(0x0101000f)=(type 0x12)0xffffffff' manifest.txt; then echo "release APK is debuggable"; exit 1; fi
           echo "release APK is not debuggable"
-          grep -E 'uses-permission|android:allowBackup|usesCleartextTraffic' manifest.txt | sed 's/^ *//' | sort -u
+          grep -E 'android:allowBackup|usesCleartextTraffic' manifest.txt | sed 's/^ *//' | sort -u
+          echo "permissions:"; "$AAPT" dump permissions "$APK" | sed 's/^/  /'
+          # برای آزمون خشک انتشار، با همان نام فایلی که job انتشار انتظار دارد (بدون امضا، نصب‌نشدنی)
+          mkdir -p dryrun/apk/release && cp "$APK" dryrun/apk/release/app-release.apk
+      - name: Hand unsigned APK to the publish dry run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dryrun-release
+          path: dryrun/
+          retention-days: 1
+          if-no-files-found: error
+
+  # همان مسیر job انتشار (دانلود artifact، ساخت version.json و یادداشت‌ها، فراخوانی gh) با DRY_RUN=1:
+  # gh فقط چاپ می‌شود؛ بدون دسترسی نوشتن، بدون Secret و بدون انتشار واقعی.
+  publish-dryrun:
+    needs: build-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HK_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dryrun-release
+          path: ${{ runner.temp }}/release
+      - name: Publish script (dry run)
+        env:
+          REPO: ${{ github.repository }}
+          DRY_RUN: "1"
+        run: |
+          set -e
+          export APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          bash scripts/publish-release.sh
+          node -e "const f=require(process.env.RUNNER_TEMP+'/version.json');if(f.versionCode!=+process.env.HK_VERSION_CODE||!/releases\/latest\/download\/hesab-ketab\.apk$/.test(f.apk))process.exit(1);console.log('feed ok',f.versionName,f.versionCode)"
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.7 -color

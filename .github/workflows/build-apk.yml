@@ -46,6 +46,7 @@ jobs:
           node --check scripts/patch-android-release.js
           node --check scripts/patch-android-icons.js
           node --check scripts/make-update-feed.js
+          bash -n scripts/publish-release.sh
 
       - name: Decode release keystore (only when secrets exist)
         id: keystore
@@ -140,23 +141,5 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -e
-          APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
-          test -n "$APK_SRC"
-          VN=$(node -p "require('./package.json').version")
-          TAG="v${VN}-b${HK_VERSION_CODE}"
-          cp "$APK_SRC" "$RUNNER_TEMP/hesab-ketab.apk"
-          node scripts/make-update-feed.js "$RUNNER_TEMP/version.json"
-          node -e "const n=(require('./version.json').notes||[]);require('fs').writeFileSync(process.env.RUNNER_TEMP+'/notes.md',(n.length?n.map(x=>'- '+x).join('\n'):'بهبودها و رفع اشکال')+'\n')"
-          gh release create "$TAG" "$RUNNER_TEMP/hesab-ketab.apk" "$RUNNER_TEMP/version.json" \
-            --repo "$REPO" --title "حساب‌کتاب ${VN} (بیلد ${HK_VERSION_CODE})" --notes-file "$RUNNER_TEMP/notes.md" --latest
-          if ! gh api "repos/$REPO/branches/update-feed" >/dev/null 2>&1; then
-            gh api -X POST "repos/$REPO/git/refs" -f ref=refs/heads/update-feed -f sha="$GITHUB_SHA" >/dev/null
-          fi
-          SHA=$(gh api "repos/$REPO/contents/version.json?ref=update-feed" --jq .sha 2>/dev/null || true)
-          CONTENT=$(base64 -w0 "$RUNNER_TEMP/version.json")
-          if [ -n "$SHA" ]; then
-            gh api -X PUT "repos/$REPO/contents/version.json" -f message="Update feed: build ${HK_VERSION_CODE}" -f branch=update-feed -f content="$CONTENT" -f sha="$SHA" >/dev/null
-          else
-            gh api -X PUT "repos/$REPO/contents/version.json" -f message="Update feed: build ${HK_VERSION_CODE}" -f branch=update-feed -f content="$CONTENT" >/dev/null
-          fi
-          echo "Published $TAG"
+          export APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          bash scripts/publish-release.sh
