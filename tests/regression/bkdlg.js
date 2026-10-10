@@ -1,0 +1,25 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 412, height: 860 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => { localStorage.setItem('hesabKetabArchive_v5_tourDone','1'); localStorage.setItem('hesabKetabArchive_v5_bankSetupDone','1'); localStorage.setItem('hesabKetabArchive_v5_cardSwipeHintDone','1');
+    window.Capacitor = { isNativePlatform: () => true, Plugins: { NativeFileExport: { saveAutoBackup: async () => ({}), listAutoBackups: async () => ({ files: [] }), deleteAutoBackup: async () => ({}) } } }; });
+  const p = await ctx.newPage(); await p.goto(require('../lib/index-url')); await p.waitForTimeout(2500);
+  await p.evaluate(() => askBackupParts()); await p.waitForTimeout(400);
+  const r = {};
+  r.before = await p.evaluate(() => document.getElementById('bkAutoOn').checked);
+  await p.tap('.bk-auto-row .bk-ttl', { position: { x: 60, y: 8 } }); await p.waitForTimeout(200);
+  r.afterTextTap = await p.evaluate(() => document.getElementById('bkAutoOn').checked);
+  await p.tap('#bkAutoOn'); await p.waitForTimeout(200);
+  r.afterBoxTap = await p.evaluate(() => document.getElementById('bkAutoOn').checked);
+  await p.tap('#bkAutoOn'); await p.waitForTimeout(200);
+  r.align = await p.evaluate(() => { const c = document.getElementById('bkAutoOn').getBoundingClientRect(), t = document.querySelector('.bk-auto-row .bk-ttl').getBoundingClientRect(); return Math.round((c.top + c.height / 2) - (t.top + t.height / 2)); });
+  r.placeholder = await p.evaluate(() => document.getElementById('bkPwd').placeholder);
+  await p.tap('.bk-auto-row .hk-info-btn'); await p.waitForTimeout(250);
+  await p.screenshot({ path: 'bkdlg.png' });
+  await p.touchscreen.tap(30, 30); await p.waitForTimeout(300); r.tipClosed = await p.evaluate(() => !document.getElementById('hkInfoTip') && !document.getElementById('hkInfoShield'));
+  await p.tap('.bk-pwd-eye'); await p.waitForTimeout(150);
+  r.eyeShown = await p.evaluate(() => ({ cls: document.querySelector('.bk-pwd-eye').className, color: getComputedStyle(document.querySelector('.bk-pwd-eye')).color, type: document.getElementById('bkPwd').type, hasSlash: document.querySelector('.bk-pwd-eye').innerHTML.includes('M3 3l18 18') }));
+  await p.tap('.bk-pwd-eye'); await p.waitForTimeout(150);
+  r.eyeHidden = await p.evaluate(() => ({ color: getComputedStyle(document.querySelector('.bk-pwd-eye')).color, type: document.getElementById('bkPwd').type, hasSlash: document.querySelector('.bk-pwd-eye').innerHTML.includes('M3 3l18 18') }));
+  console.log(JSON.stringify(r)); await b.close();
+})();

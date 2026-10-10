@@ -1,0 +1,93 @@
+name: Tests (non-blocking)
+
+# فقط تست و بررسی بیلد. هیچ Secretی خوانده نمی‌شود، هیچ چیزی امضا یا منتشر نمی‌شود،
+# و روی شاخهٔ main اجرا نمی‌شود؛ پس روی انتشار فعلی هیچ اثری ندارد.
+on:
+  push:
+    branches-ignore: [ "main", "update-feed" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Install test dependencies (isolated from the app)
+        working-directory: tests
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium for Playwright
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+      - name: Run tests (synthetic data only)
+        working-directory: tests
+        run: node run.js
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-logs
+          path: tests/out/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # همان مراحل ساخت workflow اصلی، بدون Secret و بدون انتشار؛ برای اطمینان از اینکه
+  # npm ci با lockfile و Actionهای قفل‌شده همان خروجی را می‌سازند.
+  build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Install dependencies (lockfile)
+        run: npm ci --no-audit --no-fund
+      - name: Add Android platform
+        run: npx cap add android
+      - name: Patch Android
+        run: npm run patch:android
+      - name: Remove lock-screen bypass flags
+        run: node scripts/fix-android-lock.js
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build unsigned release APK
+        working-directory: android
+        run: ./gradlew assembleRelease
+      - name: Verify release APK (web assets identical, not debuggable)
+        run: |
+          set -e
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          echo "APK: $APK"
+          SRC=$(sha256sum index.html | cut -d' ' -f1)
+          IN=$(unzip -p "$APK" assets/public/index.html | sha256sum | cut -d' ' -f1)
+          echo "index.html source=$SRC apk=$IN"
+          test "$SRC" = "$IN"
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          "$AAPT" dump xmltree --file AndroidManifest.xml "$APK" > manifest.txt
+          if grep -q 'android:debuggable.*=.*true\|debuggable(0x0101000f)=(type 0x12)0xffffffff' manifest.txt; then echo "release APK is debuggable"; exit 1; fi
+          echo "release APK is not debuggable"
+          grep -E 'uses-permission|android:allowBackup|usesCleartextTraffic' manifest.txt | sed 's/^ *//' | sort -u

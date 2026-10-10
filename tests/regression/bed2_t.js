@@ -1,0 +1,20 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true });
+  await ctx.addInitScript(() => { localStorage.setItem('hesabKetabArchive_v5_tourDone','1'); });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(require('../lib/index-url')); await p.waitForTimeout(1500);
+  await p.evaluate(() => { openBankAccountsModal(); openBankNameEditor(null, -1, null, 'بانک ملت', 'ملت'); }); await p.waitForTimeout(300);
+  await p.click('#bankAddOk'); await p.waitForTimeout(400);
+  await p.evaluate(() => openBankNameEditor(selectedBankAccounts[0], 0, null)); await p.waitForTimeout(400);
+  await p.tap('#bankAddNameInput'); await p.waitForTimeout(200);
+  const a1 = await p.evaluate(() => document.activeElement.id);
+  const bb = await (await p.$('#bankAddEditor')).boundingBox();
+  await p.touchscreen.tap(bb.x + 20, bb.y + 12); await p.waitForTimeout(200);
+  const a2 = await p.evaluate(() => document.activeElement.id);
+  await p.tap('#bankAddNameInput'); await p.waitForTimeout(200);
+  await p.touchscreen.tap(200, bb.y + bb.height + 80); await p.waitForTimeout(300);
+  const a3 = await p.evaluate(() => [document.activeElement.id, !!document.getElementById('bankAddEditor')]);
+  await p.touchscreen.tap(200, bb.y + bb.height + 80); await p.waitForTimeout(300);
+  const a4 = await p.evaluate(() => !!document.getElementById('bankAddEditor'));
+  console.log(JSON.stringify({ a1, a2, a3, a4, errs })); await b.close(); })();
