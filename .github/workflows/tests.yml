@@ -80,13 +80,13 @@ jobs:
       - name: Verify release APK (web assets identical, not debuggable)
         run: |
           set -e
-          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          APK=$(find android/app/build/outputs/apk/release -name '*.apk' -type f | head -1)
           echo "APK: $APK"
           SRC=$(sha256sum index.html | cut -d' ' -f1)
           IN=$(unzip -p "$APK" assets/public/index.html | sha256sum | cut -d' ' -f1)
           echo "index.html source=$SRC apk=$IN"
           test "$SRC" = "$IN"
-          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)
           "$AAPT" dump xmltree --file AndroidManifest.xml "$APK" > manifest.txt
           if grep -q 'android:debuggable.*=.*true\|debuggable(0x0101000f)=(type 0x12)0xffffffff' manifest.txt; then echo "release APK is debuggable"; exit 1; fi
           echo "release APK is not debuggable"
@@ -127,7 +127,8 @@ jobs:
           DRY_RUN: "1"
         run: |
           set -e
-          export APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          export APK_SRC
           bash scripts/publish-release.sh
           node -e "const f=require(process.env.RUNNER_TEMP+'/version.json');if(f.versionCode!=+process.env.HK_VERSION_CODE||!/releases\/latest\/download\/hesab-ketab\.apk$/.test(f.apk))process.exit(1);console.log('feed ok',f.versionName,f.versionCode)"
 

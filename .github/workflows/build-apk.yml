@@ -93,7 +93,7 @@ jobs:
           IN=$(unzip -p "$APK" assets/public/index.html | sha256sum | cut -d' ' -f1)
           echo "index.html source=$SRC apk=$IN"
           test "$SRC" = "$IN"
-          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)
           "$AAPT" dump xmltree --file AndroidManifest.xml "$APK" > "$RUNNER_TEMP/manifest.txt"
           if grep -q 'android:debuggable.*=.*true\|debuggable(0x0101000f)=(type 0x12)0xffffffff' "$RUNNER_TEMP/manifest.txt"; then echo "release APK is debuggable"; exit 1; fi
           echo "release APK is not debuggable"
@@ -141,5 +141,6 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -e
-          export APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          export APK_SRC
           bash scripts/publish-release.sh
