@@ -5,13 +5,15 @@ on:
   push:
     branches: [ "main" ]
 
+# حداقل دسترسی: ساخت و امضا فقط با دسترسی خواندن؛ دسترسی نوشتن فقط برای job انتشار (پایین)
 permissions:
-  # ساخت Release و به‌روزرسانی شاخهٔ update-feed (فقط در بیلد امضاشدهٔ main)
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      signed: ${{ steps.keystore.outputs.signed }}
     env:
       # شمارهٔ نسخهٔ اندروید (versionCode) هر بار بالاتر می‌رود — لازمهٔ آپدیت در استور
       HK_VERSION_CODE: ${{ github.run_number }}
@@ -46,10 +48,12 @@ jobs:
           node --check scripts/make-update-feed.js
 
       - name: Decode release keystore (only when secrets exist)
+        id: keystore
         if: ${{ env.HK_KEYSTORE_BASE64 != '' }}
         run: |
           echo "$HK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "HK_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Patch Android SMS receiver
         run: npm run patch:android
@@ -103,17 +107,44 @@ jobs:
             android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      # بروزرسانی داخل اپ: APK امضاشده در Releases (پیوند ثابت latest) + version.json در شاخهٔ update-feed
-      - name: Publish release and update feed (main + signed only)
-        if: ${{ env.HK_KEYSTORE_FILE != '' && github.ref == 'refs/heads/main' }}
+  # بروزرسانی داخل اپ: APK امضاشده در Releases (پیوند ثابت latest) + version.json در شاخهٔ update-feed.
+  # تنها job با دسترسی نوشتن؛ فقط روی main و فقط وقتی APK امضاشده ساخته شده باشد. به کلید امضا دسترسی ندارد.
+  publish:
+    needs: build
+    if: ${{ needs.build.outputs.signed == 'true' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      HK_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Download signed release from the build job
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: hesab-ketab-release
+          path: ${{ runner.temp }}/release
+
+      - name: Publish release and update feed
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -e
+          APK_SRC=$(find "$RUNNER_TEMP/release" -name app-release.apk | head -1)
+          test -n "$APK_SRC"
           VN=$(node -p "require('./package.json').version")
           TAG="v${VN}-b${HK_VERSION_CODE}"
-          cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/hesab-ketab.apk"
+          cp "$APK_SRC" "$RUNNER_TEMP/hesab-ketab.apk"
           node scripts/make-update-feed.js "$RUNNER_TEMP/version.json"
           node -e "const n=(require('./version.json').notes||[]);require('fs').writeFileSync(process.env.RUNNER_TEMP+'/notes.md',(n.length?n.map(x=>'- '+x).join('\n'):'بهبودها و رفع اشکال')+'\n')"
           gh release create "$TAG" "$RUNNER_TEMP/hesab-ketab.apk" "$RUNNER_TEMP/version.json" \
