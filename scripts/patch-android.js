@@ -83,7 +83,9 @@ public class BankSmsReceiver extends BroadcastReceiver {
         || t.contains("کد تایید") || t.contains("کد تأیید") || t.contains("کد تاييد")
         || t.contains("otp") || t.contains("one-time") || t.contains("onetime")
         || (t.contains("محرمانه") && (t.contains("رمز") || t.contains("کد")))
-        || (t.contains("هشدار") && t.contains("شناسه") && t.contains("برداشت"))) {
+        || (t.contains("هشدار") && t.contains("شناسه") && t.contains("برداشت"))
+        // «رمز» و بلافاصله عدد ۴ تا ۸ رقمی = رمز یک‌بارمصرف (مثل بانک ملی)، نه تراکنش انجام‌شده
+        || t.matches("(?s).*رمز\\\\s*[:：]?\\\\s*[0-9]{4,8}([^0-9].*)?")) {
       return false;
     }
     // رد تبلیغات اپراتور/غیر بانکی — اما «خرید شارژ» بانکی با مانده/حساب را رد نکن
