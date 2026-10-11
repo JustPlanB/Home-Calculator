@@ -14345,12 +14345,40 @@ function onPeriodChange() {
       localUpdatedAt = Date.now();
     }
 
+    /* ===== لایهٔ ذخیره‌سازی: شکست نوشتن بی‌صدا رد نمی‌شود =====
+       hkStorageSet نتیجه را برمی‌گرداند (true/false) تا فراخوان بداند واقعاً ذخیره شده یا نه.
+       پیام به کاربر یکی و با فاصله (چند خطای پشت‌سرهم = یک پیام). در کنسول فقط نام کلید و نوع خطا، هرگز محتوا. */
+    var _hkPersist = { fails: 0, lastKind: '', lastKey: '', lastAt: 0, lastToastAt: 0, quiet: 0 };
+    function hkIsQuotaError(e) {
+      if (!e) return false;
+      var n = String(e.name || ''), c = e.code;
+      return n === 'QuotaExceededError' || n === 'NS_ERROR_DOM_QUOTA_REACHED' || c === 22 || c === 1014;
+    }
+    function hkPersistFailed(key, e) {
+      var quota = hkIsQuotaError(e);
+      _hkPersist.fails++; _hkPersist.lastKind = quota ? 'quota' : 'error'; _hkPersist.lastKey = String(key || ''); _hkPersist.lastAt = Date.now();
+      try { console.warn('storage: write failed for "' + _hkPersist.lastKey + '":', quota ? 'quota' : (e && e.name ? e.name : 'error')); } catch (eL) {}
+      if (_hkPersist.quiet > 0) return;           /* عملیات بزرگ‌تر (مثل بازیابی) خودش یک پیام جمع‌بندی می‌دهد */
+      if (Date.now() - _hkPersist.lastToastAt < 6000) return;
+      _hkPersist.lastToastAt = Date.now();
+      try {
+        showToastLong(quota ? 'حافظهٔ ذخیره‌سازی پر است؛ آخرین تغییرات ذخیره نشد. پیش از بستن برنامه یک پشتیبان بگیرید.'
+                            : 'ذخیرهٔ اطلاعات ناموفق بود؛ آخرین تغییرات ذخیره نشد. پیش از بستن برنامه یک پشتیبان بگیرید.');
+      } catch (eT) {}
+    }
+    function hkStorageSet(key, value) {
+      try { localStorage.setItem(key, value); return true; }
+      catch (e) { hkPersistFailed(key, e); return false; }
+    }
+    /** ذخیرهٔ آرشیو؛ true فقط وقتی هر سه کلید نوشته شده باشند.
+        اول کلید خانواده (که بوت اول همان را می‌خواند)؛ اگر نشد، بقیه هم نوشته نمی‌شوند تا ذخیره‌ها ناهمسان نشوند. */
     function saveArchive() {
+      var ok = false;
       try {
         if (!localUpdatedAt) localUpdatedAt = Date.now();
         const bundle = getBundle();
-        localStorage.setItem(familyStorageKey(familyCode), JSON.stringify(bundle));
-        localStorage.setItem(STORAGE_KEY + '_meta', JSON.stringify({
+        ok = hkStorageSet(familyStorageKey(familyCode), JSON.stringify(bundle)) &&
+        hkStorageSet(STORAGE_KEY + '_meta', JSON.stringify({
           familyCode: familyCode,
           memberName: memberName,
           firebaseUrl: firebaseUrl,
@@ -14363,12 +14391,13 @@ function onPeriodChange() {
           currentMonth: currentMonth,
           currentTab: currentTab,
           localUpdatedAt: localUpdatedAt
-        }));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.assign({}, bundle, {
+        })) &&
+        hkStorageSet(STORAGE_KEY, JSON.stringify(Object.assign({}, bundle, {
           currentYear, currentMonth, currentTab, memberName
         })));
-      } catch (e) {}
+      } catch (e) { hkPersistFailed('archive', e); ok = false; }
       scheduleRemotePush();
+      return ok;
     }
 
     function loadArchive() {
@@ -16769,7 +16798,76 @@ function askBackupUserCards(selectedParts) {
         }
       } catch (e) {}
     }
+    /* ===== بازیابی امن: عکس از وضعیت قبل، ثبت هر شکست نوشتن، و در صورت شکست بازگشت کامل و بررسی‌شده =====
+       قبل از هر نوشتن، کل localStorage و دادهٔ اصلی حافظه کپی می‌شود. اگر هر نوشتنی (یا هر بخش بازیابی) شکست بخورد،
+       همهٔ کلیدها به همان مقدار قبل برمی‌گردند، برابری بررسی می‌شود و نتیجه false است (پیام موفقیت نشان داده نمی‌شود). */
+    var _hkRestoreAborted = false, _hkLastRestoreFailedParts = [];
+    function hkSnapshotStorage() {
+      var o = {};
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); o[k] = localStorage.getItem(k); }
+      return o;
+    }
+    function hkRestoreStorage(snap) {
+      var cur = hkSnapshotStorage();
+      /* اول کلیدهای تازه و تغییرکرده برداشته می‌شوند (فضا آزاد شود)، بعد مقدارهای قبلی نوشته می‌شوند */
+      Object.keys(cur).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(snap, k) || snap[k] !== cur[k]) { try { localStorage.removeItem(k); } catch (e) {} } });
+      Object.keys(snap).forEach(function (k) { if (localStorage.getItem(k) !== snap[k]) { try { localStorage.setItem(k, snap[k]); } catch (e) {} } });
+      var after = hkSnapshotStorage(), ka = Object.keys(after), ks = Object.keys(snap);
+      return ka.length === ks.length && ks.every(function (k) { return after[k] === snap[k]; });
+    }
+    function hkSnapshotMemory() {
+      var c = function (v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); };
+      return {
+        archive: c(archive), periodData: c(periodData), plans: c(plans), recurringIncomes: c(recurringIncomes),
+        selectedBankAccounts: c(selectedBankAccounts), trashItems: c(trashItems), smsAccountBankMap: c(smsAccountBankMap),
+        userReminders: c(userReminders), financialSubjects: c(_financialSubjects), currentYear: currentYear, currentMonth: currentMonth,
+        theme: document.documentElement.getAttribute('data-theme')
+      };
+    }
+    function hkRestoreMemory(m) {
+      archive = m.archive; periodData = m.periodData; plans = m.plans; recurringIncomes = m.recurringIncomes;
+      selectedBankAccounts = m.selectedBankAccounts; trashItems = m.trashItems; smsAccountBankMap = m.smsAccountBankMap;
+      userReminders = m.userReminders; _financialSubjects = m.financialSubjects; currentYear = m.currentYear; currentMonth = m.currentMonth;
+      try { if (m.theme && m.theme !== document.documentElement.getAttribute('data-theme')) applyTheme(m.theme); } catch (eTh) {}
+      try { initSelectors(); } catch (e1) {}
+      try { updateTabUI(); } catch (e2) {}
+      try { renderAll(); } catch (e3) {}
+      try { _hbcLast = null; renderHomeCards(); } catch (e4) {}
+    }
     function applyBackupData(data, mode) {
+      if (!data || typeof data !== 'object') return false;
+      _hkRestoreAborted = false; _hkLastRestoreFailedParts = [];
+      var snap, mem;
+      try { snap = hkSnapshotStorage(); mem = hkSnapshotMemory(); }
+      catch (eSnap) {
+        try { showToastLong('بازیابی شروع نشد (وضعیت فعلی قابل کپی نبود)؛ هیچ تغییری اعمال نشد.'); } catch (eT) {}
+        return false;
+      }
+      var failedKeys = [], origSet = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        try { return origSet.call(this, k, v); }
+        catch (e) { if (this === localStorage) failedKeys.push(String(k)); throw e; }
+      };
+      var res, threw = false;
+      _hkPersist.quiet++;
+      try { res = _applyBackupDataUnsafe(data, mode); }
+      catch (eApply) { threw = true; try { console.warn('restore: apply failed:', eApply && eApply.name ? eApply.name : 'error'); } catch (eL) {} }
+      finally { Storage.prototype.setItem = origSet; _hkPersist.quiet--; }
+      var failed = threw || failedKeys.length > 0 || _hkLastRestoreFailedParts.length > 0;
+      if (!failed) return res;
+      /* شکست: بازگشت به وضعیت پیش از بازیابی */
+      _hkRestoreAborted = true;
+      var rolled = false;
+      try { rolled = hkRestoreStorage(snap); } catch (eRb) { rolled = false; }
+      try { hkRestoreMemory(mem); } catch (eRm) {}
+      try {
+        showToastLong(rolled
+          ? 'بازیابی انجام نشد چون ذخیره‌سازی ناموفق بود؛ هیچ تغییری اعمال نشد و اطلاعات قبلی دست‌نخورده است.'
+          : 'بازیابی ناموفق بود و برگرداندن کامل وضعیت قبل هم ممکن نشد. برنامه را نبندید و فوراً یک پشتیبان بگیرید؛ پشتیبان ایمنی پیش از بازیابی هم (در صورت فعال بودن) در Downloads/HesabKetab هست.');
+      } catch (eT2) {}
+      return false;
+    }
+    function _applyBackupDataUnsafe(data, mode) {
       // mode: 'replace' | 'merge'
       if (!data || typeof data !== 'object') return false;
       /* کامل یا جزئی: فقط پشتیبان کامل حق جایگزینی کل داده را دارد؛ فایل جزئی/نامعلوم فقط بخش‌های خودش را عوض می‌کند */
@@ -16789,6 +16887,7 @@ function askBackupUserCards(selectedParts) {
         if (!_restoreReport) _restoreReport = { orphanAccounts: 0, orphanEntries: 0, invalidRecords: 0, mergedAccounts: 0, dupTrash: 0, failedParts: [] };
         if (!_restoreReport.failedParts) _restoreReport.failedParts = [];
         if (_restoreReport.failedParts.indexOf(part) < 0) _restoreReport.failedParts.push(part);
+        if (_hkLastRestoreFailedParts.indexOf(part) < 0) _hkLastRestoreFailedParts.push(part);
         try { console.warn('restore: part "' + part + '" failed:', err && err.name ? err.name : 'error'); } catch (e) {}
       }
       if (mode === 'replace') {
@@ -17041,7 +17140,7 @@ function askBackupUserCards(selectedParts) {
       /* اگر چیزی نادیده گرفته شد، کوتاه و آرام به کاربر بگو (دادهٔ سالم وارد شده است) */
       try {
         var _msg = backupReportText(_restoreReport);
-        if (_msg) setTimeout(function () { try { showToastLong(_msg); } catch (eT) {} }, 900);
+        if (_msg) setTimeout(function () { if (_hkRestoreAborted) return; try { showToastLong(_msg); } catch (eT) {} }, 900);
       } catch (eMsg) {}
       /* بعد از ری‌استور، موجودی را چند بار با داده‌ی نهایی مقایسه کن تا هیچ تغییر دیرهنگامی جا نماند */
       [1600, 3400].forEach(function (ms) {
@@ -20039,7 +20138,7 @@ async function openPdfPrintWindow(){
       if (!m[t]) m[t] = {};
       m[t].bg = Math.max(0, Math.min(4, idx|0));
       periodData.cardMeta = m;
-      try { localStorage.setItem(STORAGE_KEY + '_cardMeta', JSON.stringify(m)); } catch (e) {}
+      hkStorageSet(STORAGE_KEY + '_cardMeta', JSON.stringify(m));
       scheduleSave();
     }
     function findSectionByTitle(tab, title) {
@@ -20082,7 +20181,7 @@ async function openPdfPrintWindow(){
       } catch (e) { return []; }
     }
     function saveGlobalCardOrder(arr) {
-      try { localStorage.setItem(STORAGE_KEY + '_cardOrder', JSON.stringify(arr || [])); } catch (e) {}
+      return hkStorageSet(STORAGE_KEY + '_cardOrder', JSON.stringify(arr || []));
     }
     function sortTitlesByOrder(titles, order) {
       const list = (titles || []).slice();
@@ -22225,7 +22324,7 @@ async function openPdfPrintWindow(){
         var cat = registerCustom({ id: 'u_' + Date.now().toString(36), label: label });
         try {
           var list = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
-          localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+          hkStorageSet(CUSTOM_KEY, JSON.stringify(list));
         } catch (eS) {}
         return cat;
       }
@@ -22242,7 +22341,7 @@ async function openPdfPrintWindow(){
         } catch (e) {}
         return _dict;
       }
-      function saveDict() { try { localStorage.setItem(DICT_KEY, JSON.stringify(loadDict())); } catch (e) {} }
+      function saveDict() { try { return hkStorageSet(DICT_KEY, JSON.stringify(loadDict())); } catch (e) { return false; } }
       var STOP = {};
       ['از', 'با', 'به', 'در', 'برای', 'و', 'یا', 'که', 'این', 'اون', 'آن', 'ان', 'خرید', 'پرداخت', 'هزینه', 'بابت', 'مبلغ', 'واریز', 'کارت', 'نقد', 'قسط'].forEach(function (w) { STOP[norm(w)] = 1; });
       function words(n) { return n.split(' ').filter(function (w) { return w.length >= 2 && !STOP[w]; }); }
@@ -22343,7 +22442,7 @@ async function openPdfPrintWindow(){
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
-        try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; }))); } catch (e0) {}
+        hkStorageSet(CUSTOM_KEY, JSON.stringify(CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; })));
         var src = (o.dict && typeof o.dict === 'object') ? o.dict : {};
         var d = loadDict();
         if (mode === 'replace') { d.phrases = {}; d.words = {}; }
@@ -22900,8 +22999,8 @@ async function openPdfPrintWindow(){
         } else if (at >= 0) lists.splice(at, 1);
         if (lists.length) m[k][ym] = lists; else delete m[k][ym];
         if (!Object.keys(m[k]).length) delete m[k];
-        localStorage.setItem(TODO_KEY, JSON.stringify(m));
-      } catch (e) {}
+        return hkStorageSet(TODO_KEY, JSON.stringify(m));
+      } catch (e) { hkPersistFailed(TODO_KEY, e); return false; }
     }
     function loadTodos(title, id) {
       var l = loadTodoLists(title).filter(function (x) { return x.id === id; })[0];
@@ -25422,7 +25521,7 @@ container.innerHTML = '';
         // سقف ۲۰۰ ورودی
         const keys = Object.keys(map);
         if (keys.length > 200) keys.slice(0, keys.length - 200).forEach(k => { delete map[k]; });
-        localStorage.setItem(STORAGE_KEY + '_smsBankMap', JSON.stringify(map));
+        hkStorageSet(STORAGE_KEY + '_smsBankMap', JSON.stringify(map));
       } catch (e) {}
     }
     function matchSelectedBank(bankName) {
@@ -25826,7 +25925,7 @@ container.innerHTML = '';
       return _financialSubjects;
     }
     function saveFinancialSubjects() {
-      try { localStorage.setItem(SUBJECTS_KEY, JSON.stringify(_financialSubjects || [])); } catch (e) {}
+      return hkStorageSet(SUBJECTS_KEY, JSON.stringify(_financialSubjects || []));
     }
     function getSubjectById(id) {
       if (!id || id === 'personal') return { id: 'personal', name: 'شخصی' };
@@ -29536,12 +29635,24 @@ function confirmSmsEntry() {
       try { walk(periodData, periodKey(currentYear, currentMonth)); } catch (e0) {}
       try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k], k); }); } catch (e1) {}
       if (entries) {
+        var stashed = false;
         try {
           var KEY = STORAGE_KEY + '_orphanOpenings';
           var prev = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
           Object.keys(removed).forEach(function (k) { prev[k] = Object.assign(prev[k] || {}, removed[k]); });
-          localStorage.setItem(KEY, JSON.stringify(prev));
-        } catch (eS) {}
+          stashed = hkStorageSet(KEY, JSON.stringify(prev));
+        } catch (eS) { stashed = false; }
+        /* اگر نسخهٔ قابل بازیابی ذخیره نشد، چیزی هم برداشته نشود */
+        if (!stashed) {
+          var cur0 = periodKey(currentYear, currentMonth);
+          Object.keys(removed).forEach(function (k) {
+            var pd = k === cur0 ? periodData : (archive && archive[k]);
+            if (!pd) return;
+            if (!pd.accountOpeningInstant || typeof pd.accountOpeningInstant !== 'object') pd.accountOpeningInstant = {};
+            Object.keys(removed[k]).forEach(function (lb) { pd.accountOpeningInstant[lb] = removed[k][lb]; });
+          });
+          return { labels: 0, entries: 0, failed: true };
+        }
         if (!opts.noSave) { try { persistCurrent(); saveArchive(); } catch (eP) {} }
       }
       return { labels: Object.keys(labels).length, entries: entries };
@@ -29726,7 +29837,7 @@ function confirmSmsEntry() {
       } catch (e) { smsAccountBankMap = {}; }
     }
     function saveSmsAccountBankMap() {
-      try { localStorage.setItem(STORAGE_KEY + '_smsAccountBankMap', JSON.stringify(smsAccountBankMap)); } catch (e) {}
+      return hkStorageSet(STORAGE_KEY + '_smsAccountBankMap', JSON.stringify(smsAccountBankMap));
     }
     function migrateBankName(n) {
       if (!n) return n;
@@ -29758,7 +29869,7 @@ function confirmSmsEntry() {
       normalizeSelectedBanks();
     }
     function saveBankAccountsSelection() {
-      try { localStorage.setItem(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts)); } catch (e) {}
+      return hkStorageSet(STORAGE_KEY + '_bankAccounts', JSON.stringify(selectedBankAccounts));
     }
 
     function loadTrash() {
@@ -29769,7 +29880,7 @@ function confirmSmsEntry() {
       } catch (e) { trashItems = []; }
     }
     function saveTrash() {
-      try { localStorage.setItem(STORAGE_KEY + '_trash', JSON.stringify(trashItems)); } catch (e) {}
+      return hkStorageSet(STORAGE_KEY + '_trash', JSON.stringify(trashItems));
     }
     function pushToTrash(type, title, data) {
       loadTrash();
@@ -29784,7 +29895,10 @@ function confirmSmsEntry() {
       });
       // سقف ۵۰۰ آیتم
       if (trashItems.length > 500) trashItems = trashItems.slice(0, 500);
-      saveTrash();
+      /* اگر ذخیره نشد، در حافظه هم نماند (وگرنه به‌دروغ «در سطل زباله» دیده می‌شود) و فراخوان باخبر شود */
+      if (saveTrash()) return true;
+      loadTrash();
+      return false;
     }
     function openTrashModal() {
       try { closeSideMenu(); } catch (e) {}
@@ -30288,7 +30402,7 @@ if (item.type === 'recurring') {
       });
       return out;
     }
-    function hkTakeAccountRows(label) {
+    function hkTakeAccountRows(label, opts) {
       var refs = hkCollectAccountRows(label), cur = periodKey(currentYear, currentMonth), pack = [];
       /* از آخر به اول حذف شود تا اندیس‌ها جابه‌جا نشوند */
       refs.slice().reverse().forEach(function (ref) {
@@ -30299,12 +30413,13 @@ if (item.type === 'recurring') {
         sec.rows.splice(i, 1);
         pack.unshift({ k: ref.k, tab: ref.tab, secId: ref.secId, secTitle: ref.secTitle, secColor: ref.secColor, index: ref.index, row: JSON.parse(JSON.stringify(ref.row)) });
       });
+      if (opts && opts.noSave) return pack;   /* فراخوان بعد از ذخیرهٔ سطل زباله خودش ذخیره می‌کند */
       try { persistCurrent(); } catch (e1) {}
       try { saveArchive(); } catch (e2) {}
       try { scheduleSave(); } catch (e3) {}
       return pack;
     }
-    function hkPutBackAccountRows(pack) {
+    function hkPutBackAccountRows(pack, opts) {
       var cur = periodKey(currentYear, currentMonth);
       pack.forEach(function (ref) {
         var pd = ref.k === cur ? periodData : archive[ref.k];
@@ -30318,6 +30433,7 @@ if (item.type === 'recurring') {
         var at = Math.max(0, Math.min(sec.rows.length, ref.index | 0));
         sec.rows.splice(at, 0, ref.row);
       });
+      if (opts && opts.noSave) return;
       try { persistCurrent(); } catch (e1) {}
       try { saveArchive(); } catch (e2) {}
       try { scheduleSave(); } catch (e3) {}
@@ -30945,48 +31061,77 @@ if (item.type === 'recurring') {
               try {
                 rmLabel = (typeof accountLabel === 'function') ? accountLabel(removed) : ((removed && removed.label) || '');
               } catch (eL) {}
-              /* اول به سطل زباله: حساب + موجودی‌های اول ماه ذخیره‌شده‌اش (برای بازگردانی کامل) */
+              /* ترتیب امن: (۱) بستهٔ سطل زباله ذخیره شود؛ اگر نشد، هیچ چیزی حذف نمی‌شود.
+                 (۲) حذف در حافظه و ذخیره؛ اگر ذخیره نشد، همه‌چیز در حافظه و حافظهٔ دستگاه برگردانده می‌شود. */
+              var _openings = {}, _cur = periodKey(currentYear, currentMonth), _sms = {};
               try {
-                var _openings = {}, _cur = periodKey(currentYear, currentMonth);
                 if (rmLabel) {
                   Object.keys(archive || {}).forEach(function (k) { var pd = archive[k]; if (pd && pd.accountOpeningInstant && pd.accountOpeningInstant[rmLabel] != null) _openings[k] = pd.accountOpeningInstant[rmLabel]; });
                   if (periodData && periodData.accountOpeningInstant && periodData.accountOpeningInstant[rmLabel] != null) _openings[_cur] = periodData.accountOpeningInstant[rmLabel];
                 }
-                var _sms = {};
-                try { if (typeof smsAccountBankMap !== 'undefined') Object.keys(smsAccountBankMap).forEach(function (k) { if (smsAccountBankMap[k] === rmLabel || k === rmLabel) _sms[k] = smsAccountBankMap[k]; }); } catch (eSm) {}
-                /* «بلی»: ردیف‌های این حساب هم (به‌جز ردیف‌های خودکار اقساط) در همان بستهٔ سطل زباله */
-                var _rowsPack = withRows ? hkTakeAccountRows(rmLabel) : [];
-                pushToTrash('bank_account', (rmLabel || 'حساب') + (_rowsPack.length ? ' + ' + toPersianDigits(String(_rowsPack.length)) + ' ردیف' : ''),
+                if (typeof smsAccountBankMap !== 'undefined') Object.keys(smsAccountBankMap).forEach(function (k) { if (smsAccountBankMap[k] === rmLabel || k === rmLabel) _sms[k] = smsAccountBankMap[k]; });
+              } catch (eSm) {}
+              /* «بلی»: ردیف‌های این حساب هم (به‌جز ردیف‌های خودکار اقساط) در همان بستهٔ سطل زباله — فعلاً فقط در حافظه */
+              var _rowsPack = [];
+              try { _rowsPack = withRows ? hkTakeAccountRows(rmLabel, { noSave: true }) : []; } catch (eTk) { _rowsPack = []; }
+              var _trashed = false;
+              try {
+                _trashed = pushToTrash('bank_account', (rmLabel || 'حساب') + (_rowsPack.length ? ' + ' + toPersianDigits(String(_rowsPack.length)) + ' ردیف' : ''),
                   { sourceLabel: 'حساب‌های بانکی', account: JSON.parse(JSON.stringify(removed)), openings: _openings, smsMap: _sms, rows: _rowsPack });
-              } catch (eTr) {}
+              } catch (eTr) { _trashed = false; }
+              if (!_trashed) {
+                try { if (_rowsPack.length) hkPutBackAccountRows(_rowsPack, { noSave: true }); } catch (ePb) {}
+                try { showToastLong('حذف حساب انجام نشد: نسخهٔ قابل بازگردانی در سطل زباله ذخیره نشد. حساب و موجودی‌هایش دست‌نخورده ماندند.'); } catch (eT0) {}
+                try { renderBankAccountsList(); renderAll(); renderHomeCards(); } catch (eR0) {}
+                return;
+              }
+              var _trashId = trashItems && trashItems[0] && trashItems[0].id;
+              var _smsHad = !!(typeof smsAccountBankMap !== 'undefined' && rmLabel && Object.prototype.hasOwnProperty.call(smsAccountBankMap, rmLabel));
+              var _smsVal = _smsHad ? smsAccountBankMap[rmLabel] : undefined;
+              var _openingTargets = function (fn) {
+                Object.keys(_openings).forEach(function (k) { var pd = k === _cur ? periodData : (archive && archive[k]); if (pd) fn(pd, k); });
+              };
+              /* حذف در حافظه */
               selectedBankAccounts.splice(idx, 1);
-              saveBankAccountsSelection();
-              /* پاک‌سازی از موجودی آنی / موجودی اولیه */
-              try {
-                if (rmLabel && periodData && periodData.accountOpeningInstant) {
-                  delete periodData.accountOpeningInstant[rmLabel];
+              _openingTargets(function (pd) { if (pd.accountOpeningInstant) delete pd.accountOpeningInstant[rmLabel]; });
+              if (_smsHad) delete smsAccountBankMap[rmLabel];
+              /* ذخیره؛ فقط وقتی همه موفق باشند حذف کامل حساب می‌شود */
+              var _saved = saveBankAccountsSelection();
+              try { persistCurrent(); } catch (ePc) {}
+              _saved = saveArchive() && _saved;
+              if (_smsHad) _saved = saveSmsAccountBankMap() && _saved;
+              if (!_saved) {
+                /* بازگرداندن کامل در حافظه و تلاش برای بازنویسی حالت قبل */
+                selectedBankAccounts.splice(idx, 0, removed);
+                _openingTargets(function (pd, k) {
+                  if (!pd.accountOpeningInstant || typeof pd.accountOpeningInstant !== 'object') pd.accountOpeningInstant = {};
+                  pd.accountOpeningInstant[rmLabel] = _openings[k];
+                });
+                if (_smsHad) smsAccountBankMap[rmLabel] = _smsVal;
+                try { if (_rowsPack.length) hkPutBackAccountRows(_rowsPack, { noSave: true }); } catch (ePb2) {}
+                _hkPersist.quiet++;
+                var _rb = false;
+                try {
+                  _rb = saveBankAccountsSelection();
+                  try { persistCurrent(); } catch (ePc2) {}
+                  _rb = saveArchive() && _rb;
+                  if (_smsHad) _rb = saveSmsAccountBankMap() && _rb;
+                } finally { _hkPersist.quiet--; }
+                if (_rb) {
+                  /* حالت قبل کامل ذخیره شد: بستهٔ سطل زباله دیگر لازم نیست (وگرنه نسخهٔ تکراری می‌ماند) */
+                  trashItems = (trashItems || []).filter(function (t) { return !(t && t.id === _trashId); });
+                  _hkPersist.quiet++; try { saveTrash(); } finally { _hkPersist.quiet--; }
+                  try { showToastLong('حذف حساب انجام نشد چون ذخیره‌سازی ناموفق بود؛ هیچ چیزی تغییر نکرد.'); } catch (eT1) {}
+                } else {
+                  try { showToastLong('حذف حساب ذخیره نشد و حالت قبل هم کامل ذخیره نشد. حساب روی صفحه برگردانده شد؛ یک نسخهٔ قابل بازگردانی در سطل زباله هست. پیش از بستن برنامه پشتیبان بگیرید.'); } catch (eT2) {}
                 }
-              } catch (e1) {}
-              try {
-                if (rmLabel && archive) {
-                  Object.keys(archive).forEach(function(k) {
-                    var pd = archive[k];
-                    if (pd && pd.accountOpeningInstant) delete pd.accountOpeningInstant[rmLabel];
-                  });
-                }
-              } catch (e2) {}
-              try {
-                if (typeof saveArchive === 'function') { persistCurrent(); saveArchive(); }
-              } catch (e3) {}
+                try { renderBankAccountsList(); renderAll(); renderHomeCards(); } catch (eR1) {}
+                return;
+              }
+              if (_rowsPack.length) { try { renderAll(); } catch (eRa) {} }
               /* هر موجودی اولیهٔ دیگری که دیگر صاحب ندارد (مثلاً با نام قدیمِ همین حساب) */
               try { cleanupOrphanedAccountOpenings({ allowEmpty: true }); } catch (eCl) {}
               try { renderHomeCards(); } catch (eRh) {}
-              try {
-                if (typeof smsAccountBankMap !== 'undefined' && rmLabel && smsAccountBankMap[rmLabel]) {
-                  delete smsAccountBankMap[rmLabel];
-                  if (typeof saveSmsAccountBankMap === 'function') saveSmsAccountBankMap();
-                }
-              } catch (e4) {}
               renderBankAccountsList();
             });
           };
@@ -31298,8 +31443,9 @@ if (item.type === 'recurring') {
       } catch (e) { userReminders = []; }
     }
     function saveUserReminders() {
-      try { localStorage.setItem(STORAGE_KEY + '_userReminders', JSON.stringify(userReminders || [])); } catch (e) {}
+      var ok = hkStorageSet(STORAGE_KEY + '_userReminders', JSON.stringify(userReminders || []));
       try { scheduleNativeReminders(); } catch (eS) {}
+      return ok;
     }
     /* نوتیف سیستمی یادآورها (افزونهٔ نیتیو HkReminders): برای ماه‌های آینده هم زمان‌بندی می‌شود
        و بعد از ری‌استارت گوشی دوباره تنظیم می‌گردد؛ با هر بار باز شدن اپ از نو محاسبه می‌شود */
@@ -31444,7 +31590,7 @@ if (item.type === 'recurring') {
       return _savings;
     }
     function saveSavings() {
-      try { localStorage.setItem(SAVINGS_KEY, JSON.stringify(loadSavings())); } catch (e) { try { showToast('ذخیرهٔ پس‌انداز ممکن نشد'); } catch (e2) {} }
+      return hkStorageSet(SAVINGS_KEY, JSON.stringify(loadSavings()));
     }
     function restoreSavings(src, mode) {
       var inc = _savNormalize(src), cur = loadSavings();
@@ -32321,8 +32467,9 @@ if (item.type === 'recurring') {
       } catch (e) { recurringIncomes = []; }
     }
     function saveRecurring() {
-      try { localStorage.setItem(STORAGE_KEY + '_recurring', JSON.stringify(recurringIncomes)); } catch (e) {}
+      var ok = hkStorageSet(STORAGE_KEY + '_recurring', JSON.stringify(recurringIncomes));
       try { scheduleSharedSync(); } catch (e) {}
+      return ok;
     }
     let recurringCollapsed = false;
     try { recurringCollapsed = localStorage.getItem('hesabRecCollapsed') === '1'; } catch (e) {}

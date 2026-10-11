@@ -228,11 +228,14 @@ const otherCounts = page => page.evaluate(() => {
     const set = Storage.prototype.setItem; let toast = '';
     Storage.prototype.setItem = function (k, v) { if (String(k).endsWith('_todos')) throw new Error('quota'); return set.call(this, k, v); };
     const orig = window.showToastLong; window.showToastLong = m => { toast = m; };
-    let threw = false; try { applyBackupData(p, 'replace'); } catch (e) { threw = true; }
+    const before = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); before[k] = localStorage.getItem(k); }
+    let threw = false, ret; try { ret = applyBackupData(p, 'replace'); } catch (e) { threw = true; }
     Storage.prototype.setItem = set;
-    return new Promise(res => setTimeout(() => { window.showToastLong = orig; res({ threw, toast, sms: localStorage.getItem('hesabKetabArchive_v5_smsBankMap') }); }, 1200));
+    const after = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); after[k] = localStorage.getItem(k); }
+    return new Promise(res => setTimeout(() => { window.showToastLong = orig; res({ threw, ret, toast, unchanged: Object.keys(before).length === Object.keys(after).length && Object.keys(before).every(k => before[k] === after[k]), sms: localStorage.getItem('hesabKetabArchive_v5_smsBankMap') }); }, 1200));
   }, payload);
-  ok(!rf.threw && /todos/.test(rf.toast) && same(JSON.parse(rf.sms), F.sms), 'خطای نوشتن کارها گزارش شد و بقیهٔ بخش‌ها بازیابی شدند');
+  /* فاز ۲: بازیابی نیمه‌کاره ممنوع است — شکست یک کلید = بازگشت کامل به وضعیت قبل، بدون پیام موفقیت */
+  ok(!rf.threw && rf.ret === false && /هیچ تغییری/.test(rf.toast) && rf.unchanged && rf.sms === null, 'خطای نوشتن کارها: بازیابی کامل برگشت داده شد و به کاربر گفته شد');
   await R.ctx.close();
 
   ok(allErrors.length === 0, 'هیچ خطای JS در خروجی و بازیابی ' + (allErrors[0] || ''));
