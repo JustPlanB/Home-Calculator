@@ -1760,6 +1760,39 @@ final class HkWidgetDraw {
 
   static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none; }
 
+  static final String[] MONTHS_FA={"فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"};
+  static final String ACTION_MIDNIGHT="ir.hesabketab.app.WIDGET_MIDNIGHT";
+  static String faDigits(int n){
+    String s=String.valueOf(n); StringBuilder b=new StringBuilder();
+    for(int i=0;i<s.length();i++){ char ch=s.charAt(i); b.append(ch>='0'&&ch<='9' ? (char)(0x06F0+(ch-'0')) : ch); }
+    return b.toString();
+  }
+  /** تاریخ شمسی امروز از ساعت و منطقهٔ زمانی خود گوشی (همان مبنای اپ): [متن نمایشی، کلید y-m-d] یا null */
+  static String[] todayFa(){
+    if(android.os.Build.VERSION.SDK_INT<24) return null;
+    try{
+      android.icu.util.Calendar c=android.icu.util.Calendar.getInstance(new android.icu.util.ULocale("fa_IR@calendar=persian"));
+      int y=c.get(android.icu.util.Calendar.YEAR), m=c.get(android.icu.util.Calendar.MONTH), d=c.get(android.icu.util.Calendar.DAY_OF_MONTH);
+      if(m<0||m>11) return null;
+      return new String[]{ faDigits(d)+" "+MONTHS_FA[m]+" "+faDigits(y), y+"-"+(m+1)+"-"+d };
+    }catch(Exception e){ return null; }
+  }
+  /** بازرسم ویجت‌ها کمی بعد از نیمه‌شب (بدون اجازهٔ هشدار دقیق؛ در حالت کم‌مصرف هم اجرا می‌شود) */
+  static void scheduleMidnight(Context c){
+    try{
+      android.app.AlarmManager am=(android.app.AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+      if(am==null) return;
+      java.util.Calendar n=java.util.Calendar.getInstance();
+      n.add(java.util.Calendar.DAY_OF_YEAR,1);
+      n.set(java.util.Calendar.HOUR_OF_DAY,0); n.set(java.util.Calendar.MINUTE,0); n.set(java.util.Calendar.SECOND,20); n.set(java.util.Calendar.MILLISECOND,0);
+      android.content.Intent i=new android.content.Intent(c, HkWidgetProvider.class).setAction(ACTION_MIDNIGHT);
+      int fl=android.app.PendingIntent.FLAG_UPDATE_CURRENT|(android.os.Build.VERSION.SDK_INT>=23?android.app.PendingIntent.FLAG_IMMUTABLE:0);
+      android.app.PendingIntent pi=android.app.PendingIntent.getBroadcast(c, 7301, i, fl);
+      if(android.os.Build.VERSION.SDK_INT>=23) am.setAndAllowWhileIdle(android.app.AlarmManager.RTC, n.getTimeInMillis(), pi);
+      else am.set(android.app.AlarmManager.RTC, n.getTimeInMillis(), pi);
+    }catch(Exception ignored){}
+  }
+
   static Data load(Context c){
     SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     Data d=new Data();
@@ -1771,6 +1804,13 @@ final class HkWidgetDraw {
     d.light=sp.getBoolean("light",false);
     d.none=sp.getBoolean("todayNone",false);
     d.accounts=sp.getString("accounts","[]");
+    /* تاریخ همیشه از خود گوشی؛ اگر از آخرین به‌روزرسانی اپ روز عوض شده، خرج امروز هنوز صفر است */
+    String[] t=todayFa();
+    if(t!=null){
+      d.month=t[0];
+      String saved=sp.getString("dayKey","");
+      if(saved.length()>0 && !saved.equals(t[1])){ d.today=faDigits(0); d.none=true; }
+    }
     return d;
   }
 
@@ -1972,12 +2012,19 @@ public class HkWidgetProvider extends AppWidgetProvider {
 
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
+    HkWidgetDraw.scheduleMidnight(ctx);
   }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
   }
+  /* نیمه‌شب: تاریخ و «خرج امروز» همهٔ ویجت‌ها بدون باز شدن اپ به‌روز شوند */
+  @Override public void onReceive(Context ctx, Intent intent){
+    if(intent!=null && HkWidgetDraw.ACTION_MIDNIGHT.equals(intent.getAction())){ refreshAll(ctx); return; }
+    super.onReceive(ctx, intent);
+  }
 
   static void refreshAll(Context ctx){
+    HkWidgetDraw.scheduleMidnight(ctx);
     try{
       AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
       int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetProvider.class));
@@ -2161,6 +2208,7 @@ public class HkWidgetPlugin extends Plugin {
       e.putBoolean("locked", Boolean.TRUE.equals(call.getBoolean("locked",false)));
       e.putBoolean("light", Boolean.TRUE.equals(call.getBoolean("light",false)));
       e.putString("accounts", call.getString("accounts","[]"));
+      e.putString("dayKey", call.getString("dayKey",""));
       e.apply();
       HkWidgetProvider.refreshAll(getContext());
       call.resolve();

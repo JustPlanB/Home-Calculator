@@ -51,9 +51,10 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const w = await A.p.evaluate(async () => {
     pushHomeWidget(); await new Promise(x => setTimeout(x, 1200));
     const t = getTodayPersian();
-    return { month: window.__widget && window.__widget.month, expect: toPersianDigits(String(t.d)) + ' ' + MONTHS[t.m - 1] + ' ' + toPersianDigits(String(t.y)) };
+    return { month: window.__widget && window.__widget.month, expect: toPersianDigits(String(t.d)) + ' ' + MONTHS[t.m - 1] + ' ' + toPersianDigits(String(t.y)), dayKey: window.__widget && window.__widget.dayKey, expectKey: t.y + '-' + t.m + '-' + t.d };
   });
   ok(w.month && w.month === w.expect, 'تاریخ ویجت شامل روز است: «' + w.month + '»');
+  ok(w.dayKey && w.dayKey === w.expectKey, 'کلید روز برای ویجت فرستاده شد (' + w.dayKey + ')؛ ویجت با آن «خرج امروز» روز قبل را بعد از نیمه‌شب صفر می‌کند');
   await A.ctx.close();
 
   console.log('• پنجرهٔ ثبت تراکنش: نوشتهٔ گزینهٔ انتخاب‌شده سفید');
