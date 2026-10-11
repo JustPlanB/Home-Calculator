@@ -10319,6 +10319,14 @@
     .bk-auto-txt { display: flex; flex-direction: column; gap: 1px; }
     .bk-ttl, .bk-pwd-label { display: inline-flex; align-items: center; gap: 6px; }
     .bk-auto-last { font-size: 0.7rem; font-weight: 400; color: #8e8e93; }
+    .bk-enc-wrap { margin: 0 0 6px; font-size: 0.78rem; text-align: right; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
+    .bk-enc-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .bk-enc-btn { border: none; border-radius: 8px; padding: 4px 10px; font-family: inherit; font-weight: 700; font-size: 0.75rem; background: var(--bg3); color: var(--text); }
+    .bk-enc-err { color: #ff453a; font-size: 0.72rem; }
+    .bk-enc-ack { display: flex; align-items: flex-start; gap: 8px; font-size: 0.78rem; line-height: 1.7; text-align: right; color: #ff453a; margin: 0 0 8px; }
+    .backup-pick-ok:disabled { opacity: 0.45; }
+    .bk-enc-txt { font-size: 0.78rem; line-height: 1.8; text-align: right; margin: 0 0 8px; white-space: pre-line; }
+    .bk-enc-code { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.95rem; letter-spacing: 1px; text-align: center; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); }
     .hk-info-btn { flex-shrink: 0; width: 16px; height: 16px; min-width: 16px; padding: 0; margin: 0; border: none; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; position: relative; vertical-align: middle; -webkit-tap-highlight-color: transparent; }
     .hk-info-btn::after { content: ''; position: absolute; inset: -12px; }
     .hk-info-btn svg { width: 16px; height: 16px; display: block; }
@@ -15963,6 +15971,7 @@ function onPeriodChange() {
       html += '<div class="bk-auto-wrap"><div class="backup-pick-item bk-auto-row"><input type="checkbox" id="bkAutoOn" aria-label="پشتیبان خودکار روزانه"' + (autoBkState().enabled === false ? '' : ' checked') + ' />' +
         '<span class="bk-auto-txt"><span class="bk-ttl">پشتیبان خودکار روزانه' + hkInfoBtnHtml(autoInfo) + '</span>' +
         (autoBkPlugin() ? '<small class="bk-auto-last">(' + escapeHtml(autoBkLastText()) + ')</small>' : '') + '</span></div></div>';
+      if (autoBkPlugin()) html += hkAutoEncRowHtml();
       html += '<div class="bk-pwd-wrap"><div class="bk-pwd-label"><label for="bkPwd">رمز فایل پشتیبان (اختیاری)</label>' + hkInfoBtnHtml(pwdInfo) + '</div>' +
         hkPwdFieldHtml('bkPwd', 'new-password', '') + '</div>';
       html += '<div class="backup-pick-actions">' +
@@ -15985,6 +15994,12 @@ function onPeriodChange() {
       }
       if (allCb) allCb.addEventListener('change', syncFromAll);
       var autoCb = ov.querySelector('#bkAutoOn');
+      /* رمزنگاری پشتیبان خودکار: فعال‌سازی / خاموش‌کردن / پاک‌کردن پشتیبان‌های بی‌رمز قدیمی (پس از اتمام، همین پنجره دوباره باز می‌شود) */
+      var reopen = function () { try { ov.remove(); } catch (e) {} askBackupParts(); };
+      var encBtn = ov.querySelector('#bkEncBtn'), encOff = ov.querySelector('#bkEncOff'), encClean = ov.querySelector('#bkEncCleanup');
+      if (encBtn) encBtn.onclick = function () { var st0 = hkAutoEncState(); ov.remove(); if (st0 && !st0.broken) hkAutoEncDisable(askBackupParts); else hkAutoEncSetup(askBackupParts); };
+      if (encOff) encOff.onclick = function () { ov.remove(); hkAutoEncDisable(askBackupParts); };
+      if (encClean) encClean.onclick = function () { ov.remove(); hkAutoEncCleanup(askBackupParts); };
       if (autoCb) autoCb.addEventListener('change', function () {
         var st = autoBkState(); st.enabled = !!autoCb.checked; autoBkSave(st);
         if (autoCb.checked) { maybeDailyAutoBackup(false); try { showToast('پشتیبان خودکار روشن شد'); } catch (e) {} }
@@ -16038,6 +16053,255 @@ function onPeriodChange() {
       var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _bytesFromB64(obj.iv) }, key, _bytesFromB64(obj.data));
       return new TextDecoder().decode(pt);
     }
+
+    /* ===== پشتیبان خودکار رمزدار (اختیاری) — قالب hk-backup-enc نسخهٔ ۱ =====
+       - داده با یک کلید تصادفی ۲۵۶بیتی (DEK) و AES-256-GCM (برچسب ۱۲۸بیتی) رمز می‌شود؛ برای هر فایل nonce تصادفی ۹۶بیتی تازه.
+         (حد ایمن nonce تصادفی برای یک کلید حدود ۲^۳۲ رمزنگاری است؛ پشتیبان روزانه بسیار کمتر از آن است.)
+       - DEK دو بار «پیچیده» می‌شود: با کلید مشتق از رمز پشتیبان و با کلید مشتق از کد بازیابی (PBKDF2-SHA256، salt و nonce جدا).
+         این دو بستهٔ پیچیده یک بار هنگام راه‌اندازی ساخته و عیناً در هر فایل کپی می‌شوند (رمزنگاری تازه‌ای با همان کلید/nonce انجام نمی‌شود).
+       - AAD (دادهٔ احرازشده) = UTF-8 از JSON.stringify یک آرایهٔ ثابت؛ برای داده: ["hk-backup-enc",1,"AES-256-GCM",dekId]
+         و برای هر بستهٔ پیچیده: ["hk-backup-enc-wrap",1,type,"PBKDF2-SHA256",iter,norm,dekId]. تغییر هر کدام = رد شدن.
+       - رمز و کد بازیابی هرگز ذخیره نمی‌شوند. برای پشتیبان بی‌دخالت، خود DEK فقط در حافظهٔ خصوصی برنامه نگه داشته می‌شود؛
+         این همان سطح محافظت داده‌های زندهٔ برنامه است و داده‌های زنده (localStorage) با این کار رمز نمی‌شوند.
+       - هر فایل به‌تنهایی با رمز یا با کد بازیابی روی هر گوشی باز می‌شود؛ گوشی اول، حافظهٔ آن یا Keystore لازم نیست. */
+    var HK_ENC_FORMAT = 'hk-backup-enc', HK_ENC_V = 1, HK_ENC_CIPHER = 'AES-256-GCM', HK_ENC_KDF = 'PBKDF2-SHA256';
+    var HK_ENC_ITER_PW = 600000, HK_ENC_ITER_RC = 200000, HK_ENC_ITER_MIN = 100000, HK_ENC_ITER_MAX = 2000000;
+    var HK_ENC_NORM = { password: 'hk-pw-v1', recovery: 'hk-rc-v1' };
+    var HK_RC_ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   /* Crockford Base32 (بدون I L O U) */
+    var HK_AUTO_ENC_KEY = STORAGE_KEY + '_autoBkEnc';
+    /** نرمال‌سازی رمز پشتیبان خودکار، نسخهٔ ۱ (فقط برای این قالب؛ رمزهای پشتیبان دستی قدیمی دست نمی‌خورند):
+        NFKC؛ «ي/ى» عربی ← «ی» فارسی؛ «ك» عربی ← «ک» فارسی؛ رقم‌های فارسی و عربی ← رقم لاتین؛
+        حذف نویسه‌های بی‌عرض U+200B, U+200D, U+FEFF (نیم‌فاصله U+200C حفظ می‌شود)؛ فاصله‌های ابتدا و انتها حذف نمی‌شوند. */
+    function hkNormPwV1(p) {
+      var s = String(p == null ? '' : p).normalize('NFKC');
+      s = s.replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
+      s = s.replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); })
+           .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); });
+      return s.replace(/[​‍﻿]/g, '');
+    }
+    /** سیاست رمز: دست‌کم ۱۰ نویسه (پس از نرمال‌سازی)، فقط رقم نباشد، همه یک نویسهٔ تکراری نباشد. پیام خطا یا '' */
+    function hkPwPolicyError(p) {
+      var n = hkNormPwV1(p), chars = Array.from(n);
+      if (chars.length < 10) return 'رمز باید دست‌کم ۱۰ نویسه باشد.';
+      if (/^[0-9]+$/.test(n)) return 'رمز نباید فقط عدد باشد؛ حرف هم به کار ببرید.';
+      if (new Set(chars).size < 4) return 'رمز خیلی ساده است؛ از نویسه‌های متنوع‌تر استفاده کنید.';
+      return '';
+    }
+    /** کد بازیابی: ۲۵ نویسهٔ تصادفی از ۳۲ نویسه (۱۲۵ بیت)، با تولیدکنندهٔ امن مرورگر؛ نمایش در ۵ گروه */
+    function hkGenRecoveryCode() {
+      var b = crypto.getRandomValues(new Uint8Array(25)), out = '';
+      for (var i = 0; i < b.length; i++) out += HK_RC_ALPHA[b[i] & 31];
+      return out;
+    }
+    function hkFormatRecoveryCode(c) { return String(c).replace(/(.{5})(?=.)/g, '$1-'); }
+    /** نرمال‌سازی کد بازیابی واردشده؛ نامعتبر = '' */
+    function hkNormRecoveryCode(c) {
+      var s = String(c == null ? '' : c).normalize('NFKC')
+        .replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); })
+        .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); })
+        .toUpperCase().replace(/[\s\-_‌]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+      if (s.length !== 25) return '';
+      for (var i = 0; i < s.length; i++) if (HK_RC_ALPHA.indexOf(s[i]) < 0) return '';
+      return s;
+    }
+    function _hkAad(arr) { return new TextEncoder().encode(JSON.stringify(arr)); }
+    function _hkWrapAad(type, iter, dekId) { return _hkAad(['hk-backup-enc-wrap', HK_ENC_V, type, HK_ENC_KDF, iter, HK_ENC_NORM[type], dekId]); }
+    function _hkDataAad(dekId) { return _hkAad([HK_ENC_FORMAT, HK_ENC_V, HK_ENC_CIPHER, dekId]); }
+    async function _hkKek(secretCanon, salt, iter) {
+      var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(secretCanon), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    }
+    function _hkSecretCanon(type, secret) { return type === 'password' ? hkNormPwV1(secret) : hkNormRecoveryCode(secret); }
+    async function _hkMakeWrap(type, secret, dek, dekId) {
+      var canon = _hkSecretCanon(type, secret);
+      if (!canon) throw new Error('bad_secret');
+      var iter = type === 'password' ? HK_ENC_ITER_PW : HK_ENC_ITER_RC;
+      var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      var kek = await _hkKek(canon, salt, iter);
+      var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: _hkWrapAad(type, iter, dekId), tagLength: 128 }, kek, dek));
+      return { type: type, kdf: HK_ENC_KDF, iter: iter, norm: HK_ENC_NORM[type], salt: _b64FromBytes(salt), iv: _b64FromBytes(iv), data: _b64FromBytes(ct) };
+    }
+    /** ساخت کلید تازه و دو بستهٔ پیچیده (رمز + کد بازیابی). خروجی فقط در حافظه است تا راه‌اندازی تأیید شود. */
+    async function hkAutoEncCreateKey(password, recoveryCode) {
+      var dek = crypto.getRandomValues(new Uint8Array(32));
+      var idb = crypto.getRandomValues(new Uint8Array(12));
+      var dekId = _b64FromBytes(idb).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      var wraps = [await _hkMakeWrap('password', password, dek, dekId), await _hkMakeWrap('recovery', recoveryCode, dek, dekId)];
+      return { v: 1, dekId: dekId, dek: _b64FromBytes(dek), wraps: wraps, createdAt: Date.now() };
+    }
+    function _hkB64Len(b64, n) { try { var u = _bytesFromB64(String(b64)); return (n == null || u.length === n) ? u : null; } catch (e) { return null; } }
+    /** بررسی ساختار پیش از هر کار سنگین (PBKDF2). نتیجه: '' یا کد خطا ('unsupported_version' | 'invalid') */
+    function hkEncEnvelopeError(env) {
+      if (!env || typeof env !== 'object' || env.format !== HK_ENC_FORMAT) return 'invalid';
+      if (typeof env.v !== 'number' || !isFinite(env.v)) return 'invalid';
+      if (env.v > HK_ENC_V) return 'unsupported_version';
+      if (env.v !== HK_ENC_V || env.cipher !== HK_ENC_CIPHER) return 'invalid';
+      if (typeof env.dekId !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(env.dekId)) return 'invalid';
+      if (!_hkB64Len(env.iv, 12)) return 'invalid';
+      var d = _hkB64Len(env.data); if (!d || d.length < 17) return 'invalid';
+      if (!Array.isArray(env.wraps) || env.wraps.length < 1 || env.wraps.length > 4) return 'invalid';
+      for (var i = 0; i < env.wraps.length; i++) {
+        var w = env.wraps[i];
+        if (!w || typeof w !== 'object' || !HK_ENC_NORM[w.type] || w.kdf !== HK_ENC_KDF || w.norm !== HK_ENC_NORM[w.type]) return 'invalid';
+        if (typeof w.iter !== 'number' || (w.iter | 0) !== w.iter || w.iter < HK_ENC_ITER_MIN || w.iter > HK_ENC_ITER_MAX) return 'invalid';
+        if (!_hkB64Len(w.salt, 16) || !_hkB64Len(w.iv, 12) || !_hkB64Len(w.data, 48)) return 'invalid';
+      }
+      return '';
+    }
+    /** بازکردن DEK با رمز یا کد بازیابی؛ هر خطایی (رمز اشتباه، دست‌کاری) = استثنا. هیچ داده‌ای از برنامه دست نمی‌خورد. */
+    async function hkEncUnwrapDek(env, type, secret) {
+      var w = (env.wraps || []).filter(function (x) { return x && x.type === type; })[0];
+      if (!w) throw new Error('no_wrap');
+      var canon = _hkSecretCanon(type, secret);
+      if (!canon) throw new Error('bad_secret');
+      var kek = await _hkKek(canon, _bytesFromB64(w.salt), w.iter);
+      var dek = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _bytesFromB64(w.iv), additionalData: _hkWrapAad(type, w.iter, env.dekId), tagLength: 128 }, kek, _bytesFromB64(w.data)));
+      if (dek.length !== 32) throw new Error('bad_key');
+      return dek;
+    }
+    async function _hkDekKey(dekBytes) { return crypto.subtle.importKey('raw', dekBytes, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+    async function hkEncSeal(text, keyRec) {
+      var key = await _hkDekKey(_bytesFromB64(keyRec.dek)), iv = crypto.getRandomValues(new Uint8Array(12));
+      var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: _hkDataAad(keyRec.dekId), tagLength: 128 }, key, new TextEncoder().encode(text)));
+      return { app: 'hesab-ketab', format: HK_ENC_FORMAT, v: HK_ENC_V, cipher: HK_ENC_CIPHER, dekId: keyRec.dekId,
+        createdAt: new Date().toISOString(), wraps: JSON.parse(JSON.stringify(keyRec.wraps)), iv: _b64FromBytes(iv), data: _b64FromBytes(ct) };
+    }
+    async function hkEncOpen(env, dekBytes) {
+      var key = await _hkDekKey(dekBytes);
+      var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _bytesFromB64(env.iv), additionalData: _hkDataAad(env.dekId), tagLength: 128 }, key, _bytesFromB64(env.data));
+      return new TextDecoder('utf-8', { fatal: true }).decode(pt);
+    }
+    /** وضعیت رمزنگاری پشتیبان خودکار: null = خاموش؛ {broken:true} = روشن ولی کلید محلی ناسالم؛ وگرنه رکورد کلید */
+    function hkAutoEncState() {
+      var on = autoBkState().encEnabled === true, rec = null;
+      try { rec = JSON.parse(localStorage.getItem(HK_AUTO_ENC_KEY) || 'null'); } catch (e) { rec = null; }
+      var ok = rec && rec.v === 1 && typeof rec.dekId === 'string' && _hkB64Len(rec.dek, 32) && Array.isArray(rec.wraps) &&
+        rec.wraps.some(function (w) { return w && w.type === 'password' && _hkWrapShapeOk(w); }) && rec.wraps.some(function (w) { return w && w.type === 'recovery' && _hkWrapShapeOk(w); });
+      if (!on && !rec) return null;
+      if (!on || !ok) return { broken: true };
+      return rec;
+    }
+    /** ساختار یک wrap (همان بررسی‌های hkEncEnvelopeError، پیش از هر PBKDF2) */
+    function _hkWrapShapeOk(w) {
+      return !!(w && typeof w === 'object' && HK_ENC_NORM[w.type] && w.kdf === HK_ENC_KDF && w.norm === HK_ENC_NORM[w.type] &&
+        typeof w.iter === 'number' && (w.iter | 0) === w.iter && w.iter >= HK_ENC_ITER_MIN && w.iter <= HK_ENC_ITER_MAX &&
+        _hkB64Len(w.salt, 16) && _hkB64Len(w.iv, 12) && _hkB64Len(w.data, 48));
+    }
+    function _hkBytesEq(a, b) {
+      if (!a || !b || a.length !== b.length) return false;
+      var d = 0; for (var i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+      return d === 0;
+    }
+    /** رکورد خام کلید محلی، بدون هیچ تغییری. dekOk = DEK از نظر ساختار سالم است (v=1، ۳۲ بایت، dekId معتبر)، حتی اگر wrapها خراب باشند. */
+    function hkAutoEncRaw() {
+      var raw = null, rec = null;
+      try { raw = localStorage.getItem(HK_AUTO_ENC_KEY); } catch (e) { raw = null; }
+      if (raw == null) return { raw: null };
+      try { rec = JSON.parse(raw); } catch (e2) { rec = null; }
+      if (!rec || typeof rec !== 'object') rec = null;
+      var dek = rec ? _hkB64Len(rec.dek, 32) : null;
+      var idOk = !!(rec && typeof rec.dekId === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(rec.dekId));
+      return { raw: raw, rec: rec, v: rec && typeof rec.v === 'number' ? rec.v : null, dekOk: !!(rec && rec.v === 1 && dek && idOk), dek: dek };
+    }
+    /** آزمون واقعیِ رمز یا کد قبلی برای کلید محلی K: باز کردن wrap با AES-GCM (AAD شامل dekId) ← برابری با DEK محلی ←
+        بازکردن احرازشدهٔ یک پشتیبان رمزدارِ همین کلید از پوشه (اگر باشد)، وگرنه یک envelope آزمایشی تازه.
+        wrapهای داخل خود فایل‌ها هم امتحان می‌شوند (همان‌هایی که روی گوشی دیگر به کار می‌روند). هیچ چیزی ذخیره یا ثبت نمی‌شود. */
+    async function hkAutoEncVerifyOld(K, type, secret) {
+      if (!K || !K.dekOk || !_hkSecretCanon(type, secret)) return false;
+      var envs = [];
+      try {
+        var P = autoBkPlugin();
+        if (P && typeof P.readAutoBackup === 'function') {
+          var files = ((((await P.listAutoBackups()) || {}).files) || []).filter(function (f) { return f && /-enc\.json$/.test(String(f.name)) && _bkNameTime(f.name); });
+          files.sort(function (a, b) { var ka = _bkNameTime(a.name).key, kb = _bkNameTime(b.name).key; return ka < kb ? 1 : ka > kb ? -1 : 0; });
+          for (var i = 0; i < files.length && i < 6 && envs.length < 2; i++) {
+            try {
+              var env = hkSafeJsonParse(_hkB64ToText(((await P.readAutoBackup({ name: files[i].name })) || {}).data));
+              if (!hkEncEnvelopeError(env) && env.dekId === K.rec.dekId) envs.push(env);
+            } catch (eR) {}
+          }
+        }
+      } catch (eL) {}
+      var cands = [], seen = {};
+      var add = function (w) { if (w && w.type === type && _hkWrapShapeOk(w) && !seen[w.salt + w.data]) { seen[w.salt + w.data] = 1; cands.push(w); } };
+      envs.forEach(function (e) { e.wraps.forEach(add); });
+      (Array.isArray(K.rec.wraps) ? K.rec.wraps : []).forEach(add);
+      for (var c = 0; c < cands.length; c++) {
+        var dek = null;
+        try { dek = await hkEncUnwrapDek({ dekId: K.rec.dekId, wraps: [cands[c]] }, type, secret); } catch (eU) { dek = null; }
+        if (!dek || !_hkBytesEq(dek, K.dek)) continue;
+        for (var j = 0; j < envs.length; j++) { try { await hkEncOpen(envs[j], dek); return true; } catch (eO) {} }
+        try {
+          var probe = 'hk-verify-' + Date.now();
+          var pe = await hkEncSeal(probe, { dekId: K.rec.dekId, dek: _b64FromBytes(K.dek), wraps: [] });
+          if (await hkEncOpen(pe, dek) === probe) return true;
+        } catch (eP) {}
+      }
+      return false;
+    }
+    /** پیش از جایگزینی (purpose='reset') یا حذف (purpose='disable') کلید محلی.
+        onPass فقط پس از آزمون موفق رمز/کد قبلی یا تأیید جداگانه و صریح «هیچ‌کدام را ندارم» صدا زده می‌شود؛ هر انصراف = هیچ تغییری.
+        repair (اختیاری): وقتی DEK سالم ولی رکورد ناسالم است، «رمز و کد تازه برای همین کلید». */
+    function hkAutoEncGuard(purpose, onPass, onCancel, repair) {
+      var K = hkAutoEncRaw();
+      var cancel = function () { try { if (onCancel) onCancel(); } catch (e) {} };
+      if (K.raw == null) return onPass();
+      if (K.v != null && K.v > 1) { showToastLong('کلید رمزنگاری این دستگاه با نسخهٔ جدیدتر برنامه ساخته شده؛ برنامه را به‌روز کنید. هیچ تغییری اعمال نشد.'); return cancel(); }
+      var act = purpose === 'reset' ? 'با کلید جدید جایگزین' : 'پاک';
+      var ov = _hkEncOverlay('bkEncGuard');
+      var panel = function (title, body, actions) { ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">' + title + '</div>' + body + '<div class="backup-pick-actions">' + actions + '</div></div>'; };
+      var bindCancel = function (id) { var b = ov.querySelector('#' + id); if (b) b.onclick = function () { ov.remove(); cancel(); }; };
+      if (!K.dekOk) {
+        /* کلید محلی آسیب‌دیده و غیرقابل‌بررسی: هرگز بی‌سروصدا پاک نمی‌شود */
+        panel('کلید این دستگاه قابل استفاده نیست',
+          '<div class="bk-enc-txt" id="bkEncGTxt">کلید رمزنگاریِ ذخیره‌شده روی این دستگاه آسیب دیده و قابل بررسی نیست؛ با آن هیچ پشتیبانی باز نمی‌شود. پشتیبان‌های رمزدار قبلی فقط با رمز پشتیبان یا کد بازیابی قبلی باز می‌شوند.\n' +
+          '• با ادامه، این کلید آسیب‌دیده ' + act + ' می‌شود.\n• هیچ فایل پشتیبانی پاک نمی‌شود.</div>',
+          '<button type="button" class="backup-pick-ok" id="bkEncGBrokenGo">ادامه</button><button type="button" class="backup-pick-cancel" id="bkEncGCancel">انصراف</button>');
+        bindCancel('bkEncGCancel');
+        ov.querySelector('#bkEncGBrokenGo').onclick = function () { ov.remove(); onPass(); };
+        return;
+      }
+      var canRepair = !!repair && purpose === 'reset' && (function () { var st = hkAutoEncState(); return !st || st.broken; })();
+      var showVerify = function () {
+        panel('تأیید رمز یا کد بازیابی قبلی',
+          '<div class="bk-enc-txt" id="bkEncGTxt">پیش از ' + (purpose === 'reset' ? 'ساختن کلید جدید' : 'خاموش کردن رمزنگاری') + '، رمز پشتیبان یا کد بازیابیِ همین کلید را وارد کنید تا مطمئن شویم پشتیبان‌های رمزدار قبلی بعداً هم با آن باز می‌شوند. تا آن موقع کلید این دستگاه و فایل‌ها دست نمی‌خورند.' +
+          (canRepair ? '\n• اگر فقط می‌خواهید رمز و کد تازه داشته باشید، «رمز و کد تازه برای همین کلید» را بزنید؛ کلید عوض نمی‌شود و پشتیبان‌های قبلی روی همین گوشی مثل قبل باز می‌شوند.' : '') + '</div>' +
+          hkPwdFieldHtml('bkEncGIn', 'current-password', '') + '<div class="bk-enc-err" id="bkEncGErr"></div>',
+          '<button type="button" class="backup-pick-ok" id="bkEncGByPw">بررسی با رمز</button><button type="button" class="backup-pick-ok" id="bkEncGByRc">بررسی با کد بازیابی</button>' +
+          (canRepair ? '<button type="button" class="bk-enc-btn" id="bkEncGRepair">رمز و کد تازه برای همین کلید…</button>' : '') +
+          '<button type="button" class="bk-enc-btn" id="bkEncGLost">هیچ‌کدام را ندارم…</button><button type="button" class="backup-pick-cancel" id="bkEncGCancel">انصراف</button>');
+        var err = function (m) { var e = ov.querySelector('#bkEncGErr'); if (e) e.textContent = m; };
+        var busy = false;
+        var go = async function (type) {
+          if (busy) return;
+          var inp = ov.querySelector('#bkEncGIn'), v = inp.value;
+          busy = true; err('در حال بررسی…');
+          var ok = false;
+          try { ok = await hkAutoEncVerifyOld(K, type, v); } catch (eV) { ok = false; }
+          v = ''; inp.value = ''; busy = false;
+          if (!ov.isConnected) return;
+          if (!ok) return err((type === 'password' ? 'رمز' : 'کد بازیابی') + ' درست نیست یا پشتیبانی با آن باز نشد؛ هیچ تغییری اعمال نشد.');
+          ov.remove(); onPass();
+        };
+        ov.querySelector('#bkEncGByPw').onclick = function () { go('password'); };
+        ov.querySelector('#bkEncGByRc').onclick = function () { go('recovery'); };
+        if (canRepair) ov.querySelector('#bkEncGRepair').onclick = function () { if (busy) return; ov.remove(); repair(); };
+        ov.querySelector('#bkEncGLost').onclick = function () { if (!busy) showLost(); };
+        bindCancel('bkEncGCancel');
+      };
+      var showLost = function () {
+        panel('بدون رمز و کد بازیابی قبلی',
+          '<div class="bk-enc-txt" id="bkEncGLostTxt">اگر ادامه دهید، کلید رمزنگاری این دستگاه ' + act + ' می‌شود. پشتیبان‌های رمزدار قبلی فقط با رمز پشتیبان یا کد بازیابی قبلی باز می‌شوند؛ اگر هیچ‌کدام را ندارید، ممکن است دسترسی به آن‌ها برای همیشه از بین برود. هیچ راه تضمین‌شده‌ای برای بازگرداندن آن‌ها وجود ندارد.\n' +
+          '• هیچ فایل پشتیبانی پاک نمی‌شود.' + (canRepair ? '\n• پیشنهاد: به‌جای این کار «رمز و کد تازه برای همین کلید» را انتخاب کنید؛ کلید عوض نمی‌شود.' : '') + '</div>' +
+          '<label class="bk-enc-ack"><input type="checkbox" id="bkEncGAck"> می‌دانم ممکن است دسترسی به پشتیبان‌های رمزدار قبلی را از دست بدهم</label>',
+          '<button type="button" class="backup-pick-ok" id="bkEncGLostGo" disabled>ادامه با وجود خطر</button><button type="button" class="backup-pick-cancel" id="bkEncGCancel2">انصراف</button>');
+        var ack = ov.querySelector('#bkEncGAck'), goB = ov.querySelector('#bkEncGLostGo');
+        ack.onchange = function () { goB.disabled = !ack.checked; };
+        goB.onclick = function () { if (!ack.checked) return; ov.remove(); onPass(); };
+        bindCancel('bkEncGCancel2');
+      };
+      showVerify();
+    }
     /* فیلد رمز با دکمهٔ چشم (نمایش/پنهان) داخل باکس */
     var HK_EYE_SVG = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     var HK_EYE_OFF_SVG = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
@@ -16062,6 +16326,227 @@ function onPeriodChange() {
         b.setAttribute('aria-label', lbl); b.title = lbl;
       });
     })();
+    /* ===== رابط رمزنگاری پشتیبان خودکار ===== */
+    function hkAutoEncRowHtml() {
+      var st = hkAutoEncState(), s = autoBkState();
+      var mode = !st ? 'خاموش' : (st.broken ? 'روشن، ولی کلید روی این دستگاه پیدا نشد' : 'روشن');
+      var h = '<div class="bk-enc-wrap" id="bkEncRow"><div class="bk-enc-line"><span>رمزنگاری پشتیبان خودکار: <b id="bkEncMode">' + mode + '</b></span>' +
+        '<button type="button" class="bk-enc-btn" id="bkEncBtn">' + (!st ? 'فعال‌سازی…' : (st.broken ? 'تنظیم دوباره…' : 'خاموش کردن')) + '</button></div>';
+      if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncOff">خاموش کردن</button></div>';
+      if (st && !st.broken && s.lastEncOkAt) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncCleanup">پاک کردن پشتیبان‌های خودکار بی‌رمز قدیمی…</button></div>';
+      if (s.lastErrorText) h += '<div class="bk-enc-err" id="bkAutoErr">' + escapeHtml(s.lastErrorText) + '</div>';
+      return h + '</div>';
+    }
+    function _hkEncOverlay(id) {
+      var old = document.getElementById(id); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = id; ov.className = 'backup-pick-overlay';
+      document.body.appendChild(ov);
+      return ov;
+    }
+    /** راه‌اندازی: توضیح ← رمز (دو بار) ← نمایش کد بازیابی ← واردکردن دوبارهٔ کد ← آزمون کامل ← فقط آنگاه روشن.
+        هر انصراف یا شکستی = هیچ تغییری (رمزنگاری خاموش می‌ماند و مسیر فعلی پشتیبان دست نمی‌خورد). */
+    var HK_ENC_OLD_KEY_WARN = 'هر بار راه‌اندازی، کلید تازه‌ای می‌سازد: پشتیبان‌های رمزدارِ قبلی با رمز و کد جدید باز نمی‌شوند و برای بازکردنشان همان رمز پشتیبان یا کد بازیابیِ قبلی لازم است. راه‌اندازی دوباره، رمز و کد قبلی را جایگزین نمی‌کند و فایل‌های قبلی را دوباره رمزنگاری نمی‌کند؛ پس رمز و کد قبلی را هم نگه دارید.';
+    function hkAutoEncSetup(onDone) {
+      var done = function () { try { if (onDone) onDone(); } catch (e) {} };
+      var ov = _hkEncOverlay('bkEncSetup');
+      if (!(window.crypto && crypto.subtle && crypto.getRandomValues)) {
+        ov.remove(); showToastLong('این دستگاه از رمزنگاری پشتیبانی نمی‌کند؛ رمزنگاری پشتیبان خودکار روشن نشد.'); return done();
+      }
+      /* اگر قبلاً کلیدی وجود داشته (تنظیم دوباره)، پیش از هر کاری هشدار صریح و فرصت انصراف؛ هیچ کلید یا فایلی اینجا پاک نمی‌شود */
+      var prior = !!hkAutoEncState() || autoBkState().encEverEnabled === true || hkAutoEncRaw().raw != null;
+      if (prior) {
+        ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">پیش از راه‌اندازی دوباره</div>' +
+          '<div class="bk-enc-txt" id="bkEncPriorTxt">' + HK_ENC_OLD_KEY_WARN + '\n' +
+          '• با فعال‌سازی کلید جدید، کلید قبلیِ ذخیره‌شده روی همین گوشی هم جایگزین می‌شود؛ از آن به بعد، حتی روی همین گوشی، پشتیبان‌های رمزدار قبلی فقط با رمز پشتیبان یا کد بازیابی قبلی باز می‌شوند.\n' +
+          '• هیچ فایل پشتیبانی پاک نمی‌شود.</div>' +
+          '<div class="backup-pick-actions"><button type="button" class="backup-pick-ok" id="bkEncPriorGo">متوجه شدم، ادامه</button><button type="button" class="backup-pick-cancel" id="bkEncPriorCancel">انصراف</button></div></div>';
+        ov.querySelector('#bkEncPriorCancel').onclick = function () { ov.remove(); done(); };
+        ov.querySelector('#bkEncPriorGo').onclick = function () { ov.remove(); guarded(); };
+        return;
+      }
+      ov.remove(); guarded();
+      /* کلید محلی فعلی فقط پس از آزمون رمز/کد قبلی یا تأیید صریح جایگزین می‌شود */
+      function guarded() {
+        hkAutoEncGuard('reset', function () { hkAutoEncSetupForm(_hkEncOverlay('bkEncSetup'), done); }, done,
+          function () { hkAutoEncSetupForm(_hkEncOverlay('bkEncSetup'), done, 'repair'); });
+      }
+    }
+    function hkAutoEncSetupForm(ov, done, mode) {
+      var isRepair = mode === 'repair';
+      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">' + (isRepair ? 'رمز و کد تازه برای همین کلید' : 'رمزنگاری پشتیبان خودکار') + '</div>' + (isRepair ?
+        '<div class="bk-enc-txt" id="bkEncRepairTxt">رمز پشتیبان و کد بازیابی تازه برای همان کلید رمزنگاری ساخته می‌شود؛ خود کلید عوض نمی‌شود.\n' +
+        '• پشتیبان‌های رمزدار قبلی روی همین گوشی مثل قبل باز می‌شوند.\n' +
+        '• پشتیبان‌های تازه با رمز یا کد جدید باز می‌شوند.\n' +
+        '• پشتیبان‌های قبلی روی گوشی دیگر یا بعد از نصب دوباره فقط با رمز یا کد بازیابی قبلی باز می‌شوند؛ این فایل‌ها دوباره رمزنگاری نمی‌شوند.\n' +
+        '• اگر رمز و کد تازه را هم گم کنید، پشتیبان‌های تازه روی گوشی دیگر باز نمی‌شوند.</div>' :
+        '<div class="bk-enc-txt">با روشن کردن این گزینه، پشتیبان‌های خودکار (پوشهٔ Download/HesabKetab) رمزدار ذخیره می‌شوند و بدون رمز پشتیبان یا کد بازیابی خوانده نمی‌شوند.\n' +
+        '• برای بازیابی روی گوشی دیگر یا بعد از نصب دوباره، «رمز پشتیبان» یا «کد بازیابی» لازم است.\n' +
+        '• اگر هر دو را گم کنید، پشتیبان‌های رمزدار برای همیشه باز نمی‌شوند و هیچ‌کس نمی‌تواند بازشان کند.\n' +
+        '• این کار اطلاعات داخل خود برنامه را رمز نمی‌کند؛ برای آن قفل برنامه و قفل گوشی را روشن کنید.\n' +
+        '• پشتیبان‌های بی‌رمز قبلی خودبه‌خود پاک نمی‌شوند.\n' +
+        '• ' + HK_ENC_OLD_KEY_WARN + '</div>') +
+        '<div class="bk-pwd-wrap"><label for="bkEncPw1">رمز پشتیبان (دست‌کم ۱۰ نویسه، فقط عدد نباشد)</label>' + hkPwdFieldHtml('bkEncPw1', 'new-password', '') +
+        '<label for="bkEncPw2">تکرار رمز</label>' + hkPwdFieldHtml('bkEncPw2', 'new-password', '') + '</div>' +
+        '<div class="bk-enc-err" id="bkEncErr"></div>' +
+        '<div class="backup-pick-actions"><button type="button" class="backup-pick-ok" id="bkEncNext">ادامه</button><button type="button" class="backup-pick-cancel" id="bkEncCancel">انصراف</button></div></div>';
+      var err = function (m) { var e = ov.querySelector('#bkEncErr'); if (e) e.textContent = m; };
+      ov.querySelector('#bkEncCancel').onclick = function () { ov.remove(); done(); };
+      ov.querySelector('#bkEncNext').onclick = function () {
+        var p1 = ov.querySelector('#bkEncPw1').value, p2 = ov.querySelector('#bkEncPw2').value;
+        var pe = hkPwPolicyError(p1); if (pe) return err(pe);
+        if (hkNormPwV1(p1) !== hkNormPwV1(p2)) return err('دو رمز یکسان نیستند.');
+        var code = hkGenRecoveryCode();
+        ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">کد بازیابی</div>' +
+          '<div class="bk-enc-txt">این کد فقط همین یک بار نمایش داده می‌شود. آن را روی کاغذ بنویسید یا جای امنی بیرون از همین گوشی نگه دارید. با این کد، حتی اگر رمز را فراموش کنید، پشتیبان رمزدار باز می‌شود.</div>' +
+          '<input type="text" readonly class="bk-enc-code" id="bkEncCode" dir="ltr" value="' + hkFormatRecoveryCode(code) + '">' +
+          '<div class="backup-pick-actions" style="margin-top:6px"><button type="button" class="bk-enc-btn" id="bkEncCopy">کپی کد</button></div>' +
+          '<div class="bk-pwd-wrap"><label for="bkEncRc2">برای اطمینان، کد بازیابی را دوباره وارد کنید</label><input type="text" class="bk-enc-code" id="bkEncRc2" dir="ltr" autocomplete="off" spellcheck="false"></div>' +
+          '<div class="bk-enc-err" id="bkEncErr"></div>' +
+          '<div class="backup-pick-actions"><button type="button" class="backup-pick-ok" id="bkEncOn">فعال‌سازی</button><button type="button" class="backup-pick-cancel" id="bkEncCancel2">انصراف</button></div></div>';
+        ov.querySelector('#bkEncCancel2').onclick = function () { code = ''; ov.remove(); done(); };
+        ov.querySelector('#bkEncCopy').onclick = function () {
+          var inp = ov.querySelector('#bkEncCode');
+          try { inp.select(); } catch (e) {}
+          try { navigator.clipboard.writeText(inp.value).then(function () { showToast('کد کپی شد؛ آن را جای امنی نگه دارید'); }, function () { showToast('کپی خودکار ممکن نشد؛ کد را دستی بنویسید'); }); }
+          catch (e2) { showToast('کپی خودکار ممکن نشد؛ کد را دستی بنویسید'); }
+        };
+        var busy = false;
+        ov.querySelector('#bkEncOn').onclick = async function () {
+          if (busy) return;
+          if (hkNormRecoveryCode(ov.querySelector('#bkEncRc2').value) !== code) return err('کد واردشده با کد بازیابی یکسان نیست.');
+          busy = true; err('در حال آماده‌سازی رمزنگاری…');
+          var ok = false;
+          try { ok = await (isRepair ? hkAutoEncRepair(p1, code) : hkAutoEncActivate(p1, code)); } catch (eA) { ok = false; }
+          p1 = p2 = code = '';
+          busy = false;
+          if (!ok) { ov.remove(); showToastLong(isRepair ? 'رمز و کد تازه ثبت نشد؛ کلید این دستگاه بدون تغییر ماند.' : 'رمزنگاری پشتیبان خودکار روشن نشد؛ هیچ تغییری اعمال نشد و پشتیبان خودکار مثل قبل ادامه دارد.'); return done(); }
+          ov.remove();
+          showToastLong(isRepair ? 'رمز و کد تازه برای همان کلید ثبت شد؛ پشتیبان‌های قبلی روی همین گوشی مثل قبل باز می‌شوند. رمز و کد تازه را گم نکنید.' : 'رمزنگاری پشتیبان خودکار روشن شد. رمز پشتیبان و کد بازیابی را گم نکنید.');
+          try { writeAutoBackup('daily'); } catch (eW) {}
+          done();
+        };
+      };
+    }
+    /** ساخت کلید، آزمون مستقل هر دو راه بازیابی و یک رفت‌وبرگشت کامل؛ فقط پس از موفقیت همه، ذخیره و روشن می‌شود */
+    async function hkAutoEncActivate(password, code) {
+      var rec = await hkAutoEncCreateKey(password, code);
+      var d1 = await hkEncUnwrapDek(rec, 'password', password), d2 = await hkEncUnwrapDek(rec, 'recovery', code);
+      var raw = _b64FromBytes(d1);
+      if (raw !== rec.dek || _b64FromBytes(d2) !== rec.dek) return false;
+      var probe = JSON.stringify({ app: 'hesab-ketab', probe: true });
+      var env = await hkEncSeal(probe, rec);
+      if (await hkEncOpen(env, d2) !== probe) return false;
+      return _hkStoreKeyRec(rec);
+    }
+    /** نوشتن رکورد کلید و روشن‌کردن؛ اگر بررسی پس از نوشتن شکست بخورد، رکورد و وضعیت قبلی دقیقاً برگردانده می‌شوند (نه حذف) */
+    function _hkStoreKeyRec(rec) {
+      var prevRaw = hkAutoEncRaw().raw, prevState = JSON.stringify(autoBkState());
+      if (!hkStorageSet(HK_AUTO_ENC_KEY, JSON.stringify(rec))) return false;
+      var s = autoBkState(); s.encEnabled = true; s.encEverEnabled = true; delete s.lastEncOkAt; autoBkSave(s);
+      var chk = hkAutoEncState();
+      if (!chk || chk.broken || chk.dekId !== rec.dekId || chk.dek !== rec.dek) {
+        try { if (prevRaw == null) localStorage.removeItem(HK_AUTO_ENC_KEY); else localStorage.setItem(HK_AUTO_ENC_KEY, prevRaw); } catch (e) {}
+        try { autoBkSave(JSON.parse(prevState)); } catch (e2) {}
+        return false;
+      }
+      return true;
+    }
+    /** ترمیم: wrapهای تازه (رمز و کد جدید) برای همان DEK و dekId. فقط وقتی DEK محلی از نظر ساختار سالم است.
+        هر دو wrap تازه مستقل آزموده می‌شوند و یک رفت‌وبرگشت کامل انجام می‌شود؛ هر شکستی = رکورد قبلی بدون تغییر. */
+    async function hkAutoEncRepair(password, code) {
+      var K = hkAutoEncRaw();
+      if (!K.dekOk) return false;
+      var dekId = K.rec.dekId;
+      var rec = { v: 1, dekId: dekId, dek: _b64FromBytes(K.dek), wraps: [await _hkMakeWrap('password', password, K.dek, dekId), await _hkMakeWrap('recovery', code, K.dek, dekId)],
+        createdAt: Number(K.rec.createdAt) || Date.now(), repairedAt: Date.now() };
+      var d1 = await hkEncUnwrapDek(rec, 'password', password), d2 = await hkEncUnwrapDek(rec, 'recovery', code);
+      if (!_hkBytesEq(d1, K.dek) || !_hkBytesEq(d2, K.dek)) return false;
+      var probe = JSON.stringify({ app: 'hesab-ketab', probe: true });
+      if (await hkEncOpen(await hkEncSeal(probe, rec), d1) !== probe) return false;
+      if (hkAutoEncRaw().raw !== K.raw) return false;   /* رکورد در این فاصله عوض شده؛ کاری نکن */
+      return _hkStoreKeyRec(rec);
+    }
+    function hkAutoEncDisable(onDone) {
+      var done = function () { try { if (onDone) onDone(); } catch (e3) {} };
+      askConfirm('رمزنگاری پشتیبان خودکار خاموش شود؟ از این پس پشتیبان‌های خودکار بدون رمز ذخیره می‌شوند. پشتیبان‌های رمزدار قبلی همچنان با رمز پشتیبان یا کد بازیابی باز می‌شوند.', function () {
+        /* کلید محلی فقط پس از آزمون رمز/کد قبلی یا تأیید صریح «هیچ‌کدام را ندارم» پاک می‌شود */
+        hkAutoEncGuard('disable', function () {
+          var removed = false;
+          try { localStorage.removeItem(HK_AUTO_ENC_KEY); removed = localStorage.getItem(HK_AUTO_ENC_KEY) == null; } catch (e) { removed = false; }
+          if (!removed) { showToastLong('خاموش کردن رمزنگاری ممکن نشد؛ هیچ تغییری اعمال نشد.'); return done(); }
+          var s = autoBkState(); s.encEnabled = false; delete s.lastEncOkAt; autoBkSave(s);
+          showToast('رمزنگاری پشتیبان خودکار خاموش شد');
+          done();
+        }, done);
+      }, done);
+    }
+    function _hkB64ToText(b64) { return new TextDecoder('utf-8', { fatal: true }).decode(_bytesFromB64(b64)); }
+    /** پاک‌کردن پشتیبان‌های خودکار بی‌رمز قدیمی — فقط با تأیید صریح کاربر و فقط پس از تأیید مستقل جدیدترین فایل رمزدار.
+        فقط فایل‌های پوشهٔ HesabKetab که محتوایشان واقعاً پشتیبان بی‌رمز است؛ فایل‌های دستی و رمزدار هرگز. */
+    async function hkAutoEncCleanup(onDone) {
+      var done = function () { try { if (onDone) onDone(); } catch (e) {} };
+      var P = autoBkPlugin(), st = hkAutoEncState();
+      if (!P || typeof P.readAutoBackup !== 'function' || !st || st.broken) { showToast('این کار روی این دستگاه ممکن نیست'); return done(); }
+      var files = [];
+      try { files = ((await P.listAutoBackups()) || {}).files || []; } catch (e) { showToast('فهرست پشتیبان‌ها خوانده نشد؛ چیزی پاک نشد'); return done(); }
+      var byNew = function (a, b) { return (Number(b.modified) || 0) - (Number(a.modified) || 0) || String(b.name).localeCompare(String(a.name)); };
+      var encFiles = files.filter(function (f) { return /-enc\.json$/.test(String(f.name)); }).sort(byNew);
+      var verified = false;
+      try {
+        if (encFiles.length) {
+          var env = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: encFiles[0].name })).data));
+          if (!hkEncEnvelopeError(env) && env.dekId === st.dekId) { var obj = hkSafeJsonParse(await hkEncOpen(env, _bytesFromB64(st.dek))); verified = !!(obj && obj.app === 'hesab-ketab'); }
+        }
+      } catch (eV) { verified = false; }
+      if (!verified) { showToastLong('هنوز پشتیبان رمزدارِ تأییدشده‌ای در پوشه نیست؛ چیزی پاک نشد.'); return done(); }
+      var plain = [];
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i]; if (/-enc\.json$/.test(String(f.name))) continue;
+        try {
+          var o = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: f.name })).data));
+          if (o && typeof o === 'object' && o.app === 'hesab-ketab' && !o.format && !o.cipher && !o.enc) plain.push(f.name);
+        } catch (eR) {}
+      }
+      if (!plain.length) { showToast('پشتیبان خودکار بی‌رمز قدیمی پیدا نشد'); return done(); }
+      askConfirm(toPersianDigits(String(plain.length)) + ' پشتیبان خودکار قدیمیِ بدون رمز در Download/HesabKetab پیدا شد. حذف شوند؟ پشتیبان‌های دستی شما و فایل‌های رمزدار دست نمی‌خورند.', async function () {
+        var bad = 0;
+        for (var j = 0; j < plain.length; j++) { try { await P.deleteAutoBackup({ name: plain[j] }); } catch (eD) { bad++; } }
+        showToastLong(bad ? (toPersianDigits(String(plain.length - bad)) + ' فایل حذف شد و ' + toPersianDigits(String(bad)) + ' فایل حذف نشد.') : 'پشتیبان‌های خودکار بی‌رمز قدیمی حذف شدند.');
+        done();
+      }, done);
+    }
+    /** بازکردن پشتیبان رمزدار قالب جدید؛ تا رمزگشایی و احراز کامل و تجزیهٔ موفق، هیچ داده‌ای تغییر نمی‌کند */
+    async function hkOpenEncryptedBackup(env) {
+      var err = hkEncEnvelopeError(env);
+      if (err === 'unsupported_version') { showToastLong('این پشتیبان با نسخهٔ جدیدتر برنامه ساخته شده؛ برنامه را به‌روز کنید. هیچ تغییری اعمال نشد.'); return; }
+      if (err) { showToastLong('فایل پشتیبان رمزدار آسیب دیده یا ناشناخته است؛ هیچ تغییری اعمال نشد.'); return; }
+      var proceed = async function (dek) {
+        var plain;
+        try { plain = await hkEncOpen(env, dek); } catch (eO) { showToastLong('فایل پشتیبان رمزدار دست‌کاری شده یا آسیب دیده است؛ هیچ تغییری اعمال نشد.'); return; }
+        var d2 = null; try { d2 = hkSafeJsonParse(plain); } catch (eP) { d2 = null; }
+        if (!d2 || typeof d2 !== 'object') { showToastLong('محتوای پشتیبان رمزدار قابل خواندن نیست؛ هیچ تغییری اعمال نشد.'); return; }
+        openBackupRestoreChoice(d2);
+      };
+      var local = hkAutoEncState();
+      if (local && !local.broken && local.dekId === env.dekId) return proceed(_bytesFromB64(local.dek));
+      var ov = _hkEncOverlay('bkEncAsk');
+      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">این پشتیبان رمزدار است</div>' +
+        '<div class="bk-enc-txt">رمز پشتیبان یا کد بازیابی را وارد کنید.</div>' + hkPwdFieldHtml('bkEncIn', 'current-password', '') +
+        '<div class="backup-pick-actions"><button type="button" class="backup-pick-ok" id="bkEncByPw">باز کردن با رمز</button>' +
+        '<button type="button" class="backup-pick-ok" id="bkEncByRc">باز کردن با کد بازیابی</button>' +
+        '<button type="button" class="backup-pick-cancel" id="bkEncNo">انصراف</button></div></div>';
+      ov.querySelector('#bkEncNo').onclick = function () { ov.remove(); };
+      var go = async function (type) {
+        var v = ov.querySelector('#bkEncIn').value; ov.remove();
+        var dek;
+        try { dek = await hkEncUnwrapDek(env, type, v); }
+        catch (eU) { showToastLong((type === 'password' ? 'رمز پشتیبان' : 'کد بازیابی') + ' نادرست است یا فایل دست‌کاری شده؛ هیچ تغییری اعمال نشد.'); return; }
+        finally { v = ''; }
+        return proceed(dek);
+      };
+      ov.querySelector('#bkEncByPw').onclick = function () { go('password'); };
+      ov.querySelector('#bkEncByRc').onclick = function () { go('recovery'); };
+    }
     function askBackupPassword(onOk) {
       var old = document.getElementById('bkPwdAsk'); if (old) old.remove();
       var ov = document.createElement('div');
@@ -16411,17 +16896,43 @@ function onPeriodChange() {
           if (kind === 'daily' && !_bkHasData(payload)) return false;
           payload.autoBackup = { kind: kind, tag: tag || '' };
           var st = _bkStamp();
-          var name = kind === 'daily' ? 'hesab-auto-' + st.day + '.json' : 'hesab-safety-' + st.day + '-' + st.time + (tag ? '-' + tag : '') + '.json';
-          await P.saveAutoBackup({ filename: name, data: utf8ToBase64(JSON.stringify(payload)) });
+          /* نام یکتا (با زمان) برای هر پشتیبان: فایل تازه هرگز جای فایل قبلی را نمی‌گیرد؛ نسخهٔ قدیمی‌تر همان روز فقط پس از
+             ذخیره و تأیید فایل تازه، با هرس برداشته می‌شود */
+          /* میلی‌ثانیه + دو نویسهٔ تصادفی: دو پشتیبان در یک ثانیه (مثلاً ایمنی بلافاصله پس از روزانه) هم نام یکسان نمی‌گیرند */
+          var uniq = st.time + '-' + String(Date.now() % 1000).padStart(3, '0') + Math.random().toString(36).slice(2, 4);
+          var name = kind === 'daily' ? 'hesab-auto-' + st.day + '-' + uniq + '.json' : 'hesab-safety-' + st.day + '-' + uniq + (tag ? '-' + tag : '') + '.json';
+          var text = JSON.stringify(payload);
+          /* رمزنگاری روشن: فقط فایل رمزدار نوشته می‌شود؛ هرگز جایگزین بی‌رمز بی‌صدا نوشته نمی‌شود */
+          var enc = hkAutoEncState(), encrypted = false;
+          if (enc) {
+            if (enc.broken) throw hkBkErr('enc_key_missing');
+            var env, back;
+            try { env = await hkEncSeal(text, enc); back = await hkEncOpen(env, _bytesFromB64(enc.dek)); }
+            catch (eEnc) { throw hkBkErr('enc_failed'); }
+            if (back !== text) throw hkBkErr('enc_verify_failed');
+            text = JSON.stringify(env); encrypted = true;
+            name = name.replace(/\.json$/, '-enc.json');   /* فایل رمزدار هرگز جای فایل بی‌رمز قدیمی را نمی‌گیرد */
+          }
+          var res = await P.saveAutoBackup({ filename: name, data: utf8ToBase64(text) });
+          if (!res || res.ok !== true || res.verified !== true) throw hkBkErr('write_failed');
+          /* فایل تازه باید به‌عنوان پشتیبان تمام‌شده در فهرست دیده شود؛ وگرنه هرس انجام نمی‌شود */
+          var seen = false;
+          try { seen = (((await P.listAutoBackups()) || {}).files || []).some(function (f) { return f && f.name === name; }); } catch (eL) { seen = false; }
+          if (!seen) throw hkBkErr('not_discoverable');
           var s = autoBkState();
-          s.lastAt = Date.now(); s.lastName = name;
+          s.lastAt = Date.now(); s.lastName = name; s.lastEncrypted = encrypted;
           s.lastError = (payload.backupWarnings && payload.backupWarnings.length) ? 'partial: ' + payload.backupWarnings.join(',') : '';
+          s.lastErrorText = s.lastError ? 'بخشی از اطلاعات خوانده نشد و در آخرین پشتیبان خودکار نیست.' : '';
+          if (encrypted) s.lastEncOkAt = Date.now();
           if (kind === 'daily') s.lastDaily = st.day;
           autoBkSave(s);
-          try { await pruneAutoBackups(P); } catch (eP) {}
+          /* هرس فقط پس از ذخیرهٔ موفق و تأییدشدهٔ فایل تازه */
+          try { await pruneAutoBackups(P, encrypted, name); } catch (eP) {}
           return true;
         } catch (e) {
-          var s2 = autoBkState(); s2.lastError = String((e && (e.message || e.code)) || e); autoBkSave(s2);
+          /* آخرین پشتیبان سالم دست نمی‌خورد و هرس انجام نمی‌شود؛ فقط کد خطا و متن عمومی ثبت می‌شود (بدون محتوا) */
+          var code = (e && e.hkCode) || 'write_failed';
+          var s2 = autoBkState(); s2.lastError = code; s2.lastErrorText = hkBkErrText(code); s2.lastErrorAt = Date.now(); autoBkSave(s2);
           return false;
         }
       })();
@@ -16430,17 +16941,61 @@ function onPeriodChange() {
       job.then(clear, clear);
       return job;
     }
-    async function pruneAutoBackups(P) {
+    function hkBkErr(code) { var e = new Error(code); e.hkCode = code; return e; }
+    function hkBkErrText(code) {
+      return ({
+        enc_key_missing: 'پشتیبان خودکار رمزدار گرفته نشد: کلید رمزنگاری روی این دستگاه پیدا نشد. رمزنگاری را دوباره تنظیم کنید؛ پشتیبان بی‌رمز هم گرفته نشد.',
+        enc_failed: 'پشتیبان خودکار رمزدار گرفته نشد: رمزنگاری ممکن نشد. پشتیبان بی‌رمز هم گرفته نشد و آخرین پشتیبان سالم دست نخورد.',
+        enc_verify_failed: 'پشتیبان خودکار رمزدار گرفته نشد: بررسی فایل رمزدار ناموفق بود. آخرین پشتیبان سالم دست نخورد.',
+        write_failed: 'ذخیرهٔ پشتیبان خودکار ناموفق بود (شاید حافظهٔ گوشی پر است). آخرین پشتیبان سالم دست نخورد.',
+        not_discoverable: 'پشتیبان خودکار تازه پس از ذخیره در پوشه پیدا نشد؛ پشتیبان‌های قبلی دست نخوردند.'
+      })[code] || 'پشتیبان خودکار ناموفق بود. آخرین پشتیبان سالم دست نخورد.';
+    }
+    /** ترتیب زمانی از روی نام فایل (قابل‌اعتمادتر از DATE_MODIFIED که ممکن است صفر یا کهنه باشد).
+        روزانه: hesab-auto-YYYY-MM-DD[-HHMMSS[-mmmXX]][-enc].json — نام قدیمی بدون ساعت = ابتدای همان روز.
+        ایمنی:  hesab-safety-YYYY-MM-DD-HHMMSS[-mmmXX][-tag][-enc].json
+        خروجی: {day, key} یا null اگر نام الگوی معتبر نداشته باشد (چنین فایلی هرگز حذف نمی‌شود). */
+    function _bkNameTime(n) {
+      n = String(n || '');
+      var m = /^hesab-auto-(\d{4}-\d{2}-\d{2})(?:-(\d{6})(?:-(\d{3})([0-9a-z]{0,2}))?)?(?:-enc)?\.json$/.exec(n);
+      if (!m) m = /^hesab-safety-(\d{4}-\d{2}-\d{2})-(\d{6})(?:-(\d{3})([0-9a-z]{2}))?(?:-[0-9A-Za-z._-]*)?\.json$/.exec(n);
+      if (!m) return null;
+      return { day: m[1], key: m[1] + (m[2] || '000000') + (m[3] || '000') + (m[4] || '') };
+    }
+    /** هرس طبق همان سیاست قبلی: ۷ روز آخر (از هر روز جدیدترین فایل)، ۴ هفتهٔ قبل از آن (از هر هفته جدیدترین)، ۵ پشتیبان ایمنی آخر.
+        فقط پس از ذخیره و تأیید فایل تازه صدا زده می‌شود. فایل‌های رمزدار (-enc.json) و بی‌رمز دو مجموعهٔ جدا هستند و هر حالت فقط
+        مجموعهٔ خودش را هرس می‌کند: با روشن‌کردن رمزنگاری پشتیبان‌های بی‌رمز قبلی و با خاموش‌کردن آن پشتیبان‌های رمزدار قبلی دست نمی‌خورند.
+        ایمنی بیشتر:
+        - justWritten (فایلی که همین الان ذخیره و تأیید شد) همیشه نگه داشته می‌شود؛ اگر در فهرست نباشد، هیچ چیزی حذف نمی‌شود.
+        - «جدیدترین» از روی زمان داخل نام تعیین می‌شود؛ modified فقط برای شکستن تساوی است.
+        - فایلی که نامش الگوی معتبر ندارد هرگز حذف نمی‌شود. */
+    async function pruneAutoBackups(P, encrypted, justWritten) {
       var r = await P.listAutoBackups(), files = (r && r.files) || [];
-      var byNameDesc = function (a, b) { return String(b.name).localeCompare(String(a.name)); };
-      var daily = files.filter(function (f) { return /^hesab-auto-/.test(f.name); }).sort(byNameDesc);
-      var safety = files.filter(function (f) { return /^hesab-safety-/.test(f.name); }).sort(byNameDesc);
-      var keep = {}, weeks = {}, nw = 0;
-      daily.slice(0, 7).forEach(function (f) { keep[f.name] = 1; });
-      daily.slice(7).forEach(function (f) { var w = Math.floor((Number(f.modified) || 0) / 604800); if (!weeks[w] && nw < 4) { weeks[w] = 1; nw++; keep[f.name] = 1; } });
-      safety.slice(0, 5).forEach(function (f) { keep[f.name] = 1; });
-      for (var i = 0; i < files.length; i++) {
-        if (!keep[files[i].name]) { try { await P.deleteAutoBackup({ name: files[i].name }); } catch (e) {} }
+      var isEnc = function (n) { return /-enc\.json$/.test(String(n)); };
+      files = files.filter(function (f) { return f && typeof f.name === 'string' && isEnc(f.name) === !!encrypted; });
+      if (justWritten && !files.some(function (f) { return f.name === justWritten; })) return;   /* وضعیت نامطمئن: هیچ حذفی */
+      var timed = [];
+      files.forEach(function (f) { var t = _bkNameTime(f.name); if (t) timed.push({ f: f, day: t.day, key: t.key, daily: /^hesab-auto-/.test(f.name) }); });
+      var newest = function (a, b) {
+        if (a.key !== b.key) return a.key < b.key ? 1 : -1;
+        return (Number(b.f.modified) || 0) - (Number(a.f.modified) || 0) || String(b.f.name).localeCompare(String(a.f.name));
+      };
+      var daily = timed.filter(function (x) { return x.daily; }).sort(newest);
+      var safety = timed.filter(function (x) { return !x.daily; }).sort(newest);
+      var keep = {};
+      if (justWritten) keep[justWritten] = 1;
+      var days = [], seenDay = {};
+      daily.forEach(function (x) { if (!seenDay[x.day]) { seenDay[x.day] = x; days.push(x.day); } });
+      days.sort().reverse();
+      days.slice(0, 7).forEach(function (d) { keep[seenDay[d].f.name] = 1; });
+      /* هفته از روی تاریخ داخل نام (تقریب یکنوا: سال×۳۷۲ + ماه×۳۱ + روز)، نه DATE_MODIFIED */
+      var weekOf = function (d) { var p = d.split('-'); return Math.floor(((+p[0]) * 372 + (+p[1] - 1) * 31 + (+p[2])) / 7); };
+      var weeks = {}, nw = 0;
+      days.slice(7).forEach(function (d) { var w = weekOf(d); if (!weeks[w] && nw < 4) { weeks[w] = 1; nw++; keep[seenDay[d].f.name] = 1; } });
+      safety.slice(0, 5).forEach(function (x) { keep[x.f.name] = 1; });
+      var cand = daily.concat(safety);
+      for (var i = 0; i < cand.length; i++) {
+        if (!keep[cand[i].f.name]) { try { await P.deleteAutoBackup({ name: cand[i].f.name }); } catch (e) {} }
       }
     }
     function maybeDailyAutoBackup(refreshToday) {
@@ -16467,7 +17022,7 @@ function onPeriodChange() {
       var d = new Date(Number(s.lastAt)), now = new Date();
       var hm = toPersianDigits(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
       var days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
-      return 'آخرین پشتیبان خودکار: ' + (days <= 0 ? 'امروز ساعت ' + hm : days === 1 ? 'دیروز ساعت ' + hm : toPersianDigits(String(days)) + ' روز پیش');
+      return 'آخرین پشتیبان خودکار' + (s.lastEncrypted ? ' (رمزدار)' : '') + ': ' + (days <= 0 ? 'امروز ساعت ' + hm : days === 1 ? 'دیروز ساعت ' + hm : toPersianDigits(String(days)) + ' روز پیش');
     }
     setTimeout(function () { maybeDailyAutoBackup(false); }, 12000);
     document.addEventListener('visibilitychange', function () {
@@ -17214,6 +17769,8 @@ function askBackupUserCards(selectedParts) {
       reader.onload = () => {
         try {
           let parsed0 = hkSafeJsonParse(reader.result);
+          /* پشتیبان رمزدار قالب جدید (hk-backup-enc): بررسی ساختار ← بازکردن با کلید همین دستگاه یا رمز/کد بازیابی ← همان مسیر بازیابی */
+          if (parsed0 && typeof parsed0 === 'object' && parsed0.format === HK_ENC_FORMAT) { hkOpenEncryptedBackup(parsed0); return; }
           /* فایل رمزدار: اول رمز، بعد همان مسیر بازیابی معمول */
           if (parsed0 && parsed0.enc === 'AES-256-GCM' && parsed0.data) {
             askBackupPassword(async function (pw) {

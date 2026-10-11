@@ -443,8 +443,12 @@ public class NativeFileExportPlugin extends Plugin {
       if(!autoSafeName(name)){ call.reject("bad_name"); return; }
       byte[] bytes=decodeBase64(call.getString("data",""));
       ContentResolver cr=getContext().getContentResolver();
-      /* همان نام در پوشه (مثلاً پشتیبان امروز) جایگزین می‌شود */
-      try{ cr.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, MediaStore.Downloads.DISPLAY_NAME+"=? AND "+MediaStore.Downloads.RELATIVE_PATH+"=?", new String[]{name, autoRel()}); }catch(Exception ignored){}
+      /* نوشتن امن بدون هیچ حذفی: هر پشتیبان نام یکتای خودش را دارد (برنامه زمان را در نام می‌گذارد)، پس فایل تازه
+         هرگز جای فایل قبلی را نمی‌گیرد. ترتیب: درج با نام نهایی در حالت pending (نامرئی) ← نوشتن ← خواندن دوباره و
+         مقایسهٔ بایت‌به‌بایت ← تمام‌کردن pending ← اطمینان از اینکه با همان نام و شناسه به‌عنوان فایل تمام‌شده پیدا می‌شود.
+         هر شکستی فقط همین آیتم تازهٔ ناتمام را برمی‌دارد؛ فایل‌های قبلی هرگز اینجا حذف نمی‌شوند (پاک‌کردن نسخه‌های قدیمی
+         فقط با هرس سمت برنامه و فقط پس از تأیید همین فایل انجام می‌شود). */
+      if(findCompletedAuto(cr,name)!=null){ call.reject("name_exists"); return; }
       ContentValues v=new ContentValues();
       v.put(MediaStore.Downloads.DISPLAY_NAME,name);
       v.put(MediaStore.Downloads.MIME_TYPE,"application/json");
@@ -452,12 +456,22 @@ public class NativeFileExportPlugin extends Plugin {
       v.put(MediaStore.Downloads.IS_PENDING,1);
       Uri u=cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,v);
       if(u==null){ call.reject("insert_failed"); return; }
-      try(OutputStream out=cr.openOutputStream(u)){
-        if(out==null) throw new Exception("open output failed");
-        out.write(bytes); out.flush();
+      try{
+        /* اگر سیستم نام را عوض کرده باشد (مثلاً «(1)»)، این فایل پذیرفته نمی‌شود */
+        if(!name.equals(queryDisplayName(cr,u))) throw new Exception("name_conflict");
+        try(OutputStream out=cr.openOutputStream(u)){
+          if(out==null) throw new Exception("open output failed");
+          out.write(bytes); out.flush();
+        }
+        byte[] back=readAllBytes(cr,u);
+        if(back==null || !java.util.Arrays.equals(back,bytes)) throw new Exception("verify_failed");
+        ContentValues done=new ContentValues();
+        done.put(MediaStore.Downloads.IS_PENDING,0);
+        if(cr.update(u,done,null,null)<1) throw new Exception("finish_failed");
+        Long found=findCompletedAuto(cr,name);
+        if(found==null || found.longValue()!=android.content.ContentUris.parseId(u)) throw new Exception("not_discoverable");
       }catch(Exception we){ try{ cr.delete(u,null,null); }catch(Exception ignored){} throw we; }
-      finishPending(u);
-      call.resolve(new JSObject().put("ok",true).put("uri",u.toString()).put("filename",name).put("folder","Download/"+AUTO_DIR));
+      call.resolve(new JSObject().put("ok",true).put("verified",true).put("uri",u.toString()).put("filename",name).put("folder","Download/"+AUTO_DIR));
     }catch(Exception e){ call.reject("auto_backup_failed",e); }
   }
 
@@ -468,7 +482,7 @@ public class NativeFileExportPlugin extends Plugin {
       com.getcapacitor.JSArray arr=new com.getcapacitor.JSArray();
       c=getContext().getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
         new String[]{MediaStore.Downloads.DISPLAY_NAME, MediaStore.Downloads.SIZE, MediaStore.Downloads.DATE_MODIFIED},
-        MediaStore.Downloads.RELATIVE_PATH+"=?", new String[]{autoRel()}, null);
+        MediaStore.Downloads.RELATIVE_PATH+"=? AND "+MediaStore.Downloads.IS_PENDING+"=0", new String[]{autoRel()}, null);
       while(c!=null && c.moveToNext()){
         String n=c.getString(0);
         if(!autoSafeName(n)) continue;
@@ -476,6 +490,54 @@ public class NativeFileExportPlugin extends Plugin {
       }
       call.resolve(new JSObject().put("files",arr));
     }catch(Exception e){ call.reject("list_failed",e); }
+    finally{ if(c!=null) c.close(); }
+  }
+
+  private byte[] readAllBytes(ContentResolver cr, Uri u) throws Exception {
+    try(java.io.InputStream in=cr.openInputStream(u)){
+      if(in==null) return null;
+      ByteArrayOutputStream bo=new ByteArrayOutputStream();
+      byte[] buf=new byte[65536]; int r; long total=0;
+      while((r=in.read(buf))>0){ total+=r; if(total>64L*1024*1024) throw new Exception("too_large"); bo.write(buf,0,r); }
+      return bo.toByteArray();
+    }
+  }
+  /** شناسهٔ یک پشتیبان خودکار تمام‌شده (نه pending) با همین نام در پوشهٔ HesabKetab، یا null */
+  private Long findCompletedAuto(ContentResolver cr, String name){
+    android.database.Cursor c=null;
+    try{
+      c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Downloads._ID},
+        MediaStore.Downloads.DISPLAY_NAME+"=? AND "+MediaStore.Downloads.RELATIVE_PATH+"=? AND "+MediaStore.Downloads.IS_PENDING+"=0", new String[]{name, autoRel()}, null);
+      if(c!=null && c.moveToFirst()) return Long.valueOf(c.getLong(0));
+    }catch(Exception ignored){}
+    finally{ if(c!=null) c.close(); }
+    return null;
+  }
+  private String queryDisplayName(ContentResolver cr, Uri u){
+    android.database.Cursor c=null;
+    try{
+      c=cr.query(u,new String[]{MediaStore.Downloads.DISPLAY_NAME},null,null,null);
+      if(c!=null && c.moveToFirst()) return c.getString(0);
+    }catch(Exception ignored){}
+    finally{ if(c!=null) c.close(); }
+    return null;
+  }
+  /** خواندن یک پشتیبان خودکار تمام‌شده (فقط پوشهٔ HesabKetab و فقط نام‌های مجاز) — برای تأیید پیش از پاک‌سازی */
+  @com.getcapacitor.PluginMethod public void readAutoBackup(PluginCall call){
+    if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
+    android.database.Cursor c=null;
+    try{
+      String name=call.getString("name","");
+      if(!autoSafeName(name)){ call.reject("bad_name"); return; }
+      ContentResolver cr=getContext().getContentResolver();
+      c=cr.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Downloads._ID},
+        MediaStore.Downloads.DISPLAY_NAME+"=? AND "+MediaStore.Downloads.RELATIVE_PATH+"=? AND "+MediaStore.Downloads.IS_PENDING+"=0", new String[]{name, autoRel()}, null);
+      if(c==null || !c.moveToFirst()){ call.reject("not_found"); return; }
+      Uri u=android.content.ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, c.getLong(0));
+      byte[] bytes=readAllBytes(cr,u);
+      if(bytes==null){ call.reject("read_failed"); return; }
+      call.resolve(new JSObject().put("data",Base64.encodeToString(bytes,Base64.NO_WRAP)).put("size",bytes.length));
+    }catch(Exception e){ call.reject("read_failed",e); }
     finally{ if(c!=null) c.close(); }
   }
 

@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
     for (let i = 1; i <= 12; i++) { const d = String(i).padStart(2,'0'); files['hesab-auto-1405-06-' + d + '.json'] = { data: 'x', modified: 1750000000 + i * 86400 * 3 }; }
     for (let i = 1; i <= 7; i++) files['hesab-safety-1405-06-0' + i + '-120000-reset-all.json'] = { data: 'x', modified: 1750000000 + i };
     window.Capacitor = { isNativePlatform: () => true, Plugins: { NativeFileExport: {
-      saveAutoBackup: async (o) => { window.__log.push('save:' + o.filename); files[o.filename] = { data: o.data, modified: Math.floor(Date.now()/1000) }; return { ok: true }; },
+      saveAutoBackup: async (o) => { window.__log.push('save:' + o.filename); files[o.filename] = { data: o.data, modified: Math.floor(Date.now()/1000) }; return { ok: true, verified: true }; },
       listAutoBackups: async () => ({ files: Object.keys(files).map(n => ({ name: n, size: 1, modified: files[n].modified })) }),
       deleteAutoBackup: async (o) => { window.__log.push('del:' + o.name); delete files[o.name]; return { deleted: 1 }; },
     }, App: { getInfo: async () => ({ version: '1.2.4', build: '611' }) } } };
