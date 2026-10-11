@@ -36012,6 +36012,9 @@ function openProjectRowPicker(secId) {
       });
     }
     var UPDATE_REMOTE_KEY = STORAGE_KEY + '_updRemote';
+    var UPDATE_PROMPTED_KEY = STORAGE_KEY + '_updPrompted';
+    function updPromptedCode() { try { return +localStorage.getItem(UPDATE_PROMPTED_KEY) || 0; } catch (e) { return 0; } }
+    function updMarkPrompted(code) { try { if (code > 0) localStorage.setItem(UPDATE_PROMPTED_KEY, String(code)); } catch (e) {} }
     function setUpdateBadge(on) {
       document.querySelectorAll('.menu-update-btn').forEach(function (b) { b.classList.toggle('has-update', !!on); });
       /* نقطهٔ قرمز روی دکمهٔ منو هم، تا کاربر بدون باز کردن منو بفهمد نسخهٔ جدید آمده */
@@ -36029,7 +36032,9 @@ function openProjectRowPicker(secId) {
         if (newer) { window._hkUpdManifest = m; }
         if (newer) {
           if (!silent) showUpdateDialog(Object.assign({}, m, { _critical: isCriticalUpdate(m, inst) }), inst);
-          else if (isCriticalUpdate(m, inst) || (silent === 'launch' && !_updPromptShownThisLaunch)) showUpdatePrompt(m, inst);
+          else if (isCriticalUpdate(m, inst) || (silent === 'launch' && !_updPromptShownThisLaunch)) { showUpdatePrompt(m, inst); updMarkPrompted(remote); }
+          /* برگشتن به اپ از پس‌زمینه: برای هر نسخهٔ تازه یک بار پنجرهٔ بروزرسانی (نه فقط نقطهٔ قرمز) */
+          else if (silent === true && !_updPromptShownThisLaunch && updPromptedCode() !== remote) { showUpdatePrompt(m, inst); updMarkPrompted(remote); }
         }
         else if (!silent) showToast('شما آخرین نسخه را دارید');
         return newer;
