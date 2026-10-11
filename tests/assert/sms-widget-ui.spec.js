@@ -47,6 +47,15 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(warn['9830009417'] === false && warn['09121234567'] === true, 'هشدار «شمارهٔ شخصی» برای بانک ملی نمی‌آید و برای موبایل واقعی همچنان می‌آید');
 
+  console.log('• رمز یک‌بارمصرف بانک ملی تراکنش نیست');
+  const otp = await A.p.evaluate(() => {
+    const melli = 'بانك ملي\n603769*0056\n انتقال به\nمبلغ 15,000,000\nرمز 2960715';
+    const tx = ['بانک ملت\nخرید\nبرداشت 2,000,000\nحساب 0000***1111\nمانده 5,000,000', 'بانک ملی\nواریز 500,000\nکد پیگیری 123456\nمانده 2,000,000'];
+    return { melliOtp: isOtpOrAuthSms(melli), melliParsed: parseBankSms(melli), txParsed: tx.map(t => { const r = parseBankSms(t); return !!(r && r.amount > 0); }) };
+  });
+  ok(otp.melliOtp === true && otp.melliParsed === null, 'پیامک «انتقال به … مبلغ … رمز 2960715» رمز یک‌بارمصرف است و تراکنش ثبت نمی‌شود');
+  ok(otp.txParsed.every(Boolean), 'پیامک‌های واقعی برداشت و واریز (حتی با «کد پیگیری») همچنان تراکنش شناخته می‌شوند');
+
   console.log('• ویجت: روز، ماه و سال');
   const w = await A.p.evaluate(async () => {
     pushHomeWidget(); await new Promise(x => setTimeout(x, 1200));
