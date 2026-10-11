@@ -16165,7 +16165,104 @@ function onPeriodChange() {
         var trash = bkReadStoredJson(STORAGE_KEY + '_trash', payload, 'trash');
         if (Array.isArray(trash)) payload.trash = trash;
       }
+      /* کامل یا جزئی بودن فایل صریح ثبت می‌شود تا بازیابی «جایگزینی» بداند چه چیزی را می‌تواند عوض کند */
+      payload.backupScope = {
+        v: 1,
+        complete: !!isFull,
+        allMonths: !monthList,
+        allCards: !cardList,
+        months: payload.archive ? Object.keys(payload.archive).sort() : [],
+        cards: cardList ? cardList.slice() : null,
+        parts: BACKUP_PART_KEYS.filter(want)
+      };
       return payload;
+    }
+    /* کامل بودن فایل پشتیبان: backupScope (جدید) ← backupParts (قدیمی) ← نامعلوم (قالب‌های قدیمی‌تر) */
+    function bkBackupScope(data) {
+      var s = data && data.backupScope;
+      if (s && typeof s === 'object') {
+        return { known: true, complete: s.complete === true,
+          months: (!s.allMonths && Array.isArray(s.months)) ? s.months.slice() : null,
+          cards: (!s.allCards && Array.isArray(s.cards) && s.cards.length) ? s.cards.slice() : null };
+      }
+      var bp = data && data.backupParts;
+      if (bp && typeof bp === 'object') {
+        var months = (Array.isArray(bp.selectedMonths) && bp.selectedMonths.length && !bp._allMonths) ? bp.selectedMonths.slice() : null;
+        var cards = (Array.isArray(bp.selectedUserCards) && bp.selectedUserCards.length && !bp._allUserCards) ? bp.selectedUserCards.slice() : null;
+        var allParts = bp.all === true || BACKUP_PART_KEYS.every(function (k) { return !!bp[k]; });
+        return { known: true, complete: allParts && !months && !cards, months: months, cards: cards };
+      }
+      return { known: false, complete: false, months: null, cards: null };
+    }
+    /* جایگزینی محدود (فایل جزئی یا نامعلوم): فقط ماه‌های داخل فایل، و اگر فایل به چند کارت محدود است فقط همان کارت‌ها.
+       ماه‌ها و کارت‌های دیگر دست نمی‌خورند. قرض‌ها (کارت‌محور نیستند) و موجودی‌های اول ماه فقط افزوده می‌شوند. */
+    function replaceArchiveScoped(localArch, incArch, cards) {
+      var out = JSON.parse(JSON.stringify(localArch || {}));
+      var set = null;
+      if (cards && cards.length) { set = {}; cards.forEach(function (t) { var k = String(t || '').trim(); if (k) set[k] = true; }); }
+      Object.keys(incArch || {}).forEach(function (k) {
+        var src = incArch[k];
+        if (!src || typeof src !== 'object') return;
+        if (!set || !out[k] || typeof out[k] !== 'object') { out[k] = JSON.parse(JSON.stringify(src)); return; }
+        var dst = out[k];
+        ['income', 'expense'].forEach(function (tab) {
+          var lsec = (dst[tab] && Array.isArray(dst[tab].sections)) ? dst[tab].sections : [];
+          var isec = (src[tab] && Array.isArray(src[tab].sections)) ? src[tab].sections : [];
+          if (!dst[tab] || typeof dst[tab] !== 'object') dst[tab] = { sections: [], nextId: 1 };
+          dst[tab].sections = lsec.filter(function (sec) { return !(sec && set[String(sec.title || '').trim()]); })
+            .concat(JSON.parse(JSON.stringify(isec)));
+          dst[tab].nextId = Math.max(dst[tab].nextId || 1, (src[tab] && src[tab].nextId) || 1, dst[tab].sections.length + 1);
+        });
+        ['personOpeningInstant', 'cardMeta'].forEach(function (f) {
+          if (!dst[f] || typeof dst[f] !== 'object') dst[f] = {};
+          Object.keys(set).forEach(function (t) { delete dst[f][t]; });
+          var sm = src[f];
+          if (sm && typeof sm === 'object') Object.keys(sm).forEach(function (t) { dst[f][t] = JSON.parse(JSON.stringify(sm[t])); });
+        });
+        dst.ledger = mergeLedgerBlocks(dst.ledger, src.ledger);
+        var so = src.accountOpeningInstant;
+        if (so && typeof so === 'object') {
+          if (!dst.accountOpeningInstant || typeof dst.accountOpeningInstant !== 'object') dst.accountOpeningInstant = {};
+          Object.keys(so).forEach(function (lb) { if (dst.accountOpeningInstant[lb] == null || dst.accountOpeningInstant[lb] === '') dst.accountOpeningInstant[lb] = so[lb]; });
+        }
+        if (Array.isArray(src.personCardOrder)) {
+          if (!Array.isArray(dst.personCardOrder)) dst.personCardOrder = [];
+          src.personCardOrder.forEach(function (t) { if (dst.personCardOrder.indexOf(t) < 0) dst.personCardOrder.push(t); });
+        }
+      });
+      return out;
+    }
+    /* موجودی‌های اول ماهی که صاحب (حساب) ندارند دور ریخته نمی‌شوند: در _orphanOpenings نگه داشته می‌شوند */
+    function hkStashOrphanOpenings(removed) {
+      if (!removed || !Object.keys(removed).length) return;
+      var KEY = STORAGE_KEY + '_orphanOpenings';
+      var prev = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+      Object.keys(removed).forEach(function (k) {
+        prev[k] = prev[k] || {};
+        Object.keys(removed[k]).forEach(function (lb) { if (prev[k][lb] == null) prev[k][lb] = removed[k][lb]; });
+      });
+      localStorage.setItem(KEY, JSON.stringify(prev));
+    }
+    /* حسابی که برگشته: موجودی‌های اول ماهِ نگه‌داشته‌اش (فقط جاهای خالی) به آرشیو برمی‌گردند و از انبار برداشته می‌شوند */
+    function hkReviveOrphanOpenings() {
+      var KEY = STORAGE_KEY + '_orphanOpenings';
+      var store = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+      var live = liveAccountLabelSet(), changed = false;
+      Object.keys(store).forEach(function (k) {
+        var m = store[k];
+        if (!m || typeof m !== 'object') return;
+        Object.keys(m).forEach(function (lb) {
+          if (!live[(lb || '').trim()]) return;
+          var pd = archive && archive[k];
+          if (pd && typeof pd === 'object') {
+            if (!pd.accountOpeningInstant || typeof pd.accountOpeningInstant !== 'object') pd.accountOpeningInstant = {};
+            if (pd.accountOpeningInstant[lb] == null || pd.accountOpeningInstant[lb] === '') pd.accountOpeningInstant[lb] = m[lb];
+          } else return;
+          delete m[lb]; changed = true;
+        });
+        if (!Object.keys(m).length) delete store[k];
+      });
+      if (changed) localStorage.setItem(KEY, JSON.stringify(store));
     }
     var BACKUP_PART_KEYS = ['archive', 'plans', 'recurringIncomes', 'selectedBankAccounts', 'subjects', 'userReminders', 'savings', 'categories'];
     /* خطای پشتیبان‌گیری بی‌صدا رد نشود: نام بخش در فایل و کنسول ثبت می‌شود (بدون محتوای داده) */
@@ -16356,11 +16453,11 @@ function onPeriodChange() {
 function askBackupUserCards(selectedParts) {
       var titles = [];
       try { titles = (typeof allPersonTitles === 'function') ? allPersonTitles() : []; } catch (e) { titles = []; }
-      /* فقط ماه جاری — بدون پرسش ماه */
+      /* همهٔ ماه‌ها (قبلاً فقط ماه جاری ذخیره می‌شد و «جایگزینی» با آن تاریخچه را پاک می‌کرد) */
       try {
         selectedParts = selectedParts || {};
-        selectedParts.selectedMonths = [periodKey(currentYear, currentMonth)];
-        selectedParts._allMonths = false;
+        delete selectedParts.selectedMonths;
+        selectedParts._allMonths = true;
       } catch (eM) {}
       if (!titles || !titles.length) {
         exportFullBackup(selectedParts);
@@ -16411,8 +16508,6 @@ function askBackupUserCards(selectedParts) {
         selectedParts = selectedParts || {};
         selectedParts.selectedUserCards = picked;
         selectedParts._allUserCards = !!(allCb && allCb.checked);
-        selectedParts.selectedMonths = [periodKey(currentYear, currentMonth)];
-        selectedParts._allMonths = false;
         ov.remove();
         exportFullBackup(selectedParts);
       };
@@ -16676,10 +16771,19 @@ function askBackupUserCards(selectedParts) {
     }
     function applyBackupData(data, mode) {
       // mode: 'replace' | 'merge'
-      if (!data || typeof data !== 'object') return;
-      /* اعتبارسنجی پیش از ادغام: ساختار، حساب‌های تکراری، موجودی‌های اولیهٔ یتیم، سطل زبالهٔ تکراری */
+      if (!data || typeof data !== 'object') return false;
+      /* کامل یا جزئی: فقط پشتیبان کامل حق جایگزینی کل داده را دارد؛ فایل جزئی/نامعلوم فقط بخش‌های خودش را عوض می‌کند */
+      var _scope = bkBackupScope(data);
+      var _fullReplace = mode === 'replace' && _scope.complete;
+      /* اعتبارسنجی پیش از ادغام: ساختار، حساب‌های تکراری، موجودی‌های اولیهٔ یتیم، سطل زبالهٔ تکراری.
+         اگر اعتبارسنجی شکست بخورد، هیچ چیزی اعمال نمی‌شود. */
       var _restoreReport = null;
-      try { data = JSON.parse(JSON.stringify(data)); _restoreReport = sanitizeBackupData(data, mode); } catch (eSan) { _restoreReport = null; bkRestoreFail('validate', eSan); }
+      try { data = JSON.parse(JSON.stringify(data)); _restoreReport = sanitizeBackupData(data, mode); }
+      catch (eSan) {
+        try { console.warn('restore: validation failed:', eSan && eSan.name ? eSan.name : 'error'); } catch (e) {}
+        try { showToastLong('فایل پشتیبان بررسی نشد و هیچ تغییری اعمال نشد.'); } catch (eT) {}
+        return false;
+      }
       /* خطای بازیابی هر بخش بی‌صدا رد نشود: نام بخش در گزارش پایان بازیابی و کنسول (بدون محتوای داده) */
       function bkRestoreFail(part, err) {
         if (!_restoreReport) _restoreReport = { orphanAccounts: 0, orphanEntries: 0, invalidRecords: 0, mergedAccounts: 0, dupTrash: 0, failedParts: [] };
@@ -16688,7 +16792,10 @@ function askBackupUserCards(selectedParts) {
         try { console.warn('restore: part "' + part + '" failed:', err && err.name ? err.name : 'error'); } catch (e) {}
       }
       if (mode === 'replace') {
-        if (data.archive && typeof data.archive === 'object') archive = data.archive;
+        if (data.archive && typeof data.archive === 'object') {
+          if (_fullReplace) archive = data.archive;
+          else { try { persistCurrent(); } catch (eP) {} archive = replaceArchiveScoped(archive, data.archive, _scope.cards); }
+        }
         if (Array.isArray(data.plans)) plans = data.plans;
         if (Array.isArray(data.recurringIncomes)) {
           recurringIncomes = data.recurringIncomes;
@@ -16733,10 +16840,18 @@ function askBackupUserCards(selectedParts) {
           saveBankAccountsSelection();
         } catch (e) { bkRestoreFail('selectedBankAccounts', e); }
       }
+      /* موجودی‌های اول ماهِ کنارگذاشته در انبار؛ و حساب‌هایی که حالا وجود دارند موجودی‌هایشان را پس می‌گیرند */
+      try { hkStashOrphanOpenings(_restoreReport && _restoreReport.removedOpenings); hkReviveOrphanOpenings(); }
+      catch (eOp) { bkRestoreFail('accountOpenings', eOp); }
       if (Array.isArray(data.trash)) {
         try {
           loadTrash();
-          if (mode === 'replace') trashItems = [].concat(data.trash);
+          if (_fullReplace) trashItems = [].concat(data.trash);
+          else if (mode === 'replace') {
+            /* فایل جزئی: سطل زبالهٔ محلی حفظ می‌شود و فقط موارد تازه اضافه می‌شوند */
+            var _tIds = {}; (trashItems || []).forEach(function (t) { if (t && t.id) _tIds[t.id] = true; });
+            trashItems = data.trash.filter(function (t) { return !(t && t.id && _tIds[t.id]); }).concat(trashItems || []);
+          }
           else trashItems = [].concat(data.trash, trashItems || []);
           saveTrash();
         } catch (e) { bkRestoreFail('trash', e); }
@@ -16759,7 +16874,17 @@ function askBackupUserCards(selectedParts) {
                 inc[ym].forEach(function (l) { if (!ids[l.id]) { lists.push(l); ids[l.id] = true; } });
               });
             });
-          } else tMap = data.todos;
+          } else if (_fullReplace) tMap = data.todos;
+          else {
+            /* فایل جزئی: فقط کارت/ماه‌های داخل فایل عوض می‌شوند */
+            var tRaw2 = localStorage.getItem(tKey);
+            if (tRaw2) { tMap = JSON.parse(tRaw2); if (!tMap || typeof tMap !== 'object' || Array.isArray(tMap)) tMap = {}; }
+            Object.keys(data.todos).forEach(function (card) {
+              var inc = data.todos[card], cur = tMap[card];
+              if (Array.isArray(inc) || cur == null || Array.isArray(cur)) { tMap[card] = inc; return; }
+              Object.keys(inc).forEach(function (ym) { cur[ym] = inc[ym]; });
+            });
+          }
           localStorage.setItem(tKey, JSON.stringify(tMap));
         } catch (eTd) { bkRestoreFail('todos', eTd); }
       }
@@ -16837,7 +16962,7 @@ function askBackupUserCards(selectedParts) {
       /* ترتیب کارت‌های کاربر */
       if (Array.isArray(data.personCardOrder) && data.personCardOrder.length) {
         try {
-          if (mode === 'replace') {
+          if (_fullReplace) {
             if (periodData) periodData.personCardOrder = data.personCardOrder.slice();
             if (typeof saveGlobalCardOrder === 'function') saveGlobalCardOrder(data.personCardOrder.slice());
           } else {
@@ -16940,8 +17065,17 @@ function askBackupUserCards(selectedParts) {
         '<button type="button" id="backupReplaceBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#ff3b30;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">جایگزین کردن اطلاعات فعلی</button>' +
         '<button type="button" id="backupMergeBtn" style="width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-weight:800;font-size:0.95rem;font-family:inherit;">افزودن به اطلاعات فعلی</button>' +
         '<button type="button" id="backupCancelBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--bg3);color:var(--text);font-weight:700;font-size:0.9rem;font-family:inherit;">انصراف</button>' +
+        '<div id="bkRestoreScope" style="font-size:0.78rem;margin-top:10px;line-height:1.6;text-align:center;"></div>' +
         '<div class="bk-restore-hint" style="font-size:0.72rem;color:var(--muted);margin-top:10px;line-height:1.5;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">در حالت افزودن، ردیف‌های تکراری وارد نمی‌شوند.</div>';
       overlay.appendChild(card);
+      /* کامل یا جزئی بودن فایل و اثر «جایگزینی» پیش از انتخاب گفته شود */
+      try {
+        var sc = bkBackupScope(data), nm = Object.keys((data && data.archive) || {}).length;
+        var info = (sc.complete ? 'پشتیبان کامل' : (sc.known ? 'پشتیبان جزئی' : 'کامل بودن این فایل مشخص نیست')) +
+          ' · ' + toPersianDigits(String(nm)) + ' ماه' + (sc.cards ? ' · ' + toPersianDigits(String(sc.cards.length)) + ' کارت' : '') + '<br>' +
+          (sc.complete ? 'جایگزینی، همهٔ اطلاعات فعلی را با این فایل عوض می‌کند.' : 'با جایگزینی فقط ماه‌ها و کارت‌های داخل فایل عوض می‌شوند؛ بقیهٔ اطلاعات حفظ می‌شود.');
+        card.querySelector('#bkRestoreScope').innerHTML = info;
+      } catch (eSc) {}
       document.body.appendChild(overlay);
       const close = () => { try { overlay.remove(); } catch (e) {} };
       document.getElementById('backupCancelBtn').onclick = close;
@@ -16950,8 +17084,7 @@ function askBackupUserCards(selectedParts) {
         close();
         safetyBackupThen('restore', () => {
           try {
-            applyBackupData(data, 'replace');
-            showToast('بازیابی با جایگزینی انجام شد');
+            if (applyBackupData(data, 'replace') !== false) showToast('بازیابی با جایگزینی انجام شد');
           } catch (err) {
             console.error(err);
             showToast('خطا در بازیابی');
@@ -16962,8 +17095,7 @@ function askBackupUserCards(selectedParts) {
         close();
         safetyBackupThen('restore', () => {
           try {
-            applyBackupData(data, 'merge');
-            showToast('بازیابی با ادغام انجام شد');
+            if (applyBackupData(data, 'merge') !== false) showToast('بازیابی با ادغام انجام شد');
           } catch (err) {
             console.error(err);
             showToast('خطا در ادغام');
@@ -29443,7 +29575,7 @@ function confirmSmsEntry() {
     }
     /** اعتبارسنجی فایل پشتیبان قبل از ادغام؛ فقط دادهٔ واقعاً نامعتبر/یتیم کنار گذاشته می‌شود */
     function sanitizeBackupData(data, mode) {
-      var rep = { orphanAccounts: 0, orphanEntries: 0, invalidRecords: 0, mergedAccounts: 0, dupTrash: 0, failedParts: [] };
+      var rep = { orphanAccounts: 0, orphanEntries: 0, invalidRecords: 0, mergedAccounts: 0, dupTrash: 0, failedParts: [], removedOpenings: {} };
       if (!data || typeof data !== 'object') return rep;
       var lbOf = function (a) { return accountLabel(a); };
       /* ۱) حساب‌های فایل: بدون برچسب = نامعتبر؛ هم‌شناسه یا هم‌برچسب با حساب موجود = ادغام (بدون تکرار موجودی اولیه) */
@@ -29468,7 +29600,10 @@ function confirmSmsEntry() {
       /* ادغام: حساب‌های فعلی + حساب‌های پذیرفته‌شدهٔ فایل · جایگزینی: فقط حساب‌های فایل (اگر فایل حساب ندارد، حساب‌های فعلی می‌مانند) */
       if (mode !== 'replace' || !Array.isArray(data.selectedBankAccounts)) selectedAccountLabels().forEach(function (l) { valid[l] = true; });
       (Array.isArray(data.selectedBankAccounts) ? data.selectedBankAccounts : []).forEach(function (a) { var l = lbOf(a); if (l) valid[l] = true; });
-      /* ۲) ساختار ماه‌ها + حذف موجودی‌های اولیهٔ یتیم */
+      /* ۲) ساختار ماه‌ها + جداکردن موجودی‌های اولیهٔ یتیم.
+         اگر فایل فهرست حساب ندارد، یتیم بودن قابل تشخیص نیست (حساب‌ها ممکن است بعداً بازیابی شوند): هیچ موجودی‌ای کنار گذاشته نمی‌شود.
+         موارد کنارگذاشته هم دور ریخته نمی‌شوند و در _orphanOpenings نگه داشته می‌شوند. */
+      var fileHasAccounts = Array.isArray(data.selectedBankAccounts);
       var orphanLabels = Object.create(null);
       if (data.archive && typeof data.archive === 'object') {
         Object.keys(data.archive).forEach(function (k) {
@@ -29491,9 +29626,10 @@ function confirmSmsEntry() {
           });
           var m = pd.accountOpeningInstant;
           if (m && typeof m === 'object') {
-            Object.keys(m).forEach(function (lb) {
+            if (fileHasAccounts) Object.keys(m).forEach(function (lb) {
               if (valid[(lb || '').trim()]) return;
               orphanLabels[lb] = true; rep.orphanEntries++;
+              (rep.removedOpenings[k] = rep.removedOpenings[k] || {})[lb] = m[lb];
               delete m[lb];
             });
           } else if (m != null) { delete pd.accountOpeningInstant; }

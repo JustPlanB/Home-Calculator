@@ -166,8 +166,12 @@ const otherCounts = page => page.evaluate(() => {
   const EMPTY = await fresh(b, seedLs(F));
   await EMPTY.page.evaluate(() => applyBackupData({ version: 1, todos: {}, trash: [], smsBankMap: {} }, 'merge')); await EMPTY.page.waitForTimeout(200);
   ok(same(await read3(EMPTY.page), [F.todos, F.trash, F.sms]) && EMPTY.errors.length === 0, 'خالی در حالت ادغام: چیزی حذف نشد');
+  /* فایلی که کامل بودنش معلوم نیست: کارها و سطل زبالهٔ محلی پاک نمی‌شوند؛ بانک پیامک (بخش کامل حساب‌ها) جایگزین می‌شود */
   await EMPTY.page.evaluate(() => applyBackupData({ version: 1, todos: {}, trash: [], smsBankMap: {} }, 'replace')); await EMPTY.page.waitForTimeout(200);
-  ok(same(await read3(EMPTY.page), [{}, [], {}]) && EMPTY.errors.length === 0, 'خالی در حالت جایگزینی: همان مقدار خالی فایل اعمال شد');
+  ok(same(await read3(EMPTY.page), [F.todos, F.trash, {}]) && EMPTY.errors.length === 0, 'خالی در جایگزینی با فایل نامعلوم: کارها و سطل زباله حفظ شدند');
+  /* فایل صراحتاً کامل: مقدار خالی فایل اعمال می‌شود */
+  await EMPTY.page.evaluate(() => applyBackupData({ version: 1, backupScope: { v: 1, complete: true, allMonths: true, allCards: true, months: [], cards: null, parts: [] }, todos: {}, trash: [], smsBankMap: {} }, 'replace')); await EMPTY.page.waitForTimeout(200);
+  ok(same(await read3(EMPTY.page), [{}, [], {}]) && EMPTY.errors.length === 0, 'خالی در جایگزینی با فایل کامل: همان مقدار خالی فایل اعمال شد');
   await EMPTY.ctx.close();
 
   const PART = await fresh(b);
