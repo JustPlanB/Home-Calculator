@@ -1167,7 +1167,12 @@
     }
     .sms-seg button.active {
       background: rgba(8,181,245,0.22);
-      color: #08b5f5;
+      color: #fff;
+    }
+    /* تم روشن: زمینهٔ کم‌رنگ با نوشتهٔ سفید خوانا نیست؛ همان آبی دکمهٔ «ثبت» */
+    html[data-theme="light"] .sms-seg button.active {
+      background: var(--accent);
+      color: #fff;
     }
     .sms-pro-block {
       margin: 8px 0 10px;
@@ -15627,47 +15632,6 @@ function onPeriodChange() {
 
 
     /* —— خروجی اکسل و PDF —— */
-    function buildExportRows() {
-      const rows = [];
-      rows.push(['ماه', MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear)]);
-      rows.push([]);
-      ['expense', 'income'].forEach(tab => {
-        const label = tab === 'expense' ? 'مخارج' : 'درآمد';
-        rows.push([label]);
-        rows.push(['بخش', 'روز', 'شرح', 'مبلغ', 'وضعیت']);
-        (periodData[tab].sections || []).forEach(sec => {
-          const title = (sec.title || '').trim() || '—';
-          (sec.rows || []).forEach(r => {
-            if (!r.desc && !r.amount && !r.day) return;
-            const st = r.status === 'paid'
-              ? (tab === 'income' ? 'دریافت‌شده' : 'پرداخت‌شده')
-              : (tab === 'income' ? 'دریافت‌نشده' : 'پرداخت‌نشده');
-            rows.push([
-              title,
-              r.day ? toPersianDigits(r.day) : '',
-              r.desc || '',
-              r.amount ? formatNum(r.amount) : '۰',
-              st
-            ]);
-          });
-        });
-        rows.push([]);
-      });
-      if (plans && plans.length) {
-        rows.push(['اقساط']);
-        rows.push(['نام', 'مبلغ کل', 'تعداد', 'پرداخت‌شده', 'نرخ سود']);
-        plans.forEach(p => {
-          rows.push([
-            p.name || '—',
-            formatNum(p.amount || 0),
-            toPersianDigits(p.count || 0),
-            toPersianDigits(p.paidCount || 0),
-            toPersianDigits(p.interestRate || 0) + '٪'
-          ]);
-        });
-      }
-      return rows;
-    }
 
     async function blobToBase64(blob) {
       const buf = await blob.arrayBuffer();
@@ -15817,15 +15781,6 @@ function onPeriodChange() {
       return true;
     }
 
-    function downloadTextFile(text, filename, mime) {
-      const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
-      saveOrShareBlob(blob, filename, mime || 'text/plain;charset=utf-8')
-        .then((mode) => {
-          if (mode === 'abort') showToast('لغو شد');
-          else showToast('فایل آماده شد');
-        })
-        .catch(() => showToast('ذخیره فایل ناموفق بود'));
-    }
 
     
     
@@ -17849,199 +17804,15 @@ function askBackupUserCards(selectedParts) {
       document.getElementById('exportPdfBtn').onclick = () => { close(); exportPdf(); };
     }
 
-    function xmlEsc(s) {
-      return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
 
-    function excelCell(val, styleId) {
-      const t = (typeof val === 'number' && isFinite(val)) ? 'Number' : 'String';
-      const v = t === 'Number' ? String(val) : xmlEsc(val);
-      const st = styleId ? ' ss:StyleID="' + styleId + '"' : '';
-      return '<Cell' + st + '><Data ss:Type="' + t + '">' + v + '</Data></Cell>';
-    }
 
-    function excelRow(cells, styleId) {
-      return '<Row>' + cells.map(c => {
-        if (c && typeof c === 'object' && 'v' in c) return excelCell(c.v, c.s || styleId);
-        return excelCell(c, styleId);
-      }).join('') + '</Row>';
-    }
 
-    function collectDetailRows(tab) {
-      const isIncome = tab === 'income';
-      const paidL = isIncome ? 'دریافت‌شده' : 'پرداخت‌شده';
-      const unpaidL = isIncome ? 'دریافت‌نشده' : 'پرداخت‌نشده';
-      const rows = [];
-      (periodData[tab].sections || []).forEach(sec => {
-        const title = (sec.title || '').trim() || '—';
-        (sec.rows || []).forEach(r => {
-          if (!r.desc && !r.amount && !r.day) return;
-          rows.push([
-            title,
-            r.day ? toPersianPad2(r.day) : '',
-            r.desc || '',
-            r.amount ? formatNum(r.amount) : '۰',
-            r.status === 'paid' ? paidL : unpaidL
-          ]);
-        });
-      });
-      return rows;
-    }
 
-    function collectSummaryRows(tab) {
-      const rows = [];
-      let gPaid = 0, gUnpaid = 0;
-      (periodData[tab].sections || []).forEach(sec => {
-        let paid = 0, unpaid = 0;
-        (sec.rows || []).forEach(r => {
-          const a = Number(r.amount) || 0;
-          if (r.status === 'paid') paid += a; else unpaid += a;
-        });
-        gPaid += paid; gUnpaid += unpaid;
-        rows.push([
-          (sec.title || '').trim() || '—',
-          formatNum(paid),
-          formatNum(unpaid),
-          formatNum(paid + unpaid)
-        ]);
-      });
-      rows.push(['جمع کل', formatNum(gPaid), formatNum(gUnpaid), formatNum(gPaid + gUnpaid)]);
-      return rows;
-    }
 
-    function collectInstallDetailRows() {
-      const rows = [];
-      (plans || []).forEach(plan => {
-        const count = Math.max(0, parseInt(plan.count, 10) || 0);
-        const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
-        const amt = planInstallmentAmount(plan);
-        const total = planTotalPayable(plan);
-        rows.push([
-          plan.name || '—',
-          formatNum(amt),
-          toPersianDigits(count),
-          toPersianDigits(paid),
-          formatNum(paid * amt),
-          formatNum(total - paid * amt),
-          formatNum(total)
-        ]);
-      });
-      return rows;
-    }
 
-    function collectInstallSummaryRows() {
-      let gPaid = 0, gRemain = 0, gTotal = 0;
-      (plans || []).forEach(plan => {
-        const count = Math.max(0, parseInt(plan.count, 10) || 0);
-        const paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0));
-        const amt = planInstallmentAmount(plan);
-        const total = planTotalPayable(plan);
-        gPaid += paid * amt;
-        gRemain += total - paid * amt;
-        gTotal += total;
-      });
-      return [
-        ['پرداخت‌شده', formatNum(gPaid)],
-        ['باقی‌مانده', formatNum(gRemain)],
-        ['جمع کل', formatNum(gTotal)]
-      ];
-    }
 
-    function collectBalanceRows() {
-      const expMap = {}, incMap = {}, order = [];
-      (periodData.expense.sections || []).forEach(sec => {
-        const t = (sec.title || '').trim() || '—';
-        expMap[t] = (expMap[t] || 0) + sectionTotal(sec);
-        if (!order.includes(t)) order.push(t);
-      });
-      (periodData.income.sections || []).forEach(sec => {
-        const t = (sec.title || '').trim() || '—';
-        incMap[t] = (incMap[t] || 0) + sectionTotal(sec);
-        if (!order.includes(t)) order.push(t);
-      });
-      const rows = [];
-      let gExp = 0;
-      const _accForBal = (typeof accF !== 'undefined' ? accF : '');
-      const balGlobal = (typeof resolveBalanceMojoodi === 'function')
-        ? resolveBalanceMojoodi(_accForBal)
-        : ((typeof sumGlobalAccountBalances === 'function') ? (sumGlobalAccountBalances() || 0) : 0);
-      order.forEach(title => {
-        const bal = balGlobal;
-        const exp = expMap[title] || 0;
-        gExp += exp;
-        rows.push([title, formatNum(bal), formatNum(exp), formatNum(bal - exp)]);
-      });
-      rows.push(['جمع کل', formatNum(balGlobal), formatNum(gExp), formatNum(balGlobal - gExp)]);
-      return rows;
-    }
 
-    /** ساخت شیت با دو جدول کنار هم (جزئیات | خلاصه) */
-    function buildSideBySideSheet(sheetName, detailHeaders, detailRows, sumHeaders, sumRows) {
-      const dCols = Math.max(detailHeaders.length, 1);
-      const sCols = Math.max(sumHeaders.length, 1);
-      const maxR = Math.max(detailRows.length, sumRows.length) + 2;
-      let rowsXml = '';
-      // ردیف عنوان جداول
-      const titleCells = [{ v: 'جزئیات', s: 'Title' }];
-      for (let i = 1; i < dCols; i++) titleCells.push({ v: '', s: 'Title' });
-      titleCells.push({ v: '', s: 'Default' });
-      titleCells.push({ v: 'خلاصه', s: 'Title' });
-      for (let i = 1; i < sCols; i++) titleCells.push({ v: '', s: 'Title' });
-      rowsXml += excelRow(titleCells);
 
-      // هدر
-      const headerCells = detailHeaders.map(h => ({ v: h, s: 'Header' }));
-      headerCells.push({ v: '', s: 'Default' });
-      sumHeaders.forEach(h => headerCells.push({ v: h, s: 'Header' }));
-      rowsXml += excelRow(headerCells);
-
-      for (let i = 0; i < Math.max(detailRows.length, sumRows.length); i++) {
-        const d = detailRows[i] || [];
-        const s = sumRows[i] || [];
-        const cells = [];
-        for (let c = 0; c < dCols; c++) cells.push({ v: d[c] != null ? d[c] : '', s: 'Border' });
-        cells.push({ v: '', s: 'Default' });
-        for (let c = 0; c < sCols; c++) cells.push({ v: s[c] != null ? s[c] : '', s: 'Border' });
-        rowsXml += excelRow(cells);
-      }
-
-      const totalCols = dCols + 1 + sCols;
-      let colXml = '';
-      for (let i = 0; i < dCols; i++) colXml += '<Column ss:Width="' + (i === 2 ? 120 : 70) + '"/>';
-      colXml += '<Column ss:Width="12"/>';
-      for (let i = 0; i < sCols; i++) colXml += '<Column ss:Width="80"/>';
-
-      return (
-        '<Worksheet ss:Name="' + xmlEsc(sheetName) + '">' +
-        '<Table ss:ExpandedColumnCount="' + totalCols + '" ss:ExpandedRowCount="' + (maxR + 2) + '">' +
-        colXml +
-        rowsXml +
-        '</Table>' +
-        '<WorksheetOptions><DisplayRightToLeft/></WorksheetOptions>' +
-        '</Worksheet>'
-      );
-    }
-
-    function buildSingleSheet(sheetName, headers, dataRows) {
-      let rowsXml = excelRow(headers.map(h => ({ v: h, s: 'Header' })));
-      dataRows.forEach(r => {
-        const cells = [];
-        for (let i = 0; i < headers.length; i++) cells.push({ v: r[i] != null ? r[i] : '', s: 'Border' });
-        rowsXml += excelRow(cells);
-      });
-      return (
-        '<Worksheet ss:Name="' + xmlEsc(sheetName) + '">' +
-        '<Table ss:ExpandedColumnCount="' + headers.length + '" ss:ExpandedRowCount="' + (dataRows.length + 2) + '">' +
-        rowsXml +
-        '</Table>' +
-        '<WorksheetOptions><DisplayRightToLeft/></WorksheetOptions>' +
-        '</Worksheet>'
-      );
-    }
 
     /* ===== خروجی آفلاین واقعی XLSX - سازگار با Excel/Android ===== */
     function xlsxEsc(v){
@@ -18067,26 +17838,6 @@ function askBackupUserCards(selectedParts) {
       const cd=xlsxConcat(centrals),body=xlsxConcat(locals);
       const eocd=xlsxConcat([new Uint8Array([80,75,5,6]),xlsxU16(0),xlsxU16(0),xlsxU16(files.length),xlsxU16(files.length),xlsxU32(cd.length),xlsxU32(body.length),xlsxU16(0)]);
       return xlsxConcat([body,cd,eocd]);
-    }
-    function xlsxMakeSharedStrings(sheets){
-      const map=new Map(),list=[];
-      function id(v){ const key=String(v==null?'':v); if(map.has(key)) return map.get(key); const n=list.length; map.set(key,n); list.push(key); return n; }
-      sheets.forEach(sh=>sh.rows.forEach(r=>r.forEach(v=>id(v))));
-      let xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+list.length+'" uniqueCount="'+list.length+'">';
-      list.forEach(v=>xml+='<si><t xml:space="preserve">'+xlsxEsc(v)+'</t></si>');
-      return {xml:xml+'</sst>',id};
-    }
-    function xlsxSheetXml(rows,widths,sharedId){
-      let max=0; rows.forEach(r=>max=Math.max(max,r.length));
-      let cols=''; for(let i=0;i<max;i++) cols+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+(widths&&widths[i]||16)+'" bestFit="1" customWidth="1"/>';
-      let out='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:'+xlsxCol(Math.max(0,max-1))+(Math.max(1,rows.length))+'"/><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>'+cols+'</cols><sheetData>';
-      rows.forEach((r,ri)=>{
-        out+='<row r="'+(ri+1)+'">';
-        r.forEach((v,ci)=>{ const sid=sharedId(v); out+='<c r="'+xlsxCol(ci)+(ri+1)+'" t="s"><v>'+sid+'</v></c>'; });
-        out+='</row>';
-      });
-      out+='</sheetData><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
-      return out;
     }
     /* ===== خروجی Excel (XLSX واقعی و آفلاین): مبالغ عددی با جداکنندهٔ هزارگان، سرستون پررنگ و ثابت، راست‌به‌چپ =====
        سلول: رشته/عدد یا {v, s} — s: 1 سرستون، 2 متن، 3 عدد، 4 جمع (متن)، 5 جمع (عدد)، 6 عنوان، 7 گروه */
@@ -18345,7 +18096,6 @@ function askBackupUserCards(selectedParts) {
     }
 
     /* ===== PDF آفلاین: رندر محلی HTML به تصویر و ساخت PDF بدون اینترنت ===== */
-    function pdfByteString(bytes){ let out=''; const chunk=0x8000; for(let i=0;i<bytes.length;i+=chunk) out+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length))); return out; }
     function pdfConcat(a){ let n=0;a.forEach(x=>n+=x.length);let o=new Uint8Array(n),p=0;a.forEach(x=>{o.set(x,p);p+=x.length});return o; }
     /* نویسندهٔ PDF ساده و معتبر: هر صفحه یک تصویر JPEG (A4، حاشیهٔ ۱۸pt) */
     function buildSimpleImagePdf(pageImages, pageW, pageH) {
@@ -18736,8 +18486,6 @@ function askBackupUserCards(selectedParts) {
         '<title>حساب کتاب — ' + escapeHtml(label) + '</title><style>' + pdfStyleCss() + '</style></head><body>' +
         '<scr' + 'ipt>window.__PDF_PAGE_COUNT__=' + pages.length + ';</scr' + 'ipt>' + pages.join('') + '</body></html>';
     }
-    /* سازگاری با کد قدیمی */
-    async function buildPdfContent() { return (await buildPdfPages()).join(''); }
     /* مسیر آفلاین (مرورگر/اگر native شکست): هر صفحه جدا رندر می‌شود تا مرز صفحات دقیقاً همان باشد */
     async function renderPdfPagesOffline() {
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
@@ -21327,28 +21075,6 @@ async function openPdfPrintWindow(){
         return s;
       } catch (e) { return 0; }
     }
-    /**
-     * موجودی کل = جمع ردیف‌های درآمد (با فیلتر حساب) + موجودی ماه قبل
-     */
-    function resolveBalanceMojoodi(accFilter, dayF) {
-      accFilter = (accFilter || '').trim();
-      let incomeSum = 0;
-      try {
-        const secs = (periodData && periodData.income && periodData.income.sections) || [];
-        secs.forEach(function(sec) {
-          const title = (sec && sec.title || '').trim() || '—';
-          if (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles && balanceSelectedTitles.length &&
-              balanceSelectedTitles.indexOf(title) < 0) return;
-          (sec && sec.rows || []).forEach(function(r) {
-            if (dayF && typeof dayNum === 'function' && dayNum(r) !== dayF) return;
-            if (accFilter && (r.account || '').trim() !== accFilter) return;
-            incomeSum += Number(r.amount) || 0;
-          });
-        });
-      } catch (eI) {}
-      const opening = sumFilteredOpeningBalance(accFilter);
-      return incomeSum + opening;
-    }
     /* سازگاری: موجودی حساب‌ها مشترک بین همه کاربران */
     function personAccountBalances(title) {
       return globalAccountBalances();
@@ -22034,7 +21760,7 @@ async function openPdfPrintWindow(){
           await P.update({
             accounts: JSON.stringify(accs),
             title: 'حساب‌کتاب · ' + MONTHS[t.m - 1],
-            month: MONTHS[t.m - 1] + ' ' + toPersianDigits(String(t.y)),
+            month: toPersianDigits(String(t.d)) + ' ' + MONTHS[t.m - 1] + ' ' + toPersianDigits(String(t.y)),
             todayNone: !(spent > 0),
             balance: (bal < 0 ? '-' : '') + formatNum(Math.abs(bal)),
             today: formatNum(spent),
@@ -29023,10 +28749,12 @@ function confirmSmsEntry() {
       /* بعد از بررسی سرویس گفتار گوشی دوباره (اگر سرویس نبود، آیکون پنهان می‌شود) */
       setTimeout(syncVoiceClass, 3600);
     })();
-    /* امنیت: پیامک «بانکی» که از یک شمارهٔ موبایل شخصی آمده احتمالاً جعلی است (بانک‌ها با سرشماره/نام می‌فرستند) */
+    /* امنیت: پیامک «بانکی» که از یک شمارهٔ موبایل شخصی آمده احتمالاً جعلی است (بانک‌ها با سرشماره/نام می‌فرستند).
+       موبایل ایران: 9 و بعد 0 تا 4 یا 9 (۰۹۰x، ۰۹۱x، ۰۹۲x، ۰۹۳x، ۰۹۴x، ۰۹۹x). سرشمارهٔ خدماتی با پیش‌شمارهٔ کشور
+       مثل 9830009417 (بانک ملی = 98 + 30009417) موبایل نیست. */
     function smsSenderLooksPersonal(sender) {
       var d = toEnglishDigits(String(sender || '')).replace(/[\s\-()]/g, '');
-      return /^(\+98|0098|98|0)?9\d{9}$/.test(d);
+      return /^(\+98|0098|98|0)?9[0-49]\d{8}$/.test(d);
     }
     function showSmsSenderWarning(entry) {
       var m = document.getElementById('smsConfirmModal');
