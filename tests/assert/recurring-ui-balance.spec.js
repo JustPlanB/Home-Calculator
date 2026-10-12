@@ -36,14 +36,13 @@ const ACC = 'ملت مصنوعی';
       secDefault: ds[ds.length - 2].getValue(),
       infos: sh.querySelectorAll('.hk-info-btn').length,
       startInfo: !!sh.querySelector('.rec-date-lab .hk-info-btn'),
-      endInfo: !!sh.querySelector('.rec-end-toggle .hk-info-btn'),
+      endInfo: !!sh.querySelector('.rec-end-lab .hk-info-btn'),
       hintText: /ماه‌های گذشته ساخته نمی‌شوند/.test(sh.innerText)
     };
     /* شروع ۲۴ مهر ۱۴۰۵ → تیک پایان → ۲۴ مهر ۱۴۰۶ */
     const st = document.querySelectorAll('#recurringSheet .hk-date-sel')[0];
     const pick = async (sel, label) => { sel.querySelector('button').click(); await w(120); const o = [...document.querySelectorAll('.dark-select-list *')].find(e => e.textContent.trim() === label && !e.children.length && e.offsetParent); if (o) o.click(); await w(120); };
     await pick(st.children[0], '۲۴');
-    const chk = document.getElementById('recHasEnd'); chk.checked = true; chk.onchange(); await w(100);
     const endSel = document.getElementById('recEndDate');
     out.endDefault = endSel.getDate();
     await pick(st.children[1], 'آبان');
@@ -67,7 +66,7 @@ const ACC = 'ملت مصنوعی';
   });
   ok(form.secDefault === 's1', 'فقط یک بخش درآمد هست: همان پیش‌فرض بخش مقصد شد');
   ok(form.startInfo && form.endInfo && !form.hintText, 'توضیح‌ها داخل آیکون اطلاعات کنار «شروع قرارداد» و «پایان قرارداد» (متن شلوغ زیر تاریخ‌ها حذف شد)');
-  ok(form.endDefault.d === 24 && form.endDefault.m === 7 && form.endDefault.y === 1406, 'تیک پایان: پیش‌فرض یک سال بعد از شروع (۲۴ مهر ۱۴۰۶)');
+  ok(form.endDefault.d === 24 && form.endDefault.m === 7 && form.endDefault.y === 1406, 'پایان قرارداد: پیش‌فرض یک سال بعد از شروع (۲۴ مهر ۱۴۰۶)');
   ok(form.endFollows.m === 8 && form.endFollows.y === 1406, 'تا پایان دستی عوض نشده، با تغییر شروع جابه‌جا می‌شود (۲۴ آبان ۱۴۰۶)');
   ok(form.boxAfterCreate, 'بعد از ثبت، فهرست درآمدهای ثابت دیده می‌شود');
   ok(form.boxAfterEdit, 'بعد از ویرایش، فهرست خالی نمی‌شود و نام تازه دیده می‌شود');

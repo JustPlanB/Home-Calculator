@@ -100,11 +100,12 @@ const ACC = 'ملت مصنوعی';
     const t = document.getElementById('recurringBox').innerText; closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
     return { kind: recTodayState(recurringIncomes.find(r => r.name === 'اجاره')).kind, list: t, tag: (() => { const tr = document.createElement('table'); const it = recurringIncomes.find(r => r.name === 'اجاره'); const row = recRowsOf(it)[0].row; const el = buildRowEl('s1', row, 0, 'دریافت شده', 'دریافت نشده'); return !!el.querySelector('.rec-row-tag') && el.querySelector('.rec-row-tag').textContent; })() };
   });
-  ok(st1.kind === 'linked' && /وصل به واریز/.test(st1.list) && /اصلاح/.test(st1.list) && !/جدا کن|جابه‌جایی/.test(st1.list), 'فهرست: «این ماه: وصل به واریز …» با دکمهٔ واحد «اصلاح»');
+  ok(st1.kind === 'linked' && st1.list.includes('این ماه: دریافت شد (۱۲ مهر)') && !/وصل به واریز/.test(st1.list) && /اصلاح/.test(st1.list) && !/جدا کن|جابه‌جایی/.test(st1.list), 'فهرست: «این ماه: دریافت شد (۱۲ مهر)» به رنگ سبز با دکمهٔ «اصلاح»');
  ok(st1.list.includes('این ماه: دریافت نشده (۱۴ مهر)'), 'خط وضعیت برای «اجاره ب»: «این ماه: دریافت نشده (۱۴ مهر)»');
   ok(st1.tag === 'درآمد ثابت: اجاره', 'ردیف واریزِ وصل‌شده در جدول برچسب «درآمد ثابت: اجاره» دارد');
   ok(await p.evaluate(() => (archive[periodKey(1405, 6)].income.sections || []).every(s => s.rows.every(r => !r.fromRecurringId))), 'شهریور (گذشته) هیچ ردیفی نگرفت');
-  ok(await p.evaluate(() => !recurringIncomes.find(r => r.name === 'اجاره').contractEnd), 'بدون تاریخ پایان ذخیره شد (پایان اختیاری)');
+  ok(await p.evaluate(() => { const e = recurringIncomes.find(r => r.name === 'اجاره').contractEnd; return !!e && e.y === 1406 && e.m === 1 && e.d === 12; }), 'پایان قرارداد اجباری: پیش‌فرض یک سال بعد از شروع (۱۲ فروردین ۱۴۰۶)');
+  ok(await p.evaluate(() => { openRecurringSheet(-1, {}); const ok = !document.getElementById('recHasEnd') && !!document.querySelector('#recurringSheet .rec-end-lab') && getComputedStyle(document.getElementById('recEndDate')).display !== 'none'; [...document.querySelectorAll('#recurringSheet button')].find(x => x.textContent.trim() === 'انصراف').click(); return ok; }), 'فرم: تیک «اختیاری» حذف شد و تاریخ پایان همیشه دیده می‌شود');
   ok((await futureKeys()).length === 0, 'هیچ ماه آینده‌ای پیشاپیش ساخته نشد');
 
   console.log('• شروع در آینده و قرارداد با پایان');
@@ -136,8 +137,6 @@ const ACC = 'ملت مصنوعی';
     const i = recurringIncomes.findIndex(r => r.name === name);
     openRecurringSheet(i, Object.assign({}, recurringIncomes[i], patch));
     await new Promise(r => setTimeout(r, 120));
-    const chk = document.getElementById('recHasEnd');
-    if (patch.contractEnd !== undefined && chk.checked !== !!patch.contractEnd) { chk.checked = !!patch.contractEnd; chk.onchange(); }
     [...document.querySelectorAll('#recurringSheet button')].find(x => x.textContent.trim() === 'تأیید').click();
     const asked = [];
     for (const a of answers) {
@@ -181,7 +180,9 @@ const ACC = 'ملت مصنوعی';
     const it = recurringIncomes.find(r => r.name === 'اجاره');
     /* ردیف دریافت‌شدهٔ گذشته + ردیف دریافت‌نشدهٔ این ماه */
     archive[periodKey(1405, 6)].income.sections[0].rows[0].status = 'paid';
-    const cur = recRowsOf(it).find(x => x.key === recTodayKey()); cur.row.status = 'unpaid';
+    /* یک ردیف «دریافت نشده» در آبان (آینده) برای سنجش پاک شدن دریافت‌نشده‌ها؛ واریز ۱۲ مهر دریافت‌شده می‌ماند */
+    const pdA = recMonthData(140508, true); const secA = recSectionIn(pdA, it, true);
+    if (!recRowsOf(it).some(x => x.key === 140508)) recPlaceRow(secA, recNewRow(it, 140508));
     openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
     if (document.getElementById('confirmModal').classList.contains('open')) document.getElementById('confirmNo').click();
     await new Promise(r => setTimeout(r, 150));
@@ -193,13 +194,42 @@ const ACC = 'ملت مصنوعی';
     const q2 = document.getElementById('confirmMsg').textContent; document.getElementById('confirmYes').click();
     await new Promise(r => setTimeout(r, 250));
     let left = [];
-    recEachMonth((k, pd) => (pd.income.sections || []).forEach(s => s.rows.forEach(r => { if (r.fromRecurringId === it.id) left.push(k + ':' + r.status); })));
-    return { q1, q2, gone: !recurringIncomes.includes(it), left, trash: (typeof trashItems !== 'undefined' ? trashItems : JSON.parse(localStorage.getItem('hesabKetabArchive_v5_trash') || '[]')).some(t => t.type === 'recurring' && (t.title === 'اجاره' || (t.data && t.data.name === 'اجاره'))) };
+    let stillLinked = 0;
+    recEachMonth((k, pd) => (pd.income.sections || []).forEach(s => s.rows.forEach(r => {
+      if (r.fromRecurringId === it.id) stillLinked++;
+      if ((r.desc === 'اجاره' || r.desc === 'واریز بانکی') && Number(r.amount) > 0) left.push(k + ':' + r.status);
+    })));
+    left.stillLinked = stillLinked;
+    return { q1, q2, gone: !recurringIncomes.includes(it), left, stillLinked: left.stillLinked, trash: (typeof trashItems !== 'undefined' ? trashItems : JSON.parse(localStorage.getItem('hesabKetabArchive_v5_trash') || '[]')).some(t => t.type === 'recurring' && (t.title === 'اجاره' || (t.data && t.data.name === 'اجاره'))) };
   });
   ok(del.gone && /پاک شوند/.test(del.q2 + '') || /ردیف «دریافت نشده»/.test(del.q2), 'پس از تأیید حذف، دربارهٔ ردیف‌های دریافت‌نشده پرسیده شد');
-  ok(del.left.includes('140506:paid') && !del.left.some(x => /unpaid/.test(x)), 'ردیف دریافت‌شدهٔ شهریور ماند؛ دریافت‌نشده‌ها پاک شدند (' + del.left.join('، ') + ')');
+  ok(del.left.includes('140506:paid') && del.left.includes('140507:paid') && !del.left.some(x => /unpaid/.test(x)), 'ردیف‌های دریافت‌شده (شهریور و واریز ۱۲ مهر) ماندند؛ دریافت‌نشده‌ها پاک شدند (' + del.left.join('، ') + ')');
+  ok(del.stillLinked === 0, 'ردیف‌های باقی‌مانده از قرارداد حذف‌شده آزاد شدند (به هیچ قراردادی وصل نیستند)');
   ok(del.trash, 'تعریف به سطل بازیافت رفت');
   await p.evaluate(() => closeFeatureSheet && closeFeatureSheet());
+  /* قرارداد تازه: واریز آزادشدهٔ ۱۲ مهر دوباره پیشنهاد می‌شود */
+  const cN = await create({ name: 'اجاره نو', amount: 10000000, account: ACC, sectionId: 's1', contractStart: { d: 12, m: 7, y: 1405 }, contractEnd: null, pick: 0 });
+  r = await rowsOf('اجاره نو');
+  ok(cN.picker && /۱۲ مهر/.test(cN.picker.opts[0]) && r.length === 1 && r[0].status === 'paid' && r[0].amount === 10000000, 'قرارداد تازه: واریز ۱۲ مهرِ قرارداد حذف‌شده پیشنهاد شد و وصل شد');
+  /* واریز وصل به قرارداد موجود پیشنهاد نمی‌شود */
+  const cX = await create({ name: 'اجاره سوم‌نو', amount: 10000000, account: ACC, sectionId: 's1', contractStart: { d: 12, m: 7, y: 1405 }, contractEnd: null });
+  ok(!cX.picker || !/۱۲ مهر — ۱۰,۰۰۰,۰۰۰/.test(cX.picker.opts.join('|')), 'واریزی که به قرارداد موجود وصل است دیگر پیشنهاد نمی‌شود');
+  /* «اصلاح» روی ردیف «دریافت نشده»: وصل کردن واریز ثبت‌شده با هر روزی از ماه */
+  const lk = await p.evaluate(async (ACC) => {
+    periodData.income.sections[1].rows.push(Object.assign(emptyRow('income'), { day: '27', desc: 'واریز دستی', amount: 10000000, status: 'paid', account: ACC }));
+    persistCurrent();
+    openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
+    const i = recurringIncomes.findIndex(r => r.name === 'اجاره سوم‌نو');
+    const b = document.querySelector('[data-rec-link="' + i + '"]'); if (!b) return { btn: false };
+    b.click(); await new Promise(r => setTimeout(r, 150));
+    const opts = [...document.querySelectorAll('#recPickModal .rec-pick-opt')];
+    const o = opts.find(x => /۲۷ مهر/.test(x.textContent)); if (o) o.click();
+    await new Promise(r => setTimeout(r, 300));
+    const it = recurringIncomes[i]; const rows = recRowsOf(it).map(x => x.row.status + ':' + x.row.day);
+    closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
+    return { btn: true, found: !!o, rows };
+  }, ACC);
+  ok(lk.btn && lk.found && lk.rows.join() === 'paid:27', '«اصلاح» زیر «دریافت نشده»: واریز دستی ۲۷ مهر وصل شد و ردیف دریافت‌نشده حذف شد');
 
   console.log('• پیامک واریز: پیشنهاد خودکار، پیش‌واریز، چند گزینه');
   await create({ name: 'اجارهٔ دوم', amount: 7000000, account: ACC, sectionId: 's1', contractStart: { d: 1, m: 7, y: 1405 }, contractEnd: null });
