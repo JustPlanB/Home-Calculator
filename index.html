@@ -33149,19 +33149,24 @@ if (item.type === 'recurring') {
     }
     /* واریزهای ثبت‌شدهٔ همین ماه که شاید مربوط به این تعریف باشند (همان حساب، مبلغ ±۵٪، روز تا ۷ روز با سررسید،
        به هیچ تعریفی وصل نیستند). هیچ‌وقت خودکار وصل نمی‌شوند؛ فقط به کاربر پیشنهاد می‌شوند. */
-    function recLinkCandidates(pd, item, k) {
+    function recLiveItem(id) {
+      return (recurringIncomes || []).find(function (x) { return x && x.id === id && !x.deletedAt; }) || null;
+    }
+    function recLinkCandidates(pd, item, k, opts) {
       var amt = Number(item.amount) || 0, out = [];
       if (!amt || !pd || !pd.income) return out;
       var acc = (item.account || '').trim();
       var due = parseInt(recDayFor(item, k), 10) || 0;
       (pd.income.sections || []).forEach(function (sec) {
         (sec.rows || []).forEach(function (r) {
-          if (!r || r.deletedAt || r.fromRecurringId || r.fromPlanId || !recIsPaid(r)) return;
+          if (!r || r.deletedAt || r.fromPlanId || !recIsPaid(r)) return;
+          /* وصل به قرارداد موجود = پیشنهاد نمی‌شود؛ وصل به قرارداد حذف‌شده = آزاد */
+          if (r.fromRecurringId && recLiveItem(r.fromRecurringId)) return;
           var a = Number(r.amount) || 0;
           if (!a || Math.abs(a - amt) > amt * 0.05) return;
           if (acc && (r.account || '').trim() !== acc) return;
           var d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0;
-          if (due && d && Math.abs(d - due) > 7) return;
+          if (!(opts && opts.anyDay) && due && d && Math.abs(d - due) > 7) return;
           out.push({ row: r, sec: sec, score: (due && d) ? Math.abs(d - due) : 8 });
         });
       });
@@ -33201,6 +33206,20 @@ if (item.type === 'recurring') {
       document.body.appendChild(ov);
       return ov;
     }
+    function recFreeRows(item) {
+      var rid = item && item.id;
+      if (!rid) return 0;
+      var n = 0;
+      recEachMonth(function (k, pd) {
+        ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (r && r.fromRecurringId === rid) { delete r.fromRecurringId; delete r.recLinked; delete r.recForKey; r.updatedAt = Date.now(); n++; }
+          });
+        });
+      });
+      if (n) recPersist();
+      return n;
+    }
     function recLinkRow(item, row) {
       row.fromRecurringId = item.id;
       row.recLinked = true;
@@ -33232,6 +33251,26 @@ if (item.type === 'recurring') {
         item.genKey = Math.max(parseInt(item.genKey, 10) || 0, today);
         recPersist();
         done('واریز ' + recRowLabel(c.row, today).split(' — ')[0] + ' به «' + (item.name || '') + '» وصل شد');
+      });
+    }
+    /* ردیف «دریافت نشده»ٔ این ماه: انتخاب واریزی که قبلاً ثبت شده (هر روزی از همین ماه) به‌جای آن */
+    function recLinkExistingFlow(item, done) {
+      var today = recTodayKey();
+      var pd = recMonthData(today, false);
+      var cands = pd ? recLinkCandidates(pd, item, today, { anyDay: true }) : [];
+      if (!cands.length) { if (done) done('واریز ثبت‌شده‌ای با همین حساب و مبلغ نزدیک در این ماه پیدا نشد'); return; }
+      var opts = [];
+      cands.slice(0, 8).forEach(function (c, i) { opts.push({ label: recRowLabel(c.row, today), value: String(i) }); });
+      opts.push({ label: 'انصراف', value: null, primary: true });
+      recPickModal('کدام واریز ثبت‌شده مربوط به «' + (item.name || '') + '» است؟', opts, function (v) {
+        if (v == null) return;
+        var c = cands[parseInt(v, 10)];
+        if (!c) return;
+        recRemoveRows(recRowsOf(item).filter(function (z) { return z.key === today && !recIsPaid(z.row); }));
+        recLinkRow(item, c.row);
+        item.genKey = Math.max(parseInt(item.genKey, 10) || 0, today);
+        recPersist();
+        if (done) done('واریز ' + recRowLabel(c.row, today).split(' — ')[0] + ' به «' + (item.name || '') + '» وصل شد');
       });
     }
     /* وضعیت این ماه برای خط وضعیت فهرست */
@@ -33531,7 +33570,7 @@ if (item.type === 'recurring') {
             : '';
           const fmtD = (d) => toPersianDigits(String(d.d || '')) + ' ' + (MONTHS[(d.m || 1) - 1] || '') + ' ' + toPersianDigits(String(d.y || ''));
           const rangeLine = recStartKey(r)
-            ? ('<div class="rec-range" style="font-size:0.76rem;color:var(--muted);margin-top:2px;">از ' + fmtD(r.contractStart) + (recEndKey(r) ? ' تا ' + fmtD(r.contractEnd) : ' · بدون پایان') + '</div>')
+            ? ('<div class="rec-range" style="font-size:0.76rem;color:var(--muted);margin-top:2px;">از ' + fmtD(r.contractStart) + (recEndKey(r) ? ' تا ' + fmtD(r.contractEnd) : ' · <span style="color:#ff9f0a;">پایان قرارداد مشخص نیست</span>') + '</div>')
             : '<div class="rec-legacy" style="font-size:0.76rem;color:#ff9f0a;margin-top:2px;">تاریخ شروع ندارد؛ برای ادامهٔ ساخت ماهانه ویرایش کنید</div>';
           /* وضعیت این ماه */
           let statusLine = '';
@@ -33545,9 +33584,9 @@ if (item.type === 'recurring') {
             else if (stt.kind === 'ended') txt = 'قرارداد تمام شده';
             else if (stt.kind === 'ahead') { txt = 'این ماه: پیش‌دریافت شده'; col = '#30d158'; }
             else if (stt.kind === 'none') { txt = 'این ماه: ردیفی ندارد'; col = '#ff9f0a'; act = '<button type="button" class="rec-act" data-rec-make="' + i + '">ساخت ردیف</button>'; }
-            else if (stt.kind === 'unpaid') txt = 'این ماه: دریافت نشده (' + dueTxt + ')';
+            else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; act = '<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'paid') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
-            else if (stt.kind === 'linked') { txt = 'این ماه: وصل به واریز ' + escapeHtml(recRowLabel(stt.x.row, tk)); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
+            else if (stt.kind === 'linked') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             if (txt) statusLine = '<div class="rec-status" style="color:' + col + ';"><span>' + txt + '</span>' + act + '</div>';
           } catch (eSt) {}
           const selected = recurringSelected.has(i);
@@ -33763,6 +33802,14 @@ if (item.type === 'recurring') {
           recUnlinkFlow(r, (msg) => { recRefreshViews(); try { renderRecurringBar(); } catch (e2) {} if (msg) showToast(msg); });
         };
       });
+      box.querySelectorAll('[data-rec-link]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-link'), 10)];
+          if (!r) return;
+          recLinkExistingFlow(r, (msg) => { try { saveRecurring(); } catch (e2) {} recRefreshViews(); try { renderRecurringBar(); } catch (e3) {} if (msg) showToast(msg); });
+        };
+      });
       box.querySelectorAll('[data-rec-make]').forEach(btn => {
         btn.onclick = (e) => {
           e.stopPropagation();
@@ -33792,8 +33839,10 @@ if (item.type === 'recurring') {
               if (item && dropUnpaid) {
                 const today = recTodayKey();
                 recRemoveRows(recRowsOf(item).filter(x => !recIsPaid(x.row) && x.key >= today));
-                recRefreshViews();
               }
+              /* ردیف‌هایی که می‌مانند پاک نمی‌شوند ولی از این قرارداد آزاد می‌شوند تا به قرارداد تازه وصل شوند */
+              if (item) recFreeRows(item);
+              recRefreshViews();
             } catch (e) {}
             if (item && item.id && sharedAccountId) {
               item.deletedAt = Date.now();
@@ -34159,33 +34208,15 @@ if (item.type === 'recurring') {
       const plusYear = (d) => ({ d: d.d, m: d.m, y: d.y + 1 });
       const maskStart = hkCreateDateSelects(startInit, { onChange: (d) => { if (!endTouched && maskEnd && maskEnd.setDate) maskEnd.setDate(plusYear(d)); } });
       sheet.appendChild(maskStart);
-      const labEnd = document.createElement('label');
-      labEnd.className = 'date-mask-label rec-end-toggle';
-      labEnd.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;';
-      const chkEnd = document.createElement('input');
-      chkEnd.type = 'checkbox';
-      chkEnd.id = 'recHasEnd';
-      chkEnd.checked = !!endInit;
-      chkEnd.style.cssText = 'width:18px;height:18px;accent-color:var(--accent);margin:0;';
-      const labEndTxt = document.createElement('span');
-      labEndTxt.textContent = 'پایان قرارداد (اختیاری)';
-      labEnd.appendChild(chkEnd);
-      labEnd.appendChild(labEndTxt);
-      const endInfo = document.createElement('span');
-      endInfo.innerHTML = hkInfoBtnHtml('اختیاری است؛ بدون تاریخ پایان، هر ماه تکرار می‌شود.\nبا زدن تیک، پایان روی یک سال بعد از شروع گذاشته می‌شود (قابل تغییر).\nبعد از ماه پایان ردیفی ساخته نمی‌شود.');
-      labEnd.appendChild(endInfo.firstChild);
+      /* پایان قرارداد اجباری؛ پیش‌فرض یک سال بعد از شروع و تا دستی عوض نشده همراه شروع جابه‌جا می‌شود */
+      const labEnd = document.createElement('div');
+      labEnd.className = 'date-mask-label rec-end-lab';
+      labEnd.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;';
+      labEnd.innerHTML = '<span>پایان قرارداد</span>' + hkInfoBtnHtml('پیش‌فرض یک سال بعد از شروع قرارداد است (قابل تغییر).\nبعد از ماه پایان، ردیفی برای این درآمد ثابت ساخته نمی‌شود.');
       sheet.appendChild(labEnd);
       const maskEnd = hkCreateDateSelects(endInit || plusYear(maskStart.getDate()), { onChange: () => { endTouched = true; } });
       maskEnd.id = 'recEndDate';
       sheet.appendChild(maskEnd);
-      const syncEnd = () => {
-        if (chkEnd.checked) {
-          if (!endTouched) maskEnd.setDate(plusYear(maskStart.getDate()));
-          maskEnd.style.removeProperty('display');
-        } else maskEnd.style.setProperty('display', 'none', 'important');
-      };
-      chkEnd.onchange = syncEnd;
-      syncEnd();
 
       // بخش‌های درآمد ماه جاری (اولویت) + عناوین یکتای آرشیو
       const secOpts = [];
@@ -34301,8 +34332,8 @@ field('حساب بانکی', accSelRec);
         const amtDigits = toEnglishDigits(inpAmt.value || '').replace(/[^0-9]/g, '');
         const amount = amtDigits ? (parseInt(amtDigits, 10) || 0) : 0;
         const st = maskStart.getDate();
-        const hasEnd = !!chkEnd.checked;
-        const en = hasEnd ? maskEnd.getDate() : null;
+        const hasEnd = true;
+        const en = maskEnd.getDate();
         let day = st.d || 0;
         if (day > 31) day = 31;
         if (!maskStart.isComplete()) { showToast('تاریخ شروع قرارداد را کامل وارد کنید'); return; }
