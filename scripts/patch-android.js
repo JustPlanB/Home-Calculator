@@ -207,7 +207,7 @@ public class BankSmsPlugin extends Plugin {
       call.resolve(new JSObject().put("items",out).put("count",out.length()));
     }catch(Exception e){call.reject("pending_sms_error",e);}
   }
-  /** هماهنگی خوانده/نخوانده: وقتی پیامک داخل اپ نمایش داده شد، نوتیف همان پیامک (و عدد روی آیکن) حذف شود */
+  /** هماهنگی خوانده/نخوانده: وقتی پیامک داخل نرم‌افزار نمایش داده شد، نوتیف همان پیامک (و عدد روی آیکن) حذف شود */
   @com.getcapacitor.PluginMethod public void cancelNotification(PluginCall call){
     try{
       int id=call.getInt("id",0);
@@ -216,7 +216,7 @@ public class BankSmsPlugin extends Plugin {
       call.resolve();
     }catch(Exception e){ call.reject("cancel_failed",e); }
   }
-  /** همهٔ نوتیف‌های تراکنش بانکی که دیگر در صف نیستند پاک شوند (مثلاً بعد از خواندن همه داخل اپ) */
+  /** همهٔ نوتیف‌های تراکنش بانکی که دیگر در صف نیستند پاک شوند (مثلاً بعد از خواندن همه داخل نرم‌افزار) */
   @com.getcapacitor.PluginMethod public void cancelHandledNotifications(PluginCall call){
     try{
       android.app.NotificationManager nm=(android.app.NotificationManager)getContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -433,7 +433,7 @@ public class NativeFileExportPlugin extends Plugin {
     }catch(Exception e){ call.reject("save_download_failed",e); }
   }
 
-  /* ===== پشتیبان خودکار: پوشهٔ Downloads/HesabKetab (اندروید ۱۰ به بالا؛ بعد از حذف اپ هم می‌ماند) ===== */
+  /* ===== پشتیبان خودکار: پوشهٔ Downloads/HesabKetab (اندروید ۱۰ به بالا؛ بعد از حذف نرم‌افزار هم می‌ماند) ===== */
   private static final String AUTO_DIR="HesabKetab";
   private String autoRel(){ return Environment.DIRECTORY_DOWNLOADS+"/"+AUTO_DIR+"/"; }
   private boolean autoSafeName(String n){ return n!=null && n.matches("hesab-(auto|safety)-[0-9A-Za-z._-]{1,80}[.]json"); }
@@ -554,7 +554,7 @@ public class NativeFileExportPlugin extends Plugin {
     }catch(Exception e){ call.reject("delete_failed",e); }
   }
 
-  /** باز کردن فایل ذخیره‌شده با انتخاب اپ (فهرست اپ‌های سازگار، مثلاً نمایشگرهای PDF) */
+  /** باز کردن فایل ذخیره‌شده با انتخاب برنامه (فهرست برنامه‌های سازگار، مثلاً نمایشگرهای PDF) */
   @com.getcapacitor.PluginMethod public void openUri(PluginCall call){
     try{
       String uri=call.getString("uri","");
@@ -624,7 +624,7 @@ public class NativeFileExportPlugin extends Plugin {
         host.setBackgroundColor(android.graphics.Color.WHITE);
         final int viewW = 794; // A4 width at 96dpi CSS px
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(viewW, 1600);
-        // پشت محتوای اپ (اندیس ۰): همان چیدمان و رندر قبلی، ولی صفحه‌های گزارش روی صفحه دیده نمی‌شوند
+        // پشت محتوای نرم‌افزار (اندیس ۰): همان چیدمان و رندر قبلی، ولی صفحه‌های گزارش روی صفحه دیده نمی‌شوند
         root.addView(host,0,hp);
 
         final WebView web=new WebView(getContext());
@@ -943,7 +943,7 @@ public class AppLockPlugin extends Plugin {
   static final String K_BIO = "bio_enabled";
   static final String K_LEN = "pin_len";
   static final String K_AUTO = "auto_lock_sec";
-  /** فقط وقتی صفحه گوشی واقعاً خاموش/قفل شده — مستقل از onPause تعویض اپ */
+  /** فقط وقتی صفحه گوشی واقعاً خاموش/قفل شده — مستقل از onPause تعویض برنامه */
   static final String K_WAS_LOCKED = "device_was_locked";
 
   private BroadcastReceiver screenOffReceiver;
@@ -998,7 +998,7 @@ public class AppLockPlugin extends Plugin {
   @Override
   protected void handleOnPause() {
     super.handleOnPause();
-    // تعویض اپ → صفحه روشن → هیچ DEVICE_LOCK
+    // تعویض برنامه → صفحه روشن → هیچ DEVICE_LOCK
     // قفل صفحه → صفحه خاموش یا keyguard → DEVICE_LOCK
     if (isScreenOff() || isKeyguardLockedNow()) {
       markDeviceLocked();
@@ -1324,7 +1324,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 
-/** فقط آلارم‌های خود اپ (exported=false) */
+/** فقط آلارم‌های خود نرم‌افزار (exported=false) */
 public class HkReminderReceiver extends BroadcastReceiver {
   static final String CHANNEL="user_reminders";
   @Override public void onReceive(Context c, Intent in){
@@ -1586,7 +1586,7 @@ public class HkSpeechPlugin extends Plugin {
 }
 `;
 
-// رنگ زمینهٔ نوارهای سیستم (پشت نوار وضعیت و ناوبری) هم‌رنگ تم اپ + رنگ آیکن‌های نوار
+// رنگ زمینهٔ نوارهای سیستم (پشت نوار وضعیت و ناوبری) هم‌رنگ تم نرم‌افزار + رنگ آیکن‌های نوار
 const appChrome=`package ${pkg};
 
 import android.graphics.Color;
@@ -1653,7 +1653,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/** بروزرسانی داخل اپ: دانلود APK امضاشده از Releases با گزارش درصد، سپس باز کردن نصب‌کنندهٔ اندروید */
+/** بروزرسانی داخل نرم‌افزار: دانلود APK امضاشده از Releases با گزارش درصد، سپس باز کردن نصب‌کنندهٔ اندروید */
 @CapacitorPlugin(name="HkUpdater")
 public class HkUpdaterPlugin extends Plugin {
   private volatile boolean busy=false;
@@ -1717,7 +1717,7 @@ public class HkUpdaterPlugin extends Plugin {
     }}).start();
   }
 
-  /** اگر اجازهٔ «نصب برنامه‌های ناشناس» برای این اپ داده نشده باشد، صفحهٔ تنظیمات همان اجازه باز می‌شود */
+  /** اگر اجازهٔ «نصب برنامه‌های ناشناس» برای این نرم‌افزار داده نشده باشد، صفحهٔ تنظیمات همان اجازه باز می‌شود */
   @com.getcapacitor.PluginMethod public void install(final PluginCall call){
     try{
       File f=new File(getContext().getCacheDir(),"updates/hesab-ketab.apk");
@@ -1753,7 +1753,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
-/** رسم متن ویجت با فونت وزیرمتن (مثل اپ) روی تصویر؛ چیدمان بر اساس اندازهٔ واقعی ویجت */
+/** رسم متن ویجت با فونت وزیرمتن (مثل نرم‌افزار) روی تصویر؛ چیدمان بر اساس اندازهٔ واقعی ویجت */
 final class HkWidgetDraw {
   static final String PREFS="hk_widget";
   private static Typeface REG, BOLD;
@@ -1769,7 +1769,7 @@ final class HkWidgetDraw {
     for(int i=0;i<s.length();i++){ char ch=s.charAt(i); b.append(ch>='0'&&ch<='9' ? (char)(0x06F0+(ch-'0')) : ch); }
     return b.toString();
   }
-  /** تاریخ شمسی امروز از ساعت و منطقهٔ زمانی خود گوشی (همان مبنای اپ): [متن نمایشی، کلید y-m-d] یا null */
+  /** تاریخ شمسی امروز از ساعت و منطقهٔ زمانی خود گوشی (همان مبنای نرم‌افزار): [متن نمایشی، کلید y-m-d] یا null */
   static String[] todayFa(){
     if(android.os.Build.VERSION.SDK_INT<24) return null;
     try{
@@ -1806,7 +1806,7 @@ final class HkWidgetDraw {
     d.light=sp.getBoolean("light",false);
     d.none=sp.getBoolean("todayNone",false);
     d.accounts=sp.getString("accounts","[]");
-    /* تاریخ همیشه از خود گوشی؛ اگر از آخرین به‌روزرسانی اپ روز عوض شده، خرج امروز هنوز صفر است */
+    /* تاریخ همیشه از خود گوشی؛ اگر از آخرین به‌روزرسانی نرم‌افزار روز عوض شده، خرج امروز هنوز صفر است */
     String[] t=todayFa();
     if(t!=null){
       d.month=t[0];
@@ -1867,7 +1867,7 @@ final class HkWidgetDraw {
     float asc(){ return num?NUM_A:TXT_A; }
   }
 
-  /** ویجت اصلی: اسم اپ و ماه/سال، موجودی و مبلغ، خرج امروز و مبلغ */
+  /** ویجت اصلی: اسم نرم‌افزار و ماه/سال، موجودی و مبلغ، خرج امروز و مبلغ */
   static Bitmap full(Context c, int W, int H, float k, Data d){
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
@@ -1878,7 +1878,7 @@ final class HkWidgetDraw {
     L.add(new Line(false,false,REG,0.95f,0.55f,"موجودی",muted(d)));
     L.add(new Line(false,true,BOLD,1.7f,0.12f,d.locked?"••••••":d.balance,balColor(d)));
     L.add(new Line(false,false,REG,0.95f,0.5f,"خرج امروز",muted(d)));
-    if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، اپ را باز کنید",text(d)));
+    if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، نرم‌افزار را باز کنید",text(d)));
     else if(d.none) L.add(new Line(false,false,REG,1.05f,0.12f,"هنوز خرجی نداشتی",text(d)));
     else L.add(new Line(false,true,BOLD,1.7f,0.12f,d.today,Color.parseColor("#ff6b4a")));
     float units=0, gaps=0;
@@ -1974,7 +1974,7 @@ final class HkWidgetDraw {
     String label=page==0?"موجودی":"خرج امروز";
     String val; boolean num=true; Typeface vf=BOLD; float vr=1.9f; int vc=text(d);
     if(page==0){ val=d.locked?"••••••":d.balance; vc=balColor(d); }
-    else if(d.locked){ val="اپ را باز کنید"; num=false; vf=REG; vr=1.1f; }
+    else if(d.locked){ val="نرم‌افزار را باز کنید"; num=false; vf=REG; vr=1.1f; }
     else if(d.none){ val="هنوز خرجی نداشتی"; num=false; vf=REG; vr=1.1f; }
     else{ val=d.today; vc=Color.parseColor("#ff6b4a"); }
     float b1=TXT_A+TXT_D, b2=num?(NUM_A+NUM_D):(TXT_A+TXT_D), gap=0.1f;
@@ -2008,7 +2008,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-/** ویجت صفحهٔ اصلی گوشی: موجودی و خرج امروز (داده را خود اپ با HkWidget.update می‌فرستد) */
+/** ویجت صفحهٔ اصلی گوشی: موجودی و خرج امروز (داده را خود نرم‌افزار با HkWidget.update می‌فرستد) */
 public class HkWidgetProvider extends AppWidgetProvider {
   static final String PREFS=HkWidgetDraw.PREFS;
 
@@ -2019,7 +2019,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
   }
-  /* نیمه‌شب: تاریخ و «خرج امروز» همهٔ ویجت‌ها بدون باز شدن اپ به‌روز شوند */
+  /* نیمه‌شب: تاریخ و «خرج امروز» همهٔ ویجت‌ها بدون باز شدن نرم‌افزار به‌روز شوند */
   @Override public void onReceive(Context ctx, Intent intent){
     if(intent!=null && HkWidgetDraw.ACTION_MIDNIGHT.equals(intent.getAction())){ refreshAll(ctx); return; }
     super.onReceive(ctx, intent);
@@ -2238,7 +2238,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(HkUpdaterPlugin.class);
     registerPlugin(HkWidgetPlugin.class);
     super.onCreate(savedInstanceState);
-    // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض اپ پشت نوارهای سیستم (جلوگیری از نوار سفید)
+    // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض نرم‌افزار پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
     java.util.ArrayList<String> needed=new java.util.ArrayList<>();
     if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECEIVE_SMS)!=PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECEIVE_SMS);
@@ -2291,7 +2291,7 @@ if(fs.existsSync(manifest)){
   if(!s.includes('android.permission.READ_SMS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.READ_SMS"/>');
   // اندروید ۱۱+: برای پیدا کردن سرویس تشخیص گفتار باید اعلام شود
   if(!s.includes('android.speech.RecognitionService')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n    </queries>\n</manifest>');
-  // بروزرسانی داخل اپ: باز کردن نصب‌کنندهٔ اندروید برای APK دانلودشده
+  // بروزرسانی داخل نرم‌افزار: باز کردن نصب‌کنندهٔ اندروید برای APK دانلودشده
   if(!s.includes('android.permission.REQUEST_INSTALL_PACKAGES')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>');
   if(!s.includes('android.permission.RECEIVE_BOOT_COMPLETED')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>');
   if(!s.includes('.HkReminderReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkReminderReceiver" android:exported="false"/>\n    </application>');
@@ -2350,7 +2350,7 @@ if(fs.existsSync(manifest)){
 const xmlDir=path.join(base,'app/src/main/res/xml');
 fs.mkdirSync(xmlDir,{recursive:true});
 const filePaths=path.join(xmlDir,'file_paths.xml');
-// امنیت: FileProvider فقط پوشهٔ موقت اشتراک‌گذاری را در اختیار دیگر برنامه‌ها می‌گذارد (نه کل حافظهٔ اپ/حافظهٔ خارجی)
+// امنیت: FileProvider فقط پوشهٔ موقت اشتراک‌گذاری را در اختیار دیگر برنامه‌ها می‌گذارد (نه کل حافظهٔ نرم‌افزار/حافظهٔ خارجی)
 fs.writeFileSync(filePaths,
 `<?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
