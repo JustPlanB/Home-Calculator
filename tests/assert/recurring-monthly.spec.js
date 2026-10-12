@@ -62,9 +62,19 @@ const ACC = 'ملت مصنوعی';
     const sec = ds[ds.length - 2], acc = ds[ds.length - 1];
     if (ex.sectionId) sec.setValue(ex.sectionId);
     acc.setValue(ex.account || '');
+    if (ex.smsKey) document.getElementById('recSmsKey').value = ex.smsKey;
     [...document.querySelectorAll('#recurringSheet button')].find(x => x.textContent.trim() === 'تأیید').click();
     await new Promise(r => setTimeout(r, 200));
-    return { toast: (document.querySelector('.toast, #toast') || {}).textContent || '' };
+    /* پنجرهٔ «واریز مشابه … مربوط به همین قرارداد است؟» */
+    let picker = null;
+    const pm = document.getElementById('recPickModal');
+    if (pm) {
+      const opts = [...pm.querySelectorAll('.rec-pick-opt')];
+      picker = { title: pm.textContent, opts: opts.map(o => o.textContent) };
+      opts[ex.pick == null ? 0 : ex.pick + 1].click();
+      await new Promise(r => setTimeout(r, 200));
+    }
+    return { toast: (document.querySelector('.toast, #toast') || {}).textContent || '', picker, sheetOpen: !!document.getElementById('recurringSheet') };
   }, ex);
   const rowsOf = (name) => p.evaluate((name) => {
     const it = recurringIncomes.find(r => r.name === name);
@@ -72,11 +82,26 @@ const ACC = 'ملت مصنوعی';
   }, name);
   const futureKeys = () => p.evaluate(() => Object.keys(archive).filter(k => { const [y, m] = k.split('-').map(Number); return y * 100 + m > recTodayKey(); }));
 
-  console.log('• ساخت: شروع در گذشته → فقط از ماه جاری؛ واریز موجود این ماه وصل می‌شود');
-  const c1 = await create({ name: 'اجاره', amount: 10200000, account: ACC, sectionId: 's1', contractStart: { d: 12, m: 1, y: 1405 }, contractEnd: null });
-  let r = await rowsOf('اجاره');
-  ok(r.length === 1 && r[0].key === 140507 && r[0].status === 'paid' && r[0].amount === 10000000, 'واریز ۱۲ مهر (۱۰٬۰۰۰٬۰۰۰ ≈ ۱۰٬۲۰۰٬۰۰۰) به‌عنوان اجارهٔ این ماه شناخته شد و ردیف تازه ساخته نشد');
-  ok(/شناخته شد/.test(c1.toast), 'پیام «… به‌عنوان «اجاره» این ماه شناخته شد» نشان داده شد');
+  console.log('• ساخت: بخش مقصد اجباری؛ شروع در گذشته → فقط از ماه جاری؛ واریز مشابه فقط با انتخاب کاربر وصل می‌شود');
+  const c0 = await create({ name: 'بی‌بخش', amount: 1000, account: ACC, contractStart: { d: 12, m: 7, y: 1405 }, contractEnd: null });
+  ok(c0.sheetOpen && /بخش مقصد را انتخاب کنید/.test(c0.toast) && await p.evaluate(() => !recurringIncomes.some(r => r.name === 'بی‌بخش')), 'بدون بخش مقصد ذخیره نمی‌شود: «بخش مقصد را انتخاب کنید»');
+  await p.evaluate(() => { const sh = document.getElementById('recurringSheet'); [...sh.querySelectorAll('button')].find(x => x.textContent.trim() === 'انصراف').click(); });
+  const cB = await create({ name: 'اجاره ب', amount: 10100000, account: ACC, sectionId: 's1', contractStart: { d: 14, m: 7, y: 1405 }, contractEnd: null, pick: null });
+  let r = await rowsOf('اجاره ب');
+  ok(cB.picker && /مربوط به همین قرارداد است/.test(cB.picker.title) && /هیچ‌کدام/.test(cB.picker.opts[0]), 'واریز مشابه ۱۲ مهر: خودکار وصل نشد؛ پرسید و «هیچ‌کدام» پیش‌فرض اول است');
+  ok(r.length === 1 && r[0].status === 'unpaid' && r[0].day === '14', '«هیچ‌کدام»: ردیف «دریافت نشده» ساخته شد و واریز اجارهٔ دیگر دست نخورد');
+  const c1 = await create({ name: 'اجاره', amount: 10200000, account: ACC, sectionId: 's1', contractStart: { d: 12, m: 1, y: 1405 }, contractEnd: null, pick: 0 });
+  r = await rowsOf('اجاره');
+  ok(r.length === 1 && r[0].key === 140507 && r[0].status === 'paid' && r[0].amount === 10000000, 'با انتخاب کاربر، واریز ۱۲ مهر اجارهٔ این ماه شد و ردیف تازه ساخته نشد');
+  ok(/وصل شد/.test(c1.toast), 'پیام «واریز … به «اجاره» وصل شد»');
+  const st1 = await p.evaluate(async () => {
+    openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
+    const t = document.getElementById('recurringBox').innerText; closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
+    return { kind: recTodayState(recurringIncomes.find(r => r.name === 'اجاره')).kind, list: t, tag: (() => { const tr = document.createElement('table'); const it = recurringIncomes.find(r => r.name === 'اجاره'); const row = recRowsOf(it)[0].row; const el = buildRowEl('s1', row, 0, 'دریافت شده', 'دریافت نشده'); return !!el.querySelector('.rec-row-tag') && el.querySelector('.rec-row-tag').textContent; })() };
+  });
+  ok(st1.kind === 'linked' && /وصل به واریز/.test(st1.list) && /جدا کن/.test(st1.list), 'فهرست: «این ماه: وصل به واریز …» با دکمهٔ «جدا کن»');
+ ok(st1.list.includes('این ماه: دریافت نشده (۱۴ مهر)'), 'خط وضعیت برای «اجاره ب»: «این ماه: دریافت نشده (۱۴ مهر)»');
+  ok(st1.tag === 'درآمد ثابت: اجاره', 'ردیف واریزِ وصل‌شده در جدول برچسب «درآمد ثابت: اجاره» دارد');
   ok(await p.evaluate(() => (archive[periodKey(1405, 6)].income.sections || []).every(s => s.rows.every(r => !r.fromRecurringId))), 'شهریور (گذشته) هیچ ردیفی نگرفت');
   ok(await p.evaluate(() => !recurringIncomes.find(r => r.name === 'اجاره').contractEnd), 'بدون تاریخ پایان ذخیره شد (پایان اختیاری)');
   ok((await futureKeys()).length === 0, 'هیچ ماه آینده‌ای پیشاپیش ساخته نشد');
@@ -177,8 +202,8 @@ const ACC = 'ملت مصنوعی';
 
   console.log('• پیامک واریز: پیشنهاد خودکار، پیش‌واریز، چند گزینه');
   await create({ name: 'اجارهٔ دوم', amount: 7000000, account: ACC, sectionId: 's1', contractStart: { d: 1, m: 7, y: 1405 }, contractEnd: null });
-  const sms = async (amount, d, m) => p.evaluate(async ({ amount, d, m, ACC }) => {
-    const raw = 'بانک ملت\nواریز ' + amount + '\nحساب 0000***1111';
+  const sms = async (amount, d, m, extra) => p.evaluate(async ({ amount, d, m, ACC, extra }) => {
+    const raw = 'بانک ملت\nواریز ' + amount + '\nحساب 0000***1111' + (extra ? '\n' + extra : '');
     pendingSmsEntry = { raw, amount, type: 'income', bank: ACC, day: String(d), month: m, year: 1405 };
     openSmsConfirmModal({ type: 'income', amount, bank: ACC, day: String(d), month: m, year: 1405, raw });
     await new Promise(r => setTimeout(r, 250));
@@ -186,7 +211,7 @@ const ACC = 'ملت مصنوعی';
     await new Promise(r => setTimeout(r, 120));
     const sel = document.getElementById('smsRecMatchSel');
     return { has: !!sel, value: sel ? sel.value : null, opts: sel ? [...sel.options].map(o => o.textContent) : [], label: sel ? document.querySelector('#smsRecMatch label').textContent : '' };
-  }, { amount, d, m, ACC });
+  }, { amount, d, m, ACC, extra });
   let s1 = await sms(7000000, 3, 7);
   ok(s1.has && /اجارهٔ دوم/.test(s1.label) && s1.value.endsWith('|140507|0'), 'واریز ۳ مهر ۷٬۰۰۰٬۰۰۰: «این واریز مربوط به «اجارهٔ دوم» است؟» از پیش انتخاب شد');
   const before = await p.evaluate(() => periodData.income.sections.reduce((n, s) => n + s.rows.filter(r => r.amount > 0).length, 0));
@@ -200,8 +225,8 @@ const ACC = 'ملت مصنوعی';
   /* پیش‌واریز آخر مهر برای آبان */
   await create({ name: 'اجارهٔ سوم', amount: 5000000, account: ACC, sectionId: 's1', contractStart: { d: 2, m: 8, y: 1405 }, contractEnd: null });
   await setToday(p, '1405-07-28');
-  s1 = await sms(5000000, 28, 7);
-  ok(s1.has && s1.value.endsWith('|140508|1') && /پیش‌دریافت/.test(s1.opts.join()), 'واریز ۲۸ مهر برای اجارهٔ ۲ آبان: «پیش‌دریافت» پیشنهاد شد');
+  s1 = await sms(5000000, 30, 7);
+  ok(s1.has && s1.value.endsWith('|140508|1') && /پیش‌دریافت/.test(s1.opts.join()), 'واریز ۳۰ مهر برای اجارهٔ ۲ آبان: «پیش‌دریافت» پیشنهاد شد');
   await p.evaluate(async () => { confirmSmsEntry(); await new Promise(r => setTimeout(r, 300)); });
   await setToday(p, '1405-08-02');
   await p.evaluate(() => ensureRecurringRows());
@@ -213,8 +238,46 @@ const ACC = 'ملت مصنوعی';
   await create({ name: 'ب', amount: 4000000, account: ACC, sectionId: 's2', contractStart: { d: 11, m: 7, y: 1405 }, contractEnd: null });
   s1 = await sms(4000000, 12, 7);
   ok(s1.has && s1.value === '' && s1.opts.length === 3, 'دو درآمد ثابت هم‌مبلغ: هیچ‌کدام خودکار انتخاب نشد؛ کاربر از فهرست انتخاب می‌کند');
+  ok(s1.opts.some(o => /سررسید ۱۰ مهر/.test(o)) && s1.opts.some(o => /سررسید ۱۱ مهر/.test(o)), 'گزینه‌ها روز سررسید هر قرارداد را نشان می‌دهند');
+  const lock = await p.evaluate(async () => {
+    const sel = document.getElementById('smsRecMatchSel'), desc = document.getElementById('smsConfirmDesc');
+    desc.value = 'نوشتهٔ کاربر';
+    const free0 = !desc.readOnly;
+    sel.value = [...sel.options].find(o => o.getAttribute('data-name') === 'الف').value; sel.dispatchEvent(new Event('change'));
+    const locked = { ro: desc.readOnly, v: desc.value };
+    sel.value = ''; sel.dispatchEvent(new Event('change'));
+    const freed = { ro: desc.readOnly, v: desc.value };
+    sel.value = [...sel.options].find(o => o.getAttribute('data-name') === 'الف').value; sel.dispatchEvent(new Event('change'));
+    confirmSmsEntry(); await new Promise(r => setTimeout(r, 300));
+    return { free0, locked, freed };
+  });
+  ok(lock.free0 && lock.locked.ro && lock.locked.v === 'الف', 'با انتخاب درآمد ثابت، «بابت چه بود» قفل و با نام آن پر شد');
+  ok(!lock.freed.ro && lock.freed.v === 'نوشتهٔ کاربر', 'با «خیر، تراکنش جدید» فیلد باز شد و نوشتهٔ قبلی کاربر برگشت');
+  ok((await rowsOf('الف'))[0].status === 'paid', 'ثبت روی «الف»: ردیف دریافت‌شده شد');
+  /* جابه‌جایی واریز به «ب» از خط وضعیت */
+  const mv = await p.evaluate(async () => {
+    openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
+    const ia = recurringIncomes.findIndex(r => r.name === 'الف');
+    document.querySelector('[data-rec-unlink="' + ia + '"]').click(); await new Promise(r => setTimeout(r, 150));
+    const pm = document.getElementById('recPickModal');
+    const opts = [...pm.querySelectorAll('.rec-pick-opt')];
+    opts.find(o => /«ب»/.test(o.textContent)).click(); await new Promise(r => setTimeout(r, 300));
+    const list = document.getElementById('recurringBox') ? document.getElementById('recurringBox').innerText : '';
+    closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
+    return { list };
+  });
+  r = await rowsOf('ب');
+  const ra = await rowsOf('الف');
+  ok(r.length === 1 && r[0].status === 'paid' && ra.length === 1 && ra[0].status === 'unpaid', 'جابه‌جایی: واریز به «ب» منتقل شد (ردیف دریافت‌نشدهٔ ب جایش را داد) و «الف» دوباره «دریافت نشده» شد');
+  /* نشانهٔ پیامک */
+  await create({ name: 'ج', amount: 4000000, account: ACC, sectionId: 's2', contractStart: { d: 12, m: 7, y: 1405 }, contractEnd: null, smsKey: 'رضایی' });
+  s1 = await sms(4000000, 12, 7, 'واریز کننده: علی رضایی');
+  ok(s1.has && /ج/.test(s1.label) && s1.value.startsWith(await p.evaluate(() => recurringIncomes.find(r => r.name === 'ج').id)), 'نشانهٔ پیامک «رضایی» در متن: «ج» با اطمینان انتخاب شد (با وجود «الف» هم‌مبلغ)');
   await p.evaluate(() => closeSmsConfirmModal());
-  s1 = await sms(9999999, 12, 7);
+  s1 = await sms(4000000, 12, 7, 'واریز کننده: محمدی');
+  ok(s1.has && !s1.opts.some(o => /^ج —/.test(o)), 'پیامک بدون نشانهٔ «ج»: «ج» در فهرست نیست');
+  await p.evaluate(() => closeSmsConfirmModal());
+  s1 = await sms(2345678, 12, 7);
   ok(!s1.has, 'مبلغ نامرتبط: پیشنهادی نیست و مثل قبل ردیف تازه ثبت می‌شود');
   await p.evaluate(() => closeSmsConfirmModal());
 
@@ -265,7 +328,7 @@ const ACC = 'ملت مصنوعی';
       closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
       openRecurringSheet(0, recurringIncomes[0]);
       await new Promise(r => setTimeout(r, 120));
-      const hint = document.querySelector('#recurringSheet').textContent.includes('تاریخ شروع نداشت');
+      const hint = document.querySelector('#recurringSheet .rec-date-lab .hk-info-btn').getAttribute('data-tip').includes('تاریخ شروع نداشت');
       [...document.querySelectorAll('#recurringSheet button')].find(x => x.textContent.trim() === 'انصراف').click();
       await new Promise(r => setTimeout(r, 120));
       openRecurringSheet(0, Object.assign({}, recurringIncomes[0], { contractStart: { d: 5, m: 1, y: 1404 } }));
