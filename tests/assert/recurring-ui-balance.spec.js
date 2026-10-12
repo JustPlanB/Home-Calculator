@@ -72,6 +72,47 @@ const ACC = 'ملت مصنوعی';
   ok(form.boxAfterCreate, 'بعد از ثبت، فهرست درآمدهای ثابت دیده می‌شود');
   ok(form.boxAfterEdit, 'بعد از ویرایش، فهرست خالی نمی‌شود و نام تازه دیده می‌شود');
 
+  console.log('• دکمهٔ بازگشت: اول باکس شناور، بعد منو');
+  const bk = await p.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const back = async () => { onBackGuard(); await w(300); };
+    openFeatureSheet('recurring'); await w(400);
+    document.getElementById('addRecurringBtn').click(); await w(300);
+    const out = {};
+    /* باکس اطلاعات داخل فرم */
+    document.querySelector('#recurringSheet .rec-date-lab .hk-info-btn').click(); await w(100);
+    out.tipOpen = !!document.getElementById('hkInfoTip');
+    await back();
+    out.tipClosed = !document.getElementById('hkInfoTip');
+    out.sheetStill = !!document.getElementById('recurringSheet');
+    out.featureStill = _featureActive === 'recurring';
+    /* فهرست کشویی باز */
+    const ds = document.querySelectorAll('#recurringSheet .dark-select'); ds[0].querySelector('button').click(); await w(150);
+    out.listOpen = !!document.querySelector('.dark-select-list.open');
+    await back();
+    out.listClosed = !document.querySelector('.dark-select-list.open') && !!document.getElementById('recurringSheet');
+    [...document.querySelectorAll('#recurringSheet button')].find(x => x.textContent.trim() === 'انصراف').click(); await w(200);
+    /* پنجرهٔ «اصلاح» */
+    /* قرارداد آزمایشی در مهر با یک واریزِ وصل‌شده */
+    try { const it0 = recurringIncomes[0]; it0.contractStart = { d: 24, m: 7, y: 1405 }; const dep = periodData.income.sections[0].rows.find(r => r.desc === 'حقوق'); recLinkRow(it0, dep); } catch (e) {}
+    renderRecurringBar(); await w(150);
+    const btn = document.querySelector('[data-rec-unlink]');
+    out.hasBtn = !!btn;
+    if (btn) {
+      out.btnText = btn.textContent.trim();
+      btn.click(); await w(150); out.pickOpen = !!document.getElementById('recPickModal'); await back(); out.pickClosed = !document.getElementById('recPickModal'); out.featureAfterPick = _featureActive === 'recurring';
+    }
+    /* باکس اطلاعات روی منوی اصلی بعد از بستن همه */
+    await back();
+    out.featureClosedNow = _featureActive !== 'recurring';
+    return out;
+  });
+  ok(bk.tipOpen && bk.tipClosed && bk.sheetStill && bk.featureStill, 'بازگشت با باکس اطلاعات باز: فقط باکس بسته شد؛ فرم و منوی درآمد ثابت سر جایشان');
+  ok(bk.listOpen && bk.listClosed, 'بازگشت با فهرست کشویی باز: فقط فهرست بسته شد');
+  ok(bk.hasBtn && bk.btnText === 'اصلاح', 'دکمهٔ خط وضعیت «اصلاح» است');
+  ok(bk.pickOpen && bk.pickClosed && bk.featureAfterPick, 'بازگشت با پنجرهٔ «اصلاح» باز: فقط پنجره بسته شد و منو ماند');
+  ok(bk.featureClosedNow, 'بازگشت بعدی: منوی درآمد ثابت بسته شد');
+
   console.log('• موجودی ماه‌های آینده');
   const bal = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
