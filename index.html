@@ -9036,6 +9036,9 @@
     html[data-theme="light"] .sp-page .def { color: #c56a00 !important; }
     html[data-theme="light"] .sp-bar i.def { background: #c56a00 !important; }
     .sp-bar i.dim { opacity: 0.45; }
+    .bsr-filters { display: flex; align-items: center; gap: 6px; }
+    .bsr-filters .balance-search-sel, .bsr-filters .fancy-select-wrap { flex: 1 1 0; min-width: 0; }
+    .balance-search-sel { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg, var(--bg3)); color: var(--text); font-family: inherit; font-weight: 600; font-size: 0.85rem; }
     .rec-status { font-size: 0.76rem; margin-top: 3px; line-height: 1.6; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .rec-status .rec-act { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 8px; padding: 1px 8px; font-family: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
     .rec-row-tag { position: absolute; left: 4px; bottom: 1px; font-size: 0.56rem; font-weight: 700; color: var(--accent); opacity: 0.85; pointer-events: none; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
@@ -10862,6 +10865,16 @@
           <div class="balance-acc-row balance-search-row">
             <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
             <input type="search" id="balanceSearchInput" class="balance-search-input" placeholder="جستجوی شرح…" autocomplete="off" enterkeyhint="search" />
+          </div>
+          <div class="balance-acc-row balance-search-row bsr-filters">
+            <label class="balance-acc-label" for="balanceSearchCat">دسته:</label>
+            <select id="balanceSearchCat" class="balance-search-sel"><option value="">همهٔ دسته‌ها</option></select>
+            <select id="balanceSearchRange" class="balance-search-sel bsr-range">
+              <option value="all">همهٔ ماه‌ها</option>
+              <option value="month">این ماه</option>
+              <option value="3m">۳ ماه اخیر</option>
+              <option value="year">امسال</option>
+            </select>
           </div>
         </div>
       </div>
@@ -24544,6 +24557,11 @@ async function openPdfPrintWindow(){
       try {
         var inp = document.getElementById('balanceSearchInput');
         if (inp && inp.value) { inp.value = ''; }
+        ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
+          var el = document.getElementById(id); if (!el) return;
+          el.value = id === 'balanceSearchRange' ? 'all' : '';
+          try { if (el._fancyRender) el._fancyRender(); } catch (e2) {}
+        });
         renderBalanceSearch();
       } catch (e) {}
     }
@@ -33273,6 +33291,132 @@ if (item.type === 'recurring') {
         if (done) done('واریز ' + recRowLabel(c.row, today).split(' — ')[0] + ' به «' + (item.name || '') + '» وصل شد');
       });
     }
+    /* —— آرشیو هر درآمد ثابت: همهٔ واریزهای وصل‌شده، به ترتیب ماه (قدیمی‌تر بالا) —— */
+    function recArchiveRows(item) {
+      var out = [], rid = item && item.id;
+      if (!rid) return out;
+      recEachMonth(function (k, pd) {
+        ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (r && !r.deletedAt && r.fromRecurringId === rid && (Number(r.amount) || 0) > 0) out.push({ key: k, row: r, sec: sec });
+          });
+        });
+      });
+      out.sort(function (a, b) { return (a.key - b.key) || ((parseInt(a.row.day, 10) || 0) - (parseInt(b.row.day, 10) || 0)); });
+      return out;
+    }
+    function recOpenArchive(item) {
+      var old = document.getElementById('recArchiveModal'); if (old) old.remove();
+      var rows = recArchiveRows(item);
+      var paid = rows.filter(function (x) { return recIsPaid(x.row); });
+      var unpaid = rows.filter(function (x) { return !recIsPaid(x.row); });
+      var sum = paid.reduce(function (s, x) { return s + (Number(x.row.amount) || 0); }, 0);
+      var ov = document.createElement('div');
+      ov.id = 'recArchiveModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100350;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
+      var box = document.createElement('div');
+      box.style.cssText = 'width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px var(--shadow);direction:rtl;overflow:hidden;';
+      var fmtRange = function () {
+        var f = function (d) { return d ? toPersianDigits(String(d.d)) + ' ' + (MONTHS[d.m - 1] || '') + ' ' + toPersianDigits(String(d.y)) : '—'; };
+        return 'از ' + f(item.contractStart) + (item.contractEnd ? ' تا ' + f(item.contractEnd) : '');
+      };
+      var head = '<div style="padding:12px 14px 8px;border-bottom:1px solid var(--border);">' +
+        '<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;font-weight:800;font-size:1rem;">آرشیو «' + escapeHtml(item.name || '') + '»</div>' +
+        '<button type="button" id="recArchClose" style="border:none;background:transparent;color:var(--muted);font-size:1.4rem;line-height:1;cursor:pointer;">×</button></div>' +
+        '<div style="font-size:0.78rem;color:var(--muted);margin-top:4px;line-height:1.7;">' + formatNum(item.amount || 0) + ' تومان · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' +
+        (item.account ? ' · ' + escapeHtml(item.account) : '') + '<br>' + fmtRange() + '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:8px;font-size:0.8rem;">' +
+          '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">جمع دریافتی<br><b style="color:#30d158;">' + formatNum(sum) + '</b></div>' +
+          '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">دریافت‌شده<br><b style="color:#30d158;">' + toPersianDigits(String(paid.length)) + '</b></div>' +
+          '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">دریافت نشده<br><b style="color:#ff6b4a;">' + toPersianDigits(String(unpaid.length)) + '</b></div>' +
+        '</div></div>';
+      var body = '<div style="overflow:auto;flex:1;padding:4px 10px 8px;">';
+      if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این درآمد ثابت وصل نشده</div>';
+      else {
+        body += '<table class="rec-arch-table" style="width:100%;border-collapse:collapse;font-size:0.8rem;">' +
+          '<thead><tr style="color:var(--muted);"><th style="text-align:right;padding:6px 4px;">ماه</th><th style="padding:6px 4px;">تاریخ</th><th style="text-align:right;padding:6px 4px;">شرح</th><th style="padding:6px 4px;">بانک</th><th style="padding:6px 4px;">مبلغ</th></tr></thead><tbody>';
+        rows.forEach(function (x, i) {
+          var y = Math.floor(x.key / 100), m = x.key % 100, ok = recIsPaid(x.row);
+          var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+          body += '<tr class="rec-arch-row" data-i="' + i + '" style="border-top:1px solid var(--border);cursor:pointer;">' +
+            '<td style="padding:7px 4px;white-space:nowrap;font-weight:700;">' + (MONTHS[m - 1] || '') + ' ' + toPersianDigits(String(y)) + '</td>' +
+            '<td style="padding:7px 4px;text-align:center;white-space:nowrap;">' + (x.row.day ? p2(y % 100) + '/' + p2(m) + '/' + p2(x.row.day) : '—') + '</td>' +
+            '<td style="padding:7px 4px;">' + escapeHtml(x.row.desc || item.name || '') + '<div style="font-size:0.7rem;color:' + (ok ? '#30d158' : '#ff6b4a') + ';">' + (ok ? 'دریافت شد' : 'دریافت نشده') + '</div></td>' +
+            '<td style="padding:7px 4px;text-align:center;">' + escapeHtml(x.row.account || '—') + '</td>' +
+            '<td style="padding:7px 4px;text-align:center;white-space:nowrap;font-weight:700;color:' + (ok ? 'var(--text)' : 'var(--muted)') + ';">' + formatNum(Number(x.row.amount) || 0) + '</td></tr>';
+        });
+        body += '</tbody></table>';
+      }
+      body += '</div>';
+      var foot = '<div style="padding:8px 10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
+        '<button type="button" id="recArchAddPrev" style="flex:1;padding:9px;border-radius:9px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:inherit;font-weight:700;cursor:pointer;">افزودن واریزهای قبلی</button></div>';
+      box.innerHTML = head + body + foot;
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (e) {} };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      box.querySelector('#recArchClose').onclick = close;
+      box.querySelectorAll('.rec-arch-row').forEach(function (tr) {
+        tr.onclick = function () {
+          var x = rows[parseInt(tr.getAttribute('data-i'), 10)];
+          if (!x) return;
+          close();
+          try { if (typeof closeFeatureSheet === 'function') closeFeatureSheet(); } catch (e) {}
+          try { navigateToPeriod(Math.floor(x.key / 100), x.key % 100); } catch (e) {}
+          try { if (currentTab !== 'income') switchTab('income'); else renderAll(); } catch (e) {}
+        };
+      });
+      box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
+    }
+    /* واریزهای ثبت‌شدهٔ ماه‌های گذشته (همان حساب، مبلغ نزدیک، وصل‌نشده) با تیک به آرشیو اضافه می‌شوند؛ ردیف تازه ساخته نمی‌شود */
+    function recAddPreviousFlow(item, done) {
+      var amt = Number(item.amount) || 0, acc = (item.account || '').trim(), cands = [];
+      recEachMonth(function (k, pd) {
+        ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || r.fromPlanId || !recIsPaid(r)) return;
+            if (r.fromRecurringId && recLiveItem(r.fromRecurringId)) return;
+            var a = Number(r.amount) || 0;
+            if (!a || !amt || Math.abs(a - amt) > amt * 0.05) return;
+            if (acc && (r.account || '').trim() !== acc) return;
+            cands.push({ key: k, row: r });
+          });
+        });
+      });
+      cands.sort(function (a, b) { return (a.key - b.key) || ((parseInt(a.row.day, 10) || 0) - (parseInt(b.row.day, 10) || 0)); });
+      if (!cands.length) { showToast('واریز ثبت‌شدهٔ دیگری با همین حساب و مبلغ نزدیک پیدا نشد'); return; }
+      var old = document.getElementById('recAddPrevModal'); if (old) old.remove();
+      var ov = document.createElement('div');
+      ov.id = 'recAddPrevModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100450;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;';
+      var html = '<div style="width:100%;max-width:440px;max-height:80vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;direction:rtl;overflow:hidden;">' +
+        '<div style="padding:12px;font-weight:800;font-size:0.9rem;text-align:center;line-height:1.7;">کدام واریزها مربوط به «' + escapeHtml(item.name || '') + '» است؟</div><div style="overflow:auto;flex:1;padding:0 10px;">';
+      cands.forEach(function (c, i) {
+        html += '<label style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-top:1px solid var(--border);font-size:0.82rem;cursor:pointer;">' +
+          '<input type="checkbox" data-i="' + i + '" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;"><span style="flex:1;">' +
+          escapeHtml(recRowLabel(c.row, c.key)) + ' ' + toPersianDigits(String(Math.floor(c.key / 100))) + '</span></label>';
+      });
+      html += '</div><div style="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);">' +
+        '<button type="button" data-act="ok" style="flex:1;padding:9px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">افزودن</button>' +
+        '<button type="button" data-act="cancel" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button></div></div>';
+      ov.innerHTML = html;
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (e) {} };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('[data-act="cancel"]').onclick = close;
+      ov.querySelector('[data-act="ok"]').onclick = function () {
+        var n = 0;
+        ov.querySelectorAll('input[type=checkbox]:checked').forEach(function (cb) {
+          var c = cands[parseInt(cb.getAttribute('data-i'), 10)];
+          if (c) { recLinkRow(item, c.row); n++; }
+        });
+        if (n) recPersist();
+        close();
+        if (done) done(n);
+      };
+    }
     /* وضعیت این ماه برای خط وضعیت فهرست */
     function recTodayState(item) {
       var today = recTodayKey();
@@ -33587,14 +33731,15 @@ if (item.type === 'recurring') {
             else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; act = '<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'paid') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'linked') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
-            if (txt) statusLine = '<div class="rec-status" style="color:' + col + ';"><span>' + txt + '</span>' + act + '</div>';
+            act += '<button type="button" class="rec-act rec-arch-btn" data-rec-arch="' + i + '">آرشیو</button>';
+            statusLine = '<div class="rec-status" style="color:' + col + ';">' + (txt ? '<span>' + txt + '</span>' : '') + act + '</div>';
           } catch (eSt) {}
           const selected = recurringSelected.has(i);
           const rowCls = 'recurring-row';
           html += '<div class="' + rowCls + '" data-rec-idx="' + i + '" style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:10px;">' +
             '<span class="rec-select-check" aria-hidden="true">' + (selected ? '<svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' : '') + '</span>' +
             '<div style="flex:1;min-width:0;">' +
-              '<div style="font-weight:bold;font-size:0.95rem;">' + escapeHtml(r.name || '—') + '</div>' +
+              '<div style="font-weight:bold;font-size:0.95rem;cursor:pointer;" data-rec-arch="' + i + '">' + escapeHtml(r.name || '—') + '</div>' +
               '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">' + formatNum(r.amount || 0) + ' تومان · ' + dayStr + '</div>' +
               accLine + rangeLine + statusLine +
             '</div>' +
@@ -33800,6 +33945,13 @@ if (item.type === 'recurring') {
           const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-unlink'), 10)];
           if (!r) return;
           recUnlinkFlow(r, (msg) => { recRefreshViews(); try { renderRecurringBar(); } catch (e2) {} if (msg) showToast(msg); });
+        };
+      });
+      box.querySelectorAll('[data-rec-arch]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-arch'), 10)];
+          if (r) recOpenArchive(r);
         };
       });
       box.querySelectorAll('[data-rec-link]').forEach(btn => {
@@ -37047,7 +37199,7 @@ function openProjectRowPicker(secId) {
       /* لایه‌های شناور (باکس اطلاعات، پنجرهٔ انتخاب، فهرست‌های کشویی): بازگشت فقط بالاترین لایه را می‌بندد
          و منوی زیرش سر جایش می‌ماند */
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
-      try { var _rpm = document.getElementById('recPickModal'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
+      try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recArchiveModal'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { _spt.remove(); return; } } catch (eSpt) {}
@@ -38240,6 +38392,49 @@ function openProjectRowPicker(secId) {
       wrap.appendChild(sel);
     }
     /* ===== سرچ باکس: جستجوی شرح در همهٔ ماه‌ها (با فیلتر بخش و حساب همین صفحه) ===== */
+    /* دسته و بازهٔ زمانی جستجو */
+    function bsCatOf(r) {
+      try { var c = HKCategorizer.classify(r.desc, r); return c ? (c.ids || [c.id]) : []; } catch (e) { return []; }
+    }
+    function bsInRange(range, y, m) {
+      if (!range || range === 'all') return true;
+      var t = getTodayPersian(), tk = t.y * 12 + t.m, k = y * 12 + m;
+      if (range === 'month') return y === t.y && m === t.m;
+      if (range === '3m') return k <= tk && k > tk - 3;
+      if (range === 'year') return y === t.y;
+      return true;
+    }
+    /* فهرست دسته‌ها با تعداد ردیف‌های مخارج (فقط دسته‌هایی که ردیف دارند) */
+    function bsFillCategories() {
+      var sel = document.getElementById('balanceSearchCat');
+      if (!sel) return;
+      var keep = sel.value, counts = {}, none = 0;
+      var range = (document.getElementById('balanceSearchRange') || {}).value || 'all';
+      var curKey = periodKey(currentYear, currentMonth);
+      iterAllPeriodData(function (pd, key) {
+        if (key === curKey && pd !== periodData) return;
+        var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
+        if (!bsInRange(range, y, m)) return;
+        ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
+            var ids = bsCatOf(r);
+            if (!ids.length) none++;
+            ids.forEach(function (id) { counts[id] = (counts[id] || 0) + 1; });
+          });
+        });
+      });
+      var html = '<option value="">همهٔ دسته‌ها</option>';
+      (HKCategorizer.categories || []).forEach(function (c) {
+        if (counts[c.id]) html += '<option value="' + escapeHtml(c.id) + '">' + escapeHtml(c.label) + ' (' + toPersianDigits(String(counts[c.id])) + ')</option>';
+      });
+      if (none) html += '<option value="__none__">بدون دسته (' + toPersianDigits(String(none)) + ')</option>';
+      if (sel._bsHtml !== html) {
+        sel.innerHTML = html; sel._bsHtml = html;
+        sel.value = [].some.call(sel.options, function (o) { return o.value === keep; }) ? keep : '';
+        try { if (sel._fancyRender) sel._fancyRender(); } catch (e) {}
+      }
+    }
     function renderBalanceSearch() {
       var inp = document.getElementById('balanceSearchInput');
       var boxR = document.getElementById('searchResultBox');
@@ -38248,11 +38443,14 @@ function openProjectRowPicker(secId) {
       if (!inp || !boxR || !body) return;
       var norm = (typeof HKCategorizer !== 'undefined') ? HKCategorizer.normalize : function (x) { return String(x || '').trim(); };
       var q = norm(inp.value);
+      try { bsFillCategories(); } catch (eBs) {}
+      var catF = (document.getElementById('balanceSearchCat') || {}).value || '';
+      var rangeF = (document.getElementById('balanceSearchRange') || {}).value || 'all';
       var sb = document.getElementById('balanceScrollBody');
       var balSec = sb ? sb.querySelector(':scope > .summary-section:not(#dayDetailBox):not(#searchResultBox)') : null;
       var hint = sb ? sb.querySelector(':scope > .balance-hint') : null;
       var dayBoxEl = document.getElementById('dayDetailBox');
-      if (!q) {
+      if (!q && !catF && rangeF === 'all') {
         boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = '';
         if (balSec) balSec.style.display = '';
         if (hint) hint.style.display = '';
@@ -38273,17 +38471,20 @@ function openProjectRowPicker(secId) {
         if (key === curKey && pd !== periodData) return;
         if (dayF && key !== curKey) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
-        ['income', 'expense'].forEach(function (tab) {
+        if (!bsInRange(rangeF, y, m)) return;
+        /* با انتخاب دسته فقط مخارج (دسته‌بندی مال مخارج است) */
+        (catF ? ['expense'] : ['income', 'expense']).forEach(function (tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
             var t = ((sec && sec.title) || '').trim();
             if (sel.length && sel.indexOf(t) < 0) return;
             (sec.rows || []).forEach(function (r) {
               if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
               if (accF && (r.account || '').trim() !== accF) return;
-              if (norm(r.desc).indexOf(q) < 0) return;
+              if (q && norm(r.desc).indexOf(q) < 0) return;
               if (dayF && dayNum(r) !== dayF) return;
+              if (catF) { var ids = bsCatOf(r); if (catF === '__none__' ? ids.length : ids.indexOf(catF) < 0) return; }
               titles[t] = 1;
-              list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t, bank: (r.account || '').trim() });
+              list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t, bank: (r.account || '').trim(), row: r });
             });
           });
         });
@@ -38302,7 +38503,21 @@ function openProjectRowPicker(secId) {
         var full = it.desc + (many ? ' (' + it.title + ')' : '');
         td.textContent = full;
         td.title = full;
-        td.onclick = function (e) { e.stopPropagation(); try { showCellTextPopup(td, full); } catch (err) {} };
+        td.onclick = function (e) {
+          e.stopPropagation();
+          if (catF && it.tab === 'expense') {
+            var opts = (HKCategorizer.categories || []).map(function (c) { return { label: c.label, value: c.id }; });
+            opts.push({ label: 'انصراف', value: null, primary: true });
+            recPickModal('دستهٔ «' + it.desc + '» (برای همهٔ ردیف‌های با همین شرح):', opts, function (v) {
+              if (!v) return;
+              try { HKCategorizer.learn(it.desc, v); } catch (eL) {}
+              try { showToast('دسته عوض شد: ' + ((HKCategorizer.byId[v] || {}).label || '')); } catch (eT) {}
+              renderBalanceSearch();
+            });
+            return;
+          }
+          try { showCellTextPopup(td, full); } catch (err) {}
+        };
         var tdB = document.createElement('td');
         tdB.className = 'sr-bank';
         tdB.textContent = it.bank ? toPersianDigits(it.bank) : '—';
@@ -38330,6 +38545,14 @@ function openProjectRowPicker(secId) {
         };
         if (sumI) addF('جمع درآمد', sumI, '#ffffff');
         if (sumE) addF('جمع مخارج', sumE, '#ffffff');
+        /* بیش از یک ماه: جمع هر ماه */
+        var byM = {}, order = [];
+        list.forEach(function (it) { var k = it.y * 100 + it.m; if (!(k in byM)) { byM[k] = 0; order.push(k); } byM[k] += it.amount; });
+        if (order.length > 1) {
+          order.sort(function (a, b) { return a - b; });
+          var oneYear = Math.floor(order[0] / 100) === Math.floor(order[order.length - 1] / 100);
+          order.forEach(function (k) { addF('جمع ' + (MONTHS[(k % 100) - 1] || '') + (oneYear ? '' : ' ' + toPersianDigits(String(Math.floor(k / 100) % 100))), byM[k], 'rgba(255,255,255,0.75)'); });
+        }
       }
       document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو (' + toPersianDigits(String(list.length)) + ' مورد)';
       boxR.style.display = '';
@@ -38342,6 +38565,13 @@ function openProjectRowPicker(secId) {
         var t = 0;
         inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(renderBalanceSearch, 150); });
         inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { inp.blur(); } catch (e2) {} } });
+        ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', function () { renderBalanceSearch(); });
+          try { enhanceSelectFont(el); } catch (eF) {}
+        });
+        try { bsFillCategories(); } catch (eB) {}
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
     })();
@@ -38580,12 +38810,25 @@ function openProjectRowPicker(secId) {
     try { checkUserReminders(true); } catch (e) {} /* بدون تأخیر: باکس یادآور هم‌زمان با بقیهٔ صفحه ظاهر شود */
     loadArchive();
     loadCurrent();
+    /* هر بار باز شدن: ماه نمایش‌داده‌شده = ماه امروز (اگر روی ماه آینده بسته شده بود، برمی‌گردد) */
+    try {
+      var _bt = getTodayPersian();
+      if (_bt && _bt.y && (currentYear * 100 + currentMonth) > (_bt.y * 100 + _bt.m)) { currentYear = _bt.y; currentMonth = _bt.m; loadCurrent(); }
+    } catch (eBootM) {}
     try { autoAdvancePersianMonthIfNeeded(); } catch (eAutoM) {}
     /* درآمدهای ثابت: ردیف ماه‌های رسیده (از آخرین بازشدن تا امروز) */
     try { ensureRecurringRows({ render: false }); } catch (eRec) {}
     try {
+      var _hkLastTodayKey = recTodayKey();
       document.addEventListener('visibilitychange', function () {
         if (document.hidden) return;
+        try {
+          var nk = recTodayKey();
+          if (nk !== _hkLastTodayKey) {
+            if (recMonthKey(currentYear, currentMonth) === _hkLastTodayKey) { autoAdvancePersianMonthIfNeeded(); }
+            _hkLastTodayKey = nk;
+          }
+        } catch (e) {}
         try { ensureRecurringRows(); } catch (e) {}
       });
     } catch (eRecV) {}
