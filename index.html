@@ -9061,10 +9061,32 @@
     .rec-acts .rec-renew-btn { border-color: #ff9f0a; color: #ff9f0a; }
     .recurring-row:not(.rec-open) .rec-more { display: none; }
     .rec-st-unpaid { color: #ff6b4a; }
+    /* کلید روشن/خاموش مستطیلی گرد */
+    .hk-switch { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; height: 30px; padding: 0 10px 0 4px; border-radius: 15px; border: 1px solid var(--border); background: var(--bg3); color: var(--muted); font-family: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; direction: ltr; transition: background 0.2s, color 0.2s; }
+    .hk-switch i { display: block; width: 22px; height: 22px; border-radius: 11px; background: var(--muted); transition: background 0.2s; }
+    .hk-switch.on { background: rgba(48, 209, 88, 0.18); border-color: rgba(48, 209, 88, 0.6); color: #30d158; flex-direction: row-reverse; padding: 0 4px 0 10px; }
+    .hk-switch.on i { background: #30d158; }
+    .bk-enc-title { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    /* فلش یکسان: منوهای کشویی (دو نوع) با همان فلش درآمدهای ثابت که با باز شدن می‌چرخد */
+    .hk-chev { display: inline-flex; width: 14px; height: 14px; flex-shrink: 0; color: var(--muted); transition: transform 0.2s ease; vertical-align: middle; }
+    .hk-chev svg { width: 14px; height: 14px; display: block; }
+    .hk-chev.open { transform: rotate(180deg); }
+    .dark-select-btn::after, .fancy-select-btn::after {
+      content: '' !important; width: 12px !important; height: 12px !important; border: 0 !important; opacity: 1 !important; font-size: 0 !important;
+      background: var(--muted) !important;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+      transition: transform 0.2s ease;
+    }
+    .dark-select-btn::after { transform: translateY(-50%) !important; }
+    .dark-select.is-open .dark-select-btn::after { transform: translateY(-50%) rotate(180deg) !important; }
+    .fancy-select-wrap.is-open .fancy-select-btn::after { transform: rotate(180deg); }
+    #monthSelectWrap.is-open .dark-select-btn::after, #yearSelectWrap.is-open .dark-select-btn::after { transform: translateX(10px) translateY(-50%) rotate(180deg) !important; }
     .rec-arch-row.is-paid > td { background: rgba(158, 232, 88, 0.18); }
     .rec-arch-row.is-unpaid > td { background: rgba(255, 107, 74, 0.18); }
     html[data-theme="light"] .rec-arch-row.is-paid > td { background: rgba(63, 154, 92, 0.16); }
     html[data-theme="light"] .rec-arch-row.is-unpaid > td { background: rgba(220, 38, 38, 0.13); }
+    .rec-term-range { font-size: 0.86rem; font-weight: 800; color: #ffc531; direction: ltr; unicode-bidi: isolate; }
+    html[data-theme="light"] .rec-term-range { color: #c98f00; }
     .rec-term-fico { display: inline-flex; width: 26px; height: 26px; flex-shrink: 0; }
     .rec-term-fico svg { width: 26px; height: 26px; }
     html[data-theme="light"] .rec-st-unpaid { color: #dc2626; }
@@ -10433,8 +10455,8 @@
     .hk-bulk-fico { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; }
     .hk-bulk-fico svg { width: 22px; height: 22px; display: block; }
     .hk-bulk-fname { flex: 1; min-width: 0; }
-    .hk-bulk-arrow { color: var(--muted, #9a9a9a); font-size: 1.2rem; line-height: 1; transition: transform 0.2s; }
-    .hk-bulk-folder.open .hk-bulk-arrow { transform: rotate(-90deg); }
+    .hk-bulk-arrow { color: var(--muted, #9a9a9a); }
+    .hk-bulk-folder.open .hk-bulk-arrow { transform: rotate(180deg); }
     .hk-bulk-tx { display: none; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); padding-top: 4px; }
     .hk-bulk-folder.open .hk-bulk-tx { display: block; }
     .hk-bulk-txr { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; font-size: 0.72rem; padding: 4px 0; border-bottom: 1px dashed rgba(127,127,127,0.18); }
@@ -11872,6 +11894,8 @@
     let syncing = false;
     let editingLock = false;
     let familyModalTab = 'join'; // join | create
+    /* فلش یکسان همهٔ منوهای باز/بسته‌شونده و کشویی (همان فلش درآمدهای ثابت) */
+    var HK_CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     let familyAdvancedOpen = false;
     let sharedAccountId = ''; // uuid حساب مشترک در Supabase
     let supabaseAccessToken = '';
@@ -12660,6 +12684,7 @@
     }
     function closeDarkSelects() {
       document.querySelectorAll('.dark-select-list.open').forEach(l => l.classList.remove('open'));
+      document.querySelectorAll('.dark-select.is-open').forEach(w => w.classList.remove('is-open'));
       openDarkList = null;
       const bd = document.getElementById('darkSelectBackdrop');
       if (bd) bd.style.display = 'none';
@@ -12756,6 +12781,7 @@
         const minW = (listMinWidth === undefined || listMinWidth === null) ? 120 : listMinWidth;
         list.style.width = Math.max(r.width, minW) + 'px';
         list.classList.add('open');
+        wrap.classList.add('is-open');
         openDarkList = list;
         const bd = ensureDarkSelectBackdrop();
         bd.style.display = 'block';
@@ -14903,7 +14929,7 @@ function onPeriodChange() {
 
       if (!SUPABASE_ENABLED) {
         html += '<button type="button" class="fam-advanced-toggle" onclick="toggleFamilyAdvanced()">' +
-          (familyAdvancedOpen ? '▼' : '◀') + ' تنظیمات پیشرفته</button>';
+          '<span class="hk-chev' + (familyAdvancedOpen ? ' open' : '') + '" aria-hidden="true">' + HK_CHEV_SVG + '</span> تنظیمات پیشرفته</button>';
         html += '<div class="fam-advanced' + (familyAdvancedOpen ? ' open' : '') + '" id="familyAdvancedBox">';
         html += '<p class="family-help">همگام‌سازی ابری از طریق Supabase در نسخه توسعه‌دهنده پیکربندی می‌شود و اینجا نمایش داده نمی‌شود.</p>';
         html += '</div>';
@@ -16058,8 +16084,9 @@ function onPeriodChange() {
       /* رمزنگاری پشتیبان خودکار: فعال‌سازی / خاموش‌کردن / پاک‌کردن پشتیبان‌های بی‌رمز قدیمی (پس از اتمام، همین پنجره دوباره باز می‌شود) */
       var reopen = function () { try { ov.remove(); } catch (e) {} askBackupParts(); };
       var encBtn = ov.querySelector('#bkEncBtn'), encOff = ov.querySelector('#bkEncOff'), encClean = ov.querySelector('#bkEncCleanup');
-      if (encBtn) encBtn.onclick = function () { var st0 = hkAutoEncState(); ov.remove(); if (st0 && !st0.broken) hkAutoEncDisable(askBackupParts); else hkAutoEncSetup(askBackupParts); };
-      if (encOff) encOff.onclick = function () { ov.remove(); hkAutoEncDisable(askBackupParts); };
+      if (encBtn) encBtn.onclick = function () { var st0 = hkAutoEncState(); ov.remove(); if (st0) hkAutoEncDisable(askBackupParts); else hkAutoEncSetup(askBackupParts); };
+      var encFix = ov.querySelector('#bkEncFix');
+      if (encFix) encFix.onclick = function () { ov.remove(); hkAutoEncSetup(askBackupParts); };
       if (encClean) encClean.onclick = function () { ov.remove(); hkAutoEncCleanup(askBackupParts); };
       if (autoCb) autoCb.addEventListener('change', function () {
         var st = autoBkState(); st.enabled = !!autoCb.checked; autoBkSave(st);
@@ -16391,17 +16418,25 @@ function onPeriodChange() {
     function hkAutoEncRowHtml() {
       var st = hkAutoEncState(), s = autoBkState();
       var mode = !st ? 'خاموش' : (st.broken ? 'روشن، ولی کلید روی این دستگاه پیدا نشد' : 'روشن');
-      var h = '<div class="bk-enc-wrap" id="bkEncRow"><div class="bk-enc-line"><span>رمزنگاری پشتیبان خودکار: <b id="bkEncMode">' + mode + '</b></span>' +
-        '<button type="button" class="bk-enc-btn" id="bkEncBtn">' + (!st ? 'فعال‌سازی…' : (st.broken ? 'تنظیم دوباره…' : 'خاموش کردن')) + '</button></div>';
-      if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncOff">خاموش کردن</button></div>';
+      /* کلید روشن/خاموش (مستطیل گرد) جلوی عنوان؛ روشن کردن = پنجرهٔ تعیین رمز، خاموش کردن = تأیید */
+      var on = !!st;
+      var h = '<div class="bk-enc-wrap" id="bkEncRow"><div class="bk-enc-line"><span>رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <b id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</b>' : '') + '</span>' +
+        '<button type="button" class="hk-switch' + (on ? ' on' : '') + '" id="bkEncBtn" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="رمزنگاری پشتیبان خودکار"><i></i><span>' + (on ? 'روشن' : 'خاموش') + '</span></button></div>';
+      if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncFix">تنظیم دوباره…</button></div>';
       if (st && !st.broken && s.lastEncOkAt) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncCleanup">پاک کردن پشتیبان‌های خودکار بی‌رمز قدیمی…</button></div>';
       if (s.lastErrorText) h += '<div class="bk-enc-err" id="bkAutoErr">' + escapeHtml(s.lastErrorText) + '</div>';
       return h + '</div>';
     }
     function _hkEncOverlay(id) {
       var old = document.getElementById(id); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = id; ov.className = 'backup-pick-overlay';
+      var ov = document.createElement('div'); ov.id = id; ov.className = 'backup-pick-overlay hk-enc-ov';
       document.body.appendChild(ov);
+      /* زدن بیرون باکس یا دکمهٔ بازگشت = همان «انصراف» پنجرهٔ فعلی */
+      ov._hkCancel = function () {
+        var c = ov.querySelector('.backup-pick-cancel');
+        if (c) c.click(); else ov.remove();
+      };
+      ov.addEventListener('click', function (e) { if (e.target === ov && !document.getElementById('hkInfoTip')) ov._hkCancel(); });
       return ov;
     }
     /** راه‌اندازی: توضیح ← رمز (دو بار) ← نمایش کد بازیابی ← واردکردن دوبارهٔ کد ← آزمون کامل ← فقط آنگاه روشن.
@@ -16434,18 +16469,22 @@ function onPeriodChange() {
     }
     function hkAutoEncSetupForm(ov, done, mode) {
       var isRepair = mode === 'repair';
-      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">' + (isRepair ? 'رمز و کد تازه برای همین کلید' : 'رمزنگاری پشتیبان خودکار') + '</div>' + (isRepair ?
-        '<div class="bk-enc-txt" id="bkEncRepairTxt">رمز پشتیبان و کد بازیابی تازه برای همان کلید رمزنگاری ساخته می‌شود؛ خود کلید عوض نمی‌شود.\n' +
+      /* همهٔ توضیح‌ها داخل باکس اطلاعاتِ کنار عنوان؛ پنجره فقط فیلدها و دکمه‌ها را دارد */
+      var tip = isRepair ?
+        'رمز پشتیبان و کد بازیابی تازه برای همان کلید رمزنگاری ساخته می‌شود؛ خود کلید عوض نمی‌شود.\n' +
         '• پشتیبان‌های رمزدار قبلی روی همین گوشی مثل قبل باز می‌شوند.\n' +
         '• پشتیبان‌های تازه با رمز یا کد جدید باز می‌شوند.\n' +
         '• پشتیبان‌های قبلی روی گوشی دیگر یا بعد از نصب دوباره فقط با رمز یا کد بازیابی قبلی باز می‌شوند؛ این فایل‌ها دوباره رمزنگاری نمی‌شوند.\n' +
-        '• اگر رمز و کد تازه را هم گم کنید، پشتیبان‌های تازه روی گوشی دیگر باز نمی‌شوند.</div>' :
-        '<div class="bk-enc-txt">با روشن کردن این گزینه، پشتیبان‌های خودکار (پوشهٔ Download/HesabKetab) رمزدار ذخیره می‌شوند و بدون رمز پشتیبان یا کد بازیابی خوانده نمی‌شوند.\n' +
-        '• برای بازیابی روی گوشی دیگر یا بعد از نصب دوباره، «رمز پشتیبان» یا «کد بازیابی» لازم است.\n' +
+        '• اگر رمز و کد تازه را هم گم کنید، پشتیبان‌های تازه روی گوشی دیگر باز نمی‌شوند.' :
+        'با روشن کردن این گزینه، پشتیبان‌های خودکار (پوشهٔ Download/HesabKetab) رمزدار ذخیره می‌شوند و بدون رمز پشتیبان یا کد بازیابی خوانده نمی‌شوند.\n' +
+        '• رمز پشتیبان: رمزی که خودتان انتخاب می‌کنید؛ با آن پشتیبان‌های رمزدار باز می‌شوند.\n' +
+        '• کد بازیابی: کدی ۲۵ نویسه‌ای که در مرحلهٔ بعد فقط یک بار نشان داده می‌شود. اگر رمز را فراموش کنید، پشتیبان با این کد هم باز می‌شود؛ آن را روی کاغذ یا جایی بیرون از همین گوشی نگه دارید.\n' +
+        '• برای بازیابی روی گوشی دیگر یا بعد از نصب دوباره، «رمز پشتیبان» یا «کد بازیابی» لازم است؛ هر فایل با هر کدام از این دو باز می‌شود. هیچ‌کدام در گوشی ذخیره نمی‌شوند.\n' +
         '• اگر هر دو را گم کنید، پشتیبان‌های رمزدار برای همیشه باز نمی‌شوند و هیچ‌کس نمی‌تواند بازشان کند.\n' +
         '• این کار اطلاعات داخل خود برنامه را رمز نمی‌کند؛ برای آن قفل برنامه و قفل گوشی را روشن کنید.\n' +
         '• پشتیبان‌های بی‌رمز قبلی خودبه‌خود پاک نمی‌شوند.\n' +
-        '• ' + HK_ENC_OLD_KEY_WARN + '</div>') +
+        '• ' + HK_ENC_OLD_KEY_WARN;
+      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title bk-enc-title">' + (isRepair ? 'رمز و کد تازه برای همین کلید' : 'رمزنگاری پشتیبان خودکار') + ' ' + hkInfoBtnHtml(tip) + '</div>' +
         '<div class="bk-pwd-wrap"><label for="bkEncPw1">رمز پشتیبان (دست‌کم ۱۰ نویسه، فقط عدد نباشد)</label>' + hkPwdFieldHtml('bkEncPw1', 'new-password', '') +
         '<label for="bkEncPw2">تکرار رمز</label>' + hkPwdFieldHtml('bkEncPw2', 'new-password', '') + '</div>' +
         '<div class="bk-enc-err" id="bkEncErr"></div>' +
@@ -16457,8 +16496,8 @@ function onPeriodChange() {
         var pe = hkPwPolicyError(p1); if (pe) return err(pe);
         if (hkNormPwV1(p1) !== hkNormPwV1(p2)) return err('دو رمز یکسان نیستند.');
         var code = hkGenRecoveryCode();
-        ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title">کد بازیابی</div>' +
-          '<div class="bk-enc-txt">این کد فقط همین یک بار نمایش داده می‌شود. آن را روی کاغذ بنویسید یا جای امنی بیرون از همین گوشی نگه دارید. با این کد، حتی اگر رمز را فراموش کنید، پشتیبان رمزدار باز می‌شود.</div>' +
+        ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title bk-enc-title">کد بازیابی ' + hkInfoBtnHtml('کد بازیابی راه دوم بازکردن پشتیبان‌های رمزدار است: اگر رمز پشتیبان را فراموش کنید، با همین کد باز می‌شوند.\n• آن را روی کاغذ بنویسید یا جای امنی بیرون از همین گوشی نگه دارید.\n• این کد در گوشی ذخیره نمی‌شود و دوباره نشان داده نمی‌شود.\n• برای اطمینان از درست نوشتن، یک بار دیگر واردش کنید.') + '</div>' +
+          '<div class="bk-enc-txt">این کد فقط همین یک بار نمایش داده می‌شود.</div>' +
           '<input type="text" readonly class="bk-enc-code" id="bkEncCode" dir="ltr" value="' + hkFormatRecoveryCode(code) + '">' +
           '<div class="backup-pick-actions" style="margin-top:6px"><button type="button" class="bk-enc-btn" id="bkEncCopy">کپی کد</button></div>' +
           '<div class="bk-pwd-wrap"><label for="bkEncRc2">برای اطمینان، کد بازیابی را دوباره وارد کنید</label><input type="text" class="bk-enc-code" id="bkEncRc2" dir="ltr" autocomplete="off" spellcheck="false"></div>' +
@@ -18120,18 +18159,31 @@ function askBackupUserCards(selectedParts) {
       }
       if (want('ledger')) sheets.push({ name: 'قرض', rows: lr, widths: [24, 7, 30, 16, 16, 16, 14], freeze: 1 });
       /* درآمد ثابت + آرشیو واریزهای همین بازه */
-      var rr = [[H('نام'), H('کارت'), H('روز'), H('مبلغ')]], rs = 0;
+      /* بالا: مشخصات هر قرارداد (به ترتیب روز)؛ پایین: واریزهای همین بازه (به ترتیب تاریخ) */
+      var nd = function (d) { return (d && d.y) ? toPersianDigits(d.y + '/' + String(d.m).padStart(2, '0') + '/' + String(d.d).padStart(2, '0')) : ''; };
+      var rr = [[H('نام (مقصد)'), H('مبلغ ماهانه'), H('رهن'), H('شروع قرارداد'), H('پایان قرارداد'), H('حساب')]], rs = 0, rd = 0;
       var recList = [];
-      try { (recurringIncomes || []).forEach(function (r) { if (!r || r.deletedAt || (!r.name && !r.amount)) return; if (O.user && (r.sectionTitle || '').trim() !== O.user) return; recList.push(r); rs += Number(r.amount) || 0; rr.push([T(r.name || '—'), T(r.sectionTitle || ''), (parseInt(toEnglishDigits(String(r.day || '')), 10) ? N(parseInt(toEnglishDigits(String(r.day || '')), 10)) : T('')), N(r.amount)]); }); } catch (e) {}
-      rr.push([TT('جمع ماهانه'), TT(''), TT(''), TN(rs)]);
+      try { (recurringIncomes || []).forEach(function (r) { if (!r || r.deletedAt || (!r.name && !r.amount)) return; if (O.user && (r.sectionTitle || '').trim() !== O.user) return; recList.push(r); }); } catch (e) {}
+      recList.slice().sort(function (a, b) { return (parseInt(toEnglishDigits(String(a.day || '')), 10) || 99) - (parseInt(toEnglishDigits(String(b.day || '')), 10) || 99); }).forEach(function (r) {
+        rs += Number(r.amount) || 0; rd += Number(r.deposit) || 0;
+        rr.push([T((r.name || '—') + (r.sectionTitle ? ' (' + r.sectionTitle + ')' : '')), N(r.amount), Number(r.deposit) > 0 ? N(r.deposit) : T('—'), T(nd(r.contractStart)), T(nd(r.contractEnd)), T(r.account || '')]);
+      });
+      rr.push([TT('جمع'), TN(rs), rd ? TN(rd) : TT('—'), TT(''), TT(''), TT('')]);
       var mk = {}; months.forEach(function (mo) { mk[mo.y * 100 + mo.m] = 1; });
       var arc = [];
       recList.forEach(function (it) {
         var xs = []; try { xs = recArchiveRows(it).filter(function (x) { return mk[x.key]; }); } catch (e) {}
-        xs.forEach(function (x) { arc.push([T(it.name || ''), T((MONTHS[(x.key % 100) - 1] || '') + ' ' + toPersianDigits(Math.floor(x.key / 100))), dayNum(x.row) === '' ? T('') : N(dayNum(x.row)), N(x.row.amount), T(x.row.account || ''), T(x.row.status === 'paid' ? 'دریافت‌شده' : 'دریافت‌نشده')]); });
+        xs.forEach(function (x) { arc.push({ it: it, x: x, d: parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0 }); });
       });
-      if (arc.length) { rr.push([]); rr.push([H('آرشیو: نام'), H('ماه'), H('روز'), H('مبلغ'), H('بانک'), H('وضعیت')]); rr = rr.concat(arc); }
-      if (want('recurring')) sheets.push({ name: 'درآمد ثابت', rows: rr, widths: [26, 18, 8, 18, 16, 14], freeze: 1 });
+      arc.sort(function (a, b) { return (a.x.key - b.x.key) || (a.d - b.d); });
+      if (arc.length) {
+        rr.push([]); rr.push([H('نام (شرح)'), H('تاریخ'), H('مبلغ'), H('بانک'), H('وضعیت پرداخت'), H('')]);
+        arc.forEach(function (o) {
+          var y = Math.floor(o.x.key / 100), m = o.x.key % 100;
+          rr.push([T(o.x.row.desc || o.it.name || ''), T(toPersianDigits(y + '/' + String(m).padStart(2, '0') + (o.d ? '/' + String(o.d).padStart(2, '0') : ''))), N(o.x.row.amount), T(o.x.row.account || ''), T(o.x.row.status === 'paid' ? 'دریافت‌شده' : 'دریافت‌نشده'), T('')]);
+        });
+      }
+      if (want('recurring')) sheets.push({ name: 'درآمد ثابت', rows: rr, widths: [30, 16, 16, 14, 14, 16], freeze: 1 });
       /* پروژه‌ها (همهٔ ماه‌ها): خلاصه + واریزی‌ها و مخارج با تاریخ، شرح و بانک */
       var subs = []; try { subs = (loadFinancialSubjects() || []).filter(function (x) { return x && x.id && x.id !== 'personal'; }); } catch (e) {}
       if (subs.length && want('projects')) {
@@ -18590,28 +18642,37 @@ function askBackupUserCards(selectedParts) {
         '<table><thead><tr><th>حساب</th><th style="width:42%">موجودی</th></tr></thead><tbody>' + accKeys.map(function (k) { return '<tr><td>' + E(k) + '</td><td class="n">' + pdfMoney(accMap[k]) + '</td></tr>'; }).join('') +
         (accKeys.length > 1 ? '<tr class="T"><td>جمع</td><td class="n">' + pdfMoney(accSum) + '</td></tr>' : '') + '</tbody></table>' : '<div class="empty">حسابی تعریف نشده</div>');
       var rec = []; try { rec = (recurringIncomes || []).filter(function (r) { return r && !r.deletedAt && (r.name || r.amount) && (!O.user || (r.sectionTitle || '').trim() === O.user); }); } catch (e) {}
-      var recSum = 0;
+      /* ---- درآمدهای ثابت: جدول بالا = مشخصات هر قرارداد (به ترتیب روز)، جدول پایین = واریزهای همین بازه (به ترتیب تاریخ) ---- */
+      var numDate = function (d) { return (d && d.y) ? toPersianDigits(d.y + '/' + String(d.m).padStart(2, '0') + '/' + String(d.d).padStart(2, '0')) : '—'; };
+      var recSorted = rec.slice().sort(function (a, b) { return (parseInt(toEnglishDigits(String(a.day || '')), 10) || 99) - (parseInt(toEnglishDigits(String(b.day || '')), 10) || 99); });
+      var recSum = 0, depSum = 0;
       var recHtml = '<div class="st inc">درآمدهای ثابت</div>' + (rec.length ?
-        '<table><thead><tr><th>نام</th><th style="width:16%">روز</th><th style="width:34%">مبلغ</th></tr></thead><tbody>' + rec.map(function (r) { recSum += Number(r.amount) || 0; return '<tr><td>' + E(r.name || '—') + (r.sectionTitle ? ' <span style="color:#666">(' + E(r.sectionTitle) + ')</span>' : '') + '</td><td class="c">' + (r.day ? toPersianDigits(r.day) : '—') + '</td><td class="n">' + pdfMoney(r.amount) + '</td></tr>'; }).join('') +
-        (rec.length > 1 ? '<tr class="T"><td colspan="2">جمع ماهانه</td><td class="n">' + pdfMoney(recSum) + '</td></tr>' : '') + '</tbody></table>' : '<div class="empty">درآمد ثابتی ثبت نشده</div>');
-      if (want('accounts') && want('recurring')) B.push({ html: '<div class="pb sec row2"><div>' + accHtml + '</div><div>' + recHtml + '</div></div>' });
-      else if (want('accounts')) B.push({ html: '<div class="pb sec">' + accHtml + '</div>' });
-      else if (want('recurring')) B.push({ html: '<div class="pb sec">' + recHtml + '</div>' });
-      /* ---- آرشیو درآمدهای ثابت (واریزهای وصل‌شده در همین بازه) ---- */
+        '<table><thead><tr><th>نام (مقصد)</th><th style="width:15%">مبلغ ماهانه</th><th style="width:14%">رهن</th><th style="width:13%">شروع قرارداد</th><th style="width:13%">پایان قرارداد</th><th style="width:15%">حساب</th></tr></thead><tbody>' +
+        recSorted.map(function (r) {
+          recSum += Number(r.amount) || 0; depSum += Number(r.deposit) || 0;
+          return '<tr><td>' + E(r.name || '—') + (r.sectionTitle ? ' <span style="color:#666">(' + E(r.sectionTitle) + ')</span>' : '') + '</td><td class="n">' + pdfMoney(r.amount) + '</td><td class="n">' + (Number(r.deposit) > 0 ? pdfMoney(r.deposit) : '—') + '</td><td class="c">' + numDate(r.contractStart) + '</td><td class="c">' + numDate(r.contractEnd) + '</td><td class="c">' + E(r.account || '—') + '</td></tr>';
+        }).join('') +
+        (rec.length > 1 ? '<tr class="T"><td>جمع</td><td class="n">' + pdfMoney(recSum) + '</td><td class="n">' + (depSum ? pdfMoney(depSum) : '—') + '</td><td colspan="3"></td></tr>' : '') + '</tbody></table>' : '<div class="empty">درآمد ثابتی ثبت نشده</div>');
+      if (want('accounts')) B.push({ html: '<div class="pb sec">' + accHtml + '</div>' });
+      if (want('recurring')) B.push({ html: '<div class="pb sec">' + recHtml + '</div>', split: rec.length > 0 });
       if (want('recurring') && rec.length) {
         var mk = {}; months.forEach(function (mo) { mk[mo.y * 100 + mo.m] = 1; });
-        var ar = '', an = 0;
+        var dep = [];
         rec.forEach(function (it) {
           var rows = []; try { rows = recArchiveRows(it).filter(function (x) { return mk[x.key]; }); } catch (e) {}
-          if (!rows.length) return;
-          ar += '<tr class="g"><td colspan="6">' + E(it.name || '—') + '</td></tr>';
-          rows.forEach(function (x) {
-            an++;
-            var ok = x.row.status === 'paid';
-            ar += '<tr><td class="c">' + E((MONTHS[(x.key % 100) - 1] || '') + ' ' + toPersianDigits(Math.floor(x.key / 100))) + '</td><td class="c">' + (x.row.day ? toPersianPad2(x.row.day) : '') + '</td><td>' + E(x.row.desc || it.name || '') + '</td><td class="n">' + pdfMoney(x.row.amount) + '</td><td class="c">' + E(x.row.account || '') + '</td><td class="c' + (ok ? '' : ' un') + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
-          });
+          rows.forEach(function (x) { dep.push({ it: it, x: x, d: parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0 }); });
         });
-        if (an) B.push({ html: '<div class="pb sec"><div class="st inc">آرشیو درآمدهای ثابت <small>' + E(periodLabel) + '</small></div><table><thead><tr><th style="width:16%">ماه</th><th style="width:7%">روز</th><th>شرح</th><th style="width:16%">مبلغ</th><th style="width:16%">بانک</th><th style="width:14%">وضعیت</th></tr></thead><tbody>' + ar + '</tbody></table></div>', split: true });
+        dep.sort(function (a, b) { return (a.x.key - b.x.key) || (a.d - b.d); });
+        if (dep.length) {
+          var ar = '', paidSum = 0;
+          dep.forEach(function (o) {
+            var ok = o.x.row.status === 'paid', y = Math.floor(o.x.key / 100), m = o.x.key % 100;
+            if (ok) paidSum += Number(o.x.row.amount) || 0;
+            ar += '<tr><td>' + E(o.x.row.desc || o.it.name || '') + '</td><td class="c">' + toPersianDigits(y + '/' + String(m).padStart(2, '0') + (o.d ? '/' + String(o.d).padStart(2, '0') : '')) + '</td><td class="n">' + pdfMoney(o.x.row.amount) + '</td><td class="c">' + E(o.x.row.account || '—') + '</td><td class="c' + (ok ? '' : ' un') + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
+          });
+          ar += '<tr class="T"><td colspan="2">جمع دریافت‌شده</td><td class="n">' + pdfMoney(paidSum) + '</td><td colspan="2"></td></tr>';
+          B.push({ html: '<div class="pb sec"><div class="st inc">واریزهای درآمدهای ثابت <small>' + E(periodLabel) + '</small></div><table><thead><tr><th>نام (شرح)</th><th style="width:16%">تاریخ</th><th style="width:17%">مبلغ</th><th style="width:17%">بانک</th><th style="width:16%">وضعیت پرداخت</th></tr></thead><tbody>' + ar + '</tbody></table></div>', split: true });
+        }
       }
       /* ---- اقساط ---- */
       var ps = (plans || []).filter(function (p) { return p && !p.deletedAt && (!O.user || (p.expenseSectionTitle || '').trim() === O.user); });
@@ -26878,15 +26939,56 @@ container.innerHTML = '';
       body.appendChild(stack);
       try { inp.focus(); caretToEnd(inp); } catch (eF) {}
     }
+    /* ردیف‌های درآمد/مخارجِ یک پروژه در همهٔ ماه‌ها */
+    function hkProjectRows(id) {
+      var out = [], curK = periodKey(currentYear, currentMonth);
+      iterAllPeriodData(function (pd, key) {
+        if (key === curK && pd !== periodData) return; /* نسخهٔ آرشیوِ ماه جاری تکراری است */
+        ['income', 'expense'].forEach(function (tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+            (sec.rows || []).forEach(function (r) {
+              var fc = r && r.financialContext;
+              if (fc && fc.subjectId === id) out.push({ pd: pd, key: key, tab: tab, sec: sec, row: r });
+            });
+          });
+        });
+      });
+      return out;
+    }
+    function hkRowSig(key, tab, r) { return [key, tab, r.day || '', r.desc || '', Number(r.amount) || 0, r.account || ''].join('|'); }
+    /* حذف پروژه: «با ردیف‌ها» (ردیف‌ها همراه پروژه به سطل زباله می‌روند) یا «ردیف‌ها بمانند» (اتصال به پروژه برداشته می‌شود و ردیف معمولی می‌شوند) */
     function deleteSubject(id) {
       var s = getSubjectById(id);
       if (!s || s.id === 'personal') return;
-      askConfirm('پروژه «' + s.name + '» حذف شود؟ تراکنش‌های قبلی حفظ می‌شوند و خود پروژه به سطل زباله می‌رود.', function() {
-        try { pushToTrash('project', s.name || 'پروژه', { sourceLabel: 'پروژه‌ها', subject: JSON.parse(JSON.stringify(s)) }); } catch (eTr) {}
-        _financialSubjects = loadFinancialSubjects().filter(function(x){ return x.id !== id; });
+      var rows = hkProjectRows(id);
+      var n = rows.length;
+      var opts = [];
+      if (n) {
+        opts.push({ label: 'حذف پروژه و ' + toPersianDigits(String(n)) + ' ردیف درآمد و مخارجش', value: 'all' });
+        opts.push({ label: 'حذف پروژه؛ ردیف‌ها بمانند و ردیف معمولی شوند', value: 'keep' });
+      } else opts.push({ label: 'حذف پروژه', value: 'keep' });
+      opts.push({ label: 'انصراف', value: null, primary: true });
+      recPickModal('پروژهٔ «' + (s.name || '') + '» حذف شود؟' + (n ? ' ردیف‌های آن هم حذف شوند؟' : ''), opts, function (v) {
+        if (!v) return;
+        var data = { sourceLabel: 'پروژه‌ها', subject: JSON.parse(JSON.stringify(s)) };
+        if (v === 'all') {
+          data.rows = rows.map(function (x) { return { key: x.key, tab: x.tab, secTitle: (x.sec.title || '').trim(), row: JSON.parse(JSON.stringify(x.row)) }; });
+          rows.forEach(function (x) {
+            var i = (x.sec.rows || []).indexOf(x.row);
+            if (i >= 0) x.sec.rows.splice(i, 1);
+            if (!x.sec.rows.length) x.sec.rows = [emptyRow(x.tab)];
+          });
+        } else if (n) {
+          data.unlinked = rows.map(function (x) { return { sig: hkRowSig(x.key, x.tab, x.row), fc: JSON.parse(JSON.stringify(x.row.financialContext)), recv: !!x.row.createsReceivable }; });
+          rows.forEach(function (x) { x.row.financialContext = defaultFinancialContext(); delete x.row.createsReceivable; x.row.updatedAt = Date.now(); });
+        }
+        try { pushToTrash('project', s.name || 'پروژه', data); } catch (eTr) {}
+        _financialSubjects = loadFinancialSubjects().filter(function (x) { return x.id !== id; });
         saveFinancialSubjects();
-        renderSubjectsList();
-        showToast('پروژه حذف شد');
+        try { persistCurrent(); saveArchive(); scheduleSave(); } catch (eS) {}
+        try { renderSubjectsList(); } catch (eR) {}
+        try { renderAll(); renderHomeCards(); } catch (eA) {}
+        showToast(v === 'all' && n ? 'پروژه و ردیف‌هایش حذف شد' : 'پروژه حذف شد');
       });
     }
     function defaultFinancialContext() {
@@ -31316,6 +31418,35 @@ if (item.type === 'recurring') {
         const L = loadFinancialSubjects();
         if (L.some(x => x.id === sub.id || (x.name || '').trim() === (sub.name || '').trim())) { showToast('پروژه‌ای با همین نام وجود دارد'); return false; }
         L.push(JSON.parse(JSON.stringify(sub))); _financialSubjects = L; saveFinancialSubjects();
+        /* ردیف‌هایی که همراه پروژه حذف شده بودند برمی‌گردند؛ ردیف‌هایی که معمولی شده بودند دوباره به پروژه وصل می‌شوند */
+        try {
+          var curK = periodKey(currentYear, currentMonth);
+          (item.data.rows || []).forEach(function (x) {
+            var pd = x.key === curK ? periodData : archive[x.key];
+            if (!pd) return;
+            if (!pd[x.tab]) pd[x.tab] = { sections: [], nextId: 1 };
+            var secs = pd[x.tab].sections || (pd[x.tab].sections = []);
+            var sec = secs.find(function (q) { return (q.title || '').trim() === x.secTitle; }) || secs[0];
+            if (!sec) { sec = { id: 's' + (secs.length + 1), title: x.secTitle, rows: [] }; secs.push(sec); }
+            var ei = (sec.rows || []).findIndex(function (r) { return r && !r.desc && !r.amount && !r.day && !r.fromPlanId && !r.fromRecurringId; });
+            if (ei >= 0) sec.rows[ei] = x.row; else (sec.rows = sec.rows || []).push(x.row);
+          });
+          var un = {}; (item.data.unlinked || []).forEach(function (u) { (un[u.sig] = un[u.sig] || []).push(u); });
+          if (Object.keys(un).length) iterAllPeriodData(function (pd, key) {
+            if (key === curK && pd !== periodData) return;
+            ['income', 'expense'].forEach(function (tab) {
+              ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+                (sec.rows || []).forEach(function (r) {
+                  var l = r && un[hkRowSig(key, tab, r)];
+                  if (!l || !l.length || (r.financialContext && r.financialContext.subjectId && r.financialContext.subjectId !== 'personal')) return;
+                  var u = l.shift(); r.financialContext = u.fc; if (u.recv) r.createsReceivable = true;
+                });
+              });
+            });
+          });
+          persistCurrent(); saveArchive();
+          try { renderAll(); renderHomeCards(); } catch (eA) {}
+        } catch (eRows) {}
         try { renderSubjectsList(); } catch (eR) {}
         return true;
       }
@@ -31639,7 +31770,7 @@ if (item.type === 'recurring') {
         card.innerHTML = '<div class="hk-bulk-fhead"><input type="checkbox" class="hk-bulk-chk"' + (fo.checked ? ' checked' : '') + ' aria-label="انتخاب">' +
           '<span class="hk-bulk-fico">' + HK_FOLDER_SVG + '</span>' +
           '<span class="hk-bulk-fname">' + escapeHtml(fo.bank) + (fo.acc4 ? ' · ' + toPersianDigits(fo.acc4) : '') + '</span>' +
-          '<span class="hk-bulk-arrow" aria-hidden="true">‹</span></div>' +
+          '<span class="hk-bulk-arrow hk-chev" aria-hidden="true">' + HK_CHEV_SVG + '</span></div>' +
           '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.inRange.length)) + ' تراکنش · واریز ' + formatNum(inc) + ' · برداشت ' + formatNum(exp) +
           (fo.latestBal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.latestBal) + (fo.latestRec ? ' (' + hkJStr(fo.latestRec.j) + ')' : '') : '') + '<span class="hk-bulk-fdup"></span></div>';
         /* فهرست تراکنش‌های پوشه (با زدن روی عنوان باز/بسته می‌شود) */
@@ -33747,8 +33878,8 @@ if (item.type === 'recurring') {
     }
     /* دوره‌های قرارداد: دوره‌های قبلی (بعد از هر تمدید) + دورهٔ فعلی */
     function recTermsOf(item) {
-      var list = (item.terms || []).map(function (t) { return { start: t.contractStart, end: t.contractEnd, amount: t.amount }; });
-      list.push({ start: item.contractStart, end: item.contractEnd, amount: item.amount, current: true });
+      var list = (item.terms || []).map(function (t) { return { start: t.contractStart, end: t.contractEnd, amount: t.amount, deposit: Number(t.deposit) || 0 }; });
+      list.push({ start: item.contractStart, end: item.contractEnd, amount: item.amount, deposit: Number(item.deposit) || 0, current: true });
       return list;
     }
     /* واریز ماه k (روز day) مال کدام دوره است؟ ماه مرزی: قبل از روز شروع دورهٔ تازه = دورهٔ قبل */
@@ -33780,7 +33911,10 @@ if (item.type === 'recurring') {
       ov.style.cssText = 'position:fixed;inset:0;z-index:100350;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
       var box = document.createElement('div');
       box.style.cssText = 'width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px var(--shadow);direction:rtl;overflow:hidden;';
-      var rangeOf = function (t) { return 'از ' + recFmtDate(t.start) + (t.end ? ' تا ' + recFmtDate(t.end) : ''); };
+      /* تاریخ‌ها کاملاً عددی: ۱۴۰۴/۰۷/۰۴ تا ۱۴۰۵/۰۷/۰۴ */
+      var numD = function (d) { return d ? toPersianDigits(String(d.y)) + '/' + toPersianDigits(String(d.m).padStart(2, '0')) + '/' + toPersianDigits(String(d.d).padStart(2, '0')) : '—'; };
+      var rangeOf = function (t) { return numD(t.start) + (t.end ? ' تا ' + numD(t.end) : ''); };
+      var depOf = function (t) { return Number(t.deposit) > 0 ? ' · رهن ' + formatNum(t.deposit) : ''; };
       var head = '<div style="padding:12px 14px 8px;border-bottom:1px solid var(--border);">' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
         (multi && !folderView ? '<button type="button" id="recArchBack" style="border:none;background:transparent;color:var(--accent);font-family:inherit;font-weight:700;font-size:0.8rem;cursor:pointer;padding:0;">‹ همهٔ دوره‌ها</button>' : '') +
@@ -33788,7 +33922,7 @@ if (item.type === 'recurring') {
         '<button type="button" id="recArchClose" style="border:none;background:transparent;color:var(--muted);font-size:1.4rem;line-height:1;cursor:pointer;">×</button></div>' +
         '<div style="font-size:0.78rem;color:var(--muted);margin-top:4px;line-height:1.7;">' +
         (folderView ? toPersianDigits(String(terms.length)) + ' دورهٔ قرارداد · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' + (item.account ? ' · ' + escapeHtml(item.account) : '')
-          : formatNum(term.amount || 0) + ' تومان · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' + (item.account ? ' · ' + escapeHtml(item.account) : '') + '<br>' + rangeOf(term)) + '</div>' +
+          : formatNum(term.amount || 0) + ' تومان' + depOf(term) + ' · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' + (item.account ? ' · ' + escapeHtml(item.account) : '') + '<br>' + rangeOf(term)) + '</div>' +
         '<div style="display:flex;gap:8px;margin-top:8px;font-size:0.8rem;">' +
           '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">جمع دریافتی<br><b style="color:#30d158;">' + formatNum(sum) + '</b></div>' +
           '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">دریافت‌شده<br><b style="color:#30d158;">' + toPersianDigits(String(paid.length)) + '</b></div>' +
@@ -33802,8 +33936,8 @@ if (item.type === 'recurring') {
           var tp = tr.filter(function (x) { return recIsPaid(x.row); });
           body += '<button type="button" class="rec-term-folder" data-t="' + i + '" style="display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 0;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;text-align:right;cursor:pointer;">' +
             '<span class="rec-term-fico">' + HK_FOLDER_SVG + '</span>' +
-            '<span style="flex:1;min-width:0;line-height:1.7;"><b style="font-size:0.85rem;">' + rangeOf(t) + (t.current ? ' <span style="color:var(--accent);font-size:0.72rem;">(فعلی)</span>' : '') + '</b><br>' +
-            '<span style="font-size:0.76rem;color:var(--muted);">' + formatNum(t.amount || 0) + ' تومان · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></span></button>';
+            '<span style="flex:1;min-width:0;line-height:1.7;"><b class="rec-term-range">' + rangeOf(t) + '</b>' + (t.current ? ' <span style="color:var(--accent);font-size:0.72rem;font-weight:700;">(فعلی)</span>' : '') + '<br>' +
+            '<span style="font-size:0.76rem;color:var(--muted);">' + formatNum(t.amount || 0) + ' تومان' + depOf(t) + ' · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></span></button>';
         });
       } else if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این ' + (multi ? 'دوره' : 'درآمد ثابت') + ' وصل نشده</div>';
       else {
@@ -33840,13 +33974,14 @@ if (item.type === 'recurring') {
       box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
     }
     /* تمدید قرارداد: دورهٔ فعلی به دوره‌های قبلی می‌رود و دورهٔ تازه (پیش‌فرض: از پایان قبلی، یک سال، همان مبلغ) شروع می‌شود */
-    function recRenewItem(item, start, end, amount) {
+    function recRenewItem(item, start, end, amount, deposit) {
       var oldEndK = recEndKey(item);
       if (!Array.isArray(item.terms)) item.terms = [];
-      item.terms.push({ contractStart: Object.assign({}, item.contractStart), contractEnd: Object.assign({}, item.contractEnd), amount: Number(item.amount) || 0 });
+      item.terms.push({ contractStart: Object.assign({}, item.contractStart), contractEnd: Object.assign({}, item.contractEnd), amount: Number(item.amount) || 0, deposit: Number(item.deposit) || 0 });
       item.contractStart = { d: start.d, m: start.m, y: start.y };
       item.contractEnd = { d: end.d, m: end.m, y: end.y };
       item.amount = Number(amount) || 0;
+      if (deposit !== undefined) item.deposit = Number(deposit) || 0;
       item.updatedAt = Date.now();
       /* ردیف‌های دریافت‌نشدهٔ ماه‌های دورهٔ تازه مبلغ تازه را می‌گیرند */
       recRowsOf(item).forEach(function (x) {
@@ -33873,6 +34008,8 @@ if (item.type === 'recurring') {
         '<div style="font-size:0.8rem;font-weight:700;margin:10px 0 4px;">پایان دورهٔ تازه</div><div data-slot="e"></div>' +
         '<div style="font-size:0.8rem;font-weight:700;margin:10px 0 4px;">مبلغ ماهانه (تومان)</div>' +
         '<input type="text" inputmode="numeric" id="recRenewAmt" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.9rem;text-align:center;">' +
+        '<div style="font-size:0.8rem;font-weight:700;margin:10px 0 4px;">رهن (تومان)</div>' +
+        '<input type="text" inputmode="numeric" id="recRenewDep" placeholder="مبلغ رهن/ودیعه، اختیاری" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.9rem;text-align:center;">' +
         '<div style="display:flex;gap:8px;margin-top:14px;">' +
         '<button type="button" data-act="ok" style="flex:1;padding:10px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">تمدید</button>' +
         '<button type="button" data-act="cancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button></div>';
@@ -33884,6 +34021,9 @@ if (item.type === 'recurring') {
       var amt = box.querySelector('#recRenewAmt');
       amt.value = formatNum(Number(item.amount) || 0);
       hkAmountInput(amt);
+      var dep = box.querySelector('#recRenewDep');
+      dep.value = Number(item.deposit) > 0 ? formatNum(item.deposit) : '';
+      hkAmountInput(dep);
       ov.appendChild(box);
       document.body.appendChild(ov);
       var close = function () { try { ov.remove(); } catch (e) {} };
@@ -33896,7 +34036,7 @@ if (item.type === 'recurring') {
         if (!n) { showToast('مبلغ را وارد کنید'); return; }
         if (recMonthKey(en.y, en.m) * 100 + en.d <= recMonthKey(st.y, st.m) * 100 + st.d) { showToast('پایان دوره باید بعد از شروع آن باشد'); return; }
         close();
-        recRenewItem(item, st, en, n);
+        recRenewItem(item, st, en, n, parseInt(toEnglishDigits(dep.value).replace(/\D/g, ''), 10) || 0);
         recOfferTodayRow(item, function () {
           if (done) done('قرارداد «' + (item.name || '') + '» تمدید شد');
         });
@@ -34223,10 +34363,9 @@ if (item.type === 'recurring') {
       }
       const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
       const plusSvgRec = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
-      let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (recurringCollapsed ? '0' : '10px') + ';cursor:pointer;" id="recurringHead">' +
-        '<span class="collapse-arrow">' + (recurringCollapsed
-          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
-          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>') + '</span>' +
+      /* منوی اصلی درآمدهای ثابت همیشه باز است (فقط تک‌تک موارد باز/بسته می‌شوند) */
+      recurringCollapsed = false;
+      let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;" id="recurringHead">' +
         '<h3 style="margin:0;flex:1;">درآمدهای ثابت</h3></div>';
       if (!recurringCollapsed) {
         // مرتب‌سازی بر اساس روز
@@ -34285,6 +34424,7 @@ if (item.type === 'recurring') {
               '<div class="rec-name" style="font-weight:bold;font-size:0.95rem;"><span class="rec-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>' + escapeHtml(r.name || '—') + '</div>' +
               '<div class="rec-more">' +
                 '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">' + formatNum(r.amount || 0) + ' تومان · ' + dayStr + '</div>' +
+                (Number(r.deposit) > 0 ? '<div class="rec-deposit" style="font-size:0.78rem;color:var(--muted);margin-top:2px;">رهن: ' + formatNum(r.deposit) + ' تومان</div>' : '') +
                 accLine + rangeLine +
                 (termsN ? '<div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">' + toPersianDigits(String(termsN)) + ' دورهٔ قبلی در آرشیو</div>' : '') +
               '</div>' +
@@ -34331,9 +34471,7 @@ if (item.type === 'recurring') {
             renderRecurringBar();
             return;
           }
-          recurringCollapsed = !recurringCollapsed;
-          try { localStorage.setItem('hesabRecCollapsed', recurringCollapsed ? '1' : '0'); } catch (err) {}
-          renderRecurringBar();
+          /* منوی اصلی جمع نمی‌شود */
         };
       }
 
@@ -34909,6 +35047,16 @@ if (item.type === 'recurring') {
       inpAmt.style.cssText = inpStyle;
       hkAmountInput(inpAmt);
       field('مبلغ ماهانه (تومان)', inpAmt);
+      /* رهن/ودیعه: فقط برای ثبت و دیدن؛ اختیاری و در هیچ حسابی اثر ندارد */
+      const inpDep = document.createElement('input');
+      inpDep.type = 'text';
+      inpDep.inputMode = 'numeric';
+      inpDep.className = 'rec-deposit-inp';
+      inpDep.value = existing.deposit ? formatNum(existing.deposit) : '';
+      inpDep.placeholder = 'مبلغ رهن/ودیعه، اختیاری';
+      inpDep.style.cssText = inpStyle;
+      hkAmountInput(inpDep);
+      field('رهن (تومان)', inpDep);
 
       const startInit = existing.contractStart || (existing.day ? { d: existing.day, m: currentMonth, y: currentYear } : null);
       const endInit = existing.contractEnd || null;
@@ -35053,9 +35201,12 @@ field('حساب بانکی', accSelRec);
         if (!maskStart.isComplete()) { showToast('تاریخ شروع قرارداد را کامل وارد کنید'); return; }
         if (hasEnd && !maskEnd.isComplete()) { showToast('پایان قرارداد را کامل وارد کنید'); return; }
         if (hasEnd && recMonthKey(en.y, en.m) < recMonthKey(st.y, st.m)) { showToast('پایان قرارداد باید بعد از شروع باشد'); return; }
+        const depDigits = toEnglishDigits(inpDep.value || '').replace(/[^0-9]/g, '');
+        const deposit = depDigits ? (parseInt(depDigits, 10) || 0) : 0;
         const item = {
           name: name,
           amount: amount,
+          deposit: deposit,
           day: day || '',
           account: accSelRec.getValue() || '',
           contractStart: { d: st.d, m: st.m, y: st.y },
@@ -35111,6 +35262,8 @@ field('حساب بانکی', accSelRec);
           item.genKey = parseInt(prev.genKey, 10) || recPrevKey(today);
           if (prev.paidAhead) item.paidAhead = prev.paidAhead;
           if (prev.payerHints) item.payerHints = prev.payerHints;
+          /* دوره‌های قبلی قرارداد (بعد از تمدید) با ویرایش عادی دست نمی‌خورند */
+          if (Array.isArray(prev.terms) && prev.terms.length) item.terms = prev.terms;
           const wasLegacy = !recStartKey(prev);
           /* تعریف قدیمیِ بدون تاریخ شروع: از همین ماه ادامه می‌دهد */
           if (wasLegacy) item.fromKey = today;
@@ -35149,7 +35302,10 @@ field('حساب بانکی', accSelRec);
             const i2 = recurringIncomes.indexOf(prev);
             if (i2 >= 0) recurringIncomes[i2] = item; else recurringIncomes.push(item);
             if (res.removed) notes.push(toPersianDigits(res.removed) + ' ردیف دریافت‌نشده پاک شد');
-            recOfferTodayRow(item, (msg) => finish(notes[0] || msg || 'تغییرات اعمال شد'));
+            /* این ماه ردیفی نداشت: ویرایش وضعیت این ماه را عوض نمی‌کند و خودکار ردیف نمی‌سازد
+               (کاربر در صورت نیاز با «ساخت ردیف» می‌سازد) */
+            if (!curRow && recInRange(item, today)) item.genKey = Math.max(parseInt(item.genKey, 10) || 0, today);
+            finish(notes[0] || 'تغییرات اعمال شد');
           });
           return;
         }
@@ -37771,7 +37927,7 @@ function openProjectRowPicker(secId) {
          و منوی زیرش سر جایش می‌ماند */
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
-      try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
+      try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { _spt.remove(); return; } } catch (eSpt) {}
       /* باکس ویرایش/افزودن حساب: اول کیبورد (خروج از فیلد)، بعد بستن باکس */
@@ -39094,17 +39250,7 @@ function openProjectRowPicker(secId) {
         td.title = full;
         td.onclick = function (e) {
           e.stopPropagation();
-          if (catF && it.tab === 'expense') {
-            var opts = (HKCategorizer.categories || []).map(function (c) { return { label: c.label, value: c.id }; });
-            opts.push({ label: 'انصراف', value: null, primary: true });
-            recPickModal('دستهٔ «' + it.desc + '» (برای همهٔ ردیف‌های با همین شرح):', opts, function (v) {
-              if (!v) return;
-              try { HKCategorizer.learn(it.desc, v); } catch (eL) {}
-              try { showToast('دسته عوض شد: ' + ((HKCategorizer.byId[v] || {}).label || '')); } catch (eT) {}
-              renderBalanceSearch();
-            });
-            return;
-          }
+          /* جستجو فقط برای دیدن است؛ دستهٔ هر شرح از اسلاید «دسته‌بندی مخارج» باکس هوشمند عوض می‌شود */
           try { showCellTextPopup(td, full); } catch (err) {}
         };
         var tdB = document.createElement('td');
