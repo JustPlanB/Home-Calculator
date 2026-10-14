@@ -97,7 +97,7 @@ const ACC = 'ملت مصنوعی';
   ok(/وصل شد/.test(c1.toast), 'پیام «واریز … به «اجاره» وصل شد»');
   const st1 = await p.evaluate(async () => {
     openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
-    const t = document.getElementById('recurringBox').innerText; closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
+    const t = document.getElementById('recurringBox').textContent; closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
     return { kind: recTodayState(recurringIncomes.find(r => r.name === 'اجاره')).kind, list: t, tag: (() => { const tr = document.createElement('table'); const it = recurringIncomes.find(r => r.name === 'اجاره'); const row = recRowsOf(it)[0].row; const el = buildRowEl('s1', row, 0, 'دریافت شده', 'دریافت نشده'); return !!el.querySelector('.rec-row-tag') && el.querySelector('.rec-row-tag').textContent; })() };
   });
   ok(st1.kind === 'linked' && st1.list.includes('این ماه: دریافت شد (۱۲ مهر)') && !/وصل به واریز/.test(st1.list) && /اصلاح/.test(st1.list) && !/جدا کن|جابه‌جایی/.test(st1.list), 'فهرست: «این ماه: دریافت شد (۱۲ مهر)» به رنگ سبز با دکمهٔ «اصلاح»');
@@ -268,7 +268,8 @@ const ACC = 'ملت مصنوعی';
   await create({ name: 'الف', amount: 4000000, account: ACC, sectionId: 's2', contractStart: { d: 10, m: 7, y: 1405 }, contractEnd: null });
   await create({ name: 'ب', amount: 4000000, account: ACC, sectionId: 's2', contractStart: { d: 11, m: 7, y: 1405 }, contractEnd: null });
   s1 = await sms(4000000, 12, 7);
-  ok(s1.has && s1.value === '' && s1.opts.length === 3, 'دو درآمد ثابت هم‌مبلغ: هیچ‌کدام خودکار انتخاب نشد؛ کاربر از فهرست انتخاب می‌کند');
+  const selTxt = await p.evaluate(() => { const sl = document.getElementById('smsRecMatchSel'); return sl && sl.value ? sl.options[sl.selectedIndex].textContent : ''; });
+  ok(s1.has && s1.value !== '' && /^ب — /.test(selTxt) && s1.opts.length === 3, 'دو درآمد ثابت هم‌مبلغ: نزدیک‌ترین روز («ب»، سررسید ۱۱ مهر) از پیش انتخاب شد؛ کاربر می‌تواند عوض کند (' + selTxt + ')');
   ok(s1.opts.some(o => /سررسید ۱۰ مهر/.test(o)) && s1.opts.some(o => /سررسید ۱۱ مهر/.test(o)), 'گزینه‌ها روز سررسید هر قرارداد را نشان می‌دهند');
   ok(/خیر، تراکنش جدید/.test(s1.opts[s1.opts.length - 1]) && !/خیر/.test(s1.opts[0]), 'ترتیب: درآمدهای ثابت بالا، «خیر، تراکنش جدید ثبت شود» آخر');
   const ed = await p.evaluate(async () => {

@@ -2568,6 +2568,9 @@
     .backup-pick-cancel { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.15) !important; }
 
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
+    .ib-proj-badge { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+    .ib-proj-badge.pos { color: #30d158; background: rgba(48,209,88,0.15); }
+    .ib-proj-badge.neg { color: #ff453a; background: rgba(255,69,58,0.15); }
     .ib-check-wrap {
       display: flex;
       align-items: center;
@@ -9037,10 +9040,29 @@
     html[data-theme="light"] .sp-bar i.def { background: #c56a00 !important; }
     .sp-bar i.dim { opacity: 0.45; }
     .bsr-filters { display: flex; align-items: center; gap: 6px; }
+    tr.plan-preapp > td { opacity: 0.5; }
+    .preapp-tag { font-size: 0.66rem; font-weight: 700; color: var(--muted); line-height: 1.2; margin-top: 1px; }
+    .rec-row-tag.preapp-tag { font-size: 0.56rem; margin-top: 0; color: var(--muted); }
+    .bsr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px; direction: rtl; }
+    .bsr-grid .bsr-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .bsr-grid .bsr-wide { grid-column: 1 / -1; }
+    .bsr-grid .balance-acc-label { flex: 0 0 auto; text-align: right; white-space: nowrap; font-size: 0.8rem; }
+    .bsr-grid .filter-acc-wrap, .bsr-grid .balance-search-sel, .bsr-grid .fancy-select-wrap, .bsr-grid .balance-search-input { flex: 1 1 0; min-width: 0; width: auto; }
+    .bsr-grid .filter-acc-wrap .dark-select { min-width: 0; }
+    .bsr-grid .filter-acc-wrap .dark-select-btn { justify-content: flex-start !important; text-align: right !important; padding: 0 10px 0 24px !important; }
+    .bsr-grid .bsr-day { flex: 0 0 64px; min-width: 0; }
+    .bsr-grid .bsr-day .dark-select-btn { height: 36px !important; padding: 0 6px 0 18px !important; justify-content: center !important; }
+    .bsr-list .dark-select-item { text-align: right !important; justify-content: flex-start !important; direction: rtl; }
     .bsr-filters .balance-search-sel, .bsr-filters .fancy-select-wrap { flex: 1 1 0; min-width: 0; }
     .balance-search-sel { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg, var(--bg3)); color: var(--text); font-family: inherit; font-weight: 600; font-size: 0.85rem; }
     .rec-status { font-size: 0.76rem; margin-top: 3px; line-height: 1.6; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    .rec-status .rec-act { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 8px; padding: 1px 8px; font-family: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+    .rec-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .rec-acts .rec-act { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 9px; padding: 7px 18px; font-family: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
+    .rec-acts .rec-renew-btn { border-color: #ff9f0a; color: #ff9f0a; }
+    .recurring-row:not(.rec-open) .rec-more { display: none; }
+    .recurring-row:not(.rec-open) .rec-acts .rec-act:not(.rec-renew-btn) { display: none; }
+    .recurring-row:not(.rec-open) .rec-acts .rec-renew-btn { padding: 2px 10px; font-size: 0.74rem; }
+    .recurring-row:not(.rec-open) .rec-acts.no-renew { display: none; }
     .rec-row-tag { position: absolute; left: 4px; bottom: 1px; font-size: 0.56rem; font-weight: 700; color: var(--accent); opacity: 0.85; pointer-events: none; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
     .sp-cmp { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; gap: calc(3px * var(--sp-fs, 1)); }
     .sp-cmp-r { display: flex; flex-direction: column; gap: calc(2px * var(--sp-fs, 1)); flex-shrink: 0; }
@@ -10847,34 +10869,35 @@
     <!-- مانده -->
     <div id="panel-balance" class="tab-panel">
       <div class="balance-fixed-header" id="balanceFixedHeader">
-        <div class="filter-bar" id="balanceFilters"></div>
-        <div class="balance-filter-block">
-          <div class="balance-day-row">
-            <button class="filter-chip" type="button" id="balanceDayAllBtn">همه روزها</button>
-            <div class="day-select-box" id="balanceDaySelectBox">
-              <span class="day-select-label">روز</span>
-              <span class="day-select-divider" aria-hidden="true"></span>
-              <div class="day-select-value-wrap" id="balanceDayFilterWrap"></div>
-            </div>
-            <input type="hidden" id="balanceDayFilter" value="">
+        <div class="filter-bar" id="balanceFilters" style="display:none"></div>
+        <div class="balance-filter-block bsr-grid">
+          <div class="bsr-cell">
+            <label class="balance-acc-label">بخش:</label>
+            <div class="filter-acc-wrap" id="balanceSectionWrap"></div>
           </div>
-          <div class="balance-acc-row">
-            <label class="balance-acc-label">حساب:</label>
-            <div class="filter-acc-wrap" id="balanceAccountFilterWrap"></div>
-          </div>
-          <div class="balance-acc-row balance-search-row">
-            <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
-            <input type="search" id="balanceSearchInput" class="balance-search-input" placeholder="جستجوی شرح…" autocomplete="off" enterkeyhint="search" />
-          </div>
-          <div class="balance-acc-row balance-search-row bsr-filters">
-            <label class="balance-acc-label" for="balanceSearchCat">دسته:</label>
-            <select id="balanceSearchCat" class="balance-search-sel"><option value="">همهٔ دسته‌ها</option></select>
+          <div class="bsr-cell">
+            <label class="balance-acc-label" for="balanceSearchRange">زمان:</label>
             <select id="balanceSearchRange" class="balance-search-sel bsr-range">
               <option value="all">همهٔ ماه‌ها</option>
               <option value="month">این ماه</option>
               <option value="3m">۳ ماه اخیر</option>
               <option value="year">امسال</option>
+              <option value="day">یک روز مشخص…</option>
             </select>
+            <div class="bsr-day" id="balanceDayFilterWrap" style="display:none"></div>
+            <input type="hidden" id="balanceDayFilter" value="">
+          </div>
+          <div class="bsr-cell">
+            <label class="balance-acc-label">حساب:</label>
+            <div class="filter-acc-wrap" id="balanceAccountFilterWrap"></div>
+          </div>
+          <div class="bsr-cell">
+            <label class="balance-acc-label" for="balanceSearchCat">دسته:</label>
+            <select id="balanceSearchCat" class="balance-search-sel"><option value="">همهٔ دسته‌ها</option></select>
+          </div>
+          <div class="bsr-cell bsr-wide balance-search-row">
+            <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
+            <input type="search" id="balanceSearchInput" class="balance-search-input" placeholder="جستجوی شرح…" autocomplete="off" enterkeyhint="search" />
           </div>
         </div>
       </div>
@@ -11429,6 +11452,29 @@
      * همگام‌سازی ردیف‌های خودکار اقساط با بخش مخارج برای یک ماه مشخص.
      * اگر قسط تمام شده باشد ردیف ساخته نمی‌شود.
      */
+    /* ماه ساخت قسط (شمسی، y*100+m) از createdAt */
+    var _planCkCache = {};
+    function planCreatedKey(plan) {
+      if (!plan || !plan.createdAt) return 0;
+      var ck = plan.id + ':' + plan.createdAt;
+      if (ck in _planCkCache) return _planCkCache[ck];
+      var v = 0;
+      try {
+        var parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'numeric' }).formatToParts(new Date(Number(plan.createdAt) || plan.createdAt));
+        var g = function (t) { return parseInt(toEnglishDigits((parts.find(function (x) { return x.type === t; }) || {}).value || '0'), 10) || 0; };
+        v = g('year') * 100 + g('month');
+      } catch (e) { v = 0; }
+      _planCkCache[ck] = v;
+      return v;
+    }
+    /* «پرداخت قبلی»: ردیف قسطِ پرداخت‌شده در ماهی قبل از ماه ساخت قسط (یعنی قبل از شروع کار با نرم‌افزار، نه از پیامک).
+       در جستجو و آمار حساب نمی‌شود؛ تعداد پرداخت‌شده‌ها دست نمی‌خورد */
+    function isPreAppPlanRow(r, y, m) {
+      if (!r || !r.fromPlanId || (r.status || 'paid') !== 'paid' || r.viaSms || r.smsId) return false;
+      var plan = (plans || []).find(function (p) { return p && p.id === r.fromPlanId; });
+      var ck = planCreatedKey(plan);
+      return !!ck && ((parseInt(y, 10) || 0) * 100 + (parseInt(m, 10) || 0)) < ck;
+    }
     function syncPlansToExpensePeriod(pd, year, month) {
       if (!pd || !pd.expense) return;
       const y = parseInt(year, 10);
@@ -12275,6 +12321,8 @@
           var ledX = ensureLedger();
           (ledX.sections || []).forEach(function(s){ s.collapsed = true; });
           try { scheduleSave(); } catch (e1) {}
+        } else if (was === 'recurring') {
+          try { recExpanded.clear(); } catch (e2) {}
         }
       } catch (eClose) {}
       if (sheet) {
@@ -17796,7 +17844,7 @@ function askBackupUserCards(selectedParts) {
       const box = document.createElement('div');
       box.className = 'export-choice-box';
       box.innerHTML =
-        '<div class="export-choice-title">خروجی این ماه</div>' +
+        '<div class="export-choice-title">خروجی گزارش</div>' +
         '<div class="export-choice-actions">' +
           '<button type="button" class="export-choice-btn excel" id="exportExcelBtn">' +
             '<span class="ex-ico" aria-hidden="true"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
@@ -17825,8 +17873,9 @@ function askBackupUserCards(selectedParts) {
 
       const close = () => { try { overlay.remove(); } catch (e) {} };
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-      document.getElementById('exportExcelBtn').onclick = () => { close(); exportExcel(); };
-      document.getElementById('exportPdfBtn').onclick = () => { close(); exportPdf(); };
+      /* اول پنجرهٔ انتخاب بخش‌ها، کاربر و بازه */
+      document.getElementById('exportExcelBtn').onclick = () => { close(); hkOpenExportDialog('excel'); };
+      document.getElementById('exportPdfBtn').onclick = () => { close(); hkOpenExportDialog('pdf'); };
     }
 
 
@@ -17906,35 +17955,52 @@ function askBackupUserCards(selectedParts) {
       return { groups: groups, tot: tot, dateOf: dateOf, unitOf: _savUnit, qty: _savFmtQty };
     }
     function buildXlsxSheets() {
-      var periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
+      var O = _hkExportOpts || {};
+      var want = function (k) { return !O.sections || !!O.sections[k]; };
+      var months = hkExportMonths(O.range || 'month');
+      if (!months.length) months = [{ y: currentYear, m: currentMonth, pd: periodData, label: MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear) }];
+      var multi = months.length > 1;
+      var periodLabel = hkExportRangeLabel(O.range || 'month', months) + (O.user ? ' — ' + O.user : '');
+      var PD = periodData;
       var H = function (t) { return { v: t, s: 1 }; }, T = function (t) { return { v: t, s: 2 }; }, N = function (n) { return { v: Math.round(Number(n) || 0), s: 3 }; };
       var TT = function (t) { return { v: t, s: 4 }; }, TN = function (n) { return { v: Math.round(Number(n) || 0), s: 5 }; }, G = function (t) { return { v: t, s: 7 }; };
       var usable = function (r) { return r && !r.deletedAt && (r.desc || Number(r.amount) || r.day); };
-      var secs = function (tab) { return (periodData[tab] && periodData[tab].sections) || []; };
+      var secs = function (tab) { return ((PD[tab] && PD[tab].sections) || []).filter(function (sec) { return !O.user || (((sec.title || '').trim()) || '—') === O.user; }); };
       var dayNum = function (r) { var d = parseInt(toEnglishDigits(String(r.day || '')), 10); return d >= 1 && d <= 31 ? d : ''; };
       var sheets = [];
       /* خلاصه */
       var sum = [[{ v: 'گزارش مالی ' + periodLabel, s: 6 }], []];
       var kpiAt = sum.length;  /* جای خلاصهٔ عددی (بعد از محاسبه پر می‌شود) */
       sum.push([H('کارت'), H('درآمد'), H('دریافت‌نشده'), H('مخارج'), H('پرداخت‌نشده'), H('مانده')]);
-      var by = {}, order = [];
-      ['income', 'expense'].forEach(function (tab) {
-        secs(tab).forEach(function (sec) {
-          var t = ((sec.title || '').trim()) || '—';
-          if (!by[t]) { by[t] = { i: 0, iu: 0, e: 0, eu: 0 }; order.push(t); }
-          (sec.rows || []).forEach(function (r) {
-            if (!usable(r)) return;
-            var a = pdfPersonalAmounts(tab, r);
-            if (tab === 'income') { by[t].i += a.total; by[t].iu += a.unpaid; } else { by[t].e += a.total; by[t].eu += a.unpaid; }
+      var by = {}, order = [], perMonth = [];
+      months.forEach(function (mo) {
+        PD = mo.pd;
+        var pm = { label: mo.label, i: 0, e: 0 };
+        ['income', 'expense'].forEach(function (tab) {
+          secs(tab).forEach(function (sec) {
+            var t = ((sec.title || '').trim()) || '—';
+            if (!by[t]) { by[t] = { i: 0, iu: 0, e: 0, eu: 0 }; order.push(t); }
+            (sec.rows || []).forEach(function (r) {
+              if (!usable(r)) return;
+              var a = pdfPersonalAmounts(tab, r);
+              if (tab === 'income') { by[t].i += a.total; by[t].iu += a.unpaid; pm.i += a.total; } else { by[t].e += a.total; by[t].eu += a.unpaid; pm.e += a.total; }
+            });
           });
         });
+        perMonth.push(pm);
       });
+      PD = periodData;
       var g = { i: 0, iu: 0, e: 0, eu: 0 };
       order.forEach(function (t) { var c = by[t]; g.i += c.i; g.iu += c.iu; g.e += c.e; g.eu += c.eu; sum.push([T(t), N(c.i), N(c.iu), N(c.e), N(c.eu), N(c.i - c.e)]); });
       sum.push([TT('جمع'), TN(g.i), TN(g.iu), TN(g.e), TN(g.eu), TN(g.i - g.e)]);
+      if (multi) {
+        sum.push([]); sum.push([H('ماه'), H('درآمد'), H('مخارج'), H('مانده')]);
+        perMonth.forEach(function (pm) { sum.push([T(pm.label), N(pm.i), N(pm.e), N(pm.i - pm.e)]); });
+        sum.push([TT('جمع'), TN(g.i), TN(g.e), TN(g.i - g.e)]);
+      }
       var acc = {}; try { acc = globalAccountBalances() || {}; } catch (e) {}
       var as = 0; Object.keys(acc).forEach(function (k) { as += Number(acc[k]) || 0; });
-      if (Object.keys(acc).length) {
+      if (Object.keys(acc).length && want('accounts')) {
         sum.push([]); sum.push([H('حساب'), H('موجودی')]);
         Object.keys(acc).forEach(function (k) { sum.push([T(k), N(acc[k])]); });
         sum.push([TT('جمع'), TN(as)]);
@@ -17944,15 +18010,20 @@ function askBackupUserCards(selectedParts) {
         [H('شاخص'), H('مبلغ'), H('توضیح')],
         [T('کل درآمد'), N(g.i), T('دریافت‌شده ' + formatNum(g.i - g.iu) + ' · مانده ' + formatNum(g.iu))],
         [T('کل مخارج'), N(g.e), T('پرداخت‌شده ' + formatNum(g.e - g.eu) + ' · مانده ' + formatNum(g.eu))],
-        [T('درآمد منهای مخارج'), N(g.i - g.e), T((g.i - g.e >= 0 ? 'مازاد' : 'کسری') + ' این ماه')],
+        [T('درآمد منهای مخارج'), N(g.i - g.e), T((g.i - g.e >= 0 ? 'مازاد' : 'کسری') + (multi ? ' این بازه' : ' این ماه'))],
         [T('موجودی حساب‌ها'), N(as), T(toPersianDigits(Object.keys(acc).length) + ' حساب')],
         []);
       sheets.push({ name: 'خلاصه', rows: sum, widths: [26, 18, 18, 18, 18, 18], merges: ['A1:F1'] });
       /* درآمد و مخارج */
       ['income', 'expense'].forEach(function (tab) {
+        if (!want(tab)) return;
         var inc = tab === 'income';
         var head = inc ? [H('کارت'), H('روز'), H('شرح'), H('حساب'), H('مبلغ'), H('وضعیت'), H('پروژه')] : [H('کارت'), H('روز'), H('شرح'), H('دسته'), H('حساب'), H('مبلغ'), H('وضعیت'), H('پروژه')];
         var rows = [head], gt = 0;
+        /* بازهٔ چندماهه: ماه‌به‌ماه با عنوان هر ماه */
+        months.forEach(function (mo) {
+        PD = mo.pd;
+        if (multi && secs(tab).some(function (sec) { return (sec.rows || []).some(usable); })) rows.push(head.map(function (c, ci) { return G(ci === 0 ? mo.label : ''); }));
         secs(tab).forEach(function (sec) {
           var list = (sec.rows || []).filter(usable);
           if (!list.length) return;
@@ -17969,12 +18040,14 @@ function askBackupUserCards(selectedParts) {
           var tr = inc ? [TT('جمع ' + t), TT(''), TT(''), TT(''), TN(st), TT(''), TT('')] : [TT('جمع ' + t), TT(''), TT(''), TT(''), TT(''), TN(st), TT(''), TT('')];
           rows.push(tr);
         });
+        });
+        PD = periodData;
         rows.push(inc ? [TT('جمع کل'), TT(''), TT(''), TT(''), TN(gt), TT(''), TT('')] : [TT('جمع کل'), TT(''), TT(''), TT(''), TT(''), TN(gt), TT(''), TT('')]);
         sheets.push({ name: inc ? 'درآمد' : 'مخارج', rows: rows, widths: inc ? [18, 7, 38, 16, 16, 14, 18] : [18, 7, 34, 14, 16, 16, 14, 18], freeze: 1 });
       });
       /* اقساط */
       var ir = [[H('نام وام'), H('مبلغ هر قسط'), H('تعداد'), H('پرداخت‌شده'), H('سررسید بعدی'), H('جمع پرداختی'), H('باقی‌مانده'), H('جمع کل')]], ip = 0, irem = 0, itot = 0;
-      (plans || []).filter(function (p) { return p && !p.deletedAt; }).forEach(function (plan) {
+      (plans || []).filter(function (p) { return p && !p.deletedAt && (!O.user || (p.expenseSectionTitle || '').trim() === O.user); }).forEach(function (plan) {
         var count = Math.max(0, parseInt(plan.count, 10) || 0), paid = Math.min(count, Math.max(0, parseInt(plan.paidCount, 10) || 0)), amt = 0, total = 0;
         try { amt = planInstallmentAmount(plan); total = planTotalPayable(plan); } catch (e) { amt = Number(plan.amount) || 0; total = amt * count; }
         var next = 'تسویه'; if (paid < count) { try { var d = dueDateForInstallment(plan, paid); next = toPersianDigits(d.d) + ' ' + MONTHS[d.m - 1] + ' ' + toPersianDigits(d.y); } catch (e2) { next = ''; } }
@@ -17982,15 +18055,22 @@ function askBackupUserCards(selectedParts) {
         ir.push([T(plan.name || '—'), N(amt), N(count), N(paid), T(next), N(paid * amt), N(total - paid * amt), N(total)]);
       });
       ir.push([TT('جمع'), TT(''), TT(''), TT(''), TT(''), TN(ip), TN(irem), TN(itot)]);
-      sheets.push({ name: 'اقساط', rows: ir, widths: [22, 16, 9, 11, 18, 18, 18, 18], freeze: 1 });
+      if (want('install')) sheets.push({ name: 'اقساط', rows: ir, widths: [22, 16, 9, 11, 18, 18, 18, 18], freeze: 1 });
       /* قرض: همان جدول واحد PDF (ردیف‌ها + مانده هر رابطه + خلاصه) */
       var lr = [[H('رابطه'), H('روز'), H('شرح'), H('بدهکار'), H('بستانکار'), H('مبلغ'), H('ثبت‌کننده')]];
-      var led = { sections: [] }; try { led = ensureLedger(); } catch (e) {}
-      (led.sections || []).forEach(function (sec) {
+      var ledSecs = [];
+      months.forEach(function (mo) {
+        var led = { sections: [] };
+        try { led = mo.pd === periodData ? ensureLedger() : (mo.pd.ledger || { sections: [] }); } catch (e) {}
+        (led.sections || []).forEach(function (sx) { ledSecs.push({ sec: sx, label: multi ? mo.label : '' }); });
+      });
+      ledSecs.forEach(function (ls) {
+        var sec = ls.sec;
         var list = (sec.rows || []).filter(usable);
         if (!list.length) return;
         var a = (sec.personA || '').trim() || '—', b = (sec.personB || '').trim() || '—';
         var rel = ''; try { rel = ledgerSectionTitle(sec); } catch (e) { rel = a + ' ↔ ' + b; }
+        if (ls.label) rel += ' — ' + ls.label;
         var ab = 0, ba = 0;
         list.forEach(function (r) {
           var cr = r.status === 'credit', amt = Number(r.amount) || 0;
@@ -18005,15 +18085,23 @@ function askBackupUserCards(selectedParts) {
         lr.push([G('خلاصهٔ مانده‌ها (همهٔ رابطه‌ها)'), G(''), G(''), G(''), G(''), G(''), G('')]);
         pairs.forEach(function (p) { lr.push([TT((p.debtor || '') + ' به ' + (p.creditor || '') + ' بدهکار است'), TT(''), TT(''), TT(p.debtor || ''), TT(p.creditor || ''), TN(p.amount), TT('')]); });
       }
-      sheets.push({ name: 'قرض', rows: lr, widths: [24, 7, 30, 16, 16, 16, 14], freeze: 1 });
-      /* درآمد ثابت */
+      if (want('ledger')) sheets.push({ name: 'قرض', rows: lr, widths: [24, 7, 30, 16, 16, 16, 14], freeze: 1 });
+      /* درآمد ثابت + آرشیو واریزهای همین بازه */
       var rr = [[H('نام'), H('کارت'), H('روز'), H('مبلغ')]], rs = 0;
-      try { (recurringIncomes || []).forEach(function (r) { if (!r || (!r.name && !r.amount)) return; rs += Number(r.amount) || 0; rr.push([T(r.name || '—'), T(r.sectionTitle || ''), (parseInt(toEnglishDigits(String(r.day || '')), 10) ? N(parseInt(toEnglishDigits(String(r.day || '')), 10)) : T('')), N(r.amount)]); }); } catch (e) {}
+      var recList = [];
+      try { (recurringIncomes || []).forEach(function (r) { if (!r || r.deletedAt || (!r.name && !r.amount)) return; if (O.user && (r.sectionTitle || '').trim() !== O.user) return; recList.push(r); rs += Number(r.amount) || 0; rr.push([T(r.name || '—'), T(r.sectionTitle || ''), (parseInt(toEnglishDigits(String(r.day || '')), 10) ? N(parseInt(toEnglishDigits(String(r.day || '')), 10)) : T('')), N(r.amount)]); }); } catch (e) {}
       rr.push([TT('جمع ماهانه'), TT(''), TT(''), TN(rs)]);
-      sheets.push({ name: 'درآمد ثابت', rows: rr, widths: [26, 18, 8, 18], freeze: 1 });
+      var mk = {}; months.forEach(function (mo) { mk[mo.y * 100 + mo.m] = 1; });
+      var arc = [];
+      recList.forEach(function (it) {
+        var xs = []; try { xs = recArchiveRows(it).filter(function (x) { return mk[x.key]; }); } catch (e) {}
+        xs.forEach(function (x) { arc.push([T(it.name || ''), T((MONTHS[(x.key % 100) - 1] || '') + ' ' + toPersianDigits(Math.floor(x.key / 100))), dayNum(x.row) === '' ? T('') : N(dayNum(x.row)), N(x.row.amount), T(x.row.account || ''), T(x.row.status === 'paid' ? 'دریافت‌شده' : 'دریافت‌نشده')]); });
+      });
+      if (arc.length) { rr.push([]); rr.push([H('آرشیو: نام'), H('ماه'), H('روز'), H('مبلغ'), H('بانک'), H('وضعیت')]); rr = rr.concat(arc); }
+      if (want('recurring')) sheets.push({ name: 'درآمد ثابت', rows: rr, widths: [26, 18, 8, 18, 16, 14], freeze: 1 });
       /* پروژه‌ها (همهٔ ماه‌ها): خلاصه + واریزی‌ها و مخارج با تاریخ، شرح و بانک */
       var subs = []; try { subs = (loadFinancialSubjects() || []).filter(function (x) { return x && x.id && x.id !== 'personal'; }); } catch (e) {}
-      if (subs.length) {
+      if (subs.length && want('projects')) {
         var pr = [[H('پروژه'), H('نوع'), H('تاریخ'), H('شرح'), H('بانک'), H('مبلغ')]];
         var pDate = function (r) { var pa = String(r.key || '').split('-'), y = pa[0] || '', m = parseInt(pa[1], 10) || 0, d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0; return y ? toPersianDigits(y + '/' + String(m).padStart(2, '0') + (d >= 1 && d <= 31 ? '/' + String(d).padStart(2, '0') : '')) : ''; };
         var byDate = function (x, y) { return String(x.key).localeCompare(String(y.key)) || ((parseInt(x.day, 10) || 0) - (parseInt(y.day, 10) || 0)); };
@@ -18032,7 +18120,7 @@ function askBackupUserCards(selectedParts) {
         sheets.push({ name: 'پروژه‌ها', rows: pr, widths: [20, 10, 13, 34, 16, 18], freeze: 1 });
       }
       /* پس‌انداز (ارز و طلا): خلاصهٔ هر نوع + ردیف‌های خرید */
-      var sv = savingsExportData();
+      var sv = want('savings') ? savingsExportData() : null;
       if (sv) {
         var srows = [[H('نوع'), H('مقدار'), H('قیمت خرید کل'), H('قیمت روز هر واحد'), H('ارزش روز'), H('سود / زیان')]];
         sv.groups.forEach(function (G) {
@@ -18116,7 +18204,7 @@ function askBackupUserCards(selectedParts) {
     }
 
     async function exportExcel(){
-      try{ persistCurrent(); showToast('در حال ساخت فایل Excel...'); const name='hesab-'+currentYear+'-'+String(currentMonth).padStart(2,'0')+'.xlsx'; const blob=buildXlsxWorkbook(); const shared=await shareExportFile(blob,name,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); if(!shared) downloadBlob(blob,name); showToast(shared?'فایل Excel آماده است':'دانلود Excel شروع شد'); }
+      try{ persistCurrent(); showToast('در حال ساخت فایل Excel...'); const name=hkExportFileBase()+'.xlsx'; const blob=buildXlsxWorkbook(); const shared=await shareExportFile(blob,name,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); if(!shared) downloadBlob(blob,name); showToast(shared?'فایل Excel آماده است':'دانلود Excel شروع شد'); }
       catch(e){ console.error(e); showToast('ساخت Excel ناموفق بود'); }
     }
 
@@ -18215,43 +18303,197 @@ function askBackupUserCards(selectedParts) {
       try { return sectionPaidUnpaidTotal({ rows: [r] }, kind === 'income' ? { personalIncomeOnly: true } : { personalExpenseOnly: true }); }
       catch (e) { var a = Number(r.amount) || 0; return r.status === 'paid' ? { paid: a, unpaid: 0, total: a } : { paid: 0, unpaid: a, total: a }; }
     }
+    /* =====================================================================
+       گزینه‌های خروجی PDF / Excel: بخش‌ها (تیک‌دار)، کاربر، بازهٔ زمانی.
+       _hkExportOpts فقط در طول ساخت خروجی مقدار دارد؛ null = رفتار قبلی (همهٔ بخش‌ها، ماه جاری)
+       ===================================================================== */
+    var HK_EXPORT_SECTIONS = [
+      ['income', 'درآمدها'], ['expense', 'مخارج'], ['install', 'اقساط'], ['ledger', 'طلب و بدهی'],
+      ['projects', 'پروژه‌ها'], ['recurring', 'درآمدهای ثابت (با آرشیو)'], ['savings', 'پس‌انداز'], ['accounts', 'موجودی حساب‌ها']
+    ];
+    var HK_EXPORT_RANGES = [['month', 'این ماه'], ['3m', '۳ ماه اخیر'], ['year', 'امسال'], ['all', 'همه']];
+    var _hkExportOpts = null;
+    function hkExportPd(y, m) {
+      if (y === currentYear && m === currentMonth) return periodData;
+      return archive[periodKey(y, m)] || null;
+    }
+    /* ماه‌های بازه، قدیمی‌تر اول (لنگر = ماهی که الان نمایش داده می‌شود) */
+    function hkExportMonths(range) {
+      var out = [], cy = currentYear, cm = currentMonth;
+      var add = function (y, m) { var pd = hkExportPd(y, m); if (pd) out.push({ y: y, m: m, pd: pd, label: MONTHS[m - 1] + ' ' + toPersianDigits(y) }); };
+      if (range === '3m') {
+        for (var i = 2; i >= 0; i--) { var k = cy * 12 + (cm - 1) - i; add(Math.floor(k / 12), k % 12 + 1); }
+      } else if (range === 'year') {
+        for (var m = 1; m <= cm; m++) add(cy, m);
+      } else if (range === 'all') {
+        var keys = {};
+        Object.keys(archive || {}).forEach(function (key) { var p = String(key).split('-'), y = parseInt(p[0], 10), mm = parseInt(p[1], 10); if (y && mm) keys[y * 100 + mm] = 1; });
+        keys[cy * 100 + cm] = 1;
+        Object.keys(keys).map(Number).sort(function (a, b) { return a - b; }).forEach(function (k) {
+          var y = Math.floor(k / 100), mm = k % 100;
+          var pd = hkExportPd(y, mm);
+          if (pd && (pd === periodData || ['income', 'expense'].some(function (t) { return ((pd[t] && pd[t].sections) || []).some(function (s) { return (s.rows || []).some(function (r) { return r && !r.deletedAt && (r.desc || Number(r.amount)); }); }); }))) add(y, mm);
+        });
+      } else add(cy, cm);
+      return out;
+    }
+    function hkExportRangeLabel(range, months) {
+      if (!months.length) return '';
+      if (months.length === 1) return months[0].label;
+      if (range === 'year') return 'سال ' + toPersianDigits(currentYear);
+      return months[0].label + ' تا ' + months[months.length - 1].label;
+    }
+    /* بخش‌هایی که در این بازه/کاربر داده دارند */
+    function hkExportAvailable(range, user) {
+      var months = hkExportMonths(range), av = {};
+      var usableRow = function (r) { return r && !r.deletedAt && (r.desc || Number(r.amount)); };
+      months.forEach(function (mo) {
+        ['income', 'expense'].forEach(function (t) {
+          ((mo.pd[t] && mo.pd[t].sections) || []).forEach(function (s) {
+            if (user && ((s.title || '').trim() || '—') !== user) return;
+            if ((s.rows || []).some(usableRow)) av[t] = true;
+          });
+        });
+        var led = mo.pd.ledger;
+        if (led && (led.sections || []).some(function (s) { return (s.rows || []).some(usableRow); })) av.ledger = true;
+      });
+      try { if ((plans || []).some(function (p) { return p && !p.deletedAt && (!user || (p.expenseSectionTitle || '').trim() === user); })) av.install = true; } catch (e) {}
+      try { if ((ledgerPairNets() || []).length) av.ledger = true; } catch (e) {}
+      try { if ((loadFinancialSubjects() || []).some(function (x) { return x && x.id && x.id !== 'personal'; })) av.projects = true; } catch (e) {}
+      try { if ((recurringIncomes || []).some(function (r) { return r && !r.deletedAt && (r.name || r.amount) && (!user || (r.sectionTitle || '').trim() === user); })) av.recurring = true; } catch (e) {}
+      try { if (savingsExportData()) av.savings = true; } catch (e) {}
+      try { if ((selectedBankAccounts || []).length) av.accounts = true; } catch (e) {}
+      return av;
+    }
+    function hkExportFileBase() {
+      var o = _hkExportOpts || {}, r = o.range || 'month';
+      var base = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0');
+      if (r === '3m') base += '-3m'; else if (r === 'year') base = 'hesab-' + currentYear; else if (r === 'all') base = 'hesab-all';
+      return base;
+    }
+    function hkOpenExportDialog(kind) {
+      var old = document.getElementById('hkExportModal'); if (old) old.remove();
+      var KEY = STORAGE_KEY + '_exportOpts';
+      var saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+      var titles = []; try { titles = allSectionTitles(); } catch (e) {}
+      var st = { range: saved.range || 'month', user: (saved.user && titles.indexOf(saved.user) >= 0) ? saved.user : '', sections: saved.sections || null };
+      var ov = document.createElement('div');
+      ov.id = 'hkExportModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100360;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;';
+      var box = document.createElement('div');
+      box.style.cssText = 'width:100%;max-width:420px;max-height:88vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;direction:rtl;overflow:hidden;box-shadow:0 12px 32px var(--shadow);';
+      box.innerHTML = '<div style="padding:12px 14px 6px;font-weight:800;font-size:0.95rem;text-align:center;">' + (kind === 'excel' ? 'خروجی Excel' : 'خروجی PDF') + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 12px 8px;">' +
+          '<div><div style="font-size:0.74rem;color:var(--muted);margin-bottom:3px;text-align:right;">بخش</div><div data-slot="user"></div></div>' +
+          '<div><div style="font-size:0.74rem;color:var(--muted);margin-bottom:3px;text-align:right;">بازهٔ زمانی</div><div data-slot="range"></div></div>' +
+        '</div>' +
+        '<div id="hkExpList" style="overflow:auto;flex:1;padding:0 12px 6px;border-top:1px solid var(--border);"></div>' +
+        '<div style="display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--border);">' +
+          '<button type="button" id="hkExpGo" style="flex:1;padding:10px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">' + (kind === 'excel' ? 'ساخت Excel' : 'ساخت PDF') + '</button>' +
+          '<button type="button" id="hkExpCancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button>' +
+        '</div>';
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (e) {} };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      box.querySelector('#hkExpCancel').onclick = close;
+      var list = box.querySelector('#hkExpList'), go = box.querySelector('#hkExpGo');
+      var checked = function () { return [].slice.call(list.querySelectorAll('input[data-k]:checked')).map(function (c) { return c.getAttribute('data-k'); }); };
+      var syncGo = function () {
+        var n = checked().length, all = list.querySelectorAll('input[data-k]').length;
+        go.disabled = !n; go.style.opacity = n ? '1' : '0.45';
+        var sa = list.querySelector('#hkExpAll'); if (sa) { sa.checked = !!all && n === all; sa.indeterminate = n > 0 && n < all; }
+      };
+      /* انتخاب کاربر بین تغییر بازه/بخش حفظ می‌شود؛ null = همه */
+      var sel = st.sections ? Object.assign({}, st.sections) : null;
+      var setSel = function (k, v) { if (!sel) { sel = {}; HK_EXPORT_SECTIONS.forEach(function (s) { sel[s[0]] = true; }); } sel[k] = v; };
+      var renderList = function () {
+        var av = hkExportAvailable(st.range, st.user);
+        var keys = HK_EXPORT_SECTIONS.filter(function (s) { return av[s[0]]; });
+        var h = '<label class="hk-exp-all" style="position:sticky;top:0;z-index:2;background:var(--card);display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid var(--border);font-weight:800;font-size:0.86rem;cursor:pointer;">' +
+          '<input type="checkbox" id="hkExpAll" style="width:18px;height:18px;accent-color:var(--accent);">انتخاب همه</label>';
+        if (!keys.length) h += '<div style="text-align:center;color:var(--muted);padding:16px 4px;font-size:0.84rem;">در این بازه داده‌ای نیست</div>';
+        keys.forEach(function (s) {
+          var on = sel ? !!sel[s[0]] : true;
+          h += '<label style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--border);font-size:0.86rem;cursor:pointer;">' +
+            '<input type="checkbox" data-k="' + s[0] + '"' + (on ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:var(--accent);">' + s[1] + '</label>';
+        });
+        list.innerHTML = h;
+        list.querySelector('#hkExpAll').onchange = function () { var v = this.checked; list.querySelectorAll('input[data-k]').forEach(function (c) { c.checked = v; setSel(c.getAttribute('data-k'), v); }); syncGo(); };
+        list.querySelectorAll('input[data-k]').forEach(function (c) { c.onchange = function () { setSel(c.getAttribute('data-k'), c.checked); syncGo(); }; });
+        syncGo();
+      };
+      var uOpts = [{ value: '', label: 'همه' }].concat(titles.map(function (t) { return { value: t, label: t }; }));
+      var uSel = createDarkSelect({ options: uOpts, value: st.user, onChange: function (v) { st.user = v || ''; renderList(); } });
+      if (uSel._list) uSel._list.classList.add('bsr-list');
+      box.querySelector('[data-slot="user"]').appendChild(uSel);
+      var rSel = createDarkSelect({ options: HK_EXPORT_RANGES.map(function (r) { return { value: r[0], label: r[1] }; }), value: st.range, onChange: function (v) { st.range = v || 'month'; renderList(); } });
+      if (rSel._list) rSel._list.classList.add('bsr-list');
+      box.querySelector('[data-slot="range"]').appendChild(rSel);
+      renderList();
+      go.onclick = async function () {
+        var ks = checked();
+        if (!ks.length) return;
+        try { localStorage.setItem(KEY, JSON.stringify({ range: st.range, user: st.user, sections: sel })); } catch (e) {}
+        close();
+        _hkExportOpts = { range: st.range, user: st.user, sections: {} };
+        ks.forEach(function (k) { _hkExportOpts.sections[k] = true; });
+        try { if (kind === 'excel') await exportExcel(); else await exportPdf(); }
+        finally { _hkExportOpts = null; }
+      };
+    }
     /* بلوک‌ها: {html, split:bool} — split یعنی جدول قابل شکستن */
     function buildPdfBlocks() {
       var E = escapeHtml, B = [];
-      var periodLabel = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
+      var O = _hkExportOpts || {};
+      var want = function (k) { return !O.sections || !!O.sections[k]; };
+      var months = hkExportMonths(O.range || 'month');
+      if (!months.length) months = [{ y: currentYear, m: currentMonth, pd: periodData, label: MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear) }];
+      var multi = months.length > 1;
+      var periodLabel = hkExportRangeLabel(O.range || 'month', months) + (O.user ? ' — ' + O.user : '');
       var today = getTodayPersian();
       var titleOf = function (s) { return ((s && s.title) || '').trim() || '—'; };
-      var tabRows = function (tab) { return ((periodData[tab] && periodData[tab].sections) || []); };
+      var PD = periodData;
+      var userOk = function (sec) { return !O.user || titleOf(sec) === O.user; };
+      var tabRows = function (tab) { return ((PD[tab] && PD[tab].sections) || []).filter(userOk); };
       var usable = function (r) { return r && !r.deletedAt && (r.desc || Number(r.amount) || r.day); };
-      /* ---- جمع‌ها ---- */
-      var tot = { inc: { p: 0, u: 0 }, exp: { p: 0, u: 0 } }, byCard = {}, order = [];
-      ['income', 'expense'].forEach(function (tab) {
-        tabRows(tab).forEach(function (sec) {
-          var t = titleOf(sec);
-          if (!byCard[t]) { byCard[t] = { inc: 0, exp: 0, unpaidExp: 0, unpaidInc: 0 }; order.push(t); }
-          (sec.rows || []).forEach(function (r) {
-            if (!usable(r)) return;
-            var a = pdfPersonalAmounts(tab, r), k = tab === 'income' ? 'inc' : 'exp';
-            tot[k].p += a.paid; tot[k].u += a.unpaid;
-            byCard[t][k] += a.total;
-            byCard[t][tab === 'income' ? 'unpaidInc' : 'unpaidExp'] += a.unpaid;
+      /* ---- جمع‌ها (همهٔ ماه‌های بازه) ---- */
+      var tot = { inc: { p: 0, u: 0 }, exp: { p: 0, u: 0 } }, byCard = {}, order = [], perMonth = [];
+      months.forEach(function (mo) {
+        PD = mo.pd;
+        var pm = { label: mo.label, inc: 0, exp: 0 };
+        ['income', 'expense'].forEach(function (tab) {
+          tabRows(tab).forEach(function (sec) {
+            var t = titleOf(sec);
+            if (!byCard[t]) { byCard[t] = { inc: 0, exp: 0, unpaidExp: 0, unpaidInc: 0 }; order.push(t); }
+            (sec.rows || []).forEach(function (r) {
+              if (!usable(r)) return;
+              var a = pdfPersonalAmounts(tab, r), k = tab === 'income' ? 'inc' : 'exp';
+              tot[k].p += a.paid; tot[k].u += a.unpaid;
+              byCard[t][k] += a.total;
+              byCard[t][tab === 'income' ? 'unpaidInc' : 'unpaidExp'] += a.unpaid;
+              pm[k] += a.total;
+            });
           });
         });
+        perMonth.push(pm);
       });
+      PD = periodData;
       var accMap = {}; try { accMap = globalAccountBalances() || {}; } catch (e) {}
       var accSum = 0; Object.keys(accMap).forEach(function (k) { accSum += Number(accMap[k]) || 0; });
       var incT = tot.inc.p + tot.inc.u, expT = tot.exp.p + tot.exp.u;
       /* ---- سربرگ و خلاصه ---- */
+      var kp = '';
+      if (want('income')) kp += '<div class="kpi"><div class="l">کل درآمد</div><div class="v">' + pdfMoney(incT) + '</div><div class="s">دریافت‌شده ' + pdfMoney(tot.inc.p) + ' · مانده ' + pdfMoney(tot.inc.u) + '</div></div>';
+      if (want('expense')) kp += '<div class="kpi"><div class="l">کل مخارج</div><div class="v">' + pdfMoney(expT) + '</div><div class="s">پرداخت‌شده ' + pdfMoney(tot.exp.p) + ' · مانده ' + pdfMoney(tot.exp.u) + '</div></div>';
+      if (want('income') && want('expense')) kp += '<div class="kpi"><div class="l">درآمد منهای مخارج</div><div class="v">' + pdfMoney(incT - expT) + '</div><div class="s">' + (incT - expT >= 0 ? 'مازاد' : 'کسری') + (multi ? ' این بازه' : ' این ماه') + '</div></div>';
+      if (want('accounts')) kp += '<div class="kpi"><div class="l">موجودی حساب‌ها</div><div class="v">' + pdfMoney(accSum) + '</div><div class="s">' + toPersianDigits(Object.keys(accMap).length) + ' حساب</div></div>';
       B.push({ html: '<div class="pb hd"><div><h1>گزارش مالی ' + E(periodLabel) + '</h1></div><div class="sub">حساب‌کتاب<br>تاریخ تهیه: ' +
         toPersianDigits(today.y) + '/' + toPersianPad2(today.m) + '/' + toPersianPad2(today.d) + '</div></div>' +
-        '<div class="pb kpis">' +
-          '<div class="kpi"><div class="l">کل درآمد</div><div class="v">' + pdfMoney(incT) + '</div><div class="s">دریافت‌شده ' + pdfMoney(tot.inc.p) + ' · مانده ' + pdfMoney(tot.inc.u) + '</div></div>' +
-          '<div class="kpi"><div class="l">کل مخارج</div><div class="v">' + pdfMoney(expT) + '</div><div class="s">پرداخت‌شده ' + pdfMoney(tot.exp.p) + ' · مانده ' + pdfMoney(tot.exp.u) + '</div></div>' +
-          '<div class="kpi"><div class="l">درآمد منهای مخارج</div><div class="v">' + pdfMoney(incT - expT) + '</div><div class="s">' + (incT - expT >= 0 ? 'مازاد' : 'کسری') + ' این ماه</div></div>' +
-          '<div class="kpi"><div class="l">موجودی حساب‌ها</div><div class="v">' + pdfMoney(accSum) + '</div><div class="s">' + toPersianDigits(Object.keys(accMap).length) + ' حساب</div></div>' +
-        '</div>' });
+        (kp ? '<div class="pb kpis">' + kp + '</div>' : '') });
       /* ---- خلاصهٔ کارت‌ها ---- */
-      if (order.length) {
+      if (order.length && (want('income') || want('expense'))) {
         var h = '<div class="pb sec"><div class="st">خلاصهٔ کارت‌ها <small>(مبالغ شخصی؛ سهم پروژه‌ها جدا حساب شده)</small></div><table><thead><tr><th style="width:28%">کارت</th><th>درآمد</th><th>مخارج</th><th>مانده</th><th>پرداخت‌نشده</th></tr></thead><tbody>';
         var sI = 0, sE = 0, sU = 0;
         order.forEach(function (t) {
@@ -18262,7 +18504,7 @@ function askBackupUserCards(selectedParts) {
         B.push({ html: h + '</tbody></table></div>' });
       }
       /* ---- جزئیات درآمد/مخارج ---- */
-      function detail(tab) {
+      function detail(tab, monthLabel) {
         var isInc = tab === 'income', cls = isInc ? 'inc' : 'exp';
         var head = '<thead><tr><th style="width:6%">#</th><th style="width:7%">روز</th><th>شرح</th>' + (isInc ? '' : '<th style="width:15%">دسته</th>') + '<th style="width:15%">حساب</th><th style="width:16%">مبلغ</th><th style="width:13%">وضعیت</th></tr></thead>';
         var cols = isInc ? 6 : 7, body = '', any = false, gp = 0, gu = 0;
@@ -18286,27 +18528,61 @@ function askBackupUserCards(selectedParts) {
           gp += p; gu += u;
           body += '<tr class="t"><td colspan="' + (cols - 2) + '">جمع ' + E(titleOf(sec)) + ' — ' + (isInc ? 'دریافت‌شده ' : 'پرداخت‌شده ') + pdfMoney(p) + ' · ' + (isInc ? 'دریافت‌نشده ' : 'پرداخت‌نشده ') + pdfMoney(u) + '</td><td class="n">' + pdfMoney(p + u) + '</td><td></td></tr>';
         });
-        var title = '<div class="st ' + cls + '">' + (isInc ? 'درآمدها' : 'مخارج') + ' <small>' + E(periodLabel) + '</small></div>';
-        if (!any) { B.push({ html: '<div class="pb sec">' + title + '<div class="empty">ثبتی وجود ندارد</div></div>' }); return; }
+        var title = '<div class="st ' + cls + '">' + (isInc ? 'درآمدها' : 'مخارج') + ' <small>' + E(monthLabel || periodLabel) + '</small></div>';
+        if (!any) { if (!multi) B.push({ html: '<div class="pb sec">' + title + '<div class="empty">ثبتی وجود ندارد</div></div>' }); return; }
         body += '<tr class="T"><td colspan="' + (cols - 2) + '">جمع کل ' + (isInc ? 'درآمد' : 'مخارج') + '</td><td class="n">' + pdfMoney(gp + gu) + '</td><td></td></tr>';
         B.push({ html: '<div class="pb sec">' + title + '<table>' + head + '<tbody>' + body + '</tbody></table></div>', split: true });
       }
-      detail('income');
-      detail('expense');
+      /* بازهٔ چندماهه: ماه‌به‌ماه، بعد جمع هر ماه */
+      months.forEach(function (mo) {
+        PD = mo.pd;
+        if (want('income')) detail('income', mo.label);
+        if (want('expense')) detail('expense', mo.label);
+      });
+      PD = periodData;
+      if (multi && (want('income') || want('expense'))) {
+        var mh = '<div class="pb sec"><div class="st">جمع ماه‌به‌ماه <small>' + E(periodLabel) + '</small></div><table><thead><tr><th style="width:28%">ماه</th>' +
+          (want('income') ? '<th>درآمد</th>' : '') + (want('expense') ? '<th>مخارج</th>' : '') + (want('income') && want('expense') ? '<th>مانده</th>' : '') + '</tr></thead><tbody>';
+        var si = 0, se = 0;
+        perMonth.forEach(function (pm) {
+          si += pm.inc; se += pm.exp;
+          mh += '<tr><td>' + E(pm.label) + '</td>' + (want('income') ? '<td class="n">' + pdfMoney(pm.inc) + '</td>' : '') + (want('expense') ? '<td class="n">' + pdfMoney(pm.exp) + '</td>' : '') + (want('income') && want('expense') ? '<td class="n">' + pdfMoney(pm.inc - pm.exp) + '</td>' : '') + '</tr>';
+        });
+        mh += '<tr class="T"><td>جمع</td>' + (want('income') ? '<td class="n">' + pdfMoney(si) + '</td>' : '') + (want('expense') ? '<td class="n">' + pdfMoney(se) + '</td>' : '') + (want('income') && want('expense') ? '<td class="n">' + pdfMoney(si - se) + '</td>' : '') + '</tr></tbody></table></div>';
+        B.push({ html: mh, split: true });
+      }
       /* ---- حساب‌ها + درآمد ثابت (کنار هم) ---- */
       var accKeys = Object.keys(accMap);
       var accHtml = '<div class="st acc">موجودی حساب‌ها</div>' + (accKeys.length ?
         '<table><thead><tr><th>حساب</th><th style="width:42%">موجودی</th></tr></thead><tbody>' + accKeys.map(function (k) { return '<tr><td>' + E(k) + '</td><td class="n">' + pdfMoney(accMap[k]) + '</td></tr>'; }).join('') +
         (accKeys.length > 1 ? '<tr class="T"><td>جمع</td><td class="n">' + pdfMoney(accSum) + '</td></tr>' : '') + '</tbody></table>' : '<div class="empty">حسابی تعریف نشده</div>');
-      var rec = []; try { rec = (recurringIncomes || []).filter(function (r) { return r && (r.name || r.amount); }); } catch (e) {}
+      var rec = []; try { rec = (recurringIncomes || []).filter(function (r) { return r && !r.deletedAt && (r.name || r.amount) && (!O.user || (r.sectionTitle || '').trim() === O.user); }); } catch (e) {}
       var recSum = 0;
       var recHtml = '<div class="st inc">درآمدهای ثابت</div>' + (rec.length ?
         '<table><thead><tr><th>نام</th><th style="width:16%">روز</th><th style="width:34%">مبلغ</th></tr></thead><tbody>' + rec.map(function (r) { recSum += Number(r.amount) || 0; return '<tr><td>' + E(r.name || '—') + (r.sectionTitle ? ' <span style="color:#666">(' + E(r.sectionTitle) + ')</span>' : '') + '</td><td class="c">' + (r.day ? toPersianDigits(r.day) : '—') + '</td><td class="n">' + pdfMoney(r.amount) + '</td></tr>'; }).join('') +
         (rec.length > 1 ? '<tr class="T"><td colspan="2">جمع ماهانه</td><td class="n">' + pdfMoney(recSum) + '</td></tr>' : '') + '</tbody></table>' : '<div class="empty">درآمد ثابتی ثبت نشده</div>');
-      B.push({ html: '<div class="pb sec row2"><div>' + accHtml + '</div><div>' + recHtml + '</div></div>' });
+      if (want('accounts') && want('recurring')) B.push({ html: '<div class="pb sec row2"><div>' + accHtml + '</div><div>' + recHtml + '</div></div>' });
+      else if (want('accounts')) B.push({ html: '<div class="pb sec">' + accHtml + '</div>' });
+      else if (want('recurring')) B.push({ html: '<div class="pb sec">' + recHtml + '</div>' });
+      /* ---- آرشیو درآمدهای ثابت (واریزهای وصل‌شده در همین بازه) ---- */
+      if (want('recurring') && rec.length) {
+        var mk = {}; months.forEach(function (mo) { mk[mo.y * 100 + mo.m] = 1; });
+        var ar = '', an = 0;
+        rec.forEach(function (it) {
+          var rows = []; try { rows = recArchiveRows(it).filter(function (x) { return mk[x.key]; }); } catch (e) {}
+          if (!rows.length) return;
+          ar += '<tr class="g"><td colspan="6">' + E(it.name || '—') + '</td></tr>';
+          rows.forEach(function (x) {
+            an++;
+            var ok = x.row.status === 'paid';
+            ar += '<tr><td class="c">' + E((MONTHS[(x.key % 100) - 1] || '') + ' ' + toPersianDigits(Math.floor(x.key / 100))) + '</td><td class="c">' + (x.row.day ? toPersianPad2(x.row.day) : '') + '</td><td>' + E(x.row.desc || it.name || '') + '</td><td class="n">' + pdfMoney(x.row.amount) + '</td><td class="c">' + E(x.row.account || '') + '</td><td class="c' + (ok ? '' : ' un') + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
+          });
+        });
+        if (an) B.push({ html: '<div class="pb sec"><div class="st inc">آرشیو درآمدهای ثابت <small>' + E(periodLabel) + '</small></div><table><thead><tr><th style="width:16%">ماه</th><th style="width:7%">روز</th><th>شرح</th><th style="width:16%">مبلغ</th><th style="width:16%">بانک</th><th style="width:14%">وضعیت</th></tr></thead><tbody>' + ar + '</tbody></table></div>', split: true });
+      }
       /* ---- اقساط ---- */
-      var ps = (plans || []).filter(function (p) { return p && !p.deletedAt; });
-      if (ps.length) {
+      var ps = (plans || []).filter(function (p) { return p && !p.deletedAt && (!O.user || (p.expenseSectionTitle || '').trim() === O.user); });
+      if (ps.length && want('install')) {
         var ti = 0, tp = 0, tr = 0, tm = 0;
         var ih = '<div class="pb sec"><div class="st ins">اقساط</div><table><thead><tr><th style="width:22%">نام وام</th><th>مبلغ هر قسط</th><th style="width:12%">پرداخت‌شده</th><th style="width:17%">سررسید بعدی</th><th>جمع پرداختی</th><th>باقی‌مانده</th></tr></thead><tbody>';
         ps.forEach(function (plan) {
@@ -18324,10 +18600,14 @@ function askBackupUserCards(selectedParts) {
         B.push({ html: ih, split: true });
       }
       /* ---- قرض: یک جدول واحد (ردیف‌ها + جمع هر رابطه + خلاصهٔ مانده‌ها) ---- */
-      var led = { sections: [] }; try { led = ensureLedger(); } catch (e) {}
       var pairs = []; try { pairs = ledgerPairNets() || []; } catch (e) {}
-      var lsecs = (led.sections || []).filter(function (s) { return (s.rows || []).some(usable); });
-      if (pairs.length || lsecs.length) {
+      var lsecs = [];
+      months.forEach(function (mo) {
+        var led = { sections: [] };
+        try { led = mo.pd === periodData ? ensureLedger() : (mo.pd.ledger || { sections: [] }); } catch (e) {}
+        (led.sections || []).forEach(function (sx) { if ((sx.rows || []).some(usable)) { sx = Object.assign({}, sx); sx._mLabel = multi ? mo.label : ''; lsecs.push(sx); } });
+      });
+      if ((pairs.length || lsecs.length) && want('ledger')) {
         var withBy = lsecs.some(function (sec) { return (sec.rows || []).some(function (r) { return usable(r) && r.createdByName; }); });
         var LC = withBy ? 7 : 6, byTd = function (v) { return withBy ? '<td class="c">' + v + '</td>' : ''; };
         var lh = '<div class="pb sec"><div class="st led">قرض و طلب <small>' + E(periodLabel) + '</small></div>' +
@@ -18335,7 +18615,7 @@ function askBackupUserCards(selectedParts) {
         lsecs.forEach(function (sec) {
           var a = (sec.personA || '').trim() || '—', b = (sec.personB || '').trim() || '—';
           var rel = ''; try { rel = ledgerSectionTitle(sec); } catch (e) { rel = a + ' ↔ ' + b; }
-          lh += '<tr class="g"><td colspan="' + LC + '">' + E(rel) + '</td></tr>';
+          lh += '<tr class="g"><td colspan="' + LC + '">' + E(rel) + (sec._mLabel ? ' — ' + E(sec._mLabel) : '') + '</td></tr>';
           var ab = 0, ba = 0;
           (sec.rows || []).filter(usable).slice().sort(function (x, y) { return (parseInt(toEnglishDigits(String(x.day || '99')), 10) || 99) - (parseInt(toEnglishDigits(String(y.day || '99')), 10) || 99); }).forEach(function (r, i) {
             var cr = r.status === 'credit', amt = Number(r.amount) || 0;
@@ -18377,6 +18657,7 @@ function askBackupUserCards(selectedParts) {
         });
         return h + '<tr class="t"><td colspan="3">جمع ' + cap + '</td><td class="n">' + pdfMoney(sumT) + '</td></tr></tbody></table></div>';
       };
+      if (!want('projects')) subs = [];
       subs.forEach(function (sub, si) {
         var rep = null; try { rep = computeSubjectReport(sub.id); } catch (e) {}
         if (!rep) return;
@@ -18394,7 +18675,7 @@ function askBackupUserCards(selectedParts) {
         B.push({ html: txTable(outs, 'مخارج پروژه', 'exp'), split: outs.length > 0 });
       });
       /* ---- پس‌انداز (ارز و طلا): جدا از موجودی کل ---- */
-      var sv = savingsExportData();
+      var sv = want('savings') ? savingsExportData() : null;
       if (sv) {
         var sh = '<div class="pb sec"><div class="st sav">پس‌انداز (ارز و طلا) <small>جدا از موجودی حساب‌ها؛ قیمت روز را کاربر وارد کرده</small></div>' +
           '<table><thead><tr><th style="width:20%">نوع</th><th style="width:15%">مقدار</th><th>قیمت خرید کل</th><th>قیمت روز هر واحد</th><th>ارزش روز</th><th style="width:15%">سود / زیان</th></tr></thead><tbody>';
@@ -18500,6 +18781,7 @@ function askBackupUserCards(selectedParts) {
       push();
       M.done();
       var n = pages.length, label = MONTHS[currentMonth - 1] + ' ' + toPersianDigits(currentYear);
+      try { if (_hkExportOpts) label = hkExportRangeLabel(_hkExportOpts.range || 'month', hkExportMonths(_hkExportOpts.range || 'month')) || label; } catch (eL) {}
       return pages.map(function (inner, i) {
         return '<div class="pdf-page" data-page="' + i + '">' + inner +
           '<div class="pdf-foot"><span>حساب‌کتاب — گزارش ' + escapeHtml(label) + '</span><span>صفحهٔ ' + toPersianDigits(i + 1) + ' از ' + toPersianDigits(n) + '</span></div></div>';
@@ -18553,7 +18835,7 @@ function openPdfWithChooser(uri) {
 async function exportPdf(){
       try{
         persistCurrent();
-        const name = 'hesab-' + currentYear + '-' + String(currentMonth).padStart(2, '0') + '.pdf';
+        const name = hkExportFileBase() + '.pdf';
         showToast('در حال ساخت PDF...');
         const C = window.Capacitor, plugins = C && C.Plugins, native = plugins && plugins.NativeFileExport;
         const isNative = C && typeof C.isNativePlatform === 'function' && C.isNativePlatform();
@@ -18808,6 +19090,7 @@ async function openPdfPrintWindow(){
             var title = ((sec && sec.title) || '').trim();
             ((sec && sec.rows) || []).forEach(function (r) {
               if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
+              if (kind === 'expense' && isPreAppPlanRow(r, y, m)) return;
               var t = sectionPaidUnpaidTotal({ rows: [r] }, kind === 'income' ? { personalIncomeOnly: true } : { personalExpenseOnly: true });
               if (!t.total) return;
               var d = parseInt(toEnglishDigits(String(r.day || '')), 10);
@@ -21110,6 +21393,31 @@ async function openPdfPrintWindow(){
     }
 
     let _instantBalOpen = false;
+    /* مبلغ کوتاه برای نشان: ۳ م (میلیون)، ۲۵۰ هـ (هزار) */
+    function hkShortAmt(v) {
+      v = Math.abs(Number(v) || 0);
+      if (v >= 1e6) { var x = Math.round(v / 1e5) / 10; return toPersianDigits(String(x)).replace('.', '٫') + ' م'; }
+      if (v >= 1e3) return toPersianDigits(String(Math.round(v / 1e3))) + ' هـ';
+      return formatNum(v);
+    }
+    /* نشان پروژه کنار هر حساب در موجودی آنی: طلب (سبز) / بدهی (قرمز) پروژه‌ها روی همین حساب */
+    function ibProjectBadge(acc) {
+      try {
+        if (typeof loadFinancialSubjects !== 'function' || typeof projectReceivableOnAccounts !== 'function') return '';
+        var set = new Set([acc]), list = [];
+        loadFinancialSubjects().forEach(function (s) {
+          if (!s || !s.id || s.id === 'personal') return;
+          var r = Number(projectReceivableOnAccounts(s.id, set)) || 0;
+          if (Math.abs(r) > 0.5) list.push(r);
+        });
+        if (!list.length) return '';
+        var net = list.reduce(function (a, b) { return a + b; }, 0);
+        var pos = net >= 0;
+        var txt = list.length > 1 ? toPersianDigits(String(list.length)) + ' پروژه · ' + (pos ? 'طلب ' : 'بدهی ') + hkShortAmt(net)
+          : 'پروژه: ' + (pos ? 'طلب ' : 'بدهی ') + hkShortAmt(net);
+        return '<span class="ib-proj-badge ' + (pos ? 'pos' : 'neg') + '">' + txt + '</span>';
+      } catch (e) { return ''; }
+    }
     function closeInstantBalance() {
       _instantBalOpen = false;
       try {
@@ -21124,7 +21432,13 @@ async function openPdfPrintWindow(){
         if (!ov || !panel) return;
         const map = (typeof globalAccountBalances === 'function') ? globalAccountBalances() : personAccountBalances(title);
         const keys = Object.keys(map);
-        keys.sort(function(a, b) { return String(a).localeCompare(String(b), 'fa'); });
+        /* همان ترتیب حساب‌ها در ویجت (ترتیب ساخت حساب‌ها)؛ بقیه بعد از آن‌ها */
+        const _order = (typeof selectedAccountLabels === 'function') ? selectedAccountLabels() : [];
+        keys.sort(function(a, b) {
+          var ia = _order.indexOf(a), ib = _order.indexOf(b);
+          if (ia < 0) ia = 1e6; if (ib < 0) ib = 1e6;
+          return (ia - ib) || String(a).localeCompare(String(b), 'fa');
+        });
         let html = '<div class="instant-bal-head">موجودی آنی' +
           '<div class="instant-bal-sub">موجودی واقعی کارت (شامل موجودی اولیه و پول پروژه‌ها)</div></div>';
         var shown = 0;
@@ -21161,6 +21475,7 @@ async function openPdfPrintWindow(){
             '<div class="ib-check-wrap">' +
             '<input type="checkbox" class="ib-acc-check" data-amt="' + String(v) + '" />' +
             '<span class="ib-name">' + escapeHtml(k) + '</span>' +
+            ibProjectBadge(k) +
             '</div>' +
             '<span class="ib-amt ib-amt-click ' + (v >= 0 ? 'pos' : 'neg') + '">' + formatNum(v) + '</span></div>';
         });
@@ -24562,6 +24877,7 @@ async function openPdfPrintWindow(){
           el.value = id === 'balanceSearchRange' ? 'all' : '';
           try { if (el._fancyRender) el._fancyRender(); } catch (e2) {}
         });
+        try { var hd = document.getElementById('balanceDayFilter'); if (hd) hd.value = ''; renderBalanceDayFilter(); } catch (e3) {}
         renderBalanceSearch();
       } catch (e) {}
     }
@@ -24746,6 +25062,9 @@ container.innerHTML = '';
       sec.rows.forEach((row, idx) => {
         const tr = document.createElement('tr');
         const fromPlan = !!(row.fromPlanId);
+        /* قسطی که پیش از شروع کار با نرم‌افزار پرداخت شده: کم‌رنگ با برچسب «پرداخت قبلی» */
+        const preApp = fromPlan && isPreAppPlanRow(row, currentYear, currentMonth);
+        if (preApp) tr.classList.add('plan-preapp');
 
         const tdN = document.createElement('td');
         tdN.className = 'pd-num-cell';
@@ -24893,6 +25212,7 @@ container.innerHTML = '';
           }
         };
         tdDesc.appendChild(desc);
+        if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.textContent = 'پرداخت قبلی'; tdDesc.appendChild(tg); }
         tr.appendChild(tdDesc);
 
         // مبلغ
@@ -25698,14 +26018,17 @@ container.innerHTML = '';
       }
       // Canonical: نرم‌افزار فقط تومان ذخیره می‌کند. تبدیل ریال→تومان دقیقاً یک‌بار اینجا.
       // SMS بانکی ایران معمولاً ریال است؛ اگر واحد صریح تومان نبود و پیامک بانکی است → ریال.
+      /* مبلغ دقیق ریالی هم نگه داشته می‌شود تا تطبیق موجودی با گرد کردن تومان خطا جمع نکند */
+      extractAmountFromSms.lastRial = 0;
       if (unit === 'toman') {
         /* already toman — no convert */
       } else if (unit === 'rial') {
-        if (amount >= 10) amount = Math.round(amount / 10);
+        if (amount >= 10) { extractAmountFromSms.lastRial = amount; amount = Math.round(amount / 10); }
       } else {
         // واحد نامشخص: اگر نشانه‌های تراکنش بانکی دارد، مبلغ را ریال فرض کن
         var bankish = /مبلغ|برداشت|واریز|مانده|خرید|انتقال|حساب|بانك|بانک|کارت/i.test(raw);
         if (bankish && amount >= 1000) {
+          extractAmountFromSms.lastRial = amount;
           amount = Math.round(amount / 10);
         }
       }
@@ -25812,15 +26135,20 @@ container.innerHTML = '';
       const dt = extractDateFromSms(t);
       // amount اینجا canonical تومان است (تبدیل فقط یک‌بار داخل extractAmountFromSms)
       const amtToman = extractAmountFromSms(t);
+      const amtRial = extractAmountFromSms.lastRial || 0;
+      const balToman = extractBalanceFromSms(t);
+      const balRial = balToman == null ? null : extractBalanceFromSms.lastRial;
       return {
         type: detectTxnTypeFromSms(t),
         amount: amtToman,
+        amountRial: amtRial,
+        balanceRial: balRial,
         rawSmsAmount: amtToman,
         bank: detectBankFromSms(t),
         day: dt && dt.d ? String(dt.d) : '',
         month: dt && dt.m ? dt.m : null,
         year: dt && dt.y ? dt.y : null,
-        balance: extractBalanceFromSms(t),
+        balance: balToman,
         raw: t
       };
     }
@@ -25837,6 +26165,7 @@ container.innerHTML = '';
         var after = raw.slice((m.index || 0), (m.index || 0) + String(m[0]).length + 14);
         var unit = /تومان|تومن|toman/i.test(after) ? 'toman' : /ریال|rial/i.test(after) ? 'rial'
           : (/تومان|تومن|toman/i.test(raw) ? 'toman' : 'rial');
+        extractBalanceFromSms.lastRial = unit === 'rial' ? v : null;
         if (unit === 'rial') v = Math.round(v / 10);
         return v;
       } catch (e) { return null; }
@@ -27238,16 +27567,13 @@ function getProjectBalance(subjectId) {
           }
         }
       });
-      out.sort(function (a, b) { return (b.hint - a.hint) || (b.exact - a.exact) || (Math.abs(a.diff) - Math.abs(b.diff)); });
+      out.sort(function (a, b) { return ((b.hint && b.exact) - (a.hint && a.exact)) || (b.exact - a.exact) || (b.hint - a.hint) || (Math.abs(a.diff) - Math.abs(b.diff)); });
       return out;
     }
-    /* انتخاب خودکار فقط وقتی کاملاً مطمئن: نام واریزکنندهٔ آموخته فقط با یک مورد،
-       یا مبلغ دقیقاً برابر و حداکثر ۲ روز فاصله و هیچ مورد دیگری در همین شرایط نباشد */
+    /* هر وقت دست‌کم یک درآمد ثابتِ احتمالی هست، بهترینش از پیش انتخاب می‌شود (حتی با بیش از ۲ روز فاصله):
+       اول نام واریزکنندهٔ آموخته، بعد مبلغ دقیقاً برابر، بعد نزدیک‌ترین روز. «خیر» فقط وقتی هیچ موردی نیست پیش‌فرض است */
     function recSmsConfident(list) {
-      var h = list.filter(function (c) { return c.hint && c.exact; });
-      if (h.length === 1) return h[0];
-      var strong = list.filter(function (c) { return c.exact && Math.abs(c.diff) <= 2; });
-      return strong.length === 1 ? strong[0] : null;
+      return (list && list.length) ? list[0] : null;
     }
     /* فیلد «بابت چه بود»: با انتخاب درآمد ثابت، نام آن پیش‌فرض نوشته می‌شود ولی قابل ویرایش است؛
        متنی که کاربر خودش نوشته دست نمی‌خورد. با «خیر» فقط همان نام پیش‌فرض پاک می‌شود */
@@ -27347,6 +27673,7 @@ function getProjectBalance(subjectId) {
         if (smsK !== k) x.row.receivedOn = { y: info.y, m: info.m, d: parseInt(info.day, 10) || 0 };
         if (info.bank) x.row.account = info.bank;
         x.row.viaSms = true;
+        try { var _rl = hkSmsRialFor(info.amount); if (_rl) x.row.amountRial = _rl; else delete x.row.amountRial; } catch (eRl) {}
         x.row.updatedAt = Date.now();
       } else {
         var pd = recMonthData(smsK, true);
@@ -27356,7 +27683,7 @@ function getProjectBalance(subjectId) {
           day: info.day ? String(info.day) : '',
           desc: (info.desc && info.desc !== (item.name || '')) ? info.desc : (item.name || '') + ' (پیش‌دریافت ' + (MONTHS[(k % 100) - 1] || '') + ')',
           amount: info.amount, status: 'paid', account: info.bank || item.account || '',
-          fromRecurringId: item.id, recForKey: k, viaSms: true, createdAt: Date.now(), updatedAt: Date.now()
+          fromRecurringId: item.id, recForKey: k, viaSms: true, amountRial: hkSmsRialFor(info.amount) || undefined, createdAt: Date.now(), updatedAt: Date.now()
         }));
         if (!item.paidAhead) item.paidAhead = {};
         item.paidAhead[String(k)] = true;
@@ -28282,6 +28609,7 @@ function confirmSmsEntry() {
           row.fromPlanIndex = linkedIdx;
           row.desc = baseDesc;
           row.viaSms = true;
+          try { var _rl2 = hkSmsRialFor(amount); if (_rl2) row.amountRial = _rl2; } catch (eRl2) {}
           row.allowPlanFieldEdit = true;
           try { row.financialContext = readSmsFinancialContext('expense'); } catch (eFcP) {}
           const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
@@ -28300,6 +28628,7 @@ function confirmSmsEntry() {
         row.status = 'paid';
         row.account = bank;
         row.viaSms = true; /* برای تشخیص «پیامک بانکی در برابر ثبت دستی» */
+        try { var _rl = hkSmsRialFor(amount); if (_rl) row.amountRial = _rl; } catch (eRl) {}
         try {
           row.financialContext = readSmsFinancialContext(tab);
           // تخصیص خودکار مخارج پروژه — amount همین تومان canonical است
@@ -28445,23 +28774,53 @@ function confirmSmsEntry() {
     /* ===== تطبیق «مانده» پیامک با موجودی نرم‌افزار (لایهٔ جدا؛ ثبت تراکنش دست‌نخورده) =====
        بعد از ثبت موفق پیامک، موجودی همان حساب در نرم‌افزار تا روز همین تراکنش با «مانده» پیامک مقایسه می‌شود.
        اگر فرق داشت، هشدار زرد نشان داده می‌شود و فقط با تأیید کاربر یک ردیف «اختلاف» درست قبل از همین تراکنش ثبت می‌شود. */
+    /* مبلغ ریالی دقیق پیامکِ در حال ثبت، اگر کاربر مبلغ را عوض نکرده باشد */
+    function hkSmsRialFor(amount) {
+      try {
+        var pe = pendingSmsEntry;
+        var r = pe && Number(pe.amountRial);
+        return (r && Math.round(r / 10) === Number(amount)) ? r : 0;
+      } catch (e) { return 0; }
+    }
+    function hkRowRial(r) {
+      var t = Number(r.amount) || 0, x = Number(r.amountRial) || 0;
+      return (x && Math.round(x / 10) === t) ? x : t * 10;
+    }
+    /* مقایسهٔ «مانده» پیامک با موجودی حساب؛ اگر مانده و مبلغ ریالی دقیق داریم، به ریال (بدون خطای گرد کردن) */
+    function hkReconCompare(snap, b, includeSelf) {
+      var signed = snap.type === 'income' ? snap.amount : -snap.amount;
+      var bal = Number(snap.balance) || 0;
+      if (snap.balanceRial != null && isFinite(Number(snap.balanceRial))) {
+        var sR = Number(snap.amountRial) || snap.amount * 10;
+        var signedR = snap.type === 'income' ? sR : -sR;
+        var balR = Number(snap.balanceRial);
+        var allR = b.allR + (includeSelf ? 0 : signedR);
+        if (Math.abs(balR - allR) <= 10 || Math.abs(balR - (b.beforeR + signedR)) <= 10) return null;
+        var appT = b.all + (includeSelf ? 0 : signed);
+        return { appBal: appT, diff: Math.round((balR - allR) / 10) || (balR > allR ? 1 : -1) };
+      }
+      var after = b.all + (includeSelf ? 0 : signed);
+      if (Math.abs(bal - after) <= 1 || Math.abs(bal - (b.before + signed)) <= 1) return null;
+      return { appBal: after, diff: bal - after };
+    }
     function hkAccountBalanceUpTo(label, D) {
       var open = 0;
       try { open = Number(getAccountOpeningBalance(label)) || 0; } catch (e) {}
-      var all = open, before = open;
+      var all = open, before = open, allR = open * 10, beforeR = open * 10;
       ['income', 'expense'].forEach(function (tab) {
         ((periodData && periodData[tab] && periodData[tab].sections) || []).forEach(function (sec) {
           ((sec && sec.rows) || []).forEach(function (r) {
             if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
             if ((r.account || '').trim() !== label) return;
-            var a = (Number(r.amount) || 0) * (tab === 'income' ? 1 : -1);
+            var sg = tab === 'income' ? 1 : -1;
+            var a = (Number(r.amount) || 0) * sg, aR = hkRowRial(r) * sg;
             var dn = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0;
-            if (!D || dn <= D) all += a;
-            if (!D || dn < D) before += a;
+            if (!D || dn <= D) { all += a; allR += aR; }
+            if (!D || dn < D) { before += a; beforeR += aR; }
           });
         });
       });
-      return { all: all, before: before };
+      return { all: all, before: before, allR: allR, beforeR: beforeR };
     }
     function hkSmsReconcile(snap) {
       try {
@@ -28469,11 +28828,10 @@ function confirmSmsEntry() {
         if (typeof isLiveAccountLabel === 'function' && !isLiveAccountLabel(snap.bank)) return;
         if (snap.y !== currentYear || snap.m !== currentMonth) return;
         var b = hkAccountBalanceUpTo(snap.bank, snap.day);
-        var signed = snap.type === 'income' ? snap.amount : -snap.amount;
-        var bal = Number(snap.balance) || 0;
         /* ترتیب تراکنش‌های همان روز معلوم نیست: اگر با «همهٔ ثبت‌های تا امروز» یا «قبل از امروز + همین تراکنش» یکی بود، مغایرتی نیست */
-        if (Math.abs(bal - b.all) <= 1 || Math.abs(bal - (b.before + signed)) <= 1) return;
-        hkShowReconcileWarning(snap, b.all, bal - b.all);
+        var c = hkReconCompare(snap, b, true);
+        if (!c) return;
+        hkShowReconcileWarning(snap, c.appBal, c.diff);
       } catch (e) {}
     }
     function hkShowReconcileWarning(snap, appBal, diff, onChoice) {
@@ -28580,10 +28938,7 @@ function confirmSmsEntry() {
         if (typeof isLiveAccountLabel === 'function' && !isLiveAccountLabel(snap.bank)) return null;
         if (snap.y !== currentYear || snap.m !== currentMonth) return null;
         var b = hkAccountBalanceUpTo(snap.bank, snap.day);
-        var signed = snap.type === 'income' ? snap.amount : -snap.amount;
-        var bal = Number(snap.balance) || 0, after = b.all + signed;
-        if (Math.abs(bal - after) <= 1 || Math.abs(bal - (b.before + signed)) <= 1) return null;
-        return { appBal: after, diff: bal - after };
+        return hkReconCompare(snap, b, false);
       } catch (e) { return null; }
     }
     (function () {
@@ -28602,8 +28957,9 @@ function confirmSmsEntry() {
           var mm = parseInt(toEnglishDigits(String(g('smsConfirmMonth') || '')).replace(/[^0-9]/g, ''), 10) || pe.month || currentMonth;
           var yy = parseInt(toEnglishDigits(String(g('smsConfirmYear') || '')).replace(/[^0-9]/g, ''), 10) || pe.year || currentYear;
           if (yy > 0 && yy < 100) yy = Math.floor((currentYear || 1400) / 100) * 100 + yy;
-          return { balance: pe.balance, bank: bank, type: g('smsConfirmType') === 'income' ? 'income' : 'expense',
-            amount: parseAmount(g('smsConfirmAmount') || pe.amount), day: (dd >= 1 && dd <= 31) ? dd : 0, m: mm, y: yy };
+          var amtNow = parseAmount(g('smsConfirmAmount') || pe.amount);
+          return { balance: pe.balance, balanceRial: pe.balanceRial, amountRial: hkSmsRialFor(amtNow), bank: bank, type: g('smsConfirmType') === 'income' ? 'income' : 'expense',
+            amount: amtNow, day: (dd >= 1 && dd <= 31) ? dd : 0, m: mm, y: yy };
         } catch (e) { return null; }
       }
       var wrapped = function () {
@@ -30494,11 +30850,20 @@ function confirmSmsEntry() {
       }
 
       const toolbar = document.createElement('div');
-      toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;';
+      toolbar.className = 'trash-toolbar';
+      /* «انتخاب همه» بالای فهرست می‌ماند و فهرست زیرش اسکرول می‌شود */
+      toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;position:sticky;top:0;z-index:2;background:var(--card);';
       toolbar.innerHTML = '<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">' +
         '<input type="checkbox" id="trashSelectAll" style="width:18px;height:18px;accent-color:var(--accent);">' +
         'انتخاب همه</label>';
       box.appendChild(toolbar);
+      try {
+        /* پس‌زمینهٔ مات هم‌رنگ پنجره تا ردیف‌های زیرش دیده نشوند */
+        for (let el = box; el && el !== document.body; el = el.parentElement) {
+          const bgc = getComputedStyle(el).backgroundColor;
+          if (bgc && bgc !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bgc)) { toolbar.style.background = bgc.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgb($1,$2,$3)'); break; }
+        }
+      } catch (eBg) {}
       const selAll = toolbar.querySelector('#trashSelectAll');
       if (selAll) {
         selAll.addEventListener('change', () => {
@@ -33022,6 +33387,7 @@ if (item.type === 'recurring') {
 
     let recurringSelectMode = false;
     let recurringSelected = new Set(); // indices in recurringIncomes
+    const recExpanded = new Set(); // شناسهٔ درآمدهای ثابتِ باز در فهرست؛ با خروج از منو همه بسته می‌شوند
 
     function clearRecurringSelection() {
       recurringSelectMode = false;
@@ -33305,9 +33671,32 @@ if (item.type === 'recurring') {
       out.sort(function (a, b) { return (a.key - b.key) || ((parseInt(a.row.day, 10) || 0) - (parseInt(b.row.day, 10) || 0)); });
       return out;
     }
-    function recOpenArchive(item) {
+    /* دوره‌های قرارداد: دوره‌های قبلی (بعد از هر تمدید) + دورهٔ فعلی */
+    function recTermsOf(item) {
+      var list = (item.terms || []).map(function (t) { return { start: t.contractStart, end: t.contractEnd, amount: t.amount }; });
+      list.push({ start: item.contractStart, end: item.contractEnd, amount: item.amount, current: true });
+      return list;
+    }
+    /* واریز ماه k (روز day) مال کدام دوره است؟ ماه مرزی: قبل از روز شروع دورهٔ تازه = دورهٔ قبل */
+    function recTermIndexFor(terms, k, day) {
+      var idx = 0;
+      terms.forEach(function (t, i) {
+        var sk = (t.start && t.start.y) ? recMonthKey(t.start.y, t.start.m) : 0;
+        if (!sk) return;
+        if (k > sk || (k === sk && (i === 0 || !day || day >= (parseInt(t.start.d, 10) || 1)))) idx = i;
+      });
+      return idx;
+    }
+    function recFmtDate(d) { return d ? toPersianDigits(String(d.d)) + ' ' + (MONTHS[d.m - 1] || '') + ' ' + toPersianDigits(String(d.y)) : '—'; }
+    function recOpenArchive(item, termIdx) {
       var old = document.getElementById('recArchiveModal'); if (old) old.remove();
-      var rows = recArchiveRows(item);
+      var terms = recTermsOf(item);
+      var multi = terms.length > 1;
+      var all = recArchiveRows(item).map(function (x) { x.term = recTermIndexFor(terms, x.key, parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0); return x; });
+      var folderView = multi && termIdx == null;
+      var ti = termIdx == null ? terms.length - 1 : termIdx;
+      var term = terms[ti];
+      var rows = folderView ? all : all.filter(function (x) { return x.term === ti; });
       var paid = rows.filter(function (x) { return recIsPaid(x.row); });
       var unpaid = rows.filter(function (x) { return !recIsPaid(x.row); });
       var sum = paid.reduce(function (s, x) { return s + (Number(x.row.amount) || 0); }, 0);
@@ -33316,34 +33705,46 @@ if (item.type === 'recurring') {
       ov.style.cssText = 'position:fixed;inset:0;z-index:100350;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
       var box = document.createElement('div');
       box.style.cssText = 'width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px var(--shadow);direction:rtl;overflow:hidden;';
-      var fmtRange = function () {
-        var f = function (d) { return d ? toPersianDigits(String(d.d)) + ' ' + (MONTHS[d.m - 1] || '') + ' ' + toPersianDigits(String(d.y)) : '—'; };
-        return 'از ' + f(item.contractStart) + (item.contractEnd ? ' تا ' + f(item.contractEnd) : '');
-      };
+      var rangeOf = function (t) { return 'از ' + recFmtDate(t.start) + (t.end ? ' تا ' + recFmtDate(t.end) : ''); };
       var head = '<div style="padding:12px 14px 8px;border-bottom:1px solid var(--border);">' +
-        '<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;font-weight:800;font-size:1rem;">آرشیو «' + escapeHtml(item.name || '') + '»</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        (multi && !folderView ? '<button type="button" id="recArchBack" style="border:none;background:transparent;color:var(--accent);font-family:inherit;font-weight:700;font-size:0.8rem;cursor:pointer;padding:0;">‹ همهٔ دوره‌ها</button>' : '') +
+        '<div style="flex:1;font-weight:800;font-size:1rem;">آرشیو «' + escapeHtml(item.name || '') + '»</div>' +
         '<button type="button" id="recArchClose" style="border:none;background:transparent;color:var(--muted);font-size:1.4rem;line-height:1;cursor:pointer;">×</button></div>' +
-        '<div style="font-size:0.78rem;color:var(--muted);margin-top:4px;line-height:1.7;">' + formatNum(item.amount || 0) + ' تومان · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' +
-        (item.account ? ' · ' + escapeHtml(item.account) : '') + '<br>' + fmtRange() + '</div>' +
+        '<div style="font-size:0.78rem;color:var(--muted);margin-top:4px;line-height:1.7;">' +
+        (folderView ? toPersianDigits(String(terms.length)) + ' دورهٔ قرارداد · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' + (item.account ? ' · ' + escapeHtml(item.account) : '')
+          : formatNum(term.amount || 0) + ' تومان · روز ' + toPersianDigits(String(item.day || '')) + ' هر ماه' + (item.account ? ' · ' + escapeHtml(item.account) : '') + '<br>' + rangeOf(term)) + '</div>' +
         '<div style="display:flex;gap:8px;margin-top:8px;font-size:0.8rem;">' +
           '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">جمع دریافتی<br><b style="color:#30d158;">' + formatNum(sum) + '</b></div>' +
           '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">دریافت‌شده<br><b style="color:#30d158;">' + toPersianDigits(String(paid.length)) + '</b></div>' +
           '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:6px;text-align:center;">دریافت نشده<br><b style="color:#ff6b4a;">' + toPersianDigits(String(unpaid.length)) + '</b></div>' +
         '</div></div>';
       var body = '<div style="overflow:auto;flex:1;padding:4px 10px 8px;">';
-      if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این درآمد ثابت وصل نشده</div>';
+      if (folderView) {
+        /* هر دوره یک پوشه؛ قدیمی‌تر بالا */
+        terms.forEach(function (t, i) {
+          var tr = all.filter(function (x) { return x.term === i; });
+          var tp = tr.filter(function (x) { return recIsPaid(x.row); });
+          body += '<button type="button" class="rec-term-folder" data-t="' + i + '" style="display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 0;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;text-align:right;cursor:pointer;">' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + (t.current ? 'var(--accent)' : 'var(--muted)') + '" stroke-width="2" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' +
+            '<span style="flex:1;min-width:0;line-height:1.7;"><b style="font-size:0.85rem;">' + rangeOf(t) + (t.current ? ' <span style="color:var(--accent);font-size:0.72rem;">(فعلی)</span>' : '') + '</b><br>' +
+            '<span style="font-size:0.76rem;color:var(--muted);">' + formatNum(t.amount || 0) + ' تومان · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></span></button>';
+        });
+      } else if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این ' + (multi ? 'دوره' : 'درآمد ثابت') + ' وصل نشده</div>';
       else {
-        body += '<table class="rec-arch-table" style="width:100%;border-collapse:collapse;font-size:0.8rem;">' +
-          '<thead><tr style="color:var(--muted);"><th style="text-align:right;padding:6px 4px;">ماه</th><th style="padding:6px 4px;">تاریخ</th><th style="text-align:right;padding:6px 4px;">شرح</th><th style="padding:6px 4px;">بانک</th><th style="padding:6px 4px;">مبلغ</th></tr></thead><tbody>';
+        /* ستون‌ها مثل جدول درآمد: روز، شرح، مبلغ، بانک (ماه در ستون اول) */
+        body += '<table class="rec-arch-table" style="width:100%;border-collapse:separate;border-spacing:0 3px;font-size:0.8rem;">' +
+          '<thead><tr style="color:var(--muted);"><th style="text-align:right;padding:6px 4px;">ماه</th><th style="padding:6px 4px;">روز</th><th style="text-align:right;padding:6px 4px;">شرح</th><th style="padding:6px 4px;">مبلغ</th><th style="padding:6px 4px;">بانک</th></tr></thead><tbody>';
         rows.forEach(function (x, i) {
           var y = Math.floor(x.key / 100), m = x.key % 100, ok = recIsPaid(x.row);
-          var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
-          body += '<tr class="rec-arch-row" data-i="' + i + '" style="border-top:1px solid var(--border);cursor:pointer;">' +
-            '<td style="padding:7px 4px;white-space:nowrap;font-weight:700;">' + (MONTHS[m - 1] || '') + ' ' + toPersianDigits(String(y)) + '</td>' +
-            '<td style="padding:7px 4px;text-align:center;white-space:nowrap;">' + (x.row.day ? p2(y % 100) + '/' + p2(m) + '/' + p2(x.row.day) : '—') + '</td>' +
-            '<td style="padding:7px 4px;">' + escapeHtml(x.row.desc || item.name || '') + '<div style="font-size:0.7rem;color:' + (ok ? '#30d158' : '#ff6b4a') + ';">' + (ok ? 'دریافت شد' : 'دریافت نشده') + '</div></td>' +
-            '<td style="padding:7px 4px;text-align:center;">' + escapeHtml(x.row.account || '—') + '</td>' +
-            '<td style="padding:7px 4px;text-align:center;white-space:nowrap;font-weight:700;color:' + (ok ? 'var(--text)' : 'var(--muted)') + ';">' + formatNum(Number(x.row.amount) || 0) + '</td></tr>';
+          var bg = ok ? 'rgba(48,209,88,0.16)' : 'rgba(255,69,58,0.16)';
+          var td = 'padding:7px 4px;background:' + bg + ';';
+          body += '<tr class="rec-arch-row ' + (ok ? 'is-paid' : 'is-unpaid') + '" data-i="' + i + '">' +
+            '<td style="' + td + 'white-space:nowrap;font-weight:700;border-radius:0 8px 8px 0;">' + (MONTHS[m - 1] || '') + ' ' + toPersianDigits(String(y)) + '</td>' +
+            '<td style="' + td + 'text-align:center;white-space:nowrap;">' + (x.row.day ? toPersianDigits(String(x.row.day)) : '—') + '</td>' +
+            '<td style="' + td + '">' + escapeHtml(x.row.desc || item.name || '') + '</td>' +
+            '<td style="' + td + 'text-align:center;white-space:nowrap;font-weight:700;">' + formatNum(Number(x.row.amount) || 0) + '</td>' +
+            '<td style="' + td + 'text-align:center;border-radius:8px 0 0 8px;">' + escapeHtml(x.row.account || '—') + '</td></tr>';
         });
         body += '</tbody></table>';
       }
@@ -33354,20 +33755,77 @@ if (item.type === 'recurring') {
       ov.appendChild(box);
       document.body.appendChild(ov);
       var close = function () { try { ov.remove(); } catch (e) {} };
-      ov._hkCancel = close;
+      /* بازگشت از داخل یک دوره = فهرست دوره‌ها */
+      ov._hkCancel = (multi && !folderView) ? function () { recOpenArchive(item); } : close;
+      /* زدن داخل آرشیو کاری نمی‌کند؛ فقط ×، بازگشت و زدن بیرون می‌بندد */
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       box.querySelector('#recArchClose').onclick = close;
-      box.querySelectorAll('.rec-arch-row').forEach(function (tr) {
-        tr.onclick = function () {
-          var x = rows[parseInt(tr.getAttribute('data-i'), 10)];
-          if (!x) return;
-          close();
-          try { if (typeof closeFeatureSheet === 'function') closeFeatureSheet(); } catch (e) {}
-          try { navigateToPeriod(Math.floor(x.key / 100), x.key % 100); } catch (e) {}
-          try { if (currentTab !== 'income') switchTab('income'); else renderAll(); } catch (e) {}
-        };
+      var bk = box.querySelector('#recArchBack'); if (bk) bk.onclick = function () { recOpenArchive(item); };
+      box.querySelectorAll('.rec-term-folder').forEach(function (b) { b.onclick = function () { recOpenArchive(item, parseInt(b.getAttribute('data-t'), 10)); }; });
+      box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
+    }
+    /* تمدید قرارداد: دورهٔ فعلی به دوره‌های قبلی می‌رود و دورهٔ تازه (پیش‌فرض: از پایان قبلی، یک سال، همان مبلغ) شروع می‌شود */
+    function recRenewItem(item, start, end, amount) {
+      var oldEndK = recEndKey(item);
+      if (!Array.isArray(item.terms)) item.terms = [];
+      item.terms.push({ contractStart: Object.assign({}, item.contractStart), contractEnd: Object.assign({}, item.contractEnd), amount: Number(item.amount) || 0 });
+      item.contractStart = { d: start.d, m: start.m, y: start.y };
+      item.contractEnd = { d: end.d, m: end.m, y: end.y };
+      item.amount = Number(amount) || 0;
+      item.updatedAt = Date.now();
+      /* ردیف‌های دریافت‌نشدهٔ ماه‌های دورهٔ تازه مبلغ تازه را می‌گیرند */
+      recRowsOf(item).forEach(function (x) {
+        if (recIsPaid(x.row) || x.key <= oldEndK) return;
+        x.row.amount = item.amount; x.row.updatedAt = Date.now();
       });
-      box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
+      /* ماه‌های گذشتهٔ بعد از پایان قبلی ساخته نمی‌شوند؛ از همین ماه ادامه */
+      var today = recTodayKey();
+      item.genKey = Math.max(parseInt(item.genKey, 10) || 0, recPrevKey(today));
+      recPersist();
+    }
+    function recRenewFlow(item, done) {
+      var old = document.getElementById('recRenewModal'); if (old) old.remove();
+      var s0 = item.contractEnd ? { d: item.contractEnd.d, m: item.contractEnd.m, y: item.contractEnd.y } : getTodayPersian();
+      var e0 = { d: s0.d, m: s0.m, y: (parseInt(s0.y, 10) || 0) + 1 };
+      var ov = document.createElement('div');
+      ov.id = 'recRenewModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100420;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;';
+      var box = document.createElement('div');
+      box.style.cssText = 'width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;direction:rtl;box-shadow:0 12px 32px var(--shadow);';
+      box.innerHTML = '<div style="font-weight:800;font-size:0.95rem;text-align:center;margin-bottom:4px;">تمدید «' + escapeHtml(item.name || '') + '»</div>' +
+        '<div style="font-size:0.76rem;color:var(--muted);text-align:center;margin-bottom:10px;line-height:1.7;">دورهٔ فعلی (' + 'از ' + recFmtDate(item.contractStart) + ' تا ' + recFmtDate(item.contractEnd) + ') در آرشیو می‌ماند</div>' +
+        '<div style="font-size:0.8rem;font-weight:700;margin:6px 0 4px;">شروع دورهٔ تازه</div><div data-slot="s"></div>' +
+        '<div style="font-size:0.8rem;font-weight:700;margin:10px 0 4px;">پایان دورهٔ تازه</div><div data-slot="e"></div>' +
+        '<div style="font-size:0.8rem;font-weight:700;margin:10px 0 4px;">مبلغ ماهانه (تومان)</div>' +
+        '<input type="text" inputmode="numeric" id="recRenewAmt" style="width:100%;box-sizing:border-box;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.9rem;text-align:center;">' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+        '<button type="button" data-act="ok" style="flex:1;padding:10px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">تمدید</button>' +
+        '<button type="button" data-act="cancel" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button></div>';
+      var endTouched = false, endSel;
+      var startSel = hkCreateDateSelects(s0, { onChange: function (d) { if (!endTouched && endSel) endSel.setDate({ d: d.d, m: d.m, y: d.y + 1 }); } });
+      endSel = hkCreateDateSelects(e0, { onChange: function () { endTouched = true; } });
+      box.querySelector('[data-slot="s"]').appendChild(startSel);
+      box.querySelector('[data-slot="e"]').appendChild(endSel);
+      var amt = box.querySelector('#recRenewAmt');
+      amt.value = formatNum(Number(item.amount) || 0);
+      amt.addEventListener('input', function () { var n = parseInt(toEnglishDigits(amt.value).replace(/\D/g, ''), 10) || 0; amt.value = n ? formatNum(n) : ''; });
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (e) {} };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      box.querySelector('[data-act="cancel"]').onclick = close;
+      box.querySelector('[data-act="ok"]').onclick = function () {
+        var st = startSel.getDate(), en = endSel.getDate();
+        var n = parseInt(toEnglishDigits(amt.value).replace(/\D/g, ''), 10) || 0;
+        if (!n) { showToast('مبلغ را وارد کنید'); return; }
+        if (recMonthKey(en.y, en.m) * 100 + en.d <= recMonthKey(st.y, st.m) * 100 + st.d) { showToast('پایان دوره باید بعد از شروع آن باشد'); return; }
+        close();
+        recRenewItem(item, st, en, n);
+        recOfferTodayRow(item, function () {
+          if (done) done('قرارداد «' + (item.name || '') + '» تمدید شد');
+        });
+      };
     }
     /* واریزهای ثبت‌شدهٔ ماه‌های گذشته (همان حساب، مبلغ نزدیک، وصل‌نشده) با تیک به آرشیو اضافه می‌شوند؛ ردیف تازه ساخته نمی‌شود */
     function recAddPreviousFlow(item, done) {
@@ -33725,23 +34183,36 @@ if (item.type === 'recurring') {
             let txt = '', col = 'var(--muted)', act = '';
             if (stt.kind === 'nosec') { txt = 'بخش مقصد ندارد؛ برای ساخت ردیف ماهانه ویرایش کنید'; col = '#ff9f0a'; }
             else if (stt.kind === 'future') txt = 'از ' + recKeyLabel(stt.key) + ' شروع می‌شود';
-            else if (stt.kind === 'ended') txt = 'قرارداد تمام شده';
+            else if (stt.kind === 'ended') { txt = 'قرارداد ' + fmtD(r.contractEnd) + ' تمام شد'; col = '#ff9f0a'; }
             else if (stt.kind === 'ahead') { txt = 'این ماه: پیش‌دریافت شده'; col = '#30d158'; }
             else if (stt.kind === 'none') { txt = 'این ماه: ردیفی ندارد'; col = '#ff9f0a'; act = '<button type="button" class="rec-act" data-rec-make="' + i + '">ساخت ردیف</button>'; }
-            else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; act = '<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
+            else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; col = '#ff453a'; act ='<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'paid') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'linked') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             act += '<button type="button" class="rec-act rec-arch-btn" data-rec-arch="' + i + '">آرشیو</button>';
-            statusLine = '<div class="rec-status" style="color:' + col + ';">' + (txt ? '<span>' + txt + '</span>' : '') + act + '</div>';
+            statusLine = '<div class="rec-status" style="color:' + col + ';">' + (txt ? '<span>' + txt + '</span>' : '') + '</div>';
+            /* ماه آخر قرارداد یا بعد از آن: پیام نارنجی و دکمهٔ «تمدید» */
+            const ek = recEndKey(r);
+            if (ek && tk >= ek && stt.kind !== 'ended') {
+              statusLine += '<div class="rec-renew-note" style="color:#ff9f0a;font-size:0.76rem;margin-top:2px;">قرارداد ' + fmtD(r.contractEnd) + ' تمام می‌شود</div>';
+            }
+            if (ek && tk >= ek) act = '<button type="button" class="rec-act rec-renew-btn" data-rec-renew="' + i + '">تمدید</button>' + act;
+            statusLine += '<div class="rec-acts' + (ek && tk >= ek ? '' : ' no-renew') + '">' + act + '</div>';
           } catch (eSt) {}
           const selected = recurringSelected.has(i);
-          const rowCls = 'recurring-row';
-          html += '<div class="' + rowCls + '" data-rec-idx="' + i + '" style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:10px;">' +
+          const open = recExpanded.has(r.id || i);
+          const rowCls = 'recurring-row' + (open ? ' rec-open' : '');
+          const termsN = (r.terms || []).length;
+          html += '<div class="' + rowCls + '" data-rec-idx="' + i + '" style="display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;padding:8px 10px;border-radius:10px;cursor:pointer;">' +
             '<span class="rec-select-check" aria-hidden="true">' + (selected ? '<svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' : '') + '</span>' +
             '<div style="flex:1;min-width:0;">' +
-              '<div style="font-weight:bold;font-size:0.95rem;cursor:pointer;" data-rec-arch="' + i + '">' + escapeHtml(r.name || '—') + '</div>' +
-              '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">' + formatNum(r.amount || 0) + ' تومان · ' + dayStr + '</div>' +
-              accLine + rangeLine + statusLine +
+              '<div class="rec-name" style="font-weight:bold;font-size:0.95rem;">' + escapeHtml(r.name || '—') + '</div>' +
+              '<div class="rec-more">' +
+                '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">' + formatNum(r.amount || 0) + ' تومان · ' + dayStr + '</div>' +
+                accLine + rangeLine +
+                (termsN ? '<div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">' + toPersianDigits(String(termsN)) + ' دورهٔ قبلی در آرشیو</div>' : '') +
+              '</div>' +
+              statusLine +
             '</div>' +
             (recurringSelectMode ? '' : (
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
@@ -33908,8 +34379,25 @@ if (item.type === 'recurring') {
             e.stopPropagation();
             toggleRecurringSelect(idx);
             killTextSelection();
+            return;
           }
+          /* باز/بسته کردن جزئیات */
+          const it = recurringIncomes[idx];
+          if (!it) return;
+          const key = it.id || idx;
+          if (recExpanded.has(key)) recExpanded.delete(key); else recExpanded.add(key);
+          row.classList.toggle('rec-open', recExpanded.has(key));
+          try { ensureShapeFrame(box); } catch (eF) {}
         });
+      });
+      box.querySelectorAll('[data-rec-renew]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-renew'), 10)];
+          if (!r) return;
+          if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+          recRenewFlow(r, (msg) => { try { saveRecurring(); } catch (e2) {} recRefreshViews(); try { renderRecurringBar(); } catch (e3) {} if (msg) showToast(msg); });
+        };
       });
 
       box.querySelectorAll('[data-ri]').forEach(btn => {
@@ -35280,6 +35768,15 @@ field('حساب بانکی', accSelRec);
             tdDesc.style.position = 'relative';
             tdDesc.appendChild(tag);
           }
+        }
+        /* قسطی که پیش از شروع کار با نرم‌افزار پرداخت شده */
+        if (row.fromPlanId && isPreAppPlanRow(row, currentYear, currentMonth)) {
+          tr.classList.add('plan-preapp');
+          const tg = document.createElement('span');
+          tg.className = 'rec-row-tag preapp-tag';
+          tg.textContent = 'پرداخت قبلی';
+          tdDesc.style.position = 'relative';
+          tdDesc.appendChild(tg);
         }
       } catch (eTag) {}
       /* ارتفاع ثابت — ردیف‌های آمده از قسط / غیرمالک قابل ویرایش نیستند */
@@ -37199,8 +37696,8 @@ function openProjectRowPicker(secId) {
       /* لایه‌های شناور (باکس اطلاعات، پنجرهٔ انتخاب، فهرست‌های کشویی): بازگشت فقط بالاترین لایه را می‌بندد
          و منوی زیرش سر جایش می‌ماند */
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
-      try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recArchiveModal'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
+      try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { _spt.remove(); return; } } catch (eSpt) {}
       /* باکس ویرایش/افزودن حساب: اول کیبورد (خروج از فیلد)، بعد بستن باکس */
@@ -37294,47 +37791,68 @@ function openProjectRowPicker(secId) {
     function setBalanceDayFilter(day) {
       const hidden = document.getElementById('balanceDayFilter');
       if (hidden) hidden.value = day ? String(day) : '';
-      const allBtn = document.getElementById('balanceDayAllBtn');
-      if (allBtn) allBtn.classList.toggle('active', !day);
+      const rng = document.getElementById('balanceSearchRange');
+      if (rng) { rng.value = day ? 'day' : (rng.value === 'day' ? 'all' : rng.value); try { if (rng._fancyRender) rng._fancyRender(); } catch (e) {} }
       renderBalanceDayFilter();
       renderBalanceTab();
     }
+    /* «یک روز مشخص…» در منوی زمان: فهرست روزهای ماه جاری کنارش باز می‌شود */
     function renderBalanceDayFilter() {
       const wrap = document.getElementById('balanceDayFilterWrap');
       if (!wrap) return;
       const hidden = document.getElementById('balanceDayFilter');
-      const cur = hidden ? (parseInt(toEnglishDigits(hidden.value || '').replace(/[^0-9]/g, '') || '0', 10) || 0) : 0;
+      const rng = document.getElementById('balanceSearchRange');
+      const isDay = !!(rng && rng.value === 'day');
+      if (!isDay && hidden) hidden.value = '';
+      wrap.style.display = isDay ? '' : 'none';
+      if (!isDay) { wrap.innerHTML = ''; return; }
+      let cur = hidden ? (parseInt(toEnglishDigits(hidden.value || '').replace(/[^0-9]/g, '') || '0', 10) || 0) : 0;
       const maxD = daysInMonth(currentYear, currentMonth);
-      const opts = [{ value: '', label: '' }];
-      for (let d = 1; d <= maxD; d++) {
-        opts.push({ value: String(d), label: toPersianDigits(d) });
+      if (!cur) {
+        const t = getTodayPersian();
+        cur = (t.y === currentYear && t.m === currentMonth) ? Math.min(t.d, maxD) : 1;
+        if (hidden) hidden.value = String(cur);
       }
+      const opts = [];
+      for (let d = 1; d <= maxD; d++) opts.push({ value: String(d), label: toPersianDigits(d) });
       wrap.innerHTML = '';
       const sel = createDarkSelect({
         options: opts,
-        value: cur ? String(cur) : '',
+        value: String(cur),
         listClassName: 'day-filter-list',
         listMinWidth: 0,
         onChange: (v) => {
           const n = parseInt(v, 10) || 0;
           if (hidden) hidden.value = n ? String(n) : '';
-          const allBtn = document.getElementById('balanceDayAllBtn');
-          if (allBtn) allBtn.classList.toggle('active', !n);
           renderBalanceTab();
         }
       });
       wrap.appendChild(sel);
-      const allBtn = document.getElementById('balanceDayAllBtn');
-      if (allBtn && !allBtn._bound) {
-        allBtn._bound = true;
-        allBtn.onclick = () => {
-          if (hidden) hidden.value = '';
-          allBtn.classList.add('active');
-          renderBalanceDayFilter();
+    }
+    /* منوی بخش: با یک کاربر فقط نام او؛ با چند کاربر پیش‌فرض اولین کاربر و گزینهٔ «همه» */
+    let balanceSectionAll = false;
+    function renderBalanceSectionFilter() {
+      const wrap = document.getElementById('balanceSectionWrap');
+      if (!wrap) return;
+      const titles = allSectionTitles();
+      if (balanceSelectedTitles.length > 1) balanceSelectedTitles = [balanceSelectedTitles[0]];
+      if (balanceSelectedTitles.length && titles.indexOf(balanceSelectedTitles[0]) < 0) balanceSelectedTitles = [];
+      if (!balanceSelectedTitles.length && titles.length && (titles.length === 1 || !balanceSectionAll)) balanceSelectedTitles = [titles[0]];
+      const opts = titles.map(t => ({ value: t, label: t }));
+      if (titles.length > 1) opts.push({ value: '__all__', label: 'همه' });
+      wrap.innerHTML = '';
+      const sel = createDarkSelect({
+        options: opts.length ? opts : [{ value: '', label: '—' }],
+        value: balanceSelectedTitles.length ? balanceSelectedTitles[0] : (titles.length > 1 ? '__all__' : ''),
+        onChange: (v) => {
+          if (v === '__all__' || !v) { balanceSectionAll = true; balanceSelectedTitles = []; }
+          else { balanceSectionAll = false; balanceSelectedTitles = [v]; }
           renderBalanceTab();
-        };
-      }
-      if (allBtn) allBtn.classList.toggle('active', !cur);
+          try { renderBalanceSearch(); } catch (e) {}
+        }
+      });
+      if (sel._list) sel._list.classList.add('bsr-list');
+      wrap.appendChild(sel);
     }
 
 
@@ -38388,7 +38906,7 @@ function openProjectRowPicker(secId) {
           renderBalanceTab();
         }
       });
-      if (sel._list) sel._list.classList.add('bank-acc-list');
+      if (sel._list) { sel._list.classList.add('bank-acc-list'); sel._list.classList.add('bsr-list'); }
       wrap.appendChild(sel);
     }
     /* ===== سرچ باکس: جستجوی شرح در همهٔ ماه‌ها (با فیلتر بخش و حساب همین صفحه) ===== */
@@ -38402,6 +38920,7 @@ function openProjectRowPicker(secId) {
       if (range === 'month') return y === t.y && m === t.m;
       if (range === '3m') return k <= tk && k > tk - 3;
       if (range === 'year') return y === t.y;
+      if (range === 'day') return y === currentYear && m === currentMonth;
       return true;
     }
     /* فهرست دسته‌ها با تعداد ردیف‌های مخارج (فقط دسته‌هایی که ردیف دارند) */
@@ -38418,6 +38937,7 @@ function openProjectRowPicker(secId) {
         ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
           (sec.rows || []).forEach(function (r) {
             if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
+            if (isPreAppPlanRow(r, y, m)) return;
             var ids = bsCatOf(r);
             if (!ids.length) none++;
             ids.forEach(function (id) { counts[id] = (counts[id] || 0) + 1; });
@@ -38450,7 +38970,8 @@ function openProjectRowPicker(secId) {
       var balSec = sb ? sb.querySelector(':scope > .summary-section:not(#dayDetailBox):not(#searchResultBox)') : null;
       var hint = sb ? sb.querySelector(':scope > .balance-hint') : null;
       var dayBoxEl = document.getElementById('dayDetailBox');
-      if (!q && !catF && rangeF === 'all') {
+      /* فقط «یک روز مشخص» بدون کلمه/دسته: همان جدول جزئیات روز نشان داده می‌شود */
+      if (!q && !catF && (rangeF === 'all' || rangeF === 'day')) {
         boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = '';
         if (balSec) balSec.style.display = '';
         if (hint) hint.style.display = '';
@@ -38479,6 +39000,7 @@ function openProjectRowPicker(secId) {
             if (sel.length && sel.indexOf(t) < 0) return;
             (sec.rows || []).forEach(function (r) {
               if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
+              if (tab === 'expense' && isPreAppPlanRow(r, y, m)) return;
               if (accF && (r.account || '').trim() !== accF) return;
               if (q && norm(r.desc).indexOf(q) < 0) return;
               if (dayF && dayNum(r) !== dayF) return;
@@ -38568,7 +39090,10 @@ function openProjectRowPicker(secId) {
         ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
-          el.addEventListener('change', function () { renderBalanceSearch(); });
+          el.addEventListener('change', function () {
+            if (id === 'balanceSearchRange') { renderBalanceDayFilter(); try { renderBalanceTab(); } catch (eT) {} }
+            renderBalanceSearch();
+          });
           try { enhanceSelectFont(el); } catch (eF) {}
         });
         try { bsFillCategories(); } catch (eB) {}
@@ -38576,49 +39101,8 @@ function openProjectRowPicker(secId) {
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
     })();
     function renderBalanceTab() {
-      const filters = document.getElementById('balanceFilters');
-      if (!filters) return;
-      const titles = allSectionTitles();
-      filters.innerHTML = '';
-      const allChip = document.createElement('button');
-      allChip.type = 'button';
-      allChip.className = 'filter-chip' + (balanceSelectedTitles.length === 0 ? ' active' : '');
-      allChip.textContent = 'همه بخش‌ها';
-      allChip.onclick = () => { balanceSelectedTitles = []; renderBalanceTab(); };
-      filters.appendChild(allChip);
-      titles.forEach(t => {
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'filter-chip' + (balanceSelectedTitles.includes(t) ? ' active' : '');
-        chip.textContent = t;
-        chip.onclick = () => {
-          if (balanceSelectedTitles.includes(t)) {
-            balanceSelectedTitles = balanceSelectedTitles.filter(x => x !== t);
-          } else {
-            balanceSelectedTitles.push(t);
-          }
-          renderBalanceTab();
-        };
-        filters.appendChild(chip);
-      });
-
-      // باکس «همه روزها» هم‌عرض «همه بخش‌ها»؛ ارتفاع با باکس روز یکسان
-      const dayAllBtn = document.getElementById('balanceDayAllBtn');
-      const daySelectBox = document.getElementById('balanceDaySelectBox');
-      if (dayAllBtn) {
-        const r = allChip.getBoundingClientRect();
-        if (r.width > 0) {
-          dayAllBtn.style.boxSizing = 'border-box';
-          dayAllBtn.style.width = r.width + 'px';
-        }
-        dayAllBtn.style.height = '36px';
-        dayAllBtn.style.minHeight = '36px';
-      }
-      if (daySelectBox) {
-        daySelectBox.style.height = '36px';
-        daySelectBox.style.minHeight = '36px';
-      }
-
+      if (!document.getElementById('balanceFilters')) return;
+      renderBalanceSectionFilter();
       renderBalanceDayFilter();
       renderBalanceAccountFilter();
 
