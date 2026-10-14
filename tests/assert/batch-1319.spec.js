@@ -113,7 +113,7 @@ const ACC = 'ملت مصنوعی';
   ok(rc.clearedOnLeave && rc.closedAgain, 'خروج از منو: همه دوباره بسته شدند');
   ok(rc.renewOpen && rc.startPre.d === 4 && rc.startPre.m === 7 && rc.startPre.y === 1405 && rc.endPre.y === 1406 && rc.endPre.m === 7 && /۱۵,۰۰۰,۰۰۰/.test(rc.amtPre), 'فرم تمدید: شروع = پایان قبلی، پایان = یک سال بعد، مبلغ = مبلغ قبلی');
   ok(rc.terms.length === 1 && rc.terms[0].contractStart.y === 1404 && rc.terms[0].amount === 15000000 && rc.after.e.y === 1406 && rc.after.a === 17000000 && rc.renewGone, 'بعد از تمدید: دورهٔ قبلی نگه داشته شد، دورهٔ تازه با مبلغ ۱۷ میلیون، دکمهٔ تمدید رفت');
-  ok(rc.folders.length === 2 && /۴ مهر ۱۴۰۴ تا ۴ مهر ۱۴۰۵/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
+  ok(rc.folders.length === 2 && /۱۴۰۴\/۰۷\/۰۴ تا ۱۴۰۵\/۰۷\/۰۴/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
   ok(rc.head === 'تاریخ|شرح|مبلغ|بانک', 'ستون‌های آرشیو: تاریخ کامل | شرح | مبلغ | بانک (ستون ماه حذف شد)');
   ok(rc.rows.length === 1 && /۱۴۰۵\/۰۶\/۰۴/.test(rc.rows[0]) && rc.paidBg.startsWith('rgba(158, 232, 88') && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با پس‌زمینهٔ سبز کل ردیف (بدون متن کوچک «دریافت شد»)');
   ok(rc.tapNoop, 'زدن روی ردیف آرشیو کاری نمی‌کند (به صفحهٔ اصلی نمی‌رود)');

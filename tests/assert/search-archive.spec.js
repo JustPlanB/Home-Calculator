@@ -62,16 +62,16 @@ const ACC = 'ملت مصنوعی';
   ok(s.reset, 'پاک کردن جستجو دسته و بازه را هم به حالت اول برمی‌گرداند');
   const recat = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
+    const before = (HKCategorizer.classify('زرتک قلمبه') || {}).label || '';
     document.getElementById('balanceSearchCat').value = '__none__'; renderBalanceSearch(); await w(50);
-    document.querySelector('#search-result-body td.sec-name').click(); await w(100);
-    const opt = [...document.querySelectorAll('#recPickModal .rec-pick-opt')].find(o => o.textContent.trim() === (HKCategorizer.byId.gift ? HKCategorizer.byId.gift.label : HKCategorizer.categories[HKCategorizer.categories.length - 1].label));
-    const label = opt ? opt.textContent.trim() : '';
-    if (opt) opt.click(); await w(100);
-    const c = HKCategorizer.classify('زرتک قلمبه');
+    document.querySelector('#search-result-body td.sec-name').click(); await w(150);
+    const picker = !!document.getElementById('recPickModal');
+    const after = (HKCategorizer.classify('زرتک قلمبه') || {}).label || '';
+    try { document.querySelectorAll('.pd-desc-popup, .cell-text-popup').forEach(x => x.remove()); } catch (e) {}
     resetBalanceSearch();
-    return { label, now: c && c.label };
+    return { picker, same: before === after };
   });
-  ok(recat.label && recat.now === recat.label, 'با زدن روی ردیف، دستهٔ آن عوض و برای همان شرح یاد گرفته شد (' + recat.now + ')');
+  ok(!recat.picker && recat.same, 'جستجو فقط برای دیدن است: زدن روی ردیف پنجرهٔ تغییر دسته باز نمی‌کند');
 
   console.log('• آرشیو درآمد ثابت');
   const ar = await p.evaluate(async (ACC) => {
