@@ -1912,6 +1912,12 @@ final class HkWidgetDraw {
   }
 
   /** ویجت حساب‌ها: موجودی تک‌تک حساب‌ها (کارت‌ها)، موجودی کل و خرج امروز — ردیف‌ها کل ارتفاع را پر می‌کنند */
+  static String dots(org.json.JSONArray a){
+    if(a==null) return "";
+    StringBuilder sb=new StringBuilder();
+    for(int i=0;i<a.length() && i<4;i++){ String h=a.optString(i,""); if(h.matches("#[0-9a-fA-F]{6}")){ if(sb.length()>0) sb.append(','); sb.append(h); } }
+    return sb.toString();
+  }
   static Bitmap accounts(Context c, int W, int H, float k, Data d){
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
@@ -1920,7 +1926,7 @@ final class HkWidgetDraw {
     java.util.ArrayList<String[]> rows=new java.util.ArrayList<>();
     try{
       org.json.JSONArray a=new org.json.JSONArray(d.accounts==null?"[]":d.accounts);
-      for(int i=0;i<a.length();i++){ org.json.JSONObject o=a.optJSONObject(i); if(o!=null) rows.add(new String[]{o.optString("l",""), o.optString("b","—"), o.optBoolean("n",false)?"1":"0", o.optBoolean("t",false)?"1":"0"}); }
+      for(int i=0;i<a.length();i++){ org.json.JSONObject o=a.optJSONObject(i); if(o!=null) rows.add(new String[]{o.optString("l",""), o.optString("b","—"), o.optBoolean("n",false)?"1":"0", o.optBoolean("t",false)?"1":"0", dots(o.optJSONArray("p"))}); }
     }catch(Exception ignored){}
     boolean empty=rows.isEmpty();
     int n=(empty?1:rows.size())+1; /* + خرج امروز */
@@ -1950,7 +1956,16 @@ final class HkWidgetDraw {
       }
       y+=g;
       float ls=fit(tot?BOLD:REG,u*rowR,r[0],aw*0.45f);
-      cv.drawText(r[0], W-padX, y+NUM_A*u, paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT));
+      Paint lpn=paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT);
+      cv.drawText(r[0], W-padX, y+NUM_A*u, lpn);
+      /* نقطه(های) رنگ پروژه کنار نام حساب (مثل موجودی آنی نرم‌افزار) */
+      if(!d.locked && r.length>4 && r[4]!=null && r[4].length()>0){
+        float dr=Math.max(2.2f*k, ls*0.17f), dx=W-padX-lpn.measureText(r[0])-dr-4*k, dy=y+NUM_A*u-ls*0.32f;
+        for(String hc: r[4].split(",")){
+          try{ Paint dp=new Paint(Paint.ANTI_ALIAS_FLAG); dp.setColor(Color.parseColor(hc.trim())); cv.drawCircle(dx, dy, dr, dp); }catch(Exception ignored){}
+          dx-=dr*2+2.5f*k;
+        }
+      }
       String val=d.locked?"••••••":r[1];
       int col=d.locked?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
       cv.drawText(val, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT));
