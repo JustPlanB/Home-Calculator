@@ -83,6 +83,9 @@ const ACC = 'ملت مصنوعی';
     recLinkRow(item, archive[periodKey(1405, 6)].income.sections[0].rows[0]);
     openFeatureSheet('recurring'); await w(400);
     document.querySelector('[data-rec-arch="' + (recurringIncomes.length - 1) + '"].rec-arch-btn').click(); await w(150);
+    /* قرارداد فعلی هم پیش از تمدید پوشهٔ خودش را دارد */
+    const folderCount = document.querySelectorAll('#recArchiveModal .rec-term-folder').length;
+    document.querySelector('#recArchiveModal .rec-term-folder').click(); await w(100);
     const m = document.getElementById('recArchiveModal');
     const months = [...m.querySelectorAll('.rec-arch-row td:first-child')].map(td => td.textContent);
     const text = m.innerText;
@@ -93,16 +96,19 @@ const ACC = 'ملت مصنوعی';
     if (pm) { pm.querySelector('input[type=checkbox]').checked = true; pm.querySelector('[data-act="ok"]').click(); }
     await w(200);
     const months2 = [...document.querySelectorAll('#recArchiveModal .rec-arch-row td:first-child')].map(td => td.textContent);
-    /* بازگشت: فقط آرشیو بسته شود */
+    /* بازگشت: اول به فهرست پوشه‌ها، بعد بستن آرشیو */
+    onBackGuard(); await w(300);
+    const backToFolder = !!document.querySelector('#recArchiveModal .rec-term-folder');
     onBackGuard(); await w(300);
     const afterBack = { modal: !!document.getElementById('recArchiveModal'), feature: _featureActive === 'recurring' };
-    return { months, text, candText, months2, afterBack };
+    return { months, text, candText, months2, afterBack, folderCount, backToFolder };
   }, ACC);
-  ok(ar.months.join('|') === 'شهریور ۱۴۰۵|مهر ۱۴۰۵', 'آرشیو به ترتیب ماه: شهریور بالای مهر (' + ar.months.join('، ') + ')');
+  ok(ar.folderCount === 1, 'قرارداد فعلی (پیش از تمدید) هم در آرشیو پوشهٔ خودش را دارد');
+  ok(ar.months.join('|') === '۱۴۰۵/۰۶/۰۴|۱۴۰۵/۰۷/۰۵', 'آرشیو به ترتیب تاریخ کامل: شهریور بالای مهر (' + ar.months.join('، ') + ')');
   ok(/جمع دریافتی/.test(ar.text) && /۳۰,۰۰۰,۰۰۰/.test(ar.text) && /ملت مصنوعی/.test(ar.text), 'خلاصه: جمع دریافتی ۳۰ میلیون، با بانک و جزئیات هر واریز');
   ok(/مرداد/.test(ar.candText), '«افزودن واریزهای قبلی»: واریز مرداد (وصل‌نشده) پیشنهاد شد');
-  ok(ar.months2.join('|') === 'مرداد ۱۴۰۵|شهریور ۱۴۰۵|مهر ۱۴۰۵', 'بعد از افزودن: مرداد بالای شهریور و مهر');
-  ok(!ar.afterBack.modal && ar.afterBack.feature, 'بازگشت: آرشیو بسته شد و منوی درآمد ثابت ماند');
+  ok(ar.months2.join('|') === '۱۴۰۵/۰۵/۰۴|۱۴۰۵/۰۶/۰۴|۱۴۰۵/۰۷/۰۵', 'بعد از افزودن: مرداد بالای شهریور و مهر');
+  ok(ar.backToFolder && !ar.afterBack.modal && ar.afterBack.feature, 'بازگشت: اول پوشه‌ها، بعد آرشیو بسته شد و منوی درآمد ثابت ماند');
   await ctx.close();
 
   console.log('• باز شدن روی ماه امروز');

@@ -2568,9 +2568,8 @@
     .backup-pick-cancel { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.15) !important; }
 
     .instant-bal-row.ib-acc-row .ib-amt-click { cursor: pointer; }
-    .ib-proj-badge { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
-    .ib-proj-badge.pos { color: #30d158; background: rgba(48,209,88,0.15); }
-    .ib-proj-badge.neg { color: #ff453a; background: rgba(255,69,58,0.15); }
+    .ib-proj-dots { display: inline-flex; gap: 3px; flex-shrink: 0; align-items: center; }
+    .ib-proj-dots i { display: block; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
     .ib-check-wrap {
       display: flex;
       align-items: center;
@@ -9046,12 +9045,13 @@
     .bsr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px; direction: rtl; }
     .bsr-grid .bsr-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
     .bsr-grid .bsr-wide { grid-column: 1 / -1; }
-    .bsr-grid .balance-acc-label { flex: 0 0 auto; text-align: right; white-space: nowrap; font-size: 0.8rem; }
+    .bsr-grid .balance-acc-label { flex: 0 0 42px; width: 42px; text-align: right; white-space: nowrap; font-size: 0.8rem; }
+    .bsr-grid .bsr-cell > .filter-acc-wrap, .bsr-grid .bsr-cell > .fancy-select-wrap, .bsr-grid .bsr-cell > select { flex: 1 1 0; min-width: 0; }
+    .bsr-grid .fancy-select-btn, .bsr-grid .filter-acc-wrap .dark-select-btn { height: 36px !important; min-height: 36px !important; max-height: 36px !important; box-sizing: border-box !important; width: 100% !important; }
+    .bsr-grid .bsr-off { opacity: 0.45; pointer-events: none; }
     .bsr-grid .filter-acc-wrap, .bsr-grid .balance-search-sel, .bsr-grid .fancy-select-wrap, .bsr-grid .balance-search-input { flex: 1 1 0; min-width: 0; width: auto; }
     .bsr-grid .filter-acc-wrap .dark-select { min-width: 0; }
     .bsr-grid .filter-acc-wrap .dark-select-btn { justify-content: flex-start !important; text-align: right !important; padding: 0 10px 0 24px !important; }
-    .bsr-grid .bsr-day { flex: 0 0 64px; min-width: 0; }
-    .bsr-grid .bsr-day .dark-select-btn { height: 36px !important; padding: 0 6px 0 18px !important; justify-content: center !important; }
     .bsr-list .dark-select-item { text-align: right !important; justify-content: flex-start !important; direction: rtl; }
     .bsr-filters .balance-search-sel, .bsr-filters .fancy-select-wrap { flex: 1 1 0; min-width: 0; }
     .balance-search-sel { padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg, var(--bg3)); color: var(--text); font-family: inherit; font-weight: 600; font-size: 0.85rem; }
@@ -9060,6 +9060,21 @@
     .rec-acts .rec-act { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 9px; padding: 7px 18px; font-family: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
     .rec-acts .rec-renew-btn { border-color: #ff9f0a; color: #ff9f0a; }
     .recurring-row:not(.rec-open) .rec-more { display: none; }
+    .rec-st-unpaid { color: #ff6b4a; }
+    .rec-arch-row.is-paid > td { background: rgba(158, 232, 88, 0.18); }
+    .rec-arch-row.is-unpaid > td { background: rgba(255, 107, 74, 0.18); }
+    html[data-theme="light"] .rec-arch-row.is-paid > td { background: rgba(63, 154, 92, 0.16); }
+    html[data-theme="light"] .rec-arch-row.is-unpaid > td { background: rgba(220, 38, 38, 0.13); }
+    .rec-term-fico { display: inline-flex; width: 26px; height: 26px; flex-shrink: 0; }
+    .rec-term-fico svg { width: 26px; height: 26px; }
+    html[data-theme="light"] .rec-st-unpaid { color: #dc2626; }
+    .rec-name { display: flex; align-items: center; gap: 4px; }
+    .rec-chev { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; color: var(--muted); transition: transform 0.2s ease; }
+    .rec-chev svg { width: 16px; height: 16px; }
+    .recurring-row.rec-open .rec-chev { transform: rotate(180deg); }
+    .rec-tools { display: flex; align-items: center; gap: 4px; flex-shrink: 0; height: 32px; }
+    .rec-tools > button { width: 32px !important; height: 32px !important; min-width: 32px; min-height: 32px; padding: 0 !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box; vertical-align: middle; }
+    .rec-tools > .btn-del-row { padding-bottom: 3px !important; }
     .recurring-row:not(.rec-open) .rec-acts .rec-act:not(.rec-renew-btn) { display: none; }
     .recurring-row:not(.rec-open) .rec-acts .rec-renew-btn { padding: 2px 10px; font-size: 0.74rem; }
     .recurring-row:not(.rec-open) .rec-acts.no-renew { display: none; }
@@ -10876,15 +10891,25 @@
             <div class="filter-acc-wrap" id="balanceSectionWrap"></div>
           </div>
           <div class="bsr-cell">
+            <label class="balance-acc-label" for="balanceSearchType">نوع:</label>
+            <select id="balanceSearchType" class="balance-search-sel">
+              <option value="">همه</option>
+              <option value="income">واریز</option>
+              <option value="expense">برداشت</option>
+            </select>
+          </div>
+          <div class="bsr-cell">
             <label class="balance-acc-label" for="balanceSearchRange">زمان:</label>
             <select id="balanceSearchRange" class="balance-search-sel bsr-range">
               <option value="all">همهٔ ماه‌ها</option>
               <option value="month">این ماه</option>
               <option value="3m">۳ ماه اخیر</option>
               <option value="year">امسال</option>
-              <option value="day">یک روز مشخص…</option>
             </select>
-            <div class="bsr-day" id="balanceDayFilterWrap" style="display:none"></div>
+          </div>
+          <div class="bsr-cell">
+            <label class="balance-acc-label" for="balanceSearchDay">روز:</label>
+            <select id="balanceSearchDay" class="balance-search-sel"></select>
             <input type="hidden" id="balanceDayFilter" value="">
           </div>
           <div class="bsr-cell">
@@ -11474,6 +11499,12 @@
       var plan = (plans || []).find(function (p) { return p && p.id === r.fromPlanId; });
       var ck = planCreatedKey(plan);
       return !!ck && ((parseInt(y, 10) || 0) * 100 + (parseInt(m, 10) || 0)) < ck;
+    }
+    /* قسط پرداخت‌نشدهٔ ماه‌های بعد از ماه امروز (قسط آتی): در جستجو نشان داده نمی‌شود */
+    function isFuturePlanRow(r, y, m) {
+      if (!r || !r.fromPlanId || (r.status || 'paid') === 'paid') return false;
+      var t = getTodayPersian();
+      return ((parseInt(y, 10) || 0) * 100 + (parseInt(m, 10) || 0)) > t.y * 100 + t.m;
     }
     function syncPlansToExpensePeriod(pd, year, month) {
       if (!pd || !pd.expense) return;
@@ -12729,8 +12760,10 @@
         const bd = ensureDarkSelectBackdrop();
         bd.style.display = 'block';
         bd.style.zIndex = '100910';
+        /* گزینهٔ انتخاب‌شده وسط فهرست؛ بدون scrollIntoView که صفحهٔ پشت را هم اسکرول می‌کرد و فهرست همان لحظه بسته می‌شد */
         const sel = list.querySelector('.selected');
-        if (sel) try { sel.scrollIntoView({ block: 'nearest' }); } catch (err) {}
+        if (sel) try { list.scrollTop = Math.max(0, sel.offsetTop - list.clientHeight / 2 + sel.offsetHeight / 2); } catch (err) {}
+        window._hkMenuOpenAt = Date.now();
       };
       wrap.appendChild(btn);
       wrap.getValue = () => wrap.dataset.value;
@@ -20258,6 +20291,28 @@ async function openPdfPrintWindow(){
       }
     }
     /* نشانگر را به انتهای متن ببر (بعد از فوکوس/دبل‌کلیک؛ چند بار تا انتخاب پیش‌فرض مرورگر را جایگزین کند) */
+    /* فیلد مبلغ با جداکنندهٔ هزارگان: چپ‌به‌راست تا نشانگرِ آخر عدد واقعاً آخر باشد و «پاک کردن» کیبورد رقم آخر را پاک کند؛
+       بعد از جداکننده‌گذاری، نشانگر نسبت به آخر عدد سر جایش می‌ماند */
+    function hkAmountInput(inp) {
+      if (!inp || inp._hkAmt) return;
+      inp._hkAmt = true;
+      inp.setAttribute('dir', 'ltr');
+      inp.style.direction = 'ltr';
+      var toEnd = function () { try { var n = inp.value.length; inp.setSelectionRange(n, n); } catch (e) {} };
+      inp.addEventListener('focus', function () { setTimeout(toEnd, 0); });
+      inp.addEventListener('input', function () {
+        var v = inp.value, pos = inp.selectionStart == null ? v.length : inp.selectionStart;
+        var digitsAfter = toEnglishDigits(v.slice(pos)).replace(/[^0-9]/g, '').length;
+        var digits = toEnglishDigits(v).replace(/[^0-9]/g, '');
+        if (!digits) { inp.value = ''; return; }
+        var out = formatNum(parseInt(digits, 10) || 0);
+        inp.value = out;
+        /* همان تعداد رقم بعد از نشانگر بماند */
+        var i = out.length, seen = 0;
+        while (i > 0 && seen < digitsAfter) { if (/[0-9۰-۹]/.test(out[i - 1])) seen++; i--; }
+        try { inp.setSelectionRange(i, i); } catch (e) {}
+      });
+    }
     function caretToEnd(el) {
       if (!el || typeof el.value !== 'string') return;
       var put = function () {
@@ -21393,30 +21448,39 @@ async function openPdfPrintWindow(){
     }
 
     let _instantBalOpen = false;
-    /* مبلغ کوتاه برای نشان: ۳ م (میلیون)، ۲۵۰ هـ (هزار) */
-    function hkShortAmt(v) {
-      v = Math.abs(Number(v) || 0);
-      if (v >= 1e6) { var x = Math.round(v / 1e5) / 10; return toPersianDigits(String(x)).replace('.', '٫') + ' م'; }
-      if (v >= 1e3) return toPersianDigits(String(Math.round(v / 1e3))) + ' هـ';
-      return formatNum(v);
-    }
-    /* نشان پروژه کنار هر حساب در موجودی آنی: طلب (سبز) / بدهی (قرمز) پروژه‌ها روی همین حساب */
-    function ibProjectBadge(acc) {
+    /* پروژه‌های فعال روی یک حساب (موجودی یا طلب/بدهی غیرصفر) با رنگ هر پروژه — برای نقطه‌های کنار حساب در موجودی آنی و ویجت */
+    function hkAccountProjectColors(acc) {
+      var out = [];
       try {
-        if (typeof loadFinancialSubjects !== 'function' || typeof projectReceivableOnAccounts !== 'function') return '';
-        var set = new Set([acc]), list = [];
+        if (typeof loadFinancialSubjects !== 'function') return out;
+        var set = new Set([acc]);
         loadFinancialSubjects().forEach(function (s) {
           if (!s || !s.id || s.id === 'personal') return;
-          var r = Number(projectReceivableOnAccounts(s.id, set)) || 0;
-          if (Math.abs(r) > 0.5) list.push(r);
+          var r = 0, c = 0;
+          try { r = Number(projectReceivableOnAccounts(s.id, set)) || 0; } catch (e1) {}
+          try { c = typeof projectMoneyOnAccounts === 'function' ? (Number(projectMoneyOnAccounts(s.id, set)) || 0) : 0; } catch (e2) {}
+          if (Math.abs(r) <= 0.5 && Math.abs(c) <= 0.5) return;
+          var col = '#d000ff';
+          try { var meta = getProjectHighlightMeta(s.highlightColor); if (meta && meta.accent) col = meta.accent; } catch (e3) {}
+          out.push(col);
         });
-        if (!list.length) return '';
-        var net = list.reduce(function (a, b) { return a + b; }, 0);
-        var pos = net >= 0;
-        var txt = list.length > 1 ? toPersianDigits(String(list.length)) + ' پروژه · ' + (pos ? 'طلب ' : 'بدهی ') + hkShortAmt(net)
-          : 'پروژه: ' + (pos ? 'طلب ' : 'بدهی ') + hkShortAmt(net);
-        return '<span class="ib-proj-badge ' + (pos ? 'pos' : 'neg') + '">' + txt + '</span>';
-      } catch (e) { return ''; }
+      } catch (e) {}
+      return out;
+    }
+    /* نشان پروژه: فقط نقطه(های) رنگ پروژه؛ مبلغ با تیک زدن حساب در تفکیک پایین دیده می‌شود */
+    /* رنگ به‌صورت #rrggbb برای ویجت (رنگ‌های پروژه ممکن است کوتاه یا rgb باشند) */
+    function hkHexColor(c) {
+      c = String(c || '').trim();
+      var m3 = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(c); if (m3) return '#' + m3[1] + m3[1] + m3[2] + m3[2] + m3[3] + m3[3];
+      if (/^#[0-9a-f]{6}$/i.test(c)) return c;
+      var m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(c);
+      if (m) return '#' + [m[1], m[2], m[3]].map(function (x) { return ('0' + (parseInt(x, 10) & 255).toString(16)).slice(-2); }).join('');
+      return '';
+    }
+    function ibProjectBadge(acc) {
+      var cols = hkAccountProjectColors(acc);
+      if (!cols.length) return '';
+      return '<span class="ib-proj-dots" aria-label="پروژه">' + cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>';
     }
     function closeInstantBalance() {
       _instantBalOpen = false;
@@ -22121,7 +22185,7 @@ async function openPdfPrintWindow(){
           var accs = [];
           try {
             var gb = globalAccountBalances() || {};
-            selectedAccountLabels().forEach(function (lb) { var v = Number(gb[lb]) || 0; accs.push({ l: lb, b: (v < 0 ? '-' : '') + formatNum(Math.abs(v)), n: v < 0 }); });
+            selectedAccountLabels().forEach(function (lb) { var v = Number(gb[lb]) || 0; var pc = []; try { pc = hkAccountProjectColors(lb).map(hkHexColor).filter(Boolean); } catch (eP) {} accs.push({ l: lb, b: (v < 0 ? '-' : '') + formatNum(Math.abs(v)), n: v < 0, p: pc }); });
             /* موجودی کل (همان جمع نرم‌افزار، شامل ردیف‌های بدون حساب) — آخرین عضو با t:true */
             if (accs.length) { var tot = 0; Object.keys(gb).forEach(function (k) { tot += Number(gb[k]) || 0; }); accs.push({ l: 'موجودی کل', b: (tot < 0 ? '-' : '') + formatNum(Math.abs(tot)), n: tot < 0, t: true }); }
           } catch (eA) {}
@@ -24878,6 +24942,7 @@ async function openPdfPrintWindow(){
           try { if (el._fancyRender) el._fancyRender(); } catch (e2) {}
         });
         try { var hd = document.getElementById('balanceDayFilter'); if (hd) hd.value = ''; renderBalanceDayFilter(); } catch (e3) {}
+        try { var ty = document.getElementById('balanceSearchType'); if (ty) { ty.value = ''; if (ty._fancyRender) ty._fancyRender(); } bsSyncTypeCat(); } catch (e4) {}
         renderBalanceSearch();
       } catch (e) {}
     }
@@ -26309,8 +26374,16 @@ container.innerHTML = '';
           return false;
         } catch (e) { return false; }
       }
+      var lastW = window.innerWidth;
       function onScrollOrResize(e) {
         if (e && shouldIgnore(e.target)) return;
+        /* لحظهٔ باز شدن فهرست (بسته شدن کیبورد، جابه‌جایی صفحه) فهرست را نبندد */
+        if (Date.now() - (window._hkMenuOpenAt || 0) < 600) return;
+        if (e && e.type === 'resize') {
+          /* فقط تغییر عرض (چرخش صفحه)؛ تغییر ارتفاع از باز/بسته شدن کیبورد است */
+          if (window.innerWidth === lastW) return;
+          lastW = window.innerWidth;
+        }
         closeAllAppMenus();
       }
       window.addEventListener('scroll', onScrollOrResize, true);
@@ -26380,6 +26453,7 @@ container.innerHTML = '';
       }
       function openList() {
         closeAllAppMenus(list);
+        window._hkMenuOpenAt = Date.now();
         list.classList.add('open');
         wrap.classList.add('is-open');
         wrap.style.zIndex = '100910';
@@ -33691,7 +33765,8 @@ if (item.type === 'recurring') {
     function recOpenArchive(item, termIdx) {
       var old = document.getElementById('recArchiveModal'); if (old) old.remove();
       var terms = recTermsOf(item);
-      var multi = terms.length > 1;
+      /* همیشه پوشه‌ای: حتی قرارداد فعلی پیش از اولین تمدید پوشهٔ خودش را دارد */
+      var multi = true;
       var all = recArchiveRows(item).map(function (x) { x.term = recTermIndexFor(terms, x.key, parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0); return x; });
       var folderView = multi && termIdx == null;
       var ti = termIdx == null ? terms.length - 1 : termIdx;
@@ -33726,22 +33801,22 @@ if (item.type === 'recurring') {
           var tr = all.filter(function (x) { return x.term === i; });
           var tp = tr.filter(function (x) { return recIsPaid(x.row); });
           body += '<button type="button" class="rec-term-folder" data-t="' + i + '" style="display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 0;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;text-align:right;cursor:pointer;">' +
-            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + (t.current ? 'var(--accent)' : 'var(--muted)') + '" stroke-width="2" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' +
+            '<span class="rec-term-fico">' + HK_FOLDER_SVG + '</span>' +
             '<span style="flex:1;min-width:0;line-height:1.7;"><b style="font-size:0.85rem;">' + rangeOf(t) + (t.current ? ' <span style="color:var(--accent);font-size:0.72rem;">(فعلی)</span>' : '') + '</b><br>' +
             '<span style="font-size:0.76rem;color:var(--muted);">' + formatNum(t.amount || 0) + ' تومان · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></span></button>';
         });
       } else if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این ' + (multi ? 'دوره' : 'درآمد ثابت') + ' وصل نشده</div>';
       else {
-        /* ستون‌ها مثل جدول درآمد: روز، شرح، مبلغ، بانک (ماه در ستون اول) */
+        /* ستون‌ها: تاریخ کامل، شرح، مبلغ، بانک؛ رنگ ردیف همان سبز/قرمز مبالغ دریافت‌شده/نشدهٔ درآمد */
         body += '<table class="rec-arch-table" style="width:100%;border-collapse:separate;border-spacing:0 3px;font-size:0.8rem;">' +
-          '<thead><tr style="color:var(--muted);"><th style="text-align:right;padding:6px 4px;">ماه</th><th style="padding:6px 4px;">روز</th><th style="text-align:right;padding:6px 4px;">شرح</th><th style="padding:6px 4px;">مبلغ</th><th style="padding:6px 4px;">بانک</th></tr></thead><tbody>';
+          '<thead><tr style="color:var(--muted);"><th style="padding:6px 4px;">تاریخ</th><th style="text-align:right;padding:6px 4px;">شرح</th><th style="padding:6px 4px;">مبلغ</th><th style="padding:6px 4px;">بانک</th></tr></thead><tbody>';
         rows.forEach(function (x, i) {
           var y = Math.floor(x.key / 100), m = x.key % 100, ok = recIsPaid(x.row);
-          var bg = ok ? 'rgba(48,209,88,0.16)' : 'rgba(255,69,58,0.16)';
-          var td = 'padding:7px 4px;background:' + bg + ';';
+          var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+          var dd = parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0;
+          var td = 'padding:7px 4px;';
           body += '<tr class="rec-arch-row ' + (ok ? 'is-paid' : 'is-unpaid') + '" data-i="' + i + '">' +
-            '<td style="' + td + 'white-space:nowrap;font-weight:700;border-radius:0 8px 8px 0;">' + (MONTHS[m - 1] || '') + ' ' + toPersianDigits(String(y)) + '</td>' +
-            '<td style="' + td + 'text-align:center;white-space:nowrap;">' + (x.row.day ? toPersianDigits(String(x.row.day)) : '—') + '</td>' +
+            '<td style="' + td + 'text-align:center;white-space:nowrap;font-weight:700;border-radius:0 8px 8px 0;">' + toPersianDigits(String(y)) + '/' + p2(m) + (dd ? '/' + p2(dd) : '') + '</td>' +
             '<td style="' + td + '">' + escapeHtml(x.row.desc || item.name || '') + '</td>' +
             '<td style="' + td + 'text-align:center;white-space:nowrap;font-weight:700;">' + formatNum(Number(x.row.amount) || 0) + '</td>' +
             '<td style="' + td + 'text-align:center;border-radius:8px 0 0 8px;">' + escapeHtml(x.row.account || '—') + '</td></tr>';
@@ -33808,7 +33883,7 @@ if (item.type === 'recurring') {
       box.querySelector('[data-slot="e"]').appendChild(endSel);
       var amt = box.querySelector('#recRenewAmt');
       amt.value = formatNum(Number(item.amount) || 0);
-      amt.addEventListener('input', function () { var n = parseInt(toEnglishDigits(amt.value).replace(/\D/g, ''), 10) || 0; amt.value = n ? formatNum(n) : ''; });
+      hkAmountInput(amt);
       ov.appendChild(box);
       document.body.appendChild(ov);
       var close = function () { try { ov.remove(); } catch (e) {} };
@@ -34186,11 +34261,12 @@ if (item.type === 'recurring') {
             else if (stt.kind === 'ended') { txt = 'قرارداد ' + fmtD(r.contractEnd) + ' تمام شد'; col = '#ff9f0a'; }
             else if (stt.kind === 'ahead') { txt = 'این ماه: پیش‌دریافت شده'; col = '#30d158'; }
             else if (stt.kind === 'none') { txt = 'این ماه: ردیفی ندارد'; col = '#ff9f0a'; act = '<button type="button" class="rec-act" data-rec-make="' + i + '">ساخت ردیف</button>'; }
-            else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; col = '#ff453a'; act ='<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
+            else if (stt.kind === 'unpaid') { txt = 'این ماه: دریافت نشده (' + dueTxt + ')'; col = ''; act ='<button type="button" class="rec-act" data-rec-link="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'paid') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             else if (stt.kind === 'linked') { txt = 'این ماه: دریافت شد' + (stt.x.row.day ? ' (' + toPersianDigits(String(stt.x.row.day)) + ' ' + mName + ')' : ''); col = '#30d158'; act = '<button type="button" class="rec-act" data-rec-unlink="' + i + '">اصلاح</button>'; }
             act += '<button type="button" class="rec-act rec-arch-btn" data-rec-arch="' + i + '">آرشیو</button>';
-            statusLine = '<div class="rec-status" style="color:' + col + ';">' + (txt ? '<span>' + txt + '</span>' : '') + '</div>';
+            /* دریافت‌نشده: همان قرمز مبالغ پرداخت/دریافت‌نشده (تیره ‎#ff6b4a، روشن ‎#dc2626) */
+            statusLine = '<div class="rec-status' + (stt.kind === 'unpaid' ? ' rec-st-unpaid' : '') + '"' + (col ? ' style="color:' + col + ';"' : '') + '>' + (txt ? '<span>' + txt + '</span>' : '') + '</div>';
             /* ماه آخر قرارداد یا بعد از آن: پیام نارنجی و دکمهٔ «تمدید» */
             const ek = recEndKey(r);
             if (ek && tk >= ek && stt.kind !== 'ended') {
@@ -34206,7 +34282,7 @@ if (item.type === 'recurring') {
           html += '<div class="' + rowCls + '" data-rec-idx="' + i + '" style="display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;padding:8px 10px;border-radius:10px;cursor:pointer;">' +
             '<span class="rec-select-check" aria-hidden="true">' + (selected ? '<svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' : '') + '</span>' +
             '<div style="flex:1;min-width:0;">' +
-              '<div class="rec-name" style="font-weight:bold;font-size:0.95rem;">' + escapeHtml(r.name || '—') + '</div>' +
+              '<div class="rec-name" style="font-weight:bold;font-size:0.95rem;"><span class="rec-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>' + escapeHtml(r.name || '—') + '</div>' +
               '<div class="rec-more">' +
                 '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">' + formatNum(r.amount || 0) + ' تومان · ' + dayStr + '</div>' +
                 accLine + rangeLine +
@@ -34215,8 +34291,10 @@ if (item.type === 'recurring') {
               statusLine +
             '</div>' +
             (recurringSelectMode ? '' : (
+              '<div class="rec-tools">' +
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
-              '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="color:#ff1744!important;-webkit-text-fill-color:#ff1744!important;text-shadow:0 0 4px rgba(255,23,68,0.55);-webkit-text-stroke:0.3px #ff1744;font-weight:900;font-size:1.4rem;background:transparent;border:none;line-height:1;">×</button>'
+              '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="color:#ff1744!important;-webkit-text-fill-color:#ff1744!important;text-shadow:0 0 4px rgba(255,23,68,0.55);-webkit-text-stroke:0.3px #ff1744;font-weight:900;font-size:1.4rem;background:transparent;border:none;line-height:1;">×</button>' +
+              '</div>'
             )) +
             '</div>';
         });
@@ -34829,11 +34907,7 @@ if (item.type === 'recurring') {
       inpAmt.value = existing.amount ? formatNum(existing.amount) : '';
       inpAmt.placeholder = 'مبلغ را وارد کنید';
       inpAmt.style.cssText = inpStyle;
-      inpAmt.oninput = () => {
-        const digits = toEnglishDigits(inpAmt.value).replace(/[^0-9]/g, '');
-        if (!digits) { inpAmt.value = ''; return; }
-        inpAmt.value = formatNum(parseInt(digits, 10) || 0);
-      };
+      hkAmountInput(inpAmt);
       field('مبلغ ماهانه (تومان)', inpAmt);
 
       const startInit = existing.contractStart || (existing.day ? { d: existing.day, m: currentMonth, y: currentYear } : null);
@@ -37791,43 +37865,24 @@ function openProjectRowPicker(secId) {
     function setBalanceDayFilter(day) {
       const hidden = document.getElementById('balanceDayFilter');
       if (hidden) hidden.value = day ? String(day) : '';
-      const rng = document.getElementById('balanceSearchRange');
-      if (rng) { rng.value = day ? 'day' : (rng.value === 'day' ? 'all' : rng.value); try { if (rng._fancyRender) rng._fancyRender(); } catch (e) {} }
       renderBalanceDayFilter();
       renderBalanceTab();
     }
-    /* «یک روز مشخص…» در منوی زمان: فهرست روزهای ماه جاری کنارش باز می‌شود */
+    /* منوی «روز»: همه روزها + ۱ تا ۳۱؛ با زمان چندماهه همان روز در هر ماه */
     function renderBalanceDayFilter() {
-      const wrap = document.getElementById('balanceDayFilterWrap');
-      if (!wrap) return;
+      const sel = document.getElementById('balanceSearchDay');
       const hidden = document.getElementById('balanceDayFilter');
-      const rng = document.getElementById('balanceSearchRange');
-      const isDay = !!(rng && rng.value === 'day');
-      if (!isDay && hidden) hidden.value = '';
-      wrap.style.display = isDay ? '' : 'none';
-      if (!isDay) { wrap.innerHTML = ''; return; }
-      let cur = hidden ? (parseInt(toEnglishDigits(hidden.value || '').replace(/[^0-9]/g, '') || '0', 10) || 0) : 0;
-      const maxD = daysInMonth(currentYear, currentMonth);
-      if (!cur) {
-        const t = getTodayPersian();
-        cur = (t.y === currentYear && t.m === currentMonth) ? Math.min(t.d, maxD) : 1;
-        if (hidden) hidden.value = String(cur);
+      if (!sel) return;
+      const cur = hidden ? (parseInt(toEnglishDigits(hidden.value || '').replace(/[^0-9]/g, '') || '0', 10) || 0) : 0;
+      if (!sel._filled) {
+        let h = '<option value="">همه روزها</option>';
+        for (let d = 1; d <= 31; d++) h += '<option value="' + d + '">' + toPersianDigits(d) + '</option>';
+        sel.innerHTML = h; sel._filled = true;
       }
-      const opts = [];
-      for (let d = 1; d <= maxD; d++) opts.push({ value: String(d), label: toPersianDigits(d) });
-      wrap.innerHTML = '';
-      const sel = createDarkSelect({
-        options: opts,
-        value: String(cur),
-        listClassName: 'day-filter-list',
-        listMinWidth: 0,
-        onChange: (v) => {
-          const n = parseInt(v, 10) || 0;
-          if (hidden) hidden.value = n ? String(n) : '';
-          renderBalanceTab();
-        }
-      });
-      wrap.appendChild(sel);
+      if (sel.value !== (cur ? String(cur) : '')) {
+        sel.value = cur ? String(cur) : '';
+        try { if (sel._fancyRender) sel._fancyRender(); } catch (e) {}
+      }
     }
     /* منوی بخش: با یک کاربر فقط نام او؛ با چند کاربر پیش‌فرض اولین کاربر و گزینهٔ «همه» */
     let balanceSectionAll = false;
@@ -38920,8 +38975,19 @@ function openProjectRowPicker(secId) {
       if (range === 'month') return y === t.y && m === t.m;
       if (range === '3m') return k <= tk && k > tk - 3;
       if (range === 'year') return y === t.y;
-      if (range === 'day') return y === currentYear && m === currentMonth;
       return true;
+    }
+    /* «واریز»: دسته‌بندی فقط مال مخارج است، پس منوی دسته غیرفعال می‌شود */
+    function bsSyncTypeCat() {
+      var ty = (document.getElementById('balanceSearchType') || {}).value || '';
+      var cat = document.getElementById('balanceSearchCat');
+      if (!cat) return;
+      var off = ty === 'income';
+      if (off && cat.value) cat.value = '';
+      cat.disabled = off;
+      var w = cat.closest ? cat.closest('.bsr-cell') : null;
+      if (w) w.classList.toggle('bsr-off', off);
+      try { if (cat._fancyRender) cat._fancyRender(); } catch (e) {}
     }
     /* فهرست دسته‌ها با تعداد ردیف‌های مخارج (فقط دسته‌هایی که ردیف دارند) */
     function bsFillCategories() {
@@ -38937,7 +39003,7 @@ function openProjectRowPicker(secId) {
         ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
           (sec.rows || []).forEach(function (r) {
             if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
-            if (isPreAppPlanRow(r, y, m)) return;
+            if (isPreAppPlanRow(r, y, m) || isFuturePlanRow(r, y, m)) return;
             var ids = bsCatOf(r);
             if (!ids.length) none++;
             ids.forEach(function (id) { counts[id] = (counts[id] || 0) + 1; });
@@ -38964,14 +39030,17 @@ function openProjectRowPicker(secId) {
       var norm = (typeof HKCategorizer !== 'undefined') ? HKCategorizer.normalize : function (x) { return String(x || '').trim(); };
       var q = norm(inp.value);
       try { bsFillCategories(); } catch (eBs) {}
-      var catF = (document.getElementById('balanceSearchCat') || {}).value || '';
+      var typeF = (document.getElementById('balanceSearchType') || {}).value || '';
+      var catF = typeF === 'income' ? '' : ((document.getElementById('balanceSearchCat') || {}).value || '');
       var rangeF = (document.getElementById('balanceSearchRange') || {}).value || 'all';
+      var dayF0 = 0;
+      try { dayF0 = parseInt(toEnglishDigits((document.getElementById('balanceDayFilter') || {}).value || '').replace(/[^0-9]/g, '') || '0', 10) || 0; } catch (eD0) {}
       var sb = document.getElementById('balanceScrollBody');
       var balSec = sb ? sb.querySelector(':scope > .summary-section:not(#dayDetailBox):not(#searchResultBox)') : null;
       var hint = sb ? sb.querySelector(':scope > .balance-hint') : null;
       var dayBoxEl = document.getElementById('dayDetailBox');
-      /* فقط «یک روز مشخص» بدون کلمه/دسته: همان جدول جزئیات روز نشان داده می‌شود */
-      if (!q && !catF && (rangeF === 'all' || rangeF === 'day')) {
+      /* فقط «روز» با زمان «این ماه» (بدون کلمه/دسته/نوع): همان جدول جزئیات روز ماه جاری */
+      if (!q && !catF && !typeF && (rangeF === 'all' ? !dayF0 : (rangeF === 'month' && dayF0))) {
         boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = '';
         if (balSec) balSec.style.display = '';
         if (hint) hint.style.display = '';
@@ -38982,25 +39051,23 @@ function openProjectRowPicker(secId) {
       if (hint) hint.style.display = 'none';
       if (dayBoxEl && dayBoxEl.style.display !== 'none') { dayBoxEl.dataset.srHidden = 'show'; dayBoxEl.style.display = 'none'; }
       /* روز انتخاب‌شده: فقط نتایج همان روز از ماه جاری */
-      var dayF = 0;
-      try { dayF = parseInt(toEnglishDigits((document.getElementById('balanceDayFilter') || {}).value || '').replace(/[^0-9]/g, '') || '0', 10) || 0; } catch (eD) {}
+      var dayF = dayF0;
       var accF = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
       var sel = (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles) ? balanceSelectedTitles : [];
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};
       iterAllPeriodData(function (pd, key) {
         if (key === curKey && pd !== periodData) return;
-        if (dayF && key !== curKey) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         if (!bsInRange(rangeF, y, m)) return;
         /* با انتخاب دسته فقط مخارج (دسته‌بندی مال مخارج است) */
-        (catF ? ['expense'] : ['income', 'expense']).forEach(function (tab) {
+        (catF ? ['expense'] : (typeF ? [typeF] : ['income', 'expense'])).forEach(function (tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
             var t = ((sec && sec.title) || '').trim();
             if (sel.length && sel.indexOf(t) < 0) return;
             (sec.rows || []).forEach(function (r) {
               if (!r || r.deletedAt || !(Number(r.amount) > 0)) return;
-              if (tab === 'expense' && isPreAppPlanRow(r, y, m)) return;
+              if (tab === 'expense' && (isPreAppPlanRow(r, y, m) || isFuturePlanRow(r, y, m))) return;
               if (accF && (r.account || '').trim() !== accF) return;
               if (q && norm(r.desc).indexOf(q) < 0) return;
               if (dayF && dayNum(r) !== dayF) return;
@@ -39087,11 +39154,16 @@ function openProjectRowPicker(secId) {
         var t = 0;
         inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(renderBalanceSearch, 150); });
         inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { inp.blur(); } catch (e2) {} } });
-        ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
+        try { renderBalanceDayFilter(); } catch (eDf) {}
+        ['balanceSearchType', 'balanceSearchRange', 'balanceSearchDay', 'balanceSearchCat'].forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
           el.addEventListener('change', function () {
-            if (id === 'balanceSearchRange') { renderBalanceDayFilter(); try { renderBalanceTab(); } catch (eT) {} }
+            if (id === 'balanceSearchDay') {
+              var hd = document.getElementById('balanceDayFilter'); if (hd) hd.value = el.value || '';
+              try { renderBalanceTab(); } catch (eT) {}
+            }
+            if (id === 'balanceSearchType') bsSyncTypeCat();
             renderBalanceSearch();
           });
           try { enhanceSelectFont(el); } catch (eF) {}

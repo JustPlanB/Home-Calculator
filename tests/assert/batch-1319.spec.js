@@ -97,8 +97,12 @@ const ACC = 'ملت مصنوعی';
     out.unpaidColor = r2 ? getComputedStyle(r2).color : '';
     out.unpaidText = r2 ? r2.textContent : '';
     recOpenArchive(it2); await w(80);
+    out.singleFolder = document.querySelectorAll('#recArchiveModal .rec-term-folder').length === 1 && !!document.querySelector('#recArchiveModal .rec-term-folder .rec-term-fico svg');
+    document.querySelector('#recArchiveModal .rec-term-folder').click(); await w(80);
     const ur = document.querySelector('#recArchiveModal .rec-arch-row td');
     out.unpaidBg = ur ? getComputedStyle(ur).backgroundColor : '';
+    document.getElementById('recArchiveModal')._hkCancel(); await w(80);
+    out.cancelToFolders = !!document.querySelector('#recArchiveModal .rec-term-folder');
     document.getElementById('recArchiveModal')._hkCancel();
     closeFeatureSheet(); await w(200);
     return out;
@@ -110,12 +114,14 @@ const ACC = 'ملت مصنوعی';
   ok(rc.renewOpen && rc.startPre.d === 4 && rc.startPre.m === 7 && rc.startPre.y === 1405 && rc.endPre.y === 1406 && rc.endPre.m === 7 && /۱۵,۰۰۰,۰۰۰/.test(rc.amtPre), 'فرم تمدید: شروع = پایان قبلی، پایان = یک سال بعد، مبلغ = مبلغ قبلی');
   ok(rc.terms.length === 1 && rc.terms[0].contractStart.y === 1404 && rc.terms[0].amount === 15000000 && rc.after.e.y === 1406 && rc.after.a === 17000000 && rc.renewGone, 'بعد از تمدید: دورهٔ قبلی نگه داشته شد، دورهٔ تازه با مبلغ ۱۷ میلیون، دکمهٔ تمدید رفت');
   ok(rc.folders.length === 2 && /۴ مهر ۱۴۰۴ تا ۴ مهر ۱۴۰۵/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
-  ok(rc.head === 'ماه|روز|شرح|مبلغ|بانک', 'ستون‌های آرشیو: ماه | روز | شرح | مبلغ | بانک');
-  ok(rc.rows.length === 1 && /شهریور/.test(rc.rows[0]) && rc.paidBg.startsWith('rgba(48, 209, 88') && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با پس‌زمینهٔ سبز کل ردیف (بدون متن کوچک «دریافت شد»)');
+  ok(rc.head === 'تاریخ|شرح|مبلغ|بانک', 'ستون‌های آرشیو: تاریخ کامل | شرح | مبلغ | بانک (ستون ماه حذف شد)');
+  ok(rc.rows.length === 1 && /۱۴۰۵\/۰۶\/۰۴/.test(rc.rows[0]) && rc.paidBg.startsWith('rgba(158, 232, 88') && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با پس‌زمینهٔ سبز کل ردیف (بدون متن کوچک «دریافت شد»)');
   ok(rc.tapNoop, 'زدن روی ردیف آرشیو کاری نمی‌کند (به صفحهٔ اصلی نمی‌رود)');
   ok(rc.backToFolders && rc.backClosed, 'بازگشت: از داخل پوشه به فهرست دوره‌ها، بعد بستن آرشیو و ماندن در منو');
-  ok(rc.unpaidColor === 'rgb(255, 69, 58)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» قرمز');
-  ok(rc.unpaidBg.startsWith('rgba(255, 69, 58'), 'آرشیو: ردیف دریافت‌نشده با پس‌زمینهٔ قرمز');
+  ok(rc.unpaidColor === 'rgb(255, 107, 74)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان قرمز مبالغ دریافت‌نشده (‎#ff6b4a)');
+  ok(rc.cancelToFolders, 'بازگشت از داخل پوشهٔ تنها: به فهرست پوشه‌ها');
+  ok(rc.singleFolder, 'قرارداد بدون تمدید هم پوشهٔ خودش را دارد (با آیکون پوشهٔ ثبت گروهی)');
+  ok(rc.unpaidBg.startsWith('rgba(255, 107, 74'), 'آرشیو: ردیف دریافت‌نشده با قرمز مبالغ دریافت‌نشدهٔ درآمد');
 
   console.log('• پیامک: پیش‌فرض نزدیک‌ترین درآمد ثابت حتی با فاصلهٔ بیش از ۲ روز');
   const sm = await p.evaluate(async (ACC) => {
@@ -145,12 +151,19 @@ const ACC = 'ملت مصنوعی';
     selectedBankAccounts.push({ id: 'ba_a', bank: 'بانک الف', label: 'الف حساب', openingBalance: 1000000, createdAt: { y: 1405, m: 1 } });
     try { periodData.accountOpeningInstant = Object.assign({}, periodData.accountOpeningInstant || {}, { 'ب حساب': 2000000, 'الف حساب': 1000000 }); } catch (e) {}
     const oL = loadFinancialSubjects, oR = projectReceivableOnAccounts;
-    loadFinancialSubjects = () => [{ id: 'pj1', name: 'پروژه آزمایشی' }, { id: 'pj2', name: 'پروژه دوم' }];
+    loadFinancialSubjects = () => [{ id: 'pj1', name: 'پروژه آزمایشی', highlightColor: 'orange' }, { id: 'pj2', name: 'پروژه دوم', highlightColor: 'blue' }];
     projectReceivableOnAccounts = (id, set) => set.has('ب حساب') ? (id === 'pj1' ? 3000000 : 0) : (set.has('الف حساب') ? (id === 'pj1' ? -2000000 : -500000) : 0);
     openInstantBalance('');
     const rows = [...document.querySelectorAll('#instantBalPanel .ib-acc-row')];
-    const out = { order: rows.map(r => r.getAttribute('data-acc')), badges: rows.map(r => { const bd = r.querySelector('.ib-proj-badge'); return bd ? bd.className + ':' + bd.textContent : ''; }) };
+    const out = { order: rows.map(r => r.getAttribute('data-acc')), badges: rows.map(r => { const bd = r.querySelector('.ib-proj-dots'); return bd ? [...bd.querySelectorAll('i')].map(i => getComputedStyle(i).backgroundColor).join(',') + '|' + bd.textContent : ''; }) };
     closeInstantBalance();
+    /* ویجت: همان نقطه‌ها در دادهٔ حساب‌ها */
+    window.__wd = null;
+    const oC = window.Capacitor;
+    window.Capacitor = { isNativePlatform: () => true, Plugins: { HkWidget: { update: (o) => { window.__wd = o; } } } };
+    pushHomeWidget(); await new Promise(r => setTimeout(r, 900));
+    window.Capacitor = oC;
+    try { out.widgetAccs = JSON.parse(window.__wd.accounts); } catch (e) { out.widgetAccs = null; }
     loadFinancialSubjects = oL; projectReceivableOnAccounts = oR;
     out.widget = selectedAccountLabels();
     return out;
@@ -158,8 +171,10 @@ const ACC = 'ملت مصنوعی';
   const io = ib.order.filter(x => x === 'ب حساب' || x === 'الف حساب');
   ok(io.join('|') === 'ب حساب|الف حساب', 'ترتیب حساب‌ها مثل ویجت (ترتیب ساخت)، نه الفبایی (' + ib.order.join('، ') + ')');
   const bB = ib.badges[ib.order.indexOf('ب حساب')] || '', bA = ib.badges[ib.order.indexOf('الف حساب')] || '';
-  ok(/pos/.test(bB) && /پروژه: طلب ۳ م/.test(bB), 'نشان سبز «پروژه: طلب ۳ م» کنار حساب (' + bB + ')');
-  ok(/neg/.test(bA) && /۲ پروژه/.test(bA) && /بدهی ۲٫۵ م/.test(bA), 'دو پروژه: نشان قرمز «۲ پروژه · بدهی ۲٫۵ م» (' + bA + ')');
+  ok(bB === 'rgb(255, 106, 0)|', 'حساب با یک پروژه: فقط یک نقطه به رنگ همان پروژه (نارنجی)، بدون مبلغ (' + bB + ')');
+  ok(bA === 'rgb(255, 106, 0),rgb(0, 232, 255)|', 'حساب با دو پروژه: دو نقطه به رنگ هر پروژه (' + bA + ')');
+  const wa = (ib.widgetAccs || []).reduce((m, a) => { m[a.l] = (a.p || []).join(','); return m; }, {});
+  ok(wa['ب حساب'] === '#ff6a00' && wa['الف حساب'] === '#ff6a00,#00e8ff' && wa[ACC] === '', 'ویجت: رنگ پروژه‌های هر حساب برای نقطه‌ها فرستاده شد (' + JSON.stringify(wa) + ')');
 
   console.log('• سطل زباله: «انتخاب همه» ثابت بالای فهرست');
   const tr = await p.evaluate(async () => {
@@ -191,13 +206,27 @@ const ACC = 'ملت مصنوعی';
     out.afterAll = balanceSelectedTitles.slice();
     const rg = document.getElementById('balanceSearchRange');
     out.rangeOpts = [...rg.options].map(o => o.textContent);
-    out.dayHidden = document.getElementById('balanceDayFilterWrap').style.display === 'none';
-    rg.value = 'day'; rg.dispatchEvent(new Event('change')); await w(80);
-    out.dayShown = document.getElementById('balanceDayFilterWrap').style.display !== 'none';
-    out.dayVal = document.getElementById('balanceDayFilter').value;
-    out.dayBox = document.getElementById('dayDetailBox').style.display !== 'none';
+    const dy = document.getElementById('balanceSearchDay');
+    out.dayOpts = [...dy.options].map(o => o.textContent);
+    const ty = document.getElementById('balanceSearchType');
+    out.typeOpts = [...ty.options].map(o => o.textContent);
+    const rows = () => [...document.querySelectorAll('#search-result-body tr')].map(t => t.textContent);
+    /* نوع: واریز / برداشت */
+    ty.value = 'income'; ty.dispatchEvent(new Event('change')); await w(80);
+    out.incOnly = rows(); out.catOff = document.getElementById('balanceSearchCat').disabled;
+    ty.value = 'expense'; ty.dispatchEvent(new Event('change')); await w(80);
+    out.expOnly = rows(); out.catOn = !document.getElementById('balanceSearchCat').disabled;
+    ty.value = ''; ty.dispatchEvent(new Event('change')); await w(50);
+    /* روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه با جمع هر ماه */
+    dy.value = '4'; dy.dispatchEvent(new Event('change')); await w(80);
+    out.day4 = rows(); out.day4foot = [...document.querySelectorAll('#search-result-foot tr')].map(t => t.textContent);
+    /* روز ۵ با «این ماه»: جدول جزئیات روز */
+    rg.value = 'month'; rg.dispatchEvent(new Event('change')); dy.value = '5'; dy.dispatchEvent(new Event('change')); await w(80);
+    out.dayBox = document.getElementById('dayDetailBox').style.display !== 'none' && document.getElementById('searchResultBox').style.display === 'none';
     resetBalanceSearch(); renderBalanceTab(); await w(50);
-    out.resetDay = document.getElementById('balanceDayFilter').value === '' && document.getElementById('balanceDayFilterWrap').style.display === 'none';
+    out.resetDay = document.getElementById('balanceDayFilter').value === '' && dy.value === '' && ty.value === '';
+    const sizes = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bsr-wide)')].map(c => { const ctl = c.querySelector('.fancy-select-btn, .dark-select-btn'); const r = ctl ? ctl.getBoundingClientRect() : { width: 0, height: 0 }; return Math.round(r.width) + 'x' + Math.round(r.height); });
+    out.sizes = sizes;
     /* چیدمان فشرده: ردیف ۱ بخش و زمان، ردیف ۲ حساب و دسته، ردیف ۳ شرح */
     const cells = [...document.querySelectorAll('.bsr-grid > .bsr-cell')].map(c => ({ t: c.querySelector('.balance-acc-label').textContent, y: Math.round(c.getBoundingClientRect().top) }));
     out.layout = cells;
@@ -208,10 +237,15 @@ const ACC = 'ملت مصنوعی';
   });
   ok(se.def === 'سارا' && se.sel.join() === 'سارا' && se.opts.join('|') === 'سارا|علی|همه', 'بخش: پیش‌فرض اولین کاربر، فهرست کاربران + «همه» (بدون انتخاب چندتایی)');
   ok(se.afterAll.length === 0, 'انتخاب «همه»: همهٔ بخش‌ها');
-  ok(se.rangeOpts.join('|') === 'همهٔ ماه‌ها|این ماه|۳ ماه اخیر|امسال|یک روز مشخص…', 'منوی «زمان»: همهٔ ماه‌ها / این ماه / ۳ ماه اخیر / امسال / یک روز مشخص…');
-  ok(se.dayHidden && se.dayShown && se.dayVal === '21' && se.dayBox && se.resetDay, '«یک روز مشخص…»: فهرست روزها کنارش باز شد (پیش‌فرض امروز) و جزئیات روز دیده شد؛ پاک کردن جستجو آن را بست');
+  ok(se.rangeOpts.join('|') === 'همهٔ ماه‌ها|این ماه|۳ ماه اخیر|امسال', 'منوی «زمان»: همهٔ ماه‌ها / این ماه / ۳ ماه اخیر / امسال');
+  ok(se.dayOpts.length === 32 && se.dayOpts[0] === 'همه روزها' && se.dayOpts[31] === '۳۱' && se.typeOpts.join('|') === 'همه|واریز|برداشت', 'منوی «روز» (همه روزها + ۱ تا ۳۱) و منوی «نوع» (همه / واریز / برداشت)');
+  ok(se.incOnly.length > 0 && !se.incOnly.some(t => /نان|بنزین|کتاب/.test(t)) && se.catOff, 'نوع «واریز»: فقط درآمدها؛ منوی دسته غیرفعال');
+  ok(se.expOnly.length > 0 && !se.expOnly.some(t => /اجاره/.test(t)) && se.catOn, 'نوع «برداشت»: فقط مخارج');
+  ok(se.day4.length === 3 && se.day4.every(t => /\/۰۴$|اجاره/.test(t) || /۰۴/.test(t)) && se.day4foot.filter(t => /^جمع (مرداد|شهریور|مهر)/.test(t)).length === 3, 'روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه، با جمع هر ماه (' + se.day4.length + ' ردیف)');
+  ok(se.dayBox && se.resetDay, 'روز با «این ماه»: جدول جزئیات روز؛ پاک کردن جستجو نوع و روز را هم برمی‌گرداند');
   const L = se.layout;
-    ok(L.length === 5 && L[0].y === L[1].y && L[2].y === L[3].y && L[2].y > L[0].y && L[4].y > L[2].y && /بخش/.test(L[0].t) && /زمان/.test(L[1].t) && /حساب/.test(L[2].t) && /دسته/.test(L[3].t) && /شرح/.test(L[4].t), 'چیدمان: [بخش][زمان] / [حساب][دسته] / شرح');
+  ok(L.length === 7 && L[0].y === L[1].y && L[2].y === L[3].y && L[4].y === L[5].y && L[2].y > L[0].y && L[4].y > L[2].y && L[6].y > L[4].y && /بخش/.test(L[0].t) && /نوع/.test(L[1].t) && /زمان/.test(L[2].t) && /روز/.test(L[3].t) && /حساب/.test(L[4].t) && /دسته/.test(L[5].t) && /شرح/.test(L[6].t), 'چیدمان: [بخش][نوع] / [زمان][روز] / [حساب][دسته] / شرح');
+  ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
   ok(se.catLabelAlign === 'right', 'برچسب «دسته:» راست‌چین');
 
   console.log('• قسط‌های پرداخت‌شده پیش از شروع کار با نرم‌افزار');
