@@ -210,14 +210,15 @@ async function verifyIn(page, type, value) {
       const st0 = hkAutoEncState();
       const noPlain = await writeAutoBackup('daily');                    /* حالت ناسالم: نه رمزدار، نه بی‌رمز */
       const plainSaved = __log.filter(x => /^save:/.test(x) && !/-enc\.json$/.test(x)).length;
-      askBackupParts(); await __wait(() => __el('bkEncBtn'));
-      const label = __el('bkEncBtn').textContent; __el('bkEncBtn').click();
+      askBackupParts(); await __wait(() => __el('bkEncFix'));
+      const label = __el('bkEncFix').textContent.trim(); __el('bkEncFix').click();
       await __wait(() => __el('bkEncPriorGo')); __el('bkEncPriorGo').click();
       await __wait(() => __el('bkEncGuard'));
       const hasRepair = !!__el('bkEncGRepair');
       __el('bkEncGRepair').click();
-      await __wait(() => __el('bkEncRepairTxt'));
-      const rtxt = __txt('bkEncRepairTxt');
+      await __wait(() => __el('bkEncPw1'));
+      /* توضیح ترمیم حالا داخل باکس اطلاعاتِ کنار عنوان است */
+      const rtxt = (document.querySelector('#bkEncSetup .backup-pick-title .hk-info-btn') || { getAttribute: () => '' }).getAttribute('data-tip') || '';
       __el('bkEncPw1').value = PW_NEW; __el('bkEncPw2').value = PW_NEW; __el('bkEncNext').click();
       await __wait(() => __el('bkEncCode'));
       const code = __el('bkEncCode').value; __el('bkEncRc2').value = code; __el('bkEncOn').click();

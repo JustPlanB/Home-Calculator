@@ -261,14 +261,14 @@ const OLD = B64(JSON.stringify({ app: 'hesab-ketab', version: 1, archive: {}, no
     const X = await fresh(b);
     const openSetup = () => X.page.evaluate(() => new Promise(res => {
       askBackupParts();
-      setTimeout(() => { const btn = document.getElementById('bkEncBtn'); const label = btn && btn.textContent; if (btn) btn.click();
+      setTimeout(() => { const btn = document.getElementById('bkEncFix') || document.getElementById('bkEncBtn'); const label = btn && btn.textContent.trim(); if (btn) btn.click();
         setTimeout(() => res({ label, prior: !!document.getElementById('bkEncPriorTxt'), priorTxt: (document.getElementById('bkEncPriorTxt') || {}).textContent || '',
-          form: !!document.getElementById('bkEncPw1'), formTxt: (document.querySelector('#bkEncSetup .bk-enc-txt') || {}).textContent || '' }), 300); }, 300);
+          form: !!document.getElementById('bkEncPw1'), formTxt: ((document.querySelector('#bkEncSetup .backup-pick-title .hk-info-btn') || { getAttribute: () => '' }).getAttribute('data-tip') || '') }), 300); }, 300);
     }));
     const WARN = ['پشتیبان‌های رمزدارِ قبلی با رمز و کد جدید باز نمی‌شوند', 'همان رمز پشتیبان یا کد بازیابیِ قبلی لازم است', 'رمز و کد قبلی را جایگزین نمی‌کند', 'فایل‌های قبلی را دوباره رمزنگاری نمی‌کند'];
     const hasAll = t => WARN.every(w => t.indexOf(w) >= 0);
     const first = await openSetup();
-    ok(first.label === 'فعال‌سازی…' && !first.prior && first.form && hasAll(first.formTxt), 'راه‌اندازی اول: فرم با همان متن قبلی و بند هشدار کلید قبلی نمایش داده شد (بدون پنجرهٔ اضافی)');
+    ok(first.label === 'خاموش' && !first.prior && first.form && hasAll(first.formTxt), 'راه‌اندازی اول: فرم با همان متن قبلی و بند هشدار کلید قبلی نمایش داده شد (بدون پنجرهٔ اضافی)');
     ok(['اگر هر دو را گم کنید', 'پشتیبان‌های بی‌رمز قبلی خودبه‌خود پاک نمی‌شوند', 'قفل برنامه و قفل گوشی', 'رمز پشتیبان» یا «کد بازیابی» لازم است'].every(t => first.formTxt.indexOf(t) >= 0), 'متن‌های قبلی راه‌اندازی حذف یا کم نشده‌اند');
     await X.page.evaluate(() => { document.getElementById('bkEncCancel').click(); });
     /* کلید فعال بساز، بعد حالت «کلید محلی ناسالم» (روشن ولی رکورد نامعتبر) */
@@ -293,7 +293,7 @@ const OLD = B64(JSON.stringify({ app: 'hesab-ketab', version: 1, archive: {}, no
     const re2 = await openSetup();
     /* از ۴.۵: پس از «ادامه»، رمز قبلی باید واقعاً آزموده شود؛ بعد فرم باز می‌شود */
     const goForm = await X.page.evaluate(PW => new Promise(res => { document.getElementById('bkEncPriorGo').click(); setTimeout(() => { document.getElementById('bkEncGIn').value = PW; document.getElementById('bkEncGByPw').click();
-      (function wait(t0) { if (!document.getElementById('bkEncPw1') && Date.now() - t0 < 20000) return setTimeout(() => wait(t0), 150); res({ form: !!document.getElementById('bkEncPw1'), txt: (document.querySelector('#bkEncSetup .bk-enc-txt') || {}).textContent || '' }); })(Date.now()); }, 200); }), PW);
+      (function wait(t0) { if (!document.getElementById('bkEncPw1') && Date.now() - t0 < 20000) return setTimeout(() => wait(t0), 150); res({ form: !!document.getElementById('bkEncPw1'), txt: ((document.querySelector('#bkEncSetup .backup-pick-title .hk-info-btn') || { getAttribute: () => '' }).getAttribute('data-tip') || '') }); })(Date.now()); }, 200); }), PW);
     ok(re2.prior && goForm.form && hasAll(goForm.txt), 'ادامه: فرم رمز همراه با بند هشدار باز شد');
     const cancel2 = await X.page.evaluate(() => new Promise(res => { document.getElementById('bkEncCancel').click(); setTimeout(() => {
       const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); }
@@ -302,7 +302,7 @@ const OLD = B64(JSON.stringify({ app: 'hesab-ketab', version: 1, archive: {}, no
     /* پس از خاموش‌کردن (کلید محلی برداشته شده) هم هشدار نشان داده می‌شود، چون قبلاً روشن بوده */
     const off = await X.page.evaluate(() => { document.querySelectorAll('.backup-pick-overlay').forEach(o => o.remove()); localStorage.removeItem('hesabKetabArchive_v5_autoBkEnc'); const s = autoBkState(); s.encEnabled = false; autoBkSave(s); return { st: hkAutoEncState(), ever: autoBkState().encEverEnabled }; });
     const afterOff = await openSetup();
-    ok(off.st === null && off.ever === true && afterOff.label === 'فعال‌سازی…' && afterOff.prior && hasAll(afterOff.priorTxt), 'پس از خاموش‌کردن، فعال‌سازی دوباره هم پنجرهٔ هشدار کلید قبلی را نشان داد');
+    ok(off.st === null && off.ever === true && afterOff.label === 'خاموش' && afterOff.prior && hasAll(afterOff.priorTxt), 'پس از خاموش‌کردن، فعال‌سازی دوباره هم پنجرهٔ هشدار کلید قبلی را نشان داد');
     await X.ctx.close();
   }
 
