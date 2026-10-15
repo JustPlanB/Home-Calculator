@@ -49,7 +49,7 @@ const ACC = 'ملت مصنوعی';
     const foodQ = await run('food', 'all', 'بربری');
     const none = await run('__none__', 'all');
     const monthAll = await run('', 'month');
-    const reset = (resetBalanceSearch(), document.getElementById('searchResultBox').style.display === 'none' && document.getElementById('balanceSearchCat').value === '' && document.getElementById('balanceSearchRange').value === 'all');
+    const reset = (resetBalanceSearch(), document.getElementById('searchResultBox').style.display !== 'none' && document.getElementById('balanceSearchCat').value === '' && document.getElementById('balanceSearchRange').value === 'all');
     return { opts, food, foodMonth, foodQ, none, monthAll, reset };
   });
   ok(s.opts.some(o => /خوراکی \(۳\)/.test(o)) && s.opts.some(o => /حمل‌ونقل \(۲\)/.test(o)) && s.opts.some(o => /بدون دسته \(۱\)/.test(o)), 'منوی دسته فقط دسته‌های دارای ردیف را با تعداد نشان می‌دهد (' + s.opts.join('، ') + ')');
@@ -59,7 +59,7 @@ const ACC = 'ملت مصنوعی';
   ok(s.foodQ.rows.length === 1 && /بربری/.test(s.foodQ.rows[0]), 'دسته + کلمه با هم ترکیب می‌شوند');
   ok(s.none.rows.length === 1 && /زرتک/.test(s.none.rows[0]), '«بدون دسته»: ردیف‌هایی که دسته‌ای ندارند');
   ok(s.monthAll.rows.length === 4 && s.monthAll.rows.some(t => /اجاره/.test(t)), 'بدون دسته و فقط بازهٔ «این ماه»: درآمد و مخارج مهر');
-  ok(s.reset, 'پاک کردن جستجو دسته و بازه را هم به حالت اول برمی‌گرداند');
+  ok(s.reset, 'پاک کردن جستجو دسته و بازه را هم به حالت اول برمی‌گرداند (جدول نتیجه با همهٔ ردیف‌ها می‌ماند)');
   const recat = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const before = (HKCategorizer.classify('زرتک قلمبه') || {}).label || '';

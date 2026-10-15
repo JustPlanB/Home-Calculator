@@ -1844,6 +1844,10 @@
     #panel-balance .balance-scroll-body .summary-section:first-child {
       margin-top: 0;
     }
+    /* منوی جستجو: فقط جدول «نتیجهٔ جستجو» */
+    #panel-balance #balanceScrollBody > .summary-section:not(#searchResultBox),
+    #panel-balance #balanceScrollBody > .balance-hint { display: none !important; }
+    #panel-balance #balanceScrollBody > #searchResultBox { margin-top: 0; }
     /* border سلول‌ها داخل فریم بماند؛ بدون تغییر ضخامت/رنگ ظاهری */
     #panel-balance .balance-scroll-body .summary-table {
       border-collapse: collapse;
@@ -9068,9 +9072,10 @@
     /* کلید روشن/خاموش مستطیلی گرد */
     /* همهٔ کلیدهای روشن/خاموش: اندازه و شکل کلید «اعلان‌ها»، داخل آبی */
     .hk-switch { position: relative; display: inline-block; width: 38px; height: 22px; padding: 0; border: none; border-radius: 11px; background: rgba(142,142,147,0.45); flex-shrink: 0; cursor: pointer; transition: background 0.2s; vertical-align: middle; }
-    .hk-switch i { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: right 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    /* خاموش: دایره سمت چپ؛ روشن: دایره سمت راست */
+    .hk-switch i { position: absolute; top: 3px; right: 19px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: right 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
     .hk-switch.on { background: #0a84ff; }
-    .hk-switch.on i { right: 19px; }
+    .hk-switch.on i { right: 3px; }
     .hk-switch[disabled] { cursor: default; }
     .bk-enc-off { opacity: 0.4; pointer-events: none; }
     .bk-auto-row { display: flex; align-items: center; gap: 8px; }
@@ -9097,8 +9102,9 @@
     html[data-theme="light"] .rec-arch-row.is-unpaid > td { background: rgba(220, 38, 38, 0.13); }
     .rec-term-range { font-size: 0.86rem; font-weight: 800; color: #ffc531; direction: rtl; }
     .rec-term-range .rec-term-cur { font-size: 0.74rem; color: inherit; font-weight: 800; }
-    .rec-term-folder { align-items: flex-start !important; }
-    .rec-term-folder .rec-term-fico { margin-top: 1px; }
+    .rec-term-head { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+    .rec-term-head .rec-term-range { flex: 1; min-width: 0; line-height: 1.3; display: block; }
+    .rec-term-sub { display: block; padding-right: 36px; margin-top: 2px; font-size: 0.76rem; color: var(--muted); line-height: 1.6; }
     html[data-theme="light"] .rec-term-range { color: #c98f00; }
     .rec-term-fico { display: inline-flex; width: 26px; height: 26px; flex-shrink: 0; }
     .rec-term-fico svg { width: 26px; height: 26px; }
@@ -10405,7 +10411,13 @@
     .bk-auto-txt { display: flex; flex-direction: column; gap: 1px; }
     .bk-ttl, .bk-pwd-label { display: inline-flex; align-items: center; gap: 6px; }
     .bk-auto-last { font-size: 0.7rem; font-weight: 400; color: #8e8e93; }
-    .bk-enc-wrap { margin: 0 0 6px; font-size: 0.78rem; text-align: right; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
+    .bk-enc-wrap { margin: 0; font-size: 0.78rem; text-align: right; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
+    /* سطرهای کلیددار پنجرهٔ پشتیبان‌گیری: یک اندازه، بدون بولد، کلیدها دقیقاً زیر هم */
+    #backupPickOverlay .bk-sw-row { display: flex !important; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 8px; margin: 0; font-size: 0.88rem !important; font-weight: 400 !important; line-height: 1.6; color: rgba(255,255,255,0.92); text-align: right; border: none !important; cursor: default; }
+    html[data-theme="light"] #backupPickOverlay .bk-sw-row { color: var(--text); }
+    #backupPickOverlay .bk-sw-row .bk-ttl { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; font-size: inherit; font-weight: 400 !important; line-height: inherit; min-height: 0; }
+    #backupPickOverlay .bk-sw-row .hk-switch { margin: 0; }
+    #backupPickOverlay .bk-enc-wrap.bk-enc-hide { display: none !important; }
     .bk-enc-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .bk-enc-btn { border: none; border-radius: 8px; padding: 4px 10px; font-family: inherit; font-weight: 700; font-size: 0.75rem; background: var(--bg3); color: var(--text); }
     .bk-enc-err { color: #ff453a; font-size: 0.72rem; }
@@ -10436,19 +10448,26 @@
     .bank-open-from-sms { margin: -4px 0 10px; font-size: 0.72rem; line-height: 1.75; color: var(--muted, #9a9a9a); }
     .sms-acc-new { font-size: 0.72rem; line-height: 1.75; color: #ffc531; margin: -4px 0 10px; }
     html[data-theme="light"] .sms-acc-new { color: #9a6b00; }
-    .hk-ask3-box { border-color: var(--border, rgba(255,255,255,0.15)) !important; }
-    .hk-ask3-txt { font-size: 0.82rem; line-height: 1.9; margin-bottom: 14px; white-space: pre-line; }
-    .hk-ask3-btn { border: 1px solid var(--border, rgba(255,255,255,0.15)); background: transparent; color: var(--text, #f2f2f7); }
-    .hk-ask3-btn.danger { border: 0; background: #ff453a; color: #fff; }
-    .hk-ask3-btn.primary { border: 0; background: #0a84ff; color: #fff; }
+    /* پرسش سه‌گزینه‌ای: همان شکل پنجرهٔ تأیید «بلی/خیر» (زمینهٔ مات، سؤال بولد و وسط) */
+    #hkAsk3.hk-recon-ov { background: rgba(0,0,0,0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); padding: 20px; }
+    .hk-ask3-box { max-width: 340px !important; border: none !important; border-radius: 12px !important; padding: 22px 18px 16px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important; text-align: center; }
+    .hk-ask3-txt { font-size: 1.05rem; font-weight: 800; line-height: 1.7; margin-bottom: 18px; white-space: pre-line; text-align: center; color: var(--text); }
+    .hk-ask3-txt.long { font-size: 0.9rem; font-weight: 700; }
+    #hkAsk3 .hk-recon-btns { gap: 8px; justify-content: center; }
+    #hkAsk3 .hk-ask3-btn { min-height: 40px; padding: 9px 4px; border: none; border-radius: 8px; font-weight: 800; font-size: 0.84rem; line-height: 1.4; background: var(--btn-sec, #2c2c2e); color: var(--btn-sec-tx, #fff); }
+    #hkAsk3 .hk-ask3-btn { flex: 1 1 0; white-space: nowrap; min-width: 0; }
+    /* «انصراف» فقط به اندازهٔ نوشته‌اش؛ گزینه‌های بلندتر یک‌خطی می‌مانند */
+    #hkAsk3 .hk-ask3-btn:last-child:not(.danger):not(.primary) { flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
+    #hkAsk3 .hk-ask3-btn.danger { background: var(--btn-danger, #e0443a); color: #fff; }
+    #hkAsk3 .hk-ask3-btn.primary { background: var(--accent, #0090d4); color: #fff; }
     .hk-bulk-fdup { color: #ffc531; }
     #hkBulkCardWrap { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; }
     #hkBulkCardWrap .hk-bulk-rlbl { white-space: nowrap; }
     #hkBulkCardWrap > div:last-child { flex: 1; min-width: 0; }
     .perm-row .perm-sw { position: relative; width: 38px; height: 22px; border-radius: 11px; background: rgba(142,142,147,0.45); flex-shrink: 0; transition: background 0.2s; }
-    .perm-row .perm-sw i { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: right 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .perm-row .perm-sw i { position: absolute; top: 3px; right: 19px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: right 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
     .perm-row.on .perm-sw { background: #0a84ff; }
-    .perm-row.on .perm-sw i { right: 19px; }
+    .perm-row.on .perm-sw i { right: 3px; }
     .hk-bulk-ov { position: fixed; inset: 0; z-index: 100100; background: rgba(0,0,0,0.55); display: flex; align-items: flex-start; justify-content: center; padding: calc(env(safe-area-inset-top, 0px) + 24px) 12px 16px; box-sizing: border-box; }
     .hk-bulk-box { width: 100%; max-width: 400px; max-height: calc(100dvh - 48px); display: flex; flex-direction: column; background: var(--card, #1c1c1e); color: var(--text, #f2f2f7); border: 1px solid var(--border, rgba(255,255,255,0.12)); border-radius: 14px; padding: 14px; box-sizing: border-box; direction: rtl; }
     .hk-bulk-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 10px; }
@@ -10694,9 +10713,7 @@
         <button type="button" class="menu-item" id="menuSubjectsBtn" onclick="event.stopPropagation(); openSubjectsModal();">پروژه‌ها</button>
         <button type="button" class="menu-theme-row" onclick="event.stopPropagation(); toggleTheme();">
           <span>حالت شب / روز</span>
-          <span class="theme-switch ts-min" id="themeSwitch" aria-hidden="true">
-            <span class="ts-knob"><svg class="ts-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6"/></svg><svg class="ts-moon" viewBox="0 0 24 24"><path d="M19 14.6A7.5 7.5 0 0 1 9.4 5a7.5 7.5 0 1 0 9.6 9.6z"/></svg></span>
-          </span>
+          <span class="hk-switch" id="themeSwitch" aria-hidden="true"><i></i></span>
         </button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openSecurityModal();">امنیت و قفل برنامه</button>
         <button type="button" class="menu-theme-row perm-row" id="permRowSms" onclick="event.stopPropagation(); hkPermToggle('sms');">
@@ -16067,15 +16084,17 @@ function onPeriodChange() {
       /* مسیر پوشه در سطر جدا (متن فارسی با آدرس لاتین بلند وسط جمله، سطر اول را نصفه می‌کرد) */
       var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.\nمحل ذخیره: Downloads/HesabKetab' : 'پشتیبان خودکار فقط در نرم‌افزار اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
       var pwdInfo = 'اگر رمز نگذارید، فایل بدون رمز ذخیره می‌شود. با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.';
-      /* فقط خود چک‌باکس روشن/خاموش می‌کند (متن و فضای اطراف نه) */
+      /* زمان آخرین پشتیبان خودکار داخل باکس اطلاعات (همهٔ سطرهای کلیددار یک اندازه و هم‌تراز) */
+      if (autoBkPlugin()) autoInfo += '\n' + autoBkLastText();
+      /* سه سطر هم‌شکل: نوشته راست، کلید روشن/خاموش چپ؛ فقط خود کلید روشن/خاموش می‌کند */
       var _autoOn = autoBkState().enabled !== false;
-      html += '<div class="bk-auto-wrap"><div class="backup-pick-item bk-auto-row">' +
-        '<span class="bk-auto-txt"><span class="bk-ttl">پشتیبان خودکار روزانه' + hkInfoBtnHtml(autoInfo) + '</span>' +
-        (autoBkPlugin() ? '<small class="bk-auto-last">(' + escapeHtml(autoBkLastText()) + ')</small>' : '') + '</span>' +
-        '<button type="button" class="hk-switch' + (_autoOn ? ' on' : '') + '" id="bkAutoOn" role="switch" aria-checked="' + _autoOn + '" aria-label="پشتیبان خودکار روزانه"><i></i></button></div></div>';
+      html += '<div class="bk-auto-wrap"><div class="bk-sw-row bk-auto-row">' +
+        '<span class="bk-ttl">پشتیبان خودکار روزانه' + hkInfoBtnHtml(autoInfo) + '</span>' +
+        '<button type="button" class="hk-switch' + (_autoOn ? ' on' : '') + '" id="bkAutoOn" role="switch" aria-checked="' + _autoOn + '" aria-label="پشتیبان خودکار روزانه"><i></i></button></div>';
+      /* رمزنگاری پشتیبان خودکار فقط وقتی پشتیبان خودکار روشن است دیده می‌شود */
       if (autoBkPlugin()) html += hkAutoEncRowHtml();
       /* رمز فایل پشتیبان: کلید روشن/خاموش؛ روشن کردن، باکسی با دو فیلد رمز باز می‌کند */
-      html += '<div class="bk-pwd-wrap"><div class="bk-pwd-label bk-pwd-row"><span>رمز فایل پشتیبان' + hkInfoBtnHtml(pwdInfo) + '</span>' +
+      html += '<div class="bk-sw-row bk-pwd-row"><span class="bk-ttl">رمز فایل پشتیبان' + hkInfoBtnHtml(pwdInfo) + '</span>' +
         '<button type="button" class="hk-switch" id="bkPwdSw" role="switch" aria-checked="false" aria-label="رمز فایل پشتیبان"><i></i></button></div>' +
         '<input type="hidden" id="bkPwd" value=""></div>';
       html += '<div class="backup-pick-actions">' +
@@ -16110,7 +16129,7 @@ function onPeriodChange() {
         var onNow = !autoCb.classList.contains('on');
         autoCb.classList.toggle('on', onNow); autoCb.setAttribute('aria-checked', String(onNow));
         var st = autoBkState(); st.enabled = onNow; autoBkSave(st);
-        var er = ov.querySelector('#bkEncRow'); if (er) er.classList.toggle('bk-enc-off', !onNow);
+        var er = ov.querySelector('#bkEncRow'); if (er) er.classList.toggle('bk-enc-hide', !onNow);
         if (onNow) { maybeDailyAutoBackup(false); try { showToast('پشتیبان خودکار روشن شد'); } catch (e1) {} }
         else { try { showToast('پشتیبان خودکار خاموش شد'); } catch (e2) {} }
       });
@@ -16470,8 +16489,8 @@ function onPeriodChange() {
       var mode = !st ? 'خاموش' : (st.broken ? 'روشن، ولی کلید روی این دستگاه پیدا نشد' : 'روشن');
       /* کلید روشن/خاموش (مستطیل گرد) جلوی عنوان؛ روشن کردن = پنجرهٔ تعیین رمز، خاموش کردن = تأیید */
       var on = !!st;
-      /* تا «پشتیبان خودکار» خاموش است، رمزنگاری آن کم‌رنگ و غیرفعال است */
-      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-off' : '') + '" id="bkEncRow"><div class="bk-enc-line"><span>رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <b id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</b>' : '') + '</span>' +
+      /* تا «پشتیبان خودکار» خاموش است، سطر رمزنگاری آن پنهان است */
+      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-hide' : '') + '" id="bkEncRow"><div class="bk-sw-row bk-enc-line"><span class="bk-ttl">رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <span id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</span>' : '') + '</span>' +
         '<button type="button" class="hk-switch' + (on ? ' on' : '') + '" id="bkEncBtn" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="رمزنگاری پشتیبان خودکار"><i></i></button></div>';
       if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncFix">تنظیم دوباره…</button></div>';
       if (st && !st.broken && s.lastEncOkAt) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncCleanup">پاک کردن پشتیبان‌های خودکار بی‌رمز قدیمی…</button></div>';
@@ -22077,6 +22096,14 @@ async function openPdfPrintWindow(){
       return (r.left - p0 * W * (1 - s0) + W / 2) - (br.left + br.width / 2);
     }
     function homeCenterCard(box, card, smooth) {
+      var left = homeCardTarget(box, card);
+      try {
+        if (smooth) HomeCarousel.animateTo(box, left);
+        else box.scrollLeft = left;
+      } catch (e) { box.scrollLeft = left; }
+    }
+    /* scrollLeft لازم برای وسط آمدن کارت */
+    function homeCardTarget(box, card) {
       var left;
       if (card.offsetParent === box) {
         /* موقعیت چیدمانی کارت (بدون اثر scale/transform) — دقیق و مستقل از انیمیشن */
@@ -22087,10 +22114,7 @@ async function openPdfPrintWindow(){
       } else {
         left = box.scrollLeft + homeCardOffset(box, card);
       }
-      try {
-        if (smooth) HomeCarousel.animateTo(box, left);
-        else box.scrollLeft = left;
-      } catch (e) { box.scrollLeft = left; }
+      return left;
     }
     /* کارت وسط کامل؛ کارت‌های کناری کوچک‌تر و لبهٔ داخلی‌شان ثابت (فقط لبهٔ آن‌ها دیده می‌شود) */
     function updateHomeCardScales(box) {
@@ -22373,7 +22397,10 @@ async function openPdfPrintWindow(){
       const box = document.getElementById('homeCards');
       if (!box) return;
       try { updateHomeBalanceCircle(); } catch (eHB) {}
-      try { if (typeof HomeCarousel !== 'undefined') HomeCarousel.cancel(); } catch (eHC) {}
+      /* موقعیت و سرعت حرکت جاری نگه داشته می‌شود تا رسم دوباره کارت را نپراند */
+      const _sl0 = box.scrollLeft;
+      let _wasAnim = false, _v0 = 0;
+      try { if (typeof HomeCarousel !== 'undefined') { _wasAnim = HomeCarousel.animating(); HomeCarousel.cancel(); _v0 = _wasAnim ? HomeCarousel.lastVel() : 0; } } catch (eHC) {}
       box.innerHTML = '';
       const titles = allPersonTitles();
       const _ZERO_TOT = { incomeTotal: 0, incomePaid: 0, incomeUnpaid: 0, expenseTotal: 0, expensePaid: 0, expenseUnpaid: 0, remain: 0, instant: 0 };
@@ -22534,9 +22561,22 @@ async function openPdfPrintWindow(){
         if (box.classList.contains('has-ghost')) {
           box.scrollLeft = 0;
           requestAnimationFrame(function(){ box.scrollLeft = 0; updateHomeCardScales(box); });
+        } else if (active && (_lockT || _wasAnim)) {
+          /* وسط حرکت (مثلاً رفتن به کارت تازه): از همان نقطه و با همان سرعت ادامه بده، بدون پرش */
+          box.scrollLeft = _sl0;
+          try { updateHomeCardScales(box); } catch (eU0) {}
+          const _resume = function () {
+            try {
+              const c = box.querySelector('.person-card:not(.hc-clone)[data-title="' + (window.CSS && CSS.escape ? CSS.escape(active) : active) + '"]');
+              if (!c) return;
+              const to = homeCardTarget(box, c);
+              const done = window._hkCardFocus && window._hkCardFocus.name === active ? window._hkCardFocus.done : null;
+              HomeCarousel.animateTo(box, to, 0, _v0, done, true);
+            } catch (eR) {}
+          };
+          _resume();
         } else if (active) {
-          /* اگر در حال رفتن به کارت تازه‌ایم، رسم دوباره حرکت را قطع نکند */
-          requestAnimationFrame(function(){ scrollHomeCardsToTitle(active, !!_lockT); });
+          requestAnimationFrame(function(){ scrollHomeCardsToTitle(active, false); });
         } else {
           box.scrollLeft = 0;
           requestAnimationFrame(function(){ updateHomeCardScales(box); });
@@ -22772,9 +22812,18 @@ async function openPdfPrintWindow(){
         }, 160);
       }
       function activeClone(b) { return !!(b && b._hcClone && !b._hcClone.parked && b.contains(b._hcClone.el)); }
-      function stopAnim() { if (animRaf) { cancelAnimationFrame(animRaf); animRaf = 0; } }
-      /* حرکت «رهاشده»: با سرعت انگشت (v0) شروع و با کاهش یکنواخت سرعت دقیقاً روی کارت می‌ایستد */
-      function animateTo(b, to, dur, v0, done) {
+      var anim = null, lastV = 0;
+      /* سرعت لحظه‌ای حرکت جاری (واحد scrollLeft در میلی‌ثانیه) */
+      function curVel() {
+        if (!anim) return 0;
+        var k = Math.min(1, anim.tv / anim.dur);
+        return ((3 * k * k - 4 * k + 1) * anim.m0 + (-6 * k * k + 6 * k) * anim.d) / anim.dur;
+      }
+      function stopAnim() { if (animRaf) { lastV = curVel(); cancelAnimationFrame(animRaf); animRaf = 0; } anim = null; }
+      /* حرکت «رهاشده»: با سرعت انگشت (v0) شروع و با کاهش یکنواخت سرعت دقیقاً روی کارت می‌ایستد.
+         smooth: حرکت برنامه‌ای از حالت سکون (آرام شروع، آرام توقف).
+         زمان حرکت از فریم‌ها جمع می‌شود و هر فریم حداکثر ۳۴ میلی‌ثانیه جلو می‌رود؛ اگر گوشی لحظه‌ای کند شد، کارت نمی‌پرد */
+      function animateTo(b, to, dur, v0, done, smooth) {
         stopAnim();
         b = b || box();
         if (!b) return;
@@ -22789,13 +22838,15 @@ async function openPdfPrintWindow(){
         }
         var m0 = v0 * dur;
         if (Math.abs(m0) > Math.abs(d) * 2.2) m0 = d * 2.2;
-        if (!v0) m0 = d * 1.6;
-        var t0 = performance.now();
+        if (!v0) m0 = smooth ? 0 : d * 1.6;
+        var a = anim = { from: from, d: d, m0: m0, dur: dur, tv: 0, last: performance.now() };
         var step = function (now) {
-          var k = Math.min(1, (now - t0) / dur);
+          if (anim !== a) return;
+          a.tv += Math.max(0, Math.min(34, now - a.last)); a.last = now;
+          var k = Math.min(1, a.tv / dur);
           var h10 = k * k * k - 2 * k * k + k, h01 = -2 * k * k * k + 3 * k * k;
           b.scrollLeft = from + h10 * m0 + h01 * d;
-          if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; if (done) done(); }
+          if (k < 1) animRaf = requestAnimationFrame(step); else { b.scrollLeft = to; animRaf = 0; anim = null; lastV = 0; if (done) done(); }
         };
         animRaf = requestAnimationFrame(step);
       }
@@ -22948,6 +22999,10 @@ async function openPdfPrintWindow(){
       document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(guard, 60); });
       window.addEventListener('resize', function () { setTimeout(guard, 200); });
       return { animateTo: animateTo, takeOver: takeOver, bind: bind, cancel: cancel, settle: function () { guard(); },
+               animating: function () { return !!animRaf; },
+               /* سرعت حرکتی که آخرین بار قطع شد (برای ادامهٔ نرم بعد از رسم دوباره) */
+               lastVel: function () { return lastV; },
+               glideTo: function (b, to, dur, done) { animateTo(b, to, dur || 560, 0, done, true); },
                busy: function () { var b = box(); return !!b && multi(b) && (!!animRaf || !!st && !!st.drag || activeClone(b) || offTarget(b)); },
                canDrag: function () { var b = box(); return !!b && multi(b); } };
     })();
@@ -24756,32 +24811,51 @@ async function openPdfPrintWindow(){
         persistCurrent();
         scheduleSave();
         try { closePersonEditSheet(); } catch (e) {}
-        renderHomeCards();
+        if (isNew) {
+          /* همهٔ رسم‌ها و ذخیرهٔ معوق همین حالا انجام شود تا وسط حرکت به کارت تازه، صفحه دوباره رسم نشود (علت «نیمه‌راه ایستادن و پریدن») */
+          try { clearTimeout(_uiFlushTimer); _flushUiHeavy(); } catch (eFl) { renderHomeCards(); }
+          try { _flushPendingSave(); } catch (eFs) {}
+        } else renderHomeCards();
         try {
           if (isNew) {
-            /* از روی کارتی که کاربر رویش بود، با اسکرول روی کارت جدید برو */
+            /* از روی کارتی که کاربر رویش بود، با یک حرکت نرم (آرام شروع، آرام توقف) روی کارت جدید برو */
             var boxHC = document.getElementById('homeCards');
-            setTimeout(function(){
+            var q = function (t) { return boxHC && boxHC.querySelector('.person-card:not(.hc-clone)[data-title="' + (window.CSS && CSS.escape ? CSS.escape(t) : t) + '"]'); };
+            var cards0 = boxHC ? Array.prototype.slice.call(boxHC.querySelectorAll('.person-card:not(.hc-clone)')) : [];
+            var from0 = (_prevActiveTitle && q(_prevActiveTitle)) || cards0[cards0.length - 2];
+            if (from0) homeCenterCard(boxHC, from0, false);
+            try { updateHomeCardScales(boxHC); } catch (eSc) {}
+            /* کارت جدید از همین حالا «کارت فعال» است تا هیچ رسم دوباره‌ای آن را به کارت قبلی برنگرداند */
+            var finish = function () {
               try {
-                /* فقط کارت‌های واقعی (نه کپی‌های حلقهٔ بی‌پایان)؛ اندازه‌ها بعد از چیدمان کامل گرفته می‌شود */
-                var cards = Array.prototype.slice.call(boxHC.querySelectorAll('.person-card:not(.hc-clone)'));
-                var from = cards.find(function (c) { return c.dataset.title === _prevActiveTitle; }) || cards[cards.length - 2];
-                var to = cards.find(function (c) { return c.dataset.title === name; });
-                if (from) homeCenterCard(boxHC, from, false);
-                /* کارت جدید از همین حالا «کارت فعال» است تا رسم دوبارهٔ صفحه آن را به کارت قبلی برنگرداند */
-                window._hkCardFocus = { name: name, until: Date.now() + 1500 };
-                try { setActiveHomeCardTitle(name); } catch (eAc) {}
-                setTimeout(function () {
-                  if (to) homeCenterCard(boxHC, to, true);
-                  /* پایان حرکت (و هر رسم دوباره‌ای در این فاصله): دقیقاً روی کارت جدید جا بیفتد */
-                  [700, 1300].forEach(function (ms) {
-                    setTimeout(function () {
-                      try { if (getActiveHomeCardTitle() !== name) return; if (ms > 1000) window._hkCardFocus = null; scrollHomeCardsToTitle(name, false); var bb = document.getElementById('homeCards'); var cc = bb && bb.querySelector('.person-card:not(.hc-clone)[data-title="' + (window.CSS && CSS.escape ? CSS.escape(name) : name) + '"]'); if (cc) updateHomeCardDots(bb, cc); } catch (eSn) {}
-                    }, ms);
-                  });
-                }, 80);
-              } catch (eAn) {}
-            }, 60);
+                var cc = q(name);
+                if (cc) { homeCenterCard(boxHC, cc, false); updateHomeCardScales(boxHC); updateHomeCardDots(boxHC, cc); }
+              } catch (eSn) {}
+              window._hkCardFocus = null;
+            };
+            window._hkCardFocus = { name: name, until: Date.now() + 4000, done: finish };
+            try { setActiveHomeCardTitle(name); } catch (eAc) {}
+            /* شروع حرکت بعد از آرام شدن صفحه (بسته شدن کیبورد و چیدمان دوباره)؛ حداکثر ۶۰۰ میلی‌ثانیه صبر */
+            var pnow = function () { return performance.now(); }, t0w = pnow(), lastRz = pnow();
+            var onRz = function () { lastRz = pnow(); };
+            window.addEventListener('resize', onRz);
+            try { if (window.visualViewport) window.visualViewport.addEventListener('resize', onRz); } catch (eVv) {}
+            var go = function () {
+              if (pnow() - lastRz < 180 && pnow() - t0w < 600) { setTimeout(go, 60); return; }
+              window.removeEventListener('resize', onRz);
+              try { if (window.visualViewport) window.visualViewport.removeEventListener('resize', onRz); } catch (eVv2) {}
+              requestAnimationFrame(function () { requestAnimationFrame(function () {
+                try {
+                  var to = q(name);
+                  if (!to || !window._hkCardFocus || window._hkCardFocus.name !== name) return;
+                  if (HomeCarousel.animating()) return; /* حرکت (ادامه‌یافته پس از رسم دوباره) در جریان است */
+                  window._hkCardFocus.until = Date.now() + 2500;
+                  var left = homeCardTarget(boxHC, to);
+                  HomeCarousel.glideTo(boxHC, left, 620, finish);
+                } catch (eAn) { finish(); }
+              }); });
+            };
+            setTimeout(go, 120);
           } else {
             requestAnimationFrame(function(){ scrollHomeCardsToTitle(name, true); });
           }
@@ -27067,9 +27141,9 @@ container.innerHTML = '';
       if (!s || s.id === 'personal') return;
       var rows = hkProjectRows(id);
       var n = rows.length;
-      /* همان پنجرهٔ سه‌گزینه‌ای افقیِ حذف حساب */
-      var btns = n ? [{ v: 'all', t: 'حذف پروژه و ردیف‌ها', cls: 'danger' }, { v: 'keep', t: 'حذف پروژه بدون ردیف‌ها' }, { v: 'cancel', t: 'انصراف' }]
-        : [{ v: 'keep', t: 'حذف پروژه', cls: 'danger' }, { v: 'cancel', t: 'انصراف' }];
+      /* همان شکل پنجره‌های تأیید (سؤال بولد و وسط) */
+      var btns = n ? [{ v: 'all', t: 'حذف با ردیف‌ها', cls: 'danger' }, { v: 'keep', t: 'حذف بدون ردیف‌ها', cls: 'danger' }, { v: 'cancel', t: 'انصراف' }]
+        : [{ v: 'keep', t: 'حذف', cls: 'danger' }, { v: 'cancel', t: 'انصراف' }];
       hkAsk3('پروژهٔ «' + (s.name || '') + '» حذف شود؟', btns, function (v) {
         if (v !== 'all' && v !== 'keep') return;
         var data = { sourceLabel: 'پروژه‌ها', subject: JSON.parse(JSON.stringify(s)) };
@@ -31683,7 +31757,7 @@ if (item.type === 'recurring') {
       var old = document.getElementById('hkAsk3'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkAsk3'; ov.className = 'hk-recon-ov';
       var box = document.createElement('div'); box.className = 'hk-recon-box hk-ask3-box';
-      var t = document.createElement('div'); t.className = 'hk-ask3-txt'; t.textContent = msg; box.appendChild(t);
+      var t = document.createElement('div'); t.className = 'hk-ask3-txt' + (String(msg).length > 90 ? ' long' : ''); t.textContent = msg; box.appendChild(t);
       var row = document.createElement('div'); row.className = 'hk-recon-btns';
       var done = function (v) { try { ov.remove(); } catch (e) {} try { cb(v); } catch (e2) {} };
       opts.forEach(function (o) {
@@ -34090,10 +34164,11 @@ if (item.type === 'recurring') {
         terms.forEach(function (t, i) {
           var tr = all.filter(function (x) { return x.term === i; });
           var tp = tr.filter(function (x) { return recIsPaid(x.row); });
-          body += '<button type="button" class="rec-term-folder" data-t="' + i + '" style="display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 0;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;text-align:right;cursor:pointer;">' +
-            '<span class="rec-term-fico">' + HK_FOLDER_SVG + '</span>' +
-            '<span style="flex:1;min-width:0;line-height:1.7;"><b class="rec-term-range">' + rangeOf(t) + (t.current ? ' <span class="rec-term-cur">(فعلی)</span>' : '') + '</b><br>' +
-            '<span style="font-size:0.76rem;color:var(--muted);">' + formatNum(t.amount || 0) + ' تومان' + depOf(t) + ' · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></span></button>';
+          body += '<button type="button" class="rec-term-folder" data-t="' + i + '" style="display:block;width:100%;margin:8px 0 0;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;text-align:right;cursor:pointer;">' +
+            /* آیکون پوشه و برچسب زرد در یک ردیف، وسطشان روی یک خط */
+            '<span class="rec-term-head"><span class="rec-term-fico">' + HK_FOLDER_SVG + '</span>' +
+            '<b class="rec-term-range">' + rangeOf(t) + (t.current ? ' <span class="rec-term-cur">(فعلی)</span>' : '') + '</b></span>' +
+            '<span class="rec-term-sub">' + formatNum(t.amount || 0) + ' تومان' + depOf(t) + ' · ' + toPersianDigits(String(tp.length)) + ' دریافت</span></button>';
         });
       } else if (!rows.length) body += '<div style="text-align:center;color:var(--muted);padding:18px 6px;font-size:0.85rem;">هنوز واریزی به این ' + (multi ? 'دوره' : 'درآمد ثابت') + ' وصل نشده</div>';
       else {
@@ -39352,17 +39427,10 @@ function openProjectRowPicker(secId) {
       var balSec = sb ? sb.querySelector(':scope > .summary-section:not(#dayDetailBox):not(#searchResultBox)') : null;
       var hint = sb ? sb.querySelector(':scope > .balance-hint') : null;
       var dayBoxEl = document.getElementById('dayDetailBox');
-      /* فقط «روز» با زمان «این ماه» (بدون کلمه/دسته/نوع): همان جدول جزئیات روز ماه جاری */
-      if (!q && !catF && !typeF && (rangeF === 'all' ? !dayF0 : (rangeF === 'month' && dayF0))) {
-        boxR.style.display = 'none'; body.innerHTML = ''; if (foot) foot.innerHTML = '';
-        if (balSec) balSec.style.display = '';
-        if (hint) hint.style.display = '';
-        if (dayBoxEl && dayBoxEl.dataset.srHidden) { dayBoxEl.style.display = dayBoxEl.dataset.srHidden === 'show' ? '' : 'none'; delete dayBoxEl.dataset.srHidden; }
-        return;
-      }
+      /* منوی جستجو فقط یک جدول دارد: «نتیجهٔ جستجو» با همهٔ فیلترها (بدون فیلتر = همهٔ ردیف‌ها) */
       if (balSec) balSec.style.display = 'none';
       if (hint) hint.style.display = 'none';
-      if (dayBoxEl && dayBoxEl.style.display !== 'none') { dayBoxEl.dataset.srHidden = 'show'; dayBoxEl.style.display = 'none'; }
+      if (dayBoxEl) dayBoxEl.style.display = 'none';
       /* روز انتخاب‌شده: فقط نتایج همان روز از ماه جاری */
       var dayF = dayF0;
       var accF = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
