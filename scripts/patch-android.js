@@ -1958,17 +1958,18 @@ final class HkWidgetDraw {
       float ls=fit(tot?BOLD:REG,u*rowR,r[0],aw*0.45f);
       Paint lpn=paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT);
       cv.drawText(r[0], W-padX, y+NUM_A*u, lpn);
-      /* نقطه(های) رنگ پروژه کنار نام حساب (مثل موجودی آنی نرم‌افزار) */
-      if(!d.locked && r.length>4 && r[4]!=null && r[4].length()>0){
-        float dr=Math.max(2.2f*k, ls*0.17f), dx=W-padX-lpn.measureText(r[0])-dr-4*k, dy=y+NUM_A*u-ls*0.32f;
-        for(String hc: r[4].split(",")){
-          try{ Paint dp=new Paint(Paint.ANTI_ALIAS_FLAG); dp.setColor(Color.parseColor(hc.trim())); cv.drawCircle(dx, dy, dr, dp); }catch(Exception ignored){}
-          dx-=dr*2+2.5f*k;
-        }
-      }
       String val=d.locked?"••••••":r[1];
       int col=d.locked?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
-      cv.drawText(val, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT));
+      Paint vp=paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT);
+      cv.drawText(val, padX, y+NUM_A*u, vp);
+      /* نقطه(های) رنگ پروژه درست جلوی عدد موجودی (مثل موجودی آنی نرم‌افزار) */
+      if(!d.locked && r.length>4 && r[4]!=null && r[4].length()>0){
+        float dr=Math.max(2.2f*k, ls*0.17f), dx=padX+vp.measureText(val)+dr+5*k, dy=y+NUM_A*u-ls*0.32f;
+        for(String hc: r[4].split(",")){
+          try{ Paint dp=new Paint(Paint.ANTI_ALIAS_FLAG); dp.setColor(Color.parseColor(hc.trim())); cv.drawCircle(dx, dy, dr, dp); }catch(Exception ignored){}
+          dx+=dr*2+2.5f*k;
+        }
+      }
       y+=u*rowR*(NUM_A+NUM_D);
     }
     y+=gap*u+extra;

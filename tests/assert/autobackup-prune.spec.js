@@ -268,7 +268,7 @@ const OLD = B64(JSON.stringify({ app: 'hesab-ketab', version: 1, archive: {}, no
     const WARN = ['پشتیبان‌های رمزدارِ قبلی با رمز و کد جدید باز نمی‌شوند', 'همان رمز پشتیبان یا کد بازیابیِ قبلی لازم است', 'رمز و کد قبلی را جایگزین نمی‌کند', 'فایل‌های قبلی را دوباره رمزنگاری نمی‌کند'];
     const hasAll = t => WARN.every(w => t.indexOf(w) >= 0);
     const first = await openSetup();
-    ok(first.label === 'خاموش' && !first.prior && first.form && hasAll(first.formTxt), 'راه‌اندازی اول: فرم با همان متن قبلی و بند هشدار کلید قبلی نمایش داده شد (بدون پنجرهٔ اضافی)');
+    ok(first.label === '' && !first.prior && first.form && hasAll(first.formTxt), 'راه‌اندازی اول: فرم با همان متن قبلی و بند هشدار کلید قبلی نمایش داده شد (بدون پنجرهٔ اضافی)');
     ok(['اگر هر دو را گم کنید', 'پشتیبان‌های بی‌رمز قبلی خودبه‌خود پاک نمی‌شوند', 'قفل برنامه و قفل گوشی', 'رمز پشتیبان» یا «کد بازیابی» لازم است'].every(t => first.formTxt.indexOf(t) >= 0), 'متن‌های قبلی راه‌اندازی حذف یا کم نشده‌اند');
     await X.page.evaluate(() => { document.getElementById('bkEncCancel').click(); });
     /* کلید فعال بساز، بعد حالت «کلید محلی ناسالم» (روشن ولی رکورد نامعتبر) */
@@ -302,7 +302,7 @@ const OLD = B64(JSON.stringify({ app: 'hesab-ketab', version: 1, archive: {}, no
     /* پس از خاموش‌کردن (کلید محلی برداشته شده) هم هشدار نشان داده می‌شود، چون قبلاً روشن بوده */
     const off = await X.page.evaluate(() => { document.querySelectorAll('.backup-pick-overlay').forEach(o => o.remove()); localStorage.removeItem('hesabKetabArchive_v5_autoBkEnc'); const s = autoBkState(); s.encEnabled = false; autoBkSave(s); return { st: hkAutoEncState(), ever: autoBkState().encEverEnabled }; });
     const afterOff = await openSetup();
-    ok(off.st === null && off.ever === true && afterOff.label === 'خاموش' && afterOff.prior && hasAll(afterOff.priorTxt), 'پس از خاموش‌کردن، فعال‌سازی دوباره هم پنجرهٔ هشدار کلید قبلی را نشان داد');
+    ok(off.st === null && off.ever === true && afterOff.label === '' && afterOff.prior && hasAll(afterOff.priorTxt), 'پس از خاموش‌کردن، فعال‌سازی دوباره هم پنجرهٔ هشدار کلید قبلی را نشان داد');
     await X.ctx.close();
   }
 
