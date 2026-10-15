@@ -46,7 +46,7 @@ const { chromium } = require('playwright');
   // dialog row
   await p.evaluate(() => { autoBkSave(Object.assign(autoBkState(), { enabled: true })); askBackupParts(); });
   await p.waitForTimeout(300);
-  r.dialog = await p.evaluate(() => ({ cb: document.getElementById('bkAutoOn').checked, last: document.querySelector('.bk-auto-last').innerText, infoBtn: !!document.querySelector('.bk-auto-row .hk-info-btn') }));
+  r.dialog = await p.evaluate(() => ({ cb: document.getElementById('bkAutoOn').checked, last: (document.querySelector('.bk-auto-last') || {}).innerText || '', infoBtn: !!document.querySelector('.bk-auto-row .hk-info-btn') }));
   await p.screenshot({ path: 'autobk-dialog.png' }); await p.click('.bk-auto-row .hk-info-btn'); await p.waitForTimeout(200); await p.screenshot({ path: 'autobk-dialog2.png' });
   await p.evaluate(() => { const c = document.getElementById('bkAutoOn'); c.click(); });
   r.toggled = await p.evaluate(() => autoBkState().enabled);

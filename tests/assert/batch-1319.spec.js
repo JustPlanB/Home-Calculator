@@ -220,9 +220,9 @@ const ACC = 'ملت مصنوعی';
     /* روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه با جمع هر ماه */
     dy.value = '4'; dy.dispatchEvent(new Event('change')); await w(80);
     out.day4 = rows(); out.day4foot = [...document.querySelectorAll('#search-result-foot tr')].map(t => t.textContent);
-    /* روز ۵ با «این ماه»: جدول جزئیات روز */
+    /* روز ۵ با «این ماه»: (از ۱.۳.۲۳) فقط همان جدول نتیجهٔ جستجو، بدون جدول جزئیات روز */
     rg.value = 'month'; rg.dispatchEvent(new Event('change')); dy.value = '5'; dy.dispatchEvent(new Event('change')); await w(80);
-    out.dayBox = document.getElementById('dayDetailBox').style.display !== 'none' && document.getElementById('searchResultBox').style.display === 'none';
+    out.dayBox = getComputedStyle(document.getElementById('dayDetailBox')).display === 'none' && document.getElementById('searchResultBox').style.display !== 'none';
     resetBalanceSearch(); renderBalanceTab(); await w(50);
     out.resetDay = document.getElementById('balanceDayFilter').value === '' && dy.value === '' && ty.value === '';
     const sizes = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bsr-wide)')].map(c => { const ctl = c.querySelector('.fancy-select-btn, .dark-select-btn'); const r = ctl ? ctl.getBoundingClientRect() : { width: 0, height: 0 }; return Math.round(r.width) + 'x' + Math.round(r.height); });
@@ -242,7 +242,7 @@ const ACC = 'ملت مصنوعی';
   ok(se.incOnly.length > 0 && !se.incOnly.some(t => /نان|بنزین|کتاب/.test(t)) && se.catOff, 'نوع «واریز»: فقط درآمدها؛ منوی دسته غیرفعال');
   ok(se.expOnly.length > 0 && !se.expOnly.some(t => /اجاره/.test(t)) && se.catOn, 'نوع «برداشت»: فقط مخارج');
   ok(se.day4.length === 3 && se.day4.every(t => /\/۰۴$|اجاره/.test(t) || /۰۴/.test(t)) && se.day4foot.filter(t => /^جمع (مرداد|شهریور|مهر)/.test(t)).length === 3, 'روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه، با جمع هر ماه (' + se.day4.length + ' ردیف)');
-  ok(se.dayBox && se.resetDay, 'روز با «این ماه»: جدول جزئیات روز؛ پاک کردن جستجو نوع و روز را هم برمی‌گرداند');
+  ok(se.dayBox && se.resetDay, 'روز با «این ماه»: فقط جدول نتیجهٔ جستجو؛ پاک کردن جستجو نوع و روز را هم برمی‌گرداند');
   const L = se.layout;
   ok(L.length === 7 && L[0].y === L[1].y && L[2].y === L[3].y && L[4].y === L[5].y && L[2].y > L[0].y && L[4].y > L[2].y && L[6].y > L[4].y && /بخش/.test(L[0].t) && /نوع/.test(L[1].t) && /ماه/.test(L[2].t) && /روز/.test(L[3].t) && /حساب/.test(L[4].t) && /دسته/.test(L[5].t) && /شرح/.test(L[6].t), 'چیدمان: [بخش][نوع] / [زمان][روز] / [حساب][دسته] / شرح');
   ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');

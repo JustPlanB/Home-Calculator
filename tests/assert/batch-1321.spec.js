@@ -177,6 +177,7 @@ const ACC = 'ملت مصنوعی';
     const out = {};
     deleteSubject('pjx');
     out.title = (document.querySelector('#hkAsk3 .hk-ask3-txt') || {}).textContent || ''; out.cancelCls = ([...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].find(x => x.textContent === 'انصراف') || {}).className || '';
+    { const tx = document.querySelector('#hkAsk3 .hk-ask3-txt'), cs = tx ? getComputedStyle(tx) : {}; out.qStyle = { bold: Number(cs.fontWeight) >= 700, center: cs.textAlign === 'center' }; }
     out.opts = await pick(/بدون ردیف‌ها/);
     out.gone = !loadFinancialSubjects().some(s => s.id === 'pjx');
     out.kept = periodData.expense.sections[0].rows.filter(r => /سیمان|آجر/.test(r.desc)).map(r => r.financialContext && r.financialContext.subjectId);
@@ -186,14 +187,14 @@ const ACC = 'ملت مصنوعی';
     out.relinked = periodData.expense.sections[0].rows.filter(r => /سیمان|آجر/.test(r.desc)).map(r => r.financialContext && r.financialContext.subjectId);
     /* حذف با ردیف‌ها */
     deleteSubject('pjx');
-    await pick(/^حذف پروژه و ردیف‌ها$/);
+    await pick(/^حذف با ردیف‌ها$/);
     out.rowsGone = !periodData.expense.sections[0].rows.some(r => /سیمان|آجر/.test(r.desc));
     ti = trashItems.findIndex(t => t.type === 'project' && t.title === 'پروژه تست' && t.data && t.data.rows);
     out.restored2 = restoreTrashData(trashItems[ti]);
     out.rowsBack = periodData.expense.sections[0].rows.filter(r => /سیمان|آجر/.test(r.desc)).map(r => r.financialContext && r.financialContext.subjectId);
     return out;
   }, ACC);
-  ok(pj.title === 'پروژهٔ «پروژه تست» حذف شود؟' && pj.opts.join('|') === 'حذف پروژه و ردیف‌ها|حذف پروژه بدون ردیف‌ها|انصراف' && pj.cancelCls === 'hk-ask3-btn', 'پنجرهٔ سه‌گزینه‌ای افقی (مثل حذف حساب): «حذف پروژه و ردیف‌ها | حذف پروژه بدون ردیف‌ها | انصراف»؛ انصراف رنگ معمولی (' + pj.opts.join(' | ') + ')');
+  ok(pj.title === 'پروژهٔ «پروژه تست» حذف شود؟' && pj.opts.join('|') === 'حذف با ردیف‌ها|حذف بدون ردیف‌ها|انصراف' && pj.cancelCls === 'hk-ask3-btn' && pj.qStyle.bold && pj.qStyle.center, 'پنجرهٔ تأیید مثل بقیه (سؤال بولد و وسط): «حذف با ردیف‌ها | حذف بدون ردیف‌ها | انصراف»؛ انصراف رنگ معمولی (' + pj.opts.join(' | ') + ')');
   ok(pj.gone && pj.kept.join() === 'personal,personal', '«ردیف‌ها بمانند»: ردیف‌ها ماندند و ردیف معمولی (بدون هایلایت پروژه) شدند');
   ok(pj.restored1 && pj.relinked.join() === 'pjx,pjx', 'بازگردانی از سطل زباله: پروژه برگشت و ردیف‌ها دوباره به آن وصل شدند');
   ok(pj.rowsGone, '«با ردیف‌ها»: ردیف‌های درآمد و مخارج پروژه هم حذف شدند');
