@@ -76,7 +76,7 @@ function accState(ACC) {
     stTrash: bankTrash.length, trashPack: bankTrash[0] ? { openings: bankTrash[0].data.openings, rows: (bankTrash[0].data.rows || []).length, acc: bankTrash[0].data.account && bankTrash[0].data.account.label } : null
   };
 }
-/* حذف حساب از مسیر واقعی UI (پنجرهٔ حساب‌ها ← × ← «بلی» = همراه ردیف‌ها) */
+/* حذف حساب از مسیر واقعی UI (پنجرهٔ حساب‌ها ← × ← «حذف با ردیف‌ها») */
 async function uiDeleteAccount(page, ACC) {
   await page.evaluate(ACC => new Promise(res => {
     openBankAccountsModal(); renderBankAccountsList();
@@ -84,7 +84,7 @@ async function uiDeleteAccount(page, ACC) {
       const btn = [...document.querySelectorAll('button')].find(x => x.textContent === '×' && x.parentElement && x.parentElement.textContent.indexOf(ACC) >= 0);
       if (!btn) return res('no-button');
       btn.click();
-      setTimeout(() => { const yes = [...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].find(x => x.textContent === 'بلی'); if (yes) yes.click(); setTimeout(res, 500); }, 300);
+      setTimeout(() => { const yes = [...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].find(x => x.textContent === 'حذف با ردیف‌ها'); if (yes) yes.click(); setTimeout(res, 500); }, 300);
     }, 300);
   }), ACC);
 }

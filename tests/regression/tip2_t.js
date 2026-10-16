@@ -5,15 +5,14 @@ const { chromium } = require('playwright');
   const p = await ctx.newPage(); const errs=[]; p.on('pageerror', e => errs.push(e.message));
   await p.goto(require('../lib/index-url')); await p.waitForTimeout(2200);
   await p.evaluate(() => askBackupParts()); await p.waitForTimeout(300);
-  /* رمز فایل پشتیبان حالا با کلید روشن/خاموش در باکس جدا وارد می‌شود */
-  await p.evaluate(() => document.getElementById('bkPwdSw').click()); await p.waitForTimeout(300);
+  /* از ۱.۳.۲۴ باکس رمز فایل آیکون اطلاعات ندارد؛ آیکون سطر «پشتیبان خودکار» و کلید «رمز فایل پشتیبان» زیر آن آزموده می‌شود */
   const c = async sel => p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, sel);
-  const ic = await c('#bkPwdBox .backup-pick-title .hk-info-btn');
+  const ic = await c('.bk-auto-row .hk-info-btn');
   const tapAt = async (xy) => { await p.touchscreen.tap(xy[0], xy[1]); await p.waitForTimeout(300); };
   const st = () => p.evaluate(() => ({ tip: !!document.getElementById('hkInfoTip'), sh: !!document.getElementById('hkInfoShield'), ae: document.activeElement && (document.activeElement.tagName + '#' + document.activeElement.id + '.' + document.activeElement.type) }));
   await tapAt(ic); const s1 = await st();
   // tip rect vs password input
-  const info = await p.evaluate(() => { const t = document.getElementById('hkInfoTip').getBoundingClientRect(); const i = document.querySelector('#bkPwdBox input[type=password]'); const r = i && i.getBoundingClientRect(); return { t: [t.left, t.top, t.width, t.height], i: r && [r.left, r.top, r.width, r.height] }; });
+  const info = await p.evaluate(() => { const t = document.getElementById('hkInfoTip').getBoundingClientRect(); const i = document.getElementById('bkPwdSw'); const r = i && i.getBoundingClientRect(); return { t: [t.left, t.top, t.width, t.height], i: r && [r.left, r.top, r.width, r.height] }; });
   // tap on the tip in a spot over the input if overlapping, else tip center
   await tapAt([info.t[0] + info.t[2] / 2, info.t[1] + info.t[3] - 6]); const s2 = await st();
   await tapAt(ic); const s3 = await st();

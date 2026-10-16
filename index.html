@@ -1848,6 +1848,18 @@
     #panel-balance #balanceScrollBody > .summary-section:not(#searchResultBox),
     #panel-balance #balanceScrollBody > .balance-hint { display: none !important; }
     #panel-balance #balanceScrollBody > #searchResultBox { margin-top: 0; }
+    /* پیامک‌های ثبت‌نشده */
+    .sms-later-badge { display: inline-block; min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px; margin-right: 6px; border-radius: 9px; background: #ff453a; color: #fff; font-size: 0.7rem; font-weight: 800; text-align: center; vertical-align: middle; box-sizing: border-box; }
+    .sms-later-panel .sms-later-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 18px 6px; }
+    .sms-later-panel .sms-later-hint { color: var(--muted); font-size: 0.74rem; line-height: 1.7; margin: -4px 2px 10px; text-align: right; }
+    .sms-later-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; }
+    .sms-later-item { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; text-align: right; cursor: pointer; }
+    .sms-later-item .sli-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.88rem; }
+    .sms-later-item .sli-amt { font-weight: 800; direction: ltr; }
+    .sms-later-item .sli-amt.inc { color: #9ee858; } .sms-later-item .sli-amt.exp { color: #ff6b4a; }
+    html[data-theme="light"] .sms-later-item .sli-amt.inc { color: #3f9a5c; } html[data-theme="light"] .sms-later-item .sli-amt.exp { color: #dc2626; }
+    .sms-later-item .sli-date { font-size: 0.72rem; color: var(--muted); }
+    #search-result-body tr.sr-wait td { text-align: center !important; color: var(--muted) !important; font-size: 0.8rem; padding: 18px 8px !important; white-space: normal; }
     /* border سلول‌ها داخل فریم بماند؛ بدون تغییر ضخامت/رنگ ظاهری */
     #panel-balance .balance-scroll-body .summary-table {
       border-collapse: collapse;
@@ -10417,7 +10429,10 @@
     html[data-theme="light"] #backupPickOverlay .bk-sw-row { color: var(--text); }
     #backupPickOverlay .bk-sw-row .bk-ttl { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; font-size: inherit; font-weight: 400 !important; line-height: inherit; min-height: 0; }
     #backupPickOverlay .bk-sw-row .hk-switch { margin: 0; }
-    #backupPickOverlay .bk-enc-wrap.bk-enc-hide { display: none !important; }
+    /* سطر رمزنگاری با روشن/خاموش شدن پشتیبان خودکار آرام باز/بسته می‌شود و پنجره نرم بزرگ/کوچک می‌شود */
+    #backupPickOverlay .bk-enc-wrap { display: grid !important; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows 0.45s ease, opacity 0.4s ease; }
+    #backupPickOverlay .bk-enc-wrap > .bk-enc-in { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+    #backupPickOverlay .bk-enc-wrap.bk-enc-hide { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
     .bk-enc-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .bk-enc-btn { border: none; border-radius: 8px; padding: 4px 10px; font-family: inherit; font-weight: 700; font-size: 0.75rem; background: var(--bg3); color: var(--text); }
     .bk-enc-err { color: #ff453a; font-size: 0.72rem; }
@@ -10486,7 +10501,8 @@
     .hk-bulk-fhead input { width: 18px; height: 18px; accent-color: #0a84ff; flex-shrink: 0; }
     .hk-bulk-fico { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; }
     .hk-bulk-fico svg { width: 22px; height: 22px; display: block; }
-    .hk-bulk-fname { flex: 1; min-width: 0; }
+    .hk-bulk-fname { flex: 1; min-width: 0; color: #ffc531; }
+    html[data-theme="light"] .hk-bulk-fname { color: #c98f00; }
     .hk-bulk-arrow { color: var(--muted, #9a9a9a); }
     .hk-bulk-folder.open .hk-bulk-arrow { transform: rotate(180deg); }
     .hk-bulk-tx { display: none; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); padding-top: 4px; }
@@ -10726,6 +10742,7 @@
         <button class="menu-item" onclick="openSavingsModal()">پس‌انداز (ارز و طلا)</button>
         <button class="menu-item" onclick="openBankAccountsModal()">انتخاب حساب بانکی</button>
         <button class="menu-item" onclick="openSmsImportModal()">ثبت دستی پیامک</button>
+        <button class="menu-item" id="menuSmsLater" onclick="openSmsLaterModal()">پیامک‌های ثبت‌نشده <span class="sms-later-badge" id="smsLaterBadge" style="display:none;"></span></button>
         <button class="menu-item" onclick="askExport()">خروجی (اکسل / PDF)</button>
         <button class="menu-item" onclick="askBackupParts()">پشتیبان‌گیری</button>
         <button class="menu-item" onclick="triggerImportBackup()">بازیابی از پشتیبان</button>
@@ -11218,7 +11235,7 @@
       <div id="smsConfirmSectionWrap" style="display:none;margin-bottom:0;"></div>
       <div style="display:flex;gap:8px;">
         <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;position:relative;z-index:5;" onclick="try{confirmSmsEntry();}catch(e){showToast(String(e));}">ثبت</button>
-        <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsConfirmModal()">انصراف</button>
+        <button type="button" class="modal-btn no" id="smsConfirmReject" style="flex:1;" onclick="closeSmsConfirmModal('reject')">رد</button>
       </div>
     </div>
   </div>
@@ -16445,8 +16462,7 @@ function onPeriodChange() {
     /* باکس رمز فایل پشتیبان (رمز + تکرار)؛ done(رمز) یا done('') با انصراف/بازگشت/زدن بیرون */
     function hkBackupPwdBox(done) {
       var ov = _hkEncOverlay('bkPwdBox');
-      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title bk-enc-title">رمز فایل پشتیبان ' +
-        hkInfoBtnHtml('با رمز، فایل پشتیبان رمزنگاری می‌شود و بدون همین رمز قابل خواندن نیست. رمز در نرم‌افزار ذخیره نمی‌شود و قابل بازیابی نیست؛ آن را فراموش نکنید.') + '</div>' +
+      ov.innerHTML = '<div class="backup-pick-panel" role="dialog"><div class="backup-pick-title bk-enc-title">رمز فایل پشتیبان</div>' +
         '<div class="bk-pwd-wrap"><label for="bkPwdA">رمز</label>' + hkPwdFieldHtml('bkPwdA', 'new-password', '') +
         '<label for="bkPwdB">تکرار رمز</label>' + hkPwdFieldHtml('bkPwdB', 'new-password', '') + '</div>' +
         '<div class="bk-enc-err" id="bkPwdErr"></div>' +
@@ -16490,12 +16506,12 @@ function onPeriodChange() {
       /* کلید روشن/خاموش (مستطیل گرد) جلوی عنوان؛ روشن کردن = پنجرهٔ تعیین رمز، خاموش کردن = تأیید */
       var on = !!st;
       /* تا «پشتیبان خودکار» خاموش است، سطر رمزنگاری آن پنهان است */
-      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-hide' : '') + '" id="bkEncRow"><div class="bk-sw-row bk-enc-line"><span class="bk-ttl">رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <span id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</span>' : '') + '</span>' +
+      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-hide' : '') + '" id="bkEncRow"><div class="bk-enc-in"><div class="bk-sw-row bk-enc-line"><span class="bk-ttl">رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <span id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</span>' : '') + '</span>' +
         '<button type="button" class="hk-switch' + (on ? ' on' : '') + '" id="bkEncBtn" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="رمزنگاری پشتیبان خودکار"><i></i></button></div>';
       if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncFix">تنظیم دوباره…</button></div>';
       if (st && !st.broken && s.lastEncOkAt) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncCleanup">پاک کردن پشتیبان‌های خودکار بی‌رمز قدیمی…</button></div>';
       if (s.lastErrorText) h += '<div class="bk-enc-err" id="bkAutoErr">' + escapeHtml(s.lastErrorText) + '</div>';
-      return h + '</div>';
+      return h + '</div></div>';
     }
     function _hkEncOverlay(id) {
       var old = document.getElementById(id); if (old) old.remove();
@@ -20481,6 +20497,16 @@ async function openPdfPrintWindow(){
         while (i > 0 && seen < digitsAfter) { if (/[0-9۰-۹]/.test(out[i - 1])) seen++; i--; }
         try { inp.setSelectionRange(i, i); } catch (e) {}
       });
+    }
+    /* رفتن به خانهٔ بعد/قبل جدول بدون بسته شدن صفحه‌کلید: خانهٔ مقصد قابل‌ویرایش و همان لحظه (داخل همان رویداد کلید) فعال می‌شود؛
+       خانهٔ قبلی خودبه‌خود blur می‌شود و مقدارش ذخیره می‌شود. هیچ لحظه‌ای بدون خانهٔ فعال نمی‌ماند (علت بسته و باز شدن صفحه‌کلید) */
+    function hkMoveFocus(el) {
+      if (!el) return false;
+      try { el.readOnly = false; } catch (e0) {}
+      try { el.focus({ preventScroll: true }); } catch (e1) { try { el.focus(); } catch (e2) { return false; } }
+      try { if (typeof caretToEnd === 'function') caretToEnd(el); } catch (e3) {}
+      try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e4) {}
+      return document.activeElement === el;
     }
     function caretToEnd(el) {
       if (!el || typeof el.value !== 'string') return;
@@ -25183,6 +25209,8 @@ async function openPdfPrintWindow(){
         });
         try { var hd = document.getElementById('balanceDayFilter'); if (hd) hd.value = ''; renderBalanceDayFilter(); } catch (e3) {}
         try { var ty = document.getElementById('balanceSearchType'); if (ty) { ty.value = ''; if (ty._fancyRender) ty._fancyRender(); } bsSyncTypeCat(); } catch (e4) {}
+        /* حساب هم به «همه حساب‌ها» برمی‌گردد (بخش موقع باز شدن روی همان کاربر تنظیم می‌شود) */
+        try { if (balanceSelectedAccount) { balanceSelectedAccount = ''; renderBalanceAccountFilter(); } } catch (e5) {}
         renderBalanceSearch();
       } catch (e) {}
     }
@@ -25432,16 +25460,11 @@ container.innerHTML = '';
           if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
             e.stopPropagation();
+            /* «بعدی»: همان لحظه خانهٔ بعد فعال می‌شود (بدون لحظهٔ بی‌فوکوس) تا صفحه‌کلید بسته و باز نشود؛
+               ذخیرهٔ روز با رفتن فوکوس (onblur) انجام می‌شود */
+            const dEl = tr.querySelector('textarea.pd-desc');
+            if (dEl && !fromPlan) { hkMoveFocus(dEl); return; }
             commitDay();
-            setTimeout(() => {
-              try {
-                const dEl = tr.querySelector('textarea.pd-desc');
-                if (!dEl) return;
-                if (fromPlan) return;
-                dEl.readOnly = false;
-                dEl.focus({ preventScroll: true });
-              } catch (err) {}
-            }, 50);
           }
         };
         dayInp.onblur = () => { commitDay(); };
@@ -25493,6 +25516,8 @@ container.innerHTML = '';
         desc.onkeydown = (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            const a = tr.querySelector('.pd-amt');
+            if (a && !fromPlan) { hkMoveFocus(a); return; }
             desc._goNext = true;
             desc.blur();
           }
@@ -26126,13 +26151,118 @@ container.innerHTML = '';
       }
       unlockBodyScroll();
     }
-    function closeSmsConfirmModal() {
+    /* ===== پیامک‌های ثبت‌نشده («بعداً») =====
+       بستن باکس ثبت تراکنش با بازگشت یا زدن بیرون باکس = «بعداً»: پیامک گم نمی‌شود و در «پیامک‌های ثبت‌نشده» (منوی کناری) می‌ماند.
+       فقط «ثبت» یا «رد» پیامک را از این فهرست برمی‌دارد. */
+    var SMS_LATER_KEY = STORAGE_KEY + '_smsLater';
+    function smsLaterLoad() {
+      try { var a = JSON.parse(localStorage.getItem(SMS_LATER_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (x) { return x && x.raw; }) : []; } catch (e) { return []; }
+    }
+    function smsLaterSave(list) {
+      try { localStorage.setItem(SMS_LATER_KEY, JSON.stringify(list || [])); } catch (e) {}
+      try { updateSmsLaterBadge(); } catch (e2) {}
+    }
+    function smsLaterAdd(entry) {
+      if (!entry || !entry.raw) return;
+      var raw = String(entry.raw).trim(), list = smsLaterLoad();
+      if (list.some(function (x) { return String(x.raw).trim() === raw; })) return;
+      list.unshift({ raw: String(entry.raw), sender: entry.sender || '', at: entry._laterAt || Date.now() });
+      smsLaterSave(list.slice(0, 200));
+    }
+    function smsLaterRemove(raw) {
+      raw = String(raw || '').trim(); if (!raw) return;
+      var list = smsLaterLoad(), next = list.filter(function (x) { return String(x.raw).trim() !== raw; });
+      if (next.length !== list.length) smsLaterSave(next);
+    }
+    function updateSmsLaterBadge() {
+      var n = smsLaterLoad().length, b = document.getElementById('smsLaterBadge');
+      if (b) { b.textContent = n ? toPersianDigits(String(n)) : ''; b.style.display = n ? '' : 'none'; }
+    }
+    /* فهرست «پیامک‌های ثبت‌نشده»: با زدن هر مورد همان باکس ثبت تراکنش باز می‌شود */
+    function openSmsLaterModal() {
+      try { if (typeof closeSideMenu === 'function') closeSideMenu(); } catch (eC) {}
+      var old = document.getElementById('smsLaterOv'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'smsLaterOv'; ov.className = 'backup-pick-overlay hk-enc-ov';
+      ov._hkCancel = function () { ov.remove(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+      var list = smsLaterLoad();
+      var html = '<div class="backup-pick-panel sms-later-panel" role="dialog"><div class="backup-pick-title">پیامک‌های ثبت‌نشده</div>';
+      if (!list.length) html += '<div class="sms-later-empty">پیامک ثبت‌نشده‌ای نیست</div>';
+      else {
+        html += '<div class="sms-later-hint">پیامک‌هایی که باکس ثبتشان با بازگشت یا زدن بیرون باکس بسته شد. با زدن هر مورد، باکس ثبت تراکنش باز می‌شود.</div><div class="sms-later-list">';
+        list.forEach(function (x, i) {
+          var pr = null; try { pr = parseBankSms(x.raw); } catch (eP) {}
+          var inc = pr && pr.type === 'income';
+          var d = new Date(Number(x.at) || Date.now()), j = '';
+          try { j = hkJStr(hkJalaliOfTs(d.getTime())); } catch (eJ) {}
+          var hm = toPersianDigits(String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+          var bank = ''; try { bank = (pr && (matchSelectedBank(pr.bank) || pr.bank)) || ''; } catch (eB) {}
+          html += '<button type="button" class="sms-later-item" data-i="' + i + '"><span class="sli-top"><span class="sli-bank">' + escapeHtml(bank || 'پیامک بانکی') + ' · ' + (inc ? 'واریز' : 'برداشت') + '</span>' +
+            '<span class="sli-amt ' + (inc ? 'inc' : 'exp') + '">' + (pr && pr.amount ? formatNum(pr.amount) : '—') + '</span></span>' +
+            '<span class="sli-date">' + (j ? j + ' · ' : '') + hm + '</span></button>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="backup-pick-actions"><button type="button" class="backup-pick-cancel" id="smsLaterClose">بستن</button></div></div>';
+      ov.innerHTML = html;
+      document.body.appendChild(ov);
+      ov.querySelector('#smsLaterClose').onclick = function () { ov.remove(); };
+      ov.querySelectorAll('.sms-later-item').forEach(function (b) {
+        b.onclick = function () {
+          var x = list[parseInt(b.getAttribute('data-i'), 10)];
+          ov.remove();
+          if (x) smsLaterOpen(x);
+        };
+      });
+    }
+    function smsLaterOpen(x) {
+      if (!x || !x.raw) return;
+      if (typeof isSmsConfirmOpen === 'function' && isSmsConfirmOpen()) return;
+      var parsed = null;
+      try { parsed = parseBankSms(x.raw); } catch (e) {}
+      if (!parsed || !parsed.amount) { smsLaterRemove(x.raw); try { showToast('این پیامک قابل تشخیص نبود'); } catch (e2) {} return; }
+      try { parsed.bank = matchSelectedBank(parsed.bank); } catch (e3) {}
+      parsed.raw = String(x.raw); if (x.sender) parsed.sender = x.sender;
+      parsed._laterAt = x.at;
+      pendingSmsEntry = parsed;
+      openSmsConfirmModal(parsed);
+      try { showSmsSenderWarning(parsed); } catch (eW) {}
+    }
+    (function () {
+      function bindLater() {
+        try { updateSmsLaterBadge(); } catch (e) {}
+        /* زدن بیرون باکس ثبت تراکنش = «بعداً» (اگر همان لحظه فهرست کشویی یا باکس اطلاعات باز نبود) */
+        var m = document.getElementById('smsConfirmModal');
+        if (!m || m._hkLaterBound) return;
+        m._hkLaterBound = true;
+        var downOut = false;
+        m.addEventListener('pointerdown', function (e) {
+          downOut = e.target === m && !document.querySelector('.fancy-select-list.open, .dark-select-list.open') && !document.getElementById('hkInfoTip');
+        });
+        m.addEventListener('click', function (e) {
+          if (e.target !== m || !downOut) return;
+          downOut = false;
+          if (isSmsConfirmOpen()) closeSmsConfirmModal('later');
+        });
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindLater); else bindLater();
+    })();
+    /* mode: (خالی) ثبت شد | 'reject' رد شد | 'later' بعداً */
+    function closeSmsConfirmModal(mode) {
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
-      /* پیامک تعیین تکلیف شد (ثبت یا رد) → حالا از صف نیتیو پاک شود */
+      var _pe = pendingSmsEntry;
       try {
-        var _nid = pendingSmsEntry && pendingSmsEntry.nid;
+        if (_pe) {
+          if (mode === 'later') { smsLaterAdd(_pe); try { showToast('در «پیامک‌های ثبت‌نشده» ماند'); } catch (eT) {} }
+          else smsLaterRemove(_pe.raw);
+        }
+      } catch (eL) {}
+      /* پیامک تعیین تکلیف شد (ثبت، رد یا «بعداً» که حالا در فهرست خود نرم‌افزار است) → از صف نیتیو پاک شود و در این نوبت دوباره نیاید */
+      try {
+        var _nid = _pe && _pe.nid;
+        if (_nid) { window._hkDoneSmsNids = window._hkDoneSmsNids || {}; window._hkDoneSmsNids[_nid] = 1; }
         var _B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BankSms;
         if (_nid && _B && typeof _B.getAllPending === 'function' && typeof _B.markHandled === 'function') _B.markHandled({ nid: _nid }).catch(function () {});
       } catch (eH) {}
@@ -27142,8 +27272,9 @@ container.innerHTML = '';
       var rows = hkProjectRows(id);
       var n = rows.length;
       /* همان شکل پنجره‌های تأیید (سؤال بولد و وسط) */
-      var btns = n ? [{ v: 'all', t: 'حذف با ردیف‌ها', cls: 'danger' }, { v: 'keep', t: 'حذف بدون ردیف‌ها', cls: 'danger' }, { v: 'cancel', t: 'انصراف' }]
-        : [{ v: 'keep', t: 'حذف', cls: 'danger' }, { v: 'cancel', t: 'انصراف' }];
+      /* انصراف = بازگشت یا زدن بیرون باکس */
+      var btns = n ? [{ v: 'all', t: 'حذف با ردیف‌ها', cls: 'danger' }, { v: 'keep', t: 'حذف بدون ردیف‌ها', cls: 'danger' }]
+        : [{ v: 'keep', t: 'حذف', cls: 'danger' }];
       hkAsk3('پروژهٔ «' + (s.name || '') + '» حذف شود؟', btns, function (v) {
         if (v !== 'all' && v !== 'keep') return;
         var data = { sourceLabel: 'پروژه‌ها', subject: JSON.parse(JSON.stringify(s)) };
@@ -30709,12 +30840,15 @@ function confirmSmsEntry() {
         if (typeof BankSms.getAllPending === 'function') {
           BankSms.getAllPending().then(function (res) {
             var items = (res && res.items) || [];
-            window._hkSeenSmsNids = window._hkSeenSmsNids || {};
+            /* فقط پیامک‌هایی که در این نوبت تعیین تکلیف شده‌اند یا همین حالا باز/در صف‌اند رد می‌شوند؛
+               پیامکی که باکسش بدون تصمیم بسته شد یا نمایش داده نشد، در بازگشت به نرم‌افزار دوباره نشان داده می‌شود */
+            var done = window._hkDoneSmsNids || {};
+            var live = {};
+            try { if (pendingSmsEntry && pendingSmsEntry.nid) live[pendingSmsEntry.nid] = 1; smsPendingQueue.forEach(function (q) { if (q && q.nid) live[q.nid] = 1; }); } catch (eLv) {}
             items.forEach(function (it) {
               if (!it || !it.text) return;
               var nid = it.nid || 0;
-              if (nid && window._hkSeenSmsNids[nid]) return;
-              if (nid) window._hkSeenSmsNids[nid] = 1;
+              if (nid && (done[nid] || live[nid])) return;
               var ok = false;
               try { ok = window.onBankSmsReceived(it.text, { nid: nid, sender: it.sender || '' }); } catch (e) {}
               /* تکراری/غیرتراکنش → از صف نیتیو هم برود */
@@ -30767,7 +30901,11 @@ function confirmSmsEntry() {
         document.addEventListener('DOMContentLoaded', function () { setTimeout(startSmsBridge, 300); });
       }
       document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') pollPendingSms();
+        if (document.visibilityState === 'visible') {
+          pollPendingSms();
+          /* صف داخلی منتظر مانده (مثلاً پیامک در پس‌زمینه رسید) → با آمدن نرم‌افزار، باکس ثبت نشان داده شود */
+          setTimeout(function () { try { if (!isSmsConfirmOpen() && smsPendingQueue.length) processNextSmsInQueue(); } catch (e) {} }, 600);
+        }
       });
     })();
 
@@ -32365,9 +32503,9 @@ if (item.type === 'recurring') {
             e.stopPropagation();
             var _rmLb0 = ''; try { _rmLb0 = accountLabel(selectedBankAccounts[idx]); } catch (eL0) {}
             var _rowRefs = hkCollectAccountRows(_rmLb0);
-            hkAsk3('حساب «' + _rmLb0 + '» حذف شود. آیا مایل به حذف ردیف‌های ایجادشده با این حساب در منوهای درآمد و مخارج هم هستید؟' +
-              (_rowRefs.length ? ' (' + toPersianDigits(String(_rowRefs.length)) + ' ردیف)' : '') + '\nحساب و ردیف‌ها با هم به سطل زباله می‌روند و با هم برمی‌گردند.',
-              [{ v: 'yes', t: 'بلی', cls: 'danger' }, { v: 'no', t: 'خیر' }, { v: 'cancel', t: 'انصراف' }], function (ans) {
+            /* همان پنجرهٔ تأیید حذف پروژه؛ انصراف = بازگشت یا زدن بیرون باکس */
+            hkAsk3('حساب «' + _rmLb0 + '» حذف شود؟',
+              _rowRefs.length ? [{ v: 'yes', t: 'حذف با ردیف‌ها', cls: 'danger' }, { v: 'no', t: 'حذف بدون ردیف‌ها', cls: 'danger' }] : [{ v: 'no', t: 'حذف', cls: 'danger' }], function (ans) {
               if (ans !== 'yes' && ans !== 'no') return;
               var withRows = ans === 'yes';
               var removed = selectedBankAccounts[idx];
@@ -34919,15 +35057,18 @@ if (item.type === 'recurring') {
           const i = parseInt(btn.getAttribute('data-rd'), 10);
           const item = recurringIncomes[i];
           if (item && !canEditRow(item)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-          /* ردیف‌های دریافت‌شده و ماه‌های گذشته می‌مانند؛ فقط درباره دریافت‌نشده‌های این ماه و بعد پرسیده می‌شود */
-          const doDelete = (dropUnpaid) => {
-            /* آرشیو (واریزهای وصل‌شده) هم همراه تعریف به سطل زباله می‌رود تا با بازگردانی دوباره وصل شود */
-            try { if (item) pushToTrash('recurring', item.name || 'درآمد ثابت', Object.assign(JSON.parse(JSON.stringify(item)), { sourceLabel: 'درآمد ثابت', _archive: hkRecArchivePack([item]) })); } catch (e) {}
+          /* «حذف با ردیف‌ها»: همهٔ ردیف‌های وصل‌شده (دریافت‌شده و نشده، همهٔ ماه‌ها) همراه تعریف به سطل زباله می‌روند و با هم برمی‌گردند.
+             «حذف بدون ردیف‌ها»: ردیف‌ها می‌مانند و ردیف معمولی می‌شوند */
+          const linked = [];
+          try {
+            const rid = item && item.id;
+            if (rid) recEachMonth(function (k, pd) { ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) { (sec.rows || []).forEach(function (row) { if (row && row.fromRecurringId === rid && ((Number(row.amount) || 0) > 0 || (row.desc || '').trim())) linked.push({ key: k, sec: sec, row: row }); }); }); });
+          } catch (eL) {}
+          const doDelete = (withRows) => {
+            /* آرشیو (واریزهای وصل‌شده) همراه تعریف به سطل زباله می‌رود؛ با بازگردانی ردیف‌های موجود دوباره وصل و ردیف‌های حذف‌شده برگردانده می‌شوند */
+            try { if (item) pushToTrash('recurring', (item.name || 'درآمد ثابت') + (withRows && linked.length ? ' + ' + toPersianDigits(String(linked.length)) + ' ردیف' : ''), Object.assign(JSON.parse(JSON.stringify(item)), { sourceLabel: 'درآمد ثابت', _archive: hkRecArchivePack([item]), _withRows: !!withRows })); } catch (e) {}
             try {
-              if (item && dropUnpaid) {
-                const today = recTodayKey();
-                recRemoveRows(recRowsOf(item).filter(x => !recIsPaid(x.row) && x.key >= today));
-              }
+              if (item && withRows) recRemoveRows(linked);
               /* ردیف‌هایی که می‌مانند پاک نمی‌شوند ولی از این قرارداد آزاد می‌شوند تا به قرارداد تازه وصل شوند */
               if (item) recFreeRows(item);
               recRefreshViews();
@@ -34957,15 +35098,10 @@ if (item.type === 'recurring') {
             saveRecurring();
             renderRecurringBar();
           };
-          askConfirm('این درآمد ثابت حذف شود؟ ردیف‌های دریافت‌شده و ماه‌های گذشته در جدول می‌مانند.', () => {
-            let pending = [];
-            try { const today = recTodayKey(); pending = item ? recRowsOf(item).filter(x => !recIsPaid(x.row) && x.key >= today) : []; } catch (e) {}
-            if (!pending.length) { doDelete(false); return; }
-            setTimeout(() => {
-              recAsk(toPersianDigits(pending.length) + ' ردیف «دریافت نشده» در این ماه' + (pending.some(x => x.key > recTodayKey()) ? ' و ماه‌های بعد' : '') + ' دارد. این ردیف‌ها هم پاک شوند؟',
-                'پاک شوند', 'بمانند', () => doDelete(true), () => doDelete(false));
-            }, 60);
-          });
+          /* همان پنجرهٔ تأیید حذف پروژه و حساب؛ انصراف = بازگشت یا زدن بیرون باکس */
+          hkAsk3('درآمد ثابت «' + ((item && item.name) || '') + '» حذف شود؟',
+            linked.length ? [{ v: 'all', t: 'حذف با ردیف‌ها', cls: 'danger' }, { v: 'keep', t: 'حذف بدون ردیف‌ها', cls: 'danger' }] : [{ v: 'keep', t: 'حذف', cls: 'danger' }],
+            function (v) { if (v === 'all') doDelete(true); else if (v === 'keep') doDelete(false); });
         };
       });
       const addBtn = document.getElementById('addRecurringBtn');
@@ -38118,7 +38254,7 @@ function openProjectRowPicker(secId) {
           if (ov.id === 'userRemindersModal' && typeof closeUserRemindersModal === 'function') { closeUserRemindersModal(); return true; }
           if (ov.id === 'familyModal' && typeof closeFamilyModal === 'function') { closeFamilyModal(); return true; }
           if (ov.id === 'smsImportModal' && typeof closeSmsImportModal === 'function') { closeSmsImportModal(); return true; }
-          if (ov.id === 'smsConfirmModal' && typeof closeSmsConfirmModal === 'function') { closeSmsConfirmModal(); return true; }
+          if (ov.id === 'smsConfirmModal' && typeof closeSmsConfirmModal === 'function') { closeSmsConfirmModal('later'); return true; }
           ov.classList.remove('open');
           return true;
         }
@@ -39434,6 +39570,14 @@ function openProjectRowPicker(secId) {
       /* روز انتخاب‌شده: فقط نتایج همان روز از ماه جاری */
       var dayF = dayF0;
       var accF = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
+      /* بدون فیلتر و کلمه (عوض کردن «بخش» به‌تنهایی فیلتر حساب نمی‌شود): فقط چارچوب جدول، منتظر جستجو */
+      if (!q && !catF && !typeF && rangeF === 'all' && !dayF && !accF) {
+        body.innerHTML = '<tr class="sr-wait"><td colspan="4">برای دیدن نتیجه، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
+        if (foot) foot.innerHTML = '';
+        document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو';
+        boxR.style.display = '';
+        return;
+      }
       var sel = (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles) ? balanceSelectedTitles : [];
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};

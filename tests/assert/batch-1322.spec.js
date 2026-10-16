@@ -93,9 +93,8 @@ const ACC = 'ملت مصنوعی';
     /* حذف درآمد ثابت از منو → آرشیو هم به سطل زباله */
     openFeatureSheet('recurring'); await w(400);
     document.querySelector('[data-rd="0"]').click(); await w(300);
-    const cm = document.getElementById('confirmModal');
-    document.getElementById('confirmYes').click(); await w(300);
-    for (let i = 0; i < 3 && cm && cm.classList.contains('open'); i++) { document.getElementById('confirmNo').click(); await w(250); }
+    /* از ۱.۳.۲۴: پنجرهٔ «حذف با ردیف‌ها / حذف بدون ردیف‌ها» */
+    { const kb = [...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].find(x => x.textContent === 'حذف بدون ردیف‌ها'); if (kb) kb.click(); await w(300); }
     const pm = document.getElementById('recPickModal'); if (pm) pm._hkCancel(); await w(150);
     out.deleted = !recurringIncomes.some(r => r.id === 'rec_k' && !r.deletedAt);
     out.unlinked = !periodData.income.sections[0].rows.some(r => r.fromRecurringId === 'rec_k');
@@ -124,10 +123,10 @@ const ACC = 'ملت مصنوعی';
     out.autoIsSwitch = auto.tagName === 'BUTTON' && auto.classList.contains('hk-switch') && !document.querySelector('#backupPickOverlay input#bkAutoOn');
     out.autoOff = !auto.classList.contains('on');
     const encRow = document.getElementById('bkEncRow');
-    out.encDisabled = getComputedStyle(encRow).display === 'none';
+    out.encDisabled = encRow.classList.contains('bk-enc-hide');
     auto.click(); await w(150);
     out.autoOn = auto.classList.contains('on') && autoBkState().enabled === true;
-    out.encEnabled = getComputedStyle(encRow).display !== 'none';
+    out.encEnabled = !encRow.classList.contains('bk-enc-hide');
     const encSw = document.getElementById('bkEncBtn');
     out.encNoText = !encSw.textContent.trim();
     await w(300); const cs = getComputedStyle(auto);
@@ -150,7 +149,7 @@ const ACC = 'ملت مصنوعی';
     onBackGuard(); await w(300);
     out.backCancel = !document.getElementById('bkPwdBox') && !pw.classList.contains('on') && !!document.getElementById('backupPickOverlay');
     auto.click(); await w(100);
-    out.offAgain = getComputedStyle(encRow).display === 'none';
+    out.offAgain = encRow.classList.contains('bk-enc-hide');
     document.querySelectorAll('.backup-pick-overlay').forEach(x => x.remove());
     window.Capacitor = oC;
     return out;
