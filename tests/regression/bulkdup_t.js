@@ -17,8 +17,8 @@ const { chromium } = require('playwright');
   await p.goto(require('../lib/index-url')); await p.waitForTimeout(2000);
   // existing Mellat account with correct latest balance? set opening such that app balance == latest → no mismatch prompt
   const latest = await p.evaluate(() => [window.__mellatLatest, window.__melliLatest]); console.log('latest', latest);
-  await p.evaluate(() => { openBankAccountsModal(); openBankNameEditor(null, -1, null, 'بانک ملت', 'ملت'); }); await p.waitForTimeout(300);
-  await p.type('#bankAddBalInput', '1000000'); await p.click('#bankAddOk'); await p.waitForTimeout(300); await p.evaluate(() => closeBankAccountsModal());
+  /* حساب ملت با موجودی دستی (از ۱.۳.۲۶ ویرایشگر حساب تازه موجودی را از پیامک می‌خواند؛ این‌جا مستقیم ساخته می‌شود) */
+  await p.evaluate(() => { selectedBankAccounts.push({ id: 'ba_m', bank: 'بانک ملت', label: 'ملت', openingBalance: 1000000, createdAt: getTodayPersian() }); saveBankAccountsSelection(); renderAll(); });
 
   await p.evaluate(() => { periodData.expense.sections.push({ id: 'sK2', title: 'کارت دوم', color: '#f00', collapsed: false, rows: [emptyRow('expense')] }); persistCurrent(); renderAll(); });
   console.log('titles', await p.evaluate(() => allPersonTitles()));
@@ -28,20 +28,13 @@ const { chromium } = require('playwright');
     if (card) await p.evaluate(c => { const d = document.querySelector('#hkBulkCardWrap .dark-select'); [...d._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === c).click(); }, card);
     await p.evaluate(() => { const ov = document.getElementById('smsBulkOv'); const sels = ov._fromSel.querySelectorAll('.dark-select'); const t = getTodayPersian(); const items = sels[1]._list.querySelectorAll('.dark-select-item'); items[(t.m + 9) % 12].click(); });
     await p.click('.hk-bulk-read'); await p.waitForTimeout(800);
-    await p.evaluate(() => { const c = document.querySelectorAll('.hk-bulk-chk')[0]; c.checked = true; c.onchange(); const d = document.querySelectorAll('.hk-bulk-dsel')[0]; [...d._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === 'ملت').click(); });
+    await p.evaluate(() => { const c = document.querySelectorAll('.hk-bulk-chk')[1]; if (c) { c.checked = false; c.onchange(); } });
     await p.waitForTimeout(200);
-    console.log('folder', await p.evaluate(() => { const f = document.querySelector('.hk-bulk-folder'); return [f.className, getComputedStyle(f).borderColor, f.querySelector('.hk-bulk-fdup').textContent]; }));
+    console.log('folder', await p.evaluate(() => { const f = document.querySelector('.hk-bulk-folder'); return [f.className, f.querySelector('.hk-bulk-fdup').textContent]; }));
     await p.screenshot({ path: 'bdup_' + ans + '.png' });
-    await p.click('.hk-bulk-ok'); await p.waitForTimeout(400);
-    for (let k = 0; k < 4; k++) {
-      const a3 = await p.evaluate(() => (document.getElementById('hkAsk3') || {}).innerText || '');
-      if (!a3) break;
-      console.log('ask:', a3.replace(/\n/g, ' | '));
-      if (/مغایرت موجودی/.test(a3)) await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'ثبت').click());
-      else await p.evaluate(t => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === t).click(), ans === 'skip' ? 'فقط ثبت‌نشده‌ها' : 'همه را ثبت کن');
-      await p.waitForTimeout(400);
-    }
-    while (await p.evaluate(() => !!document.getElementById('hkReconDlg'))) { await p.click('.hk-recon-skip'); await p.waitForTimeout(200); }
+    await p.click('.hk-bulk-ok'); await p.waitForTimeout(700);
+    console.log('summary', await p.evaluate(() => ((document.querySelector('.hk-bulk-sum') || {}).innerText || '').replace(/\n/g, ' | ')));
+    await p.evaluate(() => { const d = document.querySelector('.hk-bulk-done'); if (d) d.click(); });
     await p.waitForTimeout(300);
     console.log('rows', await p.evaluate(() => Object.keys(archive).concat(['cur']).map(k => { const pd = k === 'cur' ? periodData : archive[k]; const o = {}; ['income','expense'].forEach(t => ((pd[t]||{}).sections||[]).forEach(s => (s.rows||[]).forEach(r => { if (r.fromSmsBulk) o[s.title] = (o[s.title] || 0) + 1; }))); return k + ':' + JSON.stringify(o); }).filter(x => !/\{\}$/.test(x))));
   };
