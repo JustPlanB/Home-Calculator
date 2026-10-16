@@ -3465,13 +3465,14 @@
       min-height: 26px;
       line-height: 1.35;
     }
+    /* در حال تایپ: همان باکس یک‌خطی؛ فقط وقتی متن در یک خط جا نشد، به اندازهٔ لازم بلند می‌شود (hkDescAutosize) */
     .person-detail-table tbody textarea.pd-desc.pd-editing {
       white-space: pre-wrap;
       overflow-y: auto;
-      height: 52px;
-      min-height: 52px;
-      max-height: 52px;
-      line-height: 1.3;
+      text-overflow: clip;
+      height: 20px;
+      min-height: 20px;
+      max-height: 110px;
     }
     .person-detail-table tbody input.pd-filled,
     .person-detail-table tbody textarea.pd-filled,
@@ -9469,6 +9470,7 @@
       -webkit-appearance: none; appearance: none;
     }
     .balance-search-input::placeholder { color: rgba(245, 245, 247, 0.45); }
+    .bsr-grid .balance-search-input.bs-amt { text-align: center; font-variant-numeric: tabular-nums; }
     .balance-search-input:focus { border-color: #0a84ff; }
 
     /* نشان عددی اقساط */
@@ -10988,6 +10990,11 @@
           <div class="bsr-cell">
             <label class="balance-acc-label" for="balanceSearchCat">دسته:</label>
             <select id="balanceSearchCat" class="balance-search-sel"><option value="">همهٔ دسته‌ها</option></select>
+          </div>
+          <div class="bsr-cell bsr-wide balance-search-row bs-amt-row">
+            <label class="balance-acc-label" for="balanceSearchAmtMin">مبلغ:</label>
+            <input type="text" id="balanceSearchAmtMin" class="balance-search-input bs-amt" inputmode="numeric" placeholder="از" autocomplete="off" enterkeyhint="search" />
+            <input type="text" id="balanceSearchAmtMax" class="balance-search-input bs-amt" inputmode="numeric" placeholder="تا" autocomplete="off" enterkeyhint="search" />
           </div>
           <div class="bsr-cell bsr-wide balance-search-row">
             <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
@@ -16506,7 +16513,7 @@ function onPeriodChange() {
       /* کلید روشن/خاموش (مستطیل گرد) جلوی عنوان؛ روشن کردن = پنجرهٔ تعیین رمز، خاموش کردن = تأیید */
       var on = !!st;
       /* تا «پشتیبان خودکار» خاموش است، سطر رمزنگاری آن پنهان است */
-      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-hide' : '') + '" id="bkEncRow"><div class="bk-enc-in"><div class="bk-sw-row bk-enc-line"><span class="bk-ttl">رمزنگاری پشتیبان خودکار' + (st && st.broken ? ' <span id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</span>' : '') + '</span>' +
+      var h = '<div class="bk-enc-wrap' + (s.enabled === false ? ' bk-enc-hide' : '') + '" id="bkEncRow"><div class="bk-enc-in"><div class="bk-sw-row bk-enc-line"><span class="bk-ttl">رمزنگاری پشتیبان خودکار' + hkInfoBtnHtml('با روشن کردن، فایل‌های پشتیبان خودکار رمزنگاری می‌شوند و بدون رمز یا کد بازیابی قابل خواندن نیستند.\nکلید روی همین گوشی نگه داشته می‌شود؛ در گوشی دیگر یا بعد از نصب دوباره، فقط با رمز یا کد بازیابی باز می‌شوند.\nپشتیبان‌هایی که قبلاً بی‌رمز گرفته شده‌اند، بی‌رمز می‌مانند.') + (st && st.broken ? ' <span id="bkEncMode" style="color:#ff9f0a;">(کلید روی این دستگاه پیدا نشد)</span>' : '') + '</span>' +
         '<button type="button" class="hk-switch' + (on ? ' on' : '') + '" id="bkEncBtn" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="رمزنگاری پشتیبان خودکار"><i></i></button></div>';
       if (st && st.broken) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncFix">تنظیم دوباره…</button></div>';
       if (st && !st.broken && s.lastEncOkAt) h += '<div class="bk-enc-line"><span></span><button type="button" class="bk-enc-btn" id="bkEncCleanup">پاک کردن پشتیبان‌های خودکار بی‌رمز قدیمی…</button></div>';
@@ -20090,7 +20097,7 @@ async function openPdfPrintWindow(){
         if (card._skipClick || card.classList.contains('dragging')) return;
         if (e.target === delBtn || e.target === editBtn || editBtn.contains(e.target) || delBtn.contains(e.target) || e.target.closest('.drag-handle')) return;
         plan.collapsed = !plan.collapsed;
-        card.classList.toggle('collapsed', plan.collapsed);
+        hkSlideSet(card, !plan.collapsed, function (o) { card.classList.toggle('collapsed', !o); });
         arrow.innerHTML = plan.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
         scheduleSave();
       };
@@ -20500,6 +20507,30 @@ async function openPdfPrintWindow(){
     }
     /* رفتن به خانهٔ بعد/قبل جدول بدون بسته شدن صفحه‌کلید: خانهٔ مقصد قابل‌ویرایش و همان لحظه (داخل همان رویداد کلید) فعال می‌شود؛
        خانهٔ قبلی خودبه‌خود blur می‌شود و مقدارش ذخیره می‌شود. هیچ لحظه‌ای بدون خانهٔ فعال نمی‌ماند (علت بسته و باز شدن صفحه‌کلید) */
+    /* باز/بسته شدن نرم (همان سرعت سطر «رمزنگاری پشتیبان خودکار»: ۰٫۴۵ ثانیه): ارتفاع قاب از اندازهٔ فعلی به اندازهٔ جدید می‌رود؛
+       هنگام بستن، محتوا تا پایان حرکت دیده می‌شود. setOpen(bool) فقط کلاس/حالت نمایش را عوض می‌کند */
+    function hkSlideSet(el, open, setOpen) {
+      if (!el || !el.animate || !el.isConnected) { setOpen(open); return; }
+      if (el._hkHA) { try { el._hkHA.cancel(); } catch (e0) {} }
+      var h0 = el.getBoundingClientRect().height;
+      setOpen(open);
+      var h1 = el.getBoundingClientRect().height;
+      if (Math.abs(h1 - h0) < 1) return;
+      if (!open) setOpen(true);
+      var ov = el.style.overflow;
+      el.style.overflow = 'hidden';
+      var a = el._hkHA = el.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 450, easing: 'ease' });
+      a.onfinish = function () { el._hkHA = null; el.style.overflow = ov; if (!open) setOpen(false); };
+      a.oncancel = function () { el._hkHA = null; el.style.overflow = ov; };
+    }
+    /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
+    function hkDescAutosize(el) {
+      try {
+        el.style.height = '20px';
+        var h = el.scrollHeight;
+        if (h > 22) el.style.height = Math.min(h + 2, 110) + 'px';
+      } catch (e) {}
+    }
     function hkMoveFocus(el) {
       if (!el) return false;
       try { el.readOnly = false; } catch (e0) {}
@@ -24984,8 +25015,10 @@ async function openPdfPrintWindow(){
     }
 
 
-    function openPersonDetailAccountMenu(accBtn, row, onPicked) {
+    function openPersonDetailAccountMenu(accBtn, row, onPicked, fromKeyboard) {
       if (!accBtn) return;
+      /* بسته شدن صفحه‌کلید (بعد از «بعدی» روی مبلغ) صفحه را جابه‌جا می‌کند؛ این جابه‌جایی منو را نبندد */
+      try { window._hkMenuOpenAt = Date.now() + (fromKeyboard ? 700 : 0); } catch (eT) {}
       try { document.querySelectorAll('.dark-select-list.open').forEach(l => { try { l.remove(); } catch (e2) {} }); } catch (e0) {}
       const list = document.createElement('div');
       list.className = 'dark-select-list open';
@@ -25100,6 +25133,7 @@ async function openPdfPrintWindow(){
       requestAnimationFrame(placeAccountMenu);
       setTimeout(placeAccountMenu, 50);
       setTimeout(placeAccountMenu, 280);
+      if (fromKeyboard) { setTimeout(placeAccountMenu, 550); setTimeout(placeAccountMenu, 900); }
       const close = (ev) => {
         if (!list.contains(ev.target) && ev.target !== accBtn) {
           try { list.remove(); } catch (e2) {}
@@ -25202,6 +25236,7 @@ async function openPdfPrintWindow(){
       try {
         var inp = document.getElementById('balanceSearchInput');
         if (inp && inp.value) { inp.value = ''; }
+        ['balanceSearchAmtMin', 'balanceSearchAmtMax'].forEach(function (id) { var a = document.getElementById(id); if (a) a.value = ''; });
         ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
           var el = document.getElementById(id); if (!el) return;
           el.value = id === 'balanceSearchRange' ? 'all' : '';
@@ -25506,12 +25541,14 @@ container.innerHTML = '';
           document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           desc.readOnly = false;
           desc.classList.add('pd-editing');
+          hkDescAutosize(desc);
           try { desc.focus(); } catch (err) {}
         };
         desc.onfocus = () => {
           if (fromPlan) return;
-          if (!desc.readOnly) desc.classList.add('pd-editing');
+          if (!desc.readOnly) { desc.classList.add('pd-editing'); hkDescAutosize(desc); }
         };
+        desc.addEventListener('input', () => { if (desc.classList.contains('pd-editing')) hkDescAutosize(desc); });
         desc._goNext = false;
         desc.onkeydown = (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -25526,6 +25563,7 @@ container.innerHTML = '';
           if (fromPlan) return;
           row.desc = desc.value || '';
           desc.classList.remove('pd-editing', 'pd-expanded');
+          desc.style.height = '';
           desc.readOnly = isFilledVal(row.desc);
           markFilled(desc, isFilledVal(row.desc));
           scheduleSave();
@@ -25728,10 +25766,12 @@ container.innerHTML = '';
         amt.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
+            try { window._hkMenuOpenAt = Date.now() + 700; } catch (eT) {}
             amt.blur();
+            /* «بعدی» روی مبلغ: منوی انتخاب بانک همین ردیف باز می‌شود و با بسته شدن صفحه‌کلید بسته نمی‌شود */
             try {
               const btn = tr.querySelector('.pd-acc-btn');
-              if (btn) btn.click();
+              if (btn) openPersonDetailAccountMenu(btn, row, () => { try { sortAndRebuild(); } catch (err) {} }, true);
             } catch (err) {}
           }
         };
@@ -26247,6 +26287,17 @@ container.innerHTML = '';
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindLater); else bindLater();
     })();
+    /* پیامک‌های ثبت‌شدهٔ اخیر (برای تشخیص ثبت جابه‌جا در تطبیق موجودی) */
+    var SMS_DONE_KEY = STORAGE_KEY + '_smsDoneLog';
+    function smsDoneLogLoad() { try { var a = JSON.parse(localStorage.getItem(SMS_DONE_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function smsDoneLogAdd(pe) {
+      try {
+        if (!pe || !pe.raw || !pe.amount) return;
+        var raw = String(pe.raw).trim(), list = smsDoneLogLoad().filter(function (x) { return x && x.raw !== raw; });
+        list.unshift({ raw: raw, acc4: hkSmsAcc4(raw) || '', bank: (matchSelectedBank(pe.bank) || ''), y: parseInt(pe.year, 10) || currentYear, m: parseInt(pe.month, 10) || currentMonth, d: parseInt(pe.day, 10) || 0, v: pe.type === 'income' ? Number(pe.amount) : -Number(pe.amount) });
+        localStorage.setItem(SMS_DONE_KEY, JSON.stringify(list.slice(0, 60)));
+      } catch (e) {}
+    }
     /* mode: (خالی) ثبت شد | 'reject' رد شد | 'later' بعداً */
     function closeSmsConfirmModal(mode) {
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
@@ -26257,6 +26308,7 @@ container.innerHTML = '';
         if (_pe) {
           if (mode === 'later') { smsLaterAdd(_pe); try { showToast('در «پیامک‌های ثبت‌نشده» ماند'); } catch (eT) {} }
           else smsLaterRemove(_pe.raw);
+          if (!mode) smsDoneLogAdd(_pe);
         }
       } catch (eL) {}
       /* پیامک تعیین تکلیف شد (ثبت، رد یا «بعداً» که حالا در فهرست خود نرم‌افزار است) → از صف نیتیو پاک شود و در این نوبت دوباره نیاید */
@@ -29414,6 +29466,48 @@ function confirmSmsEntry() {
         showToast('ردیف اختلاف ثبت شد؛ می‌توانید ویرایشش کنید');
       } catch (e) { try { showToast('ثبت ردیف اختلاف ممکن نشد'); } catch (e4) {} }
     }
+    /* اختلاف را ترتیب جابه‌جای ثبت توضیح می‌دهد؟ پیامک‌های قبلیِ هنوز ثبت‌نشدهٔ همین حساب (صف یا «پیامک‌های ثبت‌نشده»)
+       و پیامک‌های بعدیِ زودتر ثبت‌شده (مثلاً تراکنش سوم قبل از دوم) → { n, later } ، وگرنه null */
+    function hkPendingSmsExplains(snap, diff) {
+      try {
+        var cur = pendingSmsEntry, curRaw = cur ? String(cur.raw || '').trim() : '';
+        var acc4 = cur ? hkSmsAcc4(cur.raw) : '';
+        var key = function (y, m, d) { return (y || 0) * 10000 + (m || 0) * 100 + (d || 0); };
+        var snapK = key(snap.y, snap.m, snap.day || 31);
+        var raws = smsPendingQueue.map(function (x) { return x && x.raw; }).concat(smsLaterLoad().map(function (x) { return x.raw; }));
+        var seen = {}, vals = [];
+        raws.forEach(function (raw) {
+          raw = String(raw || '').trim();
+          if (!raw || raw === curRaw || seen[raw]) return;
+          seen[raw] = 1;
+          var pr = parseBankSms(raw);
+          if (!pr || !pr.amount) return;
+          var same = acc4 ? hkSmsAcc4(raw) === acc4 : ((matchSelectedBank(pr.bank) || '') === snap.bank);
+          if (!same) return;
+          var y = pr.year || snap.y; if (y > 0 && y < 100) y += 1400;
+          if (key(y, pr.month || snap.m, parseInt(pr.day, 10) || 0) > snapK) return;
+          vals.push({ v: pr.type === 'income' ? pr.amount : -pr.amount, later: false });
+        });
+        /* پیامک‌های همین حساب با همان روز یا بعد که زودتر ثبت شده‌اند (در موجودی نرم‌افزار هستند ولی در «مانده» این پیامک نه) */
+        var dayK = key(snap.y, snap.m, snap.day || 0);
+        smsDoneLogLoad().forEach(function (x) {
+          if (!x || x.raw === curRaw || seen[x.raw]) return;
+          var same = acc4 ? x.acc4 === acc4 : x.bank === snap.bank;
+          if (!same || key(x.y, x.m, x.d) < dayK || x.y !== snap.y || x.m !== snap.m) return;
+          seen[x.raw] = 1;
+          vals.push({ v: -x.v, later: true });
+        });
+        vals = vals.slice(0, 12);
+        /* هر زیرمجموعه‌ای از آن‌ها که دقیقاً اختلاف را بسازد (ترتیب ساعت تراکنش‌های یک روز معلوم نیست) */
+        var best = null;
+        for (var mask = 1; mask < (1 << vals.length); mask++) {
+          var sum = 0, n = 0, lat = false;
+          for (var i = 0; i < vals.length; i++) if (mask & (1 << i)) { sum += vals[i].v; n++; if (vals[i].later) lat = true; }
+          if (Math.abs(sum - diff) <= 1 && (!best || n < best.n)) best = { n: n, later: lat };
+        }
+        return best;
+      } catch (e) { return 0; }
+    }
     /* پیش از ثبت: موجودی حساب بعد از این تراکنش با «مانده» پیامک مقایسه شود (فقط ماهِ باز) */
     function hkReconPrecheck(snap) {
       try {
@@ -29421,7 +29515,16 @@ function confirmSmsEntry() {
         if (typeof isLiveAccountLabel === 'function' && !isLiveAccountLabel(snap.bank)) return null;
         if (snap.y !== currentYear || snap.m !== currentMonth) return null;
         var b = hkAccountBalanceUpTo(snap.bank, snap.day);
-        return hkReconCompare(snap, b, false);
+        var c = hkReconCompare(snap, b, false);
+        if (c) {
+          /* اختلاف از پیامک‌های قبلیِ هنوز ثبت‌نشدهٔ همین حساب است → هشدار و «ردیف اختلاف» لازم نیست؛ فقط پیامی کوتاه */
+          var np = hkPendingSmsExplains(snap, c.diff);
+          if (np) {
+            try { showToast(np.later ? 'ترتیب ثبت پیامک‌های این حساب جابه‌جا شد؛ موجودی درست است' : ((np.n > 1 ? toPersianDigits(String(np.n)) + ' پیامک' : 'پیامک') + ' قبلی این حساب هنوز ثبت نشده')); } catch (eT) {}
+            return null;
+          }
+        }
+        return c;
       } catch (e) { return null; }
     }
     (function () {
@@ -29624,6 +29727,11 @@ function confirmSmsEntry() {
         if (smsPendingQueue.some(x => x && String(x.raw || '').trim() === rawKey)) return false;
       }
       smsPendingQueue.push(parsed);
+      /* صف به ترتیب تاریخ خود پیامک (نه زمان رسیدن)؛ پیامک‌های یک روز به همان ترتیب رسیدن می‌مانند */
+      try {
+        const dk = (x) => ((parseInt(x && x.year, 10) || 0) * 10000) + ((parseInt(x && x.month, 10) || 0) * 100) + (parseInt(x && x.day, 10) || 0);
+        smsPendingQueue.sort((a, b) => dk(a) - dk(b));
+      } catch (eS) {}
       try {
         const total = smsPendingQueue.length + (isSmsConfirmOpen() ? 1 : 0);
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -32138,7 +32246,7 @@ if (item.type === 'recurring') {
         chk.onchange = function () { fo.checked = chk.checked; card.classList.toggle('on', fo.checked); if (!fo.checked) card.classList.remove('need'); hkBulkShowDup(card, fo); hkBulkOkState(); };
         card.querySelector('.hk-bulk-fhead').addEventListener('click', function (e) {
           if (e.target === chk) return;
-          fo.open = !fo.open; card.classList.toggle('open', fo.open);
+          fo.open = !fo.open; hkSlideSet(card, fo.open, function (o) { card.classList.toggle('open', o); });
         });
         list.appendChild(card);
         hkBulkShowDup(card, fo);
@@ -34971,7 +35079,7 @@ if (item.type === 'recurring') {
           if (!it) return;
           const key = it.id || idx;
           if (recExpanded.has(key)) recExpanded.delete(key); else recExpanded.add(key);
-          row.classList.toggle('rec-open', recExpanded.has(key));
+          hkSlideSet(row, recExpanded.has(key), function (o) { row.classList.toggle('rec-open', o); });
           try { ensureShapeFrame(box); } catch (eF) {}
         });
       });
@@ -39395,7 +39503,7 @@ function openProjectRowPicker(secId) {
           const target = (ledNow.sections || []).find(s => s.id === sid);
           if (!target) return;
           target.collapsed = !target.collapsed;
-          div.classList.toggle('collapsed', !!target.collapsed);
+          hkSlideSet(div, !target.collapsed, function (o) { div.classList.toggle('collapsed', !o); });
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
           persistCurrent();
           scheduleSave();
@@ -39570,8 +39678,11 @@ function openProjectRowPicker(secId) {
       /* روز انتخاب‌شده: فقط نتایج همان روز از ماه جاری */
       var dayF = dayF0;
       var accF = (typeof balanceSelectedAccount !== 'undefined' ? (balanceSelectedAccount || '') : '').trim();
+      /* بازهٔ مبلغ (از / تا؛ هر کدام خالی = بی‌حد) */
+      var amtMin = 0, amtMax = 0;
+      try { amtMin = parseAmount((document.getElementById('balanceSearchAmtMin') || {}).value || '') || 0; amtMax = parseAmount((document.getElementById('balanceSearchAmtMax') || {}).value || '') || 0; } catch (eAm) {}
       /* بدون فیلتر و کلمه (عوض کردن «بخش» به‌تنهایی فیلتر حساب نمی‌شود): فقط چارچوب جدول، منتظر جستجو */
-      if (!q && !catF && !typeF && rangeF === 'all' && !dayF && !accF) {
+      if (!q && !catF && !typeF && rangeF === 'all' && !dayF && !accF && !amtMin && !amtMax) {
         body.innerHTML = '<tr class="sr-wait"><td colspan="4">برای دیدن نتیجه، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
         if (foot) foot.innerHTML = '';
         document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو';
@@ -39595,6 +39706,8 @@ function openProjectRowPicker(secId) {
               if (tab === 'expense' && (isPreAppPlanRow(r, y, m) || isFuturePlanRow(r, y, m))) return;
               if (accF && (r.account || '').trim() !== accF) return;
               if (q && norm(r.desc).indexOf(q) < 0) return;
+              if (amtMin && Number(r.amount) < amtMin) return;
+              if (amtMax && Number(r.amount) > amtMax) return;
               if (dayF && dayNum(r) !== dayF) return;
               if (catF) { var ids = bsCatOf(r); if (catF === '__none__' ? ids.length : ids.indexOf(catF) < 0) return; }
               titles[t] = 1;
@@ -39671,6 +39784,13 @@ function openProjectRowPicker(secId) {
         var t = 0;
         inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(renderBalanceSearch, 150); });
         inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { inp.blur(); } catch (e2) {} } });
+        ['balanceSearchAmtMin', 'balanceSearchAmtMax'].forEach(function (id) {
+          var a = document.getElementById(id); if (!a) return;
+          try { hkAmountInput(a); } catch (eH) {}
+          var ta = 0;
+          a.addEventListener('input', function () { clearTimeout(ta); ta = setTimeout(renderBalanceSearch, 250); });
+          a.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { a.blur(); } catch (e2) {} } });
+        });
         try { renderBalanceDayFilter(); } catch (eDf) {}
         ['balanceSearchType', 'balanceSearchRange', 'balanceSearchDay', 'balanceSearchCat'].forEach(function (id) {
           var el = document.getElementById(id);

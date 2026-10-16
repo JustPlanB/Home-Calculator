@@ -244,6 +244,8 @@ const ACC = 'ملت مصنوعی';
   ok(se.day4.length === 3 && se.day4.every(t => /\/۰۴$|اجاره/.test(t) || /۰۴/.test(t)) && se.day4foot.filter(t => /^جمع (مرداد|شهریور|مهر)/.test(t)).length === 3, 'روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه، با جمع هر ماه (' + se.day4.length + ' ردیف)');
   ok(se.dayBox && se.resetDay, 'روز با «این ماه»: فقط جدول نتیجهٔ جستجو؛ پاک کردن جستجو نوع و روز را هم برمی‌گرداند');
   const L = se.layout;
+  /* از ۱.۳.۲۵ سطر «مبلغ» (از/تا) بالای شرح اضافه شد */
+  if (L.length === 8 && /مبلغ/.test(L[6].t) && L[7].y > L[6].y && L[6].y > L[4].y) L.splice(6, 1);
   ok(L.length === 7 && L[0].y === L[1].y && L[2].y === L[3].y && L[4].y === L[5].y && L[2].y > L[0].y && L[4].y > L[2].y && L[6].y > L[4].y && /بخش/.test(L[0].t) && /نوع/.test(L[1].t) && /ماه/.test(L[2].t) && /روز/.test(L[3].t) && /حساب/.test(L[4].t) && /دسته/.test(L[5].t) && /شرح/.test(L[6].t), 'چیدمان: [بخش][نوع] / [زمان][روز] / [حساب][دسته] / شرح');
   ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
   ok(se.catLabelAlign === 'right', 'برچسب «دسته:» راست‌چین');
