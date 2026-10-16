@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
   // delete ملت with yes
   await p.evaluate(() => { const rows = [...document.querySelectorAll('#bankSelectedScroll button')].filter(b => b.textContent === '×'); rows[0].click(); }); await p.waitForTimeout(300);
   console.log('dlg', await p.evaluate(() => (document.getElementById('hkAsk3')||{}).innerText));
-  await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'بلی').click()); await p.waitForTimeout(500);
+  await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'حذف با ردیف‌ها').click()); await p.waitForTimeout(500);
   console.log('after yes', JSON.stringify(await st()));
   // restore from trash
   console.log('trash api', await p.evaluate(() => Object.keys(window).filter(k => /trash/i.test(k)).join(',')));
@@ -25,6 +25,6 @@ const { chromium } = require('playwright');
   console.log('after restore', JSON.stringify(await st()));
   // delete ملی with no
   await p.evaluate(() => { renderBankAccountsList(); const rows = [...document.querySelectorAll('#bankSelectedScroll button')].filter(b => b.textContent === '×'); const i = selectedAccountLabels().indexOf('ملی'); rows[i].click(); }); await p.waitForTimeout(300);
-  await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'خیر').click()); await p.waitForTimeout(500);
+  await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'حذف بدون ردیف‌ها').click()); await p.waitForTimeout(500);
   console.log('after no', JSON.stringify(await st()));
   console.log(errs); await b.close(); })();

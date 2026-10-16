@@ -194,7 +194,7 @@ const ACC = 'ملت مصنوعی';
     out.rowsBack = periodData.expense.sections[0].rows.filter(r => /سیمان|آجر/.test(r.desc)).map(r => r.financialContext && r.financialContext.subjectId);
     return out;
   }, ACC);
-  ok(pj.title === 'پروژهٔ «پروژه تست» حذف شود؟' && pj.opts.join('|') === 'حذف با ردیف‌ها|حذف بدون ردیف‌ها|انصراف' && pj.cancelCls === 'hk-ask3-btn' && pj.qStyle.bold && pj.qStyle.center, 'پنجرهٔ تأیید مثل بقیه (سؤال بولد و وسط): «حذف با ردیف‌ها | حذف بدون ردیف‌ها | انصراف»؛ انصراف رنگ معمولی (' + pj.opts.join(' | ') + ')');
+  ok(pj.title === 'پروژهٔ «پروژه تست» حذف شود؟' && pj.opts.join('|') === 'حذف با ردیف‌ها|حذف بدون ردیف‌ها' && pj.qStyle.bold && pj.qStyle.center, 'پنجرهٔ تأیید مثل بقیه (سؤال بولد و وسط): «حذف با ردیف‌ها | حذف بدون ردیف‌ها» (انصراف = بازگشت) (' + pj.opts.join(' | ') + ')');
   ok(pj.gone && pj.kept.join() === 'personal,personal', '«ردیف‌ها بمانند»: ردیف‌ها ماندند و ردیف معمولی (بدون هایلایت پروژه) شدند');
   ok(pj.restored1 && pj.relinked.join() === 'pjx,pjx', 'بازگردانی از سطل زباله: پروژه برگشت و ردیف‌ها دوباره به آن وصل شدند');
   ok(pj.rowsGone, '«با ردیف‌ها»: ردیف‌های درآمد و مخارج پروژه هم حذف شدند');

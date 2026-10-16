@@ -189,9 +189,10 @@ const ACC = 'ملت مصنوعی';
     const idx = recurringIncomes.indexOf(it);
     document.querySelector('[data-rd="' + idx + '"]').click();
     await new Promise(r => setTimeout(r, 150));
-    const q1 = document.getElementById('confirmMsg').textContent; document.getElementById('confirmYes').click();
-    await new Promise(r => setTimeout(r, 250));
-    const q2 = document.getElementById('confirmMsg').textContent; document.getElementById('confirmYes').click();
+    /* از ۱.۳.۲۴: یک پنجره با «حذف با ردیف‌ها / حذف بدون ردیف‌ها»؛ «بدون ردیف‌ها» = ردیف‌ها می‌مانند و ردیف معمولی می‌شوند */
+    const q1 = (document.querySelector('#hkAsk3 .hk-ask3-txt') || {}).textContent || '';
+    const q2 = [...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].map(x => x.textContent).join('|');
+    { const kb = [...document.querySelectorAll('#hkAsk3 .hk-ask3-btn')].find(x => x.textContent === 'حذف بدون ردیف‌ها'); if (kb) kb.click(); }
     await new Promise(r => setTimeout(r, 250));
     let left = [];
     let stillLinked = 0;
@@ -202,8 +203,8 @@ const ACC = 'ملت مصنوعی';
     left.stillLinked = stillLinked;
     return { q1, q2, gone: !recurringIncomes.includes(it), left, stillLinked: left.stillLinked, trash: (typeof trashItems !== 'undefined' ? trashItems : JSON.parse(localStorage.getItem('hesabKetabArchive_v5_trash') || '[]')).some(t => t.type === 'recurring' && (t.title === 'اجاره' || (t.data && t.data.name === 'اجاره'))) };
   });
-  ok(del.gone && /پاک شوند/.test(del.q2 + '') || /ردیف «دریافت نشده»/.test(del.q2), 'پس از تأیید حذف، دربارهٔ ردیف‌های دریافت‌نشده پرسیده شد');
-  ok(del.left.includes('140506:paid') && del.left.includes('140507:paid') && !del.left.some(x => /unpaid/.test(x)), 'ردیف‌های دریافت‌شده (شهریور و واریز ۱۲ مهر) ماندند؛ دریافت‌نشده‌ها پاک شدند (' + del.left.join('، ') + ')');
+  ok(del.gone && /^درآمد ثابت «اجاره» حذف شود؟$/.test(del.q1) && del.q2 === 'حذف با ردیف‌ها|حذف بدون ردیف‌ها', 'پنجرهٔ تأیید حذف: ' + del.q1 + ' (' + del.q2 + ')');
+  ok(del.left.includes('140506:paid') && del.left.includes('140507:paid'), '«حذف بدون ردیف‌ها»: ردیف‌ها (شهریور و واریز ۱۲ مهر) ماندند (' + del.left.join('، ') + ')');
   ok(del.stillLinked === 0, 'ردیف‌های باقی‌مانده از قرارداد حذف‌شده آزاد شدند (به هیچ قراردادی وصل نیستند)');
   ok(del.trash, 'تعریف به سطل بازیافت رفت');
   await p.evaluate(() => closeFeatureSheet && closeFeatureSheet());
