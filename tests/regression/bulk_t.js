@@ -17,30 +17,24 @@ const { chromium } = require('playwright');
   await p.goto(require('../lib/index-url')); await p.waitForTimeout(2000);
   // existing Mellat account with correct latest balance? set opening such that app balance == latest → no mismatch prompt
   const latest = await p.evaluate(() => [window.__mellatLatest, window.__melliLatest]); console.log('latest', latest);
-  await p.evaluate(() => { openBankAccountsModal(); openBankNameEditor(null, -1, null, 'بانک ملت', 'ملت'); }); await p.waitForTimeout(300);
-  await p.type('#bankAddBalInput', '1000000'); await p.click('#bankAddOk'); await p.waitForTimeout(300); await p.evaluate(() => closeBankAccountsModal());
+  /* حساب ملت با موجودی دستی (از ۱.۳.۲۶ ویرایشگر حساب تازه موجودی را از پیامک می‌خواند؛ این‌جا مستقیم ساخته می‌شود) */
+  await p.evaluate(() => { selectedBankAccounts.push({ id: 'ba_m', bank: 'بانک ملت', label: 'ملت', openingBalance: 1000000, createdAt: getTodayPersian() }); saveBankAccountsSelection(); renderAll(); });
   await p.evaluate(() => openSmsBulkModal()); await p.waitForTimeout(300);
   const t = await p.evaluate(() => getTodayPersian());
   await p.evaluate(() => { const ov = document.getElementById('smsBulkOv'); const sels = ov._fromSel.querySelectorAll('.dark-select'); /* month select: choose 2 months back */ const t = getTodayPersian(); const items = sels[1]._list.querySelectorAll('.dark-select-item'); items[(t.m + 9) % 12].click(); });
   await p.click('.hk-bulk-read'); await p.waitForTimeout(800);
   console.log('folders', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-folder')].map(c => c.innerText.replace(/\n/g, ' | '))));
   await p.screenshot({ path: 'bulk1.png' });
-  // check both; submit without accounts → warning
-  await p.evaluate(() => document.querySelectorAll('.hk-bulk-chk').forEach(c => { c.checked = true; c.onchange(); }));
-  await p.click('.hk-bulk-ok'); await p.waitForTimeout(300);
-  console.log('need', await p.evaluate(() => document.querySelectorAll('.hk-bulk-folder.need').length));
-  // Mellat → existing; Melli → add account
-  await p.evaluate(() => { const d = document.querySelectorAll('.hk-bulk-dsel'); [...d[0]._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === 'ملت').click(); [...d[1]._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === '__add_account__').click(); }); await p.waitForTimeout(400);
-  await p.evaluate(() => openBankNameEditor(null, -1, null, 'بانک ملی', 'ملی')); await p.waitForTimeout(300);
-  console.log('editor', await p.evaluate(() => [document.getElementById('bankAddBalInput').value, document.getElementById('bankAddBalInput').readOnly, (document.querySelector('.bank-open-from-sms')||{}).textContent]));
-  await p.click('#bankAddOk'); await p.waitForTimeout(300); await p.evaluate(() => closeBankAccountsModal()); await p.waitForTimeout(300);
-  console.log('after add', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-dsel')].map(s => s.getValue())));
-  await p.evaluate(() => { const h = document.querySelector('.hk-bulk-fhead'); h.click(); }); await p.waitForTimeout(200); await p.screenshot({ path: 'bulk3.png' });
-  await p.click('.hk-bulk-ok'); await p.waitForTimeout(400);
-  console.log('ask', await p.evaluate(() => (document.getElementById('hkAsk3')||{}).innerText));
-  await p.evaluate(() => [...document.querySelectorAll('#hkAsk3 button')].find(b => b.textContent === 'ثبت').click()); await p.waitForTimeout(600);
-  console.log('gap dlg', await p.evaluate(() => (document.getElementById('hkReconDlg')||{}).innerText));
+  // همه پیش‌فرض تیک‌خورده؛ ملت → حساب موجود (تنها حساب بانک)، ملی → حساب تازهٔ خودکار
+  console.log('auto', await p.evaluate(() => ({ all: document.querySelector('.hk-bulk-allchk').checked, vals: [...document.querySelectorAll('.hk-bulk-dsel')].map(s => s.getValue()), need: document.querySelectorAll('.hk-bulk-folder.need').length })));
+  await p.evaluate(() => { const h = document.querySelector('.hk-bulk-fhead'); h.click(); }); await p.waitForTimeout(600); await p.screenshot({ path: 'bulk3.png' });
+  console.log('txrows', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-tx')].map(t => t.children.length)));
+  await p.click('.hk-bulk-ok'); await p.waitForTimeout(900);
+  console.log('ask', await p.evaluate(() => !!document.getElementById('hkAsk3') || !!document.getElementById('hkReconDlg')));
+  console.log('summary', await p.evaluate(() => (document.querySelector('.hk-bulk-sum') || {}).innerText));
   await p.screenshot({ path: 'bulk2.png' });
-  await p.click('.hk-recon-add'); await p.waitForTimeout(800);
   console.log('end', await p.evaluate(() => ({ ov: !!document.getElementById('smsBulkOv'), bal: JSON.stringify(globalAccountBalances()), rows: Object.keys(archive).concat(['cur']).map(k => { const pd = k === 'cur' ? periodData : archive[k]; let n = 0, g = 0; ['income','expense'].forEach(t => ((pd[t]||{}).sections||[]).forEach(s => (s.rows||[]).forEach(r => { if (r.fromSmsBulk) n++; if (r.reconGap) g++; }))); return k + ':' + n + '/' + g; }).filter(x => !/:0\/0$/.test(x)) })));
+  // برگرداندن
+  await p.click('.hk-bulk-undo'); await p.waitForTimeout(400);
+  console.log('undo', await p.evaluate(() => ({ bal: JSON.stringify(globalAccountBalances()), accs: selectedAccountLabels() })));
   console.log(errs); await b.close(); })();
