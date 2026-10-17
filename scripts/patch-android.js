@@ -113,7 +113,9 @@ public class BankSmsReceiver extends BroadcastReceiver {
         || t.contains("تخفیف") || t.contains("جایزه") || t.contains("نصب") || t.contains("ثبت نام"))) return false;
     // فقط پیامک‌های واقعی بانکی
     boolean strongTx = t.contains("واریز") || t.contains("برداشت") || t.contains("کسر از") || t.contains("کسر مبلغ")
-        || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه");
+        || t.contains("انتقال وجه") || t.contains("انتقال به") || t.contains("خرید از") || t.contains("پرداخت وجه")
+        || t.contains("قبض") || t.contains("سود") || t.contains("کارمزد") || t.contains("عودت") || t.contains("برگشت")
+        || t.contains("چک") || t.contains("پایا") || t.contains("ساتنا");
     /* «قسط» فقط وقتی تراکنش است که نشانه‌های مالی دیگر هم باشد (مانده/موجودی، یا حساب/کارت) — تنها کلمهٔ قسط ملاک نیست */
     boolean installTx = t.contains("قسط") && (t.contains("مانده") || t.contains("موجودی") || t.contains("حساب") || t.contains("کارت"));
     if(installTx) strongTx = true;
@@ -131,6 +133,9 @@ public class BankSmsReceiver extends BroadcastReceiver {
         ||sd.contains("پاسارگاد")||sd.contains("سامان")||sd.contains("mellat")||sd.contains("melli")||sd.contains("sepah")||sd.contains("bank");
     boolean money = t.matches("(?s).*\\\\d[\\\\d,٬،. ]{2,}.*");
     if(!money) return false;
+    // قانون کلی (مستقل از کلمه‌ها): خط «مانده/موجودی» + مبلغ + نشانهٔ بانک = تراکنش (مثل «قبض برق:22,122,000-»)؛
+    // رمز یک‌بارمصرف، تبلیغ و تراکنش ناموفق بالاتر رد شده‌اند و درستی مبلغ را زنجیرهٔ مانده در نرم‌افزار می‌سنجد
+    if(hasBalance && (bankHint || bankName || senderBank)) return true;
     // سخت‌گیرانه‌تر
     if(strongTx && (hasBalance || bankHint || bankName || senderBank)) return true;
     if(weakTx && hasBalance && (bankHint || bankName || senderBank)) return true;
