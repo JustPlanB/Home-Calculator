@@ -80,7 +80,8 @@ const ACC = 'ملت مصنوعی';
     out.head = [...am().querySelectorAll('thead th')].map(th => th.textContent).join('|');
     const trs = [...am().querySelectorAll('.rec-arch-row')];
     out.rows = trs.map(tr => tr.textContent);
-    out.paidBg = trs[0] ? getComputedStyle(trs[0].querySelector('td')).backgroundColor : '';
+    /* از ۱.۳.۲۹ ظاهر جدول درآمد/مخارج: رنگ روی مبلغ (سبز/قرمز)، نه پس‌زمینهٔ ردیف */
+    out.paidBg = trs[0] ? getComputedStyle(trs[0].querySelector('.pd-amt')).color : '';
     out.noSmallText = !/دریافت شد/.test(am().querySelector('tbody').textContent);
     /* زدن داخل آرشیو هیچ کاری نمی‌کند */
     const before = [currentYear, currentMonth, _featureActive];
@@ -99,8 +100,8 @@ const ACC = 'ملت مصنوعی';
     recOpenArchive(it2); await w(80);
     out.singleFolder = document.querySelectorAll('#recArchiveModal .rec-term-folder').length === 1 && !!document.querySelector('#recArchiveModal .rec-term-folder .rec-term-fico svg');
     document.querySelector('#recArchiveModal .rec-term-folder').click(); await w(80);
-    const ur = document.querySelector('#recArchiveModal .rec-arch-row td');
-    out.unpaidBg = ur ? getComputedStyle(ur).backgroundColor : '';
+    const ur = document.querySelector('#recArchiveModal .rec-arch-row .pd-amt');
+    out.unpaidBg = ur ? getComputedStyle(ur).color : '';
     document.getElementById('recArchiveModal')._hkCancel(); await w(80);
     out.cancelToFolders = !!document.querySelector('#recArchiveModal .rec-term-folder');
     document.getElementById('recArchiveModal')._hkCancel();
@@ -115,13 +116,13 @@ const ACC = 'ملت مصنوعی';
   ok(rc.terms.length === 1 && rc.terms[0].contractStart.y === 1404 && rc.terms[0].amount === 15000000 && rc.after.e.y === 1406 && rc.after.a === 17000000 && rc.renewGone, 'بعد از تمدید: دورهٔ قبلی نگه داشته شد، دورهٔ تازه با مبلغ ۱۷ میلیون، دکمهٔ تمدید رفت');
   ok(rc.folders.length === 2 && /۱۴۰۴\/۰۷\/۰۴ تا ۱۴۰۵\/۰۷\/۰۴/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
   ok(rc.head === 'تاریخ|شرح|مبلغ|بانک', 'ستون‌های آرشیو: تاریخ کامل | شرح | مبلغ | بانک (ستون ماه حذف شد)');
-  ok(rc.rows.length === 1 && /۱۴۰۵\/۰۶\/۰۴/.test(rc.rows[0]) && rc.paidBg.startsWith('rgba(158, 232, 88') && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با پس‌زمینهٔ سبز کل ردیف (بدون متن کوچک «دریافت شد»)');
+  ok(rc.rows.length === 1 && /۱۴۰۵\/۰۶\/۰۴/.test(rc.rows[0]) && rc.paidBg === 'rgb(158, 232, 88)' && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با مبلغ سبز (بدون متن کوچک «دریافت شد»)');
   ok(rc.tapNoop, 'زدن روی ردیف آرشیو کاری نمی‌کند (به صفحهٔ اصلی نمی‌رود)');
   ok(rc.backToFolders && rc.backClosed, 'بازگشت: از داخل پوشه به فهرست دوره‌ها، بعد بستن آرشیو و ماندن در منو');
   ok(rc.unpaidColor === 'rgb(255, 107, 74)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان قرمز مبالغ دریافت‌نشده (‎#ff6b4a)');
   ok(rc.cancelToFolders, 'بازگشت از داخل پوشهٔ تنها: به فهرست پوشه‌ها');
   ok(rc.singleFolder, 'قرارداد بدون تمدید هم پوشهٔ خودش را دارد (با آیکون پوشهٔ ثبت گروهی)');
-  ok(rc.unpaidBg.startsWith('rgba(255, 107, 74'), 'آرشیو: ردیف دریافت‌نشده با قرمز مبالغ دریافت‌نشدهٔ درآمد');
+  ok(rc.unpaidBg === 'rgb(255, 107, 74)', 'آرشیو: مبلغ دریافت‌نشده با قرمز مبالغ دریافت‌نشدهٔ درآمد');
 
   console.log('• پیامک: پیش‌فرض نزدیک‌ترین درآمد ثابت حتی با فاصلهٔ بیش از ۲ روز');
   const sm = await p.evaluate(async (ACC) => {

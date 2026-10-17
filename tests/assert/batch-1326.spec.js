@@ -68,7 +68,7 @@ async function newPage(b, list) {
   const fo = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     openSmsBulkModal(); await w(200);
-    await hkBulkRead(); await w(500);
+    await hkBulkRead(); await w(1000);
     /* از ۱.۳.۲۷ پیش‌فرض هیچ پوشه‌ای تیک ندارد؛ «همه» همه را انتخاب می‌کند */
     const def = { all: document.querySelector('.hk-bulk-allchk').checked, on: document.querySelectorAll('.hk-bulk-folder.on').length, need: document.querySelectorAll('.hk-bulk-folder.need').length };
     document.querySelector('.hk-bulk-allchk').click(); await w(100);
@@ -150,7 +150,7 @@ async function newPage(b, list) {
   const again = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const run = async () => {
-      openSmsBulkModal(); await w(150); await hkBulkRead(); await w(400);
+      openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
       document.querySelector('.hk-bulk-allchk').click(); await w(50);
       const cards = [...document.querySelectorAll('.hk-bulk-folder')];
       cards.forEach((c, i) => { if (!_hkBulk.folders[i].account) { const ch = c.querySelector('.hk-bulk-chk'); ch.checked = false; ch.onchange(); } });
