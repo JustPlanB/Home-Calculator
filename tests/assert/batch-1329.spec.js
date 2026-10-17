@@ -72,12 +72,14 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     const th = t.querySelector('thead th'), amt = t.querySelector('.pd-amt'), d = t.querySelector('.rec-arch-desc');
     const out = { cls: t.className, thBg: getComputedStyle(th).backgroundColor, amtCol: getComputedStyle(amt).color, h0: Math.round(d.getBoundingClientRect().height), ws0: getComputedStyle(d).whiteSpace };
     d.click(); await w(50);
-    out.h1 = Math.round(d.getBoundingClientRect().height); out.ws1 = getComputedStyle(d).whiteSpace;
+    /* از ۱.۳.۳۱ متن کامل در باکس شناور یک‌خطی (مثل بقیهٔ سلول‌ها) */
+    const pop = document.querySelector('.cell-text-popup'); out.pop = pop ? pop.textContent : ''; out.popWs = pop ? getComputedStyle(pop).whiteSpace : '';
+    if (pop) pop.remove();
     m._hkCancel && m._hkCancel(); const m2 = document.getElementById('recArchiveModal'); if (m2) m2.remove();
     return out;
   });
   ok(/person-detail-table/.test(a.cls) && a.thBg === 'rgb(10, 22, 40)' && a.amtCol === 'rgb(158, 232, 88)', 'آرشیو: همان جدول درآمد/مخارج (ردیف تایتل ' + a.thBg + '، مبلغ دریافت‌شده سبز)');
-  ok(a.ws0 === 'nowrap' && a.ws1 === 'normal' && a.h1 > a.h0, 'شرح طولانی یک‌خطی است و با زدن رویش کامل نشان داده می‌شود (' + a.h0 + '→' + a.h1 + 'px)');
+  ok(a.ws0 === 'nowrap' && /قبض‌ها$/.test(a.pop) && a.popWs === 'nowrap', 'شرح طولانی یک‌خطی است و با زدن رویش متن کامل در باکس یک‌خطی نشان داده می‌شود');
 
   console.log('• ثبت گروهی: جمع شدن بازه و آمدن پوشه‌ها بی‌پرش');
   const mv = await p.evaluate(async () => {

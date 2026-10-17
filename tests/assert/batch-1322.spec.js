@@ -51,7 +51,7 @@ const ACC = 'ملت مصنوعی';
     const w = ms => new Promise(r => setTimeout(r, ms));
     openPersonDetail('سارا', 'balance'); await w(300);
     const lab = document.querySelector('label[for="balanceSearchRange"]').textContent;
-    document.getElementById('balanceSearchRange').value = 'month'; renderBalanceSearch(); await w(50);
+    document.getElementById('balanceSearchRange').value = '7'; renderBalanceSearch(); await w(50);
     const rows = [...document.querySelectorAll('#search-result-body tr')].map(tr => ({ t: tr.textContent, c: getComputedStyle(tr.querySelector('td.val')).color }));
     const foot = [...document.querySelectorAll('#search-result-foot tr')].map(tr => ({ t: tr.textContent, c: getComputedStyle(tr.querySelector('td.val')).color }));
     resetBalanceSearch(); closePersonDetail(); await w(200);

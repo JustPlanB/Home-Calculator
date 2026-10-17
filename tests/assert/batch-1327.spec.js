@@ -185,7 +185,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان', amount: 30000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'balance'); await w(400);
-    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell:not(.bsr-desc):not(.bs-arange-row)')];
+    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell:not(.bsr-desc):not(.bs-arange-row):not(.bs-amt-row)')];
     out.widths = cells.map(c => Math.round(c.getBoundingClientRect().width));
     out.labelsInside = cells.every(c => { const l = c.querySelector('.balance-acc-label').getBoundingClientRect(), r = c.getBoundingClientRect(); return l.left >= r.left && l.right <= r.right && getComputedStyle(c.querySelector('.balance-acc-label')).position === 'absolute'; });
     out.names = cells.map(c => c.querySelector('.balance-acc-label').textContent);
@@ -193,9 +193,10 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     closePersonDetail(); await w(200);
     return out;
   });
-  ok(new Set(ui2.widths).size === 1 && ui2.widths.length === 8, 'هشت فیلتر جستجو هم‌اندازه (' + ui2.widths[0] + 'px)');
+  /* از ۱.۳.۳۱ باکس‌های مبلغ حذف شدند (فقط محور بازهٔ مبلغ) */
+  ok(new Set(ui2.widths).size === 1 && ui2.widths.length === 6, 'شش فیلتر جستجو هم‌اندازه (' + ui2.widths[0] + 'px)');
   /* از ۱.۳.۲۹ اسم فیلتر به‌جای برچسب جدا، متن خود باکس است (batch-1329) */
-  ok(ui2.names.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته،مبلغ از،مبلغ تا', 'هشت فیلتر با اسم‌های درست؛ «مبلغ از» و «مبلغ تا» دو باکس جدا');
+  ok(ui2.names.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته', 'شش فیلتر با اسم‌های درست');
   ok(ui2.desc, 'ردیف «شرح» دست نخورده');
 
   const rec = await A.evaluate(async () => {
