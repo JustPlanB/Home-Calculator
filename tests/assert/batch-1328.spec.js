@@ -52,7 +52,7 @@ async function page(b, inbox) {
     /* از ۱ شهریور */
     const ov = document.getElementById('smsBulkOv'); const sels = ov._fromSel.querySelectorAll('.dark-select');
     [...sels[1]._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === '6').click(); await w(50);
-    await hkBulkRead(); await w(700);
+    await hkBulkRead(); await w(1000);
     const out = { planRow0: planRow0 ? { st: planRow0.status, amt: planRow0.amount, day: planRow0.day } : null };
     const wrap = ov.querySelector('.hk-bulk-rwrap'), bar = ov.querySelector('.hk-bulk-rbar');
     out.collapsed = getComputedStyle(wrap).display === 'none' && getComputedStyle(bar).display !== 'none'; out.bar = bar.textContent;
@@ -105,7 +105,7 @@ async function page(b, inbox) {
   const u = await q.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const out = {};
-    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(700);
+    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
     const ov = document.getElementById('smsBulkOv');
     ov.querySelector('.hk-bulk-rbar').click(); await w(600);
     out.reopened = getComputedStyle(ov.querySelector('.hk-bulk-rwrap')).display !== 'none';

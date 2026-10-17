@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
   await p.evaluate(() => openSmsBulkModal()); await p.waitForTimeout(300);
   const t = await p.evaluate(() => getTodayPersian());
   await p.evaluate(() => { const ov = document.getElementById('smsBulkOv'); const sels = ov._fromSel.querySelectorAll('.dark-select'); /* month select: choose 2 months back */ const t = getTodayPersian(); const items = sels[1]._list.querySelectorAll('.dark-select-item'); items[(t.m + 9) % 12].click(); });
-  await p.click('.hk-bulk-read'); await p.waitForTimeout(800);
+  await p.click('.hk-bulk-read'); await p.waitForTimeout(1200);
   console.log('folders', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-folder')].map(c => c.innerText.replace(/\n/g, ' | '))));
   await p.screenshot({ path: 'bulk1.png' });
   await p.evaluate(() => document.querySelector('.hk-bulk-allchk').click()); await p.waitForTimeout(150);

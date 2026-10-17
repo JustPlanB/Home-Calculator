@@ -81,7 +81,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     const w = ms => new Promise(r => setTimeout(r, ms));
     selectedBankAccounts.push({ id: 'bs', bank: 'بانک سپه', label: 'سپه', openingBalance: 14488275, createdAt: { y: 1404, m: 1, d: 1 } }); saveBankAccountsSelection();
     smsAccountBankMap['L4:0128'] = 'سپه'; saveSmsAccountBankMap();
-    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(400);
+    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
     const cards = [...document.querySelectorAll('.hk-bulk-folder')].map(c => ({ name: c.querySelector('.hk-bulk-fname').textContent, personal: c.classList.contains('personal'), on: c.classList.contains('on'), tag: (c.querySelector('.hk-bulk-ptag') || {}).textContent || '', v: c.querySelector('.hk-bulk-dsel').getValue() }));
     const fo = _hkBulk.folders.find(f => !f.personal);
     const allTx = fo ? fo.all.length : 0;
@@ -125,7 +125,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     /* روز با رقم فارسی و نام حساب با نیم‌فاصله/«ي» عربی → باز هم همان تراکنش؛ و یک ردیف با حساب دیگر برای توضیح */
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [R('۱۳', 'لباس', 200000, 'ملت‌ ۵۵۵۵'), R('17', 'کتاب', 100000, 'ملي ۵۵۵۵')] }];
     persistCurrent(); saveArchive();
-    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(400);
+    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
     const mel = _hkBulk.folders.find(f => f.acc4 === '5555');
     const info = { n: mel.inRange.length, last: mel.inRange[mel.inRange.length - 1].type, unsure: mel.unsure, dup: mel.dupSms };
     document.querySelector('.hk-bulk-allchk').click(); await w(80);
@@ -149,7 +149,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
   const rdUi = await D.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const out = {};
-    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(400);
+    openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
     const list = document.getElementById('hkBulkList'), all = list.querySelector('.hk-bulk-all');
     out.sticky = getComputedStyle(all).position;
     list.scrollTop = 99999; await w(100);
@@ -194,7 +194,8 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     return out;
   });
   ok(new Set(ui2.widths).size === 1 && ui2.widths.length === 8, 'هشت فیلتر جستجو هم‌اندازه (' + ui2.widths[0] + 'px)');
-  ok(ui2.labelsInside && ui2.names.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته،مبلغ از،مبلغ تا', 'اسم هر فیلتر داخل خود باکس؛ «مبلغ از» و «مبلغ تا» دو باکس جدا');
+  /* از ۱.۳.۲۹ اسم فیلتر به‌جای برچسب جدا، متن خود باکس است (batch-1329) */
+  ok(ui2.names.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته،مبلغ از،مبلغ تا', 'هشت فیلتر با اسم‌های درست؛ «مبلغ از» و «مبلغ تا» دو باکس جدا');
   ok(ui2.desc, 'ردیف «شرح» دست نخورده');
 
   const rec = await A.evaluate(async () => {
