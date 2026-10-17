@@ -28,7 +28,7 @@ const { chromium } = require('playwright');
     if (card) await p.evaluate(c => { const d = document.querySelector('#hkBulkCardWrap .dark-select'); [...d._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === c).click(); }, card);
     await p.evaluate(() => { const ov = document.getElementById('smsBulkOv'); const sels = ov._fromSel.querySelectorAll('.dark-select'); const t = getTodayPersian(); const items = sels[1]._list.querySelectorAll('.dark-select-item'); items[(t.m + 9) % 12].click(); });
     await p.click('.hk-bulk-read'); await p.waitForTimeout(800);
-    await p.evaluate(() => { const c = document.querySelectorAll('.hk-bulk-chk')[1]; if (c) { c.checked = false; c.onchange(); } });
+    await p.evaluate(() => { const c0 = document.querySelectorAll('.hk-bulk-chk')[0]; c0.checked = true; c0.onchange(); const c = document.querySelectorAll('.hk-bulk-chk')[1]; if (c) { c.checked = false; c.onchange(); } });
     await p.waitForTimeout(200);
     console.log('folder', await p.evaluate(() => { const f = document.querySelector('.hk-bulk-folder'); return [f.className, f.querySelector('.hk-bulk-fdup').textContent]; }));
     await p.screenshot({ path: 'bdup_' + ans + '.png' });

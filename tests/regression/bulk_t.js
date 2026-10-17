@@ -25,7 +25,8 @@ const { chromium } = require('playwright');
   await p.click('.hk-bulk-read'); await p.waitForTimeout(800);
   console.log('folders', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-folder')].map(c => c.innerText.replace(/\n/g, ' | '))));
   await p.screenshot({ path: 'bulk1.png' });
-  // همه پیش‌فرض تیک‌خورده؛ ملت → حساب موجود (تنها حساب بانک)، ملی → حساب تازهٔ خودکار
+  await p.evaluate(() => document.querySelector('.hk-bulk-allchk').click()); await p.waitForTimeout(150);
+  // «همه» زده شد؛ ملت → حساب موجود (تنها حساب بانک)، ملی → حساب تازهٔ خودکار
   console.log('auto', await p.evaluate(() => ({ all: document.querySelector('.hk-bulk-allchk').checked, vals: [...document.querySelectorAll('.hk-bulk-dsel')].map(s => s.getValue()), need: document.querySelectorAll('.hk-bulk-folder.need').length })));
   await p.evaluate(() => { const h = document.querySelector('.hk-bulk-fhead'); h.click(); }); await p.waitForTimeout(600); await p.screenshot({ path: 'bulk3.png' });
   console.log('txrows', await p.evaluate(() => [...document.querySelectorAll('.hk-bulk-tx')].map(t => t.children.length)));

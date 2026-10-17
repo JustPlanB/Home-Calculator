@@ -9067,6 +9067,11 @@
     .bsr-grid .bsr-cell > .filter-acc-wrap, .bsr-grid .bsr-cell > .fancy-select-wrap, .bsr-grid .bsr-cell > select { flex: 1 1 0; min-width: 0; }
     .bsr-grid .fancy-select-btn, .bsr-grid .filter-acc-wrap .dark-select-btn { height: 36px !important; min-height: 36px !important; max-height: 36px !important; box-sizing: border-box !important; width: 100% !important; }
     .bsr-grid .bsr-off { opacity: 0.45; pointer-events: none; }
+    /* اسم هر فیلتر داخل خود باکس (سمت راست، کم‌رنگ)؛ همهٔ باکس‌ها جز «شرح» هم‌اندازه */
+    .bsr-grid .bsr-cell:not(.bsr-desc) { position: relative; }
+    .bsr-grid .bsr-cell:not(.bsr-desc) > .balance-acc-label { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: auto; flex: none; z-index: 2; pointer-events: none; font-size: 0.7rem; font-weight: 600; color: var(--muted, #8e8e93); margin: 0; }
+    .bsr-grid .bsr-cell:not(.bsr-desc) .fancy-select-btn, .bsr-grid .bsr-cell:not(.bsr-desc) .dark-select-btn { padding-right: 46px !important; justify-content: flex-end !important; text-align: left !important; }
+    .bsr-grid .bsr-cell:not(.bsr-desc) > .balance-search-input { height: 36px; box-sizing: border-box; padding-right: 50px !important; text-align: left; }
     .bsr-grid .filter-acc-wrap, .bsr-grid .balance-search-sel, .bsr-grid .fancy-select-wrap, .bsr-grid .balance-search-input { flex: 1 1 0; min-width: 0; width: auto; }
     .bsr-grid .filter-acc-wrap .dark-select { min-width: 0; }
     .bsr-grid .filter-acc-wrap .dark-select-btn { justify-content: flex-start !important; text-align: right !important; padding: 0 10px 0 24px !important; }
@@ -10504,6 +10509,16 @@
     .hk-bulk-folder.need .hk-bulk-dsel { outline: 1.5px solid #ff453a; outline-offset: 1px; border-radius: 10px; }
     .hk-bulk-all { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.86rem; padding: 2px 10px; cursor: pointer; }
     .hk-bulk-all input { width: 18px; height: 18px; accent-color: #0a84ff; }
+    /* ردیف «همه» بالای فهرست ثابت می‌ماند و پوشه‌ها از زیرش رد می‌شوند */
+    .hk-bulk-list > .hk-bulk-all { position: sticky; top: 0; z-index: 4; background: var(--card, #1c1c1e); padding: 6px 10px; margin: 0 0 -2px; box-shadow: 0 6px 8px -6px rgba(0,0,0,0.45); }
+    .hk-bulk-ov.hk-bulk-center { align-items: center; padding-top: 16px; }
+    .hk-bulk-folder { cursor: pointer; }
+    .hk-bulk-folder.personal { border-style: dashed; border-color: rgba(161,161,170,0.55); background: rgba(161,161,170,0.07); }
+    .hk-bulk-folder.personal.on { border-color: #a1a1aa; box-shadow: 0 0 0 1px rgba(161,161,170,0.5); }
+    .hk-bulk-folder.personal .hk-bulk-fname { color: #a1a1aa; }
+    .hk-bulk-ptag { font-size: 0.72rem; font-weight: 700; color: #a1a1aa; }
+    .hk-bulk-txr.unsure .bal { color: #ffc531; }
+    .hk-bulk-unsure { color: #ffc531; }
     .hk-dup-row { display: flex; gap: 8px; align-items: flex-start; font-size: 0.78rem; line-height: 1.8; border: 1px solid var(--border, rgba(255,255,255,0.12)); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
     .hk-dup-row input { width: 18px; height: 18px; margin-top: 4px; accent-color: #0a84ff; flex-shrink: 0; }
     .hk-dup-row s { color: #ff6b4a; }
@@ -10981,11 +10996,11 @@
         <div class="filter-bar" id="balanceFilters" style="display:none"></div>
         <div class="balance-filter-block bsr-grid">
           <div class="bsr-cell">
-            <label class="balance-acc-label">بخش:</label>
+            <label class="balance-acc-label">بخش</label>
             <div class="filter-acc-wrap" id="balanceSectionWrap"></div>
           </div>
           <div class="bsr-cell">
-            <label class="balance-acc-label" for="balanceSearchType">نوع:</label>
+            <label class="balance-acc-label" for="balanceSearchType">نوع</label>
             <select id="balanceSearchType" class="balance-search-sel">
               <option value="">همه</option>
               <option value="income">واریز</option>
@@ -10993,7 +11008,7 @@
             </select>
           </div>
           <div class="bsr-cell">
-            <label class="balance-acc-label" for="balanceSearchRange">ماه:</label>
+            <label class="balance-acc-label" for="balanceSearchRange">ماه</label>
             <select id="balanceSearchRange" class="balance-search-sel bsr-range">
               <option value="all">همهٔ ماه‌ها</option>
               <option value="month">این ماه</option>
@@ -11002,24 +11017,27 @@
             </select>
           </div>
           <div class="bsr-cell">
-            <label class="balance-acc-label" for="balanceSearchDay">روز:</label>
+            <label class="balance-acc-label" for="balanceSearchDay">روز</label>
             <select id="balanceSearchDay" class="balance-search-sel"></select>
             <input type="hidden" id="balanceDayFilter" value="">
           </div>
           <div class="bsr-cell">
-            <label class="balance-acc-label">حساب:</label>
+            <label class="balance-acc-label">حساب</label>
             <div class="filter-acc-wrap" id="balanceAccountFilterWrap"></div>
           </div>
           <div class="bsr-cell">
-            <label class="balance-acc-label" for="balanceSearchCat">دسته:</label>
+            <label class="balance-acc-label" for="balanceSearchCat">دسته</label>
             <select id="balanceSearchCat" class="balance-search-sel"><option value="">همهٔ دسته‌ها</option></select>
           </div>
-          <div class="bsr-cell bsr-wide balance-search-row bs-amt-row">
-            <label class="balance-acc-label" for="balanceSearchAmtMin">مبلغ:</label>
-            <input type="text" id="balanceSearchAmtMin" class="balance-search-input bs-amt" inputmode="numeric" placeholder="از" autocomplete="off" enterkeyhint="search" />
-            <input type="text" id="balanceSearchAmtMax" class="balance-search-input bs-amt" inputmode="numeric" placeholder="تا" autocomplete="off" enterkeyhint="search" />
+          <div class="bsr-cell bs-amt-row">
+            <label class="balance-acc-label" for="balanceSearchAmtMin">مبلغ از</label>
+            <input type="text" id="balanceSearchAmtMin" class="balance-search-input bs-amt" inputmode="numeric" placeholder="" autocomplete="off" enterkeyhint="search" />
           </div>
-          <div class="bsr-cell bsr-wide balance-search-row">
+          <div class="bsr-cell bs-amt-row">
+            <label class="balance-acc-label" for="balanceSearchAmtMax">مبلغ تا</label>
+            <input type="text" id="balanceSearchAmtMax" class="balance-search-input bs-amt" inputmode="numeric" placeholder="" autocomplete="off" enterkeyhint="search" />
+          </div>
+          <div class="bsr-cell bsr-wide balance-search-row bsr-desc">
             <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
             <input type="search" id="balanceSearchInput" class="balance-search-input" placeholder="جستجوی شرح…" autocomplete="off" enterkeyhint="search" />
           </div>
@@ -12858,6 +12876,16 @@
         const minW = (listMinWidth === undefined || listMinWidth === null) ? 120 : listMinWidth;
         list.style.width = Math.max(r.width, minW) + 'px';
         list.classList.add('open');
+        /* پایین صفحه جا نیست → رو به بالا باز شود (مثلاً منوی حسابِ آخرین پوشهٔ ثبت گروهی) */
+        try {
+          const lh = list.offsetHeight, below = window.innerHeight - r.bottom - 8, above = r.top - 8;
+          if (lh > below && above > below) {
+            const h = Math.min(lh, Math.max(120, above - 4));
+            list.style.maxHeight = h + 'px';
+            list.style.top = Math.max(8, r.top - 4 - Math.min(lh, h)) + 'px';
+            list.classList.add('dl-up');
+          } else list.classList.remove('dl-up');
+        } catch (eUp) {}
         wrap.classList.add('is-open');
         openDarkList = list;
         const bd = ensureDarkSelectBackdrop();
@@ -20546,6 +20574,35 @@ async function openPdfPrintWindow(){
       a.onfinish = function () { el._hkHA = null; el.style.overflow = ov; el.classList.remove('hk-shutting'); if (!open) setOpen(false); };
       a.oncancel = function () { el._hkHA = null; el.style.overflow = ov; el.classList.remove('hk-shutting'); };
     }
+    /* باز/بسته شدن نرمِ چند بخش داخلی (به‌جای کل باکس): ارتفاع، فاصله‌ها و خط‌ها همه با هم به صفر می‌رسند تا
+       لحظهٔ آخر هیچ چیزی نپرد. gap = فاصلهٔ flex قبل از بخش (با حاشیهٔ منفی جمع می‌شود). */
+    function hkSlideParts(host, getParts, open, setOpen, gap) {
+      if (!host || !host.animate || !host.isConnected) { setOpen(open); return; }
+      (host._hkParts || []).forEach(function (a0) { try { a0.cancel(); } catch (e0) {} });
+      host._hkParts = [];
+      setOpen(true);
+      var parts = (getParts() || []).filter(function (p) { return p && getComputedStyle(p).display !== 'none'; });
+      if (!parts.length) { setOpen(open); return; }
+      if (!open) host.classList.add('hk-shutting'); else host.classList.remove('hk-shutting');
+      var left = parts.length, finished = false;
+      var cleanOne = function (p) { ['overflow', 'boxSizing', 'height', 'paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth', 'marginTop', 'marginBottom'].forEach(function (k) { p.style[k] = ''; }); };
+      parts.forEach(function (p) {
+        p.style.overflow = 'hidden'; p.style.boxSizing = 'border-box';
+        var cs = getComputedStyle(p);
+        var full = { height: p.getBoundingClientRect().height + 'px', paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, borderTopWidth: cs.borderTopWidth, borderBottomWidth: cs.borderBottomWidth, marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: 1 };
+        var zero = { height: '0px', paddingTop: '0px', paddingBottom: '0px', borderTopWidth: '0px', borderBottomWidth: '0px', marginTop: (gap ? -gap : 0) + 'px', marginBottom: '0px', opacity: 0 };
+        var a = p.animate(open ? [zero, full] : [full, zero], { duration: 450, easing: 'ease' });
+        host._hkParts.push(a);
+        a.onfinish = function () {
+          if (--left > 0) return;
+          finished = true; host._hkParts = [];
+          if (!open) setOpen(false);
+          parts.forEach(cleanOne); host.classList.remove('hk-shutting');
+        };
+        a.oncancel = function () { cleanOne(p); host.classList.remove('hk-shutting'); };
+      });
+    }
+    function hkSlideBox(el, open, setOpen, gap) { hkSlideParts(el, function () { return [el]; }, open, setOpen, gap); }
     /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
     function hkDescAutosize(el) {
       try {
@@ -21906,7 +21963,7 @@ async function openPdfPrintWindow(){
               }
             });
             bd += '<div class="instant-bal-row ib-bd-personal-row">' +
-              '<span class="ib-bd-name"><span class="ib-name">موجودی شخصی</span></span>' +
+              '<span class="ib-bd-name"><span class="ib-name">موجودی با احتساب پروژه</span></span>' +
               '<span class="ib-amt ib-bd-personal">' + formatNum(personal) + '</span></div>';
             body.innerHTML = bd;
           } catch (eBd) {}
@@ -29639,12 +29696,36 @@ function confirmSmsEntry() {
           var m2 = t.match(/(?:حساب|کارت|سپرده|شماره)\s*(?:شماره)?\s*[:：]?\s*([0-9][0-9\-]{3,})/);
           tok = m2 ? m2[1] : '';
         }
+        /* شمارهٔ حساب/کارت کامل هر جای پیامک («برداشت از:3130…»، «واریز سود به: 3130…»): رشتهٔ ۱۰ رقمی یا بیشتر بدون کاما،
+           به‌جز شمارهٔ پیگیری/مرجع و عددی که کنار «مبلغ/مانده» یا «ریال/تومان» آمده (مبلغ بی‌کاما) */
+        if (!tok) {
+          var re = /[0-9]{10,}/g, mm;
+          while ((mm = re.exec(t))) {
+            var before = t.slice(Math.max(0, mm.index - 16), mm.index), after = t.slice(mm.index + mm[0].length, mm.index + mm[0].length + 8);
+            if (/(پیگیری|پيگيري|مرجع|ارجاع|رهگیری|سند|شناسه)/.test(before)) continue;
+            if (/(مبلغ|مانده|موجودی|موجودي)\s*[:：]?\s*$/.test(before) || /^\s*(ریال|ريال|تومان|rial)/i.test(after)) continue;
+            if (/[,٬]$/.test(before)) continue;
+            tok = mm[0]; break;
+          }
+        }
         var d = String(tok).replace(/[^0-9]/g, '');
         var tail = String(tok).match(/([0-9]+)\D*$/);
         var last = tail ? tail[1] : d;
         if (last.length < 3) return '';
         return last.slice(-4);
       } catch (e) { return ''; }
+    }
+    /* اطلاعیه، نه تراکنش: پیامک بی‌مانده با فعل آینده/اطلاع‌رسانی («… برداشت می‌گردد»، «خواهد شد»، «مشتری گرامی») */
+    function hkIsSmsNotice(raw, p) {
+      if (p && p.balance != null) return false;
+      var t = String(raw || '');
+      try { t = normalizeSmsText(t); } catch (e) {}
+      return /(می\s*[\u200c]?\s*گردد|مي\s*[\u200c]?\s*گردد|خواهد\s*(شد|گردید|گرديد)|مشتری\s*گرامی|مشتري\s*گرامي|کاربر\s*گرامی)/.test(t);
+    }
+    /* فرستندهٔ شخصی: شمارهٔ موبایل ایران (۰۹…، ‎+۹۸۹…، ۹۸۹…). بانک‌ها از این شماره‌ها پیامک نمی‌فرستند */
+    function hkIsPersonalSender(addr) {
+      var a = toEnglishDigits(String(addr || '')).replace(/[\s\-()]/g, '');
+      return /^(\+98|0098|98|0)9[0-9]{9}$/.test(a);
     }
     function hkAcc4Label(acc4) {
       if (!acc4 || typeof smsAccountBankMap !== 'object' || !smsAccountBankMap) return '';
@@ -30057,6 +30138,10 @@ function confirmSmsEntry() {
       var ok = false;
       try {
         if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) { cancelNativeSmsNotification(nid, true); return false; }
+        /* پیامک از شمارهٔ موبایل شخصی (مثلاً پیامک بانکی که کسی فوروارد کرده) یا اطلاعیهٔ بی‌مانده («… برداشت می‌گردد») تراکنش این کاربر نیست */
+        if (sender && hkIsPersonalSender(sender)) { cancelNativeSmsNotification(nid, true); return false; }
+        var _pn = null; try { _pn = parseBankSms(smsText); } catch (eP) {}
+        if (_pn && hkIsSmsNotice(smsText, _pn)) { cancelNativeSmsNotification(nid, true); return false; }
       } catch (eO) {}
       try { ok = enqueueBankSms(smsText, { nid: nid, sender: sender }); } catch (eE) { ok = false; }
       /* پیامکی که نرم‌افزار نمایش نمی‌دهد (تکراری/غیرتراکنش) نوتیف بی‌مصرف نگذارد */
@@ -32176,7 +32261,7 @@ if (item.type === 'recurring') {
             ((pd[tab] && pd[tab].sections) || []).forEach(function (s2) {
               ((s2 && s2.rows) || []).forEach(function (x) {
                 if (!x || x.deletedAt || x.reconGap) return;
-                var acc = (x.account || '').trim(), d = parseInt(x.day, 10), a = Number(x.amount) || 0;
+                var acc = hkNormAcc(x.account), d = hkDayNum(x.day), a = hkAmtNum(x.amount);
                 if (!acc || !d || !a) return;
                 var kk = tab + '|' + d + '|' + a + '|' + acc; cnt[kk] = (cnt[kk] || 0) + 1;
               });
@@ -32190,7 +32275,7 @@ if (item.type === 'recurring') {
         fo.inRange.forEach(function (r) {
           r._dup = false;
           if (!fo.account) return;
-          var cnt = poolOf(r.j.y, r.j.m), kk = r.type + '|' + r.j.d + '|' + Number(r.amount) + '|' + fo.account;
+          var cnt = poolOf(r.j.y, r.j.m), kk = r.type + '|' + r.j.d + '|' + hkAmtNum(r.amount) + '|' + hkNormAcc(fo.account);
           if (cnt[kk] > 0) { cnt[kk]--; r._dup = true; fo.dupCount++; n++; }
         });
       });
@@ -32219,23 +32304,63 @@ if (item.type === 'recurring') {
     }
     function hkBulkBuild(items, f, to) {
       if (!_hkBulk) return;
-      var fk = hkJKey(f), tk = hkJKey(to), map = {};
+      var fk = hkJKey(f), tk = hkJKey(to), map = {}, seenBody = {}, skipNotice = 0;
       items.forEach(function (it) {
         try {
           var body = String(it.body || ''); if (!body) return;
           if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
           var p = parseBankSms(body); if (!p || !p.amount) return;
-          var j = hkJalaliOfTs(Number(it.date) || Date.now());
+          if (hkIsSmsNotice(body, p)) { skipNotice++; return; }
+          var ts = Number(it.date) || 0;
+          /* همان پیامک دو بار در صندوق (هم‌متن و هم‌زمان) */
+          var bk = body + '|' + Math.round(ts / 60000);
+          if (seenBody[bk]) return; seenBody[bk] = 1;
+          var j = hkJalaliOfTs(ts || Date.now());
           var acc4 = hkSmsAcc4(body), bank = '';
           try { bank = detectBankFromSms(body) || ''; } catch (eB) {}
           if (!bank) bank = 'بانک نامشخص';
-          var key = bank + '|' + (acc4 || '');
-          var fo = map[key] || (map[key] = { key: key, bank: bank, acc4: acc4, all: [], inRange: [], latestBal: null });
-          var rec = { ts: Number(it.date) || 0, j: j, type: p.type === 'income' ? 'income' : 'expense', amount: p.amount, balance: p.balance, body: body };
+          var personal = hkIsPersonalSender(it.address);
+          var key = (personal ? 'P|' + toEnglishDigits(String(it.address || '')).replace(/\D/g, '').slice(-10) + '|' : '') + bank + '|' + (acc4 || '');
+          var fo = map[key] || (map[key] = { key: key, bank: bank, acc4: acc4, all: [], inRange: [], latestBal: null, personal: personal, sender: personal ? String(it.address || '') : '' });
+          var rec = { ts: ts, j: j, type: p.type === 'income' ? 'income' : 'expense', amount: p.amount, balance: p.balance, body: body };
           fo.all.push(rec);
           var k = hkJKey(j);
           if (k >= fk && k <= tk) fo.inRange.push(rec);
         } catch (e) {}
+      });
+      var bankRecs = [];
+      Object.keys(map).forEach(function (k) {
+        var fo = map[k];
+        fo.all.sort(function (a, b) { return a.ts - b.ts; });
+        /* زنجیرهٔ مانده؛ قانون کلیِ مستقل از قالب بانک: ماندهٔ قبلی ± مبلغ = ماندهٔ جدید */
+        var prev = null, dupSms = 0;
+        fo.all.forEach(function (r) {
+          if (r.balance != null && prev && prev.balance != null) {
+            var pb = Number(prev.balance), b = Number(r.balance), a = Number(r.amount), sg = r.type === 'income' ? 1 : -1;
+            var ok = function (amt, sign) { return Math.abs(pb + sign * amt - b) <= 1; };
+            if (Math.abs(b - pb) <= 1 && prev.type === r.type && Number(prev.amount) === a && (r.ts - prev.ts) < 86400000) { r._dupSms = true; dupSms++; return; }   /* پیامک تکراریِ همان تراکنش */
+            if (!ok(a, sg)) {
+              if (ok(a, -sg)) r.type = r.type === 'income' ? 'expense' : 'income';            /* نوع برعکس خوانده شده بود */
+              else if (ok(a * 10, sg)) r.amount = a * 10;                                     /* ریال/تومان قاطی شده بود */
+              else if (a % 10 === 0 && ok(a / 10, sg)) r.amount = a / 10;
+              else r._unsure = true;                                                          /* با مانده جور نیست (یا پیامکی بینشان جا افتاده) */
+            }
+          }
+          if (r.balance != null) prev = r;
+          else if (!prev || prev.balance == null) prev = r;
+        });
+        fo.dupSms = dupSms;
+        fo.all = fo.all.filter(function (r) { return !r._dupSms; });
+        fo.inRange = fo.inRange.filter(function (r) { return !r._dupSms; });
+        if (!fo.personal) fo.all.forEach(function (r) { bankRecs.push(r); });
+      });
+      /* پیامکِ شمارهٔ شخصی که همان پیامک بانک است (فوروارد) کنار می‌رود */
+      var bankSig = {};
+      bankRecs.forEach(function (r) { bankSig[r.type + '|' + r.amount + '|' + (r.balance == null ? '' : r.balance) + '|' + hkJKey(r.j)] = 1; });
+      Object.keys(map).forEach(function (k) {
+        var fo = map[k]; if (!fo.personal) return;
+        var keep = function (r) { return !bankSig[r.type + '|' + r.amount + '|' + (r.balance == null ? '' : r.balance) + '|' + hkJKey(r.j)]; };
+        fo.all = fo.all.filter(keep); fo.inRange = fo.inRange.filter(keep);
       });
       var folders = Object.keys(map).map(function (k) { return map[k]; }).filter(function (fo) { return fo.inRange.length; });
       folders.forEach(function (fo) {
@@ -32244,13 +32369,15 @@ if (item.type === 'recurring') {
         var lb = fo.all.find(function (r) { return r.balance != null; });
         fo.latestBal = lb ? lb.balance : null;
         fo.latestRec = lb || null;
+        fo.unsure = fo.inRange.filter(function (r) { return r._unsure; }).length;
       });
-      folders.sort(function (a, b) { return b.inRange.length - a.inRange.length; });
-      folders.forEach(function (fo) { fo.checked = true; });
-      _hkBulk.folders = folders; _hkBulk.from = f; _hkBulk.to = to;
+      folders.sort(function (a, b) { return (a.personal ? 1 : 0) - (b.personal ? 1 : 0) || b.inRange.length - a.inRange.length; });
+      folders.forEach(function (fo) { fo.checked = false; });   /* پیش‌فرض: هیچ پوشه‌ای تیک نخورده */
+      _hkBulk.folders = folders; _hkBulk.from = f; _hkBulk.to = to; _hkBulk.skipNotice = skipNotice;
       hkBulkAutoAssign();
       hkBulkRender();
     }
+    var HK_PERSON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" fill="rgba(160,160,170,0.18)" stroke="#a1a1aa" stroke-width="1.7"/><path d="M4.8 19.6c1.1-3.4 3.9-5.2 7.2-5.2s6.1 1.8 7.2 5.2" fill="none" stroke="#a1a1aa" stroke-width="1.7" stroke-linecap="round"/></svg>';
     var HK_FOLDER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="rgba(255,197,49,0.14)" stroke="#ffc531" stroke-width="1.7" stroke-linejoin="round"/><path d="M3.5 10h17" stroke="#ffc531" stroke-width="1.4" opacity="0.6"/></svg>';
     /* حساب هر پوشه بدون سؤال: (۱) رقم‌های آخرِ آموخته‌شده (۲) تنها حسابِ آزادِ همان بانک (۳) حساب تازه با نام «ملت ۱۲۳۴».
        اگر بانک چند حساب دارد و معلوم نیست کدام است، فقط کادر حساب همان پوشه قرمز می‌شود. */
@@ -32265,13 +32392,14 @@ if (item.type === 'recurring') {
       var labels = selectedAccountLabels(), folders = _hkBulk.folders, taken = labels.slice();
       var map = (typeof smsAccountBankMap === 'object' && smsAccountBankMap) || {};
       folders.forEach(function (fo) {
-        fo.newLabel = hkBulkNewLabel(fo, taken); taken.push(fo.newLabel);
+        fo.newLabel = fo.personal ? '' : hkBulkNewLabel(fo, taken); if (fo.newLabel) taken.push(fo.newLabel);
         fo.account = ''; fo.ambig = false;
+        if (fo.personal) return;   /* پیامکِ شمارهٔ شخصی: حساب خودکار نمی‌گیرد */
         var m = fo.acc4 && map['L4:' + fo.acc4];
         if (m && labels.indexOf(m) >= 0) fo.account = m;
       });
       var byBank = {};
-      folders.forEach(function (fo) { if (!fo.account) (byBank[fo.bank] = byBank[fo.bank] || []).push(fo); });
+      folders.forEach(function (fo) { if (!fo.account && !fo.personal) (byBank[fo.bank] = byBank[fo.bank] || []).push(fo); });
       Object.keys(byBank).forEach(function (bank) {
         var fs = byBank[bank];
         if (bank === 'بانک نامشخص') { fs.forEach(function (fo) { fo.ambig = true; }); return; }
@@ -32296,29 +32424,33 @@ if (item.type === 'recurring') {
       var allRow = document.createElement('label'); allRow.className = 'hk-bulk-all';
       allRow.innerHTML = '<input type="checkbox" class="hk-bulk-allchk"><span>همه</span>';
       var allChk = allRow.querySelector('input');
-      var syncAll = function () { var n = _hkBulk.folders.filter(function (f) { return f.checked; }).length; allChk.checked = n === _hkBulk.folders.length; allChk.indeterminate = n > 0 && n < _hkBulk.folders.length; };
+      var bankFolders = function () { return _hkBulk.folders.filter(function (f) { return !f.personal; }); };
+      var syncAll = function () { var bf = bankFolders(), n = bf.filter(function (f) { return f.checked; }).length; allChk.checked = bf.length > 0 && n === bf.length; allChk.indeterminate = n > 0 && n < bf.length; };
       allChk.onchange = function () {
-        _hkBulk.folders.forEach(function (fo) { fo.checked = allChk.checked; });
-        list.querySelectorAll('.hk-bulk-folder').forEach(function (c, i) { var fo = _hkBulk.folders[i]; c.classList.toggle('on', fo.checked); c.querySelector('.hk-bulk-chk').checked = fo.checked; if (!fo.checked) c.classList.remove('need'); hkBulkShowDup(c, fo); });
+        _hkBulk.folders.forEach(function (fo) { if (!fo.personal) fo.checked = allChk.checked; });
+        list.querySelectorAll('.hk-bulk-folder').forEach(function (c, i) { var fo = _hkBulk.folders[i]; c.classList.toggle('on', fo.checked); c.querySelector('.hk-bulk-chk').checked = fo.checked; c.classList.toggle('need', !!(fo.checked && !fo.account)); hkBulkShowDup(c, fo); });
         hkBulkOkState();
       };
       list.appendChild(allRow);
       _hkBulk.folders.forEach(function (fo, i) {
-        var card = document.createElement('div'); card.className = 'hk-bulk-folder' + (fo.checked ? ' on' : '') + (fo.open ? ' open' : '') + (fo.checked && !fo.account ? ' need' : '');
+        var card = document.createElement('div'); card.className = 'hk-bulk-folder' + (fo.checked ? ' on' : '') + (fo.open ? ' open' : '') + (fo.checked && !fo.account ? ' need' : '') + (fo.personal ? ' personal' : '');
         var inc = 0, exp = 0; fo.inRange.forEach(function (r) { if (r.type === 'income') inc += r.amount; else exp += r.amount; });
         card.innerHTML = '<div class="hk-bulk-fhead"><input type="checkbox" class="hk-bulk-chk"' + (fo.checked ? ' checked' : '') + ' aria-label="انتخاب">' +
-          '<span class="hk-bulk-fico">' + HK_FOLDER_SVG + '</span>' +
+          '<span class="hk-bulk-fico">' + (fo.personal ? HK_PERSON_SVG : HK_FOLDER_SVG) + '</span>' +
           '<span class="hk-bulk-fname">' + escapeHtml(fo.bank) + (fo.acc4 ? ' · ' + toPersianDigits(fo.acc4) : '') + '</span>' +
           '<span class="hk-bulk-arrow hk-chev" aria-hidden="true">' + HK_CHEV_SVG + '</span></div>' +
+          (fo.personal ? '<div class="hk-bulk-ptag">از شمارهٔ شخصی (' + escapeHtml(toPersianDigits(fo.sender)) + ')، نه بانک</div>' : '') +
           '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.inRange.length)) + ' تراکنش · واریز ' + formatNum(inc) + ' · برداشت ' + formatNum(exp) +
-          (fo.latestBal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.latestBal) + (fo.latestRec ? ' (' + hkJStr(fo.latestRec.j) + ')' : '') : '') + '<span class="hk-bulk-fdup"></span></div>';
+          (fo.latestBal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.latestBal) + (fo.latestRec ? ' (' + hkJStr(fo.latestRec.j) + ')' : '') : '') +
+          (fo.unsure ? '<br><span class="hk-bulk-unsure">' + toPersianDigits(String(fo.unsure)) + ' تراکنش با ماندهٔ پیامک قبلی جور نیست (؟)؛ برای اختلاف، ردیف اختلاف ثبت می‌شود</span>' : '') +
+          '<span class="hk-bulk-fdup"></span></div>';
         /* فهرست تراکنش‌ها فقط با اولین باز شدن پوشه ساخته می‌شود (۴۰ ردیف برای همهٔ پوشه‌ها از اول = کندی) */
         var tx = document.createElement('div'); tx.className = 'hk-bulk-tx';
         var fillTx = function () {
           if (tx._filled) return; tx._filled = true;
           tx.innerHTML = fo.inRange.slice().reverse().map(function (r) {
-            return '<div class="hk-bulk-txr"><span>' + hkJStr(r.j) + '</span><span class="' + (r.type === 'income' ? 'inc' : 'exp') + '">' + (r.type === 'income' ? '+' : '−') + formatNum(r.amount) + '</span>' +
-              '<span class="bal">' + (r.balance != null ? formatNum(r.balance) : '—') + '</span></div>';
+            return '<div class="hk-bulk-txr' + (r._unsure ? ' unsure' : '') + '"' + (r._unsure ? ' title="با ماندهٔ پیامک قبلی جور نیست"' : '') + '><span>' + hkJStr(r.j) + '</span><span class="' + (r.type === 'income' ? 'inc' : 'exp') + '">' + (r.type === 'income' ? '+' : '−') + formatNum(r.amount) + '</span>' +
+              '<span class="bal">' + (r.balance != null ? formatNum(r.balance) : '—') + (r._unsure ? ' ؟' : '') + '</span></div>';
           }).join('');
         };
         if (fo.open) fillTx();
@@ -32343,14 +32475,16 @@ if (item.type === 'recurring') {
         var chk = card.querySelector('.hk-bulk-chk');
         chk.addEventListener('click', function (e) { e.stopPropagation(); });
         chk.onchange = function () { fo.checked = chk.checked; card.classList.toggle('on', fo.checked); card.classList.toggle('need', !!(fo.checked && !fo.account)); hkBulkShowDup(card, fo); hkBulkOkState(); syncAll(); };
-        card.querySelector('.hk-bulk-fhead').addEventListener('click', function (e) {
-          if (e.target === chk) return;
+        /* زدن هر جای کارت پوشه (به‌جز تیک، منوی حساب و خودِ فهرست تراکنش‌ها) = باز/بسته شدن ریز تراکنش‌ها */
+        card.addEventListener('click', function (e) {
+          var t = e.target;
+          if (t === chk || (t.closest && t.closest('.hk-bulk-dsel, .hk-bulk-tx'))) return;
           fo.open = !fo.open;
           if (fo.open) fillTx();
           /* فلش همان لحظه برمی‌گردد؛ فقط ناحیهٔ فهرست انیمیت می‌شود و فهرست بلند بدون انیمیشن */
           card.classList.toggle('shut', !fo.open);
           if (fo.inRange.length > 60) { card.classList.toggle('open', fo.open); return; }
-          hkSlideSet(tx, fo.open, function (o) { card.classList.toggle('open', o); });
+          hkSlideBox(tx, fo.open, function (o) { card.classList.toggle('open', o); }, 6);
         });
         list.appendChild(card);
         hkBulkShowDup(card, fo);
@@ -32373,23 +32507,33 @@ if (item.type === 'recurring') {
        (تا بعد از ثبت، موجودی حساب دقیقاً برابر آخرین مانده شود) */
     function hkBulkOpeningFor(fo) {
       if (!fo || fo.latestBal == null) return null;
+      if (fo.latestRec && fo.latestRec.ts && (Date.now() - fo.latestRec.ts) > HK_SMS_FRESH_DAYS * 86400000) return null;   /* پیامکِ کهنه = موجودی نامعلوم */
       var t = getTodayPersian(), s = 0;
       fo.inRange.forEach(function (r) {
         if (r.j.y === t.y && r.j.m === t.m && (!fo.latestRec || r.ts <= fo.latestRec.ts)) s += r.type === 'income' ? r.amount : -r.amount;
       });
       return (Number(fo.latestBal) || 0) - s;
     }
+    /* یکدست‌سازی برای مقایسهٔ ردیف و پیامک: رقم فارسی/انگلیسی، «ي/ی»، «ك/ک»، نیم‌فاصله و فاصله‌ها یکی حساب می‌شوند */
+    function hkNormAcc(s) { return toEnglishDigits(String(s || '')).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\s\u200c\u200e\u200f\u00a0]+/g, ''); }
+    function hkDayNum(v) { return parseInt(toEnglishDigits(String(v == null ? '' : v)).replace(/[^0-9]/g, ''), 10) || 0; }
+    function hkAmtNum(v) { if (typeof v === 'number') return Math.round(v); var n = parseAmount(String(v == null ? '' : v)); return Math.round(Number(n) || 0); }
+    var HK_SMS_FRESH_DAYS = 35;
     /* موجودی اول ماه جاری طبق زنجیرهٔ پیامک‌ها: ماندهٔ آخرین پیامکِ پیش از ماه، وگرنه ماندهٔ اولین پیامکِ ماه منهای تراکنش‌های تا آن‌جا.
        end = ماندهٔ آخرین پیامک ماه (برای سنجش «با بانک یکی است») */
     function hkBulkSmsMonth(fo, y, m) {
       var ym = y * 100 + m, recs = fo.all.slice().sort(function (a, b) { return a.ts - b.ts; });
-      var before = null, inM = [];
-      recs.forEach(function (r) { var k = r.j.y * 100 + r.j.m; if (k < ym) { if (r.balance != null) before = r; } else if (k === ym) inM.push(r); });
-      var open = null;
-      if (before) open = Number(before.balance);
-      else {
-        var s = 0;
-        for (var i = 0; i < inM.length; i++) { s += inM[i].type === 'income' ? inM[i].amount : -inM[i].amount; if (inM[i].balance != null) { open = Number(inM[i].balance) - s; break; } }
+      var before = null, beforeIdx = -1, inM = [];
+      recs.forEach(function (r, i) { var k = r.j.y * 100 + r.j.m; if (k < ym) { if (r.balance != null) { before = r; beforeIdx = i; } } else if (k === ym) inM.push(r); });
+      var open = null, s = 0;
+      /* اول از پیامک‌های مانده‌دارِ خودِ همین ماه */
+      for (var i = 0; i < inM.length; i++) { s += inM[i].type === 'income' ? inM[i].amount : -inM[i].amount; if (inM[i].balance != null) { open = Number(inM[i].balance) - s; break; } }
+      /* وگرنه پیامکِ قبل از ماه، فقط اگر تازه باشد (حداکثر ۳۵ روز قبل از اول ماه) و بعدش تا اول ماه پیامکِ بی‌مانده نیامده باشد */
+      if (open == null && before) {
+        var ms = 0; try { var g = persianToDate(y, m, 1); ms = g ? g.getTime() : 0; } catch (eG) {}
+        var fresh = ms && (ms - before.ts) <= HK_SMS_FRESH_DAYS * 86400000;
+        var gapless = recs.slice(beforeIdx + 1).every(function (r) { var k = r.j.y * 100 + r.j.m; return k >= ym || r.balance != null; });
+        if (fresh && gapless) open = Number(before.balance);
       }
       var last = null; inM.forEach(function (r) { if (r.balance != null) last = r; });
       return { open: open, end: last ? Number(last.balance) : null, endDay: last ? last.j.d : 0, hasMonth: inM.length > 0 };
@@ -32456,7 +32600,7 @@ if (item.type === 'recurring') {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (s2) {
             ((s2 && s2.rows) || []).forEach(function (x) {
               if (!x || x.deletedAt || !(Number(x.amount) || 0)) return;
-              arr.push({ tab: tab, day: parseInt(x.day, 10) || 0, amount: Number(x.amount) || 0, acc: (x.account || '').trim(), row: x, used: false });
+              arr.push({ tab: tab, day: hkDayNum(x.day), amount: hkAmtNum(x.amount), acc: hkNormAcc(x.account), rawAcc: (x.account || '').trim(), row: x, used: false });
             });
           });
         });
@@ -32477,18 +32621,27 @@ if (item.type === 'recurring') {
         var pd = ctxOf(y, m).data;
         ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (s2) { var i = (s2.rows || []).indexOf(row); if (i >= 0) s2.rows.splice(i, 1); }); });
       };
-      var added = 0, skipped = 0, linked = 0, gapN = 0, report = [];
+      var added = 0, skipped = 0, linked = 0, gapN = 0, report = [], notes = [], unknownOpen = [];
       chosen.forEach(function (fo) {
-        var fuzzy = [];
+        var fuzzy = [], accN = hkNormAcc(fo.account);
+        /* ردیف جفت‌شده به شکل درست اصلاح شود (روز/نام حساب یکدست) */
+        var fixRow = function (x, r) { try { if (x.row.account !== fo.account) x.row.account = fo.account; if (String(x.row.day) !== String(r.j.d)) x.row.day = String(r.j.d); x.rawAcc = fo.account; } catch (eF) {} };
         /* ۱) تکراری قطعی: همان روز، مبلغ، نوع و حساب؛ ردیف «بدون حساب» با همان روز و مبلغ = همین تراکنش (حسابش پر می‌شود) */
         fo.inRange.forEach(function (r) {
-          var ex = existing(r.j.y, r.j.m), a = Number(r.amount);
-          var hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && x.acc === fo.account; });
-          if (hit) { hit.used = true; r._st = 'dup'; skipped++; return; }
-          hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (!x.acc || x.acc === 'بدون حساب'); });
-          if (hit) { hit.used = true; hit.row.account = fo.account; hit.acc = fo.account; r._st = 'dup'; skipped++; linked++; return; }
-          hit = ex.find(function (x) { return !x.used && x.tab === r.type && Math.abs(x.day - r.j.d) === 1 && x.amount === a && x.acc === fo.account; });
+          var ex = existing(r.j.y, r.j.m), a = hkAmtNum(r.amount);
+          var hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && x.acc === accN; });
+          if (hit) { hit.used = true; fixRow(hit, r); r._st = 'dup'; skipped++; return; }
+          hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (!x.acc || x.rawAcc === 'بدون حساب'); });
+          if (hit) { hit.used = true; hit.row.account = fo.account; hit.acc = accN; hit.rawAcc = fo.account; r._st = 'dup'; skipped++; linked++; return; }
+          hit = ex.find(function (x) { return !x.used && x.tab === r.type && Math.abs(x.day - r.j.d) === 1 && x.amount === a && x.acc === accN; });
           if (hit) { hit.used = true; r._st = 'fuzzy'; r._fz = hit; fuzzy.push(r); return; }
+          /* ردیف تازه؛ اگر ردیف دستیِ خیلی شبیهی هست، در خلاصه گفته شود چه چیزش فرق داشت */
+          var near = ex.find(function (x) { return !x.used && x.tab === r.type && x.amount === a && x.day === r.j.d && x.acc && x.acc !== accN; }) ||
+                     ex.find(function (x) { return !x.used && x.tab === r.type && x.amount === a && x.acc === accN && x.day !== r.j.d && Math.abs(x.day - r.j.d) <= 3; });
+          if (near && notes.length < 6) {
+            var why = near.acc !== accN ? 'نام حسابش «' + (near.rawAcc || '—') + '» بود' : 'روزش ' + toPersianDigits(String(near.day || '؟')) + ' بود';
+            notes.push((r.type === 'income' ? 'واریز ' : 'برداشت ') + formatNum(a) + ' روز ' + toPersianDigits(String(r.j.d)) + ' ثبت شد؛ ردیف «' + ((near.row.desc || '').trim() || 'بی‌شرح') + '» شبیه بود ولی ' + why);
+          }
           r._st = 'new'; r._row = addRow(fo, r); added++;
         });
         /* ۲) اختلاف بین دو پیامک پشت‌سرهم → ردیف اختلاف (مگر ردیف‌های دستیِ جفت‌نشدهٔ همان بازه دقیقاً توضیحش بدهند، یا قبلاً ثبت شده باشد) */
@@ -32502,14 +32655,14 @@ if (item.type === 'recurring') {
                 if (ii === 1 && jj.y === prev.j.y && jj.m === prev.j.m) return;
                 existing(jj.y, jj.m).forEach(function (x) {
                   var xk = jj.y * 10000 + jj.m * 100 + x.day;
-                  if (!x.used && x.acc === fo.account && !x.row.reconGap && !x.row.fromSmsBulk && xk >= pk && xk <= rk) loose.push(x);
+                  if (!x.used && x.acc === accN && !x.row.reconGap && !x.row.fromSmsBulk && xk >= pk && xk <= rk) loose.push(x);
                 });
               });
               var pick = hkSubsetSum(loose.map(function (x) { return x.tab === 'income' ? x.amount : -x.amount; }), diff);
               if (pick && pick.length) pick.forEach(function (ix) { loose[ix].used = true; });
               else {
                 var gtab = diff < 0 ? 'expense' : 'income', gamt = Math.abs(diff);
-                var had = existing(r.j.y, r.j.m).find(function (x) { return !x.used && x.row.reconGap && x.tab === gtab && x.amount === gamt && x.day === r.j.d && x.acc === fo.account; });
+                var had = existing(r.j.y, r.j.m).find(function (x) { return !x.used && x.row.reconGap && x.tab === gtab && x.amount === gamt && x.day === r.j.d && x.acc === accN; });
                 if (had) had.used = true;
                 else { hkBulkApplyGap({ fo: fo, rec: r, diff: diff, row: r._row || null }, ctxOf(r.j.y, r.j.m)); gapN++; }
               }
@@ -32522,8 +32675,8 @@ if (item.type === 'recurring') {
         var sumUpTo = function (day) {
           var s = 0;
           ['income', 'expense'].forEach(function (tab) { ((periodData[tab] && periodData[tab].sections) || []).forEach(function (s2) { (s2.rows || []).forEach(function (x) {
-            if (!x || (x.status || 'paid') !== 'paid' || (x.account || '').trim() !== fo.account) return;
-            var d = parseInt(x.day, 10) || 0; if (day && d > day) return;
+            if (!x || (x.status || 'paid') !== 'paid' || hkNormAcc(x.account) !== accN) return;
+            var d = hkDayNum(x.day); if (day && d > day) return;
             s += (tab === 'income' ? 1 : -1) * (Number(x.amount) || 0);
           }); }); });
           return s;
@@ -32537,8 +32690,9 @@ if (item.type === 'recurring') {
         fuzzy.forEach(function (r) { if (r._st === 'fuzzy') skipped++; });
         try { if (fo.acc4) smsAccountBankMap['L4:' + fo.acc4] = fo.account; } catch (eM) {}
         /* ۴) موجودی اول ماه جاری طبق پیامک‌ها */
-        var open = sm.open != null ? sm.open : (sm.end != null ? sm.end - sumUpTo(sm.endDay) : (fo.latestBal != null && !sm.hasMonth ? Number(fo.latestBal) : null));
+        var open = sm.open;
         var isNew = created.indexOf(fo.account) >= 0;
+        if (open == null) unknownOpen.push(fo.account);
         if (open != null) {
           var curOpen = 0; try { curOpen = getAccountOpeningBalance(fo.account) || 0; } catch (eO) {}
           if (!periodData.accountOpeningInstant || typeof periodData.accountOpeningInstant !== 'object') periodData.accountOpeningInstant = {};
@@ -32564,7 +32718,8 @@ if (item.type === 'recurring') {
       }).filter(Boolean);
       try { renderAll(); } catch (eR) {}
       try { renderHomeCards(); } catch (eH) {}
-      hkBulkSummary({ added: added, skipped: skipped, linked: linked, gaps: gapN, created: created, report: report, checks: checks, snap: snap });
+      var dupSms = 0; chosen.forEach(function (fo) { dupSms += fo.dupSms || 0; });
+      hkBulkSummary({ added: added, skipped: skipped, linked: linked, gaps: gapN, created: created, report: report, checks: checks, snap: snap, notes: notes, unknownOpen: unknownOpen, dupSms: dupSms, notices: (_hkBulk && _hkBulk.skipNotice) || 0, newAccs: created });
     }
     function hkBulkSummary(s) {
       var box = document.querySelector('#smsBulkOv .hk-bulk-box'); if (!box) { showToast(toPersianDigits(String(s.added)) + ' تراکنش ثبت شد'); closeSmsBulkModal(); return; }
@@ -32574,9 +32729,14 @@ if (item.type === 'recurring') {
       if (s.gaps) L.push(toPersianDigits(String(s.gaps)) + ' ردیف اختلاف برای پیامک‌های جاافتاده ثبت شد');
       s.created.forEach(function (lb) { L.push('حساب تازه ساخته شد: ' + lb); });
       s.report.forEach(function (x) { L.push(x); });
+      if (s.dupSms) L.push(toPersianDigits(String(s.dupSms)) + ' پیامک تکراریِ بانک نادیده گرفته شد');
+      if (s.notices) L.push(toPersianDigits(String(s.notices)) + ' پیامک اطلاع‌رسانی (نه تراکنش) نادیده گرفته شد');
+      (s.unknownOpen || []).forEach(function (lb) { L.push('موجودی «' + lb + '» از پیامک‌ها معلوم نشد (پیامکِ تازه‌ای با مانده نیست)' + (s.newAccs.indexOf(lb) >= 0 ? '؛ از ویرایش حساب، موجودی را وارد کنید' : '؛ موجودی حساب دست نخورد')); });
+      (s.notes || []).forEach(function (x) { L.push(x); });
       var chk = s.checks.map(function (c) {
         return '<div class="hk-bulk-sline ' + (c.ok ? 'ok' : 'bad') + '">' + escapeHtml(c.acc) + ': ' + (c.ok ? 'موجودی با پیامک بانک یکی است ✓' : formatNum(Math.abs(c.diff)) + ' تومان ' + (c.diff > 0 ? 'بیشتر' : 'کمتر') + ' از ماندهٔ آخرین پیامک بانک') + '</div>';
       }).join('');
+      try { var _ov = document.getElementById('smsBulkOv'); if (_ov) _ov.classList.add('hk-bulk-center'); } catch (eC) {}
       box.innerHTML = '<div class="hk-bulk-title">ثبت گروهی انجام شد</div>' +
         '<div class="hk-bulk-sum">' + L.map(function (x) { return '<div class="hk-bulk-sline">' + escapeHtml(x) + '</div>'; }).join('') + chk + '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok hk-bulk-done">باشه</button><button type="button" class="hk-bulk-undo">برگرداندن این ثبت</button></div>';
@@ -32634,6 +32794,7 @@ if (item.type === 'recurring') {
             if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
             if ((detectBankFromSms(body) || '') !== bank) return;
             var p = parseBankSms(body); if (!p || p.balance == null) return;
+            if (hkIsPersonalSender(it.address)) return;
             var ts = Number(it.date) || 0, a4 = hkSmsAcc4(body) || '';
             if (!by[a4] || by[a4].ts < ts) by[a4] = { acc4: a4, balance: Number(p.balance) || 0, ts: ts, j: hkJalaliOfTs(ts) };
           } catch (e) {}
@@ -33186,7 +33347,8 @@ if (item.type === 'recurring') {
           hkReadBankBalances(bankName).then(function (cards) {
             if (!editor.isConnected) return;
             var lbs = selectedAccountLabels(), mp = smsAccountBankMap || {};
-            cards = cards.filter(function (c) { return !(c.acc4 && mp['L4:' + c.acc4] && lbs.indexOf(mp['L4:' + c.acc4]) >= 0); });
+            /* پیامکِ کهنه (بیش از ۶۰ روز) معیار موجودی امروز نیست → کادر دستی */
+            cards = cards.filter(function (c) { return !(c.acc4 && mp['L4:' + c.acc4] && lbs.indexOf(mp['L4:' + c.acc4]) >= 0) && (!c.ts || Date.now() - c.ts <= 60 * 86400000); });
             if (!cards.length) { _sb.remove(); _ch.remove(); _hideMan(false); return; }
             var pick = function (c) {
               editor._smsPick = c; balInp.value = formatNum(c.balance);
@@ -35462,7 +35624,12 @@ if (item.type === 'recurring') {
           if (!it) return;
           const key = it.id || idx;
           if (recExpanded.has(key)) recExpanded.delete(key); else recExpanded.add(key);
-          hkSlideSet(row, recExpanded.has(key), function (o) { row.classList.toggle('rec-open', o); });
+          /* فقط جزئیات (و دکمه‌هایی که در حالت بسته پنهان‌اند) جمع می‌شوند؛ «این ماه: …» همراه باکس آرام بالا می‌آید */
+          hkSlideParts(row, function () {
+            var out = [row.querySelector('.rec-more')], acts = row.querySelector('.rec-acts.no-renew');
+            if (acts) out.push(acts);
+            return out;
+          }, recExpanded.has(key), function (o) { row.classList.toggle('rec-open', o); });
           try { ensureShapeFrame(box); } catch (eF) {}
         });
       });

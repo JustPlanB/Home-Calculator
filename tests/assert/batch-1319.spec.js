@@ -225,7 +225,7 @@ const ACC = 'ملت مصنوعی';
     out.dayBox = getComputedStyle(document.getElementById('dayDetailBox')).display === 'none' && document.getElementById('searchResultBox').style.display !== 'none';
     resetBalanceSearch(); renderBalanceTab(); await w(50);
     out.resetDay = document.getElementById('balanceDayFilter').value === '' && dy.value === '' && ty.value === '';
-    const sizes = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bsr-wide)')].map(c => { const ctl = c.querySelector('.fancy-select-btn, .dark-select-btn'); const r = ctl ? ctl.getBoundingClientRect() : { width: 0, height: 0 }; return Math.round(r.width) + 'x' + Math.round(r.height); });
+    const sizes = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bsr-wide):not(.bs-amt-row)')].map(c => { const ctl = c.querySelector('.fancy-select-btn, .dark-select-btn'); const r = ctl ? ctl.getBoundingClientRect() : { width: 0, height: 0 }; return Math.round(r.width) + 'x' + Math.round(r.height); });
     out.sizes = sizes;
     /* چیدمان فشرده: ردیف ۱ بخش و زمان، ردیف ۲ حساب و دسته، ردیف ۳ شرح */
     const cells = [...document.querySelectorAll('.bsr-grid > .bsr-cell')].map(c => ({ t: c.querySelector('.balance-acc-label').textContent, y: Math.round(c.getBoundingClientRect().top) }));
@@ -246,6 +246,8 @@ const ACC = 'ملت مصنوعی';
   const L = se.layout;
   /* از ۱.۳.۲۵ سطر «مبلغ» (از/تا) بالای شرح اضافه شد */
   if (L.length === 8 && /مبلغ/.test(L[6].t) && L[7].y > L[6].y && L[6].y > L[4].y) L.splice(6, 1);
+  /* از ۱.۳.۲۷ «مبلغ از» و «مبلغ تا» دو باکس هم‌اندازه در یک سطر */
+  if (L.length === 9 && /مبلغ از/.test(L[6].t) && /مبلغ تا/.test(L[7].t) && L[6].y === L[7].y && L[8].y > L[6].y) L.splice(6, 2);
   ok(L.length === 7 && L[0].y === L[1].y && L[2].y === L[3].y && L[4].y === L[5].y && L[2].y > L[0].y && L[4].y > L[2].y && L[6].y > L[4].y && /بخش/.test(L[0].t) && /نوع/.test(L[1].t) && /ماه/.test(L[2].t) && /روز/.test(L[3].t) && /حساب/.test(L[4].t) && /دسته/.test(L[5].t) && /شرح/.test(L[6].t), 'چیدمان: [بخش][نوع] / [زمان][روز] / [حساب][دسته] / شرح');
   ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
   ok(se.catLabelAlign === 'right', 'برچسب «دسته:» راست‌چین');
