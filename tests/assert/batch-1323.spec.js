@@ -54,7 +54,8 @@ const ACC = 'ملت مصنوعی';
     resetBalanceSearch(); closePersonDetail(); await w(200);
     return { tables, all, title0, exp, tables2, day5, hint };
   });
-  ok(sr.tables.join() === 'searchResultBox' && sr.tables2.join() === 'searchResultBox' && !sr.hint, 'فقط یک جدول دیده می‌شود: نتیجهٔ جستجو (بدون «مانده به تفکیک بخش» و «جزئیات روز»)');
+  /* از ۱.۳.۳۱ جدول ماه‌های سال (searchMonthSummary) هم بالای نتیجه هست */
+  ok(sr.tables.filter(t => t !== 'searchMonthSummary').join() === 'searchResultBox' && sr.tables2.filter(t => t !== 'searchMonthSummary').join() === 'searchResultBox' && !sr.hint, 'فقط جدول نتیجهٔ جستجو (و جدول ماه‌ها)؛ بدون «مانده به تفکیک بخش» و «جزئیات روز»');
   ok(sr.all === 1 && sr.title0 === 'نتیجهٔ جستجو', 'بدون فیلتر (از ۱.۳.۲۴): فقط چارچوب جدول، منتظر فیلتر یا کلمه');
   ok(sr.exp.length === 2 && sr.exp.every(t => /نان|بنزین/.test(t)), 'فیلتر «برداشت» روی همان جدول اعمال شد');
   ok(sr.day5.length === 1 && /نان/.test(sr.day5[0]), 'فیلتر روز ۵ + برداشت: همان جدول، یک ردیف');
