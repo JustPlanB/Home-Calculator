@@ -220,9 +220,9 @@ const ACC = 'ملت مصنوعی';
     ty.value = ''; ty.dispatchEvent(new Event('change')); await w(50);
     /* روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه با جمع هر ماه */
     dy.value = '4'; dy.dispatchEvent(new Event('change')); await w(80);
-    out.day4 = rows(); out.day4foot = [...document.querySelectorAll('#search-result-foot tr')].map(t => t.textContent);
+    out.day4 = rows(); /* از ۱.۳.۳۱ جمع هر ماه در جدول «ماه‌های سال» بالای نتیجه است */ out.day4foot = [...document.querySelectorAll('#searchMonthSummary .bs-mrow td.bs-mname')].map(t => 'جمع ' + t.textContent);
     /* روز ۵ با «این ماه»: (از ۱.۳.۲۳) فقط همان جدول نتیجهٔ جستجو، بدون جدول جزئیات روز */
-    rg.value = 'month'; rg.dispatchEvent(new Event('change')); dy.value = '5'; dy.dispatchEvent(new Event('change')); await w(80);
+    rg.value = '7'; rg.dispatchEvent(new Event('change')); dy.value = '5'; dy.dispatchEvent(new Event('change')); await w(80);
     out.dayBox = getComputedStyle(document.getElementById('dayDetailBox')).display === 'none' && document.getElementById('searchResultBox').style.display !== 'none';
     resetBalanceSearch(); renderBalanceTab(); await w(50);
     out.resetDay = document.getElementById('balanceDayFilter').value === '' && dy.value === '' && ty.value === '';
@@ -238,7 +238,7 @@ const ACC = 'ملت مصنوعی';
   });
   ok(se.def === 'سارا' && se.sel.join() === 'سارا' && se.opts.join('|') === 'سارا|علی|همه', 'بخش: پیش‌فرض اولین کاربر، فهرست کاربران + «همه» (بدون انتخاب چندتایی)');
   ok(se.afterAll.length === 0, 'انتخاب «همه»: همهٔ بخش‌ها');
-  ok(se.rangeOpts.join('|') === 'همهٔ ماه‌ها|این ماه|۳ ماه اخیر|امسال', 'منوی «زمان»: همهٔ ماه‌ها / این ماه / ۳ ماه اخیر / امسال');
+  ok(se.rangeOpts.join('|') === 'همهٔ ماه‌ها|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند', 'منوی «ماه» (از ۱.۳.۳۱): همهٔ ماه‌ها + دوازده ماه سال');
   ok(se.dayOpts.length === 32 && se.dayOpts[0] === 'همه روزها' && se.dayOpts[31] === '۳۱' && se.typeOpts.join('|') === 'همه|واریز|برداشت', 'منوی «روز» (همه روزها + ۱ تا ۳۱) و منوی «نوع» (همه / واریز / برداشت)');
   ok(se.incOnly.length > 0 && !se.incOnly.some(t => /نان|بنزین|کتاب/.test(t)) && se.catOff, 'نوع «واریز»: فقط درآمدها؛ منوی دسته غیرفعال');
   ok(se.expOnly.length > 0 && !se.expOnly.some(t => /اجاره/.test(t)) && se.catOn, 'نوع «برداشت»: فقط مخارج');
