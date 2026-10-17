@@ -26,7 +26,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان', amount: 30000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'balance'); await w(500);
-    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell')];
+    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell:not(.bs-arange-row)')];
     const sel = cells.filter(c => c.querySelector('.fancy-select-btn, .dark-select-btn'));
     const out = {};
     out.def = sel.map(c => { const bt = c.querySelector('.fancy-select-btn, .dark-select-btn'); const bs = getComputedStyle(bt, '::before'); return { name: bt.dataset.name, def: bt.classList.contains('bsr-def'), before: bs.content, fs: getComputedStyle(bt).fontSize, col: bs.color, align: getComputedStyle(bt).textAlign }; });

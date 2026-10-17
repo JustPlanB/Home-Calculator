@@ -229,7 +229,7 @@ const ACC = 'ملت مصنوعی';
     const sizes = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bsr-wide):not(.bs-amt-row)')].map(c => { const ctl = c.querySelector('.fancy-select-btn, .dark-select-btn'); const r = ctl ? ctl.getBoundingClientRect() : { width: 0, height: 0 }; return Math.round(r.width) + 'x' + Math.round(r.height); });
     out.sizes = sizes;
     /* چیدمان فشرده: ردیف ۱ بخش و زمان، ردیف ۲ حساب و دسته، ردیف ۳ شرح */
-    const cells = [...document.querySelectorAll('.bsr-grid > .bsr-cell')].map(c => ({ t: c.querySelector('.balance-acc-label').textContent, y: Math.round(c.getBoundingClientRect().top) }));
+    const cells = [...document.querySelectorAll('.bsr-grid > .bsr-cell:not(.bs-arange-row)')].map(c => ({ t: c.querySelector('.balance-acc-label').textContent, y: Math.round(c.getBoundingClientRect().top) }));
     out.layout = cells;
     const lab = document.querySelector('label[for="balanceSearchCat"]');
     out.catLabelAlign = getComputedStyle(lab).textAlign;

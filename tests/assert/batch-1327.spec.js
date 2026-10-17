@@ -185,7 +185,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان', amount: 30000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'balance'); await w(400);
-    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell:not(.bsr-desc)')];
+    const cells = [...document.querySelectorAll('#balanceFixedHeader .bsr-cell:not(.bsr-desc):not(.bs-arange-row)')];
     out.widths = cells.map(c => Math.round(c.getBoundingClientRect().width));
     out.labelsInside = cells.every(c => { const l = c.querySelector('.balance-acc-label').getBoundingClientRect(), r = c.getBoundingClientRect(); return l.left >= r.left && l.right <= r.right && getComputedStyle(c.querySelector('.balance-acc-label')).position === 'absolute'; });
     out.names = cells.map(c => c.querySelector('.balance-acc-label').textContent);
