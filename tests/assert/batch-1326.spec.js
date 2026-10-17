@@ -69,13 +69,17 @@ async function newPage(b, list) {
     const w = ms => new Promise(r => setTimeout(r, ms));
     openSmsBulkModal(); await w(200);
     await hkBulkRead(); await w(500);
+    /* از ۱.۳.۲۷ پیش‌فرض هیچ پوشه‌ای تیک ندارد؛ «همه» همه را انتخاب می‌کند */
+    const def = { all: document.querySelector('.hk-bulk-allchk').checked, on: document.querySelectorAll('.hk-bulk-folder.on').length, need: document.querySelectorAll('.hk-bulk-folder.need').length };
+    document.querySelector('.hk-bulk-allchk').click(); await w(100);
     const cards = [...document.querySelectorAll('.hk-bulk-folder')];
     const by = {}; cards.forEach((c, i) => { by[c.querySelector('.hk-bulk-fname').textContent] = { i, v: c.querySelector('.hk-bulk-dsel').getValue(), need: c.classList.contains('need'), on: c.classList.contains('on'), tx: c.querySelector('.hk-bulk-tx').children.length }; });
     const all = document.querySelector('.hk-bulk-allchk');
-    return { by, all: all && all.checked, n: cards.length };
+    return { by, all: all && all.checked, n: cards.length, def };
   });
   const F = k => Object.keys(fo.by).find(x => x.indexOf(k) >= 0);
-  ok(fo.all === true && Object.values(fo.by).every(x => x.on), 'تیک «همه» بالای پوشه‌ها و همهٔ پوشه‌ها به‌طور پیش‌فرض انتخاب‌شده');
+  ok(fo.def.all === false && fo.def.on === 0 && fo.def.need === 0, 'پیش‌فرض: «همه» و هیچ پوشه‌ای تیک نخورده (کادر قرمزی هم نیست)');
+  ok(fo.all === true && Object.values(fo.by).every(x => x.on), 'زدن «همه» → همهٔ پوشه‌ها انتخاب شدند');
   ok(fo.by[F('پاسارگاد')].v === 'پاسارگاد من', 'پوشهٔ با رقم‌های آموخته‌شده → همان حساب');
   ok(fo.by[F('ملت')].v === 'ملت', 'تنها حساب بانک → خودکار همان حساب');
   ok(fo.by[F('ملی')].v === 'ملی ۲۲۲۲', 'بانک بدون حساب → حساب تازهٔ «ملی ۲۲۲۲» پیشنهاد و انتخاب شد');
@@ -147,6 +151,7 @@ async function newPage(b, list) {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const run = async () => {
       openSmsBulkModal(); await w(150); await hkBulkRead(); await w(400);
+      document.querySelector('.hk-bulk-allchk').click(); await w(50);
       const cards = [...document.querySelectorAll('.hk-bulk-folder')];
       cards.forEach((c, i) => { if (!_hkBulk.folders[i].account) { const ch = c.querySelector('.hk-bulk-chk'); ch.checked = false; ch.onchange(); } });
       document.querySelector('.hk-bulk-ok').click(); await w(600);
