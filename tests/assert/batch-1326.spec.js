@@ -73,7 +73,7 @@ async function newPage(b, list) {
     const def = { all: document.querySelector('.hk-bulk-allchk').checked, on: document.querySelectorAll('.hk-bulk-folder.on').length, need: document.querySelectorAll('.hk-bulk-folder.need').length };
     document.querySelector('.hk-bulk-allchk').click(); await w(100);
     const cards = [...document.querySelectorAll('.hk-bulk-folder')];
-    const by = {}; cards.forEach((c, i) => { by[c.querySelector('.hk-bulk-fname').textContent] = { i, v: c.querySelector('.hk-bulk-dsel').getValue(), need: c.classList.contains('need'), on: c.classList.contains('on'), tx: c.querySelector('.hk-bulk-tx').children.length }; });
+    const by = {}; cards.forEach((c, i) => { by[c.querySelector('.hk-bulk-fname').textContent] = { i, v: c.querySelector('.hk-bulk-dsel').getValue(), need: c.classList.contains('need'), pick: c.classList.contains('pick'), on: c.classList.contains('on'), tx: c.querySelector('.hk-bulk-tx').children.length }; });
     const all = document.querySelector('.hk-bulk-allchk');
     return { by, all: all && all.checked, n: cards.length, def };
   });
@@ -83,7 +83,7 @@ async function newPage(b, list) {
   ok(fo.by[F('پاسارگاد')].v === 'پاسارگاد من', 'پوشهٔ با رقم‌های آموخته‌شده → همان حساب');
   ok(fo.by[F('ملت')].v === 'ملت', 'تنها حساب بانک → خودکار همان حساب');
   ok(fo.by[F('ملی')].v === 'ملی ۲۲۲۲', 'بانک بدون حساب → حساب تازهٔ «ملی ۲۲۲۲» پیشنهاد و انتخاب شد');
-  ok(fo.by[F('صادرات')].v === '' && fo.by[F('صادرات')].need && Object.keys(fo.by).filter(k => fo.by[k].need).length === 1, 'دو حساب از یک بانک و رقم ناشناس → فقط کادر همان پوشه قرمز');
+  ok(fo.by[F('صادرات')].v === '' && fo.by[F('صادرات')].pick && !fo.by[F('صادرات')].need && Object.keys(fo.by).filter(k => fo.by[k].pick).length === 1, 'دو حساب از یک بانک و رقم ناشناس → فقط کادر حساب همان پوشه آبی (قرمز فقط بعد از «ثبت»)');
   ok(Object.values(fo.by).every(x => x.tx === 0), 'ردیف‌های تراکنش پوشه‌ها تا باز شدن ساخته نمی‌شوند');
 
   const lazy = await p.evaluate(async (i) => {
