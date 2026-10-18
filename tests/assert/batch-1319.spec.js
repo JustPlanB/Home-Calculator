@@ -220,7 +220,7 @@ const ACC = 'ملت مصنوعی';
     ty.value = ''; ty.dispatchEvent(new Event('change')); await w(50);
     /* روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه با جمع هر ماه */
     dy.value = '4'; dy.dispatchEvent(new Event('change')); await w(80);
-    out.day4 = rows(); /* از ۱.۳.۳۱ جمع هر ماه در جدول «ماه‌های سال» بالای نتیجه است */ out.day4foot = [...document.querySelectorAll('#searchMonthSummary .bs-mrow td.bs-mname')].map(t => 'جمع ' + t.textContent);
+    out.day4 = rows(); /* از ۱.۳.۳۱ جمع هر ماه در جدول «ماه‌های سال» بالای نتیجه است */ out.day4foot = [...document.querySelectorAll('#search-result-foot tr')].map(t => t.textContent.trim()); /* ۱.۳.۳۶: یک جدول؛ جمع کل زیر نتیجه */
     /* روز ۵ با «این ماه»: (از ۱.۳.۲۳) فقط همان جدول نتیجهٔ جستجو، بدون جدول جزئیات روز */
     rg.value = '7'; rg.dispatchEvent(new Event('change')); dy.value = '5'; dy.dispatchEvent(new Event('change')); await w(80);
     out.dayBox = getComputedStyle(document.getElementById('dayDetailBox')).display === 'none' && document.getElementById('searchResultBox').style.display !== 'none';
@@ -242,7 +242,7 @@ const ACC = 'ملت مصنوعی';
   ok(se.dayOpts.length === 32 && se.dayOpts[0] === 'همه روزها' && se.dayOpts[31] === '۳۱' && se.typeOpts.join('|') === 'همه|واریز|برداشت', 'منوی «روز» (همه روزها + ۱ تا ۳۱) و منوی «نوع» (همه / واریز / برداشت)');
   ok(se.incOnly.length > 0 && !se.incOnly.some(t => /نان|بنزین|کتاب/.test(t)) && se.catOff, 'نوع «واریز»: فقط درآمدها؛ منوی دسته غیرفعال');
   ok(se.expOnly.length > 0 && !se.expOnly.some(t => /اجاره/.test(t)) && se.catOn, 'نوع «برداشت»: فقط مخارج');
-  ok(se.day4.length === 3 && se.day4.every(t => /\/۰۴$|اجاره/.test(t) || /۰۴/.test(t)) && se.day4foot.filter(t => /^جمع (مرداد|شهریور|مهر)/.test(t)).length === 3, 'روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه، با جمع هر ماه (' + se.day4.length + ' ردیف)');
+  ok(se.day4.length === 3 && se.day4.every(t => /\/۰۴$|اجاره/.test(t) || /۰۴/.test(t)) && se.day4foot.some(t => /^جمع (خرج|درآمد) \(/.test(t)), 'روز ۴ با «همهٔ ماه‌ها»: روز ۴ هر ماه، با جمع کل زیر نتیجه (' + se.day4.length + ' ردیف)');
   ok(se.dayBox && se.resetDay, 'روز با «این ماه»: فقط جدول نتیجهٔ جستجو؛ پاک کردن جستجو نوع و روز را هم برمی‌گرداند');
   const L = se.layout;
   /* از ۱.۳.۲۵ سطر «مبلغ» (از/تا) بالای شرح اضافه شد */

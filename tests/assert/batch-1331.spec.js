@@ -52,7 +52,7 @@ async function page(b, inbox) {
     out.handles = Math.abs(hc(hs[0]) - tr.left) < 3 && Math.abs(hc(hs[1]) - tr.right) < 3;
     out.opts = [...document.getElementById('balanceSearchRange').options].map(o => o.textContent);
     /* جدول ماه‌ها (همهٔ ماه‌های ۱۴۰۵) */
-    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); bsRenderMonthSummary(window._bsLastList || [], 'all'); await w(200); /* ۱.۳.۳۶: جدول ماه‌ها از منوی جستجو برداشته شد؛ آزمون خود جدول و پنجرهٔ جزئیات مستقیم */ 
     const ms = document.getElementById('searchMonthSummary');
     out.msShown = !!ms && getComputedStyle(ms).display !== 'none';
     out.msTitle = ms ? ms.querySelector('.summary-header').textContent : '';
