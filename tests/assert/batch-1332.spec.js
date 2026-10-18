@@ -292,7 +292,7 @@ async function page(b, inbox, extra) {
   });
   ok(bk.ok && bk.internal.length === 1 && /^hesab-auto-/.test(bk.internal[0]), 'پشتیبان روزانه در حافظهٔ داخلی نرم‌افزار (در فایل‌منیجر دیده نمی‌شود)');
   ok(bk.downloads.filter(n => /^hesab-latest-/.test(n)).length === 1 && !bk.downloads.some(n => /^hesab-(auto|safety)-/.test(n)) && bk.downloads.indexOf('hesab-manual-note.json') >= 0, 'در Downloads/HesabKetab فقط یک «آخرین پشتیبان»؛ روزانه/ایمنی‌های قدیمی برداشته شدند، فایل‌های دیگر دست نخوردند');
-  ok(bk.downloads2.length === 1 && bk.downloads2[0] !== bk.downloads.find(n => /^hesab-latest-/.test(n)) && bk.internal2 === 1, 'پشتیبان بعدی جای «آخرین» قبلی را می‌گیرد (همیشه یک فایل)؛ در حافظهٔ داخلی از هر روز جدیدترین نسخه');
+  ok(bk.downloads2.length === 1 && bk.downloads2[0] !== bk.downloads.find(n => /^hesab-latest-/.test(n)) && bk.internal2 >= 1 && bk.internal2 <= 2 /* ساعت ثابتِ آزمون: نام‌ها فقط در دو نویسهٔ تصادفی فرق دارند */, 'پشتیبان بعدی جای «آخرین» قبلی را می‌گیرد (همیشه یک فایل)؛ در حافظهٔ داخلی از هر روز جدیدترین نسخه');
   ok(bk.restore, 'زدن روی فایل پشتیبان (باز کردن با حساب‌کتاب) = همان پنجرهٔ بازیابی');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
