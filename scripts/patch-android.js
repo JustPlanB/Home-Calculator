@@ -350,6 +350,35 @@ import java.io.ByteArrayOutputStream;
 
 @CapacitorPlugin(name="NativeFileExport")
 public class NativeFileExportPlugin extends Plugin {
+  /* فایلی که با «باز کردن با…» یا «اشتراک‌گذاری» به نرم‌افزار داده شده (مثلاً پشتیبان در Downloads) */
+  private static String openedName=null; private static byte[] openedData=null;
+  public static boolean captureOpened(android.app.Activity act, Intent intent){
+    try{
+      if(intent==null) return false;
+      String a=intent.getAction(); Uri u=null;
+      if(Intent.ACTION_VIEW.equals(a)) u=intent.getData();
+      else if(Intent.ACTION_SEND.equals(a)){ Object x=intent.getParcelableExtra(Intent.EXTRA_STREAM); if(x instanceof Uri) u=(Uri)x; }
+      if(u==null) return false;
+      ContentResolver cr=act.getContentResolver();
+      String name="backup.json";
+      android.database.Cursor c=null;
+      try{ c=cr.query(u,new String[]{android.provider.OpenableColumns.DISPLAY_NAME},null,null,null); if(c!=null && c.moveToFirst() && c.getString(0)!=null) name=c.getString(0); }catch(Exception ignored){} finally{ if(c!=null) c.close(); }
+      try(java.io.InputStream in=cr.openInputStream(u)){
+        if(in==null) return false;
+        ByteArrayOutputStream bo=new ByteArrayOutputStream(); byte[] buf=new byte[65536]; int r; long t=0;
+        while((r=in.read(buf))>0){ t+=r; if(t>64L*1024*1024) return false; bo.write(buf,0,r); }
+        openedName=name; openedData=bo.toByteArray();
+      }
+      intent.setAction(Intent.ACTION_MAIN); intent.setData(null);
+      return true;
+    }catch(Exception e){ return false; }
+  }
+  @com.getcapacitor.PluginMethod public void takeOpenedFile(PluginCall call){
+    JSObject r=new JSObject();
+    if(openedData!=null){ r.put("name",openedName); r.put("data",Base64.encodeToString(openedData,Base64.NO_WRAP)); }
+    openedName=null; openedData=null;
+    call.resolve(r);
+  }
 
   private String uniqueDownloadName(String filename) {
     if(filename==null || filename.trim().isEmpty()) filename="download.bin";
@@ -441,7 +470,27 @@ public class NativeFileExportPlugin extends Plugin {
   /* ===== پشتیبان خودکار: پوشهٔ Downloads/HesabKetab (اندروید ۱۰ به بالا؛ بعد از حذف نرم‌افزار هم می‌ماند) ===== */
   private static final String AUTO_DIR="HesabKetab";
   private String autoRel(){ return Environment.DIRECTORY_DOWNLOADS+"/"+AUTO_DIR+"/"; }
-  private boolean autoSafeName(String n){ return n!=null && n.matches("hesab-(auto|safety)-[0-9A-Za-z._-]{1,80}[.]json"); }
+  private boolean autoSafeName(String n){ return n!=null && n.matches("hesab-(auto|safety|latest)-[0-9A-Za-z._-]{1,80}[.]json"); }
+  /* حافظهٔ داخلی خود نرم‌افزار (در فایل‌منیجر دیده نمی‌شود): پشتیبان‌های روزانه و ایمنی؛ در Downloads فقط «آخرین پشتیبان» */
+  private boolean isInternal(PluginCall c){ return "internal".equals(c.getString("store","")); }
+  private File internalDir(){ File d=new File(getContext().getFilesDir(),"backups"); if(!d.exists()) d.mkdirs(); return d; }
+  private byte[] readFileBytes(File f) throws Exception {
+    if(f.length()>64L*1024*1024) throw new Exception("too_large");
+    try(java.io.FileInputStream in=new java.io.FileInputStream(f)){
+      ByteArrayOutputStream bo=new ByteArrayOutputStream(); byte[] buf=new byte[65536]; int r;
+      while((r=in.read(buf))>0) bo.write(buf,0,r);
+      return bo.toByteArray();
+    }
+  }
+  private void saveInternal(PluginCall call, String name, byte[] bytes) throws Exception {
+    File dir=internalDir(), f=new File(dir,name), tmp=new File(dir,name+".tmp");
+    if(f.exists()){ call.reject("name_exists"); return; }
+    try(FileOutputStream out=new FileOutputStream(tmp)){ out.write(bytes); out.flush(); try{ out.getFD().sync(); }catch(Exception ignored){} }
+    byte[] back=readFileBytes(tmp);
+    if(!java.util.Arrays.equals(back,bytes)){ tmp.delete(); throw new Exception("verify_failed"); }
+    if(!tmp.renameTo(f)){ tmp.delete(); throw new Exception("finish_failed"); }
+    call.resolve(new JSObject().put("ok",true).put("verified",true).put("filename",name).put("folder","internal"));
+  }
 
   @com.getcapacitor.PluginMethod public void saveAutoBackup(PluginCall call){
     if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
@@ -449,6 +498,7 @@ public class NativeFileExportPlugin extends Plugin {
       String name=call.getString("filename","");
       if(!autoSafeName(name)){ call.reject("bad_name"); return; }
       byte[] bytes=decodeBase64(call.getString("data",""));
+      if(isInternal(call)){ saveInternal(call,name,bytes); return; }
       ContentResolver cr=getContext().getContentResolver();
       /* نوشتن امن بدون هیچ حذفی: هر پشتیبان نام یکتای خودش را دارد (برنامه زمان را در نام می‌گذارد)، پس فایل تازه
          هرگز جای فایل قبلی را نمی‌گیرد. ترتیب: درج با نام نهایی در حالت pending (نامرئی) ← نوشتن ← خواندن دوباره و
@@ -483,6 +533,15 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   @com.getcapacitor.PluginMethod public void listAutoBackups(PluginCall call){
+    if(isInternal(call)){
+      try{
+        com.getcapacitor.JSArray arr=new com.getcapacitor.JSArray();
+        File[] fs=internalDir().listFiles();
+        if(fs!=null) for(File f: fs){ if(f.isFile() && autoSafeName(f.getName())) arr.put(new JSObject().put("name",f.getName()).put("size",f.length()).put("modified",f.lastModified()/1000)); }
+        call.resolve(new JSObject().put("files",arr));
+      }catch(Exception e){ call.reject("list_failed",e); }
+      return;
+    }
     if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
     android.database.Cursor c=null;
     try{
@@ -531,6 +590,17 @@ public class NativeFileExportPlugin extends Plugin {
   }
   /** خواندن یک پشتیبان خودکار تمام‌شده (فقط پوشهٔ HesabKetab و فقط نام‌های مجاز) — برای تأیید پیش از پاک‌سازی */
   @com.getcapacitor.PluginMethod public void readAutoBackup(PluginCall call){
+    if(isInternal(call)){
+      try{
+        String name=call.getString("name","");
+        if(!autoSafeName(name)){ call.reject("bad_name"); return; }
+        File f=new File(internalDir(),name);
+        if(!f.isFile()){ call.reject("not_found"); return; }
+        byte[] bytes=readFileBytes(f);
+        call.resolve(new JSObject().put("data",Base64.encodeToString(bytes,Base64.NO_WRAP)).put("size",bytes.length));
+      }catch(Exception e){ call.reject("read_failed",e); }
+      return;
+    }
     if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
     android.database.Cursor c=null;
     try{
@@ -549,6 +619,13 @@ public class NativeFileExportPlugin extends Plugin {
   }
 
   @com.getcapacitor.PluginMethod public void deleteAutoBackup(PluginCall call){
+    if(isInternal(call)){
+      String name=call.getString("name","");
+      if(!autoSafeName(name)){ call.reject("bad_name"); return; }
+      File f=new File(internalDir(),name);
+      call.resolve(new JSObject().put("deleted", f.isFile() && f.delete() ? 1 : 0));
+      return;
+    }
     if(Build.VERSION.SDK_INT<29){ call.reject("unsupported"); return; }
     try{
       String name=call.getString("name","");
@@ -2240,6 +2317,94 @@ public class HkWidgetPlugin extends Plugin {
 }
 `;
 
+const hkMedia=`package ${pkg};
+
+import android.Manifest;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.provider.Settings;
+import android.util.Base64;
+import androidx.activity.result.ActivityResult;
+import androidx.core.content.FileProvider;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.annotation.ActivityCallback;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+
+/** پیوست ردیف: گرفتن عکس با دوربین (نه گالری) و اجازهٔ میکروفون برای ضبط یادداشت صوتی */
+@CapacitorPlugin(name="HkMedia", permissions={
+  @Permission(strings={Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS}, alias="mic")
+})
+public class HkMediaPlugin extends Plugin {
+  private File photoFile;
+
+  @com.getcapacitor.PluginMethod public void micPermission(PluginCall call){
+    if(getPermissionState("mic")==PermissionState.GRANTED){ call.resolve(new JSObject().put("granted",true)); return; }
+    requestPermissionForAlias("mic",call,"micCb");
+  }
+  @PermissionCallback private void micCb(PluginCall call){
+    boolean ok=getPermissionState("mic")==PermissionState.GRANTED;
+    boolean never=!ok && getActivity()!=null && !getActivity().shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO);
+    call.resolve(new JSObject().put("granted",ok).put("blocked",never));
+  }
+  @com.getcapacitor.PluginMethod public void openAppSettings(PluginCall call){
+    try{
+      Intent i=new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:"+getContext().getPackageName()));
+      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); call.resolve();
+    }catch(Exception e){ call.reject("open_failed",e); }
+  }
+  @com.getcapacitor.PluginMethod public void takePhoto(PluginCall call){
+    try{
+      File dir=new File(getContext().getCacheDir(),"capture"); if(!dir.exists()) dir.mkdirs();
+      File[] old=dir.listFiles(); if(old!=null) for(File f: old) f.delete();
+      photoFile=new File(dir,"photo_"+System.currentTimeMillis()+".jpg");
+      Uri u=FileProvider.getUriForFile(getContext(), getContext().getPackageName()+".fileprovider", photoFile);
+      Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+      i.putExtra(MediaStore.EXTRA_OUTPUT,u);
+      i.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      startActivityForResult(call,i,"photoCb");
+    }catch(Exception e){ call.reject("camera_failed",e); }
+  }
+  @ActivityCallback private void photoCb(PluginCall call, ActivityResult result){
+    if(call==null) return;
+    try{
+      if(photoFile==null || !photoFile.exists() || photoFile.length()==0){ call.reject("cancelled"); return; }
+      /* کوچک‌کردن در خود گوشی (ضلع بلند ۱۶۰۰) و چرخاندن طبق EXIF؛ JPEG کیفیت ۸۲ */
+      BitmapFactory.Options o=new BitmapFactory.Options(); o.inJustDecodeBounds=true;
+      BitmapFactory.decodeFile(photoFile.getAbsolutePath(),o);
+      int max=Math.max(o.outWidth,o.outHeight), ss=1;
+      while(max/(ss*2)>=1600) ss*=2;
+      BitmapFactory.Options o2=new BitmapFactory.Options(); o2.inSampleSize=ss;
+      Bitmap b=BitmapFactory.decodeFile(photoFile.getAbsolutePath(),o2);
+      if(b==null){ call.reject("decode_failed"); return; }
+      float k=Math.min(1f,1600f/Math.max(b.getWidth(),b.getHeight()));
+      int rot=0;
+      try{
+        androidx.exifinterface.media.ExifInterface ex=new androidx.exifinterface.media.ExifInterface(photoFile.getAbsolutePath());
+        int or=ex.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,1);
+        rot= or==6?90: or==3?180: or==8?270: 0;
+      }catch(Throwable ignored){}
+      Matrix m=new Matrix(); m.postScale(k,k); if(rot!=0) m.postRotate(rot);
+      Bitmap out=Bitmap.createBitmap(b,0,0,b.getWidth(),b.getHeight(),m,true);
+      ByteArrayOutputStream bo=new ByteArrayOutputStream();
+      out.compress(Bitmap.CompressFormat.JPEG,82,bo);
+      photoFile.delete();
+      call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
+    }catch(Exception e){ call.reject("photo_failed",e); }
+  }
+}
+`;
+
 const main=`package ${pkg};
 
 import android.Manifest;
@@ -2258,7 +2423,9 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(HkSpeechPlugin.class);
     registerPlugin(HkUpdaterPlugin.class);
     registerPlugin(HkWidgetPlugin.class);
+    registerPlugin(HkMediaPlugin.class);
     super.onCreate(savedInstanceState);
+    try{ NativeFileExportPlugin.captureOpened(this,getIntent()); }catch(Exception ignored){}
     // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض نرم‌افزار پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
     java.util.ArrayList<String> needed=new java.util.ArrayList<>();
@@ -2270,6 +2437,7 @@ public class MainActivity extends BridgeActivity {
   @Override public void onNewIntent(android.content.Intent intent){
     super.onNewIntent(intent);
     try{ HkRemindersPlugin.saveTarget(this,intent); }catch(Exception ignored){}
+    try{ if(NativeFileExportPlugin.captureOpened(this,intent) && getBridge()!=null) getBridge().triggerWindowJSEvent("hkFileOpened"); }catch(Exception ignored){}
   }
 }
 `;
@@ -2291,12 +2459,14 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
 fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
 fs.writeFileSync(path.join(javaDir,'HkWidgetAccountsProvider.java'),hkWidgetAccounts);
 fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
+fs.writeFileSync(path.join(javaDir,'HkMediaPlugin.java'),hkMedia);
 
 const gradle=path.join(base,'app/build.gradle');
 if(fs.existsSync(gradle)){
   let s=fs.readFileSync(gradle,'utf8');
   if(!s.includes('androidx.core:core')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.core:core:1.15.0"');
   if(!s.includes('androidx.biometric:biometric')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.biometric:biometric:1.1.0"');
+  if(!s.includes('androidx.exifinterface:exifinterface')) s=s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "androidx.exifinterface:exifinterface:1.3.7"');
   fs.writeFileSync(gradle,s);
 }
 const manifest=path.join(base,'app/src/main/AndroidManifest.xml');
@@ -2308,6 +2478,31 @@ if(fs.existsSync(manifest)){
   const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
+  // ضبط صدا داخل صفحه (getUserMedia) بدون این مجوز بی‌صدا رد می‌شود
+  if(!s.includes('android.permission.MODIFY_AUDIO_SETTINGS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>');
+  // اندروید ۱۱+: پیدا کردن برنامهٔ دوربین برای «گرفتن عکس»
+  if(!s.includes('android.media.action.IMAGE_CAPTURE')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE"/>\n        </intent>\n    </queries>\n</manifest>');
+  // باز کردن فایل پشتیبان با زدن رویش (Downloads / اشتراک‌گذاری)
+  if(!s.includes('hk-open-backup')){
+    const openFilters =
+      '            <!-- hk-open-backup -->\n' +
+      '            <intent-filter>\n' +
+      '                <action android:name="android.intent.action.VIEW"/>\n' +
+      '                <category android:name="android.intent.category.DEFAULT"/>\n' +
+      '                <category android:name="android.intent.category.BROWSABLE"/>\n' +
+      '                <data android:scheme="content"/>\n' +
+      '                <data android:scheme="file"/>\n' +
+      '                <data android:mimeType="application/json"/>\n' +
+      '                <data android:mimeType="application/octet-stream"/>\n' +
+      '            </intent-filter>\n' +
+      '            <intent-filter>\n' +
+      '                <action android:name="android.intent.action.SEND"/>\n' +
+      '                <category android:name="android.intent.category.DEFAULT"/>\n' +
+      '                <data android:mimeType="application/json"/>\n' +
+      '                <data android:mimeType="application/octet-stream"/>\n' +
+      '            </intent-filter>\n';
+    s=s.replace(/(<activity\b[^>]*android:name="[.\w]*MainActivity"[\s\S]*?)(<\/activity>)/, function(m0,a,b){ return a+openFilters+'        '+b; });
+  }
   // ثبت گروهی پیامک‌ها: خواندن صندوق ورودی (فقط با اجازهٔ کاربر، از منوی «ثبت دستی پیامک»)
   if(!s.includes('android.permission.READ_SMS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.READ_SMS"/>');
   // اندروید ۱۱+: برای پیدا کردن سرویس تشخیص گفتار باید اعلام شود
@@ -2377,6 +2572,7 @@ fs.writeFileSync(filePaths,
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="share_cache" path="share/" />
     <cache-path name="updates" path="updates/" />
+    <cache-path name="capture" path="capture/" />
 </paths>
 `);
 

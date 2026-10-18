@@ -1871,6 +1871,31 @@
     .bs-month-table tr.sr-wait td { color: var(--muted); padding: 14px 8px; }
     /* منوی جستجو: منوی ماه و سال بالای صفحه پنهان؛ باکس‌های مبلغ پنهان (فقط محور) */
     body.search-open .top-bar #monthSelectWrap, body.search-open .top-bar #yearSelectWrap, body.search-open .top-bar .period-select { display: none !important; }
+    /* منوی جستجو: نوار بالا (منوی همبرگری) هم پنهان و فیلترها بالای صفحه */
+    body.search-open #stickyChrome { display: none !important; }
+    body.detail-open.search-open #panel-balance.active { top: calc(max(0px, env(safe-area-inset-top, 0px)) + 8px) !important; }
+    /* ضربدر پاک کردن «جستجوی شرح» (هر وقت نوشته‌ای هست) */
+    .bsr-desc { position: relative; }
+    .bsr-grid .bsr-desc.has-q > .balance-search-input { padding-left: 38px !important; }
+    .bs-desc-clr { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: 0; background: none; padding: 0; display: none; align-items: center; justify-content: center; color: var(--muted, #8e8e93); cursor: pointer; z-index: 2; }
+    .bs-desc-clr svg { width: 16px; height: 16px; }
+    .bsr-desc.has-q .bs-desc-clr { display: flex; }
+    .bsr-grid .bsr-desc > input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+    /* جزئیات یک ماه (از جدول ماه‌ها) */
+    #bsMonthDetail { position: fixed; inset: 0; z-index: 100300; background: var(--bg, #121212); display: flex; flex-direction: column; direction: rtl; padding-top: env(safe-area-inset-top, 0px); }
+    #bsMonthDetail .bmd-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 8px; }
+    #bsMonthDetail .bmd-back { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--bg3, rgba(255,255,255,0.06)); color: #0a84ff; font-size: 1.3rem; line-height: 38px; padding: 0; }
+    #bsMonthDetail .bmd-title { flex: 1; font-weight: 800; font-size: 1.02rem; }
+    #bsMonthDetail .bmd-body { flex: 1; overflow-y: auto; padding: 0 12px calc(16px + env(safe-area-inset-bottom, 0px)); }
+    #bsMonthDetail .bmd-sum { display: flex; background: var(--bg3, rgba(255,255,255,0.05)); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+    #bsMonthDetail .bmd-sum > div { flex: 1; text-align: center; padding: 8px 4px; font-size: 0.78rem; line-height: 1.7; }
+    #bsMonthDetail .bmd-sum > div + div { border-right: 1px solid var(--border, rgba(255,255,255,0.14)); }
+    #bsMonthDetail .bmd-sum b { display: block; font-size: 0.9rem; }
+    #bsMonthDetail .bmd-sec { font-weight: 800; font-size: 0.86rem; margin: 12px 2px 6px; }
+    #bsMonthDetail table { width: 100%; }
+    #bsMonthDetail td { font-size: 0.8rem; }
+    #bsMonthDetail td.bmd-desc { text-align: right !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; padding: 4px 8px; }
+    #bsMonthDetail .bmd-cat { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 4px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
     .bsr-grid .bs-amt-row { display: none !important; }
     #search-result-body tr.sr-wait td { text-align: center !important; color: var(--muted) !important; font-size: 0.8rem; padding: 18px 8px !important; white-space: normal; }
     /* border سلول‌ها داخل فریم بماند؛ بدون تغییر ضخامت/رنگ ظاهری */
@@ -9104,16 +9129,16 @@
     .bs-amt-row.has-val .bs-amt-clr { display: block; }
     /* اسلایدر بازهٔ مبلغ: ریل ضخیم با سرهای گرد، بازهٔ بین دو دستگیره آبی، دستگیرهٔ سپری، درجه‌ها بالای ریل و مقدار زیر دستگیره */
     .bsr-grid .bs-arange-row { display: block; padding: 0 2px; }
-    .hk-arange { position: relative; height: 74px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .hk-arange { position: relative; height: 76px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
     .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 28px; }
     .hk-ar-tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; font-size: 0.66rem; line-height: 1.15; color: var(--muted, #8e8e93); white-space: nowrap; direction: rtl; }
     .hk-ar-tick small { display: block; font-size: 0.56rem; opacity: 0.85; }
-    .hk-ar-track { position: absolute; left: 0; right: 0; top: 34px; height: 7px; border-radius: 7px; background: rgba(142,142,147,0.32); }
-    .hk-ar-fill { position: absolute; top: 0; bottom: 0; border-radius: 7px; background: #0a84ff; }
-    .hk-ar-h { position: absolute; top: 26px; width: 22px; height: 26px; margin-left: -11px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; z-index: 2; }
-    .hk-ar-h svg { width: 22px; height: 26px; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+    .hk-ar-track { position: absolute; left: 0; right: 0; top: 32px; height: 11px; border-radius: 11px; background: rgba(142,142,147,0.32); }
+    .hk-ar-fill { position: absolute; top: 0; bottom: 0; border-radius: 11px; background: #0a84ff; }
+    .hk-ar-h { position: absolute; top: 24px; width: 24px; height: 28px; margin-left: -12px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; z-index: 2; }
+    .hk-ar-h svg { width: 24px; height: 28px; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
     .hk-ar-h.drag { cursor: grabbing; z-index: 3; }
-    .hk-ar-val { position: absolute; top: 55px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #0a84ff; white-space: nowrap; direction: rtl; }
+    .hk-ar-val { position: absolute; top: 56px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #0a84ff; white-space: nowrap; direction: rtl; }
     .bsr-grid .filter-acc-wrap, .bsr-grid .balance-search-sel, .bsr-grid .fancy-select-wrap, .bsr-grid .balance-search-input { flex: 1 1 0; min-width: 0; width: auto; }
     .bsr-grid .filter-acc-wrap .dark-select { min-width: 0; }
     .bsr-grid .filter-acc-wrap .dark-select-btn { justify-content: flex-start !important; text-align: right !important; padding: 0 10px 0 24px !important; }
@@ -9484,6 +9509,7 @@
     .sp-pick-input:focus { border-color: #08b5f5; }
     /* صفحهٔ نکته: هر نکته یک نمای کامل، اسکرول عمودی با توقف روی هر نکته */
     /* نکته‌ها: بین هر دو نکته فاصله تا حرکت‌ها/همزهٔ نکتهٔ بعد در نمای نکتهٔ قبلی دیده نشود؛ هر نکته کمی فاصلهٔ داخلی بالا و پایین */
+    .sp-sub { font-size: calc(0.66rem * var(--sp-fs, 1)); line-height: 1.7; color: var(--muted, #9a9a9a); margin-top: calc(4px * var(--sp-fs, 1)); }
     .sp-tips { scroll-snap-type: y mandatory; display: flex; flex-direction: column; gap: 18px; }
     .sp-tipbox { display: flex; flex-direction: column; gap: calc(5px * var(--sp-fs, 1)); scroll-snap-align: start; scroll-snap-stop: always; box-sizing: border-box; overflow: hidden; padding: 3px 0; flex-shrink: 0; }
     .sp-tips .sp-t { font-size: calc(0.76rem * var(--sp-fs, 1)); }
@@ -10594,8 +10620,14 @@
     .hk-att-actions { display: flex; gap: 6px; margin-bottom: 10px; }
     .hk-att-btn { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; border: 1px solid var(--border, rgba(255,255,255,0.14)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; text-align: center; padding: 0 4px; }
     .hk-att-btn.on { border-color: #ff453a; color: #ff453a; }
-    .hk-img-view { position: fixed; inset: 0; z-index: 100500; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; padding: 10px; }
-    .hk-img-view img { max-width: 100%; max-height: 100%; }
+    .hk-img-view { position: fixed; inset: 0; z-index: 100500; background: rgba(0,0,0,0.94); display: flex; align-items: center; justify-content: center; padding: 10px; touch-action: none; overflow: hidden; }
+    .hk-img-view img { max-width: 100%; max-height: 100%; transform-origin: center center; will-change: transform; -webkit-user-select: none; user-select: none; }
+    .hk-img-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 12px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,0.16); color: #fff; font-size: 1.5rem; line-height: 38px; padding: 0; }
+    .hk-att-loading { align-items: center; justify-content: center; min-height: 90px; }
+    .hk-att-loading svg { width: 52px; height: 52px; transform: rotate(-90deg); }
+    .hk-att-loading circle { fill: none; stroke-width: 4; }
+    .hk-att-loading circle.bg { stroke: rgba(142,142,147,0.3); }
+    .hk-att-loading circle.fg { stroke: #0a84ff; stroke-linecap: round; transition: stroke-dashoffset 0.25s ease; }
     .pd-num-cell .pd-num.has-att { color: #0a84ff; }
     .pd-num-cell .pd-att-ico { display: block; width: 11px; height: 11px; margin: 0 auto; color: #0a84ff; }
     .pd-num-cell .pd-att-ico svg { width: 11px; height: 11px; display: block; }
@@ -11121,6 +11153,7 @@
           <div class="bsr-cell bsr-wide balance-search-row bsr-desc">
             <label class="balance-acc-label" for="balanceSearchInput">شرح:</label>
             <input type="search" id="balanceSearchInput" class="balance-search-input" placeholder="جستجوی شرح" autocomplete="off" enterkeyhint="search" />
+            <button type="button" class="bs-desc-clr" aria-label="پاک کردن"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
           </div>
           <div class="bsr-cell bsr-wide bs-arange-row">
             <div class="hk-arange" id="balanceAmtRange" aria-label="بازهٔ مبلغ"></div>
@@ -11746,7 +11779,8 @@
                 planCarried: !!r.planCarried,
                 desc: r.desc || '',
                 amount: r.amount,
-                allowPlanFieldEdit: !!r.allowPlanFieldEdit
+                allowPlanFieldEdit: !!r.allowPlanFieldEdit,
+                planNote: r.planNote || '', smsLinked: !!r.smsLinked
               };
               prevByPlan[pk] = meta;
               if (!prevByPlan[plan.id]) prevByPlan[plan.id] = meta;
@@ -11846,6 +11880,9 @@
             planCarried: !!item.carried
           };
           if (item.isPaid && prev.allowPlanFieldEdit) row.allowPlanFieldEdit = true;
+          /* توضیح پیامک (دیرکرد / چند قسط با هم) و پیوند پیامک با ساختن دوبارهٔ ردیف از بین نرود */
+          if (item.isPaid && prev.planNote) { row.planNote = prev.planNote; row.desc += prev.planNote; }
+          if (item.isPaid && prev.smsLinked) row.smsLinked = true;
           if (prev.id && !item.carried) row.id = prev.id;
           if (prev.createdBy) row.createdBy = prev.createdBy;
           if (prev.createdByName) row.createdByName = prev.createdByName;
@@ -16250,7 +16287,7 @@ function onPeriodChange() {
           '<span>' + p.label + '</span></label>';
       });
       /* مسیر پوشه در سطر جدا (متن فارسی با آدرس لاتین بلند وسط جمله، سطر اول را نصفه می‌کرد) */
-      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود. این فایل‌ها رمز ندارند.\nمحل ذخیره: Downloads/HesabKetab' : 'پشتیبان خودکار فقط در نرم‌افزار اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
+      var autoInfo = autoBkPlugin() ? 'هر روز یک نسخهٔ کامل از همهٔ اطلاعات ذخیره می‌شود و ۷ روز اخیر و ۴ هفتهٔ قبل نگه داشته می‌شود. قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید هم خودکار پشتیبان گرفته می‌شود.\nاین نسخه‌ها در حافظهٔ داخلی نرم‌افزار ذخیره می‌شوند و در فایل‌منیجر دیده نمی‌شوند؛ در Downloads/HesabKetab فقط یک فایل «آخرین پشتیبان» می‌ماند (برای وقتی نرم‌افزار حذف یا گوشی عوض شود). با زدن روی آن فایل، حساب‌کتاب بازیابی را پیشنهاد می‌دهد.' : 'پشتیبان خودکار فقط در نرم‌افزار اندروید (نسخهٔ ۱۰ به بالا) فعال است.';
       var pwdInfo = 'اگر رمز نگذارید، فایل بدون رمز ذخیره می‌شود. با رمز، فایل رمزنگاری می‌شود و بدون رمز قابل خواندن نیست. رمز را فراموش نکنید؛ قابل بازیابی نیست.';
       /* زمان آخرین پشتیبان خودکار داخل باکس اطلاعات (همهٔ سطرهای کلیددار یک اندازه و هم‌تراز) */
       if (autoBkPlugin()) autoInfo += '\n' + autoBkLastText();
@@ -16517,11 +16554,11 @@ function onPeriodChange() {
       try {
         var P = autoBkPlugin();
         if (P && typeof P.readAutoBackup === 'function') {
-          var files = ((((await P.listAutoBackups()) || {}).files) || []).filter(function (f) { return f && /-enc\.json$/.test(String(f.name)) && _bkNameTime(f.name); });
+          var files = (await autoBkAllFiles(P)).filter(function (f) { return f && /-enc\.json$/.test(String(f.name)) && _bkNameTime(f.name); });
           files.sort(function (a, b) { var ka = _bkNameTime(a.name).key, kb = _bkNameTime(b.name).key; return ka < kb ? 1 : ka > kb ? -1 : 0; });
           for (var i = 0; i < files.length && i < 6 && envs.length < 2; i++) {
             try {
-              var env = hkSafeJsonParse(_hkB64ToText(((await P.readAutoBackup({ name: files[i].name })) || {}).data));
+              var env = hkSafeJsonParse(_hkB64ToText(((await P.readAutoBackup({ name: files[i].name, store: files[i].store })) || {}).data));
               if (!hkEncEnvelopeError(env) && env.dekId === K.rec.dekId) envs.push(env);
             } catch (eR) {}
           }
@@ -16713,7 +16750,7 @@ function onPeriodChange() {
         '• پشتیبان‌های تازه با رمز یا کد جدید باز می‌شوند.\n' +
         '• پشتیبان‌های قبلی روی گوشی دیگر یا بعد از نصب دوباره فقط با رمز یا کد بازیابی قبلی باز می‌شوند؛ این فایل‌ها دوباره رمزنگاری نمی‌شوند.\n' +
         '• اگر رمز و کد تازه را هم گم کنید، پشتیبان‌های تازه روی گوشی دیگر باز نمی‌شوند.' :
-        'با روشن کردن این گزینه، پشتیبان‌های خودکار (پوشهٔ Download/HesabKetab) رمزدار ذخیره می‌شوند و بدون رمز پشتیبان یا کد بازیابی خوانده نمی‌شوند.\n' +
+        'با روشن کردن این گزینه، پشتیبان‌های خودکار (حافظهٔ داخلی و «آخرین پشتیبان» در Download/HesabKetab) رمزدار ذخیره می‌شوند و بدون رمز پشتیبان یا کد بازیابی خوانده نمی‌شوند.\n' +
         '• رمز پشتیبان: رمزی که خودتان انتخاب می‌کنید؛ با آن پشتیبان‌های رمزدار باز می‌شوند.\n' +
         '• کد بازیابی: کدی ۲۵ نویسه‌ای که در مرحلهٔ بعد فقط یک بار نشان داده می‌شود. اگر رمز را فراموش کنید، پشتیبان با این کد هم باز می‌شود؛ آن را روی کاغذ یا جایی بیرون از همین گوشی نگه دارید.\n' +
         '• برای بازیابی روی گوشی دیگر یا بعد از نصب دوباره، «رمز پشتیبان» یا «کد بازیابی» لازم است؛ هر فایل با هر کدام از این دو باز می‌شود. هیچ‌کدام در گوشی ذخیره نمی‌شوند.\n' +
@@ -16825,13 +16862,13 @@ function onPeriodChange() {
       var P = autoBkPlugin(), st = hkAutoEncState();
       if (!P || typeof P.readAutoBackup !== 'function' || !st || st.broken) { showToast('این کار روی این دستگاه ممکن نیست'); return done(); }
       var files = [];
-      try { files = ((await P.listAutoBackups()) || {}).files || []; } catch (e) { showToast('فهرست پشتیبان‌ها خوانده نشد؛ چیزی پاک نشد'); return done(); }
+      try { files = await autoBkAllFiles(P, true); } catch (e) { showToast('فهرست پشتیبان‌ها خوانده نشد؛ چیزی پاک نشد'); return done(); }
       var byNew = function (a, b) { return (Number(b.modified) || 0) - (Number(a.modified) || 0) || String(b.name).localeCompare(String(a.name)); };
       var encFiles = files.filter(function (f) { return /-enc\.json$/.test(String(f.name)); }).sort(byNew);
       var verified = false;
       try {
         if (encFiles.length) {
-          var env = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: encFiles[0].name })).data));
+          var env = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: encFiles[0].name, store: encFiles[0].store })).data));
           if (!hkEncEnvelopeError(env) && env.dekId === st.dekId) { var obj = hkSafeJsonParse(await hkEncOpen(env, _bytesFromB64(st.dek))); verified = !!(obj && obj.app === 'hesab-ketab'); }
         }
       } catch (eV) { verified = false; }
@@ -16840,14 +16877,14 @@ function onPeriodChange() {
       for (var i = 0; i < files.length; i++) {
         var f = files[i]; if (/-enc\.json$/.test(String(f.name))) continue;
         try {
-          var o = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: f.name })).data));
-          if (o && typeof o === 'object' && o.app === 'hesab-ketab' && !o.format && !o.cipher && !o.enc) plain.push(f.name);
+          var o = hkSafeJsonParse(_hkB64ToText((await P.readAutoBackup({ name: f.name, store: f.store })).data));
+          if (o && typeof o === 'object' && o.app === 'hesab-ketab' && !o.format && !o.cipher && !o.enc) plain.push(f);
         } catch (eR) {}
       }
       if (!plain.length) { showToast('پشتیبان خودکار بی‌رمز قدیمی پیدا نشد'); return done(); }
-      askConfirm(toPersianDigits(String(plain.length)) + ' پشتیبان خودکار قدیمیِ بدون رمز در Download/HesabKetab پیدا شد. حذف شوند؟ پشتیبان‌های دستی شما و فایل‌های رمزدار دست نمی‌خورند.', async function () {
+      askConfirm(toPersianDigits(String(plain.length)) + ' پشتیبان خودکار قدیمیِ بدون رمز پیدا شد. حذف شوند؟ پشتیبان‌های دستی شما و فایل‌های رمزدار دست نمی‌خورند.', async function () {
         var bad = 0;
-        for (var j = 0; j < plain.length; j++) { try { await P.deleteAutoBackup({ name: plain[j] }); } catch (eD) { bad++; } }
+        for (var j = 0; j < plain.length; j++) { try { await P.deleteAutoBackup({ name: plain[j].name, store: plain[j].store }); } catch (eD) { bad++; } }
         showToastLong(bad ? (toPersianDigits(String(plain.length - bad)) + ' فایل حذف شد و ' + toPersianDigits(String(bad)) + ' فایل حذف نشد.') : 'پشتیبان‌های خودکار بی‌رمز قدیمی حذف شدند.');
         done();
       }, done);
@@ -17190,7 +17227,8 @@ function onPeriodChange() {
     }
 
     /* ===== پشتیبان خودکار (اندروید ۱۰ به بالا) =====
-       روزانه: یک نسخهٔ کامل در Downloads/HesabKetab (نسخهٔ امروز با هر بار رفتن نرم‌افزار به پس‌زمینه تازه می‌شود)؛ ۷ روز اخیر + ۴ هفتهٔ قبل نگه داشته می‌شود.
+       روزانه: یک نسخهٔ کامل در حافظهٔ داخلی نرم‌افزار (نسخهٔ امروز با هر بار رفتن نرم‌افزار به پس‌زمینه تازه می‌شود)؛ ۷ روز اخیر + ۴ هفتهٔ قبل.
+       در Downloads/HesabKetab فقط یک فایل «آخرین پشتیبان» (hesab-latest-…) که هر بار جایگزین قبلی می‌شود.
        ایمنی: قبل از حذف ماه، حذف کلی، بازیابی و نصب نسخهٔ جدید؛ ۵ نسخهٔ آخر نگه داشته می‌شود. */
     var AUTO_BK_KEY = STORAGE_KEY + '_autoBackup';
     function autoBkState() {
@@ -17254,11 +17292,11 @@ function onPeriodChange() {
             text = JSON.stringify(env); encrypted = true;
             name = name.replace(/\.json$/, '-enc.json');   /* فایل رمزدار هرگز جای فایل بی‌رمز قدیمی را نمی‌گیرد */
           }
-          var res = await P.saveAutoBackup({ filename: name, data: utf8ToBase64(text) });
+          var res = await P.saveAutoBackup({ filename: name, data: utf8ToBase64(text), store: 'internal' });
           if (!res || res.ok !== true || res.verified !== true) throw hkBkErr('write_failed');
           /* فایل تازه باید به‌عنوان پشتیبان تمام‌شده در فهرست دیده شود؛ وگرنه هرس انجام نمی‌شود */
           var seen = false;
-          try { seen = (((await P.listAutoBackups()) || {}).files || []).some(function (f) { return f && f.name === name; }); } catch (eL) { seen = false; }
+          try { seen = (((await P.listAutoBackups({ store: 'internal' })) || {}).files || []).some(function (f) { return f && f.name === name; }); } catch (eL) { seen = false; }
           if (!seen) throw hkBkErr('not_discoverable');
           var s = autoBkState();
           s.lastAt = Date.now(); s.lastName = name; s.lastEncrypted = encrypted;
@@ -17269,6 +17307,8 @@ function onPeriodChange() {
           autoBkSave(s);
           /* هرس فقط پس از ذخیرهٔ موفق و تأییدشدهٔ فایل تازه */
           try { await pruneAutoBackups(P, encrypted, name); } catch (eP) {}
+          /* در Downloads فقط یک فایل «آخرین پشتیبان» (برای وقتی نرم‌افزار حذف یا گوشی عوض شود) */
+          if (kind === 'daily') { try { await hkWriteLatestDownloads(P, text, encrypted, st, uniq); } catch (eLt) {} }
           return true;
         } catch (e) {
           /* آخرین پشتیبان سالم دست نمی‌خورد و هرس انجام نمی‌شود؛ فقط کد خطا و متن عمومی ثبت می‌شود (بدون محتوا) */
@@ -17311,7 +17351,7 @@ function onPeriodChange() {
         - «جدیدترین» از روی زمان داخل نام تعیین می‌شود؛ modified فقط برای شکستن تساوی است.
         - فایلی که نامش الگوی معتبر ندارد هرگز حذف نمی‌شود. */
     async function pruneAutoBackups(P, encrypted, justWritten) {
-      var r = await P.listAutoBackups(), files = (r && r.files) || [];
+      var r = await P.listAutoBackups({ store: 'internal' }), files = (r && r.files) || [];
       var isEnc = function (n) { return /-enc\.json$/.test(String(n)); };
       files = files.filter(function (f) { return f && typeof f.name === 'string' && isEnc(f.name) === !!encrypted; });
       if (justWritten && !files.some(function (f) { return f.name === justWritten; })) return;   /* وضعیت نامطمئن: هیچ حذفی */
@@ -17336,9 +17376,50 @@ function onPeriodChange() {
       safety.slice(0, 5).forEach(function (x) { keep[x.f.name] = 1; });
       var cand = daily.concat(safety);
       for (var i = 0; i < cand.length; i++) {
-        if (!keep[cand[i].f.name]) { try { await P.deleteAutoBackup({ name: cand[i].f.name }); } catch (e) {} }
+        if (!keep[cand[i].f.name]) { try { await P.deleteAutoBackup({ name: cand[i].f.name, store: 'internal' }); } catch (e) {} }
       }
     }
+    /* همهٔ پشتیبان‌های خودکار: حافظهٔ داخلی + Downloads/HesabKetab (نسخه‌های قبلی و «آخرین پشتیبان»)؛ هر فایل store خودش را دارد */
+    async function autoBkAllFiles(P, withLatest) {
+      var out = [];
+      try { (((await P.listAutoBackups({ store: 'internal' })) || {}).files || []).forEach(function (f) { if (f) { f.store = 'internal'; out.push(f); } }); } catch (e) {}
+      try { (((await P.listAutoBackups()) || {}).files || []).forEach(function (f) { if (f && (withLatest || !/^hesab-latest-/.test(f.name))) { f.store = 'downloads'; out.push(f); } }); } catch (e2) {}
+      return out;
+    }
+    /** «آخرین پشتیبان» در Downloads/HesabKetab: فایل تازه ذخیره و تأیید می‌شود، بعد فایل‌های قبلی همین پوشه
+        (آخرین‌های قبلی و پشتیبان‌های روزانه/ایمنیِ نسخه‌های قبلی) برداشته می‌شوند؛ پس در فایل‌منیجر همیشه یک فایل دیده می‌شود.
+        پاک‌کردن فقط وقتی که حافظهٔ داخلی دست‌کم یک پشتیبان روزانهٔ سالم دارد. */
+    async function hkWriteLatestDownloads(P, text, encrypted, st, uniq) {
+      var name = 'hesab-latest-' + st.day + '-' + uniq + (encrypted ? '-enc' : '') + '.json';
+      var res = await P.saveAutoBackup({ filename: name, data: utf8ToBase64(text) });
+      if (!res || res.ok !== true || res.verified !== true) return false;
+      var dl = (((await P.listAutoBackups()) || {}).files || []);
+      if (!dl.some(function (f) { return f && f.name === name; })) return false;
+      var internalOk = (((await P.listAutoBackups({ store: 'internal' })) || {}).files || []).some(function (f) { return f && /^hesab-auto-/.test(f.name); });
+      for (var i = 0; i < dl.length; i++) {
+        var n = dl[i] && dl[i].name;
+        if (!n || n === name) continue;
+        if (/^hesab-latest-/.test(n) || (internalOk && /^hesab-(auto|safety)-/.test(n))) { try { await P.deleteAutoBackup({ name: n }); } catch (eD) {} }
+      }
+      var s = autoBkState(); s.latestName = name; autoBkSave(s);
+      return true;
+    }
+    /* فایل پشتیبانی که با «باز کردن با…» یا «اشتراک‌گذاری» به نرم‌افزار داده شده: همان مسیر بازیابی معمول (رمز، ادغام/جایگزینی، تأیید) */
+    function hkCheckOpenedFile() {
+      var C = window.Capacitor, P = C && C.Plugins && C.Plugins.NativeFileExport;
+      if (!P || typeof P.takeOpenedFile !== 'function') return;
+      var lk = document.getElementById('appLockOverlay');
+      if ((lk && lk.classList.contains('show')) || document.getElementById('appTour')) { setTimeout(hkCheckOpenedFile, 1200); return; }
+      P.takeOpenedFile().then(function (r) {
+        if (!r || !r.data) return;
+        var text = '';
+        try { text = new TextDecoder('utf-8').decode(_bytesFromB64(r.data)); } catch (e) { showToast('فایل خوانده نشد'); return; }
+        if (!/^\s*[\[{]/.test(text)) { showToast('این فایل پشتیبان حساب‌کتاب نیست'); return; }
+        try { importFullBackup({ target: { files: [new File([text], r.name || 'backup.json', { type: 'application/json' })] } }); } catch (e2) { showToast('فایل پشتیبان نامعتبر است'); }
+      }).catch(function () {});
+    }
+    window.addEventListener('hkFileOpened', function () { setTimeout(hkCheckOpenedFile, 300); });
+    setTimeout(hkCheckOpenedFile, 2200);
     function maybeDailyAutoBackup(refreshToday) {
       try {
         var s = autoBkState();
@@ -17759,7 +17840,7 @@ function askBackupUserCards(selectedParts) {
       try {
         showToastLong(rolled
           ? 'بازیابی انجام نشد چون ذخیره‌سازی ناموفق بود؛ هیچ تغییری اعمال نشد و اطلاعات قبلی دست‌نخورده است.'
-          : 'بازیابی ناموفق بود و برگرداندن کامل وضعیت قبل هم ممکن نشد. برنامه را نبندید و فوراً یک پشتیبان بگیرید؛ پشتیبان ایمنی پیش از بازیابی هم (در صورت فعال بودن) در Downloads/HesabKetab هست.');
+          : 'بازیابی ناموفق بود و برگرداندن کامل وضعیت قبل هم ممکن نشد. برنامه را نبندید و فوراً یک پشتیبان بگیرید؛ پشتیبان ایمنی پیش از بازیابی هم (در صورت فعال بودن) در حافظهٔ داخلی نرم‌افزار هست و «آخرین پشتیبان» در Downloads/HesabKetab.');
       } catch (eT2) {}
       return false;
     }
@@ -18744,7 +18825,7 @@ function askBackupUserCards(selectedParts) {
         var av = hkExportAvailable(st.range, st.user);
         var keys = HK_EXPORT_SECTIONS.filter(function (s) { return av[s[0]]; });
         var h = '<label class="hk-exp-all" style="position:sticky;top:0;z-index:2;background:var(--card);display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid var(--border);font-weight:800;font-size:0.86rem;cursor:pointer;">' +
-          '<input type="checkbox" id="hkExpAll" style="width:18px;height:18px;accent-color:var(--accent);">انتخاب همه</label>';
+          '<input type="checkbox" id="hkExpAll" style="width:18px;height:18px;accent-color:var(--accent);">همه</label>';
         if (!keys.length) h += '<div style="text-align:center;color:var(--muted);padding:16px 4px;font-size:0.84rem;">در این بازه داده‌ای نیست</div>';
         keys.forEach(function (s) {
           var on = sel ? !!sel[s[0]] : true;
@@ -23712,20 +23793,26 @@ async function openPdfPrintWindow(){
       });
     }
     /* اقساط پرداخت‌نشده: همهٔ معوق‌ها + سررسیدهای تا ۳۱ روز آینده */
+    /* قسط‌های ماهِ انتخاب‌شده (سررسید در همین ماه) با وضعیت پرداخت؛ در ماه جاری قسط‌های معوقِ ماه‌های قبل هم */
     function spInstallments(title) {
       var out = [];
       try {
         var today = getTodayPersian();
         var ti = dateToIndex(today.y, today.m, today.d);
+        var isCur = currentYear === today.y && currentMonth === today.m;
         spPlansForTitle(title).forEach(function (plan) {
           var count = Math.max(0, parseInt(plan.count, 10) || 0);
           var paid = Math.max(0, parseInt(plan.paidCount, 10) || 0);
-          for (var i = paid; i < count; i++) {
-            if (plan.paidEarlyMap && plan.paidEarlyMap[String(i)]) continue;
+          for (var i = 0; i < count; i++) {
             var due = dueDateForInstallment(plan, i);
+            var inMonth = due.y === currentYear && due.m === currentMonth;
+            var before = (due.y * 100 + due.m) < (currentYear * 100 + currentMonth);
+            var early = !!(plan.paidEarlyMap && plan.paidEarlyMap[String(i)]);
+            var isPaid = (i < paid && !isPlanIndexPaidLate(plan, i)) || early;
             var days = dateToIndex(due.y, due.m, due.d) - ti;
-            if (days > 31) break;
-            out.push({ pid: plan.id || plan.name || '', name: plan.name || 'قسط', days: days, amount: planInstallmentAmount(plan) });
+            /* ماه جاری: معوق‌های قبل و سررسیدهای ۷ روز آینده (حتی اگر به ماه بعد برسد) هم */
+            if (!(inMonth || (isCur && i >= paid && !early && (before || (days >= 0 && days <= 7))))) continue;
+            out.push({ pid: plan.id || plan.name || '', name: plan.name || 'قسط', days: days, amount: planInstallmentAmount(plan), paid: isPaid, idx: i, inMonth: inMonth });
           }
         });
       } catch (e) {}
@@ -23895,18 +23982,19 @@ async function openPdfPrintWindow(){
       }
 
       /* ۲) پروژه‌ها: مستقیماً از computeSubjectReport (همان محاسبهٔ گزارش پروژه) */
+      /* پروژه‌ها فقط با تراکنش‌های ماهِ انتخاب‌شده؛ ماهی که پروژه تراکنشی ندارد، چیزی نشان داده نمی‌شود */
       function projects(title) {
         var ids = {}, t = (title || '').trim();
         try {
-          iterAllPeriodData(function (pd) {
-            ['income', 'expense'].forEach(function (tab) {
-              ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
-                if (((sec && sec.title) || '').trim() !== t) return;
-                (sec.rows || []).forEach(function (r) {
-                  if (!r) return;
-                  var fc = rowFinancialContext(r);
-                  if (fc.subjectId && fc.subjectId !== 'personal' && (fc.classification === 'third_party' || fc.accountType === 'project')) ids[fc.subjectId] = 1;
-                });
+          ['income', 'expense'].forEach(function (tab) {
+            ((periodData[tab] && periodData[tab].sections) || []).forEach(function (sec) {
+              if (((sec && sec.title) || '').trim() !== t) return;
+              (sec.rows || []).forEach(function (r) {
+                if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+                var fc = rowFinancialContext(r);
+                if (!(fc.subjectId && fc.subjectId !== 'personal' && (fc.classification === 'third_party' || fc.accountType === 'project'))) return;
+                var o = ids[fc.subjectId] || (ids[fc.subjectId] = { rec: 0, exp: 0 });
+                if (tab === 'income') o.rec += Number(r.amount) || 0; else o.exp += Number(r.amount) || 0;
               });
             });
           });
@@ -23915,10 +24003,10 @@ async function openPdfPrintWindow(){
         Object.keys(ids).forEach(function (sid) {
           var sub = getSubjectById(sid);
           if (!sub || sub.id === 'personal') return;
-          var rep = computeSubjectReport(sid);
-          var rec = Number(rep.received) || 0, exp = Number(rep.totalExpense) || 0;
+          var rec = ids[sid].rec, exp = ids[sid].exp;
           if (!rec && !exp) return;
           var net = rec - exp, lines = [], p = 35, state = '';
+          lines.push('این ماه:');
           if (exp > rec) {
             lines.push('مخارج پروژه از مبلغ دریافتی بیشتر شده است.');
             lines.push(spAmt(exp - rec) + ' تومان بدهکار است.');
@@ -24033,30 +24121,46 @@ async function openPdfPrintWindow(){
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
+    /* یک لوله: درآمد کل ماه (دریافت‌شده و نشده) در برابر مخارج کل ماه (پرداخت‌شده و نشده).
+       مثبت = «پس‌انداز کارت» (سبز)، منفی = «کسری کارت» (قرمز)؛ مبلغ و درصد. زیرش دریافت‌نشده/پرداخت‌نشده و بودجهٔ روزانه تا آخر ماه */
     function spPageOverview(D) {
       if (D.inc <= 0 && D.exp <= 0) return null;
+      var rem = D.inc - D.exp, sc = rem >= 0 ? 'pos' : 'neg';
+      var pct = D.inc > 0 ? Math.abs(rem) / D.inc * 100 : 100;
       var html = spHead('وضعیت این ماه') + '<div class="sp-even">';
-      var rem = D.inc - D.exp;
-      if (D.inc > 0) {
-        var save = rem / D.inc * 100, sc = save >= 0 ? 'pos' : 'neg';
-        html += '<div class="sp-blk">' + spLine(save >= 0 ? 'پس‌انداز کل' : 'کسری کل', spPct(Math.abs(save)), sc) + spTube(Math.abs(save), sc) + '</div>';
+      html += '<div class="sp-blk">' + spLine(rem >= 0 ? 'پس‌انداز کارت' : 'کسری کارت', spAmt(Math.abs(rem)) + ' · ' + spPct(Math.min(999, pct)), sc) + spTube(Math.min(100, pct), sc) + '</div>';
+      var incUn = Math.max(0, D.inc - D.incPaid), expUn = Math.max(0, D.expUnpaid);
+      var sub = [];
+      if (incUn > 0) sub.push('دریافت‌نشده ' + spAmt(incUn));
+      if (expUn > 0) sub.push('پرداخت‌نشده ' + spAmt(expUn));
+      var t0 = getTodayPersian();
+      if (currentYear === t0.y && currentMonth === t0.m && rem > 0) {
+        var dim = 30; try { dim = daysInMonth(t0.y, t0.m); } catch (eD) { dim = t0.m <= 6 ? 31 : 30; }
+        var left = Math.max(1, dim - t0.d + 1);
+        sub.push('بودجهٔ روزانه تا آخر ماه ' + spAmt(Math.floor(rem / left)));
       }
-      var cash = D.incPaid - D.expPaid, cc = cash >= 0 ? 'pos' : 'neg';
-      var cashPct = D.incPaid > 0 ? Math.abs(cash) / D.incPaid * 100 : (cash !== 0 ? 100 : 0);
-      /* منفی = خرجِ این ماه از موجودی ماه قبل → «کسری این ماه» بدون علامت منفی، نارنجی */
-      if (cash < 0) html += '<div class="sp-blk">' + spLine('کسری این ماه', spAmt(-cash), 'def') + spTube(cashPct, 'def') + '</div>';
-      else html += '<div class="sp-blk">' + spLine('مانده کنونی', spAmt(cash), cc) + spTube(cashPct, cc) + '</div>';
+      if (sub.length) html += '<div class="sp-sub">' + sub.map(spEsc).join('<br>') + '</div>';
       return html + '</div>';
     }
     /* ۲) تعهدات: هر خبر جدا با خط جداکننده؛ مبلغ قسط زیر عنوانش */
     function spPageObligations(D) {
       var items = [];
-      var late = D.inst.filter(function (x) { return x.days < 0; });
-      var next = D.inst.filter(function (x) { return x.days >= 0; })[0];
+      var t0 = getTodayPersian();
+      if (!(currentYear === t0.y && currentMonth === t0.m)) {
+        /* ماه دیگر: فقط قسط‌های همان ماه و وضعیتشان */
+        D.inst.slice(0, 4).forEach(function (x) {
+          items.push('<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under ' + (x.paid ? 'pos' : 'neg') + '">' + (x.paid ? 'پرداخت‌شده' : 'پرداخت‌نشده') + ' · ' + spAmt(x.amount) + '</div>');
+        });
+        if (!items.length) return null;
+        return spHead('قسط‌های ' + MONTHS[currentMonth - 1]) + spItems(items);
+      }
+      var open = D.inst.filter(function (x) { return !x.paid; });
+      var late = open.filter(function (x) { return x.days < 0; });
+      var next = open.filter(function (x) { return x.days >= 0; })[0];
       if (late.length) items.push(spLine('قسط معوق', spFa(late.length) + ' قسط', 'neg') + spLine('بیشترین تاخیر', spFa(-late[0].days) + ' روز', 'neg'));
       /* قسط بعدیِ هر وام جداگانه (دو وام با مبلغ و موعد یکسان هر دو نمایش داده می‌شوند) */
       var seenPlan = {}, upcoming = [];
-      D.inst.forEach(function (x) { if (x.days >= 0 && !seenPlan[x.pid]) { seenPlan[x.pid] = 1; upcoming.push(x); } });
+      open.forEach(function (x) { if (x.days >= 0 && !seenPlan[x.pid]) { seenPlan[x.pid] = 1; upcoming.push(x); } });
       upcoming.slice(0, 3).forEach(function (x) {
         items.push('<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under' + (x.days <= 1 ? ' neg' : '') + '">' + spDaysLabel(x.days) + '</div>' +
           '<div class="sp-l">مبلغ قسط</div><div class="sp-v sp-under">' + spAmt(x.amount) + ' تومان</div>');
@@ -24119,8 +24223,8 @@ async function openPdfPrintWindow(){
     /* ۶) نکته: اعلان‌های تحلیلی + نکته‌های کوتاه؛ درصدها همان درصدهای صفحهٔ دسته‌بندی */
     function spInsights(D) {
       var out = D.alerts.filter(function (a) { return a.type === 'analysis'; }).map(function (a) { return { p: a.p, h: a.title, t: a.text }; });
-      var soon = D.inst.filter(function (x) { return x.days >= 0 && x.days <= 7; }).length;
-      var late = D.inst.filter(function (x) { return x.days < 0; }).length;
+      var soon = D.inst.filter(function (x) { return !x.paid && x.days >= 0 && x.days <= 7; }).length;
+      var late = D.inst.filter(function (x) { return !x.paid && x.days < 0; }).length;
       if (late) out.push({ p: 95, t: spFa(late) + ' قسط از سررسیدش گذشته است.' });
       if (soon) out.push({ p: 90, t: spFa(soon) + ' پرداخت قسط در ۷ روز آینده داری.' });
       if (D.inc > 0 && D.exp > D.inc) out.push({ p: 80, t: 'مخارج این ماه ' + spPct((D.exp - D.inc) / D.inc * 100) + ' از درآمد بیشتر شده است.' });
@@ -24138,6 +24242,74 @@ async function openPdfPrintWindow(){
       return spHead('نکات') + '<div class="sp-scroll sp-tips">' + ins.slice(0, 5).map(function (x) {
         return '<div class="sp-tipbox">' + (x.h ? '<div class="sp-t">' + spEsc(x.h) + '</div>' : '') + '<div class="sp-tip">' + spEsc(x.t) + '</div></div>';
       }).join('') + '</div>';
+    }
+    /* ۷) سررسیدهای ۷ روز آینده (فقط ماه جاری): قسط‌های پرداخت‌نشده و درآمدهای ثابتِ هنوز دریافت‌نشده */
+    function spPageUpcoming(D) {
+      var t0 = getTodayPersian();
+      if (!(currentYear === t0.y && currentMonth === t0.m)) return null;
+      var items = [];
+      D.inst.filter(function (x) { return !x.paid && x.days >= 0 && x.days <= 7; }).slice(0, 3).forEach(function (x) {
+        items.push({ d: x.days, h: '<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under' + (x.days <= 1 ? ' neg' : '') + '">' + spDaysLabel(x.days) + ' · ' + spAmt(x.amount) + '</div>' });
+      });
+      spRows(findSectionByTitle('income', D.title)).forEach(function (r) {
+        if (!r.fromRecurringId || (r.status || 'paid') === 'paid') return;
+        var d = spDay(r) - t0.d; if (d < 0 || d > 7) return;
+        items.push({ d: d, h: '<div class="sp-l">دریافت «' + spEsc(r.desc || 'درآمد ثابت') + '»</div><div class="sp-v sp-under pos">' + spDaysLabel(d) + ' · ' + spAmt(Number(r.amount) || 0) + '</div>' });
+      });
+      if (!items.length) return null;
+      items.sort(function (a, b) { return a.d - b.d; });
+      return spHead('۷ روز آینده') + spItems(items.slice(0, 4).map(function (x) { return x.h; }));
+    }
+    /* ۸) جهش دسته: دسته‌ای که این ماه دست‌کم ۴۰٪ بیشتر از میانگین ۳ ماه قبل خرج شده */
+    function spPageJump(D) {
+      if (!D.cats.list.length) return null;
+      var prev = {}, n = 0;
+      for (var b = 1; b <= 3; b++) {
+        var sec = spPrevSection('expense', D.title, b); if (!sec) continue;
+        n++; spCategoryTotals(sec).list.forEach(function (c) { prev[c.id] = (prev[c.id] || 0) + c.amount; });
+      }
+      if (!n) return null;
+      var best = null;
+      D.cats.list.forEach(function (c) {
+        var avg = (prev[c.id] || 0) / n; if (avg <= 0) return;
+        var up = (c.amount - avg) / avg;
+        if (up >= 0.4 && c.amount - avg >= D.cats.total * 0.05 && (!best || up > best.up)) best = { c: c, avg: avg, up: up };
+      });
+      if (!best) return null;
+      return spHead('جهش خرج') + spItems([
+        '<div class="sp-t">«' + spEsc(best.c.label) + '» ' + spPct(best.up * 100) + ' بیشتر از میانگین</div>',
+        spLine('این ماه', spAmt(best.c.amount), 'neg'),
+        spLine('میانگین ' + spFa(n) + ' ماه قبل', spAmt(best.avg))
+      ]);
+    }
+    /* ۹) بزرگ‌ترین خرج ماه و تعداد تراکنش‌ها */
+    function spPageBiggest(D) {
+      var rows = spRows(findSectionByTitle('expense', D.title)).filter(function (r) { return (r.status || 'paid') === 'paid' && Number(r.amount) > 0; });
+      if (rows.length < 3) return null;
+      var big = rows.slice().sort(function (a, b) { return (Number(b.amount) || 0) - (Number(a.amount) || 0); })[0];
+      var inc = spRows(findSectionByTitle('income', D.title)).filter(function (r) { return Number(r.amount) > 0; }).length;
+      return spHead('خرج‌های ماه') + spItems([
+        '<div class="sp-l">بزرگ‌ترین خرج</div><div class="sp-v sp-under neg">' + spEsc(big.desc || '—') + ' · ' + spAmt(Number(big.amount) || 0) + '</div>',
+        spLine('تعداد خرج‌ها', spFa(rows.length)),
+        spLine('تعداد واریزها', spFa(inc))
+      ]);
+    }
+    /* ۱۰) کارهای ناتمام اطلاعات: ردیف‌های بی‌حساب، خرج‌های بی‌دسته (لمس = برگهٔ دسته‌بندی) */
+    function spPageFix(D) {
+      var noAcc = 0, noCat = 0;
+      ['income', 'expense'].forEach(function (tab) {
+        spRows(findSectionByTitle(tab, D.title)).forEach(function (r) {
+          if (!(Number(r.amount) > 0) || (r.status || 'paid') !== 'paid') return;
+          if (!(r.account || '').trim()) noAcc++;
+          if (tab === 'expense' && !r.fromPlanId) { var c = null; try { c = HKCategorizer.classify(r.desc, r); } catch (e) {} if (!c) noCat++; }
+        });
+      });
+      if (!noAcc && !noCat) return null;
+      var items = [];
+      if (noAcc) items.push(spLine('ردیف بدون حساب', spFa(noAcc), 'def'));
+      if (noCat) items.push(spLine('خرج بدون دسته', spFa(noCat), 'def'));
+      items.push('<div class="sp-tip">' + (noCat ? 'برای دسته‌بندی، روی همین اسلاید بزنید.' : 'حساب ردیف‌ها را در جدول درآمد/مخارج انتخاب کنید تا موجودی بانک درست شود.') + '</div>');
+      return spHead('تکمیل اطلاعات') + spItems(items);
     }
     /* ===== کارهای من (to-do) در باکس هوشمند — جدا برای هر کارت ===== */
     var TODO_KEY = STORAGE_KEY + '_todos';
@@ -24291,6 +24463,10 @@ async function openPdfPrintWindow(){
       { key: 'ledger', build: spPageLedger },
       { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
       { key: 'projects', build: spPageProjects },
+      { key: 'upcoming', build: spPageUpcoming },
+      { key: 'jump', build: spPageJump },
+      { key: 'biggest', build: spPageBiggest },
+      { key: 'fix', build: spPageFix, onTap: function (title) { try { openCategoryReviewSheet(title); } catch (e) {} } },
       { key: 'insight', build: spPageInsight },
       { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoEditor(title, null); } }
     ];
@@ -25535,7 +25711,7 @@ async function openPdfPrintWindow(){
         '<div class="hk-att-sub"></div>' +
         '<div class="hk-att-list"></div>' +
         '<div class="hk-att-actions">' +
-          '<label class="hk-att-btn"><input type="file" accept="image/*" capture="environment" hidden>گرفتن عکس</label>' +
+          '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>گرفتن عکس</label>' +
           '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>انتخاب از گالری</label>' +
           '<button type="button" class="hk-att-btn hk-att-rec">ضبط صدا</button>' +
         '</div>' +
@@ -25567,20 +25743,62 @@ async function openPdfPrintWindow(){
           };
         });
       }
+      /* از گرفتن/انتخاب عکس تا نمایش کوچکش: دایره‌ای که مرحله‌به‌مرحله آبی پر می‌شود */
+      var ring = null;
+      function ringShow(p) {
+        if (!ring) {
+          ring = document.createElement('div'); ring.className = 'hk-att-item hk-att-loading';
+          ring.innerHTML = '<svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18" class="bg"/><circle cx="22" cy="22" r="18" class="fg"/></svg>';
+          var hint = list.querySelector('.hk-bulk-hint'); if (hint) hint.remove();
+          list.appendChild(ring);
+        }
+        var c = ring.querySelector('.fg'), L = 2 * Math.PI * 18;
+        c.style.strokeDasharray = L; c.style.strokeDashoffset = L * (1 - Math.max(0, Math.min(1, p)));
+      }
+      function ringDone() { if (ring) { var r0 = ring; ring = null; ringShow0(r0); } }
+      function ringShow0(r0) { var c = r0.querySelector('.fg'); c.style.strokeDashoffset = 0; setTimeout(function () { r0.remove(); }, 260); }
       function addBlob(kind, blob, extra) {
         var id = HKAttach.newId();
+        if (kind === 'img') ringShow(0.75);
         return HKAttach.put(id, blob).then(function () {
           row.att.push(Object.assign({ id: id, kind: kind, size: blob.size, at: Date.now() }, extra || {}));
-          changed(); draw();
-        }).catch(function () { showToast('ذخیرهٔ پیوست ممکن نشد', 'warn'); });
+          if (kind === 'img') ringShow(0.92);
+          changed();
+          setTimeout(function () { ringDone(); draw(); }, kind === 'img' ? 280 : 0);
+        }).catch(function () { if (ring) { ring.remove(); ring = null; } showToast('ذخیرهٔ پیوست ممکن نشد', 'warn'); });
+      }
+      function addImageFile(f) {
+        ringShow(0.15);
+        setTimeout(function () { ringShow(0.35); }, 60);
+        HKAttach.compressImage(f).then(function (b) { ringShow(0.6); return addBlob('img', b); })
+          .catch(function () { if (ring) { ring.remove(); ring = null; } showToast('خواندن عکس ممکن نشد', 'warn'); });
       }
       ov.querySelectorAll('input[type=file]').forEach(function (inp) {
         inp.onchange = function () {
           var f = inp.files && inp.files[0]; inp.value = '';
           if (!f) return;
-          HKAttach.compressImage(f).then(function (b) { return addBlob('img', b); }).catch(function () { showToast('خواندن عکس ممکن نشد', 'warn'); });
+          addImageFile(f);
         };
       });
+      /* گرفتن عکس: در نرم‌افزار اندروید مستقیم دوربین (افزونهٔ HkMedia)، نه گالری */
+      var media = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.HkMedia) || null;
+      var camLbl = ov.querySelector('.hk-att-cam');
+      if (media && typeof media.takePhoto === 'function') {
+        camLbl.addEventListener('click', function (e) {
+          e.preventDefault();
+          ringShow(0.05);
+          media.takePhoto().then(function (res) {
+            if (!res || !res.data) throw new Error('empty');
+            ringShow(0.4);
+            var bin = atob(res.data), u8 = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+            addImageFile(new Blob([u8], { type: res.mime || 'image/jpeg' }));
+          }).catch(function (err) {
+            if (ring) { ring.remove(); ring = null; }
+            if (!/cancel/i.test(String((err && (err.message || err.code)) || ''))) showToast('دوربین باز نشد', 'warn');
+          });
+        });
+      }
       /* ضبط صدا */
       var recBtn = ov.querySelector('.hk-att-rec'), rec = null, chunks = [], t0 = 0, tick = 0, stream = null;
       ov._stopRec = function (cancel) {
@@ -25591,7 +25809,15 @@ async function openPdfPrintWindow(){
       recBtn.onclick = function () {
         if (rec) { ov._stopRec(false); return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') { showToast('ضبط صدا روی این گوشی پشتیبانی نمی‌شود', 'warn'); return; }
-        navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }).then(function (st) {
+        /* اول اجازهٔ میکروفون از اندروید (بار اول همان لحظه پرسیده می‌شود؛ اگر قبلاً داده شده، مستقیم ضبط) */
+        var askMic = (media && typeof media.micPermission === 'function') ? media.micPermission() : Promise.resolve({ granted: true });
+        askMic.then(function (pr) {
+          if (pr && pr.granted === false) {
+            if (pr.blocked && typeof media.openAppSettings === 'function') askConfirm('اجازهٔ میکروفون قبلاً رد شده است. تنظیمات مجوزهای نرم‌افزار باز شود؟', function () { media.openAppSettings().catch(function () {}); });
+            else showToast('اجازهٔ میکروفون داده نشد', 'warn');
+            return Promise.reject('denied');
+          }
+          return navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }).then(function (st) {
           stream = st; chunks = [];
           var mt = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm', 'audio/mp4'].find(function (m) { try { return MediaRecorder.isTypeSupported(m); } catch (e) { return false; } }) || '';
           try { rec = new MediaRecorder(st, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); } catch (eR) { rec = new MediaRecorder(st); }
@@ -25608,24 +25834,82 @@ async function openPdfPrintWindow(){
           recBtn.classList.add('on');
           var upd = function () { var s2 = Math.floor((performance.now() - t0) / 1000); recBtn.textContent = 'پایان ضبط · ' + toPersianDigits(String(Math.floor(s2 / 60))) + ':' + toPersianDigits(String(s2 % 60).padStart(2, '0')); if (s2 >= 300) ov._stopRec(false); };
           upd(); tick = setInterval(upd, 500);
-        }).catch(function () { showToast('اجازهٔ میکروفون داده نشد', 'warn'); });
+          });
+        }).catch(function (e) { if (e !== 'denied') showToast('میکروفون در دسترس نیست', 'warn'); });
       };
       ov.querySelector('.hk-bulk-close').onclick = hkCloseAttach;
       ov.addEventListener('click', function (e) { if (e.target === ov) hkCloseAttach(); });
       draw();
     }
+    /* نمایش تمام‌صفحهٔ عکس پیوست: دو انگشت = بزرگ/کوچک، دو ضربه = زوم ۲ برابر/برگشت، کشیدن در حالت زوم = جابه‌جایی؛
+       یک ضربه در حالت عادی یا دکمهٔ × = بستن */
     function hkViewImage(url) {
       var v = document.createElement('div'); v.id = 'hkImgView'; v.className = 'hk-img-view';
-      v.innerHTML = '<img alt="">'; v.querySelector('img').src = url;
-      v.onclick = function () { v.remove(); };
+      v.innerHTML = '<img alt="" draggable="false"><button type="button" class="hk-img-x" aria-label="بستن">×</button>';
+      var img = v.querySelector('img'); img.src = url;
       document.body.appendChild(v);
+      var sc = 1, tx = 0, ty = 0, pts = {}, start = null, lastTap = 0, moved = false;
+      var apply = function (anim) { img.style.transition = anim ? 'transform 0.22s ease' : 'none'; img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + sc + ')'; };
+      var clamp = function () {
+        if (sc <= 1) { sc = 1; tx = 0; ty = 0; return; }
+        var r = img.getBoundingClientRect(), w = r.width / sc, h = r.height / sc;
+        var mx = Math.max(0, (w * sc - window.innerWidth) / 2), my = Math.max(0, (h * sc - window.innerHeight) / 2);
+        tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+      };
+      var close = function () { v.remove(); };
+      v.querySelector('.hk-img-x').onclick = function (e) { e.stopPropagation(); close(); };
+      v.addEventListener('pointerdown', function (e) {
+        if (e.target.classList.contains('hk-img-x')) return;
+        try { v.setPointerCapture(e.pointerId); } catch (eC) {}
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY }; moved = false;
+        var ids = Object.keys(pts);
+        if (ids.length === 2) { var a = pts[ids[0]], b = pts[ids[1]]; start = { d: Math.hypot(a.x - b.x, a.y - b.y), sc: sc, tx: tx, ty: ty, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; }
+        else start = { x: e.clientX, y: e.clientY, tx: tx, ty: ty };
+      });
+      v.addEventListener('pointermove', function (e) {
+        if (!pts[e.pointerId]) return;
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+        var ids = Object.keys(pts);
+        if (ids.length === 2 && start && start.d) {
+          var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
+          sc = Math.max(1, Math.min(5, start.sc * d / start.d));
+          tx = start.tx + ((a.x + b.x) / 2 - start.cx); ty = start.ty + ((a.y + b.y) / 2 - start.cy);
+          moved = true; apply(false);
+        } else if (ids.length === 1 && start && !start.d && sc > 1) {
+          tx = start.tx + (e.clientX - start.x); ty = start.ty + (e.clientY - start.y);
+          if (Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 6) moved = true;
+          apply(false);
+        } else if (start && !start.d && Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 6) moved = true;
+      });
+      var up = function (e) {
+        if (!pts[e.pointerId]) return;
+        delete pts[e.pointerId];
+        var left = Object.keys(pts).length;
+        if (left === 1) { var k = Object.keys(pts)[0]; start = { x: pts[k].x, y: pts[k].y, tx: tx, ty: ty }; return; }
+        if (left) return;
+        clamp(); apply(true);
+        if (moved) return;
+        var now = Date.now();
+        if (now - lastTap < 300) {
+          /* دو ضربه: زوم ۲ برابر روی همان نقطه یا برگشت */
+          if (sc > 1) { sc = 1; tx = 0; ty = 0; }
+          else { sc = 2; tx = (window.innerWidth / 2 - e.clientX); ty = (window.innerHeight / 2 - e.clientY); clamp(); }
+          apply(true); lastTap = 0;
+        } else {
+          lastTap = now;
+          var t0 = now;
+          setTimeout(function () { if (lastTap === t0 && sc <= 1 && v.isConnected) close(); }, 320);
+        }
+      };
+      v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
     }
     function closePersonDetail() {
       /* خروج از سرچ باکس: عبارت جستجو پاک و جدول مانده دوباره نمایش داده شود */
       try { resetBalanceSearch(); } catch (eRs) {}
       try { setTimeout(() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }, 30); } catch (e) {}
       _detailContext = null;
-      try { document.body.classList.remove('detail-open'); document.body.classList.remove('search-open'); } catch (e) {}
+      try { document.body.classList.remove('detail-open'); document.body.classList.remove('search-open'); bsCloseMonthDetail(); } catch (e) {}
+      try { if (typeof syncStickyChromeHeight === 'function') { syncStickyChromeHeight(); requestAnimationFrame(syncStickyChromeHeight); } } catch (eSc) {}
       const bar = document.getElementById('detailPageBar');
       if (bar) bar.style.display = 'none';
       currentTab = 'home';
@@ -27774,7 +28058,10 @@ container.innerHTML = '';
        - پرداخت چند قسط با هم: مبلغ ≈ ۲ یا ۳ برابر قسط = همان تعداد قسطِ پرداخت‌نشدهٔ پشت‌سرهم (مثلاً تیر و مرداد با هم).
        - دو وامِ هم‌مبلغ و هم‌سررسید: جای هم عوض‌پذیرند؛ اولین وامِ پرداخت‌نشده انتخاب می‌شود (پیامک بعدی به وام دیگر می‌رسد).
        خروجی: { plan, idx, idxs, k, extra, due, late } یا null */
-    function hkMatchInstallment(amount, j, raw, account) {
+    function hkMatchInstallment(amount, j, raw, account, opts) {
+      opts = opts || {};
+      /* قسطِ از قبل «پرداخت‌شده» که هنوز به پیامکی وصل نشده (مثلاً دستی تیک خورده، بی‌حساب) هم نامزد است */
+      var free = function (p, i, paid) { return i >= paid || (typeof opts.paidFree === 'function' && opts.paidFree(p, i)); };
       amount = Math.round(Number(amount) || 0);
       if (!amount || !j || !j.y) return null;
       var gj = null; try { gj = persianToDate(j.y, j.m, j.d || 1); } catch (e0) {}
@@ -27793,7 +28080,8 @@ container.innerHTML = '';
         if (!cnt || !pa) return;
         var accSc = account && p.lastPayAccount && hkNormAcc(p.lastPayAccount) === hkNormAcc(account) ? 1 : 0;
         /* یک قسط */
-        for (var i = paid; i < cnt; i++) {
+        for (var i = 0; i < cnt; i++) {
+          if (!free(p, i, paid)) continue;
           var x = dayDiff(p, i); if (!x) continue;
           if (x.dd < -20) break;
           if (x.dd > 60) continue;
@@ -27803,24 +28091,29 @@ container.innerHTML = '';
           if (!core && !kw) continue;
           var sc = amtSc + (core ? 2 : 1) + (kw ? 2 : 0) + accSc;
           if (sc < 4) continue;
-          cands.push({ plan: p, order: pOrder, idx: i, idxs: [i], k: 1, score: sc, extra: amount - pa, due: x.due, pa: pa });
+          cands.push({ plan: p, order: pOrder, idx: i, idxs: [i], wasPaid: [i < paid], k: 1, score: sc, extra: amount - pa, due: x.due, pa: pa, dd: x.dd });
         }
         /* چند قسط با هم (۲ یا ۳): قسط‌های پرداخت‌نشدهٔ پشت‌سرهم از اولین پرداخت‌نشده */
         for (var k = 2; k <= 3; k++) {
-          if (paid + k > cnt) break;
           var tgt = pa * k;
           if (Math.abs(amount - tgt) > tgt * 0.02 && !(amount > tgt && amount <= tgt * 1.1 + 1)) continue;
-          var first = dayDiff(p, paid), last = dayDiff(p, paid + k - 1);
-          if (!first || !last) continue;
-          /* اولی سررسیدش گذشته (حداکثر ۹۰ روز) و آخری حداکثر ۲۰ روز بعد */
-          if (first.dd < -7 || first.dd > 90 || last.dd < -20) continue;
-          var idxs = []; for (var q = 0; q < k; q++) idxs.push(paid + q);
-          var sc2 = (Math.abs(amount - tgt) <= 1 ? 3 : 2) + 2 + (kw ? 2 : 0) + accSc;
-          cands.push({ plan: p, order: pOrder, idx: idxs[k - 1], idxs: idxs, k: k, score: sc2, extra: amount - tgt, due: last.due, pa: pa });
+          /* شروع از قسط‌های پرداخت‌نشده، یا قسط‌های پرداخت‌شدهٔ بی‌پیامکِ چند ماه اخیر */
+          for (var st = Math.max(0, paid - 6); st <= paid && st + k <= cnt; st++) {
+            var idxs = [], okRun = true;
+            for (var q = 0; q < k; q++) { if (!free(p, st + q, paid)) { okRun = false; break; } idxs.push(st + q); }
+            if (!okRun) continue;
+            var first = dayDiff(p, st), last = dayDiff(p, st + k - 1);
+            if (!first || !last) continue;
+            /* اولی سررسیدش گذشته (حداکثر ۹۰ روز) و آخری حداکثر ۲۰ روز بعد */
+            if (first.dd < -7 || first.dd > 90 || last.dd < -20) continue;
+            var sc2 = (Math.abs(amount - tgt) <= 1 ? 3 : 2) + 2 + (kw ? 2 : 0) + accSc;
+            cands.push({ plan: p, order: pOrder, idx: idxs[k - 1], idxs: idxs, wasPaid: idxs.map(function (ii) { return ii < paid; }), k: k, score: sc2, extra: amount - tgt, due: last.due, pa: pa, dd: last.dd });
+          }
         }
       });
       if (!cands.length) return null;
-      cands.sort(function (a, b) { return b.score - a.score || a.k - b.k || a.idx - b.idx || a.order - b.order; });
+      /* امتیاز بیشتر، بعد تعداد قسط کمتر، بعد نزدیک‌ترین سررسید به تاریخ پرداخت */
+      cands.sort(function (a, b) { return b.score - a.score || a.k - b.k || Math.abs(a.dd) - Math.abs(b.dd) || a.idx - b.idx || a.order - b.order; });
       var best = cands[0];
       var same = function (c) { return c.k === best.k && c.pa === best.pa && c.due.y === best.due.y && c.due.m === best.due.m && c.due.d === best.due.d; };
       /* هم‌امتیازِ وامی دیگر: فقط اگر آن وام عوض‌پذیر باشد (قسطی با همان مبلغ و همان سررسیدِ انتخاب‌شده دارد) قبول؛ وگرنه نامطمئن */
@@ -27831,6 +28124,27 @@ container.innerHTML = '';
       /* پرداخت در ماهی غیر از ماه سررسید = دیرکرد (ردیف ماه سررسید پرداخت‌نشده می‌ماند، ردیف «معوق» این ماه پرداخت‌شده می‌شود) */
       best.late = best.idxs.map(function (i) { var d = null; try { d = dueDateForInstallment(best.plan, i); } catch (e) {} return !!(d && (d.y !== j.y || d.m !== j.m)); });
       return best;
+    }
+    /* برداشتی که به مبلغ یک قسط نزدیک است (±۱۵٪ یا ۲ و ۳ برابر) ولی وصل نشد: دلیل برای خلاصهٔ ثبت گروهی */
+    function hkInstallmentMissReason(amount, j) {
+      amount = Number(amount) || 0; if (!amount) return '';
+      var gj = null; try { gj = persianToDate(j.y, j.m, j.d || 1); } catch (e) {}
+      if (!gj) return '';
+      var best = null;
+      (plans || []).forEach(function (p) {
+        if (!p || p.deletedAt) return;
+        var pa = Number(p.amount) || 0, cnt = parseInt(p.count, 10) || 0; if (!pa || !cnt) return;
+        [1, 2, 3].forEach(function (k) {
+          var dv = Math.abs(amount - pa * k) / (pa * k); if (dv > 0.15) return;
+          var near = null;
+          for (var i = 0; i < cnt; i++) { var d = null; try { d = dueDateForInstallment(p, i); } catch (e2) {} if (!d) continue; var g = persianToDate(d.y, d.m, d.d || 1); var dd = Math.round((gj - g) / 86400000); if (!near || Math.abs(dd) < Math.abs(near.dd)) near = { dd: dd, i: i }; }
+          if (!best || dv < best.dv) best = { p: p, k: k, dv: dv, near: near, pa: pa };
+        });
+      });
+      if (!best) return '';
+      var why = best.dv > 0.1 ? 'مبلغش ' + toPersianDigits(String(Math.round(best.dv * 100))) + '٪ با ' + (best.k > 1 ? toPersianDigits(String(best.k)) + ' قسط' : 'قسط') + ' فرق داشت'
+        : (best.near && Math.abs(best.near.dd) > 35 ? 'تاریخش ' + toPersianDigits(String(Math.abs(best.near.dd))) + ' روز با سررسید فاصله داشت' : 'قسط‌های نزدیکش قبلاً به پیامک دیگری وصل یا پرداخت شده بودند');
+      return 'برداشت ' + formatNum(amount) + ' روز ' + toPersianDigits(String(j.d)) + ' ' + MONTHS[j.m - 1] + ' شبیه «' + (best.p.name || 'قسط') + '» بود ولی وصل نشد: ' + why;
     }
     function listPayableInstallments() {
       var out = [];
@@ -31933,11 +32247,11 @@ function confirmSmsEntry() {
 
       const toolbar = document.createElement('div');
       toolbar.className = 'trash-toolbar';
-      /* «انتخاب همه» بالای فهرست می‌ماند و فهرست زیرش اسکرول می‌شود */
+      /* «همه» بالای فهرست می‌ماند و فهرست زیرش اسکرول می‌شود */
       toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;position:sticky;top:0;z-index:2;background:var(--card);';
       toolbar.innerHTML = '<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">' +
         '<input type="checkbox" id="trashSelectAll" style="width:18px;height:18px;accent-color:var(--accent);">' +
-        'انتخاب همه</label>';
+        'همه</label>';
       box.appendChild(toolbar);
       try {
         /* پس‌زمینهٔ مات هم‌رنگ پنجره تا ردیف‌های زیرش دیده نشوند */
@@ -33049,13 +33363,16 @@ if (item.type === 'recurring') {
         if (ei >= 0) sec.rows.splice(ei, 1);
         sec.rows.push(row);
         sec.rows.sort(function (a, b) { return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99); });
+        /* ردیف تازه در فهرست تطبیق همان ماه هم باشد (استفاده‌شده) تا پیامک بعدی دوباره به آن نخورد */
+        var ek = periodKey(r.j.y, r.j.m);
+        if (exOf[ek]) exOf[ek].push({ tab: r.type, day: r.j.d, amount: hkAmtNum(r.amount), acc: hkNormAcc(fo.account), rawAcc: fo.account, row: row, used: true });
         return row;
       };
       var removeRow = function (y, m, row) {
         var pd = ctxOf(y, m).data;
         ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (s2) { var i = (s2.rows || []).indexOf(row); if (i >= 0) s2.rows.splice(i, 1); }); });
       };
-      var added = 0, skipped = 0, linked = 0, gapN = 0, report = [], notes = [], unknownOpen = [], instHits = 0;
+      var added = 0, skipped = 0, linked = 0, gapN = 0, report = [], notes = [], unknownOpen = [], instHits = 0, instMiss = [];
       chosen.forEach(function (fo) {
         var fuzzy = [], accN = hkNormAcc(fo.account);
         /* ردیف جفت‌شده به شکل درست اصلاح شود (روز/نام حساب یکدست) */
@@ -33065,7 +33382,7 @@ if (item.type === 'recurring') {
           var ex = existing(r.j.y, r.j.m), a = hkAmtNum(r.amount);
           var hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (x.acc === accN || (x.row.fromPlanId && !x.acc)); });
           if (hit) {
-            hit.used = true; fixRow(hit, r); r._st = 'dup';
+            hit.used = true; fixRow(hit, r); r._st = 'dup'; if (hit.row.fromPlanId) hit.row.smsLinked = true;
             /* ردیف قسطِ پرداخت‌نشدهٔ همان روز و مبلغ → همین پیامک پرداختش است */
             if (hit.row.fromPlanId && (hit.row.status || 'paid') !== 'paid') {
               var hp = (plans || []).find(function (pl) { return pl && pl.id === hit.row.fromPlanId; }), hi = parseInt(hit.row.fromPlanIndex, 10);
@@ -33083,34 +33400,82 @@ if (item.type === 'recurring') {
           if (r.type === 'expense') {
             /* قسطی که قبلاً دستی پرداخت‌شده ثبت شده (روزش با پیامک فرق دارد) = همین تراکنش */
             hit = ex.find(function (x) { return !x.used && x.tab === 'expense' && x.row.fromPlanId && (x.row.status || 'paid') === 'paid' && x.amount === a && (!x.acc || x.acc === accN); });
-            if (hit) { hit.used = true; fixRow(hit, r); r._st = 'dup'; skipped++; return; }
-            var im = hkMatchInstallment(a, r.j, r.body, fo.account);
+            if (hit) { hit.used = true; fixRow(hit, r); hit.row.smsLinked = true; r._st = 'dup'; skipped++; return; }
+            /* قسطِ پرداخت‌شده‌ای که هنوز به پیامکی وصل نشده (حسابش خالی یا همین حساب) */
+            var planRowOf = function (pl, ii, ym, withUsed) {
+              return existing(ym.y, ym.m).find(function (x) { return (withUsed || !x.used) && x.tab === 'expense' && x.row.fromPlanId === pl.id && parseInt(x.row.fromPlanIndex, 10) === ii; });
+            };
+            var paidFree = function (pl, ii) {
+              var due = null; try { due = dueDateForInstallment(pl, ii); } catch (eD) {}
+              var cand = [r.j].concat(due ? [due] : []), seen = false;
+              for (var c = 0; c < cand.length; c++) {
+                var x = planRowOf(pl, ii, cand[c], true);
+                if (!x) continue;
+                seen = true;
+                if (!x.used && (x.row.status || 'paid') === 'paid' && !x.row.smsLinked && (!x.acc || x.acc === accN)) return true;
+              }
+              /* ماهی که هنوز ردیفی برایش ساخته نشده: پیوند پیامکی هم ندارد */
+              return !seen;
+            };
+            var im = hkMatchInstallment(a, r.j, r.body, fo.account, { paidFree: paidFree });
             if (im) {
               var cntP = parseInt(im.plan.count, 10) || 0, prow = null, left = a;
-              /* هر قسط ردیف خودش در همین ماه (ردیف «معوق» برای قسطِ ماه قبل)؛ مبلغ پرداختی بینشان تقسیم می‌شود و اختلاف روی آخری */
+              /* هر قسط ردیف خودش؛ مبلغ پرداختی بینشان تقسیم می‌شود و اختلاف روی آخری */
               im.idxs.forEach(function (ii, n) {
                 var last = n === im.idxs.length - 1, share = last ? left : Math.min(left, im.pa);
                 left -= share;
-                var pr = ex.find(function (x) { return !x.used && x.row.fromPlanId === im.plan.id && parseInt(x.row.fromPlanIndex, 10) === ii && x.tab === 'expense'; });
-                var rw;
-                if (pr) { pr.used = true; rw = pr.row; }
-                else { rw = addRow(fo, r); rw.fromSmsBulk = true; if (!n || !prow || !prow.fromSmsBulk) added++; }
-                rw.fromPlanId = im.plan.id; rw.fromPlanIndex = ii; rw.allowPlanFieldEdit = true;
-                if (im.late[n]) rw.planCarried = true;
-                rw.status = 'paid'; rw.amount = share; rw.day = String(r.j.d); rw.account = fo.account;
+                var due = null; try { due = dueDateForInstallment(im.plan, ii); } catch (eD2) {}
+                var early = !!(due && (due.y * 100 + due.m) > (r.j.y * 100 + r.j.m));
                 var dif = share - im.pa;
-                rw.desc = planInstallmentDesc(im.plan, ii, cntP) + (im.late[n] ? ' (معوق)' : '') + (im.k > 1 ? ' — پرداخت ' + toPersianDigits(String(im.k)) + ' قسط با هم' : '') + (last && dif > 0 ? ' — دیرکرد ' + formatNum(dif) : (last && dif < 0 ? ' — ' + formatNum(-dif) + ' کمتر' : ''));
-                try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL) {}
+                var note = (im.k > 1 ? ' — پرداخت ' + toPersianDigits(String(im.k)) + ' قسط با هم' : '') + (last && dif > 0 ? ' — دیرکرد ' + formatNum(dif) : (last && dif < 0 ? ' — ' + formatNum(-dif) + ' کمتر' : ''));
+                var rw = null, pr = null;
+                if (im.wasPaid[n]) {
+                  /* از قبل پرداخت‌شده: همان ردیف (ماه پرداخت یا ماه سررسید) به پیامک وصل می‌شود؛ شمار قسط‌ها دست نمی‌خورد */
+                  pr = planRowOf(im.plan, ii, r.j) || (due ? planRowOf(im.plan, ii, due) : null);
+                  if (pr) {
+                    pr.used = true; rw = pr.row;
+                    rw.account = fo.account; rw.amount = share;
+                    if (due && due.y === r.j.y && due.m === r.j.m) rw.day = String(r.j.d);
+                  }
+                }
+                if (!rw) {
+                  pr = planRowOf(im.plan, ii, r.j);
+                  if (pr) { pr.used = true; rw = pr.row; }
+                  else { rw = addRow(fo, r); rw.fromSmsBulk = true; if (!n || !prow || !prow.fromSmsBulk) added++; }
+                  rw.status = 'paid'; rw.amount = share; rw.day = String(r.j.d); rw.account = fo.account;
+                  if (early) {
+                    /* پیش‌پرداخت قسط ماه بعد: ماه سررسید پرداخت‌نشده می‌ماند */
+                    rw.planEarlyPay = true; rw.planCarried = false;
+                    if (!im.plan.paidEarlyMap) im.plan.paidEarlyMap = {};
+                    im.plan.paidEarlyMap[String(ii)] = { y: r.j.y, m: r.j.m, amount: share, day: String(r.j.d), account: fo.account };
+                  } else {
+                    if (im.late[n]) rw.planCarried = true;
+                    try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL) {}
+                  }
+                }
+                rw.fromPlanId = im.plan.id; rw.fromPlanIndex = ii; rw.allowPlanFieldEdit = true; rw.smsLinked = true;
+                rw.planNote = note;
+                rw.desc = planInstallmentDesc(im.plan, ii, cntP) + (early ? ' (پیش‌پرداخت)' : (im.late[n] && !im.wasPaid[n] ? ' (معوق)' : '')) + note;
                 prow = rw;
               });
-              var needP = im.idx + 1; if ((parseInt(im.plan.paidCount, 10) || 0) < needP) im.plan.paidCount = Math.min(cntP, needP);
-              try { clampPlanPaymentState(im.plan); } catch (eCl) {}
-              /* clamp دیرکردهای بالای paidCount را پاک می‌کند؛ این‌ها زیرش هستند و می‌مانند */
-              im.idxs.forEach(function (ii, n) { try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL2) {} });
+              var lastUnpaid = -1;
+              im.idxs.forEach(function (ii, n) {
+                var due2 = null; try { due2 = dueDateForInstallment(im.plan, ii); } catch (eD3) {}
+                var early2 = !!(due2 && (due2.y * 100 + due2.m) > (r.j.y * 100 + r.j.m));
+                if (!im.wasPaid[n] && !early2) lastUnpaid = ii;
+              });
+              if (lastUnpaid >= 0) {
+                if ((parseInt(im.plan.paidCount, 10) || 0) < lastUnpaid + 1) im.plan.paidCount = Math.min(cntP, lastUnpaid + 1);
+                try { clampPlanPaymentState(im.plan); } catch (eCl) {}
+                /* clamp دیرکردهای بالای paidCount را پاک می‌کند؛ این‌ها زیرش هستند و می‌مانند */
+                im.idxs.forEach(function (ii, n) { if (!im.wasPaid[n]) { try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL2) {} } });
+              }
               im.plan.lastPayAccount = fo.account;
               instHits += im.k; r._st = 'inst'; r._row = prow;
               return;
             }
+            /* شبیه قسط بود ولی وصل نشد: دلیلش در خلاصه */
+            try { var why = hkInstallmentMissReason(a, r.j); if (why && instMiss.length < 6) instMiss.push(why); } catch (eW) {}
           }
           /* ردیف تازه؛ اگر ردیف دستیِ خیلی شبیهی هست، در خلاصه گفته شود چه چیزش فرق داشت */
           var near = ex.find(function (x) { return !x.used && x.tab === r.type && x.amount === a && x.day === r.j.d && x.acc && x.acc !== accN; }) ||
@@ -33213,7 +33578,7 @@ if (item.type === 'recurring') {
       try { renderHomeCards(); } catch (eH) {}
       var dupSms = 0; chosen.forEach(function (fo) { dupSms += fo.dupSms || 0; });
       try { if (instHits && typeof updateInstallSummary === 'function') updateInstallSummary(); } catch (eIs) {}
-      hkBulkSummary({ instHits: instHits, added: added, skipped: skipped, linked: linked, gaps: gapN, created: created, report: report, checks: checks, snap: snap, notes: notes, unknownOpen: unknownOpen, dupSms: dupSms, notices: (_hkBulk && _hkBulk.skipNotice) || 0, newAccs: created });
+      hkBulkSummary({ instMiss: instMiss, instHits: instHits, added: added, skipped: skipped, linked: linked, gaps: gapN, created: created, report: report, checks: checks, snap: snap, notes: notes, unknownOpen: unknownOpen, dupSms: dupSms, notices: (_hkBulk && _hkBulk.skipNotice) || 0, newAccs: created });
     }
     function hkBulkSummary(s) {
       var box = document.querySelector('#smsBulkOv .hk-bulk-box'); if (!box) { showToast(toPersianDigits(String(s.added)) + ' تراکنش ثبت شد'); closeSmsBulkModal(); return; }
@@ -33222,6 +33587,7 @@ if (item.type === 'recurring') {
       if (s.skipped) L.push(toPersianDigits(String(s.skipped)) + ' تراکنش از قبل ثبت شده بود و دوباره ثبت نشد' + (s.linked ? ' (' + toPersianDigits(String(s.linked)) + ' ردیف بدون حساب، به حسابش وصل شد)' : ''));
       if (s.gaps) L.push(toPersianDigits(String(s.gaps)) + ' ردیف اختلاف برای پیامک‌های جاافتاده ثبت شد');
       if (s.instHits) L.push(toPersianDigits(String(s.instHits)) + ' پرداخت قسط شناخته شد و قسطش پرداخت‌شده ثبت شد');
+      (s.instMiss || []).forEach(function (m) { L.push(m); });
       s.created.forEach(function (lb) { L.push('حساب تازه ساخته شد: ' + lb); });
       s.report.forEach(function (x) { L.push(x); });
       if (s.dupSms) L.push(toPersianDigits(String(s.dupSms)) + ' پیامک تکراریِ بانک نادیده گرفته شد');
@@ -33235,7 +33601,12 @@ if (item.type === 'recurring') {
       box.innerHTML = '<div class="hk-bulk-title">ثبت گروهی انجام شد</div>' +
         '<div class="hk-bulk-sum">' + L.map(function (x) { return '<div class="hk-bulk-sline">' + escapeHtml(x) + '</div>'; }).join('') + chk + '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok hk-bulk-done">باشه</button><button type="button" class="hk-bulk-undo">برگرداندن این ثبت</button></div>';
-      box.querySelector('.hk-bulk-done').onclick = function () { closeSmsBulkModal(); };
+      /* بعد از ثبت، منوی اصلی به ماهِ شروع بازه می‌رود (مثلاً ۲۰ شهریور ۱۴۰۴ ← شهریور ۱۴۰۴) */
+      box.querySelector('.hk-bulk-done').onclick = function () {
+        var g = _hkBulk && _hkBulk.from ? { y: _hkBulk.from.y, m: _hkBulk.from.m } : null;
+        closeSmsBulkModal();
+        if (g && (g.y !== currentYear || g.m !== currentMonth)) { try { navigateToPeriod(g.y, g.m); } catch (eN) {} }
+      };
       box.querySelector('.hk-bulk-undo').onclick = function () {
         try {
           archive = JSON.parse(s.snap.archive); periodData = JSON.parse(s.snap.period);
@@ -35248,8 +35619,9 @@ if (item.type === 'recurring') {
       out.sort(function (x, y) { return x.score - y.score; });
       return out;
     }
+    /* «۶ فروردین ۱۴۰۵ — مبلغ — بانک — «شرح»» (سال کنار روز و ماه) */
     function recRowLabel(r, k) {
-      return (r.day ? toPersianDigits(String(r.day)) + ' ' : '') + (MONTHS[(k % 100) - 1] || '') + ' — ' + formatNum(Number(r.amount) || 0) +
+      return (r.day ? toPersianDigits(String(r.day)) + ' ' : '') + (MONTHS[(k % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(k / 100))) + ' — ' + formatNum(Number(r.amount) || 0) +
         (r.account ? ' — ' + r.account : '') + (r.desc ? ' — «' + r.desc + '»' : '');
     }
     /* پنجرهٔ انتخاب یکی از چند گزینه؛ onPick(value) — value=null یعنی بستن بدون انتخاب */
@@ -35298,8 +35670,28 @@ if (item.type === 'recurring') {
     function recLinkRow(item, row) {
       row.fromRecurringId = item.id;
       row.recLinked = true;
+      /* واریز بی‌شرح (مثلاً از پیامک) اسم همان درآمد ثابت را می‌گیرد */
+      if (!(row.desc || '').trim() && (item.name || '').trim()) row.desc = item.name.trim();
       row.updatedAt = Date.now();
     }
+    /* یک‌بار پس از هر اجرا: واریزهایی که قبلاً به درآمد ثابتی وصل شده‌اند و شرح ندارند، اسم همان درآمد ثابت را می‌گیرند */
+    function hkRecDescMigrate() {
+      try {
+        var changed = false;
+        recEachMonth(function (k, pd) {
+          ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+            (sec.rows || []).forEach(function (r) {
+              if (!r || r.deletedAt || !r.fromRecurringId || (r.desc || '').trim()) return;
+              if (!(Number(r.amount) > 0) || !recIsPaid(r)) return;
+              var it = recLiveItem(r.fromRecurringId);
+              if (it && (it.name || '').trim()) { r.desc = it.name.trim(); r.updatedAt = Date.now(); changed = true; }
+            });
+          });
+        });
+        if (changed) { recPersist(); try { renderAll(); } catch (eR) {} }
+      } catch (e) {}
+    }
+    setTimeout(hkRecDescMigrate, 1800);
     /* ردیف این ماه برای یک تعریف (اگر لازم است): اگر واریز مشابهی ثبت شده، از کاربر می‌پرسد؛ پیش‌فرض ساخت ردیف «دریافت نشده» */
     function recOfferTodayRow(item, done) {
       var today = recTodayKey();
@@ -35585,11 +35977,13 @@ if (item.type === 'recurring') {
       ov.id = 'recAddPrevModal';
       ov.style.cssText = 'position:fixed;inset:0;z-index:100450;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;';
       var html = '<div style="width:100%;max-width:440px;max-height:80vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;direction:rtl;overflow:hidden;">' +
-        '<div style="padding:12px;font-weight:800;font-size:0.9rem;text-align:center;line-height:1.7;">کدام واریزها مربوط به «' + escapeHtml(item.name || '') + '» است؟</div><div style="overflow:auto;flex:1;padding:0 10px;">';
+        '<div style="padding:12px;font-weight:800;font-size:0.9rem;text-align:center;line-height:1.7;">کدام واریزها مربوط به «' + escapeHtml(item.name || '') + '» است؟</div><div style="overflow:auto;flex:1;padding:0 10px;">' +
+        /* «همه» بالای فهرست، ثابت (مثل بقیهٔ جاها) */
+        (cands.length > 1 ? '<label class="rec-prev-all" style="position:sticky;top:0;z-index:2;background:var(--card);display:flex;align-items:center;gap:8px;padding:9px 4px;font-size:0.84rem;font-weight:800;cursor:pointer;"><input type="checkbox" class="rec-prev-allchk" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;"><span>همه</span></label>' : '');
       cands.forEach(function (c, i) {
         html += '<label style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-top:1px solid var(--border);font-size:0.82rem;cursor:pointer;">' +
           '<input type="checkbox" data-i="' + i + '" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;"><span style="flex:1;">' +
-          escapeHtml(recRowLabel(c.row, c.key)) + ' ' + toPersianDigits(String(Math.floor(c.key / 100))) + '</span></label>';
+          escapeHtml(recRowLabel(c.row, c.key)) + '</span></label>';
       });
       html += '</div><div style="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);">' +
         '<button type="button" data-act="ok" style="flex:1;padding:9px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">افزودن</button>' +
@@ -35600,9 +35994,15 @@ if (item.type === 'recurring') {
       ov._hkCancel = close;
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       ov.querySelector('[data-act="cancel"]').onclick = close;
+      var allChk = ov.querySelector('.rec-prev-allchk'), items = ov.querySelectorAll('input[data-i]');
+      if (allChk) {
+        var syncAll = function () { var n0 = [].filter.call(items, function (x) { return x.checked; }).length; allChk.checked = n0 === items.length; allChk.indeterminate = n0 > 0 && n0 < items.length; };
+        allChk.onchange = function () { items.forEach(function (x) { x.checked = allChk.checked; }); };
+        items.forEach(function (x) { x.addEventListener('change', syncAll); });
+      }
       ov.querySelector('[data-act="ok"]').onclick = function () {
         var n = 0;
-        ov.querySelectorAll('input[type=checkbox]:checked').forEach(function (cb) {
+        ov.querySelectorAll('input[data-i]:checked').forEach(function (cb) {
           var c = cands[parseInt(cb.getAttribute('data-i'), 10)];
           if (c) { recLinkRow(item, c.row); n++; }
         });
@@ -39452,6 +39852,8 @@ function openProjectRowPicker(secId) {
          و منوی زیرش سر جایش می‌ماند */
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
+      /* جزئیات ماه (روی منوی جستجو) و نمای تمام‌صفحهٔ عکس پیوست */
+      try { if (document.getElementById('hkImgView')) { document.getElementById('hkImgView').remove(); return; } if (bsCloseMonthDetail()) return; } catch (eMd) {}
       try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { if (_spt._hkClose) _spt._hkClose(); else _spt.remove(); document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); }); return; } } catch (eSpt) {}
@@ -39514,7 +39916,7 @@ function openProjectRowPicker(secId) {
         var _bam = document.getElementById('bankAccountsModal'), _bamOpen = _bam && _bam.classList.contains('open');
         if (!_bamOpen) {
           var _dov = document.getElementById('hkDupOv'); if (_dov) { _dov.remove(); return; }
-          if (document.getElementById('smsBulkOv')) { closeSmsBulkModal(); return; }
+          if (document.getElementById('smsBulkOv')) { var _dn = document.querySelector('#smsBulkOv .hk-bulk-done'); if (_dn) _dn.click(); else closeSmsBulkModal(); return; }
         }
       } catch (eSb) {}
       if(closeTopOverlayOrMenu()) return;
@@ -40675,6 +41077,8 @@ function openProjectRowPicker(secId) {
         btn.classList.toggle('bsr-def', def);
       });
       grid.querySelectorAll('.bs-amt-row').forEach(function (c) { var i = c.querySelector('input'); c.classList.toggle('has-val', !!(i && i.value)); });
+      var dq = grid.querySelector('.bsr-desc'), di = document.getElementById('balanceSearchInput');
+      if (dq) dq.classList.toggle('has-q', !!(di && di.value));
       try { hkAmtRangeSync(); } catch (eAr) {}
     }
     /* ===== اسلایدر بازهٔ مبلغ (جستجو) =====
@@ -40807,6 +41211,13 @@ function openProjectRowPicker(secId) {
         h.addEventListener('change', queue, true);
         /* «C» داخل باکس مبلغ: عدد پاک و جستجو به‌روز */
         h.addEventListener('click', function (e) {
+          var dc = e.target && e.target.closest && e.target.closest('.bs-desc-clr');
+          if (dc) {
+            e.preventDefault(); e.stopPropagation();
+            var di = document.getElementById('balanceSearchInput');
+            if (di) { di.value = ''; di.dispatchEvent(new Event('input', { bubbles: true })); }
+            queue(); return;
+          }
           var b = e.target && e.target.closest && e.target.closest('.bs-amt-clr'); if (!b) return;
           e.preventDefault(); e.stopPropagation();
           var i = document.getElementById(b.getAttribute('data-for')); if (!i) return;
@@ -40854,14 +41265,42 @@ function openProjectRowPicker(secId) {
       ms.forEach(function (m) { var b = by[m]; html += '<tr class="bs-mrow" data-m="' + m + '"><td class="bs-mname">' + MONTHS[m - 1] + '</td><td class="bs-ci">' + formatNum(b.i) + '</td><td class="bs-ce">' + formatNum(b.e) + '</td><td>' + net(b.i - b.e) + '</td></tr>'; });
       html += '</tbody>' + (ms.length ? '<tfoot><tr class="bs-mtotal"><td>جمع سال</td><td class="bs-ci">' + formatNum(ti) + '</td><td class="bs-ce">' + formatNum(te) + '</td><td>' + net(ti - te) + '</td></tr></tfoot>' : '') + '</table>';
       box.innerHTML = html; box.style.display = '';
+      box._list = list;
       box.querySelectorAll('.bs-mrow').forEach(function (tr) {
-        tr.onclick = function () {
-          var sel = document.getElementById('balanceSearchRange'); if (!sel) return;
-          sel.value = tr.getAttribute('data-m');
-          try { if (sel._fancyRender) sel._fancyRender(); } catch (e) {}
-          sel.dispatchEvent(new Event('change'));
-        };
+        tr.onclick = function () { bsOpenMonthDetail(parseInt(tr.getAttribute('data-m'), 10), box._list || []); };
       });
+    }
+    /* پنجرهٔ جزئیات یک ماه (با فیلترهای فعلی): جمع درآمد/مخارج/مانده، ردیف‌ها به ترتیب روز، جمع هر دستهٔ مخارج.
+       بک اندروید یا دکمهٔ بازگشت = برگشت به منوی جستجو */
+    function bsCloseMonthDetail() { var o = document.getElementById('bsMonthDetail'); if (!o) return false; o.remove(); return true; }
+    function bsOpenMonthDetail(m, list) {
+      bsCloseMonthDetail();
+      var rows = list.filter(function (it) { return it.m === m && it.y === currentYear; }).sort(function (a, b) { return a.d - b.d; });
+      var inc = rows.filter(function (it) { return it.tab === 'income'; }), exp = rows.filter(function (it) { return it.tab === 'expense'; });
+      var si = inc.reduce(function (a, it) { return a + it.amount; }, 0), se = exp.reduce(function (a, it) { return a + it.amount; }, 0);
+      var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+      var tbl = function (arr, cls) {
+        if (!arr.length) return '<div class="hk-bulk-hint">ردیفی نیست</div>';
+        return '<table class="summary-table"><thead><tr><th>روز</th><th>شرح</th><th>مبلغ</th></tr></thead><tbody>' + arr.map(function (it, i) {
+          return '<tr><td>' + (it.d ? p2(it.d) : '—') + '</td><td class="bmd-desc" data-i="' + cls + i + '">' + escapeHtml(it.desc || '—') + '</td><td class="' + cls + '">' + formatNum(it.amount) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      };
+      var cats = {};
+      exp.forEach(function (it) { var ids = []; try { ids = bsCatOf(it.row); } catch (e) {} var id = ids[0] || '__none__'; cats[id] = (cats[id] || 0) + it.amount; });
+      var catLbl = function (id) { if (id === '__none__') return 'بدون دسته'; var c = (HKCategorizer.categories || []).find(function (x) { return x.id === id; }); return c ? c.label : id; };
+      var catHtml = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; }).map(function (id) { return '<div class="bmd-cat"><span>' + escapeHtml(catLbl(id)) + '</span><span class="bs-ce">' + formatNum(cats[id]) + '</span></div>'; }).join('');
+      var net = si - se;
+      var o = document.createElement('div'); o.id = 'bsMonthDetail';
+      o.innerHTML = '<div class="bmd-head"><button type="button" class="bmd-back" aria-label="بازگشت">›</button><div class="bmd-title">جزئیات ' + MONTHS[m - 1] + ' ' + toPersianDigits(String(currentYear)) + '</div></div>' +
+        '<div class="bmd-body bs-month-table">' +
+          '<div class="bmd-sum"><div>درآمد<b class="bs-ci">' + formatNum(si) + '</b></div><div>مخارج<b class="bs-ce">' + formatNum(se) + '</b></div><div>مانده<b class="' + (net < 0 ? 'bs-ce' : 'bs-ci') + '"><bdi dir="ltr">' + (net < 0 ? '−' : '') + formatNum(Math.abs(net)) + '</bdi></b></div></div>' +
+          '<div class="bmd-sec">درآمدها (' + toPersianDigits(String(inc.length)) + ')</div>' + tbl(inc, 'bs-ci') +
+          '<div class="bmd-sec">مخارج (' + toPersianDigits(String(exp.length)) + ')</div>' + tbl(exp, 'bs-ce') +
+          (catHtml ? '<div class="bmd-sec">جمع هر دسته</div>' + catHtml : '') +
+        '</div>';
+      document.body.appendChild(o);
+      o.querySelector('.bmd-back').onclick = bsCloseMonthDetail;
+      o.querySelectorAll('td.bmd-desc').forEach(function (td) { td.onclick = function (e) { e.stopPropagation(); try { var pp = showCellTextPopup(td, td.textContent); if (pp) pp.style.zIndex = '100400'; } catch (eP) {} }; });
     }
     /* «واریز»: دسته‌بندی فقط مال مخارج است، پس منوی دسته غیرفعال می‌شود */
     function bsSyncTypeCat() {
@@ -41014,16 +41453,18 @@ function openProjectRowPicker(secId) {
         foot.innerHTML = '';
         var addF = function (label, v, color) {
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td class="sec-name">' + label + '</td><td></td><td></td><td class="val">' + formatNum(v) + '</td>';
+          tr.innerHTML = '<td class="sec-name" colspan="3">' + label + '</td><td class="val">' + formatNum(v) + '</td>';
           tr.querySelector('td.val').style.setProperty('color', color, 'important');
+          /* متن طولانی: با زدن، باکس شناور یک‌خطی */
+          tr.querySelectorAll('td').forEach(function (td) { td.style.cursor = 'pointer'; td.onclick = function (ev) { ev.stopPropagation(); try { showCellTextPopup(td, td.classList.contains('val') ? label + ': ' + formatNum(v) : label); } catch (eP) {} }; });
           foot.appendChild(tr);
         };
         var _lt = document.documentElement.getAttribute('data-theme') === 'light';
         /* یک ماه انتخاب شده: جمع درآمد و جمع مخارج همان ماه (جمع همهٔ ماه‌ها در جدول ماه‌ها بالای نتیجه است) */
         if (rangeF !== 'all') {
           var mName = MONTHS[parseInt(rangeF, 10) - 1] || '';
-          if (typeF !== 'expense' && !catF) addF('جمع درآمد ' + mName, sumI, _lt ? '#3f9a5c' : '#9ee858');
-          if (typeF !== 'income') addF('جمع مخارج ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
+          if (typeF !== 'expense' && !catF) addF('درآمد کل ' + mName, sumI, _lt ? '#3f9a5c' : '#9ee858');
+          if (typeF !== 'income') addF('خرج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
         }
       }
       document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو (' + toPersianDigits(String(list.length)) + ' مورد)';

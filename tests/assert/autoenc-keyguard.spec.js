@@ -25,6 +25,13 @@ function installMock() {
     deleteAutoBackup: async (o) => { window.__log.push('del:' + o.name); delete files[o.name]; return { deleted: 1 }; },
     readAutoBackup: async (o) => { if (!files[o.name]) throw new Error('not_found'); return { data: files[o.name].data, size: 1 }; }
   }, App: { getInfo: async () => ({ version: '1.3.10', build: '1' }) } } };
+
+  /* از ۱.۳.۳۲ پشتیبان‌های روزانه/ایمنی در حافظهٔ داخلی (store:'internal') و در Downloads فقط «آخرین پشتیبان»: فهرست بالا = حافظهٔ داخلی، Downloads جدا */
+  { const P = window.Capacitor.Plugins.NativeFileExport, orig = Object.assign({}, P), dl = {}; window.__dl = dl; const isI = o => !!(o && o.store === 'internal');
+    P.saveAutoBackup = async o => isI(o) ? orig.saveAutoBackup(o) : (dl[o.filename] = { data: o.data, modified: Math.floor(Date.now() / 1000) }, { ok: true, verified: true, filename: o.filename });
+    P.listAutoBackups = async o => isI(o) ? orig.listAutoBackups(o) : { files: Object.keys(dl).map(n => ({ name: n, size: 1, modified: dl[n].modified })) };
+    P.deleteAutoBackup = async o => isI(o) ? orig.deleteAutoBackup(o) : (delete dl[o.name], { deleted: 1 });
+    P.readAutoBackup = async o => isI(o) ? orig.readAutoBackup(o) : { data: (dl[o.name] || {}).data, size: 1 }; }
   ['log', 'warn', 'error', 'info'].forEach(m => { const o = console[m]; console[m] = function () { try { window.__console.push([].map.call(arguments, String).join(' ')); } catch (e) {} return o.apply(this, arguments); }; });
 }
 async function fresh(b) {

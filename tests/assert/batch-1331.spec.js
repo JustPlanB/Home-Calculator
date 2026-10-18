@@ -154,7 +154,7 @@ async function page(b, inbox) {
     out.extra = ['5', '6'].reduce((n, m) => n + rowsOf(m).filter(x => !x.fromPlanId).length, 0);
     return out;
   });
-  ok(ins.one === 'pa:3', 'برداشت ۵۹۵٬۵۹۱ با دو وام هم‌مبلغ (۵۹۶٬۳۲۸ روز ۲۱): نامطمئن نیست؛ قدیمی‌ترین قسط پرداخت‌نشدهٔ وام اول');
+  ok(ins.one === 'pa:4', 'برداشت ۵۹۵٬۵۹۱ روز ۲۳ شهریور با دو وام هم‌مبلغ (۵۹۶٬۳۲۸ روز ۲۱): نامطمئن نیست؛ نزدیک‌ترین سررسید (شهریور) وام اول');
   ok(ins.two === 'pa:2+3:true/false', '۱٬۱۹۰٬۴۰۰ ≈ دو قسط: قسط تیر (دیرکرد) و مرداد همان وام');
   ok(ins.mordad.length === 4 && ins.mordad.every(x => /:paid:/.test(x) && /:ملی$/.test(x)) && ins.mordad.filter(x => /^pa:/.test(x)).length === 2 && ins.mordad.filter(x => /^pb:/.test(x)).length === 2 && ins.mordadDesc.every(d => /۲ قسط با هم/.test(d)), 'مرداد: هر دو وام، هر کدام دو قسط پرداخت‌شده (تیر «معوق» + مرداد) با حساب ملی');
   ok(ins.mordad.filter(x => /^pa:/.test(x)).reduce((s2, x) => s2 + Number(x.split(':')[3]), 0) === 1190400, 'جمع دو ردیف هر وام = مبلغ واقعی پیامک (۱٬۱۹۰٬۴۰۰)');
