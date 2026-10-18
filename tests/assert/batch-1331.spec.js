@@ -58,8 +58,8 @@ async function page(b, inbox) {
     out.msRows = ms ? [...ms.querySelectorAll('.bs-mrow')].map(r => [...r.children].map(td => td.textContent)) : [];
     out.msTotal = ms ? [...ms.querySelectorAll('.bs-mtotal td')].map(td => td.textContent) : [];
     out.msColor = ms ? getComputedStyle(ms.querySelector('.bs-mrow .bs-ci')).color : '';
-    /* زدن ردیف شهریور = فیلتر شهریور؛ جمع درآمد و جمع مخارج همان ماه */
-    ms.querySelector('.bs-mrow[data-m="6"]').click(); await w(150);
+    /* از ۱.۳.۳۲ زدن ماه پنجرهٔ جزئیات باز می‌کند (batch-1332)؛ فیلتر شهریور از منوی «ماه» */
+    const rg0 = document.getElementById('balanceSearchRange'); rg0.value = '6'; rg0.dispatchEvent(new Event('change')); await w(150);
     out.picked = document.getElementById('balanceSearchRange').value;
     out.msHidden = getComputedStyle(ms).display === 'none';
     out.foot = [...document.querySelectorAll('#search-result-foot tr')].map(t => t.textContent);
@@ -75,7 +75,7 @@ async function page(b, inbox) {
   ok(se.opts.length === 13 && se.opts[0] === 'همهٔ ماه‌ها' && se.opts[1] === 'فروردین' && se.opts[12] === 'اسفند', '«ماه»: همهٔ ماه‌ها + فروردین تا اسفند');
   ok(se.msShown && /۱۴۰۵/.test(se.msTitle) && se.msRows.length === 2 && se.msRows[0][0] === 'شهریور' && se.msRows[1][0] === 'مهر', 'جدول ماه‌های ۱۴۰۵ (فقط ماه‌های دارای ردیف؛ ۱۴۰۴ نیامد): ' + se.msRows.map(r => r[0]).join('، '));
   ok(se.msRows[0][1] === '۵۰,۰۰۰,۰۰۰' && se.msRows[0][2] === '۱۴۷,۰۰۰,۰۰۰' && /۹۷,۰۰۰,۰۰۰/.test(se.msRows[0][3]) && se.msTotal[0] === 'جمع سال' && se.msTotal[1] === '۱۰۰,۰۰۰,۰۰۰' && se.msColor === 'rgb(158, 232, 88)', 'هر ماه: درآمد / مخارج / مانده؛ ردیف جمع سال');
-  ok(se.picked === '6' && se.msHidden && se.foot.length === 2 && /جمع درآمد شهریور/.test(se.foot[0]) && /جمع مخارج شهریور/.test(se.foot[1]) && se.resN === 21 && se.years.join() === '۱۴۰۵', 'زدن ماه در جدول = فیلتر همان ماه؛ جمع درآمد و جمع مخارج همان ماه (' + se.resN + ' ردیف)');
+  ok(se.picked === '6' && se.msHidden && se.foot.length === 2 && /درآمد کل شهریور/.test(se.foot[0]) && /خرج کل شهریور/.test(se.foot[1]) && se.resN === 21 && se.years.join() === '۱۴۰۵', 'فیلتر یک ماه: جدول ماه‌ها پنهان؛ درآمد کل و خرج کل همان ماه (' + se.resN + ' ردیف)');
 
   /* ---------- ثبت گروهی ---------- */
   console.log('• ثبت گروهی پیامک');
@@ -154,7 +154,7 @@ async function page(b, inbox) {
     out.extra = ['5', '6'].reduce((n, m) => n + rowsOf(m).filter(x => !x.fromPlanId).length, 0);
     return out;
   });
-  ok(ins.one === 'pa:3', 'برداشت ۵۹۵٬۵۹۱ با دو وام هم‌مبلغ (۵۹۶٬۳۲۸ روز ۲۱): نامطمئن نیست؛ قدیمی‌ترین قسط پرداخت‌نشدهٔ وام اول');
+  ok(ins.one === 'pa:4', 'برداشت ۵۹۵٬۵۹۱ روز ۲۳ شهریور با دو وام هم‌مبلغ (۵۹۶٬۳۲۸ روز ۲۱): نامطمئن نیست؛ نزدیک‌ترین سررسید (شهریور) وام اول');
   ok(ins.two === 'pa:2+3:true/false', '۱٬۱۹۰٬۴۰۰ ≈ دو قسط: قسط تیر (دیرکرد) و مرداد همان وام');
   ok(ins.mordad.length === 4 && ins.mordad.every(x => /:paid:/.test(x) && /:ملی$/.test(x)) && ins.mordad.filter(x => /^pa:/.test(x)).length === 2 && ins.mordad.filter(x => /^pb:/.test(x)).length === 2 && ins.mordadDesc.every(d => /۲ قسط با هم/.test(d)), 'مرداد: هر دو وام، هر کدام دو قسط پرداخت‌شده (تیر «معوق» + مرداد) با حساب ملی');
   ok(ins.mordad.filter(x => /^pa:/.test(x)).reduce((s2, x) => s2 + Number(x.split(':')[3]), 0) === 1190400, 'جمع دو ردیف هر وام = مبلغ واقعی پیامک (۱٬۱۹۰٬۴۰۰)');
