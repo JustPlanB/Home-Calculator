@@ -52,6 +52,7 @@ async function page(b, inbox) {
     out.handles = Math.abs(hc(hs[0]) - tr.left) < 3 && Math.abs(hc(hs[1]) - tr.right) < 3;
     out.opts = [...document.getElementById('balanceSearchRange').options].map(o => o.textContent);
     /* جدول ماه‌ها (همهٔ ماه‌های ۱۴۰۵) */
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
     const ms = document.getElementById('searchMonthSummary');
     out.msShown = !!ms && getComputedStyle(ms).display !== 'none';
     out.msTitle = ms ? ms.querySelector('.summary-header').textContent : '';
@@ -213,7 +214,7 @@ async function page(b, inbox) {
   });
   ok(sm.slide.join('،') === 'شیر،قبض،نان✓', 'اسلاید کارها: انجام‌نشده‌ها بالا، انجام‌شده پایین (' + sm.slide.join('، ') + ')');
   ok(sm.editor.join('،') === 'شیر،قبض✓،نان✓', 'تیک زدن در فهرست: کار انجام‌شده به پایین می‌رود (' + sm.editor.join('، ') + ')');
-  ok(sm.ledger.n === 1 && /«علی» بدهکار به «من»|«من» بدهکار به «علی»/.test(sm.ledger.html) && /طلب و بدهی/.test(sm.ledger.html), 'قرضی که نامش با کارت جور نیست هم در باکس هوشمند دیده می‌شود');
+  ok(sm.ledger.n === 1 && /«علی» به «من» .*بدهکار است|«من» به «علی» .*بدهکار است/.test(sm.ledger.html.replace(/<[^>]+>/g, '')) /* ۱.۳.۳۵: «x به y مبلغ بدهکار است» */ && /طلب و بدهی/.test(sm.ledger.html), 'قرضی که نامش با کارت جور نیست هم در باکس هوشمند دیده می‌شود');
   ok(sm.ledger2.debt === 500000, 'نام کارت با فاصلهٔ اضافه («سارا ») هم شناخته می‌شود (بدهی ' + sm.ledger2.debt + ')');
   ok(sm.tipGap === '18px' && sm.tipPad === '3px', 'بین نکته‌ها فاصله (۱۸px) تا حرکت/همزهٔ نکتهٔ بعد در نکتهٔ قبلی دیده نشود');
   ok(sm.projMehr === 0 && sm.cashMehr === 0 && sm.projSh === 1 && sm.cashSh === 9000000, 'پروژه فقط در ماه تراکنشش (شهریور) کنار موجودی ملی با دایرهٔ رنگی و مبلغ همان ماه');

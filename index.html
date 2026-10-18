@@ -1912,6 +1912,11 @@
     body.search-open #panel-balance .summary-section > .summary-header, body.search-open .bs-search-head, #bsMonthDetail .bmd-ttl {
       font-size: 1.15rem !important; font-weight: 800 !important; padding: 14px 12px 10px !important; text-align: center !important; border-bottom: 0 !important; border-radius: 16px 16px 0 0; }
     #bsMonthDetail .bmd-ttl { background: var(--bg); color: var(--text); font-size: 1.02rem !important; padding: 11px 12px 9px !important; }
+    /* جدول‌های جستجو: ردیف‌ها شفاف روی زمینهٔ جدول (مثل جدول‌های درآمد/مخارج)؛ کادر فیلترها همرنگ عنوان جدول‌ها */
+    body.search-open #panel-balance .summary-section .summary-table tbody td, body.search-open #panel-balance .summary-section .summary-table tfoot td,
+    #bsMonthDetail .hk-tframe .summary-table tbody td { background: transparent !important; }
+    body.search-open #panel-balance .balance-fixed-header { background: var(--bg) !important; }
+    html[data-theme="light"] body.search-open #panel-balance .balance-fixed-header { background: var(--bg) !important; }
     #bsMonthDetail .hk-tframe { margin-bottom: 12px; }
     /* جزئیات ماه: جدول یک‌ردیفیِ درآمد/مخارج/مانده بالا ثابت؛ بقیه زیرش اسکرول */
     #bsMonthDetail .bmd-sum { position: sticky; top: 0; z-index: 3; margin-bottom: 12px; }
@@ -9106,6 +9111,7 @@
     .sp-v { direction: rtl; unicode-bidi: isolate; white-space: normal; overflow-wrap: anywhere; margin-right: auto; font-variant-numeric: tabular-nums; min-width: 0; max-width: 100%; }
     .sp-page .sp-t, .sp-page .sp-tip, .sp-page .sp-sub, .sp-page .sp-todo { overflow-wrap: anywhere; min-width: 0; }
     .sp-under { display: block; margin: 2px 0 0; text-align: left; font-size: calc(0.68rem * var(--sp-fs, 1)); }
+    .sp-right { display: block; margin: 2px 0 0; text-align: right; font-size: calc(0.68rem * var(--sp-fs, 1)); }
     .sp-page .pos { color: #9ee858; }
     .sp-page .neg { color: #ff6b4a; }
     .sp-blk { display: flex; flex-direction: column; gap: calc(4px * var(--sp-fs, 1)); flex-shrink: 0; }
@@ -10649,13 +10655,13 @@
     .hk-att-media img { display: block; max-width: 100%; max-height: 220px; border-radius: 8px; margin: 0 auto; cursor: zoom-in; }
     .hk-att-media audio { width: 100%; }
     .hk-att-meta { font-size: 0.72rem; color: var(--muted, #9a9a9a); }
-    .hk-att-del { position: absolute; top: 6px; left: 6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(28,28,30,0.82); color: #ff453a; font-size: 1.6rem; font-weight: 800; line-height: 34px; padding: 0; z-index: 1; }
+    .hk-att-del { position: absolute; top: 6px; left: 6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: none; color: #ff453a; font-size: 1.75rem; font-weight: 800; line-height: 34px; padding: 0; z-index: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
     /* پشت پنجرهٔ پیوست‌ها مات */
     #hkAttachOv { background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     /* صدا: پخش‌کنندهٔ ساده داخل یک قرص — پخش، نوار پیشرفت و زمان، بعد جداکننده و × در انتهای چپ (هم‌راستای × عکس‌ها) */
     .hk-att-item.aud { flex-direction: row; align-items: center; gap: 8px; padding: 6px; border-radius: 999px; }
-    .hk-aud-play { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #0a84ff; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
-    .hk-aud-play svg { width: 16px; height: 16px; fill: currentColor; }
+    .hk-aud-play { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 0; background: #0a84ff; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+    .hk-aud-play svg { width: 12px; height: 12px; fill: currentColor; }
     .hk-aud-bar { flex: 1; min-width: 40px; height: 6px; border-radius: 3px; background: rgba(142,142,147,0.3); position: relative; overflow: hidden; direction: ltr; cursor: pointer; }
     .hk-aud-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #0a84ff; border-radius: 3px; }
     .hk-aud-time { flex: 0 0 auto; font-size: 0.74rem; color: var(--muted, #9a9a9a); direction: ltr; min-width: 64px; text-align: center; }
@@ -11650,7 +11656,7 @@
     }
     /* ساعت از متن پیامک (مثل «0520-10:00») وگرنه از زمان رسیدن پیامک؛ خروجی «HH:MM» */
     function hkSmsTime(body, ts) {
-      var t = toEnglishDigits(String(body || '')), m, last = null, re = /(?:^|[^\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])/g;
+      var t = toEnglishDigits(String(body || '')), m, last = null, re = /(?:^|[^\d:])([01]?\d|2[0-3])[:٫.]([0-5]\d)(?::[0-5]\d)?(?![\d:])/g;
       while ((m = re.exec(t))) last = m;
       if (last) return ('0' + last[1]).slice(-2) + ':' + last[2];
       if (ts > 0) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
@@ -11778,7 +11784,14 @@
         const byId = pd.expense.sections.find(s => s.id === id);
         if (byId) return byId;
       }
-      return null;
+      /* همان کارت با املای دیگر (ی/ي، فاصله، نیم‌فاصله)، یا بخشی که ردیف‌های همین قسط در آن است (ردیف‌ها گم نشوند) */
+      if (title && typeof hkNormTitle === 'function') {
+        const nt = hkNormTitle(title);
+        const byNorm = pd.expense.sections.find(s => hkNormTitle(s.title) === nt);
+        if (byNorm) return byNorm;
+      }
+      const byRows = pd.expense.sections.find(s => (s.rows || []).some(r => r && r.fromPlanId === plan.id));
+      return byRows || null;
     }
 
     function planInstallmentDesc(plan, index, count) {
@@ -11914,7 +11927,9 @@
            */
           if (dueThisMonth) {
             var paidInDue = isPaid && !paidLate;
-            indicesToShow.push({ i: i, due: d, isPaid: paidInDue, carried: false });
+            /* دیر پرداخت شد (تاریخ پرداخت معلوم): «پرداخت در …» بی مبلغ؛ مبلغ در ماه پرداخت با «(معوق)» آمده */
+            var laterAt = isPaid && paidLate && plan.paidLaterAt && plan.paidLaterAt[String(i)];
+            indicesToShow.push({ i: i, due: d, isPaid: paidInDue, carried: false, laterAt: laterAt || null });
             continue;
           }
           if (dueBefore && periodEntered && dueMonthEnded) {
@@ -11950,7 +11965,7 @@
           var usePrevDay = item.isPaid && prev.day != null && prev.day !== '';
           const row = {
             day: usePrevDay ? String(prev.day) : String(due.d),
-            desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق)' : ''),
+            desc: planInstallmentDesc(plan, matchIdx, count) + (showMoavagh ? ' (معوق ' + MONTHS[due.m - 1] + ')' : ''),
             amount: usePrevAmt ? prev.amount : amt,
             status: autoStatus,
             account: item.isPaid ? (prev.account || '') : (prev.account || ''),
@@ -11958,6 +11973,7 @@
             fromPlanIndex: matchIdx,
             planCarried: !!item.carried
           };
+          if (item.laterAt) hkMarkPaidLaterRow(row, plan, matchIdx, count, item.laterAt, due);
           if (item.isPaid && prev.allowPlanFieldEdit) row.allowPlanFieldEdit = true;
           /* توضیح پیامک (دیرکرد / چند قسط با هم) و پیوند پیامک با ساختن دوبارهٔ ردیف از بین نرود */
           if (item.isPaid && prev.planNote) { row.planNote = prev.planNote; row.desc += prev.planNote; }
@@ -12033,6 +12049,12 @@
         Object.keys(plan.paidEarlyMap).forEach(function(k) {
           const idx = parseInt(k, 10);
           if (isNaN(idx) || idx >= paid) delete plan.paidEarlyMap[k];
+        });
+      }
+      if (plan.paidLaterAt && typeof plan.paidLaterAt === 'object') {
+        Object.keys(plan.paidLaterAt).forEach(function(k) {
+          const idx = parseInt(k, 10);
+          if (isNaN(idx) || idx >= paid || !(plan.paidLateMap && plan.paidLateMap[k])) delete plan.paidLaterAt[k];
         });
       }
       /* ردیف‌های پیش‌پرداختی که دیگر در map نیستند از همه ماه‌ها حذف شوند */
@@ -17249,12 +17271,59 @@ function onPeriodChange() {
       if (raw == null || raw === '') return null;
       try { return JSON.parse(raw); } catch (e2) { bkWarn(payload, part, e2); return null; }
     }
-    async function exportFullBackup(selectedParts) {
+    /* همهٔ پیوست‌های ردیف‌ها (عکس / صدا) */
+    function hkAllAttachments() {
+      var out = [], seen = {}, cur = periodKey(currentYear, currentMonth);
+      try {
+        iterAllPeriodData(function (pd, key) {
+          if (key === cur && pd !== periodData) return;
+          ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
+            (Array.isArray(r && r.att) ? r.att : []).forEach(function (a) { if (a && a.id && !seen[a.id]) { seen[a.id] = 1; out.push(a); } });
+          }); }); });
+        });
+      } catch (e) {}
+      return out;
+    }
+    /* پشتیبان دستی: پیوست‌ها هم (اختیاری) — فایل‌ها base64 داخل همان فایل پشتیبان */
+    function hkAttachmentsForBackup(list) {
+      return Promise.all(list.map(function (a) {
+        return HKAttach.get(a.id).then(function (blob) {
+          if (!blob) return null;
+          return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res({ id: a.id, type: blob.type || '', data: String(fr.result || '').split(',')[1] || '' }); }; fr.onerror = function () { res(null); }; fr.readAsDataURL(blob); });
+        }).catch(function () { return null; });
+      })).then(function (arr) { return arr.filter(Boolean); });
+    }
+    function hkRestoreAttachments(arr) {
+      if (!Array.isArray(arr) || !arr.length) return;
+      arr.forEach(function (x) {
+        try {
+          if (!x || !x.id || !x.data) return;
+          var bin = atob(x.data), u8 = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+          HKAttach.put(String(x.id), new Blob([u8], { type: x.type || '' })).catch(function () {});
+        } catch (e) {}
+      });
+    }
+    async function exportFullBackup(selectedParts, withAtt) {
       closeSideMenu();
+      /* پیوست دارد: یک بار بپرس با پیوست‌ها یا بی پیوست */
+      if (withAtt === undefined) {
+        var _al = hkAllAttachments();
+        if (_al.length) {
+          var _sz = _al.reduce(function (t, a) { return t + (Number(a.size) || 0); }, 0);
+          hkAsk3('عکس‌ها و صداهای پیوست (' + toPersianDigits(String(_al.length)) + ' فایل، حدود ' + hkFmtSize(Math.max(1024, Math.round(_sz * 1.34))) + ') هم در پشتیبان باشند؟',
+            [{ v: 'yes', t: 'همراه با پیوست‌ها', cls: 'primary' }, { v: 'no', t: 'بدون پیوست‌ها' }], function (ans) {
+              if (ans === 'cancel') return;
+              exportFullBackup(selectedParts, ans === 'yes');
+            });
+          return;
+        }
+      }
       try {
         persistCurrent();
         saveArchive();
         const payload = buildBackupPayload(selectedParts || null);
+        if (withAtt) { try { payload.attachments = await hkAttachmentsForBackup(hkAllAttachments()); } catch (eAt) {} }
         if (payload.backupWarnings && payload.backupWarnings.length) {
           setTimeout(function () { try { showToastLong('بخشی از اطلاعات خوانده نشد و در پشتیبان نیست (' + payload.backupWarnings.join('، ') + ').'); } catch (eW) {} }, 2600);
         }
@@ -18069,6 +18138,7 @@ function askBackupUserCards(selectedParts) {
           saveSmsAccountBankMap();
         } catch (e) { bkRestoreFail('smsAccountBankMap', e); }
       }
+      if (Array.isArray(data.attachments)) { try { hkRestoreAttachments(data.attachments); } catch (eAtR) {} }
       if (Array.isArray(data.customBanks)) { try { data.customBanks.forEach(function (b) { if (b) hkAddCustomBank(String(b)); }); } catch (eCb2) {} }
       if (Array.isArray(data.userReminders)) {
         try {
@@ -24220,7 +24290,9 @@ async function openPdfPrintWindow(){
       var rem = D.inc - D.exp, sc = rem >= 0 ? 'pos' : 'neg';
       var pct = D.inc > 0 ? Math.abs(rem) / D.inc * 100 : 100;
       var html = spHead('وضعیت این ماه') + '<div class="sp-even">';
-      html += '<div class="sp-blk">' + spLine(rem >= 0 ? 'پس‌انداز کارت' : 'کسری کارت', spAmt(Math.abs(rem)) + ' · ' + spPct(Math.min(999, pct)), sc) + spTube(Math.min(100, pct), sc) + '</div>';
+      /* درصد بالای لوله (چپ‌چین)، مبلغ زیر لوله (راست‌چین) */
+      html += '<div class="sp-blk">' + spLine(rem >= 0 ? 'پس‌انداز کارت' : 'کسری کارت', spPct(Math.min(999, pct)), sc) + spTube(Math.min(100, pct), sc) +
+        '<div class="sp-v sp-right ' + sc + '">' + spAmt(Math.abs(rem)) + '</div></div>';
       var incUn = Math.max(0, D.inc - D.incPaid), expUn = Math.max(0, D.expUnpaid);
       var sub = [];
       if (incUn > 0) sub.push('دریافت‌نشده ' + spAmt(incUn));
@@ -24269,10 +24341,10 @@ async function openPdfPrintWindow(){
       if (L.credit > 0) items.push('<div class="sp-row"><span class="sp-l pos">طلب کل</span><span class="sp-v pos">' + spAmt(L.credit) + '</span></div>');
       if (L.debt > 0) items.push('<div class="sp-row"><span class="sp-l neg">بدهی کل</span><span class="sp-v neg">' + spAmt(L.debt) + '</span></div>');
       (L.list || []).forEach(function (x) {
-        /* نام طرف‌حساب یک خط، مبلغ زیرش (یکدست برای نام‌های کوتاه و بلند) */
-        if (x.type === 'other') { items.push('<div class="sp-l">«' + spEsc(x.who) + '» بدهکار به «' + spEsc(x.to) + '»</div><div class="sp-v sp-under">' + spAmt(x.amount) + '</div>'); return; }
+        /* «x به y فلان مبلغ بدهکار است» / «x از y فلان مبلغ طلبکار است» */
+        if (x.type === 'other') { items.push('<div class="sp-tip">«' + spEsc(x.who) + '» به «' + spEsc(x.to) + '» <b class="neg">' + spAmt(x.amount) + '</b> بدهکار است</div>'); return; }
         var cr = x.type === 'credit';
-        items.push('<div class="sp-l">' + (cr ? 'طلب از' : 'بدهی به') + ' «' + spEsc(x.who) + '»</div><div class="sp-v sp-under ' + (cr ? 'pos' : 'neg') + '">' + spAmt(x.amount) + '</div>');
+        items.push('<div class="sp-tip">«' + spEsc(D.title) + '» ' + (cr ? 'از' : 'به') + ' «' + spEsc(x.who) + '» <b class="' + (cr ? 'pos' : 'neg') + '">' + spAmt(x.amount) + '</b> ' + (cr ? 'طلبکار' : 'بدهکار') + ' است</div>');
       });
       /* اسکرول عمودی آزاد؛ همیشه از بالا شروع می‌شود و خودکار اسکرول نمی‌شود */
       return spHead('طلب و بدهی') + '<div class="sp-scroll sp-free">' + spItems(items) + '</div>';
@@ -24380,7 +24452,7 @@ async function openPdfPrintWindow(){
       var big = rows.slice().sort(function (a, b) { return (Number(b.amount) || 0) - (Number(a.amount) || 0); })[0];
       var inc = spRows(findSectionByTitle('income', D.title)).filter(function (r) { return Number(r.amount) > 0; }).length;
       return spHead('خرج‌های ماه') + spItems([
-        '<div class="sp-l">بزرگ‌ترین خرج</div><div class="sp-v sp-under neg">' + spEsc(big.desc || '—') + ' · ' + spAmt(Number(big.amount) || 0) + '</div>',
+        '<div class="sp-l">بزرگ‌ترین خرج: ' + spEsc(big.desc || '—') + '</div><div class="sp-v sp-right neg">' + spAmt(Number(big.amount) || 0) + '</div>',
         spLine('تعداد خرج‌ها', spFa(rows.length)),
         spLine('تعداد واریزها', spFa(inc))
       ]);
@@ -26197,7 +26269,7 @@ container.innerHTML = '';
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.1em"><col style="width:1.95em"><col style="width:23%">' +
+        '<col style="width:2.1em"><col style="width:2.4em"><col style="width:21.5%">' +
         '<col style="width:28%"><col style="width:18%"><col style="width:2em"><col style="width:1.5em">' +
         '</colgroup>' +
         '<thead><tr>' +
@@ -26212,7 +26284,7 @@ container.innerHTML = '';
       table.className = 'person-detail-table';
       table.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.1em"><col style="width:1.95em"><col style="width:23%">' +
+        '<col style="width:2.1em"><col style="width:2.4em"><col style="width:21.5%">' +
         '<col style="width:28%"><col style="width:18%"><col style="width:2em"><col style="width:1.5em">' +
         '</colgroup>';
       const tbody = document.createElement('tbody');
@@ -28228,15 +28300,21 @@ container.innerHTML = '';
        - پرداخت چند قسط با هم: مبلغ ≈ ۲ یا ۳ برابر قسط = همان تعداد قسطِ پرداخت‌نشدهٔ پشت‌سرهم (مثلاً تیر و مرداد با هم).
        - دو وامِ هم‌مبلغ و هم‌سررسید: جای هم عوض‌پذیرند؛ اولین وامِ پرداخت‌نشده انتخاب می‌شود (پیامک بعدی به وام دیگر می‌رسد).
        خروجی: { plan, idx, idxs, k, extra, due, late } یا null */
+    /* تشخیص پرداخت قسط (قانون ساده):
+       ۱) پیامک کلمهٔ «قسط/اقساط/تسهیلات/وام» دارد → مبلغ (±۵٪ از ۱، ۲ یا ۳ برابر مبلغ هر قسط) و تاریخ (تا ۲۰ روز از سررسید) کافی است.
+       ۲) کلمه ندارد → تلرانس کوچک: مبلغ از ۱٪ کمتر تا ۳٪ بیشتر (دیرکرد)، تاریخ از ۵ روز قبل تا ۱۵ روز بعد از سررسید.
+       ضریب‌ها: ۲ یا ۳ برابر = قسط‌های پشت‌سرهم تا سررسید همین پرداخت (مثلاً معوقهٔ مرداد + سررسید شهریور).
+       نامزد: قسطی که هنوز به پیامکی وصل نشده (پرداخت‌نشده، یا «پرداخت‌شده»ِ دستی که opts.paidFree تأیید کند).
+       از بین نامزدها محتمل‌ترین: مبلغ دقیق‌تر، بعد سررسید نزدیک‌تر، بعد ضریب کمتر، بعد همان بانکِ پرداخت قبلی. */
     function hkMatchInstallment(amount, j, raw, account, opts) {
       opts = opts || {};
-      /* قسطِ از قبل «پرداخت‌شده» که هنوز به پیامکی وصل نشده (مثلاً دستی تیک خورده، بی‌حساب) هم نامزد است */
       var free = function (p, i, paid) { return i >= paid || (typeof opts.paidFree === 'function' && opts.paidFree(p, i)); };
       amount = Math.round(Number(amount) || 0);
       if (!amount || !j || !j.y) return null;
       var gj = null; try { gj = persianToDate(j.y, j.m, j.d || 1); } catch (e0) {}
       if (!gj) return null;
-      var kw = /(قسط|اقساط|تسهیلات|وام)/.test(String(raw || ''));
+      var kw = /(قسط|اقساط|تسهیلات|وام)/.test(String(raw || '').replace(/ي/g, 'ی'));
+      var lo = kw ? 0.95 : 0.99, hi = kw ? 1.05 : 1.03, dMin = kw ? -20 : -5, dMax = kw ? 20 : 15;
       var dayDiff = function (p, i) {
         var due = null; try { due = dueDateForInstallment(p, i); } catch (e1) {}
         if (!due) return null;
@@ -28246,53 +28324,35 @@ container.innerHTML = '';
       var cands = [];
       (plans || []).forEach(function (p, pOrder) {
         if (!p || p.deletedAt) return;
-        var cnt = Math.max(0, parseInt(p.count, 10) || 0), pa = Math.round(planInstallmentAmount(p) || 0) /* مبلغ هر قسط، نه مبلغ کل وام */, paid = Math.max(0, parseInt(p.paidCount, 10) || 0);
+        var cnt = Math.max(0, parseInt(p.count, 10) || 0), pa = Math.round(planInstallmentAmount(p) || 0), paid = Math.max(0, parseInt(p.paidCount, 10) || 0);
         if (!cnt || !pa) return;
         var accSc = account && p.lastPayAccount && hkNormAcc(p.lastPayAccount) === hkNormAcc(account) ? 1 : 0;
-        /* یک قسط */
-        for (var i = 0; i < cnt; i++) {
-          if (!free(p, i, paid)) continue;
-          var x = dayDiff(p, i); if (!x) continue;
-          if (x.dd < -20) break;
-          if (x.dd > 60) continue;
-          var amtSc = Math.abs(amount - pa) <= 1 ? 3 : ((amount > pa && amount <= pa * 1.1 + 1) || Math.abs(amount - pa) <= pa * 0.02) ? 2 : 0;
-          if (!amtSc) continue;
-          var core = x.dd >= -7 && x.dd <= 35;
-          if (!core && !kw) continue;
-          var sc = amtSc + (core ? 2 : 1) + (kw ? 2 : 0) + accSc;
-          if (sc < 4) continue;
-          cands.push({ plan: p, order: pOrder, idx: i, idxs: [i], wasPaid: [i < paid], k: 1, score: sc, extra: amount - pa, due: x.due, pa: pa, dd: x.dd });
-        }
-        /* چند قسط با هم (۲ یا ۳): قسط‌های پرداخت‌نشدهٔ پشت‌سرهم از اولین پرداخت‌نشده */
-        for (var k = 2; k <= 3; k++) {
+        for (var k = 1; k <= 3; k++) {
           var tgt = pa * k;
-          if (Math.abs(amount - tgt) > tgt * 0.02 && !(amount > tgt && amount <= tgt * 1.1 + 1)) continue;
-          /* شروع از قسط‌های پرداخت‌نشده، یا قسط‌های پرداخت‌شدهٔ بی‌پیامکِ چند ماه اخیر */
-          for (var st = Math.max(0, paid - 6); st <= paid && st + k <= cnt; st++) {
+          if (amount < tgt * lo || amount > tgt * hi + 1) continue;
+          /* آخرین قسطِ این پرداخت: سررسیدش در بازهٔ تاریخ؛ قبلی‌ها قسط‌های پشت‌سرهمِ پیش از آن (معوقه) */
+          for (var last = k - 1; last < cnt; last++) {
+            var x = dayDiff(p, last); if (!x) continue;
+            if (x.dd < dMin) break;
+            if (x.dd > dMax) continue;
             var idxs = [], okRun = true;
-            for (var q = 0; q < k; q++) { if (!free(p, st + q, paid)) { okRun = false; break; } idxs.push(st + q); }
+            for (var q = last - k + 1; q <= last; q++) { if (!free(p, q, paid)) { okRun = false; break; } idxs.push(q); }
             if (!okRun) continue;
-            var first = dayDiff(p, st), last = dayDiff(p, st + k - 1);
-            if (!first || !last) continue;
-            /* اولی سررسیدش گذشته (حداکثر ۹۰ روز) و آخری حداکثر ۲۰ روز بعد */
-            if (first.dd < -7 || first.dd > 90 || last.dd < -20) continue;
-            var sc2 = (Math.abs(amount - tgt) <= 1 ? 3 : 2) + 2 + (kw ? 2 : 0) + accSc;
-            cands.push({ plan: p, order: pOrder, idx: idxs[k - 1], idxs: idxs, wasPaid: idxs.map(function (ii) { return ii < paid; }), k: k, score: sc2, extra: amount - tgt, due: last.due, pa: pa, dd: last.dd });
+            cands.push({ plan: p, order: pOrder, idx: last, idxs: idxs, wasPaid: idxs.map(function (ii) { return ii < paid; }), k: k,
+              err: Math.abs(amount - tgt) / tgt, dd: x.dd, due: x.due, pa: pa, extra: amount - tgt, acc: accSc });
           }
         }
       });
       if (!cands.length) return null;
-      /* امتیاز بیشتر، بعد تعداد قسط کمتر، بعد نزدیک‌ترین سررسید به تاریخ پرداخت */
-      cands.sort(function (a, b) { return b.score - a.score || a.k - b.k || Math.abs(a.dd) - Math.abs(b.dd) || a.idx - b.idx || a.order - b.order; });
+      cands.sort(function (a, b) {
+        /* پیش‌پرداختِ قسط بعدی کم‌احتمال‌تر از پرداختِ قسطِ سررسیدگذشته است (فاصلهٔ قبل از سررسید ۲٫۵ برابر حساب می‌شود) */
+        var ea = a.dd < 0 ? -a.dd * 2.5 : a.dd, eb = b.dd < 0 ? -b.dd * 2.5 : b.dd;
+        return (Math.round(a.err * 1000) - Math.round(b.err * 1000)) || (ea - eb) || (a.k - b.k) || (b.acc - a.acc) || (a.idx - b.idx) || (a.order - b.order);
+      });
       var best = cands[0];
-      var same = function (c) { return c.k === best.k && c.pa === best.pa && c.due.y === best.due.y && c.due.m === best.due.m && c.due.d === best.due.d; };
-      /* هم‌امتیازِ وامی دیگر: فقط اگر آن وام عوض‌پذیر باشد (قسطی با همان مبلغ و همان سررسیدِ انتخاب‌شده دارد) قبول؛ وگرنه نامطمئن */
-      if (cands.some(function (c) {
-        return c !== best && c.score === best.score && c.plan.id !== best.plan.id &&
-          !cands.some(function (c2) { return c2.plan.id === c.plan.id && same(c2); });
-      })) return null;
-      /* پرداخت در ماهی غیر از ماه سررسید = دیرکرد (ردیف ماه سررسید پرداخت‌نشده می‌ماند، ردیف «معوق» این ماه پرداخت‌شده می‌شود) */
-      best.late = best.idxs.map(function (i) { var d = null; try { d = dueDateForInstallment(best.plan, i); } catch (e) {} return !!(d && (d.y !== j.y || d.m !== j.m)); });
+      best.kw = kw;
+      /* دیرکرد: پرداخت در ماهی غیر از ماه سررسید */
+      best.late = best.idxs.map(function (i) { var d = null; try { d = dueDateForInstallment(best.plan, i); } catch (e) {} return !!(d && (d.y * 100 + d.m) < (j.y * 100 + j.m)); });
       return best;
     }
     /* اعمال یک پرداخت قسطِ شناخته‌شده (im از hkMatchInstallment): هر قسط ردیف خودش؛ مبلغ واقعی بینشان تقسیم و اختلاف روی آخری.
@@ -28306,32 +28366,33 @@ container.innerHTML = '';
         left -= share;
         var due = null; try { due = dueDateForInstallment(im.plan, ii); } catch (eD2) {}
         var early = !!(due && (due.y * 100 + due.m) > (j.y * 100 + j.m));
+        var late = !!(due && (due.y * 100 + due.m) < (j.y * 100 + j.m));
         var dif = share - im.pa;
         var note = (im.k > 1 ? ' — پرداخت ' + toPersianDigits(String(im.k)) + ' قسط با هم' : '') + (last && dif > 0 ? ' — دیرکرد ' + formatNum(dif) : (last && dif < 0 ? ' — ' + formatNum(-dif) + ' کمتر' : ''));
-        var rw = null;
-        if (im.wasPaid[n]) {
-          rw = findRow(im.plan, ii, j) || (due ? findRow(im.plan, ii, due) : null);
-          if (rw) {
-            rw.account = account; rw.amount = share;
-            if (due && due.y === j.y && due.m === j.m) rw.day = String(j.d);
-          }
-        }
-        if (!rw) {
-          rw = findRow(im.plan, ii, j) || addRow(!n || !prow || !prow.fromSmsBulk);
-          rw.status = 'paid'; rw.amount = share; rw.day = String(j.d); rw.account = account;
-          if (early) {
-            /* پیش‌پرداخت قسط ماه بعد: ماه سررسید پرداخت‌نشده می‌ماند */
-            rw.planEarlyPay = true; rw.planCarried = false;
-            if (!im.plan.paidEarlyMap) im.plan.paidEarlyMap = {};
-            im.plan.paidEarlyMap[String(ii)] = { y: j.y, m: j.m, amount: share, day: String(j.d), account: account };
-          } else {
-            if (im.late[n]) rw.planCarried = true;
-            try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL) {}
-          }
+        /* ردیف قسطِ همین ماهِ پرداخت (ماه سررسید، یا ردیف معوقِ این ماه)؛ نبود → ردیف تازه در ماه پرداخت */
+        var rw = findRow(im.plan, ii, j) || addRow(!n || !prow || !prow.fromSmsBulk);
+        rw.status = 'paid'; rw.amount = share; rw.day = String(j.d); rw.account = account;
+        rw.planEarlyPay = false; rw.planCarried = false;
+        if (early) {
+          /* پیش‌پرداخت قسط ماه بعد: ماه سررسید پرداخت‌نشده می‌ماند */
+          rw.planEarlyPay = true;
+          if (!im.plan.paidEarlyMap) im.plan.paidEarlyMap = {};
+          im.plan.paidEarlyMap[String(ii)] = { y: j.y, m: j.m, amount: share, day: String(j.d), account: account };
+        } else if (late) {
+          /* معوق: پرداخت در این ماه با «(معوق ماه)»؛ ردیف ماه سررسید «پرداخت در …» می‌شود و دیگر خرج آن ماه حساب نمی‌شود */
+          rw.planCarried = true;
+          try { setPlanIndexPaidLate(im.plan, ii, true); } catch (eL) {}
+          if (!im.plan.paidLaterAt) im.plan.paidLaterAt = {};
+          im.plan.paidLaterAt[String(ii)] = { y: j.y, m: j.m, d: j.d };
+          var drw = due ? findRow(im.plan, ii, due) : null;
+          if (drw && drw !== rw) hkMarkPaidLaterRow(drw, im.plan, ii, cntP, { y: j.y, m: j.m, d: j.d }, due);
+        } else {
+          try { setPlanIndexPaidLate(im.plan, ii, false); } catch (eL1) {}
+          try { if (im.plan.paidLaterAt) delete im.plan.paidLaterAt[String(ii)]; } catch (eL3) {}
         }
         rw.fromPlanId = im.plan.id; rw.fromPlanIndex = ii; rw.allowPlanFieldEdit = true; rw.smsLinked = true; rw.viaSms = true;
         rw.planNote = note;
-        rw.desc = planInstallmentDesc(im.plan, ii, cntP) + (early ? ' (پیش‌پرداخت)' : (im.late[n] && !im.wasPaid[n] ? ' (معوق)' : '')) + note;
+        rw.desc = planInstallmentDesc(im.plan, ii, cntP) + (early ? ' (پیش‌پرداخت)' : (late ? ' (معوق ' + MONTHS[due.m - 1] + ')' : '')) + note;
         prow = rw;
       });
       var lastUnpaid = -1;
@@ -28343,11 +28404,16 @@ container.innerHTML = '';
       if (lastUnpaid >= 0) {
         if ((parseInt(im.plan.paidCount, 10) || 0) < lastUnpaid + 1) im.plan.paidCount = Math.min(cntP, lastUnpaid + 1);
         try { clampPlanPaymentState(im.plan); } catch (eCl) {}
-        /* clamp دیرکردهای بالای paidCount را پاک می‌کند؛ این‌ها زیرش هستند و می‌مانند */
-        im.idxs.forEach(function (ii, n) { if (!im.wasPaid[n]) { try { setPlanIndexPaidLate(im.plan, ii, !!im.late[n]); } catch (eL2) {} } });
       }
       im.plan.lastPayAccount = account;
       return prow;
+    }
+    /* ردیف ماه سررسیدِ قسطی که بعداً (معوق) پرداخت شد: «پرداخت در ۱۲ شهریور»، بی مبلغ (مبلغ در ماه پرداخت آمده) */
+    function hkMarkPaidLaterRow(r, plan, ii, cnt, at, due) {
+      r.status = 'paid'; r.amount = 0; r.account = ''; r.planPaidLater = true; r.smsLinked = true;
+      r.fromPlanId = plan.id; r.fromPlanIndex = ii;
+      if (due) r.day = String(due.d);
+      r.desc = planInstallmentDesc(plan, ii, cnt || parseInt(plan.count, 10) || 0) + ' — پرداخت در ' + toPersianDigits(String(at.d)) + ' ' + MONTHS[at.m - 1] + (due && due.y !== at.y ? ' ' + toPersianDigits(String(at.y)) : '');
     }
     /* برداشتی که به مبلغ یک قسط نزدیک است (±۱۵٪ یا ۲ و ۳ برابر) ولی وصل نشد: دلیل برای خلاصهٔ ثبت گروهی */
     function hkInstallmentMissReason(amount, j) {
@@ -33688,7 +33754,8 @@ if (item.type === 'recurring') {
             /* ماهی که هنوز ردیفی برایش ساخته نشده: پیوند پیامکی هم ندارد */
             return !seen;
           };
-          var hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (x.acc === accN || (x.row.fromPlanId && !x.acc)); });
+          /* ردیف قسطی که هنوز به پیامکی وصل نشده «تکراری» حساب نمی‌شود؛ تشخیص قسط تصمیم می‌گیرد کدام قسط است */
+          var hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && x.acc === accN && (!x.row.fromPlanId || x.row.smsLinked); });
           /* همین پیامک قبلاً (نسخه‌های قبل) به‌صورت ردیف معمولیِ بی‌شرح ثبت شده ولی پرداخت قسط است: ردیف معمولی برداشته
              و پیامک به ردیف قسط وصل می‌شود (وگرنه به‌عنوان «تکراری» رد می‌شد و قسط هرگز پیدا نمی‌شد) */
           var preIm = null;
@@ -33707,15 +33774,13 @@ if (item.type === 'recurring') {
             } else skipped++;
             return;
           }
-          if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (!x.acc || x.rawAcc === 'بدون حساب'); });
+          if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && !x.row.fromPlanId && (!x.acc || x.rawAcc === 'بدون حساب'); });
           if (hit) { hit.used = true; hit.row.account = fo.account; if (r.time && !hit.row.time) hit.row.time = r.time; hit.acc = accN; hit.rawAcc = fo.account; r._st = 'dup'; skipped++; linked++; return; }
-          if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && Math.abs(x.day - r.j.d) === 1 && x.amount === a && x.acc === accN; });
+          if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && Math.abs(x.day - r.j.d) === 1 && x.amount === a && x.acc === accN && !x.row.fromPlanId; });
           if (hit) { hit.used = true; r._st = 'fuzzy'; r._fz = hit; fuzzy.push(r); return; }
           /* پرداخت قسط: ردیف تازه نه؛ همان ردیف قسطِ آن ماه پرداخت‌شده و مبلغش مبلغ واقعی (با دیرکرد) می‌شود */
           if (r.type === 'expense') {
             /* قسطی که قبلاً دستی پرداخت‌شده ثبت شده (روزش با پیامک فرق دارد) = همین تراکنش */
-            if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === 'expense' && x.row.fromPlanId && (x.row.status || 'paid') === 'paid' && x.amount === a && (!x.acc || x.acc === accN); });
-            if (hit) { hit.used = true; fixRow(hit, r); hit.row.smsLinked = true; hit.row.viaSms = true; r._st = 'dup'; skipped++; return; }
             var im = preIm || hkMatchInstallment(a, r.j, r.body, fo.account, { paidFree: paidFree });
             if (im) {
               var prow = hkApplyInstallmentMatch(im, r.j, a, fo.account, function (pl, ii, ym) { var x = planRowOf(pl, ii, ym); if (x) x.used = true; return x ? x.row : null; },
@@ -33814,6 +33879,11 @@ if (item.type === 'recurring') {
       });
       try { saveSmsAccountBankMap(); } catch (eSv) {}
       if (created.length) { try { saveBankAccountsSelection(); } catch (eS2) {} }
+      /* قسط پرداخت شد: ردیف‌های قسطِ همهٔ ماه‌ها دوباره از روی وام (معوقِ پرداخت‌شده از ماه‌های بعد برداشته شود) */
+      if (instHits) {
+        Object.keys(archive || {}).forEach(function (k) { var pk2 = k.split('-'); try { syncPlansToExpensePeriod(ctxOf(+pk2[0], +pk2[1]).data, +pk2[0], +pk2[1]); } catch (eSy) {} });
+        try { syncPlansToExpensePeriod(ctxOf(currentYear, currentMonth).data, currentYear, currentMonth); } catch (eSy2) {}
+      }
       /* ردیف‌های هر روز به ترتیب ساعت (ساعت از پیامک؛ ردیف‌های قبلی هم با همین ثبت ساعت گرفتند) */
       Object.keys(ctxs).forEach(function (k) {
         var pd0 = ctxs[k].data || {};
@@ -34158,10 +34228,56 @@ if (item.type === 'recurring') {
       out.plans = Object.keys(touchedPlans).map(function (id) { return touchedPlans[id].name || 'قسط'; });
       return out;
     }
+    /* ساعت تراکنش‌های قبلی: یک‌بار صندوق پیامک خوانده می‌شود؛ ردیفی که روز، مبلغ، نوع و بانکش با یک پیامک یکی است فقط ساعت می‌گیرد */
+    function hkBackfillTimes() {
+      var B = hkBankSmsPlugin();
+      if (!B || typeof B.readInbox !== 'function') return Promise.resolve(0);
+      return B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
+        var idx = {}, map = smsAccountBankMap || {};
+        if (!((res && res.items) || []).length) return -1;
+        ((res && res.items) || []).forEach(function (it) {
+          try {
+            var body = String(it.body || ''); if (!body) return;
+            if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
+            var p = parseBankSms(body); if (!p || !p.amount) return;
+            var ts = Number(it.date) || 0, j = hkJalaliOfTs(ts || Date.now()), tm = hkSmsTime(body, ts); if (!tm) return;
+            var a4 = hkSmsAcc4(body) || '', acc = a4 && map['L4:' + a4] ? map['L4:' + a4] : '';
+            var k = j.y + '-' + j.m + '|' + (p.type === 'income' ? 'income' : 'expense') + '|' + j.d + '|' + Math.round(p.amount);
+            (idx[k] = idx[k] || []).push({ acc: hkNormAcc(acc), time: tm, used: false });
+          } catch (e) {}
+        });
+        var n = 0, cur = periodKey(currentYear, currentMonth), ctxs = {};
+        Object.keys(archive || {}).concat([cur]).filter(function (k, i, a) { return a.indexOf(k) === i; }).forEach(function (k) {
+          var pk = k.split('-'), y = +pk[0], m = +pk[1], ctx = getWritablePeriodData(y, m), pd = ctx.data, dirty = false;
+          ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) {
+            (sc.rows || []).forEach(function (r) {
+              if (!r || r.time || r.deletedAt || !(Number(r.amount) > 0) || r.planPaidLater) return;
+              var list = idx[y + '-' + m + '|' + tab + '|' + (parseInt(toEnglishDigits(String(r.day || '')), 10) || 0) + '|' + Math.round(Number(r.amount))];
+              if (!list) return;
+              var ra = hkNormAcc(r.account || ''), c = list.find(function (x) { return !x.used && x.acc && x.acc === ra; }) || (list.filter(function (x) { return !x.used; }).length === 1 ? list.find(function (x) { return !x.used; }) : null);
+              if (!c) return;
+              c.used = true; r.time = c.time; n++; dirty = true;
+            });
+            if (dirty) sc.rows = hkSortRunsByTime(sc.rows);
+          }); });
+          if (dirty) ctxs[k] = ctx;
+        });
+        Object.keys(ctxs).forEach(function (k) { try { commitWritablePeriodData(ctxs[k]); } catch (e) {} });
+        if (n) { try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e2) {} try { renderAll(); } catch (e3) {} }
+        return n;
+      }).catch(function () { return 0; });
+    }
+    setTimeout(function () {
+      try {
+        var K = STORAGE_KEY + '_timeFill1335';
+        if (localStorage.getItem(K) || !hkBankSmsPlugin()) return;
+        hkBackfillTimes().then(function (n) { if (n >= 0) { try { localStorage.setItem(K, '1'); } catch (e) {} } });
+      } catch (e) {}
+    }, 5000);
     /* یک‌بار بعد از آپدیت: اول برگرداندن وصل‌های اشتباه (با پشتیبان ایمنی)، بعد پنجرهٔ ترمیم ردیف‌های معمولی که واقعاً پرداخت قسط‌اند */
     setTimeout(function () {
       try {
-        var K = STORAGE_KEY + '_instRepair1334';
+        var K = STORAGE_KEY + '_instRepair1335';
         if (localStorage.getItem(K)) return;
         var lk = document.getElementById('appLockOverlay');
         if ((lk && lk.classList.contains('show')) || document.getElementById('appTour')) return;
@@ -40328,6 +40444,9 @@ function openProjectRowPicker(secId) {
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
       /* جزئیات ماه (روی منوی جستجو) و نمای تمام‌صفحهٔ عکس پیوست */
       try { if (document.getElementById('hkImgView')) { document.getElementById('hkImgView').remove(); return; } if (bsCloseMonthDetail()) return; } catch (eMd) {}
+      /* پنجره‌های تکراری‌های قبلی / ترمیم قسط / پیوست‌ها (روی ثبت گروهی و جدول‌ها): فقط همان پنجره بسته شود */
+      try { var _dov = document.getElementById('hkDupOv') || document.getElementById('hkInstRepOv'); if (_dov) { var _cl = _dov.querySelector('.hk-bulk-close'); if (_cl) _cl.click(); else _dov.remove(); return; } } catch (eDov) {}
+      try { if (document.getElementById('hkAttachOv')) { hkCloseAttach(); return; } } catch (eAtt) {}
       try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { if (_spt._hkClose) _spt._hkClose(); else _spt.remove(); document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); }); return; } } catch (eSpt) {}
@@ -41896,7 +42015,8 @@ function openProjectRowPicker(secId) {
       });
       /* تاریخ زودتر بالای جدول */
       list.sort(function (a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); });
-      try { bsRenderMonthSummary(list, rangeF); } catch (eMs) {}
+      /* حالت عادی (بی فیلتر و کلمه): فقط جدول خالی «نتیجهٔ جستجو»؛ جدول ماه‌ها با اولین فیلتر */
+      try { bsRenderMonthSummary(list, noFilter ? 'none' : rangeF); } catch (eMs) {}
       /* بدون فیلتر و کلمه: فقط جدول ماه‌ها؛ ردیف‌ها منتظر جستجو */
       if (noFilter) {
         body.innerHTML = '<tr class="sr-wait"><td colspan="4">برای دیدن ردیف‌ها، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';

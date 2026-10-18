@@ -165,6 +165,7 @@ async function page(b, inbox, extra) {
     document.querySelectorAll('.cell-text-popup').forEach(x => x.remove());
     /* همهٔ ماه‌ها: زدن روی ماه = پنجرهٔ جزئیات؛ بک = برگشت به جستجو */
     rg.value = 'all'; rg.dispatchEvent(new Event('change')); await w(200);
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
     document.querySelector('#searchMonthSummary .bs-mrow[data-m="6"]').click(); await w(200);
     const md = document.getElementById('bsMonthDetail');
     out.detail = md ? { title: md.querySelector('.bmd-title').textContent, sum: [...md.querySelectorAll('.bmd-sum b')].map(x => x.textContent), rows: md.querySelectorAll('table:not(.bmd-cats) tbody tr').length, cats: md.querySelectorAll('table.bmd-cats tbody tr').length /* ۱.۳.۳۳: جمع دسته‌ها در جدول کادردار */ } : null;
