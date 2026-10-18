@@ -2402,6 +2402,56 @@ public class HkMediaPlugin extends Plugin {
       call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
     }catch(Exception e){ call.reject("photo_failed",e); }
   }
+  /* انتخاب از گالری با انتخابگر خود اندروید: HEIC و عکس‌های خیلی بزرگ هم اینجا خوانده می‌شوند
+     (ImageDecoder از اندروید ۹ با کوچک‌کردن هنگام خواندن و چرخش EXIF؛ پیش از آن BitmapFactory با inSampleSize + EXIF)؛ خروجی JPEG کوچک‌شده */
+  @com.getcapacitor.PluginMethod public void pickImage(PluginCall call){
+    try{
+      Intent i=new Intent(Intent.ACTION_GET_CONTENT); i.setType("image/*"); i.addCategory(Intent.CATEGORY_OPENABLE);
+      startActivityForResult(call,i,"pickCb");
+    }catch(Exception e){ call.reject("picker_failed",e); }
+  }
+  @ActivityCallback private void pickCb(PluginCall call, ActivityResult result){
+    if(call==null) return;
+    try{
+      Intent d=result.getData(); Uri u=d==null?null:d.getData();
+      if(result.getResultCode()!=android.app.Activity.RESULT_OK || u==null){ call.reject("cancelled"); return; }
+      final int MAXS=1600; Bitmap b=null; boolean rotated=false;
+      if(android.os.Build.VERSION.SDK_INT>=28){
+        try{
+          android.graphics.ImageDecoder.Source src=android.graphics.ImageDecoder.createSource(getContext().getContentResolver(),u);
+          b=android.graphics.ImageDecoder.decodeBitmap(src,(dec,info,s)->{
+            int w=info.getSize().getWidth(), h=info.getSize().getHeight(), mx=Math.max(w,h);
+            if(mx>MAXS){ float k=MAXS/(float)mx; dec.setTargetSize(Math.max(1,Math.round(w*k)),Math.max(1,Math.round(h*k))); }
+            dec.setAllocator(android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE);
+          });
+          rotated=true;
+        }catch(Throwable t){ b=null; }
+      }
+      if(b==null){
+        BitmapFactory.Options o=new BitmapFactory.Options(); o.inJustDecodeBounds=true;
+        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){ BitmapFactory.decodeStream(in,null,o); }
+        int max=Math.max(o.outWidth,o.outHeight), ss=1;
+        while(max/(ss*2)>=MAXS) ss*=2;
+        BitmapFactory.Options o2=new BitmapFactory.Options(); o2.inSampleSize=ss;
+        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){ b=BitmapFactory.decodeStream(in,null,o2); }
+      }
+      if(b==null){ call.reject("decode_failed"); return; }
+      int rot=0;
+      if(!rotated){
+        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){
+          androidx.exifinterface.media.ExifInterface ex=new androidx.exifinterface.media.ExifInterface(in);
+          int or=ex.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,1);
+          rot= or==6?90: or==3?180: or==8?270: 0;
+        }catch(Throwable ignored){}
+      }
+      float k=Math.min(1f,(float)MAXS/Math.max(b.getWidth(),b.getHeight()));
+      Bitmap out=b;
+      if(k<1f || rot!=0){ Matrix m=new Matrix(); m.postScale(k,k); if(rot!=0) m.postRotate(rot); out=Bitmap.createBitmap(b,0,0,b.getWidth(),b.getHeight(),m,true); }
+      ByteArrayOutputStream bo=new ByteArrayOutputStream();
+      out.compress(Bitmap.CompressFormat.JPEG,82,bo);
+      call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
+    }catch(Throwable e){ call.reject("pick_failed",e instanceof Exception?(Exception)e:new Exception(e)); }
+  }
 }
 `;
 

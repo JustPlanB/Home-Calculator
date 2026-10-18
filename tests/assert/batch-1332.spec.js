@@ -167,7 +167,7 @@ async function page(b, inbox, extra) {
     rg.value = 'all'; rg.dispatchEvent(new Event('change')); await w(200);
     document.querySelector('#searchMonthSummary .bs-mrow[data-m="6"]').click(); await w(200);
     const md = document.getElementById('bsMonthDetail');
-    out.detail = md ? { title: md.querySelector('.bmd-title').textContent, sum: [...md.querySelectorAll('.bmd-sum b')].map(x => x.textContent), rows: md.querySelectorAll('tbody tr').length, cats: md.querySelectorAll('.bmd-cat').length } : null;
+    out.detail = md ? { title: md.querySelector('.bmd-title').textContent, sum: [...md.querySelectorAll('.bmd-sum b')].map(x => x.textContent), rows: md.querySelectorAll('table:not(.bmd-cats) tbody tr').length, cats: md.querySelectorAll('table.bmd-cats tbody tr').length /* ۱.۳.۳۳: جمع دسته‌ها در جدول کادردار */ } : null;
     out.rangeKept = rg.value;
     out.dbg = [document.querySelector('.fancy-select-list.open, .dark-select-list.open') ? 'list' : '', document.getElementById('hkInfoTip') ? 'tip' : ''].join(',');
     onBackGuard(); await w(250);
