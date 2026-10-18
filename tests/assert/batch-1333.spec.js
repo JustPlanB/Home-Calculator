@@ -15,7 +15,7 @@ async function page(b, inbox, opts) {
   opts = opts || {};
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript((keep) => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1333']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1334']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
   }, !!opts.keepRepair);
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
     window.__media = { photo: null, pick: null, mic: { granted: true }, pend: null };
@@ -52,7 +52,7 @@ async function page(b, inbox, opts) {
     smsAccountBankMap['L4:2002'] = 'ملی'; saveSmsAccountBankMap();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
     periodData.income.sections = [{ id: 'i1', title: 'سارا', rows: [emptyRow('income')] }];
-    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 4, amount: 595238, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 4, amount: 7142856 /* 595238 × 12 */, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
     persistCurrent();
     /* مرداد: ردیف قسطِ دستی پرداخت‌شده (بی‌بانک) + ردیف معمولیِ بی‌شرح از ثبت گروهیِ نسخهٔ قبل؛ عنوان کارت با نیم‌فاصله (املای دیگر) */
     const pr = Object.assign(emptyRow('expense'), { day: '20', desc: 'قسط ۵', amount: 595238, status: 'paid', account: '', fromPlanId: 'pa', fromPlanIndex: 4 });
@@ -90,8 +90,8 @@ async function page(b, inbox, opts) {
     const w = ms => new Promise(r => setTimeout(r, ms));
     selectedBankAccounts.push({ id: 'bm', bank: 'بانک ملی', label: 'ملی ۲۰۰۲', openingBalance: 0, createdAt: { y: 1405, m: 1, d: 1 } }); saveBankAccountsSelection();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
-    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 595238, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
-    plans.push({ id: 'pb', name: 'وام ب', count: 12, paidCount: 6, amount: 595238, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
+    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 7142856 /* 595238 × 12 */, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pb', name: 'وام ب', count: 12, paidCount: 6, amount: 7142856 /* 595238 × 12 */, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
     const pr = (pid, idx, day) => Object.assign(emptyRow('expense'), { day: String(day), desc: 'x', amount: 595238, status: 'paid', account: '', fromPlanId: pid, fromPlanIndex: idx });
     const pl = (amt, day) => Object.assign(emptyRow('expense'), { day: String(day), desc: '', amount: amt, status: 'paid', account: 'ملی ۲۰۰۲' });
     archive['1405-5'] = { income: { sections: [] }, expense: { sections: [{ id: 's1', title: 'سارا', rows: [pr('pa', 4, 20), pr('pb', 4, 20), pl(1190400, 20), pl(1190400, 20)] }] } };
@@ -113,7 +113,7 @@ async function page(b, inbox, opts) {
     return out;
   });
   await p2.waitForTimeout(3000);
-  const flag = await p2.evaluate(() => localStorage.getItem(STORAGE_KEY + '_instRepair1333'));
+  const flag = await p2.evaluate(() => localStorage.getItem(STORAGE_KEY + '_instRepair1334'));
   ok(rp.list.length === 4 && rp.list.filter(x => /^وام الف/.test(x)).length === 2 && rp.list.filter(x => /^وام ب/.test(x)).length === 2 && rp.list.filter(x => /:2:1190400$/.test(x)).length === 2, 'چهار ردیف معمولی پیدا شد؛ هر وام فقط یک بار (۱٬۱۹۰٬۴۰۰ = دو قسطِ هر وام) (' + rp.list.join(' | ') + ')');
   ok(rp.dlg && rp.chk === 4, 'از «بررسی تکراری‌ها» اول پنجرهٔ ترمیم با فهرست تیک‌دار باز شد');
   ok(rp.plain[0] === 0 && rp.plain[1] === 0 && rp.linked[0] === 4 && rp.linked[1] === 2 && rp.again === 0, 'با «وصل کردن» ردیف‌های معمولی برداشته شدند و پرداخت‌ها با بانک به ردیف قسطشان وصل شدند؛ بار دوم چیزی نمی‌ماند');

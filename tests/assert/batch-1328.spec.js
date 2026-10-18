@@ -44,7 +44,7 @@ async function page(b, inbox) {
     selectedBankAccounts.push({ id: 'bm', bank: 'بانک ملی', label: 'ملی', openingBalance: 0, createdAt: { y: 1405, m: 7, d: 10 } }); saveBankAccountsSelection();
     smsAccountBankMap['L4:2002'] = 'ملی'; saveSmsAccountBankMap();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
-    plans.push({ id: 'pl1', name: 'وام مسکن', count: 12, paidCount: 4, amount: 590000, startYear: 1405, startMonth: 3, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pl1', name: 'وام مسکن', count: 12, paidCount: 4, amount: 7080000 /* 590000 × 12 */, startYear: 1405, startMonth: 3, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
     try { syncPlansToExpenseAll(); } catch (e) {}
     persistCurrent(); saveArchive(); renderAll();
     const planRow0 = periodData.expense.sections[0].rows.find(x => x.fromPlanId === 'pl1');
@@ -86,7 +86,7 @@ async function page(b, inbox) {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const pl = plans.find(x => x.id === 'pl1');
     /* قسط بعدی (۲۰ آبان) را زودتر، همین ماه با دیرکرد نه، با مبلغ برابر */
-    plans.push({ id: 'pl2', name: 'وام خودرو', count: 10, paidCount: 2, amount: 1250000, startYear: 1405, startMonth: 5, startDay: 18, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
+    plans.push({ id: 'pl2', name: 'وام خودرو', count: 10, paidCount: 2, amount: 12500000 /* 1250000 × 10 */, startYear: 1405, startMonth: 5, startDay: 18, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
     window.onBankSmsReceived('بانك ملي ايران\nبرداشت:12,500,000-\nحساب:62002\nمانده:46,067,867\n0721-12:00', { nid: 0, sender: 'Bank Melli' });
     await w(800);
     const seg = document.getElementById('smsExpenseSeg'), pick = document.getElementById('smsPlanPick');

@@ -51,7 +51,7 @@ async function page(b, inbox, extra) {
     smsAccountBankMap['L4:2002'] = 'ملی'; saveSmsAccountBankMap();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
     /* شش قسط اول دستی «پرداخت‌شده» (بی‌بانک) */
-    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 596328, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 7155936 /* 596328 × 12 */, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
     try { syncPlansToExpenseAll(); } catch (e) {}
     persistCurrent();
     /* ردیف‌های قسطِ پرداخت‌شدهٔ مرداد و شهریور در آرشیو (بی‌بانک) */
@@ -94,7 +94,7 @@ async function page(b, inbox, extra) {
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [Object.assign(emptyRow('expense'), { day: '2', desc: 'خرید یخچال', amount: 30000000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'expense'); await w(500);
-    document.querySelector('#panel-expense .pd-num-cell').click(); await w(200);
+    document.querySelector('#panel-expense .pd-file-btn').click(); await w(200);
     /* عکس از دوربین (شبیه‌سازی افزونه): base64 یک JPEG کوچک */
     const c = document.createElement('canvas'); c.width = 800; c.height = 600; const g = c.getContext('2d'); g.fillStyle = '#c33'; g.fillRect(0, 0, 800, 600);
     window.__media.photo = { data: c.toDataURL('image/jpeg', 0.8).split(',')[1], mime: 'image/jpeg' };
@@ -194,7 +194,7 @@ async function page(b, inbox, extra) {
     /* سه ماه قبل: نان کم */
     [4, 5, 6].forEach(m => { archive['1405-' + m] = { income: { sections: [] }, expense: { sections: [{ id: 's1', title: 'سارا', rows: [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان بربری', amount: 3000000, status: 'paid' }), Object.assign(emptyRow('expense'), { day: '3', desc: 'خرید', amount: 30000000, status: 'paid' })] }] } }; });
     plans.length = 0;
-    plans.push({ id: 'pz', name: 'وام خانه', count: 12, paidCount: 6, amount: 2000000, startYear: 1405, startMonth: 1, startDay: 25, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pz', name: 'وام خانه', count: 12, paidCount: 6, amount: 24000000 /* 2000000 × 12 */, startYear: 1405, startMonth: 1, startDay: 25, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
     persistCurrent(); saveArchive();
     const D = spCollect('سارا');
     const out = {};
