@@ -173,7 +173,7 @@ async function page(b, inbox, opts) {
     periodData.income.sections = [{ id: 'i1', title: 'سپهر', rows: [Object.assign(emptyRow('income'), { day: '1', desc: 'حقوق', amount: 40000000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سپهر', 'balance'); await w(600);
-    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); bsRenderMonthSummary(window._bsLastList || [], 'all'); await w(200); /* ۱.۳.۳۶: جدول ماه‌ها از منوی جستجو برداشته شد؛ آزمون خود جدول و پنجرهٔ جزئیات مستقیم */ 
     const out = {};
     const ms = document.getElementById('searchMonthSummary');
     out.msBorder = getComputedStyle(ms).borderTopLeftRadius + ' ' + getComputedStyle(ms).borderTopColor;

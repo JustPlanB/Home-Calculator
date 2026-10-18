@@ -179,7 +179,7 @@ async function page(b, inbox, opts) {
     periodData.income.sections = [{ id: 'i1', title: 'سارا', rows: [Object.assign(emptyRow('income'), { day: '1', desc: 'حقوق', amount: 40000000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'balance'); await w(600);
-    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); bsRenderMonthSummary(window._bsLastList || [], 'all'); await w(200); /* ۱.۳.۳۶: جدول ماه‌ها از منوی جستجو برداشته شد؛ آزمون خود جدول و پنجرهٔ جزئیات مستقیم */ 
     const out = {};
     const hd = document.querySelector('#balanceFixedHeader .bs-search-head'), fh = document.getElementById('balanceFixedHeader');
     out.head = hd && getComputedStyle(hd).display !== 'none' ? hd.textContent : '';

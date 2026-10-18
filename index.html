@@ -9167,16 +9167,19 @@
     .bs-amt-row.has-val .bs-amt-clr { display: block; }
     /* اسلایدر بازهٔ مبلغ: ریل ضخیم با سرهای گرد، بازهٔ بین دو دستگیره آبی، دستگیرهٔ سپری، درجه‌ها بالای ریل و مقدار زیر دستگیره */
     .bsr-grid .bs-arange-row { display: block; padding: 0 2px; }
-    .hk-arange { position: relative; height: 76px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
-    .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 28px; }
-    .hk-ar-tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; font-size: 0.66rem; line-height: 1.15; color: var(--muted, #8e8e93); white-space: nowrap; direction: rtl; }
+    /* درجه‌ها زیر ریل؛ اولی و آخری (و مقدار انتخاب‌شده) بالای ریل */
+    .hk-arange { position: relative; height: 90px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 90px; pointer-events: none; }
+    .hk-ar-tick { position: absolute; top: 62px; transform: translateX(-50%); text-align: center; font-size: 0.66rem; line-height: 1.15; color: var(--muted, #8e8e93); white-space: nowrap; direction: rtl; }
     .hk-ar-tick small { display: block; font-size: 0.56rem; opacity: 0.85; }
-    .hk-ar-track { position: absolute; left: 0; right: 0; top: 32px; height: 11px; border-radius: 11px; background: rgba(142,142,147,0.32); }
+    .hk-ar-tick.hk-ar-end { top: 2px; }
+    .hk-ar-tick.hk-ar-off { visibility: hidden; }
+    .hk-ar-track { position: absolute; left: 0; right: 0; top: 40px; height: 11px; border-radius: 11px; background: rgba(142,142,147,0.32); }
     .hk-ar-fill { position: absolute; top: 0; bottom: 0; border-radius: 11px; background: #0a84ff; }
-    .hk-ar-h { position: absolute; top: 24px; width: 24px; height: 28px; margin-left: -12px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; z-index: 2; }
+    .hk-ar-h { position: absolute; top: 32px; width: 24px; height: 28px; margin-left: -12px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; z-index: 2; }
     .hk-ar-h svg { width: 24px; height: 28px; display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
     .hk-ar-h.drag { cursor: grabbing; z-index: 3; }
-    .hk-ar-val { position: absolute; top: 56px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #0a84ff; white-space: nowrap; direction: rtl; }
+    .hk-ar-val { position: absolute; top: 6px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #0a84ff; white-space: nowrap; direction: rtl; }
     .bsr-grid .filter-acc-wrap, .bsr-grid .balance-search-sel, .bsr-grid .fancy-select-wrap, .bsr-grid .balance-search-input { flex: 1 1 0; min-width: 0; width: auto; }
     .bsr-grid .filter-acc-wrap .dark-select { min-width: 0; }
     .bsr-grid .filter-acc-wrap .dark-select-btn { justify-content: flex-start !important; text-align: right !important; padding: 0 10px 0 24px !important; }
@@ -10598,6 +10601,7 @@
     #hkAsk3 .hk-ask3-btn { flex: 1 1 0; white-space: nowrap; min-width: 0; }
     /* «انصراف» فقط به اندازهٔ نوشته‌اش؛ گزینه‌های بلندتر یک‌خطی می‌مانند */
     #hkAsk3 .hk-ask3-btn:last-child:not(.danger):not(.primary) { flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
+    #hkAsk3 .hk-ask3-btn.eqw { flex: 1 1 0 !important; padding-left: 4px !important; padding-right: 4px !important; }
     #hkAsk3 .hk-ask3-btn.danger { background: var(--btn-danger, #e0443a); color: #fff; }
     #hkAsk3 .hk-ask3-btn.primary { background: var(--accent, #0090d4); color: #fff; }
     .hk-bulk-fdup { color: #ffc531; }
@@ -17311,8 +17315,8 @@ function onPeriodChange() {
         var _al = hkAllAttachments();
         if (_al.length) {
           var _sz = _al.reduce(function (t, a) { return t + (Number(a.size) || 0); }, 0);
-          hkAsk3('عکس‌ها و صداهای پیوست (' + toPersianDigits(String(_al.length)) + ' فایل، حدود ' + hkFmtSize(Math.max(1024, Math.round(_sz * 1.34))) + ') هم در پشتیبان باشند؟',
-            [{ v: 'yes', t: 'همراه با پیوست‌ها', cls: 'primary' }, { v: 'no', t: 'بدون پیوست‌ها' }], function (ans) {
+          hkAsk3('پیوست‌ها هم پشتیبان شوند؟ (' + toPersianDigits(String(_al.length)) + ' فایل، ' + hkFmtSize(Math.max(1024, Math.round(_sz * 1.34))) + ')',
+            [{ v: 'yes', t: 'با پیوست‌ها', cls: 'primary eqw' }, { v: 'no', t: 'بدون پیوست‌ها', cls: 'eqw' }], function (ans) {
               if (ans === 'cancel') return;
               exportFullBackup(selectedParts, ans === 'yes');
             });
@@ -24481,6 +24485,16 @@ async function openPdfPrintWindow(){
     function loadTodoMap() {
       try { var m = JSON.parse(localStorage.getItem(TODO_KEY) || '{}'); return (m && typeof m === 'object') ? m : {}; } catch (e) { return {}; }
     }
+    /* تاریخ ساخت فهرست کارها: « (۲۱ مهر)» — از زمان ذخیره‌شده یا شناسهٔ فهرست (l + زمان به مبنای ۳۶) */
+    function hkTodoDateLabel(l) {
+      try {
+        var ts = Number(l && l.at) || 0;
+        if (!ts && l && /^l[0-9a-z]{8}/.test(l.id || '')) ts = parseInt(l.id.slice(1, 9), 36) || 0;
+        if (!(ts > 1e12)) return '';
+        var j = hkJalaliOfTs(ts);
+        return ' (' + toPersianDigits(String(j.d)) + ' ' + MONTHS[j.m - 1] + ')';
+      } catch (e) { return ''; }
+    }
     function loadTodoLists(title) {
       var m = loadTodoMap(), k = (title || '').trim(), v = m[k];
       /* نسخهٔ قبلی (یک فهرست بدون ماه) → فهرستِ ماه جاری */
@@ -24497,7 +24511,7 @@ async function openPdfPrintWindow(){
         var at = -1;
         lists.forEach(function (l, i) { if (l && l.id === id) at = i; });
         if (items && items.length) {
-          if (at >= 0) lists[at].items = items; else lists.push({ id: id, items: items });
+          if (at >= 0) lists[at].items = items; else lists.push({ id: id, items: items, at: Date.now() });
         } else if (at >= 0) lists.splice(at, 1);
         if (lists.length) m[k][ym] = lists; else delete m[k][ym];
         if (!Object.keys(m[k]).length) delete m[k];
@@ -24521,7 +24535,7 @@ async function openPdfPrintWindow(){
           key: 'todo-' + l.id,
           onTap: function (title) { openTodoEditor(title, l.id); },
           /* انجام‌نشده‌ها بالا، انجام‌شده‌ها پایین (ترتیب داخل هر گروه همان ترتیب نوشتن) */
-          html: spHead('کارهای من') + spItems(l.items.filter(function (x) { return !x.done; }).concat(l.items.filter(function (x) { return x.done; })).map(function (x) {
+          html: spHead('کارهای من' + hkTodoDateLabel(l)) + spItems(l.items.filter(function (x) { return !x.done; }).concat(l.items.filter(function (x) { return x.done; })).map(function (x) {
             return '<div class="sp-todo' + (x.done ? ' done' : '') + '"><i></i><span>' + spEsc(x.t) + '</span></div>';
           }))
         };
@@ -41723,7 +41737,7 @@ function openProjectRowPicker(secId) {
         var n = ticks.length - 1;
         host.innerHTML = '<div class="hk-ar-ticks">' + ticks.map(function (t, i) {
           var sh = hkArShort(t), left = i / n * 100;
-          return '<span class="hk-ar-tick" style="left:' + left + '%">' + (i === n ? '<bdi dir="ltr">+' + sh.n + '</bdi>' : sh.n) + (sh.u ? '<small>' + sh.u + '</small>' : '') + '</span>';
+          return '<span class="hk-ar-tick' + (i === 0 || i === n ? ' hk-ar-end' : '') + '" style="left:' + left + '%">' + (i === n ? '<bdi dir="ltr">+' + sh.n + '</bdi>' : sh.n) + (sh.u ? '<small>' + sh.u + '</small>' : '') + '</span>';
         }).join('') + '</div><div class="hk-ar-track"><div class="hk-ar-fill"></div></div>' +
           '<button type="button" class="hk-ar-h" data-k="min" aria-label="مبلغ از">' + HK_AR_SHIELD + '</button><button type="button" class="hk-ar-h" data-k="max" aria-label="مبلغ تا">' + HK_AR_SHIELD + '</button>' +
           '<span class="hk-ar-val" data-k="min"></span><span class="hk-ar-val" data-k="max"></span>';
@@ -41751,11 +41765,18 @@ function openProjectRowPicker(secId) {
       /* دو دستگیرهٔ نزدیک: یک برچسب «از – تا» وسطشان */
       /* متن فقط اگر عوض شده (وگرنه MutationObserver فیلترها بی‌دلیل دوباره اجرا می‌شود) */
       var put = function (el, t) { if (el.textContent !== t) el.textContent = t; };
+      /* بالای ریل: دستگیره سر جای اول/آخر = همان درجهٔ اول/آخر (برچسب مقدار پنهان)؛ دستگیرهٔ نزدیکِ لبه = درجهٔ لبه پنهان */
+      var ends = host.querySelectorAll('.hk-ar-end');
+      if (ends[0]) ends[0].classList.toggle('hk-ar-off', fa > 0.001 && fa < 0.16);
+      if (ends[1]) ends[1].classList.toggle('hk-ar-off', fb < 0.999 && fb > 0.84);
       if (fb - fa < 0.24) {
         vs[0].style.left = ((xa + xb) / 2) + '%'; put(vs[0], la === lb ? la : la + ' – ' + lb); vs[1].style.display = 'none';
       } else {
         vs[0].style.left = xa + '%'; put(vs[0], la); vs[1].style.display = ''; vs[1].style.left = xb + '%'; put(vs[1], lb);
       }
+      /* دستگیره روی اولین/آخرین درجه: همان درجه کافی است */
+      vs[0].style.visibility = (fb - fa >= 0.24 && fa <= 0.001) ? 'hidden' : '';
+      vs[1].style.visibility = fb >= 0.999 ? 'hidden' : '';
       /* برچسب لبه‌ها از کادر بیرون نزند */
       var W = host.clientWidth;
       if (W) [vs[0], vs[1]].forEach(function (el) {
@@ -41803,12 +41824,15 @@ function openProjectRowPicker(secId) {
         h.addEventListener('input', queue, true);
         h.addEventListener('change', queue, true);
         /* «C» داخل باکس مبلغ: عدد پاک و جستجو به‌روز */
+        /* زدن ضربدر شرح: فیلد فوکوسش را از دست ندهد (کیبورد بسته نشود) */
+        ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { h.addEventListener(ev, function (e) { if (e.target && e.target.closest && e.target.closest('.bs-desc-clr')) e.preventDefault(); }, { passive: false }); });
         h.addEventListener('click', function (e) {
           var dc = e.target && e.target.closest && e.target.closest('.bs-desc-clr');
           if (dc) {
             e.preventDefault(); e.stopPropagation();
             var di = document.getElementById('balanceSearchInput');
-            if (di) { di.value = ''; di.dispatchEvent(new Event('input', { bubbles: true })); }
+            /* پاک کردن + فوکوس روی همان فیلد تا کیبورد بالا بیاید (یا بالا بماند) */
+            if (di) { di.value = ''; di.dispatchEvent(new Event('input', { bubbles: true })); try { di.focus({ preventScroll: true }); } catch (eF2) { try { di.focus(); } catch (eF3) {} } }
             queue(); return;
           }
           var b = e.target && e.target.closest && e.target.closest('.bs-amt-clr'); if (!b) return;
@@ -42015,8 +42039,9 @@ function openProjectRowPicker(secId) {
       });
       /* تاریخ زودتر بالای جدول */
       list.sort(function (a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); });
-      /* حالت عادی (بی فیلتر و کلمه): فقط جدول خالی «نتیجهٔ جستجو»؛ جدول ماه‌ها با اولین فیلتر */
-      try { bsRenderMonthSummary(list, noFilter ? 'none' : rangeF); } catch (eMs) {}
+      /* منوی جستجو فقط یک جدول دارد: «نتیجهٔ جستجو» (جدول ماه‌ها برداشته شد) */
+      try { window._bsLastList = list; } catch (eLl) {}
+      try { bsRenderMonthSummary(list, 'none'); } catch (eMs) {}
       /* بدون فیلتر و کلمه: فقط جدول ماه‌ها؛ ردیف‌ها منتظر جستجو */
       if (noFilter) {
         body.innerHTML = '<tr class="sr-wait"><td colspan="4">برای دیدن ردیف‌ها، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
@@ -42071,11 +42096,14 @@ function openProjectRowPicker(secId) {
           foot.appendChild(tr);
         };
         var _lt = document.documentElement.getAttribute('data-theme') === 'light';
-        /* یک ماه انتخاب شده: جمع درآمد و جمع مخارج همان ماه (جمع همهٔ ماه‌ها در جدول ماه‌ها بالای نتیجه است) */
+        /* یک ماه انتخاب شده: جمع درآمد و مخارج همان ماه؛ وگرنه اگر چند مورد پیدا شد، جمع کل آن‌ها */
         if (rangeF !== 'all') {
           var mName = MONTHS[parseInt(rangeF, 10) - 1] || '';
           if (typeF !== 'expense' && !catF) addF('درآمد کل ' + mName, sumI, _lt ? '#3f9a5c' : '#9ee858');
           if (typeF !== 'income') addF('خرج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
+        } else if (list.length > 1) {
+          if (sumI > 0) addF('جمع درآمد (' + toPersianDigits(String(list.filter(function (x) { return x.tab === 'income'; }).length)) + ' مورد)', sumI, _lt ? '#3f9a5c' : '#9ee858');
+          if (sumE > 0) addF('جمع خرج (' + toPersianDigits(String(list.filter(function (x) { return x.tab !== 'income'; }).length)) + ' مورد)', sumE, _lt ? '#dc2626' : '#ff6b4a');
         }
       }
       document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو (' + toPersianDigits(String(list.length)) + ' مورد)';
