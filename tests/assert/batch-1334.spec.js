@@ -13,7 +13,7 @@ async function page(b, inbox, opts) {
   opts = opts || {};
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript((keep) => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1334']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1335']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
   }, !!opts.keepRepair);
   if (opts.init) await ctx.addInitScript(opts.init);
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
@@ -173,10 +173,11 @@ async function page(b, inbox, opts) {
     periodData.income.sections = [{ id: 'i1', title: 'سپهر', rows: [Object.assign(emptyRow('income'), { day: '1', desc: 'حقوق', amount: 40000000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سپهر', 'balance'); await w(600);
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
     const out = {};
     const ms = document.getElementById('searchMonthSummary');
     out.msBorder = getComputedStyle(ms).borderTopLeftRadius + ' ' + getComputedStyle(ms).borderTopColor;
-    out.short = [...document.querySelectorAll('#panel-balance .hk-scroll11')].every(x => !x.classList.contains('on') && getComputedStyle(x).overscrollBehaviorY !== 'contain');
+    out.short = [...document.querySelectorAll('#searchMonthSummary .hk-scroll11')].every(x => !x.classList.contains('on') && getComputedStyle(x).overscrollBehaviorY !== 'contain');
     document.querySelector('#searchMonthSummary .bs-mrow').click(); await w(400);
     const md = document.getElementById('bsMonthDetail');
     out.titles = [...md.querySelectorAll('.hk-tframe > .bmd-ttl')].map(x => x.textContent);

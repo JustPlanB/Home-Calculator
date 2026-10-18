@@ -15,7 +15,7 @@ async function page(b, inbox, opts) {
   opts = opts || {};
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript((keep) => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1334']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1335']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
   }, !!opts.keepRepair);
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
     window.__media = { photo: null, pick: null, mic: { granted: true }, pend: null };
@@ -113,7 +113,7 @@ async function page(b, inbox, opts) {
     return out;
   });
   await p2.waitForTimeout(3000);
-  const flag = await p2.evaluate(() => localStorage.getItem(STORAGE_KEY + '_instRepair1334'));
+  const flag = await p2.evaluate(() => localStorage.getItem(STORAGE_KEY + '_instRepair1335'));
   ok(rp.list.length === 4 && rp.list.filter(x => /^وام الف/.test(x)).length === 2 && rp.list.filter(x => /^وام ب/.test(x)).length === 2 && rp.list.filter(x => /:2:1190400$/.test(x)).length === 2, 'چهار ردیف معمولی پیدا شد؛ هر وام فقط یک بار (۱٬۱۹۰٬۴۰۰ = دو قسطِ هر وام) (' + rp.list.join(' | ') + ')');
   ok(rp.dlg && rp.chk === 4, 'از «بررسی تکراری‌ها» اول پنجرهٔ ترمیم با فهرست تیک‌دار باز شد');
   ok(rp.plain[0] === 0 && rp.plain[1] === 0 && rp.linked[0] === 4 && rp.linked[1] === 2 && rp.again === 0, 'با «وصل کردن» ردیف‌های معمولی برداشته شدند و پرداخت‌ها با بانک به ردیف قسطشان وصل شدند؛ بار دوم چیزی نمی‌ماند');
@@ -179,6 +179,7 @@ async function page(b, inbox, opts) {
     periodData.income.sections = [{ id: 'i1', title: 'سارا', rows: [Object.assign(emptyRow('income'), { day: '1', desc: 'حقوق', amount: 40000000, status: 'paid' })] }];
     persistCurrent(); renderAll();
     openPersonDetail('سارا', 'balance'); await w(600);
+    document.getElementById('balanceSearchAmtMin').value = '1'; renderBalanceSearch(); await w(200); /* ۱.۳.۳۵: جدول ماه‌ها فقط با فیلتر */ 
     const out = {};
     const hd = document.querySelector('#balanceFixedHeader .bs-search-head'), fh = document.getElementById('balanceFixedHeader');
     out.head = hd && getComputedStyle(hd).display !== 'none' ? hd.textContent : '';
