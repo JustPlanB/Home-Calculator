@@ -131,8 +131,8 @@ async function page(b, inbox) {
     selectedBankAccounts.push({ id: 'bm', bank: 'بانک ملی', label: 'ملی', openingBalance: 0, createdAt: { y: 1405, m: 4, d: 1 } }); saveBankAccountsSelection();
     smsAccountBankMap['L4:2002'] = 'ملی'; saveSmsAccountBankMap();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
-    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 2, amount: 596328, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
-    plans.push({ id: 'pb', name: 'وام ب', count: 12, paidCount: 2, amount: 596328, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
+    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 2, amount: 7155936 /* 596328 × 12 */, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
+    plans.push({ id: 'pb', name: 'وام ب', count: 12, paidCount: 2, amount: 7155936 /* 596328 × 12 */, startYear: 1405, startMonth: 2, startDay: 21, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
     try { syncPlansToExpenseAll(); } catch (e) {}
     persistCurrent(); saveArchive();
     /* اعلان تکی: دو وام هم‌مبلغ عوض‌پذیرند → اولی */
@@ -206,7 +206,7 @@ async function page(b, inbox) {
     navigateToPeriod(1405, 7); await w(250);
     /* پیوست */
     openPersonDetail('سارا', 'expense'); await w(500);
-    document.querySelector('#panel-expense .pd-num-cell').click(); await w(200);
+    document.querySelector('#panel-expense .pd-file-btn').click(); await w(200); /* ۱.۳.۳۴: ستون «فایل» */
     const ov = document.getElementById('hkAttachOv');
     out.att = { open: !!ov, beta: ov ? ov.querySelector('.hk-att-beta').textContent : '', btns: ov ? [...ov.querySelectorAll('.hk-att-btn')].map(x => x.textContent.trim()) : [], cam: !!(ov && ov.querySelector('input[capture="environment"]')) };
     return out;
@@ -217,7 +217,7 @@ async function page(b, inbox) {
   ok(sm.ledger2.debt === 500000, 'نام کارت با فاصلهٔ اضافه («سارا ») هم شناخته می‌شود (بدهی ' + sm.ledger2.debt + ')');
   ok(sm.tipGap === '18px' && sm.tipPad === '3px', 'بین نکته‌ها فاصله (۱۸px) تا حرکت/همزهٔ نکتهٔ بعد در نکتهٔ قبلی دیده نشود');
   ok(sm.projMehr === 0 && sm.cashMehr === 0 && sm.projSh === 1 && sm.cashSh === 9000000, 'پروژه فقط در ماه تراکنشش (شهریور) کنار موجودی ملی با دایرهٔ رنگی و مبلغ همان ماه');
-  ok(sm.att.open && sm.att.beta === 'آزمایشی' && sm.att.btns.join('،') === 'گرفتن عکس،انتخاب از گالری،ضبط صدا' && sm.att.cam, 'زدن شمارهٔ ردیف: پنجرهٔ پیوست (آزمایشی) با گرفتن عکس / گالری / ضبط صدا');
+  ok(sm.att.open && sm.att.beta === 'آزمایشی' && sm.att.btns.join('،') === 'گرفتن عکس،انتخاب از گالری،ضبط صدا' && sm.att.cam, 'زدن گیرهٔ ستون فایل: پنجرهٔ پیوست (آزمایشی) با گرفتن عکس / گالری / ضبط صدا');
 
   /* عکس بزرگ → فشرده */
   const big = await s.evaluate(() => { const c = document.createElement('canvas'); c.width = 4000; c.height = 3000; const g = c.getContext('2d'); for (let i = 0; i < 600; i++) { g.fillStyle = 'hsl(' + i + ',70%,50%)'; g.fillRect((i * 97) % 4000, (i * 53) % 3000, 260, 180); } return c.toDataURL('image/png').split(',')[1]; });
@@ -231,14 +231,14 @@ async function page(b, inbox) {
     const a = (row.att || [])[0];
     const blob = a ? await HKAttach.get(a.id) : null;
     const dims = blob ? await new Promise(res => { const im = new Image(); im.onload = () => res([im.naturalWidth, im.naturalHeight]); im.src = URL.createObjectURL(blob); }) : [];
-    const out = { n: (row.att || []).length, kind: a && a.kind, size: blob ? blob.size : 0, type: blob ? blob.type : '', dims, thumb: !!document.querySelector('#hkAttachOv .hk-att-media img'), ico: !!document.querySelector('#panel-expense .pd-att-ico') };
+    const out = { n: (row.att || []).length, kind: a && a.kind, size: blob ? blob.size : 0, type: blob ? blob.type : '', dims, thumb: !!document.querySelector('#hkAttachOv .hk-att-media img'), ico: !!document.querySelector('#panel-expense .pd-file-btn.has-att') };
     onBackGuard(); await w(200);
     out.closed = !document.getElementById('hkAttachOv') && !!_detailContext;
     return out;
   });
   const orig = fs.statSync(f).size; fs.unlinkSync(f);
   ok(at.n === 1 && at.kind === 'img' && at.type === 'image/jpeg' && Math.max(...at.dims) === 1600 && at.size < orig / 2 && at.size < 500 * 1024, 'عکس ۴۰۰۰×۳۰۰۰ به ۱۶۰۰px و JPEG فشرده ذخیره شد (' + Math.round(orig / 1024) + ' → ' + Math.round(at.size / 1024) + ' کیلوبایت)');
-  ok(at.thumb && at.ico, 'پیش‌نمایش عکس در پنجره و نشان گیره کنار شمارهٔ ردیف');
+  ok(at.thumb && at.ico, 'پیش‌نمایش عکس در پنجره و گیرهٔ ستون فایل آبی');
   ok(at.closed, 'بک اندروید پنجرهٔ پیوست را می‌بندد و صفحه سر جایش می‌ماند');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));

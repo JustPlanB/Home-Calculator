@@ -1903,7 +1903,22 @@
     #bsMonthDetail .bmd-cat { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 4px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
     /* قانون کلی جدول‌ها: کادر گرد، فاصلهٔ متن از لبه‌ها، عنوان ستون وسط‌چین؛ جدول بلند فقط ۱۱ ردیف و بقیه داخل خودش اسکرول */
     .hk-tframe { border: 1px solid var(--border, rgba(255,255,255,0.14)); border-radius: 10px; overflow: hidden; background: var(--card); }
-    .hk-scroll11 { max-height: calc(13 * 38px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    /* جدول‌های منوی جستجو مثل جدول‌های درآمد/مخارج: همان خط دور، گوشه و سایه؛ عنوان داخل جدول، وسط‌چین بالا */
+    body.search-open #panel-balance .summary-section, #bsMonthDetail .hk-tframe, body.search-open #panel-balance .balance-fixed-header, #bsMonthDetail .bmd-sum {
+      border: 1px solid var(--tbl-stroke, rgba(255,255,255,0.55)) !important; border-radius: 16px !important; background: var(--tbl-bg, #2c2c2e) !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06) !important; }
+    html[data-theme="light"] body.search-open #panel-balance .summary-section, html[data-theme="light"] #bsMonthDetail .hk-tframe, html[data-theme="light"] body.search-open #panel-balance .balance-fixed-header, html[data-theme="light"] #bsMonthDetail .bmd-sum {
+      background: var(--lt-surface) !important; box-shadow: var(--lt-elev) !important; border-color: var(--lt-line) !important; }
+    body.search-open #panel-balance .summary-section > .summary-header, body.search-open .bs-search-head, #bsMonthDetail .bmd-ttl {
+      font-size: 1.15rem !important; font-weight: 800 !important; padding: 14px 12px 10px !important; text-align: center !important; border-bottom: 0 !important; border-radius: 16px 16px 0 0; }
+    #bsMonthDetail .bmd-ttl { background: var(--bg); color: var(--text); font-size: 1.02rem !important; padding: 11px 12px 9px !important; }
+    #bsMonthDetail .hk-tframe { margin-bottom: 12px; }
+    /* جزئیات ماه: جدول یک‌ردیفیِ درآمد/مخارج/مانده بالا ثابت؛ بقیه زیرش اسکرول */
+    #bsMonthDetail .bmd-sum { position: sticky; top: 0; z-index: 3; margin-bottom: 12px; }
+    /* اسکرول داخلی فقط وقتی جدول بیش از ۱۱ ردیف دارد (.on)؛ بی overscroll-behavior تا کشیدن روی جدول، صفحه را هم جابه‌جا کند
+       (در اندروید جعبهٔ overflow با contain حتی وقتی چیزی برای اسکرول ندارد، کشیدن انگشت را می‌گرفت) */
+    .hk-scroll11 { overflow: visible; }
+    .hk-scroll11.on { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
     .hk-scroll11 > table { width: 100%; table-layout: fixed; }
     .hk-scroll11 thead th { position: sticky; top: 0; z-index: 1; }
     .hk-scroll11 tfoot td { position: sticky; bottom: 0; z-index: 1; background: var(--card); }
@@ -3681,7 +3696,7 @@
       justify-content: flex-end !important;
       direction: rtl !important;
       text-align: right !important;
-      font-size: 12px !important;
+      font-size: 14px !important;
       font-weight: 700 !important;
       color: #c8c8c8 !important;
       opacity: 1 !important;
@@ -10634,7 +10649,9 @@
     .hk-att-media img { display: block; max-width: 100%; max-height: 220px; border-radius: 8px; margin: 0 auto; cursor: zoom-in; }
     .hk-att-media audio { width: 100%; }
     .hk-att-meta { font-size: 0.72rem; color: var(--muted, #9a9a9a); }
-    .hk-att-del { position: absolute; top: 6px; left: 6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.55); color: #fff; font-size: 1.45rem; line-height: 34px; padding: 0; z-index: 1; }
+    .hk-att-del { position: absolute; top: 6px; left: 6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(28,28,30,0.82); color: #ff453a; font-size: 1.6rem; font-weight: 800; line-height: 34px; padding: 0; z-index: 1; }
+    /* پشت پنجرهٔ پیوست‌ها مات */
+    #hkAttachOv { background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     /* صدا: پخش‌کنندهٔ ساده داخل یک قرص — پخش، نوار پیشرفت و زمان، بعد جداکننده و × در انتهای چپ (هم‌راستای × عکس‌ها) */
     .hk-att-item.aud { flex-direction: row; align-items: center; gap: 8px; padding: 6px; border-radius: 999px; }
     .hk-aud-play { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #0a84ff; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
@@ -10643,7 +10660,8 @@
     .hk-aud-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #0a84ff; border-radius: 3px; }
     .hk-aud-time { flex: 0 0 auto; font-size: 0.74rem; color: var(--muted, #9a9a9a); direction: ltr; min-width: 64px; text-align: center; }
     .hk-aud-sep { flex: 0 0 auto; width: 1px; align-self: stretch; margin: 4px 0; background: var(--border, rgba(255,255,255,0.18)); }
-    .hk-att-item.aud .hk-att-del { position: static; flex: 0 0 auto; background: rgba(142,142,147,0.22); color: var(--text); }
+    .hk-att-item.aud .hk-att-del { position: static; flex: 0 0 auto; }
+    .hk-att-item.aud .hk-aud-bar { margin-right: 8px; }
     .hk-att-actions { display: flex; gap: 6px; margin-bottom: 10px; }
     .hk-att-btn { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; border: 1px solid var(--border, rgba(255,255,255,0.14)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; text-align: center; padding: 0 4px; }
     .hk-att-btn.on { border-color: #ff453a; color: #ff453a; }
@@ -10655,6 +10673,12 @@
     .hk-att-loading circle { fill: none; stroke-width: 4; }
     .hk-att-loading circle.bg { stroke: rgba(142,142,147,0.3); }
     .hk-att-loading circle.fg { stroke: #0a84ff; stroke-linecap: round; transition: stroke-dashoffset 0.25s ease; }
+    /* ستون «فایل»: گیرهٔ خاکستری؛ با پیوست آبی */
+    .person-detail-table td.pd-file-cell { width: 2em; max-width: 2em; padding: 1px !important; text-align: center; }
+    .person-detail-table th.pd-file-h { font-size: 0.68rem; padding-left: 0 !important; padding-right: 0 !important; }
+    .pd-file-btn { border: 0; background: none; padding: 4px 2px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #8e8e93; cursor: pointer; }
+    .pd-file-btn svg { width: 17px; height: 17px; display: block; }
+    .pd-file-btn.has-att { color: #0a84ff; }
     .pd-num-cell .pd-num.has-att { color: #0a84ff; }
     .pd-num-cell .pd-att-ico { display: block; width: 11px; height: 11px; margin: 0 auto; color: #0a84ff; }
     .pd-num-cell .pd-att-ico svg { width: 11px; height: 11px; display: block; }
@@ -10899,6 +10923,7 @@
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openUserRemindersModal();">یادآور</button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openStatsSheet();">آمار</button>
         <div class="menu-section-label"><span class="sec-ico"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>تنظیمات</div>
+        <button type="button" class="menu-item" onclick="event.stopPropagation(); openSecurityModal();">امنیت و قفل برنامه</button>
         <button type="button" class="menu-pro-row" style="display:none;" onclick="event.stopPropagation(); toggleProfessionalMode();">
           <span>حالت حرفه‌ای</span>
           <span class="pro-mode-switch" id="proModeSwitch" aria-hidden="true"><span class="pro-knob"></span></span>
@@ -10908,7 +10933,6 @@
           <span>حالت شب / روز</span>
           <span class="hk-switch" id="themeSwitch" aria-hidden="true"><i></i></span>
         </button>
-        <button type="button" class="menu-item" onclick="event.stopPropagation(); openSecurityModal();">امنیت و قفل برنامه</button>
         <button type="button" class="menu-theme-row perm-row" id="permRowSms" onclick="event.stopPropagation(); hkPermToggle('sms');">
           <span>دریافت پیامک‌های بانکی</span><span class="perm-sw" aria-hidden="true"><i></i></span>
         </button>
@@ -11618,6 +11642,33 @@
     const YEAR_START = 1390;
     const YEAR_END = 1415;
 
+    /* ساعت تراکنش (از پیامک): در یک روز، ردیف‌های ساعت‌دار به ترتیب ساعت؛ بی‌ساعت آخرِ همان روز */
+    function hkTimeCmp(a, b) {
+      var ta = (a && a.time) || '', tb = (b && b.time) || '';
+      if (ta && tb) return ta < tb ? -1 : ta > tb ? 1 : 0;
+      return ta ? -1 : tb ? 1 : 0;
+    }
+    /* ساعت از متن پیامک (مثل «0520-10:00») وگرنه از زمان رسیدن پیامک؛ خروجی «HH:MM» */
+    function hkSmsTime(body, ts) {
+      var t = toEnglishDigits(String(body || '')), m, last = null, re = /(?:^|[^\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])/g;
+      while ((m = re.exec(t))) last = m;
+      if (last) return ('0' + last[1]).slice(-2) + ':' + last[2];
+      if (ts > 0) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+      return '';
+    }
+    /* فقط داخل هر دنبالهٔ پشت‌سرهمِ هم‌روز به ترتیب ساعت (ترتیب روزها و ردیف‌های دیگر دست نمی‌خورد) */
+    function hkSortRunsByTime(rows) {
+      var out = [], i = 0;
+      while (i < rows.length) {
+        var d = parseInt(rows[i] && rows[i].day, 10) || 0, j = i + 1;
+        while (d && j < rows.length && (parseInt(rows[j] && rows[j].day, 10) || 0) === d) j++;
+        var run = rows.slice(i, j).map(function (x, k) { return { x: x, k: k }; });
+        if (run.length > 1) run.sort(function (A, B) { return hkTimeCmp(A.x, B.x) || A.k - B.k; });
+        run.forEach(function (o) { out.push(o.x); });
+        i = j;
+      }
+      return out;
+    }
     function emptyRow(forTab) {
       const tab = (forTab === 'income' || forTab === 'expense') ? forTab : (typeof currentTab !== 'undefined' ? currentTab : 'expense');
       // درآمد: دریافت‌شده؛ مخارج: پرداخت‌شده
@@ -11926,7 +11977,7 @@
           const da = parseInt(a.day, 10) || 99;
           const db = parseInt(b.day, 10) || 99;
           if (da !== db) return da - db;
-          return (parseInt(a.fromPlanIndex, 10) || 0) - (parseInt(b.fromPlanIndex, 10) || 0);
+          return hkTimeCmp(a, b) || (parseInt(a.fromPlanIndex, 10) || 0) - (parseInt(b.fromPlanIndex, 10) || 0);
         });
       });
     }
@@ -12296,7 +12347,7 @@
           if (!da) return 1;
           if (!db) return -1;
           if (da !== db) return da - db;
-          return a.i - b.i;
+          return hkTimeCmp(a.r, b.r) || a.i - b.i;
         })
         .map(x => x.r);
     }
@@ -17037,6 +17088,7 @@ function onPeriodChange() {
         if (want('selectedBankAccounts')) {
           payload.selectedBankAccounts = selectedBankAccounts;
           payload.smsAccountBankMap = typeof smsAccountBankMap !== 'undefined' ? smsAccountBankMap : {};
+          try { var _cb = hkCustomBanks(); if (_cb.length) payload.customBanks = _cb; } catch (eCb) {}
         }
         if (want('userReminders')) {
           try { payload.userReminders = typeof userReminders !== 'undefined' ? userReminders : []; } catch (eR) {}
@@ -17584,7 +17636,7 @@ function askBackupUserCards(selectedParts) {
           if (!da) return 1;
           if (!db) return -1;
           if (da !== db) return da - db;
-          return a.i - b.i;
+          return hkTimeCmp(a.r, b.r) || a.i - b.i;
         })
         .map(x => x.r);
     }
@@ -18017,6 +18069,7 @@ function askBackupUserCards(selectedParts) {
           saveSmsAccountBankMap();
         } catch (e) { bkRestoreFail('smsAccountBankMap', e); }
       }
+      if (Array.isArray(data.customBanks)) { try { data.customBanks.forEach(function (b) { if (b) hkAddCustomBank(String(b)); }); } catch (eCb2) {} }
       if (Array.isArray(data.userReminders)) {
         try {
           loadUserReminders();
@@ -20061,7 +20114,18 @@ async function openPdfPrintWindow(){
             sourceLabel: 'پاک کردن ماه'
           });
         } catch (e) { console.warn(e); }
+        /* کارت‌ها (نام، رنگ، ترتیب) می‌مانند و فقط ردیف‌ها پاک می‌شوند؛ نه برگشت به «نام کاربر» */
+        var _keep = { income: [], expense: [] }, _ord = periodData.personCardOrder;
+        ['income', 'expense'].forEach(function (tab) {
+          ((periodData[tab] && periodData[tab].sections) || []).forEach(function (sc) {
+            if (sc && (sc.title || '').trim()) _keep[tab].push({ id: sc.id, title: sc.title, color: sc.color, collapsed: false, rows: [emptyRow(tab)] });
+          });
+        });
         periodData = emptyPeriodData();
+        ['income', 'expense'].forEach(function (tab) {
+          if (_keep[tab].length && periodData[tab]) { periodData[tab].sections = _keep[tab]; periodData[tab].nextId = Math.max(periodData[tab].nextId || 1, _keep[tab].length + 1); }
+        });
+        if (Array.isArray(_ord) && _ord.length) periodData.personCardOrder = _ord.slice();
         persistCurrent();
         saveArchive();
         renderAll();
@@ -25699,7 +25763,8 @@ async function openPdfPrintWindow(){
       function tx(mode, fn) {
         return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(ST, mode), st = t.objectStore(ST), out = fn(st); t.oncomplete = function () { res(out && out.result !== undefined ? out.result : undefined); }; t.onerror = function () { rej(t.error); }; }); });
       }
-      function put(id, blob) { return tx('readwrite', function (st) { st.put(blob, id); }); }
+      /* ذخیرهٔ ماندگار: اندروید در کمبود فضا پیوست‌ها را پاک نکند */
+      function put(id, blob) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (eP) {} return tx('readwrite', function (st) { st.put(blob, id); }); }
       function get(id) { return tx('readonly', function (st) { return st.get(id); }); }
       function del(id) { return tx('readwrite', function (st) { st.delete(id); }); }
       function newId() { return 'att' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -25794,7 +25859,8 @@ async function openPdfPrintWindow(){
           it.className = 'hk-att-item' + (isAud ? ' aud' : '');
           if (isAud) {
             it.title = 'صدا' + (a.size ? ' · ' + hkFmtSize(a.size) : '');
-            it.innerHTML = '<button type="button" class="hk-aud-play" aria-label="پخش">' + HK_PLAY_SVG + '</button><div class="hk-aud-bar"><div class="hk-aud-fill"></div></div><span class="hk-aud-time"></span><span class="hk-aud-sep"></span><button type="button" class="hk-att-del" aria-label="حذف">×</button>';
+            /* راست به چپ: نوار پخش، زمان، دکمهٔ آبی پخش، جداکننده، × حذف */
+            it.innerHTML = '<div class="hk-aud-bar"><div class="hk-aud-fill"></div></div><span class="hk-aud-time"></span><button type="button" class="hk-aud-play" aria-label="پخش">' + HK_PLAY_SVG + '</button><span class="hk-aud-sep"></span><button type="button" class="hk-att-del" aria-label="حذف">×</button>';
           } else {
             it.innerHTML = '<div class="hk-att-media"></div><div class="hk-att-meta">عکس' + (a.size ? ' · ' + hkFmtSize(a.size) : '') + '</div><button type="button" class="hk-att-del" aria-label="حذف">×</button>';
           }
@@ -26131,11 +26197,11 @@ container.innerHTML = '';
       headTable.className = 'person-detail-table';
       headTable.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.1em"><col style="width:2.2em"><col style="width:26%">' +
-        '<col style="width:28%"><col style="width:18%"><col style="width:1.5em">' +
+        '<col style="width:2.1em"><col style="width:1.95em"><col style="width:23%">' +
+        '<col style="width:28%"><col style="width:18%"><col style="width:2em"><col style="width:1.5em">' +
         '</colgroup>' +
         '<thead><tr>' +
-        '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th></th>' +
+        '<th>ردیف</th><th>روز</th><th>شرح</th><th>مبلغ</th><th>حساب</th><th class="pd-file-h">فایل</th><th></th>' +
         '</tr></thead>';
       sticky.appendChild(headTable);
       box.appendChild(sticky);
@@ -26146,8 +26212,8 @@ container.innerHTML = '';
       table.className = 'person-detail-table';
       table.innerHTML =
         '<colgroup>' +
-        '<col style="width:2.1em"><col style="width:2.2em"><col style="width:26%">' +
-        '<col style="width:28%"><col style="width:18%"><col style="width:1.5em">' +
+        '<col style="width:2.1em"><col style="width:1.95em"><col style="width:23%">' +
+        '<col style="width:28%"><col style="width:18%"><col style="width:2em"><col style="width:1.5em">' +
         '</colgroup>';
       const tbody = document.createElement('tbody');
 
@@ -26170,12 +26236,14 @@ container.innerHTML = '';
             if (!da && !db) return 0;
             if (!da) return 1;
             if (!db) return -1;
-            return da - db;
+            return da - db || hkTimeCmp(a, b);
           });
         } catch (e) {}
         rebuild();
       }
 
+      /* هر روز به ترتیب ساعت تراکنش (ساعت از پیامک) */
+      try { if (sec.rows.some(function (r) { return r && r.time; })) sec.rows = hkSortRunsByTime(sec.rows); } catch (eTs) {}
       sec.rows.forEach((row, idx) => {
         const tr = document.createElement('tr');
         const fromPlan = !!(row.fromPlanId);
@@ -26189,17 +26257,6 @@ container.innerHTML = '';
         numSpan.className = 'pd-num';
         numSpan.textContent = toPersianDigits(String(idx + 1));
         tdN.appendChild(numSpan);
-        /* زدن شمارهٔ ردیف: پیوست‌ها (عکس / صدا، آزمایشی) */
-        const markAtt = function () {
-          const n = Array.isArray(row.att) ? row.att.length : 0;
-          numSpan.classList.toggle('has-att', n > 0);
-          let ic = tdN.querySelector('.pd-att-ico');
-          if (n && !ic) { ic = document.createElement('span'); ic.className = 'pd-att-ico'; ic.innerHTML = HK_CLIP_SVG; tdN.appendChild(ic); }
-          else if (!n && ic) ic.remove();
-        };
-        markAtt();
-        tdN.style.cursor = 'pointer';
-        tdN.addEventListener('click', function (e) { e.stopPropagation(); if (!row.amount && !row.desc) return; openRowAttachments(row, markAtt); });
         tr.appendChild(tdN);
 
         // روز — یک کلیک برای تایپ
@@ -26228,9 +26285,13 @@ container.innerHTML = '';
           if (!isFilledVal(row.day)) {
             dayInp.readOnly = false;
             try { dayInp.focus({ preventScroll: true }); } catch (e) { try { dayInp.focus(); } catch (e2) {} }
+            return;
           }
+          /* روز پر: فقط ساعت تراکنش در باکس شناور (روز خودش در خانه هست) */
+          if (dayInp.readOnly && !row.reconGap) { try { showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); } catch (eP) {} }
         };
         dayInp.ondblclick = () => {
+          document.querySelectorAll('.pd-desc-popup').forEach(p => p.remove());
           dayInp.readOnly = false;
           try { dayInp.focus({ preventScroll: true }); } catch (e) {}
         };
@@ -26246,7 +26307,7 @@ container.innerHTML = '';
               if (!da && !db) return 0;
               if (!da) return 1;
               if (!db) return -1;
-              return da - db;
+              return da - db || hkTimeCmp(a, b);
             });
           } catch (e) {}
           scheduleSave();
@@ -26571,6 +26632,21 @@ container.innerHTML = '';
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
+
+        // فایل (پیوست: عکس / صدا، آزمایشی) — گیرهٔ خاکستری؛ با پیوست آبی
+        const tdFile = document.createElement('td');
+        tdFile.className = 'pd-file-cell';
+        const fileBtn = document.createElement('button');
+        fileBtn.type = 'button'; fileBtn.className = 'pd-file-btn'; fileBtn.setAttribute('aria-label', 'فایل'); fileBtn.innerHTML = HK_CLIP_SVG;
+        const markAtt = function () { fileBtn.classList.toggle('has-att', Array.isArray(row.att) && row.att.length > 0); };
+        markAtt();
+        fileBtn.onclick = function (e) {
+          e.stopPropagation();
+          if (!row.amount && !row.desc) { showToast('اول ردیف را پر کنید'); return; }
+          openRowAttachments(row, markAtt);
+        };
+        tdFile.appendChild(fileBtn);
+        tr.appendChild(tdFile);
 
         // حذف — کوچک
         const tdDel = document.createElement('td');
@@ -28170,7 +28246,7 @@ container.innerHTML = '';
       var cands = [];
       (plans || []).forEach(function (p, pOrder) {
         if (!p || p.deletedAt) return;
-        var cnt = Math.max(0, parseInt(p.count, 10) || 0), pa = Math.round(Number(p.amount) || 0), paid = Math.max(0, parseInt(p.paidCount, 10) || 0);
+        var cnt = Math.max(0, parseInt(p.count, 10) || 0), pa = Math.round(planInstallmentAmount(p) || 0) /* مبلغ هر قسط، نه مبلغ کل وام */, paid = Math.max(0, parseInt(p.paidCount, 10) || 0);
         if (!cnt || !pa) return;
         var accSc = account && p.lastPayAccount && hkNormAcc(p.lastPayAccount) === hkNormAcc(account) ? 1 : 0;
         /* یک قسط */
@@ -28281,7 +28357,7 @@ container.innerHTML = '';
       var best = null;
       (plans || []).forEach(function (p) {
         if (!p || p.deletedAt) return;
-        var pa = Number(p.amount) || 0, cnt = parseInt(p.count, 10) || 0; if (!pa || !cnt) return;
+        var pa = planInstallmentAmount(p) || 0, cnt = parseInt(p.count, 10) || 0; if (!pa || !cnt) return;
         [1, 2, 3].forEach(function (k) {
           var dv = Math.abs(amount - pa * k) / (pa * k); if (dv > 0.15) return;
           var near = null;
@@ -28319,7 +28395,7 @@ container.innerHTML = '';
             planId: p.id,
             planIndex: i,
             name: p.name || 'قسط',
-            amount: Number(p.amount) || 0,
+            amount: planInstallmentAmount(p) || 0,
             due: due,
             status: status,
             label: planInstallmentDesc(p, i, count) + (status === 'معوق' ? ' (معوق)' : (status === 'پیش‌پرداخت' ? ' (پیش‌پرداخت)' : ''))
@@ -30106,7 +30182,7 @@ function confirmSmsEntry() {
         sec.rows.sort((a, b) => {
           const da = parseInt(a.day, 10) || 99;
           const db = parseInt(b.day, 10) || 99;
-          return da - db;
+          return da - db || hkTimeCmp(a, b);
         });
         sec.collapsed = false;
       }
@@ -30650,6 +30726,36 @@ function confirmSmsEntry() {
       gated._hkAccGate = true; gated._hkRecon = true;
       confirmSmsEntry = gated;
       try { window.confirmSmsEntry = gated; } catch (eW) {}
+    })();
+    /* ثبت تکیِ پیامک: ساعت تراکنش (از متن پیامک، وگرنه همین لحظه) روی ردیف ثبت‌شده می‌نشیند */
+    (function () {
+      var orig = confirmSmsEntry;
+      if (typeof orig !== 'function' || orig._hkTime) return;
+      var stampTime = function (pe, tm, t0) {
+        var amt = Math.round(Number(pe && pe.amount) || 0); if (!amt || !tm) return;
+        var cur = periodKey(currentYear, currentMonth), best = null;
+        iterAllPeriodData(function (pd, key) {
+          if (key === cur && pd !== periodData) return;
+          ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
+            if (!r || r.time || r.deletedAt || Math.round(Number(r.amount) || 0) !== amt) return;
+            var fresh = Math.max(Number(r.createdAt) || 0, Number(r.updatedAt) || 0) >= t0;
+            if (fresh || !best) best = { r: r, fresh: fresh, sc: sc };
+            else if (!best.fresh && fresh) best = { r: r, fresh: fresh, sc: sc };
+          }); }); });
+        });
+        if (best && best.fresh) { best.r.time = tm; try { best.sc.rows = hkSortRunsByTime(best.sc.rows); } catch (e) {} try { scheduleSave(); } catch (e2) {} }
+      };
+      var w = function () {
+        var pe = pendingSmsEntry, t0 = Date.now() - 1000;
+        var tm = pe ? (hkSmsTime(pe.raw || '', 0) || hkSmsTime('', Date.now())) : '';
+        var res = orig.apply(this, arguments);
+        if (pe && tm) { setTimeout(function () { stampTime(pe, tm, t0); }, 0); setTimeout(function () { stampTime(pe, tm, t0); }, 1500); }
+        return res;
+      };
+      for (var k in orig) { try { w[k] = orig[k]; } catch (eK) {} }
+      w._hkTime = true;
+      confirmSmsEntry = w;
+      try { window.confirmSmsEntry = w; } catch (eW) {}
     })();
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
@@ -33071,12 +33177,23 @@ if (item.type === 'recurring') {
       try { (allPersonTitles() || []).forEach(add); } catch (e) {}
       try { loadGlobalCardOrder().forEach(add); } catch (e2) {}
       try { Object.keys(archive || {}).sort().reverse().forEach(function (k) { var pd = archive[k]; ['income', 'expense'].forEach(function (tab) { ((pd && pd[tab] && pd[tab].sections) || []).forEach(function (s2) { add(s2 && s2.title); }); }); }); } catch (e3) {}
+      /* «نام کاربر»ِ خالیِ پیش‌فرض (مثلاً بعد از حذف ماه در نسخه‌های قبل) وقتی کارت واقعی هست، آخر فهرست */
+      var dk = hkNormTitle('نام کاربر');
+      if (out.length > 1 && hkNormTitle(out[0]) === dk) {
+        var curEmpty = true;
+        try { ['income', 'expense'].forEach(function (tab) { ((periodData[tab] && periodData[tab].sections) || []).forEach(function (s2) { if (hkNormTitle(s2 && s2.title) === dk && !hkIsEmptyDefaultSec(s2)) curEmpty = false; }); }); } catch (e4) {}
+        if (curEmpty) out.push(out.shift());
+      }
       return out;
     }
     function hkBulkCardTitle() {
       var ct = (_hkBulk && _hkBulk.card) || '';
-      if (!ct) { try { ct = (allPersonTitles() || [])[0] || ''; } catch (eT) {} }
+      if (!ct) { try { ct = hkAllCardTitles()[0] || ''; } catch (eT) {} }
       return ct || 'نام کاربر';
+    }
+    /* کارت پیش‌فرضِ خالی «نام کاربر» (بی ردیف مبلغ‌دار) */
+    function hkIsEmptyDefaultSec(s2) {
+      return !!s2 && hkNormTitle(s2.title) === hkNormTitle('نام کاربر') && !((s2.rows || []).some(function (x) { return x && !x.deletedAt && Number(x.amount) > 0; }));
     }
     /* تطبیق با ردیف‌های درآمد/مخارج: همان روز، همان مبلغ، همان نوع و همان حساب (هر ردیف موجود فقط یک پیامک را پوشش می‌دهد) */
     function hkBulkMarkDups(folders) {
@@ -33203,7 +33320,7 @@ if (item.type === 'recurring') {
           var personal = hkIsPersonalSender(it.address);
           var key = (personal ? 'P|' + toEnglishDigits(String(it.address || '')).replace(/\D/g, '').slice(-10) + '|' : '') + bank + '|' + (acc4 || '');
           var fo = map[key] || (map[key] = { key: key, bank: bank, acc4: acc4, all: [], inRange: [], latestBal: null, personal: personal, sender: personal ? String(it.address || '') : '' });
-          var rec = { ts: ts, j: j, type: p.type === 'income' ? 'income' : 'expense', amount: p.amount, balance: p.balance, body: body };
+          var rec = { ts: ts, j: j, time: hkSmsTime(body, ts), type: p.type === 'income' ? 'income' : 'expense', amount: p.amount, balance: p.balance, body: body };
           fo.all.push(rec);
           var k = hkJKey(j);
           if (k >= fk && k <= tk) fo.inRange.push(rec);
@@ -33496,6 +33613,15 @@ if (item.type === 'recurring') {
           var named = pd[tab].sections.filter(function (s2) { return s2 && (s2.title || '').trim(); });
           if (named.length === 1) sec = named[0];
         }
+        /* آن ماه فقط «نام کاربر»ِ خالیِ پیش‌فرض دارد (مثلاً بعد از حذف ماه): همان، با نام کارت مقصد (در درآمد و مخارج)، نه کارت تازه */
+        if (!sec) {
+          var defs = pd[tab].sections.filter(function (s2) { return s2 && (s2.title || '').trim(); });
+          if (defs.length === 1 && hkIsEmptyDefaultSec(defs[0])) {
+            ['income', 'expense'].forEach(function (t2) { ((pd[t2] && pd[t2].sections) || []).forEach(function (s3) { if (hkIsEmptyDefaultSec(s3)) s3.title = cardTitle; }); });
+            if (Array.isArray(pd.personCardOrder)) pd.personCardOrder = pd.personCardOrder.map(function (x) { return hkNormTitle(x) === hkNormTitle('نام کاربر') ? cardTitle : x; });
+            sec = defs[0];
+          }
+        }
         if (!sec) {
           var nid = pd[tab].nextId || (pd[tab].sections.length + 1);
           sec = { id: 's' + nid + '_bk', title: cardTitle, color: tabAccentColor(tab), collapsed: false, rows: [] };
@@ -33522,12 +33648,13 @@ if (item.type === 'recurring') {
       var addRow = function (fo, r) {
         var sec = secOf(ctxOf(r.j.y, r.j.m).data, r.type), row = emptyRow(r.type);
         row.day = String(r.j.d); row.desc = ''; row.amount = r.amount; row.status = 'paid'; row.account = fo.account;
+        if (r.time) row.time = r.time;
         row.fromSmsBulk = true; row.createdAt = Date.now(); row.updatedAt = row.createdAt;
         try { if (typeof stampRowOwner === 'function') stampRowOwner(row); } catch (eS) {}
         var ei = sec.rows.findIndex(function (x) { return x && !x.desc && !x.amount && !x.day && !x.fromPlanId; });
         if (ei >= 0) sec.rows.splice(ei, 1);
         sec.rows.push(row);
-        sec.rows.sort(function (a, b) { return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99); });
+        sec.rows.sort(function (a, b) { return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99) || hkTimeCmp(a, b); });
         /* ردیف تازه در فهرست تطبیق همان ماه هم باشد (استفاده‌شده) تا پیامک بعدی دوباره به آن نخورد */
         var ek = periodKey(r.j.y, r.j.m);
         if (exOf[ek]) exOf[ek].push({ tab: r.type, day: r.j.d, amount: hkAmtNum(r.amount), acc: hkNormAcc(fo.account), rawAcc: fo.account, row: row, used: true });
@@ -33541,7 +33668,7 @@ if (item.type === 'recurring') {
       chosen.forEach(function (fo) {
         var fuzzy = [], accN = hkNormAcc(fo.account);
         /* ردیف جفت‌شده به شکل درست اصلاح شود (روز/نام حساب یکدست) */
-        var fixRow = function (x, r) { try { if (x.row.account !== fo.account) x.row.account = fo.account; if (String(x.row.day) !== String(r.j.d)) x.row.day = String(r.j.d); x.rawAcc = fo.account; } catch (eF) {} };
+        var fixRow = function (x, r) { try { if (x.row.account !== fo.account) x.row.account = fo.account; if (String(x.row.day) !== String(r.j.d)) x.row.day = String(r.j.d); if (r.time && !x.row.time) x.row.time = r.time; x.rawAcc = fo.account; } catch (eF) {} };
         /* ۱) تکراری قطعی: همان روز، مبلغ، نوع و حساب؛ ردیف «بدون حساب» با همان روز و مبلغ = همین تراکنش (حسابش پر می‌شود) */
         fo.inRange.forEach(function (r) {
           var ex = existing(r.j.y, r.j.m), a = hkAmtNum(r.amount);
@@ -33581,7 +33708,7 @@ if (item.type === 'recurring') {
             return;
           }
           if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && x.day === r.j.d && x.amount === a && (!x.acc || x.rawAcc === 'بدون حساب'); });
-          if (hit) { hit.used = true; hit.row.account = fo.account; hit.acc = accN; hit.rawAcc = fo.account; r._st = 'dup'; skipped++; linked++; return; }
+          if (hit) { hit.used = true; hit.row.account = fo.account; if (r.time && !hit.row.time) hit.row.time = r.time; hit.acc = accN; hit.rawAcc = fo.account; r._st = 'dup'; skipped++; linked++; return; }
           if (!preIm) hit = ex.find(function (x) { return !x.used && x.tab === r.type && Math.abs(x.day - r.j.d) === 1 && x.amount === a && x.acc === accN; });
           if (hit) { hit.used = true; r._st = 'fuzzy'; r._fz = hit; fuzzy.push(r); return; }
           /* پرداخت قسط: ردیف تازه نه؛ همان ردیف قسطِ آن ماه پرداخت‌شده و مبلغش مبلغ واقعی (با دیرکرد) می‌شود */
@@ -33593,6 +33720,7 @@ if (item.type === 'recurring') {
             if (im) {
               var prow = hkApplyInstallmentMatch(im, r.j, a, fo.account, function (pl, ii, ym) { var x = planRowOf(pl, ii, ym); if (x) x.used = true; return x ? x.row : null; },
                 function (first) { var rw = addRow(fo, r); rw.fromSmsBulk = true; if (first) added++; return rw; });
+              if (prow && r.time) prow.time = r.time;
               instHits += im.k; r._st = 'inst'; r._row = prow;
               return;
             }
@@ -33686,6 +33814,14 @@ if (item.type === 'recurring') {
       });
       try { saveSmsAccountBankMap(); } catch (eSv) {}
       if (created.length) { try { saveBankAccountsSelection(); } catch (eS2) {} }
+      /* ردیف‌های هر روز به ترتیب ساعت (ساعت از پیامک؛ ردیف‌های قبلی هم با همین ثبت ساعت گرفتند) */
+      Object.keys(ctxs).forEach(function (k) {
+        var pd0 = ctxs[k].data || {};
+        ['income', 'expense'].forEach(function (tab) { ((pd0[tab] && pd0[tab].sections) || []).forEach(function (s2) {
+          if (!Array.isArray(s2.rows) || !s2.rows.some(function (x) { return x && x.time; })) return;
+          s2.rows = hkSortRunsByTime(s2.rows);
+        }); });
+      });
       Object.keys(ctxs).forEach(function (k) { try { commitWritablePeriodData(ctxs[k]); } catch (eC) {} });
       try { persistCurrent(); } catch (e1) {}
       try { saveArchive(); } catch (e2) {}
@@ -33970,18 +34106,77 @@ if (item.type === 'recurring') {
       };
       return true;
     }
-    /* یک‌بار بعد از آپدیت: اگر ردیفی پیدا شد، پنجرهٔ ترمیم */
+    /* ===== برگرداندن وصل‌های اشتباه نسخه‌های ۱.۳.۳۱ تا ۱.۳.۳۳ =====
+       آن نسخه‌ها مبلغ برداشت را با «مبلغ کل وام» مقایسه می‌کردند (نه مبلغ هر قسط)؛ مثلاً برداشت ۱۰۰ میلیونی «۲ قسط با هم»ِ وام ۵۰ میلیونی شد.
+       ردیف قسطِ وصل‌شده به پیامک که مبلغش با مبلغ قسط جور نیست (کمتر از نصف یا بیش از ۱٫۵ برابر) برمی‌گردد:
+       ردیف‌های همان پرداخت (همان وام، روز و بانک) یک ردیف معمولی با جمع مبلغ می‌شوند و ردیف‌های قسط از روی وام دوباره ساخته می‌شوند. */
+    function hkUndoWrongInstallmentLinks(apply) {
+      var out = [], ctxs = {}, touchedPlans = {};
+      var ctxOf = function (y, m) { var k = periodKey(y, m); if (!ctxs[k]) ctxs[k] = getWritablePeriodData(y, m); return ctxs[k]; };
+      var byId = {}; (plans || []).forEach(function (p) { if (p && p.id) byId[p.id] = p; });
+      var keys = Object.keys(archive || {}).concat([periodKey(currentYear, currentMonth)]).filter(function (k, i, a) { return a.indexOf(k) === i; });
+      keys.forEach(function (k) {
+        var pk = k.split('-'), y = +pk[0], m = +pk[1], pd = ctxOf(y, m).data, dirty = false;
+        ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
+          var groups = {};
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || !r.fromPlanId || !r.smsLinked) return;
+            var pl = byId[r.fromPlanId]; if (!pl) return;
+            var inst = planInstallmentAmount(pl) || 0, a = Number(r.amount) || 0;
+            if (!inst || (a >= inst * 0.5 && a <= inst * 1.5)) return;
+            var gk = pl.id + '|' + (r.day || '') + '|' + (r.account || '');
+            (groups[gk] = groups[gk] || { plan: pl, day: r.day, account: r.account || '', rows: [] }).rows.push(r);
+          });
+          Object.keys(groups).forEach(function (gk) {
+            var g = groups[gk], total = g.rows.reduce(function (t, r) { return t + (Number(r.amount) || 0); }, 0);
+            out.push({ y: y, m: m, d: g.day, account: g.account, amount: total, plan: g.plan.name || 'قسط', idxs: g.rows.map(function (r) { return parseInt(r.fromPlanIndex, 10); }) });
+            if (!apply) return;
+            var at = sec.rows.indexOf(g.rows[0]);
+            g.rows.forEach(function (r) {
+              var ii = String(r.fromPlanIndex);
+              try { if (g.plan.paidEarlyMap && g.plan.paidEarlyMap[ii]) delete g.plan.paidEarlyMap[ii]; } catch (e) {}
+              try { if (g.plan.paidLateMap && g.plan.paidLateMap[ii]) delete g.plan.paidLateMap[ii]; } catch (e2) {}
+              var i0 = sec.rows.indexOf(r); if (i0 >= 0) sec.rows.splice(i0, 1);
+            });
+            var nr = Object.assign(emptyRow('expense'), { day: String(g.day || ''), amount: total, account: g.account, status: 'paid', desc: '', fromSmsBulk: true });
+            sec.rows.splice(Math.max(0, Math.min(at, sec.rows.length)), 0, nr);
+            touchedPlans[g.plan.id] = g.plan; dirty = true;
+          });
+        });
+        if (dirty) ctxs[k]._undoDirty = { y: y, m: m };
+      });
+      if (apply && out.length) {
+        Object.keys(ctxs).forEach(function (k) {
+          var c = ctxs[k];
+          if (c._undoDirty) { try { syncPlansToExpensePeriod(c.data, c._undoDirty.y, c._undoDirty.m); } catch (e) {} }
+          try { commitWritablePeriodData(c); } catch (e2) {}
+        });
+        try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e3) {}
+        try { if (typeof updateInstallSummary === 'function') updateInstallSummary(); } catch (e4) {}
+        try { renderAll(); } catch (e5) {}
+      }
+      out.plans = Object.keys(touchedPlans).map(function (id) { return touchedPlans[id].name || 'قسط'; });
+      return out;
+    }
+    /* یک‌بار بعد از آپدیت: اول برگرداندن وصل‌های اشتباه (با پشتیبان ایمنی)، بعد پنجرهٔ ترمیم ردیف‌های معمولی که واقعاً پرداخت قسط‌اند */
     setTimeout(function () {
       try {
-        var K = STORAGE_KEY + '_instRepair1333';
+        var K = STORAGE_KEY + '_instRepair1334';
         if (localStorage.getItem(K)) return;
         var lk = document.getElementById('appLockOverlay');
         if ((lk && lk.classList.contains('show')) || document.getElementById('appTour')) return;
         /* بی قسط چیزی برای بررسی نیست (و چیزی هم در حافظه نوشته نمی‌شود) */
         if (!(plans || []).some(function (p) { return p && !p.deletedAt && Number(p.amount) > 0; })) return;
         localStorage.setItem(K, '1');
-        var list = hkInstallmentRepair(false);
-        if (list.length) openInstallmentRepair(list);
+        var thenRepair = function () { var list = hkInstallmentRepair(false); if (list.length) openInstallmentRepair(list); };
+        var wrong = hkUndoWrongInstallmentLinks(false);
+        if (!wrong.length) { thenRepair(); return; }
+        var go = function () {
+          var done = hkUndoWrongInstallmentLinks(true);
+          hkAsk3(toPersianDigits(String(done.length)) + ' برداشت که در نسخهٔ قبل اشتباهی به قسط وصل شده بود (مثل ' + formatNum(done[0].amount) + ' تومانِ ' + toPersianDigits(String(done[0].d)) + ' ' + MONTHS[done[0].m - 1] + ') دوباره ردیف معمولی شد. شمار قسط‌های پرداخت‌شدهٔ «' + done.plans.join('»، «') + '» را در منوی اقساط یک نگاه بیندازید.',
+            [{ v: 'ok', t: 'باشه', cls: 'primary' }], function () { setTimeout(thenRepair, 200); });
+        };
+        try { safetyBackupThen('inst-undo', go); } catch (eB) { go(); }
       } catch (e) {}
     }, 3500);
     function openDupCleanup() {
@@ -34291,7 +34486,7 @@ if (item.type === 'recurring') {
       addTitle.textContent = 'افزودن حساب بانکی';
       addTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin:4px 0 8px;color:var(--muted);';
       banksWrap.appendChild(addTitle);
-      (ALL_IRAN_BANKS || []).forEach((name) => {
+      hkBankList().forEach((name) => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
         const span = document.createElement('span');
@@ -34320,7 +34515,7 @@ if (item.type === 'recurring') {
         row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 4px;';
         const inp = document.createElement('input');
         inp.type = 'text'; inp.id = 'bankCustomName'; inp.maxLength = 30; inp.autocomplete = 'off';
-        inp.placeholder = 'بانک دیگر (نام دلخواه)';
+        inp.placeholder = 'نام بانک (دلخواه)';
         inp.setAttribute('enterkeyhint', 'done');
         inp.style.cssText = 'flex:1;min-width:0;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.85rem;box-sizing:border-box;';
         const addBtn = document.createElement('button');
@@ -34329,9 +34524,11 @@ if (item.type === 'recurring') {
         addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
         addBtn.style.cssText = 'width:32px;height:32px;padding:0;border:none;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
         const go = () => {
-          const nm = (inp.value || '').replace(/\s+/g, ' ').trim();
+          const nm = hkCustomBankName(inp.value);
           if (!nm) { try { showToast('نام بانک را بنویسید'); } catch (e0) {} try { inp.focus(); } catch (e1) {} return; }
           try { inp.blur(); } catch (e2) {}
+          /* بانک تازه جزو فهرست بانک‌ها می‌ماند */
+          hkAddCustomBank(nm);
           openBankNameEditor(null, -1, null, nm, bankShortLabel(nm) || nm);
         };
         addBtn.onclick = (e) => { e.stopPropagation(); go(); };
@@ -34339,6 +34536,24 @@ if (item.type === 'recurring') {
         row.appendChild(inp); row.appendChild(addBtn);
         banksWrap.appendChild(row);
       })();
+    }
+    /* نام دلخواه بانک: «درخت» → «بانک درخت»؛ «بانک درخت» همان (نه «بانک بانک درخت») */
+    function hkCustomBankName(v) {
+      var core = String(v || '').replace(/[ي]/g, 'ی').replace(/[ك]/g, 'ک').replace(/\s+/g, ' ').trim().replace(/^(بانک\s*)+/, '').trim();
+      return core ? 'بانک ' + core : '';
+    }
+    function hkCustomBanks() { try { var a = JSON.parse(localStorage.getItem(STORAGE_KEY + '_customBanks') || '[]'); return Array.isArray(a) ? a.filter(Boolean) : []; } catch (e) { return []; } }
+    function hkAddCustomBank(nm) {
+      var k = function (x) { return hkNormTitle(String(x || '').replace(/^بانک/, '')); };
+      if (hkBankList().some(function (b) { return k(b) === k(nm); })) return;
+      var a = hkCustomBanks(); a.push(nm);
+      try { localStorage.setItem(STORAGE_KEY + '_customBanks', JSON.stringify(a)); } catch (e) {}
+    }
+    /* فهرست بانک‌ها: بانک‌های ایران + بانک‌های دلخواهی که کاربر ساخته (بی تکرار) */
+    function hkBankList() {
+      var out = [], seen = {};
+      (ALL_IRAN_BANKS || []).concat(hkCustomBanks()).forEach(function (b) { var key = hkNormTitle(String(b || '').replace(/^بانک/, '')); if (!key || seen[key]) return; seen[key] = 1; out.push(b); });
+      return out;
     }
     function openBankNameEditor(acc, idx, anchorRow, bankName, defaultLabel) {
       // مات پشت باکس
@@ -39620,7 +39835,7 @@ function openProjectRowPicker(secId) {
     /* —— باکس اعلان بروزرسانی هنگام ورود به نرم‌افزار ——
        معمولی: «بروزرسانی» و «بعداً»؛ با «بعداً» دفعهٔ بعد که نرم‌افزار باز شود دوباره می‌آید.
        ضروری (critical یا پایین‌تر از minVersionCode): بدون «بعداً»؛ تا نصب نسخهٔ جدید، نرم‌افزار قابل استفاده نیست. */
-    var _updPromptShownThisLaunch = false;
+    var _updPromptShownThisLaunch = false, _updPromptAt = 0;
     function isCriticalUpdate(m, inst) {
       var minC = parseInt(m && m.minVersionCode, 10) || 0;
       return !!(m && m.critical === true) || (minC > 0 && inst && inst.code > 0 && inst.code < minC);
@@ -39631,7 +39846,7 @@ function openProjectRowPicker(secId) {
       /* اگر قفل برنامه باز است، بعد از ورود نشان بده */
       try { var lk = document.getElementById('appLockOverlay'); if (lk && lk.classList.contains('show')) { setTimeout(function () { showUpdatePrompt(m, inst); }, 1500); return; } } catch (eL) {}
       if (document.getElementById('updPrompt') || document.getElementById('updDlg')) return;
-      _updPromptShownThisLaunch = true;
+      _updPromptShownThisLaunch = true; _updPromptAt = Date.now();
       var notes = Array.isArray(m.notes) ? m.notes : (m.notes ? [m.notes] : []);
       var ov = document.createElement('div');
       ov.id = 'updPrompt'; ov.className = 'backup-pick-overlay';
@@ -39724,6 +39939,8 @@ function openProjectRowPicker(secId) {
         var newer = remote > 0 && inst.code > 0 ? remote > inst.code : (m.versionName && inst.name && String(m.versionName) !== String(inst.name) && !silent);
         setUpdateBadge(!!newer);
         if (newer) { window._hkUpdManifest = m; }
+        /* آخرین فایل نسخه نگه داشته می‌شود تا دفعهٔ بعد پنجره همان لحظهٔ ورود (بی منتظر اینترنت) بیاید */
+        try { if (remote > 0) localStorage.setItem(UPDATE_REMOTE_KEY + '_m', JSON.stringify({ versionCode: m.versionCode, versionName: m.versionName, notes: m.notes, apk: m.apk, stores: m.stores, critical: m.critical, minVersionCode: m.minVersionCode })); } catch (eM) {}
         if (newer) {
           if (!silent) showUpdateDialog(Object.assign({}, m, { _critical: isCriticalUpdate(m, inst) }), inst);
           else if (isCriticalUpdate(m, inst) || (silent === 'launch' && !_updPromptShownThisLaunch)) { showUpdatePrompt(m, inst); updMarkPrompted(remote); }
@@ -39755,8 +39972,29 @@ function openProjectRowPicker(secId) {
       if (_knownRemote > 0) getInstalledVersion().then(function (v) { if (v && v.code > 0 && _knownRemote > v.code) setUpdateBadge(true); });
     } catch (e) {}
     /* هر بار باز شدن نرم‌افزار (بدون فاصلهٔ حداقل)، برگشتن به نرم‌افزار (هر ۳۰ دقیقه) و باز کردن منو (هر ۲ دقیقه) */
-    setTimeout(function () { silentUpdateCheck(0); }, 6000);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(function () { silentUpdateCheck(30 * 60 * 1000); try { enforceCriticalUpdate(); } catch (eC) {} }, 1500); });
+    /* ورود به نرم‌افزار: اگر نسخهٔ تازه از قبل شناخته شده، پنجره همان لحظه؛ بعد بررسی از اینترنت */
+    function updPromptFromCache() {
+      try {
+        if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
+        var cm = JSON.parse(localStorage.getItem(UPDATE_REMOTE_KEY + '_m') || 'null');
+        var rc = cm ? parseInt(cm.versionCode, 10) || 0 : 0; if (!rc) return;
+        getInstalledVersion().then(function (v) {
+          if (v && v.code > 0 && rc > v.code && !_updPromptShownThisLaunch) { window._hkUpdManifest = window._hkUpdManifest || cm; setUpdateBadge(true); showUpdatePrompt(cm, v); updMarkPrompted(rc); }
+        });
+      } catch (e) {}
+    }
+    setTimeout(updPromptFromCache, 900);
+    setTimeout(function () { silentUpdateCheck(0); }, 1500);
+    /* برگشتن به نرم‌افزار = ورود دوباره: همان لحظه بررسی (پنجره حداکثر هر ۱۰ دقیقه یک بار) */
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) return;
+      setTimeout(function () {
+        if (_updPromptShownThisLaunch && Date.now() - _updPromptAt > 10 * 60 * 1000 && !document.getElementById('updPrompt')) _updPromptShownThisLaunch = false;
+        updPromptFromCache();
+        silentUpdateCheck(0);
+        try { enforceCriticalUpdate(); } catch (eC) {}
+      }, 600);
+    });
     (function initAppVersionLabel() {
       const el = document.getElementById('appVersionLabel');
       if (el) el.textContent = APP_VERSION_FA;
@@ -40322,7 +40560,7 @@ function openProjectRowPicker(secId) {
           if (!da) return 1;
           if (!db) return -1;
           if (da !== db) return da - db;
-          return a.i - b.i;
+          return hkTimeCmp(a.r, b.r) || a.i - b.i;
         })
         .map(x => x.r);
     }
@@ -41493,7 +41731,9 @@ function openProjectRowPicker(secId) {
         for (var i = 0; i < rows.length && i < 11; i++) h += rows[i].getBoundingClientRect().height;
         var fr = t.tFoot ? [].slice.call(t.tFoot.rows) : [], fh = 0;
         for (var k = fr.length - 1; k >= 0; k--) { [].forEach.call(fr[k].cells, function (c) { c.style.bottom = fh + 'px'; }); fh += fr[k].getBoundingClientRect().height; }
-        sc.style.maxHeight = rows.length > 11 ? Math.ceil(th + h + fh + 2) + 'px' : 'none';
+        var on = rows.length > 11;
+        sc.classList.toggle('on', on);
+        sc.style.maxHeight = on ? Math.ceil(th + h + fh + 2) + 'px' : 'none';
       } catch (e) {}
     }
     function bsRenderMonthSummary(list, rangeF) {
@@ -41513,7 +41753,7 @@ function openProjectRowPicker(secId) {
       ms.forEach(function (m) { var b = by[m]; html += '<tr class="bs-mrow" data-m="' + m + '"><td class="bs-mname">' + MONTHS[m - 1] + '</td><td class="bs-ci">' + formatNum(b.i) + '</td><td class="bs-ce">' + formatNum(b.e) + '</td><td>' + net(b.i - b.e) + '</td></tr>'; });
       html += '</tbody>' + (ms.length ? '<tfoot><tr class="bs-mtotal"><td>جمع سال</td><td class="bs-ci">' + formatNum(ti) + '</td><td class="bs-ce">' + formatNum(te) + '</td><td>' + net(ti - te) + '</td></tr></tfoot>' : '') + '</table></div>';
       box.innerHTML = html; box.style.display = '';
-      hkFit11(box.querySelector('.hk-scroll11'));
+      /* جدول ماه‌ها حداکثر ۱۲ ماه است: همه دیده می‌شود (بی اسکرول داخلی) */
       box._list = list;
       box.querySelectorAll('.bs-mrow').forEach(function (tr) {
         tr.onclick = function () { bsOpenMonthDetail(parseInt(tr.getAttribute('data-m'), 10), box._list || []); };
@@ -41528,9 +41768,9 @@ function openProjectRowPicker(secId) {
       var inc = rows.filter(function (it) { return it.tab === 'income'; }), exp = rows.filter(function (it) { return it.tab === 'expense'; });
       var si = inc.reduce(function (a, it) { return a + it.amount; }, 0), se = exp.reduce(function (a, it) { return a + it.amount; }, 0);
       var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
-      var tbl = function (arr, cls) {
-        if (!arr.length) return '<div class="hk-bulk-hint">ردیفی نیست</div>';
-        return '<div class="hk-tframe"><div class="hk-scroll11"><table class="summary-table"><colgroup><col style="width:17%"><col><col style="width:32%"></colgroup><thead><tr><th>روز</th><th>شرح</th><th>مبلغ</th></tr></thead><tbody>' + arr.map(function (it, i) {
+      var tbl = function (arr, cls, ttl) {
+        if (!arr.length) return '<div class="hk-tframe"><div class="bmd-ttl">' + ttl + '</div><div class="hk-bulk-hint" style="text-align:center;padding:10px">ردیفی نیست</div></div>';
+        return '<div class="hk-tframe"><div class="bmd-ttl">' + ttl + '</div><div class="hk-scroll11"><table class="summary-table"><colgroup><col style="width:17%"><col><col style="width:32%"></colgroup><thead><tr><th>روز</th><th>شرح</th><th>مبلغ</th></tr></thead><tbody>' + arr.map(function (it, i) {
           return '<tr><td>' + (it.d ? p2(it.d) : '—') + '</td><td class="bmd-desc" data-i="' + cls + i + '">' + escapeHtml(it.desc || '—') + '</td><td class="' + cls + '">' + formatNum(it.amount) + '</td></tr>';
         }).join('') + '</tbody></table></div></div>';
       };
@@ -41538,15 +41778,15 @@ function openProjectRowPicker(secId) {
       exp.forEach(function (it) { var ids = []; try { ids = bsCatOf(it.row); } catch (e) {} var id = ids[0] || '__none__'; cats[id] = (cats[id] || 0) + it.amount; });
       var catLbl = function (id) { if (id === '__none__') return 'بدون دسته'; var c = (HKCategorizer.categories || []).find(function (x) { return x.id === id; }); return c ? c.label : id; };
       var catKeys = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; });
-      var catHtml = catKeys.length ? '<div class="hk-tframe"><div class="hk-scroll11"><table class="summary-table bmd-cats"><colgroup><col><col style="width:38%"></colgroup><thead><tr><th>دسته</th><th>جمع مخارج</th></tr></thead><tbody>' + catKeys.map(function (id) { return '<tr><td class="bmd-cname">' + escapeHtml(catLbl(id)) + '</td><td class="bs-ce">' + formatNum(cats[id]) + '</td></tr>'; }).join('') + '</tbody></table></div></div>' : '';
+      var catHtml = catKeys.length ? '<div class="hk-tframe"><div class="bmd-ttl">جمع هر دسته</div><div class="hk-scroll11"><table class="summary-table bmd-cats"><colgroup><col><col style="width:38%"></colgroup><thead><tr><th>دسته</th><th>جمع مخارج</th></tr></thead><tbody>' + catKeys.map(function (id) { return '<tr><td class="bmd-cname">' + escapeHtml(catLbl(id)) + '</td><td class="bs-ce">' + formatNum(cats[id]) + '</td></tr>'; }).join('') + '</tbody></table></div></div>' : '';
       var net = si - se;
       var o = document.createElement('div'); o.id = 'bsMonthDetail';
       o.innerHTML = '<div class="bmd-head"><button type="button" class="bmd-back" aria-label="بازگشت">›</button><div class="bmd-title">جزئیات ' + MONTHS[m - 1] + ' ' + toPersianDigits(String(currentYear)) + '</div></div>' +
         '<div class="bmd-body bs-month-table">' +
           '<div class="bmd-sum"><div>درآمد<b class="bs-ci">' + formatNum(si) + '</b></div><div>مخارج<b class="bs-ce">' + formatNum(se) + '</b></div><div>مانده<b class="' + (net < 0 ? 'bs-ce' : 'bs-ci') + '"><bdi dir="ltr">' + (net < 0 ? '−' : '') + formatNum(Math.abs(net)) + '</bdi></b></div></div>' +
-          '<div class="bmd-sec">درآمدها (' + toPersianDigits(String(inc.length)) + ')</div>' + tbl(inc, 'bs-ci') +
-          '<div class="bmd-sec">مخارج (' + toPersianDigits(String(exp.length)) + ')</div>' + tbl(exp, 'bs-ce') +
-          (catHtml ? '<div class="bmd-sec">جمع هر دسته</div>' + catHtml : '') +
+          tbl(inc, 'bs-ci', 'درآمدها (' + toPersianDigits(String(inc.length)) + ')') +
+          tbl(exp, 'bs-ce', 'مخارج (' + toPersianDigits(String(exp.length)) + ')') +
+          catHtml +
         '</div>';
       document.body.appendChild(o);
       o.querySelectorAll('.hk-scroll11').forEach(hkFit11);
