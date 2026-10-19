@@ -35,7 +35,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
     if (msgs == null || msgs.length == 0) return;
     StringBuilder body=new StringBuilder(); String sender=msgs[0].getOriginatingAddress();
     long ts=msgs[0].getTimestampMillis();
-    for(SmsMessage m:msgs) if(m!=null && m.getMessageBody()!=null) body.append(m.getMessageBody()).append("\\n");
+    // ۱.۳.۴۲: تکه‌های پیامک چندبخشی بدون جداکننده به هم وصل می‌شوند (قبلاً «\\n» وسطشان می‌آمد و مثلاً «0727-17:33» می‌شد «0727-1⏎7:33» → ساعت ۰۷:۳۳)
+    for(SmsMessage m:msgs) if(m!=null && m.getMessageBody()!=null) body.append(m.getMessageBody());
     String text=body.toString().trim();
     if(!looksLikeBankTransaction(text, sender)) return;
     SharedPreferences sp=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
