@@ -1933,7 +1933,21 @@
     body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, .hk-scroll11 .summary-table tfoot tr:first-child td { border-top: 2px solid var(--tbl-stroke, rgba(255,255,255,0.55)) !important; }
     html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot tr:first-child td { border-top-color: var(--lt-line, #c7c7cc) !important; }
     /* ۱.۳.۳۷: منوی جستجو یک‌تکه اسکرول می‌شود: کادر فیلترها همراه صفحه بالا می‌رود (همیشه باز)؛ عنوان ستون‌های نتیجه چسبان */
-    body.search-open #panel-balance.active { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    body.search-open #panel-balance.active { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overflow-anchor: none; }
+    /* ۱.۳.۳۸: بعد از نتیجه، با اولین اسکرول رو به پایین کادر جستجو نرم جمع می‌شود (فقط «جستجوی شرح» می‌ماند، بالای صفحه چسبیده)؛
+       برگشت به بالای جدول = دوباره باز. فلش کوچک زیر حالت بسته = رفتن به بالا و باز شدن */
+    body.search-open #panel-balance .balance-fixed-header { position: sticky !important; top: 0 !important; transition: padding 0.26s ease; }
+    #balanceFixedHeader .bs-search-head, #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { transition: max-height 0.26s ease, opacity 0.2s ease, padding 0.26s ease, margin 0.26s ease; }
+    #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { max-height: 46px; }
+    #balanceFixedHeader .bsr-grid > .bs-arange-row { max-height: 100px; }
+    #balanceFixedHeader .bs-search-head { max-height: 60px; overflow: hidden; }
+    #balanceFixedHeader .bsr-grid { transition: row-gap 0.26s ease; }
+    body.search-open #panel-balance #balanceFixedHeader.bsr-collapsed .bs-search-head, #balanceFixedHeader.bsr-collapsed .bsr-grid > .bsr-cell:not(.bsr-desc) { max-height: 0 !important; opacity: 0; overflow: hidden; padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; pointer-events: none; }
+    #balanceFixedHeader.bsr-collapsed .bsr-grid { row-gap: 0; }
+    body.search-open #panel-balance #balanceFixedHeader.bsr-collapsed { padding-top: 8px !important; padding-bottom: 2px !important; }
+    #balanceFixedHeader .bsr-handle { display: block; width: 100%; height: 0; padding: 0; border: 0; background: none; color: var(--muted, #8e8e93); overflow: hidden; opacity: 0; transition: height 0.26s ease, opacity 0.2s ease; cursor: pointer; }
+    #balanceFixedHeader .bsr-handle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    #balanceFixedHeader.bsr-collapsed .bsr-handle { height: 20px; opacity: 1; }
     body.search-open #panel-balance .balance-scroll-body { height: auto !important; flex: none !important; overflow: visible !important; padding-top: 0 !important; }
     body.search-open #panel-balance .balance-fixed-header .bsr-grid { padding-top: 0 !important; }
     body.search-open .bs-search-head { margin-bottom: 6px !important; }
@@ -9169,6 +9183,8 @@
        عرض برچسب ثابت تا خط‌های تفکیک همهٔ باکس‌ها در یک راستا باشند. */
     .bsr-grid .bsr-cell:not(.bsr-desc):not(.bs-arange-row):not(.bs-amt-row) > .balance-acc-label { display: flex !important; position: absolute; right: 0; top: 7px; bottom: 7px; width: 46px; align-items: center; justify-content: center; border-left: 1px solid var(--border, rgba(255,255,255,0.22)); pointer-events: none; z-index: 2; font-size: 0.8rem; font-weight: 700; color: var(--text); -webkit-text-fill-color: var(--text); }
     .bsr-grid .fancy-select-btn, .bsr-grid .filter-acc-wrap .dark-select-btn { padding-right: 54px !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 0.82rem !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* ۱.۳.۳۸: منوی باز (fancy-select با z-index بالا) برچسب ثابت را نپوشاند؛ برچسب همیشه دیده می‌شود */
+    .bsr-grid .bsr-cell:has(.fancy-select-wrap.is-open) > .balance-acc-label, .bsr-grid .bsr-cell:has(.dark-select.open) > .balance-acc-label, .bsr-grid .bsr-cell.bsr-open > .balance-acc-label { z-index: 100911 !important; }
     .bsr-grid .bsr-def { color: var(--muted, #8e8e93) !important; -webkit-text-fill-color: var(--muted, #8e8e93) !important; }
     .bsr-list .dark-select-item, .bsr-flist .fancy-select-opt { color: #fff !important; -webkit-text-fill-color: #fff !important; text-align: right !important; }
     html[data-theme="light"] .bsr-list .dark-select-item, html[data-theme="light"] .bsr-flist .fancy-select-opt { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
@@ -10702,6 +10718,34 @@
     .hk-att-actions { display: flex; gap: 6px; margin-bottom: 10px; }
     .hk-att-btn { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; border: 1px solid var(--border, rgba(255,255,255,0.14)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; text-align: center; padding: 0 4px; }
     .hk-att-btn.on { border-color: #ff453a; color: #ff453a; }
+    .hk-att-btn { gap: 5px; }
+    .hk-ico { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-att-btn .hk-ico { width: 16px; height: 16px; opacity: 0.85; }
+    /* ۱.۳.۳۸: پیوست در منوی ثبت پیامک — گیرهٔ طوسی کنار میکروفون با خط تفکیک؛ پنجرهٔ کوچک رو به بالا؛ پیش‌نمایش زیر شرح */
+    .desc-att-btn { position: absolute; left: 6px; top: 3px; height: calc(100% - 11px); max-height: 40px; width: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted, #8e8e93); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .desc-att-btn svg { width: 20px; height: 20px; }
+    .desc-att-btn.has { color: #0a84ff; }
+    .desc-att-btn .desc-att-n { position: absolute; top: 2px; right: 0; min-width: 15px; height: 15px; line-height: 15px; border-radius: 8px; background: #0a84ff; color: #fff; font-size: 0.6rem; font-weight: 800; text-align: center; padding: 0 3px; box-sizing: border-box; display: none; }
+    .desc-att-btn.has .desc-att-n { display: block; }
+    .desc-att-sep { display: none; position: absolute; left: 41px; top: 50%; width: 1px; height: 20px; margin-top: -14px; background: var(--border, rgba(255,255,255,0.22)); }
+    html.hk-voice .desc-mic-wrap > .desc-att-btn { left: 44px; }
+    html.hk-voice .desc-mic-wrap > .desc-att-sep { display: block; }
+    .desc-mic-wrap > #smsConfirmDesc { padding-left: 44px !important; }
+    html.hk-voice .desc-mic-wrap > #smsConfirmDesc { padding-left: 84px !important; }
+    .hk-attpop { position: fixed; z-index: 100600; min-width: 172px; padding: 6px 0; border-radius: 12px; background: var(--card, #1c1c1e); border: 1px solid var(--border, rgba(255,255,255,0.16)); box-shadow: 0 10px 28px rgba(0,0,0,0.5); direction: rtl; transform-origin: 20% 100%; opacity: 0; transform: translateY(8px) scale(0.96); transition: opacity 0.16s ease, transform 0.18s ease; }
+    .hk-attpop.in { opacity: 1; transform: none; }
+    .hk-attpop button { direction: rtl; justify-content: flex-start; display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; border: 0; background: none; color: var(--text); font-family: inherit; font-size: 0.9rem; font-weight: 700; text-align: right; cursor: pointer; }
+    .hk-attpop button + button { border-top: 1px solid var(--border, rgba(255,255,255,0.08)); }
+    .hk-attpop button .hk-ico { color: var(--muted, #8e8e93); width: 18px; height: 18px; }
+    .hk-attpop button.rec { color: #ff453a; }
+    .hk-attpop button.rec .hk-ico { color: #ff453a; }
+    #smsAttStrip { display: none; flex-wrap: wrap; gap: 8px; margin: -2px 0 10px; direction: rtl; }
+    #smsAttStrip.on { display: flex; }
+    #smsAttStrip .sa-it { position: relative; width: 52px; height: 52px; border-radius: 9px; overflow: hidden; border: 1px solid var(--border, rgba(255,255,255,0.16)); background: var(--bg3, rgba(255,255,255,0.05)); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.66rem; font-weight: 700; flex-direction: column; gap: 2px; }
+    #smsAttStrip .sa-it img { width: 100%; height: 100%; object-fit: cover; }
+    #smsAttStrip .sa-it .hk-ico { width: 18px; height: 18px; }
+    #smsAttStrip .sa-x { position: absolute; top: 1px; left: 1px; width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,0.55); color: #ff453a; font-size: 0.95rem; font-weight: 800; line-height: 20px; padding: 0; cursor: pointer; }
+    html[data-theme="light"] .hk-attpop { background: #fff; }
     .hk-img-view { position: fixed; inset: 0; z-index: 100500; background: #000; display: flex; align-items: center; justify-content: center; padding: 0; touch-action: none; overflow: hidden; }
     .hk-img-view img { width: 100%; height: 100%; object-fit: contain; transform-origin: center center; will-change: transform; -webkit-user-select: none; user-select: none; }
     .hk-img-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.55); color: #fff; font-size: 1.9rem; line-height: 46px; padding: 0; z-index: 2; }
@@ -11248,6 +11292,7 @@
             <div class="hk-arange" id="balanceAmtRange" aria-label="بازهٔ مبلغ"></div>
           </div>
         </div>
+        <button type="button" class="bsr-handle" aria-label="باز کردن فیلترها"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button>
       </div>
       <div class="balance-scroll-body" id="balanceScrollBody">
         <div class="summary-section">
@@ -25961,6 +26006,10 @@ async function openPdfPrintWindow(){
       }
       return { put: put, get: get, del: del, newId: newId, compressImage: compressImage };
     })();
+    /* ۱.۳.۳۸: آیکون‌های مینیمال پیوست (خطی، هم‌سبک بقیهٔ آیکون‌ها)؛ «ضبط صدا» موج صدا است، نه میکروفونِ گفتار به متن */
+    var HK_ICON_CAM = '<svg class="hk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.6A1.6 1.6 0 0 1 5.6 7h2.2l1.5-2.2h5.4L16.2 7h2.2A1.6 1.6 0 0 1 20 8.6v8.8a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 17.4z"/><circle cx="12" cy="12.6" r="3.3"/></svg>';
+    var HK_ICON_GAL = '<svg class="hk-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2.2"/><circle cx="9.2" cy="9.8" r="1.6"/><path d="M4.8 17.2l4.6-4.6 3.2 3.2 2.6-2.6 4 4"/></svg>';
+    var HK_ICON_WAVE = '<svg class="hk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5v3M8 7.5v9M12 4.5v15M16 8.5v7M20 10.5v3"/></svg>';
     var HK_LOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
     var HK_CLIP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5l-8.1 8.1a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     function hkFmtSize(n) { return n >= 1048576 ? toPersianDigits((n / 1048576).toFixed(1)).replace('.', '٫') + ' مگابایت' : toPersianDigits(String(Math.max(1, Math.round(n / 1024)))) + ' کیلوبایت'; }
@@ -26099,9 +26148,9 @@ async function openPdfPrintWindow(){
         '<div class="hk-att-sub"></div>' +
         '<div class="hk-att-list"></div>' +
         '<div class="hk-att-actions">' +
-          '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>گرفتن عکس</label>' +
-          '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>انتخاب از گالری</label>' +
-          '<button type="button" class="hk-att-btn hk-att-rec">ضبط صدا</button>' +
+          '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>' + HK_ICON_CAM + '<span class="hk-att-lbl">گرفتن عکس</span></label>' +
+          '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>' + HK_ICON_GAL + '<span class="hk-att-lbl">انتخاب از گالری</span></label>' +
+          '<button type="button" class="hk-att-btn hk-att-rec">' + HK_ICON_WAVE + '<span class="hk-att-lbl">ضبط صدا</span></button>' +
         '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
       document.body.appendChild(ov);
@@ -26242,14 +26291,14 @@ async function openPdfPrintWindow(){
           rec.onstop = function () {
             var r0 = rec; rec = null; clearInterval(tick);
             try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (eS) {}
-            recBtn.classList.remove('on'); recBtn.textContent = 'ضبط صدا';
+            recBtn.classList.remove('on'); recBtn.querySelector('.hk-att-lbl').textContent = 'ضبط صدا';
             if (r0._cancel || !chunks.length) return;
             var dur = (performance.now() - t0) / 1000;
             addBlob('aud', new Blob(chunks, { type: (r0.mimeType || mt || 'audio/webm').split(';')[0] }), { dur: dur });
           };
           rec.start(1000); t0 = performance.now();
           recBtn.classList.add('on');
-          var upd = function () { var s2 = Math.floor((performance.now() - t0) / 1000); recBtn.textContent = 'پایان ضبط · ' + toPersianDigits(String(Math.floor(s2 / 60))) + ':' + toPersianDigits(String(s2 % 60).padStart(2, '0')); if (s2 >= 300) ov._stopRec(false); };
+          var upd = function () { var s2 = Math.floor((performance.now() - t0) / 1000); recBtn.querySelector('.hk-att-lbl').textContent = 'پایان ضبط · ' + toPersianDigits(String(Math.floor(s2 / 60))) + ':' + toPersianDigits(String(s2 % 60).padStart(2, '0')); if (s2 >= 300) ov._stopRec(false); };
           upd(); tick = setInterval(upd, 500);
           });
         }).catch(function (e) { if (e !== 'denied') showToast('میکروفون در دسترس نیست', 'warn'); });
@@ -26323,6 +26372,7 @@ async function openPdfPrintWindow(){
     function closePersonDetail() {
       /* خروج از سرچ باکس: عبارت جستجو پاک و جدول مانده دوباره نمایش داده شود */
       try { resetBalanceSearch(); } catch (eRs) {}
+      try { hkSearchCollapse(false); } catch (eSc0) {}
       try { setTimeout(() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }, 30); } catch (e) {}
       _detailContext = null;
       try { document.body.classList.remove('detail-open'); document.body.classList.remove('search-open'); bsCloseMonthDetail(); } catch (e) {}
@@ -27405,6 +27455,8 @@ container.innerHTML = '';
     /* mode: (خالی) ثبت شد | 'reject' رد شد | 'later' بعداً */
     function closeSmsConfirmModal(mode) {
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
+      /* پیوست‌های در انتظار: ثبت → روی ردیف تازه؛ رد/بعداً → پاک */
+      try { if (typeof hkSmsAttFinish === 'function') hkSmsAttFinish(!mode); } catch (eAt) {}
       const m = document.getElementById('smsConfirmModal');
       if (m) m.classList.remove('open');
       var _pe = pendingSmsEntry;
@@ -29416,6 +29468,7 @@ function getProjectBalance(subjectId) {
     function openSmsConfirmModal(parsed) {
       const m = document.getElementById('smsConfirmModal');
       if (!m) return;
+      try { if (typeof hkSmsAttBegin === 'function') hkSmsAttBegin(parsed && parsed.amount); } catch (eAt) {}
       const kind = parsed.type === 'income' ? 'واریز (درآمد)' : 'برداشت (مخارج)';
       const titleEl = document.getElementById('smsConfirmTitle');
       if (titleEl) titleEl.textContent = 'ثبت ' + kind;
@@ -31182,6 +31235,198 @@ function confirmSmsEntry() {
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setup(); syncVoiceClass(); }); else { setup(); syncVoiceClass(); }
       /* بعد از بررسی سرویس گفتار گوشی دوباره (اگر سرویس نبود، آیکون پنهان می‌شود) */
       setTimeout(syncVoiceClass, 3600);
+    })();
+    /* ===== ۱.۳.۳۸: پیوست در منوی ثبت پیامک =====
+       گیرهٔ طوسی داخل فیلد شرح (کنار میکروفون، با خط تفکیک)؛ زدنش پنجرهٔ کوچک رو به بالا: گرفتن عکس / انتخاب از گالری / ضبط صدا.
+       ردیف هنوز ساخته نشده، پس پیوست‌ها همان لحظه در حافظهٔ پیوست ذخیره و «در انتظار» نگه داشته می‌شوند؛
+       با ثبت پیامک به ردیف تازه می‌چسبند و با انصراف/بعداً پاک می‌شوند. پیش‌نمایش‌ها (با ×) زیر شرح */
+    var _smsAtt = { list: [], t0: 0, amt: 0, seen: null };
+    function hkB64Blob(data, mime) {
+      var bin = atob(data || ''), u8 = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      return new Blob([u8], { type: mime || 'image/jpeg' });
+    }
+    function hkMediaPlugin() { return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.HkMedia) || null; }
+    /* عکس از دوربین یا گالری → Blob (اندروید: افزونهٔ HkMedia که خودش کوچک می‌کند؛ مرورگر: input فایل + فشرده‌سازی) */
+    function hkAttGetPhoto(src) {
+      var media = hkMediaPlugin(), fn = media && (src === 'cam' ? media.takePhoto : media.pickImage);
+      if (typeof fn === 'function') return fn.call(media).then(function (res) { if (!res || !res.data) throw new Error('empty'); return hkB64Blob(res.data, res.mime); });
+      return new Promise(function (resolve, reject) {
+        var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; if (src === 'cam') inp.setAttribute('capture', 'environment');
+        inp.style.display = 'none'; document.body.appendChild(inp);
+        inp.onchange = function () {
+          var f = inp.files && inp.files[0]; inp.remove();
+          if (!f) { reject(new Error('cancelled')); return; }
+          HKAttach.compressImage(f).then(resolve, function () { if (/^image\/(jpeg|png|webp)$/i.test(f.type || '') && f.size < 6 * 1048576) resolve(f); else reject(new Error('decode')); });
+        };
+        inp.click();
+      });
+    }
+    /* ضبط صدا: start(onTick) → Promise<{blob, dur}> که با stop() تمام می‌شود */
+    function hkAttRecorder() {
+      var rec = null, stream = null, chunks = [], t0 = 0, tick = 0, done = null, fail = null, media = hkMediaPlugin();
+      return {
+        start: function (onTick) {
+          return new Promise(function (resolve, reject) {
+            done = resolve; fail = reject;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') { showToast('ضبط صدا روی این گوشی پشتیبانی نمی‌شود', 'warn'); reject('nosupport'); return; }
+            var ask = (media && typeof media.micPermission === 'function') ? media.micPermission() : Promise.resolve({ granted: true });
+            ask.then(function (pr) {
+              if (pr && pr.granted === false) {
+                if (pr.blocked && typeof media.openAppSettings === 'function') askConfirm('اجازهٔ میکروفون قبلاً رد شده است. تنظیمات مجوزهای نرم‌افزار باز شود؟', function () { media.openAppSettings().catch(function () {}); });
+                else showToast('اجازهٔ میکروفون داده نشد', 'warn');
+                throw 'denied';
+              }
+              return navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+            }).then(function (st) {
+              stream = st; chunks = [];
+              var mt = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm', 'audio/mp4'].find(function (m) { try { return MediaRecorder.isTypeSupported(m); } catch (e) { return false; } }) || '';
+              try { rec = new MediaRecorder(st, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); } catch (eR) { rec = new MediaRecorder(st); }
+              rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+              rec.onstop = function () {
+                var r0 = rec; rec = null; clearInterval(tick);
+                try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (eS) {}
+                if (r0._cancel || !chunks.length) { fail('cancelled'); return; }
+                done({ blob: new Blob(chunks, { type: (r0.mimeType || mt || 'audio/webm').split(';')[0] }), dur: (performance.now() - t0) / 1000 });
+              };
+              rec.start(1000); t0 = performance.now();
+              var upd = function () { var s2 = Math.floor((performance.now() - t0) / 1000); if (onTick) onTick(s2); if (s2 >= 300) { try { rec.stop(); } catch (e) {} } };
+              upd(); tick = setInterval(upd, 500);
+            }).catch(function (e) { if (e !== 'denied') showToast('میکروفون در دسترس نیست', 'warn'); reject(e); });
+          });
+        },
+        stop: function (cancel) { if (!rec) return; rec._cancel = !!cancel; try { rec.stop(); } catch (e) {} },
+        active: function () { return !!rec; }
+      };
+    }
+    function hkSmsAttRender() {
+      var btn = document.querySelector('#smsConfirmModal .desc-att-btn'), strip = document.getElementById('smsAttStrip');
+      var n = _smsAtt.list.length;
+      if (btn) { btn.classList.toggle('has', n > 0); var nn = btn.querySelector('.desc-att-n'); if (nn) nn.textContent = toPersianDigits(String(n)); }
+      if (!strip) return;
+      (strip._urls || []).forEach(function (u) { URL.revokeObjectURL(u); }); strip._urls = [];
+      strip.innerHTML = '';
+      strip.classList.toggle('on', n > 0);
+      _smsAtt.list.forEach(function (a) {
+        var it = document.createElement('div'); it.className = 'sa-it';
+        if (a.kind === 'aud') {
+          var s2 = Math.round(a.dur || 0);
+          it.innerHTML = HK_ICON_WAVE + '<span>' + toPersianDigits(Math.floor(s2 / 60) + ':' + String(s2 % 60).padStart(2, '0')) + '</span>';
+        } else if (a._blob) {
+          var u = URL.createObjectURL(a._blob); strip._urls.push(u);
+          var im = document.createElement('img'); im.src = u; im.alt = ''; im.onclick = function () { try { hkViewImage(u); } catch (e) {} };
+          it.appendChild(im);
+        }
+        var x = document.createElement('button'); x.type = 'button'; x.className = 'sa-x'; x.textContent = '×'; x.setAttribute('aria-label', 'حذف');
+        x.onclick = function (e) { e.stopPropagation(); _smsAtt.list = _smsAtt.list.filter(function (y) { return y !== a; }); HKAttach.del(a.id).catch(function () {}); hkSmsAttRender(); };
+        it.appendChild(x);
+        strip.appendChild(it);
+      });
+    }
+    function hkSmsAttAdd(kind, blob, extra) {
+      var id = HKAttach.newId();
+      return HKAttach.put(id, blob).then(function () {
+        _smsAtt.list.push(Object.assign({ id: id, kind: kind, size: blob.size, at: Date.now(), _blob: blob }, extra || {}));
+        hkSmsAttRender();
+      }).catch(function () { showToast('ذخیرهٔ پیوست ممکن نشد', 'warn'); });
+    }
+    function hkCloseAttPop() { var p = document.querySelector('.hk-attpop'); if (!p) return false; if (p._rec && p._rec.active()) p._rec.stop(true); p.remove(); return true; }
+    function hkOpenSmsAttPop(anchor) {
+      if (hkCloseAttPop()) return;
+      var pop = document.createElement('div'); pop.className = 'hk-attpop';
+      pop.innerHTML = '<button type="button" data-a="cam">' + HK_ICON_CAM + '<span>گرفتن عکس</span></button>' +
+        '<button type="button" data-a="gal">' + HK_ICON_GAL + '<span>انتخاب از گالری</span></button>' +
+        '<button type="button" data-a="rec">' + HK_ICON_WAVE + '<span>ضبط صدا</span></button>';
+      document.body.appendChild(pop);
+      var r = anchor.getBoundingClientRect();
+      pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.left)) + 'px';
+      pop.style.bottom = Math.max(8, window.innerHeight - r.top + 6) + 'px';
+      requestAnimationFrame(function () { pop.classList.add('in'); });
+      var outside = function (e) {
+        if (!pop.isConnected) { document.removeEventListener('pointerdown', outside, true); return; }
+        if (pop.contains(e.target) || anchor.contains(e.target)) return;
+        if (pop._rec && pop._rec.active()) return;   /* هنگام ضبط فقط با «پایان ضبط» بسته می‌شود */
+        hkCloseAttPop(); document.removeEventListener('pointerdown', outside, true);
+      };
+      setTimeout(function () { document.addEventListener('pointerdown', outside, true); }, 0);
+      pop.querySelectorAll('button').forEach(function (b) {
+        b.onclick = function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var a = b.getAttribute('data-a');
+          if (a === 'rec') {
+            if (pop._rec && pop._rec.active()) { pop._rec.stop(false); return; }
+            pop._rec = hkAttRecorder();
+            var lbl = b.querySelector('span');
+            pop._rec.start(function (s2) { b.classList.add('rec'); lbl.textContent = 'پایان ضبط · ' + toPersianDigits(Math.floor(s2 / 60) + ':' + String(s2 % 60).padStart(2, '0')); })
+              .then(function (res) { pop.remove(); return hkSmsAttAdd('aud', res.blob, { dur: res.dur }); })
+              .catch(function () { b.classList.remove('rec'); lbl.textContent = 'ضبط صدا'; });
+            return;
+          }
+          pop.remove();
+          hkAttGetPhoto(a).then(function (blob) { return hkSmsAttAdd('img', blob); })
+            .catch(function (err) { if (!/cancel/i.test(String((err && (err.message || err.code)) || err || ''))) showToast(a === 'cam' ? 'دوربین باز نشد' : 'خواندن عکس ممکن نشد', 'warn'); });
+        };
+      });
+    }
+    /* باز شدن منوی پیامک: پیوست‌های در انتظارِ قبلی (اگر مانده) پاک؛ ردیف‌های هم‌مبلغِ موجود یادداشت می‌شوند تا ردیف تازه شناخته شود */
+    function hkSmsAttBegin(amount) {
+      hkSmsAttDiscard();
+      _smsAtt.t0 = Date.now(); _smsAtt.amt = Math.round(Number(amount) || 0); _smsAtt.seen = new Set();
+      try { iterAllPeriodData(function (pd) { ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) { if (r) _smsAtt.seen.add(r); }); }); }); }); } catch (e) {}
+      hkSmsAttRender();
+    }
+    function hkSmsAttDiscard() {
+      _smsAtt.list.forEach(function (a) { HKAttach.del(a.id).catch(function () {}); });
+      _smsAtt.list = []; hkSmsAttRender();
+    }
+    /* بسته شدن منوی پیامک: ثبت شد → پیوست‌ها روی ردیف تازه (همان مبلغ، تازه ساخته یا تازه پرداخت‌شده)؛ وگرنه پاک */
+    function hkSmsAttFinish(saved) {
+      hkCloseAttPop();
+      if (!_smsAtt.list.length) return;
+      if (!saved) { hkSmsAttDiscard(); return; }
+      var items = _smsAtt.list.slice(), seen = _smsAtt.seen || new Set(), t0 = _smsAtt.t0;
+      var amtInp = document.getElementById('smsConfirmAmount');
+      var amt = Math.round((amtInp && parseAmount(amtInp.value)) || _smsAtt.amt || 0);
+      _smsAtt.list = []; hkSmsAttRender();
+      var tries = 0;
+      var tryAttach = function () {
+        var best = null, score = -1;
+        iterAllPeriodData(function (pd) { ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
+          if (!r || r.deletedAt || Math.round(Number(r.amount) || 0) !== amt) return;
+          var fresh = Math.max(Number(r.createdAt) || 0, Number(r.updatedAt) || 0) >= t0, isNew = !seen.has(r);
+          if (!fresh && !isNew) return;
+          var sc2 = (r.viaSms ? 4 : 0) + (fresh ? 2 : 0) + (isNew ? 1 : 0);
+          if (sc2 > score) { score = sc2; best = r; }
+        }); }); }); });
+        if (!best) {
+          if (++tries < 3) { setTimeout(tryAttach, 800); return; }
+          items.forEach(function (a) { HKAttach.del(a.id).catch(function () {}); });
+          showToast('ردیف ثبت‌شده پیدا نشد؛ پیوست‌ها ذخیره نشدند', 'warn');
+          return;
+        }
+        if (!Array.isArray(best.att)) best.att = [];
+        items.forEach(function (a) { var c = Object.assign({}, a); delete c._blob; best.att.push(c); });
+        try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e) {}
+        try { renderAll(); } catch (e2) {}
+      };
+      setTimeout(tryAttach, 0);
+    }
+    (function () {
+      function setupAtt() {
+        var inp = document.getElementById('smsConfirmDesc'), w = inp && inp._micWrap;
+        if (!w || w._attBtn) return;
+        var sep = document.createElement('span'); sep.className = 'desc-att-sep';
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'desc-att-btn'; b.setAttribute('aria-label', 'پیوست'); b.title = 'پیوست';
+        b.innerHTML = HK_CLIP_SVG + '<span class="desc-att-n"></span>';
+        w.appendChild(sep); w.appendChild(b); w._attBtn = b;
+        var strip = document.createElement('div'); strip.id = 'smsAttStrip';
+        w.parentNode.insertBefore(strip, w.nextSibling);
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); hkOpenSmsAttPop(b); });
+        hkSmsAttRender();
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(setupAtt, 0); }); else setTimeout(setupAtt, 0);
+      setTimeout(setupAtt, 1500);
     })();
     /* امنیت: پیامک «بانکی» که از یک شمارهٔ موبایل شخصی آمده احتمالاً جعلی است (بانک‌ها با سرشماره/نام می‌فرستند).
        موبایل ایران: 9 و بعد 0 تا 4 یا 9 (۰۹۰x، ۰۹۱x، ۰۹۲x، ۰۹۳x، ۰۹۴x، ۰۹۹x). سرشمارهٔ خدماتی با پیش‌شمارهٔ کشور
@@ -40404,6 +40649,7 @@ function openProjectRowPicker(secId) {
       /* جزئیات ماه (روی منوی جستجو) و نمای تمام‌صفحهٔ عکس پیوست */
       try { if (document.getElementById('hkImgView')) { document.getElementById('hkImgView').remove(); return; } if (bsCloseMonthDetail()) return; } catch (eMd) {}
       /* پنجره‌های تکراری‌های قبلی / ترمیم قسط / پیوست‌ها (روی ثبت گروهی و جدول‌ها): فقط همان پنجره بسته شود */
+      try { if (typeof hkCloseAttPop === 'function' && hkCloseAttPop()) return; } catch (eAp) {}
       try { var _dov = document.getElementById('hkShareOv') || document.getElementById('hkDupOv') || document.getElementById('hkInstRepOv'); if (_dov) { var _cl = _dov.querySelector('.hk-bulk-close'); if (_cl) _cl.click(); else _dov.remove(); return; } } catch (eDov) {}
       try { if (document.getElementById('hkAttachOv')) { hkCloseAttach(); return; } } catch (eAtt) {}
       try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
@@ -41820,6 +42066,47 @@ function openProjectRowPicker(secId) {
       };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
       setTimeout(init, 800);
+    })();
+    /* ===== ۱.۳.۳۸: جمع و باز شدن کادر جستجو با اسکرول =====
+       جمع: نتیجه هست، اسکرول رو به پایین (صفحه یا جدول بلند) و بعد از جمع شدن هنوز جا برای اسکرول هست (وگرنه باز/بسته پشت سر هم).
+       باز: برگشت به بالای همه‌چیز. در طول انیمیشن تصمیم تازه گرفته نمی‌شود. */
+    var hkSearchCollapse = (function () {
+      var st = { c: false, lock: 0, last: 0 };
+      var hdr = function () { return document.getElementById('balanceFixedHeader'); };
+      function set(c) {
+        var h = hdr(); if (!h) return;
+        if (st.c === c) return;
+        st.c = c; st.lock = performance.now() + 340;
+        /* جای خالیِ موقت زیر جدول به اندازهٔ جمع شدن کادر: صفحه کوتاه نمی‌شود، پس اسکرول سر جایش می‌ماند و کادر دوباره باز نمی‌شود */
+        var body = document.getElementById('balanceScrollBody');
+        if (body) {
+          if (c) { var desc = h.querySelector('.bsr-desc'); body.style.setProperty('padding-bottom', (56 + Math.max(0, h.offsetHeight - (desc ? desc.offsetHeight : 0) - 30)) + 'px', 'important'); }
+          else body.style.removeProperty('padding-bottom');
+        }
+        h.classList.toggle('bsr-collapsed', c);
+        if (c) { try { document.querySelectorAll('.dark-select-list.open, .fancy-select-list.open').forEach(function (l) { l.classList.remove('open'); }); document.querySelectorAll('.fancy-select-wrap.is-open').forEach(function (w) { w.classList.remove('is-open'); }); } catch (e) {} }
+      }
+      function onScroll(e) {
+        var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll');
+        if (!p || (e && e.target !== p && e.target !== inner)) return;
+        if (!document.body.classList.contains('search-open')) { set(false); return; }
+        var innerOn = !!(inner && inner.classList.contains('on'));
+        var top = p.scrollTop + (innerOn ? inner.scrollTop : 0), down = top > st.last;
+        st.last = top;
+        if (performance.now() < st.lock) return;
+        if (!st.c) {
+          if (!down || top <= 6 || !document.querySelector('#search-result-body tr:not(.sr-wait)')) return;
+          set(true);
+        } else if (top <= 2) set(false);
+      }
+      document.addEventListener('scroll', onScroll, true);
+      document.addEventListener('click', function (e) {
+        var b = e.target && e.target.closest && e.target.closest('#balanceFixedHeader .bsr-handle'); if (!b) return;
+        var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll');
+        try { if (inner) inner.scrollTo({ top: 0, behavior: 'smooth' }); p.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e2) { if (inner) inner.scrollTop = 0; p.scrollTop = 0; }
+        setTimeout(function () { set(false); }, 360);
+      });
+      return set;
     })();
     /* ===== سرچ باکس: جستجوی شرح در همهٔ ماه‌ها (با فیلتر بخش و حساب همین صفحه) ===== */
     /* دسته و بازهٔ زمانی جستجو */
