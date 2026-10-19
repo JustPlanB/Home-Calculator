@@ -3969,9 +3969,6 @@
       text-align: right;
       pointer-events: auto;
     }
-    .cell-text-popup.hk-time-pop { text-align: center; overflow: visible; }
-    .hk-time-pop .hk-time-btn { display: block; margin: 8px auto 0; padding: 5px 14px; border-radius: 8px; border: 1px solid rgba(10,132,255,0.55); background: rgba(10,132,255,0.16); color: #4da3ff; font: inherit; font-size: 0.82rem; cursor: pointer; }
-    .hk-time-pop .hk-time-inp { position: absolute; left: 50%; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; }
     /* فاصله پویا بین باکس اسامی و فیلتر روز در مانده */
     #panel-balance .balance-fixed-header .filter-bar {
       display: flex;
@@ -10192,7 +10189,8 @@
     .voice-overlay .vo-ring.vo-bars i { display: none; }
     .voice-overlay .vo-mic.vo-bars { width: 200px; height: 140px; border-radius: 16px; background: none !important; box-shadow: none !important; transform: none !important; }
     .vo-mic svg.vo-wave { width: 180px; height: 120px; overflow: visible; }
-    .vo-wave rect { transform-box: fill-box; transform-origin: center; transition: transform 0.16s ease-in-out; }
+    /* ۱.۳.۴۱: خط‌های باریک‌تر با سر کاملاً گرد (ارتفاع عوض می‌شود نه scale، پس گردی سرها نمی‌شکند)؛ حرکت نرم و آهسته */
+    .vo-wave rect { transition: height 0.42s cubic-bezier(0.45, 0, 0.55, 1), y 0.42s cubic-bezier(0.45, 0, 0.55, 1); }
     .vo-wave rect:nth-child(odd) { fill: #2f9bff; }
     .vo-wave rect:nth-child(even) { fill: #7cc4ff; }
     .voice-overlay.err .vo-wave rect { fill: #8e8e93 !important; }
@@ -10761,9 +10759,10 @@
     html.hk-voice .desc-mic-wrap > .desc-att-sep { display: block; }
     .desc-mic-wrap > #smsConfirmDesc { padding-left: 44px !important; }
     html.hk-voice .desc-mic-wrap > #smsConfirmDesc { padding-left: 84px !important; }
-    .hk-attpop { position: fixed; z-index: 100600; min-width: 172px; padding: 6px 0; border-radius: 12px; background: var(--card, #1c1c1e); border: 1px solid var(--border, rgba(255,255,255,0.16)); box-shadow: 0 10px 28px rgba(0,0,0,0.5); direction: rtl; transform-origin: 20% 100%; opacity: 0; transform: translateY(8px) scale(0.96); transition: opacity 0.16s ease, transform 0.18s ease; }
+    /* ۱.۳.۴۱: باریک (مستطیل عمودی) و همیشه چسبیده به گیره (با باز/بسته شدن کیبورد هم) */
+    .hk-attpop { position: fixed; z-index: 100600; width: max-content; min-width: 0; padding: 4px 0; border-radius: 12px; background: var(--card, #1c1c1e); border: 1px solid var(--border, rgba(255,255,255,0.16)); box-shadow: 0 10px 28px rgba(0,0,0,0.5); direction: rtl; transform-origin: 20% 100%; opacity: 0; transform: translateY(8px) scale(0.96); transition: opacity 0.16s ease, transform 0.18s ease; }
     .hk-attpop.in { opacity: 1; transform: none; }
-    .hk-attpop button { direction: rtl; justify-content: flex-start; display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 14px; border: 0; background: none; color: var(--text); font-family: inherit; font-size: 0.9rem; font-weight: 700; text-align: right; cursor: pointer; }
+    .hk-attpop button { direction: rtl; justify-content: flex-start; display: flex; align-items: center; gap: 9px; width: 100%; padding: 12px 16px 12px 18px; white-space: nowrap; border: 0; background: none; color: var(--text); font-family: inherit; font-size: 0.9rem; font-weight: 700; text-align: right; cursor: pointer; }
     .hk-attpop button + button { border-top: 1px solid var(--border, rgba(255,255,255,0.08)); }
     .hk-attpop button .hk-ico { color: var(--muted, #8e8e93); width: 18px; height: 18px; }
     .hk-attpop button.rec { color: #ff453a; }
@@ -11766,28 +11765,6 @@
       if (last) return ('0' + last[1]).slice(-2) + ':' + last[2];
       if (ts > 0) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
       return '';
-    }
-    /* دکمهٔ «تغییر ساعت» زیر باکس ساعتِ خانهٔ روز: انتخاب‌گر ساعت سیستم؛ با انتخاب، ساعت ردیف عوض و ترتیب روز دوباره چیده می‌شود */
-    function hkTimePickBtn(pop, row, done) {
-      if (!pop || !row) return;
-      pop.classList.add('hk-time-pop');
-      var b = document.createElement('button'), inp = document.createElement('input');
-      b.type = 'button'; b.className = 'hk-time-btn'; b.textContent = row.time ? 'تغییر ساعت' : 'افزودن ساعت';
-      inp.type = 'time'; inp.className = 'hk-time-inp'; inp.value = row.time || ''; inp.tabIndex = -1;
-      inp.addEventListener('change', function () {
-        var v = String(inp.value || '').slice(0, 5);
-        if (!/^\d\d:\d\d$/.test(v)) return;
-        row.time = v; row.updatedAt = Date.now();
-        try { pop.remove(); } catch (e) {}
-        try { done && done(); } catch (e2) {}
-      });
-      b.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        try { if (typeof inp.showPicker === 'function') { inp.showPicker(); return; } } catch (e) {}
-        try { inp.focus(); inp.click(); } catch (e3) {}
-      });
-      pop.appendChild(b); pop.appendChild(inp);
-      try { var pr = pop.getBoundingClientRect(), vh = window.innerHeight; if (pr.bottom > vh - 8) pop.style.top = Math.max(8, vh - 8 - pr.height) + 'px'; } catch (eR) {}
     }
     /* فقط داخل هر دنبالهٔ پشت‌سرهمِ هم‌روز به ترتیب ساعت (ترتیب روزها و ردیف‌های دیگر دست نمی‌خورد) */
     function hkSortRunsByTime(rows) {
@@ -26201,7 +26178,7 @@ async function openPdfPrintWindow(){
         '<div class="hk-att-actions">' +
           '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>' + HK_ICON_CAM + '<span class="hk-att-lbl">دوربین</span></label>' +
           '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>' + HK_ICON_GAL + '<span class="hk-att-lbl">گالری</span></label>' +
-          '<button type="button" class="hk-att-btn hk-att-rec">' + HK_ICON_WAVE + '<span class="hk-att-lbl">ضبط صدا</span></button>' +
+          '<button type="button" class="hk-att-btn hk-att-rec">' + HK_ICON_WAVE + '<span class="hk-att-lbl">صدا</span></button>' +
         '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
       document.body.appendChild(ov);
@@ -26342,7 +26319,7 @@ async function openPdfPrintWindow(){
           rec.onstop = function () {
             var r0 = rec; rec = null; clearInterval(tick);
             try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (eS) {}
-            recBtn.classList.remove('on'); recBtn.querySelector('.hk-att-lbl').textContent = 'ضبط صدا';
+            recBtn.classList.remove('on'); recBtn.querySelector('.hk-att-lbl').textContent = 'صدا';
             if (r0._cancel || !chunks.length) return;
             var dur = (performance.now() - t0) / 1000;
             addBlob('aud', new Blob(chunks, { type: (r0.mimeType || mt || 'audio/webm').split(';')[0] }), { dur: dur });
@@ -26648,7 +26625,7 @@ container.innerHTML = '';
             return;
           }
           /* روز پر: فقط ساعت تراکنش در باکس شناور (روز خودش در خانه هست) */
-          if (dayInp.readOnly && !row.reconGap) { try { const pp = showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); if (pp) hkTimePickBtn(pp, row, sortAndRebuild); } catch (eP) {} }
+          if (dayInp.readOnly && !row.reconGap) { try { showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); } catch (eP) {} }
         };
         dayInp.ondblclick = () => {
           if (preApp) return;
@@ -31150,10 +31127,10 @@ function confirmSmsEntry() {
     var VO_BARS = 9;
     function _voiceWaveSvg() {
       var out = '<svg class="vo-wave" viewBox="0 0 172 120" aria-hidden="true">';
-      for (var i = 0; i < VO_BARS; i++) out += '<rect x="' + (i * 20) + '" y="0" width="12" height="120" rx="6" style="transform:scaleY(0.3)"/>';
+      for (var i = 0; i < VO_BARS; i++) out += '<rect x="' + (i * 20 + 2) + '" y="42" width="8" height="36" rx="4" style="height:36px;y:42px"/>';
       return out + '</svg>';
     }
-    /* هر ۱۶۰ میلی‌ثانیه ارتفاع تازهٔ هر خط (تصادفی، مستقل)؛ شدت صدا (۰ تا ۱) سقفش را بالا می‌برد؛ در سکوت موج آرام */
+    /* هر ۳۴۰ میلی‌ثانیه ارتفاع تازهٔ هر خط (تصادفی، مستقل، نیمی از ارتفاع قبلی را نگه می‌دارد تا نرم باشد)؛ شدت صدا (۰ تا ۱) سقفش را بالا می‌برد */
     function _voiceWave(level) {
       if (_voice.el) _voice.level = level;
     }
@@ -31162,8 +31139,9 @@ function confirmSmsEntry() {
       if (_voice.el.classList.contains('err')) return;
       var lv = Math.max(0, Math.min(1, _voice.level || 0)), rs = _voice.el.querySelectorAll('.vo-wave rect');
       for (var i = 0; i < rs.length; i++) {
-        var lo = 0.14 + lv * 0.25, hi = 0.38 + lv * 0.62;
-        rs[i].style.transform = 'scaleY(' + (lo + Math.random() * (hi - lo)).toFixed(2) + ')';
+        var lo = 0.12 + lv * 0.25, hi = 0.36 + lv * 0.64, prev = parseFloat(rs[i].style.height) || 36;
+        var h = Math.max(8, Math.round(((lo + Math.random() * (hi - lo)) * 120 + prev) / 2));
+        rs[i].style.height = h + 'px'; rs[i].style.y = ((120 - h) / 2) + 'px';
       }
     }
     /* فیلتر کلمات نامناسبِ سرویس گفتار گوشی‌های قدیمی‌تر «سوپر» را «س***» می‌نویسد؛ کلمه‌های رایجِ ستاره‌دار برگردانده می‌شوند */
@@ -31186,7 +31164,7 @@ function confirmSmsEntry() {
       document.body.appendChild(el);
       _voice.el = el;
       requestAnimationFrame(function () { el.classList.add('on'); });
-      _voice.level = 0; clearInterval(_voice.waveT); _voice.waveT = setInterval(_voiceWaveTick, 160); _voiceWaveTick();
+      _voice.level = 0; clearInterval(_voice.waveT); _voice.waveT = setInterval(_voiceWaveTick, 340); _voiceWaveTick();
       el.querySelector('.vo-mic').onclick = function () { try { P.stop().catch(function () {}); } catch (e) {} _voiceStatus('در حال تبدیل به متن…'); };
       el.querySelector('.vo-kb').onclick = function () { closeVoiceInput(true); };
       var add = function (ev, fn) { try { Promise.resolve(P.addListener(ev, fn)).then(function (h) { if (_voice.open) _voice.listeners.push(h); else try { h.remove(); } catch (e) {} }); } catch (e) {} };
@@ -31429,11 +31407,24 @@ function confirmSmsEntry() {
       var pop = document.createElement('div'); pop.className = 'hk-attpop';
       pop.innerHTML = '<button type="button" data-a="cam">' + HK_ICON_CAM + '<span>دوربین</span></button>' +
         '<button type="button" data-a="gal">' + HK_ICON_GAL + '<span>گالری</span></button>' +
-        '<button type="button" data-a="rec">' + HK_ICON_WAVE + '<span>ضبط صدا</span></button>';
+        '<button type="button" data-a="rec">' + HK_ICON_WAVE + '<span>صدا</span></button>';
       document.body.appendChild(pop);
-      var r = anchor.getBoundingClientRect();
-      pop.style.left = Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.left)) + 'px';
-      pop.style.bottom = Math.max(8, window.innerHeight - r.top + 6) + 'px';
+      /* جای پنجره هر فریم از روی خود گیره: کیبورد باز/بسته شود یا منو جابه‌جا شود، پنجره همراه گیره می‌ماند
+         (بالای گیره؛ اگر بالا جا نبود، زیرش) */
+      var place = function () {
+        if (!pop.isConnected) return;
+        if (!anchor.isConnected) { hkCloseAttPop(); return; }
+        var r = anchor.getBoundingClientRect(), vv = window.visualViewport, vt = vv ? vv.offsetTop : 0, vh = vv ? vv.height : window.innerHeight;
+        var w = pop.offsetWidth, h = pop.offsetHeight;
+        var left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+        var top = r.top - h - 6;
+        if (top < vt + 8) top = Math.min(r.bottom + 6, vt + vh - h - 8);
+        var L = Math.round(left) + 'px', T = Math.round(top) + 'px';
+        if (pop.style.left !== L) pop.style.left = L;
+        if (pop.style.top !== T) pop.style.top = T;
+        requestAnimationFrame(place);
+      };
+      place();
       requestAnimationFrame(function () { pop.classList.add('in'); });
       var outside = function (e) {
         if (!pop.isConnected) { document.removeEventListener('pointerdown', outside, true); return; }
@@ -31452,7 +31443,7 @@ function confirmSmsEntry() {
             var lbl = b.querySelector('span');
             pop._rec.start(function (s2) { b.classList.add('rec'); lbl.textContent = 'پایان ضبط · ' + toPersianDigits(Math.floor(s2 / 60) + ':' + String(s2 % 60).padStart(2, '0')); })
               .then(function (res) { pop.remove(); return hkSmsAttAdd('aud', res.blob, { dur: res.dur }); })
-              .catch(function () { b.classList.remove('rec'); lbl.textContent = 'ضبط صدا'; });
+              .catch(function () { b.classList.remove('rec'); lbl.textContent = 'صدا'; });
             return;
           }
           pop.remove();

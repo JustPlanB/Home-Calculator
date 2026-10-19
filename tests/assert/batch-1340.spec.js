@@ -1,5 +1,5 @@
 // نسخهٔ ۱.۳.۴۰: ساعت پیامک همان لحظهٔ ساختن ردیف روی ردیف می‌نشیند (پیوست هم مستقیم)، ساعت ردیف‌های قبلی + ترتیب ساعتی،
-// ردیف دستیِ امروز ساعت می‌گیرد و از خانهٔ روز «تغییر ساعت» دارد، ردیف‌های جمع چسبان و مات با خط‌های لب‌به‌لب، «جمع مخارج»،
+// ردیف دستیِ امروز ساعت می‌گیرد (خانهٔ روز فقط ساعت را نشان می‌دهد)، ردیف‌های جمع چسبان و مات با خط‌های لب‌به‌لب، «جمع مخارج»،
 // سرهای محور مبلغ زیر محور، و جمع نشدن کادر جستجو برای فهرست کوتاه. فقط دادهٔ مصنوعی.
 const { chromium } = require('playwright');
 const INDEX = require('../lib/index-url');
@@ -53,7 +53,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
   });
   ok(bf.n === 1 && bf.order === 'بی‌ساعت:08:10،ساعت‌دار:09:00', 'ردیف قبلی ساعت پیامکش را گرفت و روز به ترتیب ساعت چیده شد (' + bf.order + ')');
 
-  console.log('• ردیف دستی امروز و «تغییر ساعت»');
+  console.log('• ردیف دستی امروز و باکس ساعت');
   const mt = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const sec = periodData.expense.sections[0];
@@ -67,23 +67,17 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     const out = { auto: manual && manual.time };
     try { renderPersonDetailPanel('expense', sec.title); } catch (e) {}
     await w(200);
-    /* خانهٔ روز ردیف «صبح»: باکس ساعت + دکمهٔ تغییر ساعت */
+    /* خانهٔ روز ردیف «صبح»: فقط باکس ساعت (۱.۳.۴۱: دکمهٔ تغییر ساعت برداشته شد) */
     const idx = sec.rows.findIndex(r => r.desc === 'صبح');
     dayInputs()[idx].click(); await w(150);
     const pop = document.querySelector('.cell-text-popup');
-    out.pop = pop ? pop.firstChild.textContent : '';
-    out.btn = pop && pop.querySelector('.hk-time-btn') ? pop.querySelector('.hk-time-btn').textContent : '';
-    const ti = pop && pop.querySelector('input.hk-time-inp');
-    if (ti) { ti.value = '23:30'; ti.dispatchEvent(new Event('change')); }
-    await w(300);
-    out.after = sec.rows.filter(r => String(r.day) === '21').map(r => (r.desc || 'دستی') + ':' + r.time).join('،');
-    out.popGone = !document.querySelector('.cell-text-popup');
+    out.pop = pop ? pop.textContent : '';
+    out.noBtn = !!pop && !pop.querySelector('button, input');
     try { closePersonDetail(); } catch (e) {}
     return out;
   });
   ok(/^\d\d:\d\d$/.test(mt.auto || '') && mt.auto === '12:30', 'ردیف دستی با روز امروز ساعت همین لحظه را گرفت (' + mt.auto + ')');
-  ok(mt.pop === 'ساعت ۰۸:۰۰' && mt.btn === 'تغییر ساعت', 'زدن خانهٔ روز: «ساعت ۰۸:۰۰» و دکمهٔ «تغییر ساعت»');
-  ok(mt.after === 'دستی:12:30،صبح:23:30' && mt.popGone, 'انتخاب ساعت تازه: ساعت ردیف عوض شد و روز دوباره به ترتیب ساعت چیده شد (' + mt.after + ')');
+  ok(mt.pop === 'ساعت ۰۸:۰۰' && mt.noBtn, 'زدن خانهٔ روز: فقط «ساعت ۰۸:۰۰» (بدون دکمهٔ تغییر ساعت)');
 
   console.log('• ردیف‌های جمع جدول نتیجه');
   const ft = await p.evaluate(async () => {
