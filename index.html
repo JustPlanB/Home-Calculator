@@ -10716,6 +10716,11 @@
     #hkShareOv { z-index: 100125; }
     .hk-share-new { width: 100%; margin: 4px 0 8px; padding: 10px; border-radius: 10px; border: 1px dashed #0a84ff; background: none; color: #0a84ff; font-family: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer; }
     .hk-share-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+    /* ۱.۳.۴۲: تراکنش‌های ثبت‌نشده بالای فهرست (اولی برجسته)، «نگه دار تا پیامک بیاید» */
+    .hk-share-sub { margin: 8px 2px 6px; font-size: 0.78rem; font-weight: 800; color: var(--muted, #8e8e93); text-align: right; }
+    .hk-share-unreg { display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+    .hk-share-row.hk-share-u.first { border-color: #0a84ff; box-shadow: 0 0 0 1px rgba(10,132,255,0.5) inset; }
+    .hk-share-keep { width: 100%; margin: 8px 0 4px; padding: 10px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.18)); background: none; color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
     .hk-share-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.14)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; font-size: 0.84rem; text-align: right; cursor: pointer; direction: rtl; }
     .hk-share-row .hk-sr-d { flex: 0 0 auto; color: var(--muted); font-size: 0.76rem; min-width: 52px; }
     .hk-share-row .hk-sr-t { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -11758,9 +11763,20 @@
       if (ta && tb) return ta < tb ? -1 : ta > tb ? 1 : 0;
       return ta ? -1 : tb ? 1 : 0;
     }
+    /* ۱.۳.۴۲: پیامک‌های چندبخشیِ قدیمی (تا ۱.۳.۴۱) که گیرندهٔ اندروید تکه‌هایشان را با «\n» وصل می‌کرد: پیامک فارسی
+       هر ۶۷ نویسه یک تکه است، پس «0727-17:33» گاهی «0727-1⏎7:33» ذخیره شده. «\n» سرِ مرز تکه‌ها فقط وقتی برداشته می‌شود
+       که با برداشتنش تاریخ/ساعت کامل (مثل MMDD-HH:MM یا YY/MM/DD-HH:MM) پیدا شود و قبلاً نبود (متن سالم دست نمی‌خورد) */
+    function hkSmsUnsplit(raw) {
+      var HK_SMS_DT_RE = /\d{4}\s*[-–]\s*\d{1,2}:\d{2}|\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[-–]\s*\d{1,2}:\d{2}/;
+      var s = String(raw || '');
+      if (s.length < 69 || s.indexOf('\n') < 0 || HK_SMS_DT_RE.test(toEnglishDigits(s))) return s;
+      var out = '', i = 0;
+      while (i < s.length) { out += s.slice(i, i + 67); i += 67; if (s.charAt(i) === '\n') i++; }
+      return out !== s && HK_SMS_DT_RE.test(toEnglishDigits(out)) ? out : s;
+    }
     /* ساعت از متن پیامک (مثل «0520-10:00») وگرنه از زمان رسیدن پیامک؛ خروجی «HH:MM» */
     function hkSmsTime(body, ts) {
-      var t = toEnglishDigits(String(body || '')), m, last = null, re = /(?:^|[^\d:])([01]?\d|2[0-3])[:٫.]([0-5]\d)(?::[0-5]\d)?(?![\d:])/g;
+      var t = toEnglishDigits(hkSmsUnsplit(String(body || ''))), m, last = null, re = /(?:^|[^\d:])([01]?\d|2[0-3])[:٫.]([0-5]\d)(?::[0-5]\d)?(?![\d:])/g;
       while ((m = re.exec(t))) last = m;
       if (last) return ('0' + last[1]).slice(-2) + ':' + last[2];
       if (ts > 0) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
@@ -21069,11 +21085,14 @@ async function openPdfPrintWindow(){
       var h1 = el.getBoundingClientRect().height;
       if (Math.abs(h1 - h0) < 1) return;
       if (!open) { setOpen(true); el.classList.add('hk-shutting'); } else el.classList.remove('hk-shutting');
-      var ov = el.style.overflow;
-      el.style.overflow = 'hidden';
+      /* ۱.۳.۴۲: overflow با !important (بعضی باکس‌ها مثل قرض در CSS «overflow: visible !important» دارند و محتوای در حال
+         باز/بسته شدن از باکس بیرون می‌زد و روی باکس بعدی می‌افتاد) */
+      var ov = el.style.getPropertyValue('overflow'), ovp = el.style.getPropertyPriority('overflow');
+      var restore = function () { el.style.removeProperty('overflow'); if (ov) el.style.setProperty('overflow', ov, ovp); };
+      el.style.setProperty('overflow', 'hidden', 'important');
       var a = el._hkHA = el.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 450, easing: 'ease' });
-      a.onfinish = function () { el._hkHA = null; el.style.overflow = ov; el.classList.remove('hk-shutting'); if (!open) setOpen(false); };
-      a.oncancel = function () { el._hkHA = null; el.style.overflow = ov; el.classList.remove('hk-shutting'); };
+      a.onfinish = function () { el._hkHA = null; restore(); el.classList.remove('hk-shutting'); if (!open) setOpen(false); };
+      a.oncancel = function () { el._hkHA = null; restore(); el.classList.remove('hk-shutting'); };
     }
     /* باز/بسته شدن نرمِ چند بخش داخلی (به‌جای کل باکس): ارتفاع، فاصله‌ها و خط‌ها همه با هم به صفر می‌رسند تا
        لحظهٔ آخر هیچ چیزی نپرد. gap = فاصلهٔ flex قبل از بخش (با حاشیهٔ منفی جمع می‌شود). */
@@ -21086,9 +21105,9 @@ async function openPdfPrintWindow(){
       if (!parts.length) { setOpen(open); return; }
       if (!open) host.classList.add('hk-shutting'); else host.classList.remove('hk-shutting');
       var left = parts.length, finished = false;
-      var cleanOne = function (p) { ['overflow', 'boxSizing', 'height', 'paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth', 'marginTop', 'marginBottom'].forEach(function (k) { p.style[k] = ''; }); };
+      var cleanOne = function (p) { p.style.removeProperty('overflow'); ['boxSizing', 'height', 'paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth', 'marginTop', 'marginBottom'].forEach(function (k) { p.style[k] = ''; }); };
       parts.forEach(function (p) {
-        p.style.overflow = 'hidden'; p.style.boxSizing = 'border-box';
+        p.style.setProperty('overflow', 'hidden', 'important'); p.style.boxSizing = 'border-box';
         var cs = getComputedStyle(p);
         var full = { height: p.getBoundingClientRect().height + 'px', paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, borderTopWidth: cs.borderTopWidth, borderBottomWidth: cs.borderBottomWidth, marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: 1 };
         var zero = { height: '0px', paddingTop: '0px', paddingBottom: '0px', borderTopWidth: '0px', borderBottomWidth: '0px', marginTop: (gap ? -gap : 0) + 'px', marginBottom: '0px', opacity: 0 };
@@ -26110,16 +26129,62 @@ async function openPdfPrintWindow(){
       out.sort(function (a, b) { return (b.d - a.d) || (b.t < a.t ? -1 : b.t > a.t ? 1 : 0); });
       return out.slice(0, 40);
     }
+    /* ۱.۳.۴۲: تراکنش‌های ثبت‌نشده برای پیوست رسید: منوی ثبتِ بازِ همین الان، صف پیامک‌های رسیده و «پیامک‌های ثبت‌نشده»؛
+       تازه‌ترین (نزدیک‌ترین به لحظهٔ اشتراک‌گذاری) اول */
+    function hkShareUnreg() {
+      var out = [], seen = {};
+      var push = function (src, e, x) {
+        var raw = String((e && e.raw) || (x && x.raw) || '').trim(); if (!raw || seen[raw]) return; seen[raw] = 1;
+        var pr = e && e.amount ? e : null; if (!pr) { try { pr = parseBankSms(raw); } catch (eP) {} }
+        if (!pr || !pr.amount) return;
+        var at = Number((e && (e.ts || e.date || e._laterAt)) || (x && x.at)) || 0;
+        out.push({ src: src, e: e, x: x, raw: raw, pr: pr, at: at, time: hkSmsTime(raw, at) });
+      };
+      try { if (isSmsConfirmOpen() && pendingSmsEntry) push('open', pendingSmsEntry, null); } catch (e0) {}
+      (smsPendingQueue || []).forEach(function (e) { push('queue', e, null); });
+      smsLaterLoad().forEach(function (x) { push('later', null, x); });
+      /* ترتیب با زمانِ خود تراکنش (روز و ساعت داخل پیامک)؛ تازه‌ترین اول */
+      var key = function (u) { var hm = /^(\d\d):(\d\d)$/.exec(u.time || ''); return (parseInt(u.pr.month, 10) || 0) * 50000 + (parseInt(u.pr.day, 10) || 0) * 1440 + (hm ? +hm[1] * 60 + +hm[2] : 0); };
+      var rest = out.filter(function (u) { return u.src !== 'open'; }).sort(function (a, b) { return (key(b) - key(a)) || (b.at - a.at); });
+      return out.filter(function (u) { return u.src === 'open'; }).concat(rest);
+    }
+    function hkShareBlobs(items) {
+      return items.map(function (x) {
+        var bin = atob(x.data || ''), u8 = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        return { blob: new Blob([u8], { type: x.mime || 'image/jpeg' }), pdf: !!x.pdf };
+      });
+    }
+    /* رسید → منوی ثبت همان تراکنش (رسید زیر شرح؛ با «ثبت» هم تراکنش و هم پیوست ثبت می‌شود) */
+    function hkShareToUnreg(u, items) {
+      var add = function () {
+        hkShareBlobs(items).forEach(function (b) { hkSmsAttAdd('img', b.blob, { src: b.pdf ? 'pdf' : 'share' }); });
+        try { showToast('رسید زیر شرح پیوست شد؛ شرح را بنویسید و «ثبت» را بزنید'); } catch (e) {}
+      };
+      if (u.src === 'open' && isSmsConfirmOpen() && pendingSmsEntry === u.e) { add(); return; }
+      if (u.src === 'queue') { var qi = smsPendingQueue.indexOf(u.e); if (qi >= 0) smsPendingQueue.splice(qi, 1); }
+      /* منوی تراکنش دیگری باز است: آن تراکنش در «پیامک‌های ثبت‌نشده» می‌ماند */
+      if (isSmsConfirmOpen()) closeSmsConfirmModal('later');
+      if (u.src === 'later') smsLaterOpen(u.x);
+      else { pendingSmsEntry = u.e; openSmsConfirmModal(u.e); }
+      setTimeout(add, 120);
+    }
     function hkOpenSharePicker(items) {
       var old = document.getElementById('hkShareOv'); if (old) old.remove();
-      var rows = hkShareRows();
+      var rows = hkShareRows(), unreg = hkShareUnreg();
       var ov = document.createElement('div'); ov.id = 'hkShareOv'; ov.className = 'hk-bulk-ov hk-bulk-center';
       var nPdf = items.filter(function (x) { return x.pdf; }).length, nImg = items.length - nPdf;
       var what = [nImg ? toPersianDigits(String(nImg)) + ' عکس' : '', nPdf ? toPersianDigits(String(nPdf)) + ' PDF (صفحهٔ اول)' : ''].filter(Boolean).join(' و ');
       var size = items.reduce(function (t, x) { return t + Math.round((x.data || '').length * 3 / 4); }, 0);
       ov.innerHTML = '<div class="hk-bulk-box"><div class="hk-bulk-title">پیوست به کدام ردیف؟</div>' +
         '<div class="hk-bulk-hint">' + what + ' · حجم کم‌شده: ' + hkFmtSize(size) + '</div>' +
+        (unreg.length ? '<div class="hk-share-sub">' + (unreg.length > 1 ? toPersianDigits(String(unreg.length)) + ' تراکنش ثبت‌نشده' : 'تراکنش ثبت‌نشده') + '</div><div class="hk-share-unreg">' + unreg.map(function (u, i) {
+          var inc = u.pr.type === 'income', bank = String(u.pr.bank || '').replace(/^بانک\s*/, '');
+          return '<button type="button" class="hk-share-row hk-share-u' + (i === 0 ? ' first' : '') + '" data-u="' + i + '"><span class="hk-sr-d">' + (u.time ? toPersianDigits(u.time) : '—') + '</span><span class="hk-sr-t">' + escapeHtml((inc ? 'واریز' : 'برداشت') + (bank ? ' · ' + bank : '')) + '</span><span class="hk-sr-a ' + (inc ? 'inc' : 'exp') + '">' + formatNum(Number(u.pr.amount) || 0) + '</span></button>';
+        }).join('') + '</div>' : '') +
+        '<button type="button" class="hk-share-keep">نگه دار تا پیامک تراکنش بیاید</button>' +
         '<button type="button" class="hk-share-new">+ ردیف تازه در مخارج</button>' +
+        '<div class="hk-share-sub">تراکنش‌های ثبت‌شده</div>' +
         '<div class="hk-bulk-list hk-share-list">' + (rows.length ? rows.map(function (x, i) {
           var r = x.row, desc = (r.desc || '').trim() || 'بی‌شرح';
           return '<button type="button" class="hk-share-row" data-i="' + i + '"><span class="hk-sr-d">' + (x.d ? toPersianDigits(String(x.d)) + ' ' + MONTHS[currentMonth - 1] : '—') + '</span><span class="hk-sr-t">' + escapeHtml(desc) + '</span><span class="hk-sr-a ' + (x.tab === 'income' ? 'inc' : 'exp') + '">' + (Number(r.amount) > 0 ? formatNum(Number(r.amount)) : '') + '</span></button>';
@@ -26145,7 +26210,13 @@ async function openPdfPrintWindow(){
           openRowAttachments(row, function () { try { renderAll(); } catch (e3) {} });
         }).catch(function () { showToast('ذخیرهٔ پیوست ممکن نشد', 'warn'); });
       };
-      ov.querySelectorAll('.hk-share-row').forEach(function (b) { b.onclick = function () { attach(rows[+b.getAttribute('data-i')].row); }; });
+      ov.querySelectorAll('.hk-share-row[data-i]').forEach(function (b) { b.onclick = function () { attach(rows[+b.getAttribute('data-i')].row); }; });
+      ov.querySelectorAll('.hk-share-u').forEach(function (b) { b.onclick = function () { close(); hkShareToUnreg(unreg[+b.getAttribute('data-u')], items); }; });
+      ov.querySelector('.hk-share-keep').onclick = function () {
+        close();
+        hkRcptKeep(hkShareBlobs(items)).then(function () { showToast('رسید نگه داشته شد؛ با آمدن پیامک تراکنش، زیر شرح پیشنهاد می‌شود'); })
+          .catch(function () { showToast('ذخیرهٔ رسید ممکن نشد', 'warn'); });
+      };
       ov.querySelector('.hk-share-new').onclick = function () {
         if (!periodData.expense) periodData.expense = { sections: [], nextId: 1 };
         var secs = periodData.expense.sections || (periodData.expense.sections = []);
@@ -27806,7 +27877,7 @@ container.innerHTML = '';
     }
 
     function parseBankSms(text) {
-      const t = String(text || '').trim();
+      const t = hkSmsUnsplit(String(text || '').trim());
       if (!t) return null;
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(t)) return null;
       if (isNonTransactionSms(t)) return null;
@@ -31016,7 +31087,7 @@ function confirmSmsEntry() {
         if (!Array.isArray(row.att)) row.att = [];
         items.forEach(function (a) {
           if (a._blob) HKAttach.get(a.id).then(function (bl) { if (!bl) return HKAttach.put(a.id, a._blob); }).catch(function () { try { HKAttach.put(a.id, a._blob); } catch (e) {} });
-          var cp = Object.assign({}, a); delete cp._blob; row.att.push(cp);
+          var cp = Object.assign({}, a); delete cp._blob; delete cp._rcpt; row.att.push(cp);
         });
         try { hkSmsAttRender(); } catch (e) {}
       }
@@ -31389,7 +31460,7 @@ function confirmSmsEntry() {
           it.appendChild(im);
         }
         var x = document.createElement('button'); x.type = 'button'; x.className = 'sa-x'; x.textContent = '×'; x.setAttribute('aria-label', 'حذف');
-        x.onclick = function (e) { e.stopPropagation(); _smsAtt.list = _smsAtt.list.filter(function (y) { return y !== a; }); HKAttach.del(a.id).catch(function () {}); hkSmsAttRender(); };
+        x.onclick = function (e) { e.stopPropagation(); _smsAtt.list = _smsAtt.list.filter(function (y) { return y !== a; }); if (a._rcpt) hkRcptReturn([a]); else HKAttach.del(a.id).catch(function () {}); hkSmsAttRender(); };
         it.appendChild(x);
         strip.appendChild(it);
       });
@@ -31461,12 +31532,69 @@ function confirmSmsEntry() {
       _smsAtt.raw = raw;
       if (window._hkSmsCur && window._hkSmsCur.raw !== raw) window._hkSmsCur = null;
       _smsAtt.t0 = Date.now(); _smsAtt.amt = Math.round(Number(amount) || 0); _smsAtt.seen = new Set();
+      try { var _pe0 = pendingSmsEntry; setTimeout(function () { hkRcptOffer(_pe0 && (Number(_pe0.ts || _pe0.date || _pe0._laterAt) || 0)); }, 60); } catch (eR) {}
       try { iterAllPeriodData(function (pd) { ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) { if (r) _smsAtt.seen.add(r); }); }); }); }); } catch (e) {}
       hkSmsAttRender();
     }
     function hkSmsAttDiscard() {
-      _smsAtt.list.forEach(function (a) { HKAttach.del(a.id).catch(function () {}); });
+      /* ۱.۳.۴۲: رسیدِ اشتراکیِ پیشنهادشده پاک نمی‌شود؛ به «رسیدهای در انتظار» برمی‌گردد */
+      hkRcptReturn(_smsAtt.list.filter(function (a) { return a._rcpt; }));
+      _smsAtt.list.forEach(function (a) { if (!a._rcpt) HKAttach.del(a.id).catch(function () {}); });
       _smsAtt.list = []; hkSmsAttRender();
+    }
+    /* ===== ۱.۳.۴۲: رسیدهای در انتظار =====
+       رسیدی که از برنامهٔ بانک به حساب‌کتاب اشتراک‌گذاری شد ولی هنوز تراکنشش (پیامک) نیامده، اینجا نگه داشته می‌شود
+       (فایل در حافظهٔ پیوست، فهرست در localStorage، تا ۲۴ ساعت). با باز شدن منوی ثبت پیامک، نزدیک‌ترین رسید (از نظر زمان)
+       خودکار زیر شرح پیشنهاد می‌شود؛ با «ثبت» روی ردیف می‌رود، با × یا انصراف دوباره به همین صف برمی‌گردد. */
+    var HK_RCPT_KEY = STORAGE_KEY + '_pendRcpt', HK_RCPT_TTL = 24 * 3600 * 1000;
+    function hkRcptLoad() {
+      var a = [];
+      try { a = JSON.parse(localStorage.getItem(HK_RCPT_KEY) || '[]'); } catch (e) {}
+      if (!Array.isArray(a)) a = [];
+      var now = Date.now(), keep = a.filter(function (g) { return g && Array.isArray(g.items) && g.items.length && now - (Number(g.at) || 0) < HK_RCPT_TTL; });
+      if (keep.length !== a.length) {
+        a.forEach(function (g) { if (keep.indexOf(g) < 0 && g && Array.isArray(g.items)) g.items.forEach(function (x) { HKAttach.del(x.id).catch(function () {}); }); });
+        hkRcptSave(keep);
+      }
+      return keep;
+    }
+    function hkRcptSave(list) { try { localStorage.setItem(HK_RCPT_KEY, JSON.stringify(list || [])); } catch (e) {} }
+    function hkRcptKeep(blobs) {
+      var at = Date.now(), items = [];
+      return Promise.all(blobs.map(function (b) {
+        var id = HKAttach.newId();
+        return HKAttach.put(id, b.blob).then(function () { items.push({ id: id, size: b.blob.size, src: b.pdf ? 'pdf' : 'share' }); });
+      })).then(function () {
+        var list = hkRcptLoad(); list.push({ at: at, items: items }); hkRcptSave(list);
+        return items.length;
+      });
+    }
+    function hkRcptReturn(entries) {
+      if (!entries || !entries.length) return;
+      var list = hkRcptLoad(), by = {};
+      entries.forEach(function (a) {
+        var g = by[a._rcpt] || list.find(function (x) { return x.at === a._rcpt; });
+        if (!g) { g = { at: a._rcpt, items: [] }; list.push(g); }
+        by[a._rcpt] = g;
+        if (!g.items.some(function (x) { return x.id === a.id; })) g.items.push({ id: a.id, size: a.size, src: a.src || 'share' });
+      });
+      hkRcptSave(list);
+    }
+    /* منوی ثبت پیامک باز شد: نزدیک‌ترین رسید در انتظار (به زمان پیامک) زیر شرح */
+    function hkRcptOffer(ts) {
+      var list = hkRcptLoad(); if (!list.length) return;
+      var t = Number(ts) || Date.now();
+      list.sort(function (a, b) { return Math.abs(a.at - t) - Math.abs(b.at - t); });
+      var g = list.shift(); hkRcptSave(list);
+      var raw0 = _smsAtt.raw;
+      Promise.all(g.items.map(function (x) { return HKAttach.get(x.id).then(function (bl) { return bl ? { x: x, bl: bl } : null; }).catch(function () { return null; }); })).then(function (rs) {
+        rs = rs.filter(Boolean);
+        if (!rs.length) return;
+        if (_smsAtt.raw !== raw0 || !isSmsConfirmOpen()) { hkRcptReturn(rs.map(function (r) { return { id: r.x.id, size: r.x.size, src: r.x.src, _rcpt: g.at }; })); return; }
+        rs.forEach(function (r) { _smsAtt.list.push({ id: r.x.id, kind: 'img', size: r.bl.size, at: g.at, _blob: r.bl, src: r.x.src, _rcpt: g.at }); });
+        hkSmsAttRender();
+        try { showToast('رسیدِ اشتراک‌گذاری‌شده زیر شرح آمد؛ اگر مال این تراکنش نیست × را بزنید'); } catch (e) {}
+      });
     }
     /* بسته شدن منوی پیامک: ثبت شد → پیوست‌ها روی ردیف تازه (همان مبلغ، تازه ساخته یا تازه پرداخت‌شده)؛ وگرنه پاک */
     function hkSmsAttFinish(saved) {
@@ -31497,7 +31625,7 @@ function confirmSmsEntry() {
           return;
         }
         if (!Array.isArray(best.att)) best.att = [];
-        items.forEach(function (a) { var c = Object.assign({}, a); delete c._blob; best.att.push(c); });
+        items.forEach(function (a) { var c = Object.assign({}, a); delete c._blob; delete c._rcpt; best.att.push(c); });
         try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e) {}
         try { renderAll(); } catch (e2) {}
       };
@@ -34480,7 +34608,8 @@ if (item.type === 'recurring') {
       return pairs;
     }
     /* ساعت تراکنش‌های قبلی: یک‌بار صندوق پیامک خوانده می‌شود؛ ردیفی که روز، مبلغ، نوع و بانکش با یک پیامک یکی است فقط ساعت می‌گیرد */
-    function hkBackfillTimes() {
+    function hkBackfillTimes(opts) {
+      var fix = !!(opts && opts.fix);
       var B = hkBankSmsPlugin();
       if (!B || typeof B.readInbox !== 'function') return Promise.resolve(0);
       return B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
@@ -34502,9 +34631,20 @@ if (item.type === 'recurring') {
           var pk = k.split('-'), y = +pk[0], m = +pk[1], ctx = getWritablePeriodData(y, m), pd = ctx.data, dirty = false;
           ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) {
             (sc.rows || []).forEach(function (r) {
-              if (!r || r.time || r.deletedAt || !(Number(r.amount) > 0) || r.planPaidLater) return;
+              if (!r || r.deletedAt || !(Number(r.amount) > 0) || r.planPaidLater) return;
               var list = idx[y + '-' + m + '|' + tab + '|' + (parseInt(toEnglishDigits(String(r.day || '')), 10) || 0) + '|' + Math.round(Number(r.amount))];
               if (!list) return;
+              /* ۱.۳.۴۲: ساعتِ خراب از پیامک چندبخشی (دقیقه درست، ساعت از ماه): فقط وقتی پیامکِ همان روز/مبلغ/نوع با همان دقیقه
+                 و ساعت دیگری هست (و ساعت درستش در هیچ پیامکی نیست) ساعت اصلاح می‌شود */
+              if (r.time) {
+                if (!fix || list.some(function (x) { return x.time === r.time; })) return;
+                var ra0 = hkNormAcc(r.account || ''), mins = String(r.time).slice(3);
+                var cs = list.filter(function (x) { return !x.used && x.time.slice(3) === mins; });
+                var c0 = cs.filter(function (x) { return x.acc && x.acc === ra0; })[0] || (cs.length === 1 ? cs[0] : null);
+                if (!c0) return;
+                c0.used = true; r.time = c0.time; n++; dirty = true;
+                return;
+              }
               var ra = hkNormAcc(r.account || ''), c = list.find(function (x) { return !x.used && x.acc && x.acc === ra; }) || (list.filter(function (x) { return !x.used; }).length === 1 ? list.find(function (x) { return !x.used; }) : null);
               if (!c) return;
               c.used = true; r.time = c.time; n++; dirty = true;
@@ -34524,9 +34664,12 @@ if (item.type === 'recurring') {
     }
     setTimeout(function () {
       try {
-        var K = STORAGE_KEY + '_timeFill1340';
-        if (localStorage.getItem(K) || !hkBankSmsPlugin()) return;
-        hkBackfillTimes().then(function (n) { if (n >= 0) { try { localStorage.setItem(K, '1'); } catch (e) {} } });
+        if (!hkBankSmsPlugin()) return;
+        var K = STORAGE_KEY + '_timeFill1340', K2 = STORAGE_KEY + '_timeFix1342';
+        var fill = !localStorage.getItem(K), fx = !localStorage.getItem(K2);
+        if (!fill && !fx) return;
+        /* ۱.۳.۴۲: یک‌بار دیگر هم با اصلاح ساعت‌های خرابِ پیامک‌های چندبخشی */
+        hkBackfillTimes({ fix: fx }).then(function (n) { if (n >= 0) { try { localStorage.setItem(K, '1'); localStorage.setItem(K2, '1'); } catch (e) {} } });
       } catch (e) {}
     }, 5000);
     /* ===== ۱.۳.۳۷: برگرداندن همهٔ وصل‌های خودکار قسط (ثبت گروهی و ترمیم نسخه‌های ۱.۳.۲۸ تا ۱.۳.۳۶) =====
