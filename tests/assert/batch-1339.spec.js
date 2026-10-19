@@ -50,15 +50,16 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     /* خط‌های ردیف‌های جمع سفید */
     const i = document.getElementById('balanceSearchInput'); i.value = 'اجاره'; i.dispatchEvent(new Event('input')); await w(300);
     const ftd = document.querySelector('#search-result-foot td');
-    out.footBorder = getComputedStyle(ftd).borderLeftColor + '|' + getComputedStyle(document.querySelectorAll('#search-result-foot tr')[1].cells[0]).borderTopColor;
+    /* ۱.۳.۴۰: خط‌ها با ::before (افقی) و ::after (عمودی) کشیده می‌شوند */
+    out.footBorder = getComputedStyle(document.querySelector('#search-result-foot td.val'), '::after').backgroundColor + '|' + getComputedStyle(document.querySelectorAll('#search-result-foot tr')[1].cells[0], '::before').backgroundColor;
     return out;
   });
   ok(s.inside, 'محور مبلغ با درجه‌هایش کامل داخل کادر جستجو (نه روی جدول نتیجه)');
   ok(s.minOnly.e1 && s.minOnly.v.length === 1 && /۲۵/.test(s.minOnly.v[0]), '«تا» روی انتها: درجهٔ آخر دیده می‌شود و «از» برچسب خودش را دارد (' + JSON.stringify(s.minOnly) + ')');
   const nearParts = (s.near.v[0] || '').split('|').map(x => ({ x: +x.split(':')[0], t: x.split(':').slice(1).join(':') }));
   ok(nearParts.length === 3 && /۵٫۵/.test(nearParts[0].t) && /۱۰/.test(nearParts[2].t) && nearParts[0].x < nearParts[2].x, 'دو دستگیرهٔ نزدیک: «۵٫۵ میلیون – ۱۰ میلیون»، کمتر سمت چپ مثل محور (' + s.near.v[0] + ')');
-  const lowParts = (s.low.v[0] || '').split('|').map(x => ({ x: +x.split(':')[0], t: x.split(':').slice(1).join(':') }));
-  ok(lowParts.length === 3 && lowParts[0].t === '۰' && /۲۰۰/.test(lowParts[2].t) && lowParts[0].x < lowParts[2].x, '«از» روی ۰ و «تا» نزدیکش: یک برچسب «۰ – ۲۰۰ هزار» (هیچ سری بی‌نوشته نمی‌ماند)');
+  /* ۱.۳.۴۰: سرها زیر محورند؛ «از» روی ۰ برچسب بالایی ندارد (درجهٔ ۰ زیر محور نشانش است) */
+  ok(s.low.e0 && s.low.v.length === 1 && /۲۰۰/.test(s.low.v[0]), '«از» روی ۰ و «تا» نزدیکش: درجهٔ ۰ زیر محور و فقط «۲۰۰ هزار» بالا (' + JSON.stringify(s.low) + ')');
   ok(s.full.e0 && s.full.e1 && s.full.v.length === 0, 'کل بازه: فقط درجهٔ اول و آخر');
   ok(/rgba\(255, 255, 255, 0\.4\)/.test(s.footBorder.split('|')[0]) && /rgba\(255, 255, 255, 0\.4\)/.test(s.footBorder.split('|')[1]), 'خط‌های بین ردیف‌های جمع و بین ستون‌ها سفید (' + s.footBorder + ')');
 
@@ -105,17 +106,17 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     const inp = document.getElementById('smsConfirmDesc');
     openVoiceInput(inp); await w(300);
     const ov = document.querySelector('.voice-overlay'), rects = ov ? [...ov.querySelectorAll('.vo-wave rect')] : [];
-    const out = { n: rects.length, color: ov ? getComputedStyle(ov.querySelector('.vo-mic')).backgroundImage : '' };
+    const out = { n: rects.length, color: ov ? getComputedStyle(ov.querySelector('.vo-mic')).backgroundImage + '|' + getComputedStyle(ov.querySelector('.vo-mic')).backgroundColor : '', fill: rects.map(r => getComputedStyle(r).fill).filter((x, i, a) => a.indexOf(x) === i).join('|') };
     const hs = () => rects.map(r => r.style.transform).join(',');
-    window.__vo.level({ rms: -2 }); await w(50); out.quiet = hs();
-    window.__vo.level({ rms: 10 }); await w(50); out.loud = hs();
+    window.__vo.level({ rms: -2 }); await w(400); out.quiet = hs();
+    window.__vo.level({ rms: 10 }); await w(400); out.loud = hs();
     window.__vo.partial({ text: 'خرید س*** مارکت' }); await w(30); out.partial = ov.querySelector('.vo-text').textContent;
     window.__voDone({ text: 'خرید س*** مارکت' }); await w(200);
     out.final = inp.value;
     out.unmask = _voiceUnmask('س***');
     return out;
   });
-  ok(vo.n === 11 && /10, 132, 255|0a84ff/i.test(vo.color), 'هنگام شنیدن: موج صدای ۱۱ خطی روی همان دایرهٔ آبی (به جای میکروفون)');
+  ok(vo.n === 9 && /^none\|rgba\(0, 0, 0, 0\)$/.test(vo.color) && vo.fill === 'rgb(47, 155, 255)|rgb(124, 196, 255)', 'هنگام شنیدن (۱.۳.۴۰): فقط ۹ خط آبی در دو رنگ، بدون هیچ دایره‌ای (' + vo.color + ' / ' + vo.fill + ')');
   ok(vo.quiet !== vo.loud && vo.loud.split(',').some(t => parseFloat(t.replace(/[^0-9.]/g, '')) > 0.6), 'ارتفاع خط‌ها با شدت صدا تغییر می‌کند');
   ok(vo.partial === 'خرید سوپر مارکت' && vo.final === 'خرید سوپر مارکت' && vo.unmask === 'سوپر', '«س***» (فیلتر سرویس گفتار) به «سوپر» برمی‌گردد');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
