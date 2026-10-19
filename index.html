@@ -9086,6 +9086,11 @@
       row-gap: 3px;
       column-gap: 10px;
     }
+    /* ۱.۳.۴۳: منوی ثبتِ تراکنشی که از اعلان ثبت می‌شود پنهان باز می‌شود (فقط اگر تکمیل لازم باشد دیده می‌شود) */
+    #smsConfirmModal.hk-quick { visibility: hidden !important; }
+    /* ۱.۳.۴۳: ردیفی که از اسلاید «خرج‌های ماه» به آن رفتیم کوتاه برجسته می‌شود */
+    tr.sp-flash td { animation: spFlashRow 1.8s ease; }
+    @keyframes spFlashRow { 0%, 60% { background-color: rgba(10,132,255,0.28); } 100% { background-color: transparent; } }
     /* باکس هوشمند (فعلاً خالی) — همان استایل فیلدهای کارت */
     #homeCards .person-card .pc-smart-box {
       flex: 0 0 36%;
@@ -10859,6 +10864,7 @@
     html[data-theme="light"] .hk-info-tip { background: #ffffff; color: #1c1c1e; border-color: rgba(0,0,0,0.10); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
     @keyframes hkTipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
     #searchResultBox td.sr-date { font-size: 0.74rem; white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+    #searchResultBox td.sr-num { color: var(--muted, #8e8e93); font-size: 0.74rem; text-align: center !important; padding-left: 1px !important; padding-right: 1px !important; }
     .export-choice-btn .ex-ico { width: 44px; height: 26px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.16); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 2px rgba(0,0,0,0.12); }
     .export-choice-btn .ex-ico svg { width: 22px; height: 22px; display: block; }
     #backupPickOverlay .backup-pick-panel { max-height: 90vh; max-height: 90dvh; }
@@ -11356,8 +11362,9 @@
           <div class="hk-scroll11" id="searchResultScroll"><table class="summary-table">
             <thead>
               <tr>
+                <th style="width:9%;">ردیف</th>
                 <th style="width:24%;">تاریخ</th>
-                <th style="width:34%;">شرح</th>
+                <th style="width:25%;">شرح</th>
                 <th style="width:17%;">بانک</th>
                 <th style="width:25%;">مبلغ</th>
               </tr>
@@ -11463,8 +11470,8 @@
         می‌توانید چند حساب از یک بانک داشته باشید و برای هر کدام نام دلخواه بگذارید (مثلاً ملی حقوق، ملی پس‌انداز).
       </p>
       <div id="bankAccountsList" style="margin-bottom:12px;">
-        <div id="bankSelectedScroll" style="max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;"></div>
-        <div id="bankBanksScroll" style="max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;"></div>
+        <div id="bankSelectedScroll" style="max-height:44vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;"></div>
+        <div id="bankBanksScroll" style="max-height:16vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;"></div>
       </div>
       <button class="modal-btn no" style="width:100%;" type="button" onclick="closeBankAccountsModal()">بستن</button>
     </div>
@@ -24491,6 +24498,26 @@ async function openPdfPrintWindow(){
       return html + '</div>';
     }
     /* ۲) تعهدات: هر خبر جدا با خط جداکننده؛ مبلغ قسط زیر عنوانش */
+    /* ناوبری از اسلاید: هر خطا بی‌صدا (نباید باکس هوشمند را از کار بیندازد) */
+    function spGo(fn) { try { fn(); } catch (e) {} }
+    /* اسلاید «۷ روز آینده»: اگر قسطی در آن هست → منوی اقساط، وگرنه (فقط درآمد ثابت) → جدول درآمد */
+    var _spUpcomingInst = {};
+    function spHasUpcomingInst(title) { return !!_spUpcomingInst[title]; }
+    /* بزرگ‌ترین خرج: بعد از باز شدن جدول مخارج، همان ردیف کمی برجسته می‌شود */
+    function spFlashBiggest(title) {
+      setTimeout(function () {
+        try {
+          var sec = findSectionByTitle('expense', title);
+          var rows = spRows(sec).filter(function (r) { return (r.status || 'paid') === 'paid'; });
+          if (!rows.length) return;
+          var big = rows.slice().sort(function (a, b) { return (Number(b.amount) || 0) - (Number(a.amount) || 0); })[0];
+          var idx = (sec.rows || []).indexOf(big); if (idx < 0) return;
+          var tr = document.querySelectorAll('#sections-expense tbody tr')[idx]; if (!tr) return;
+          tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          tr.classList.add('sp-flash'); setTimeout(function () { tr.classList.remove('sp-flash'); }, 1800);
+        } catch (e) {}
+      }, 450);
+    }
     function spPageObligations(D) {
       var items = [];
       var t0 = getTodayPersian();
@@ -24596,7 +24623,7 @@ async function openPdfPrintWindow(){
       if (!(currentYear === t0.y && currentMonth === t0.m)) return null;
       var items = [];
       D.inst.filter(function (x) { return !x.paid && x.days >= 0 && x.days <= 7; }).slice(0, 3).forEach(function (x) {
-        items.push({ d: x.days, h: '<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under' + (x.days <= 1 ? ' neg' : '') + '">' + spDaysLabel(x.days) + '، ' + spAmt(x.amount) + '</div>' });
+        items.push({ inst: true, d: x.days, h: '<div class="sp-l">قسط «' + spEsc(x.name) + '»</div><div class="sp-v sp-under' + (x.days <= 1 ? ' neg' : '') + '">' + spDaysLabel(x.days) + '، ' + spAmt(x.amount) + '</div>' });
       });
       spRows(findSectionByTitle('income', D.title)).forEach(function (r) {
         if (!r.fromRecurringId || (r.status || 'paid') === 'paid') return;
@@ -24605,6 +24632,7 @@ async function openPdfPrintWindow(){
       });
       if (!items.length) return null;
       items.sort(function (a, b) { return a.d - b.d; });
+      _spUpcomingInst[D.title] = items.some(function (x) { return x.inst; });
       return spHead('۷ روز آینده') + spItems(items.slice(0, 4).map(function (x) { return x.h; }));
     }
     /* ۸) جهش دسته: دسته‌ای که این ماه دست‌کم ۴۰٪ بیشتر از میانگین ۳ ماه قبل خرج شده */
@@ -24813,18 +24841,19 @@ async function openPdfPrintWindow(){
 
     var SMART_PANEL_PAGES = [
       { key: 'warn', build: spPageWarn, onTap: function (title) { spDismissDupPrompt(title); } },
-      { key: 'overview', build: spPageOverview },
-      { key: 'stats', build: spPageStats },
+      /* ۱.۳.۴۳: زدن هر اسلاید = رفتن به همان بخشی که اطلاعاتش را نشان می‌دهد */
+      { key: 'overview', build: spPageOverview, onTap: function (title) { spGo(function () { openPersonDetail(title, 'expense'); }); } },
+      { key: 'stats', build: spPageStats, onTap: function () { spGo(function () { openStatsSheet(); }); } },
       { key: 'todo', build: spPageTodo },
-      { key: 'obligations', build: spPageObligations },
-      { key: 'ledger', build: spPageLedger },
+      { key: 'obligations', build: spPageObligations, onTap: function () { spGo(function () { switchTabFromMenu('install'); }); } },
+      { key: 'ledger', build: spPageLedger, onTap: function () { spGo(function () { switchTabFromMenu('ledger'); }); } },
       { key: 'categories', build: spPageCategories, onTap: function (title) { openCategoryReviewSheet(title); } },
-      { key: 'projects', build: spPageProjects },
-      { key: 'upcoming', build: spPageUpcoming },
-      { key: 'jump', build: spPageJump },
-      { key: 'biggest', build: spPageBiggest },
+      { key: 'projects', build: spPageProjects, onTap: function () { spGo(function () { openSubjectsModal(); }); } },
+      { key: 'upcoming', build: spPageUpcoming, onTap: function (title) { spGo(function () { if (spHasUpcomingInst(title)) switchTabFromMenu('install'); else openPersonDetail(title, 'income'); }); } },
+      { key: 'jump', build: spPageJump, onTap: function (title) { spGo(function () { openPersonDetail(title, 'expense'); }); } },
+      { key: 'biggest', build: spPageBiggest, onTap: function (title) { spGo(function () { openPersonDetail(title, 'expense'); spFlashBiggest(title); }); } },
       { key: 'fix', build: spPageFix, onTap: function (title) { try { openCategoryReviewSheet(title); } catch (e) {} } },
-      { key: 'insight', build: spPageInsight },
+      { key: 'insight', build: spPageInsight, onTap: function () { spGo(function () { openStatsSheet(); }); } },
       { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoEditor(title, null); } }
     ];
     function spDismissDupPrompt(title) {
@@ -31120,6 +31149,7 @@ function confirmSmsEntry() {
       parsed.raw = parsed.raw || String(smsText || '');
       if (opts.nid) parsed.nid = opts.nid;
       if (opts.sender) parsed.sender = String(opts.sender);
+      if (opts.quick) { parsed._quick = true; parsed._quickDesc = String(opts.quickDesc || ''); opts.silent = true; }
       const rawKey = String(smsText || '').trim();
       if (rawKey) {
         if (pendingSmsEntry && String(pendingSmsEntry.raw || '').trim() === rawKey) return false;
@@ -31711,11 +31741,74 @@ function confirmSmsEntry() {
         var _pn = null; try { _pn = parseBankSms(smsText); } catch (eP) {}
         if (_pn && hkIsSmsNotice(smsText, _pn)) { cancelNativeSmsNotification(nid, true); return false; }
       } catch (eO) {}
-      try { ok = enqueueBankSms(smsText, { nid: nid, sender: sender }); } catch (eE) { ok = false; }
+      try { ok = enqueueBankSms(smsText, { nid: nid, sender: sender, quick: !!(meta && meta.quick), quickDesc: (meta && meta.quickDesc) || '' }); } catch (eE) { ok = false; }
       /* پیامکی که نرم‌افزار نمایش نمی‌دهد (تکراری/غیرتراکنش) نوتیف بی‌مصرف نگذارد */
       if (!ok) cancelNativeSmsNotification(nid, true);
       return ok;
     };
+    /* ===== ۱.۳.۴۳: ثبت از خود اعلان (پاسخ مستقیم) =====
+       متن «بابت چه بود؟» که در اعلان نوشته شد کنار پیامک در صف نیتیو می‌آید (quickDesc). منوی ثبت پنهان باز می‌شود،
+       شرح پر و «ثبت» زده می‌شود. اگر چیزی تأیید یا تکمیل لازم دارد (حساب نامشخص، «مربوط به درآمد ثابت/قسط؟»، فرستندهٔ
+       مشکوک، تطبیق موجودی و …) منوی ثبت با همان شرح نمایان می‌ماند تا کاربر خودش تمام کند (هیچ وصلی بی‌اجازه نیست). */
+    function hkQuickBlock() {
+      var bank = document.getElementById('smsConfirmBank');
+      if (!bank || !bank.value || bank.value === '__add_account__') return 'حساب این پیامک مشخص نیست';
+      var rec = document.getElementById('smsRecMatchSel');
+      if (rec && rec.closest('#smsRecMatch') && getComputedStyle(rec.closest('#smsRecMatch')).display !== 'none' && rec.value) return 'باید تأیید شود این واریز مربوط به کدام درآمد ثابت است';
+      var pp = document.getElementById('smsPlanPickBlock');
+      if (pp && getComputedStyle(pp).display !== 'none' && pp.offsetHeight > 0) return 'باید قسط مربوط انتخاب شود';
+      var sw = document.getElementById('smsSenderWarn');
+      if (sw && getComputedStyle(sw).display !== 'none' && sw.offsetHeight > 0) return 'فرستندهٔ پیامک بررسی لازم دارد';
+      var an = document.getElementById('smsAccNewNote');
+      if (an && getComputedStyle(an).display !== 'none' && an.offsetHeight > 0) return 'حساب تازه است و موجودی اولیه لازم دارد';
+      return '';
+    }
+    function hkQuickShow(msg) {
+      var m = document.getElementById('smsConfirmModal'); if (m) m.classList.remove('hk-quick');
+      if (msg) { try { showToast('ثبت از اعلان: ' + msg + '؛ تکمیل و «ثبت» را بزنید', 'warn'); } catch (e) {} }
+    }
+    function hkQuickAutoConfirm(pe) {
+      if (!pe || pe._quickTried) return;
+      pe._quickTried = true;
+      if (!isSmsConfirmOpen() || pendingSmsEntry !== pe) { hkQuickShow(''); return; }
+      var d = document.getElementById('smsConfirmDesc');
+      if (d && pe._quickDesc) { d.value = pe._quickDesc; try { d.dispatchEvent(new Event('input', { bubbles: true })); } catch (e0) {} }
+      var why = hkQuickBlock();
+      if (why) { hkQuickShow(why); return; }
+      try { confirmSmsEntry(); } catch (e1) { hkQuickShow('ثبت انجام نشد'); return; }
+      setTimeout(function () {
+        if (isSmsConfirmOpen() && pendingSmsEntry === pe) hkQuickShow('یک مورد تأیید لازم دارد');
+        else { hkQuickShow(''); try { showToast('تراکنش از اعلان ثبت شد' + (pe._quickDesc ? ' — ' + pe._quickDesc : '')); } catch (e2) {} }
+      }, 700);
+    }
+    /* پیامکِ «ثبت‌شده از اعلان» که همین الان باز یا در صف است */
+    function hkQuickApplyLive(nid, desc) {
+      window._hkQuickSeen = window._hkQuickSeen || {};
+      if (window._hkQuickSeen[nid]) return;
+      window._hkQuickSeen[nid] = 1;
+      if (pendingSmsEntry && pendingSmsEntry.nid === nid && isSmsConfirmOpen()) {
+        pendingSmsEntry._quick = true; pendingSmsEntry._quickDesc = desc;
+        hkQuickAutoConfirm(pendingSmsEntry);
+        return;
+      }
+      (smsPendingQueue || []).forEach(function (q) { if (q && q.nid === nid) { q._quick = true; q._quickDesc = desc; } });
+    }
+    (function () {
+      var orig = openSmsConfirmModal;
+      if (typeof orig !== 'function' || orig._hkQuick) return;
+      var w = function (parsed) {
+        var m = document.getElementById('smsConfirmModal');
+        var q = !!(parsed && parsed._quick && !parsed._quickTried);
+        if (m) m.classList.toggle('hk-quick', q);
+        var r = orig.apply(this, arguments);
+        if (q) setTimeout(function () { hkQuickAutoConfirm(parsed); }, 350);
+        return r;
+      };
+      for (var k in orig) { try { w[k] = orig[k]; } catch (eK) {} }
+      w._hkQuick = true;
+      openSmsConfirmModal = w;
+      try { window.openSmsConfirmModal = w; } catch (eW) {}
+    })();
 
 
     /* ========== App Lock / Security ========== */
@@ -32654,9 +32747,11 @@ function confirmSmsEntry() {
             items.forEach(function (it) {
               if (!it || !it.text) return;
               var nid = it.nid || 0;
+              /* ۱.۳.۴۳: «ثبت» از خود اعلان برای پیامکی که همین الان در نرم‌افزار باز/در صف است */
+              if (it.quick && nid && live[nid] && !done[nid]) { try { hkQuickApplyLive(nid, it.quickDesc || ''); } catch (eQ) {} return; }
               if (nid && (done[nid] || live[nid])) return;
               var ok = false;
-              try { ok = window.onBankSmsReceived(it.text, { nid: nid, sender: it.sender || '' }); } catch (e) {}
+              try { ok = window.onBankSmsReceived(it.text, { nid: nid, sender: it.sender || '', quick: !!it.quick, quickDesc: it.quickDesc || '' }); } catch (e) {}
               /* تکراری/غیرتراکنش → از صف نیتیو هم برود */
               if (!ok && nid) { try { BankSms.markHandled({ nid: nid }).catch(function () {}); } catch (e2) {} }
             });
@@ -34896,6 +34991,7 @@ if (item.type === 'recurring') {
       }
       _bankModalFromMenu = true;
     }
+    /* ۱.۳.۴۳: حساب‌های ساخته‌شده بیشتر صفحه را می‌گیرند (تا ۴۴٪ ارتفاع) و فهرست همهٔ بانک‌ها کوتاه‌تر (۱۶٪) */
     function renderBankAccountsList() {
       const box = document.getElementById('bankAccountsList');
       if (!box) return;
@@ -34906,10 +35002,10 @@ if (item.type === 'recurring') {
         box.innerHTML = '';
         selectedWrap = document.createElement('div');
         selectedWrap.id = 'bankSelectedScroll';
-        selectedWrap.style.cssText = 'max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;';
+        selectedWrap.style.cssText = 'max-height:44vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;';
         banksWrap = document.createElement('div');
         banksWrap.id = 'bankBanksScroll';
-        banksWrap.style.cssText = 'max-height:28vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;';
+        banksWrap.style.cssText = 'max-height:16vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;';
         box.appendChild(selectedWrap);
         box.appendChild(banksWrap);
       }
@@ -42560,7 +42656,7 @@ function openProjectRowPicker(secId) {
       try { bsRenderMonthSummary(list, 'none'); } catch (eMs) {}
       /* بدون فیلتر و کلمه: فقط جدول ماه‌ها؛ ردیف‌ها منتظر جستجو */
       if (noFilter) {
-        body.innerHTML = '<tr class="sr-wait"><td colspan="4">برای دیدن ردیف‌ها، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
+        body.innerHTML = '<tr class="sr-wait"><td colspan="5">برای دیدن ردیف‌ها، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
         if (foot) foot.innerHTML = '';
         document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو';
         boxR.style.display = '';
@@ -42595,17 +42691,21 @@ function openProjectRowPicker(secId) {
         tdV.textContent = formatNum(it.amount);
         /* نتیجهٔ جستجو: واریز سبز و برداشت قرمز (همان رنگ مبالغ درآمد و مخارج) */
         tdV.classList.add(it.tab === 'income' ? 'sr-inc' : 'sr-exp');
-        tr.appendChild(tdD); tr.appendChild(td); tr.appendChild(tdB); tr.appendChild(tdV);
+        /* ۱.۳.۴۳: شمارهٔ ردیف ستون اول */
+        var tdN = document.createElement('td');
+        tdN.className = 'sr-num';
+        tdN.textContent = toPersianDigits(String(body.children.length + 1));
+        tr.appendChild(tdN); tr.appendChild(tdD); tr.appendChild(td); tr.appendChild(tdB); tr.appendChild(tdV);
         body.appendChild(tr);
       });
       if (!list.length) {
-        body.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.7;">نتیجه‌ای پیدا نشد</td></tr>';
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:0.7;">نتیجه‌ای پیدا نشد</td></tr>';
       }
       if (foot) {
         foot.innerHTML = '';
         var addF = function (label, v, color) {
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td class="sec-name" colspan="3">' + label + '</td><td class="val">' + formatNum(v) + '</td>';
+          tr.innerHTML = '<td class="sec-name" colspan="4">' + label + '</td><td class="val">' + formatNum(v) + '</td>';
           tr.querySelector('td.val').style.setProperty('color', color, 'important');
           /* متن طولانی: با زدن، باکس شناور یک‌خطی */
           tr.querySelectorAll('td').forEach(function (td) { td.style.cursor = 'pointer'; td.onclick = function (ev) { ev.stopPropagation(); try { showCellTextPopup(td, td.classList.contains('val') ? label + ': ' + formatNum(v) : label); } catch (eP) {} }; });

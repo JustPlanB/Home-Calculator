@@ -20,6 +20,7 @@ import android.os.Build;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,6 +28,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
   static final String PREFS="bank_sms_bridge";
   static final String QUEUE="pending_queue";
   static final String CHANNEL="bank_sms";
+  static final String KEY_DESC="hk_quick_desc";
+  static final String ACTION_QUICK="ir.hesabketab.app.QUICK_REPLY";
 
   @Override public void onReceive(Context context, Intent intent) {
     if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
@@ -153,6 +156,15 @@ public class BankSmsReceiver extends BroadcastReceiver {
     PendingIntent pi=PendingIntent.getActivity(c,1001,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     String shortText=text.replace('\\n',' '); if(shortText.length()>110) shortText=shortText.substring(0,110)+"…";
     NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("تراکنش بانکی جدید").setContentText(shortText).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setContentIntent(pi).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
+    /* ۱.۳.۴۳: ثبت از خود اعلان (پاسخ مستقیم): با کمی پایین کشیدن، دکمهٔ «ثبت» و فقط فیلد «بابت چه بود؟» */
+    try{
+      Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK); qi.putExtra("nid",nid);
+      int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
+      PendingIntent qpi=PendingIntent.getBroadcast(c,nid,qi,fl);
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چه بود؟").build();
+      NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).build();
+      b.addAction(act);
+    }catch(Exception ignored){}
     nm.notify(nid,b.build());
   }
 }
@@ -208,6 +220,7 @@ public class BankSmsPlugin extends Plugin {
       for(int i=0;i<q.length();i++){
         JSONObject x=q.optJSONObject(i); if(x==null) continue;
         JSObject r=new JSObject(); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); r.put("nid",x.optInt("nid",0));
+        if(x.has("quickDesc")){ r.put("quick",true); r.put("quickDesc",x.optString("quickDesc","")); r.put("quickAt",x.optLong("quickAt",0)); }
         out.put(r);
       }
       call.resolve(new JSObject().put("items",out).put("count",out.length()));
@@ -320,6 +333,54 @@ public class BankSmsPlugin extends Plugin {
     }}).start();
   }
   @com.getcapacitor.PluginMethod public void clearPending(PluginCall call){ getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().remove(QUEUE).apply(); call.resolve(); }
+}
+`;
+
+/* ۱.۳.۴۳: پاسخ مستقیم از اعلان تراکنش. متن «بابت چه بود؟» کنار همان پیامک در صف ذخیره می‌شود (quickDesc)؛
+   نرم‌افزار (اگر باز است در چند ثانیه، وگرنه در باز شدن بعدی) ردیف را بی‌سؤال می‌سازد یا اگر تکمیل لازم است منوی ثبت را با همین شرح باز می‌کند. */
+const quickReply=`package ${pkg};
+
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Bundle;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class HkQuickReplyReceiver extends BroadcastReceiver {
+  @Override public void onReceive(Context c, Intent in){
+    if(in==null || !BankSmsReceiver.ACTION_QUICK.equals(in.getAction())) return;
+    Bundle res=RemoteInput.getResultsFromIntent(in); if(res==null) return;
+    CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC);
+    String desc=cs==null?"":cs.toString().trim(); if(desc.length()>200) desc=desc.substring(0,200);
+    int nid=in.getIntExtra("nid",0); if(nid==0) return;
+    boolean found=false;
+    try{
+      SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE);
+      JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]"));
+      for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null && x.optInt("nid",0)==nid){ x.put("quickDesc",desc); x.put("quickAt",System.currentTimeMillis()); found=true; break; } }
+      if(found) sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit();
+    }catch(Exception ignored){}
+    try{
+      NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
+      Intent oi=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+      PendingIntent pi=null;
+      if(oi!=null){ oi.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); pi=PendingIntent.getActivity(c,1001,oi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE); }
+      NotificationCompat.Builder b=new NotificationCompat.Builder(c,BankSmsReceiver.CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle(found?"ثبت شد ✓":"این تراکنش قبلاً ثبت یا رد شده")
+        .setContentText(found?(desc.isEmpty()?"بدون شرح":"بابت: "+desc):"")
+        .setOnlyAlertOnce(true).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_LOW);
+      if(pi!=null) b.setContentIntent(pi);
+      if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(8000);
+      nm.notify(nid,b.build());
+    }catch(Exception ignored){}
+  }
 }
 `;
 
@@ -2566,6 +2627,7 @@ public class MainActivity extends BridgeActivity {
 
 fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
+fs.writeFileSync(path.join(javaDir,'HkQuickReplyReceiver.java'),quickReply);
 fs.writeFileSync(path.join(javaDir,'AppLockPlugin.java'),appLockPlugin);
 fs.writeFileSync(path.join(javaDir,'NativeFileExportPlugin.java'),nativeExport);
 fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
@@ -2599,6 +2661,8 @@ if(fs.existsSync(manifest)){
   }
   const receiverTag='<receiver android:name=".BankSmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">\n            <intent-filter android:priority="999">\n                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>\n            </intent-filter>\n        </receiver>';
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
+  // ۱.۳.۴۳: گیرندهٔ «ثبت» از خود اعلان (فقط از PendingIntent همین برنامه؛ از بیرون قابل صدا زدن نیست)
+  if(!s.includes('.HkQuickReplyReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkQuickReplyReceiver" android:exported="false"/>\n    </application>');
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
   // ضبط صدا داخل صفحه (getUserMedia) بدون این مجوز بی‌صدا رد می‌شود
   if(!s.includes('android.permission.MODIFY_AUDIO_SETTINGS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>');

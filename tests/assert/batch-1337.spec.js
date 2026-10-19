@@ -81,7 +81,8 @@ async function page(b, extra) {
   /* ضربدر شرح با لمس واقعی (touchstart/touchend) */
   await p.touchscreen.tap(s.clr.x, s.clr.y); await p.waitForTimeout(250);
   const clr = await p.evaluate(() => { const i = document.getElementById('balanceSearchInput'); return { v: i.value, f: document.activeElement === i }; });
-  ok(s.th.join('،') === 'تاریخ،شرح،بانک،مبلغ' && s.firstCells[0] === 'sr-date' && s.firstCells[1] === 'sec-name', 'ستون‌های نتیجه به ترتیب: تاریخ، شرح، بانک، مبلغ');
+  /* ۱.۳.۴۳: شمارهٔ ردیف ستون اول */
+  ok(s.th.join('،') === 'ردیف،تاریخ،شرح،بانک،مبلغ' && s.firstCells[0] === 'sr-num' && s.firstCells[1] === 'sr-date' && s.firstCells[2] === 'sec-name', 'ستون‌های نتیجه به ترتیب: ردیف، تاریخ، شرح، بانک، مبلغ');
   ok(s.foot.pos === 'sticky' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول چسبان (همیشه دیده می‌شود)، زمینهٔ جدا و خط ضخیم بالا (' + s.foot.bg + ')');
   /* ۱.۳.۳۸: کادر جستجو بالای صفحه می‌چسبد و با اسکرول جمع می‌شود (batch-1338) */
   ok(s.panelOv === 'auto' && s.scrolled > 20, 'منوی جستجو یک‌تکه اسکرول می‌شود (' + s.scrolled + 'px)');
