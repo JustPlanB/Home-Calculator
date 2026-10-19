@@ -83,7 +83,8 @@ async function page(b, extra) {
   const clr = await p.evaluate(() => { const i = document.getElementById('balanceSearchInput'); return { v: i.value, f: document.activeElement === i }; });
   ok(s.th.join('،') === 'تاریخ،شرح،بانک،مبلغ' && s.firstCells[0] === 'sr-date' && s.firstCells[1] === 'sec-name', 'ستون‌های نتیجه به ترتیب: تاریخ، شرح، بانک، مبلغ');
   ok(s.foot.pos === 'static' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول می‌ماند (چسبان نیست، روی ردیف‌ها نمی‌آید)، زمینهٔ جدا و خط بالا (' + s.foot.bg + ')');
-  ok(s.panelOv === 'auto' && s.scrolled > 20 && Math.abs(s.headMoved - s.scrolled) <= 1, 'کادر فیلترها همیشه باز است و با صفحه بالا می‌رود (' + s.headMoved + 'px)');
+  /* ۱.۳.۳۸: کادر جستجو بالای صفحه می‌چسبد و با اسکرول جمع می‌شود (batch-1338) */
+  ok(s.panelOv === 'auto' && s.scrolled > 20, 'منوی جستجو یک‌تکه اسکرول می‌شود (' + s.scrolled + 'px)');
   ok(s.overlaps.every(n => n === 0), 'بازهٔ مبلغ: در هیچ حالتی برچسب‌ها روی هم نمی‌افتند (' + s.overlaps.join(',') + ')');
   ok(clr.v === '' && clr.f, 'ضربدر شرح با لمس کار می‌کند: نوشته پاک و فیلد فعال می‌ماند');
 
