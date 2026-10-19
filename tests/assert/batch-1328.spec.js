@@ -12,7 +12,7 @@ const melli = (body, ts, addr) => ({ address: addr || 'Bank Melli', date: ts, bo
 
 async function page(b, inbox) {
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox)}.sort((a, b) => b.date - a.date);
     window.Capacitor = { isNativePlatform: () => true, Plugins: { BankSms: { readInbox: () => Promise.resolve({ items: window.__inbox }), getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve(), markHandled: () => Promise.resolve(), permStatus: () => Promise.resolve({ sms: true, notif: true }) } } };` });
   const p = await ctx.newPage();
@@ -77,8 +77,9 @@ async function page(b, inbox) {
   ok(r.collapsed && /بازه: ۱ شهریور تا ۲۱ مهر/.test(r.bar), 'بعد از خواندن، بازه جمع شد و نوار «' + r.bar.replace('✎', '').trim() + '» ماند');
   ok(r.shOpen === 9268987 && /موجودی اول شهریور ملی طبق پیامک‌ها تنظیم شد/.test(r.sum), 'موجودی اول شهریور از پیامک‌های همان ماه (۹٬۲۶۸٬۷۸۷) و گزارش در خلاصه');
   ok(r.shEnd === 6556787 && r.mehrOpen === 6556787, 'پایان شهریور = ماندهٔ آخرین پیامک شهریور = اول مهر (' + r.shEnd + ')');
-  ok(r.planRows.length === 1 && r.planRows[0].st === 'paid' && r.planRows[0].amt === 600000 && /دیرکرد ۱۰,۰۰۰/.test(r.planRows[0].desc) && r.planRows[0].acc === 'ملی', 'برداشت ۶۰۰ هزار = قسط ۵۹۰ هزاری با ۱۰ هزار دیرکرد؛ همان ردیف قسط پرداخت‌شده شد');
-  ok(r.paidCount === 5 && r.extra600 === 0 && /پرداخت قسط شناخته شد/.test(r.sum), 'شمار قسط‌های پرداخت‌شده ۵ شد، ردیف اضافه ساخته نشد و در خلاصه آمد');
+  /* ۱.۳.۳۷: پیدا کردن خودکار قسط از ثبت گروهی برداشته شد → برداشت ۶۰۰ هزار ردیف معمولی است و قسط دست نمی‌خورد */
+  ok(r.planRows.length >= 1 && r.planRows.every(x => x.acc !== 'ملی' && x.amt !== 600000), 'ردیف قسط به پیامک وصل نشد (پیدا کردن خودکار قسط برداشته شد)');
+  ok(r.paidCount === 4 && r.extra600 === 1 && !/پرداخت قسط شناخته شد/.test(r.sum), 'برداشت ۶۰۰ هزار یک ردیف معمولی شد؛ شمار قسط‌های پرداخت‌شده همان ۴ ماند');
   ok(r.bal === 5856787, 'موجودی ملی = ماندهٔ آخرین پیامک (' + r.bal + ')');
 
   console.log('• اعلان لحظه‌ای: قسط خودکار انتخاب شود');

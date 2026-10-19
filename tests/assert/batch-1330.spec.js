@@ -14,7 +14,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   for (let i = 0; i < 3; i++) inbox.push({ address: 'Bank Mellat', date: T(2026, 10, 3 + i), body: 'بانک ملت\nبرداشت 10,000\nحساب 0000***' + (1000 + i) + '\nمانده ' + (900000 - i * 1000).toLocaleString('en') });
   inbox.push({ address: '+989351112233', date: T(2026, 10, 10), body: 'بانک ملت\nبرداشت 1,000,000\nحساب 0000***7777\nمانده 9,000,000' });
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox)};
     window.Capacitor = { isNativePlatform: () => true, Plugins: { BankSms: { readInbox: () => Promise.resolve({ items: window.__inbox }), getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve(), permStatus: () => Promise.resolve({ sms: true, notif: true }) } } };` });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));

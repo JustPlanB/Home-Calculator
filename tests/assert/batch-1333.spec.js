@@ -15,7 +15,7 @@ async function page(b, inbox, opts) {
   opts = opts || {};
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript((keep) => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1335']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].concat(keep ? [] : ['instRepair1335']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
   }, !!opts.keepRepair);
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
     window.__media = { photo: null, pick: null, mic: { granted: true }, pend: null };
@@ -78,47 +78,28 @@ async function page(b, inbox, opts) {
     return out;
   });
   ok(bi.cardShown && bi.cardVal === 'سارا', 'منوی کارت مقصد همیشه هست و پیش‌فرض روی کارت اول است');
-  ok(bi.rows.length === 2 && bi.rows.every(x => /^pa:\d+:ملی:L:$/.test(x)), 'ردیف معمولیِ ۱٬۱۹۰٬۴۰۰ (تکراریِ ظاهری) برداشته شد و پرداخت به دو ردیف قسط وصل شد؛ برچسب «پرداخت قبلی» نمی‌خورد (' + bi.rows.join(' | ') + ')');
-  ok(/ردیف معمولیِ قبلی که پرداخت قسط بود/.test(bi.sum), 'خلاصه می‌گوید ردیف معمولیِ قبلی به قسطش وصل شد');
+  /* ۱.۳.۳۷: ثبت گروهی دیگر ردیف معمولی را به قسط تبدیل نمی‌کند: همان ردیف معمولی (تکراری) می‌ماند و ردیف قسط دست نمی‌خورد */
+  ok(bi.rows.length === 2 && bi.rows.some(x => /^-:undefined:ملی::$/.test(x)) && bi.rows.some(x => /^pa:4:::/.test(x)) && !/به قسطش وصل شد/.test(bi.sum), 'ردیف معمولیِ ۱٬۱۹۰٬۴۰۰ سر جایش ماند (تکراری) و به قسط وصل نشد (' + bi.rows.join(' | ') + ')');
   ok(bi.secTitles.length === 1 && bi.noUser, 'عنوان کارت با املای دیگر همان کارت شناخته شد؛ کارت تازه یا «نام کاربر» ساخته نشد');
 
-  /* ---------- پنجرهٔ ترمیم قسط‌ها ---------- */
-  console.log('• ترمیم یک‌بارهٔ قسط‌ها');
+  /* ---------- ۱.۳.۳۷: ترمیم قسط‌ها برداشته شد؛ «بررسی تکراری‌ها» مستقیم فقط تکراری‌ها ---------- */
+  console.log('• بی پنجرهٔ ترمیم قسط');
   const p2 = await page(b, [], { keepRepair: true }); p2.on('pageerror', e => errors.push(e.message));
   await p2.goto(INDEX); await p2.waitForTimeout(1200);
   const rp = await p2.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
-    selectedBankAccounts.push({ id: 'bm', bank: 'بانک ملی', label: 'ملی ۲۰۰۲', openingBalance: 0, createdAt: { y: 1405, m: 1, d: 1 } }); saveBankAccountsSelection();
     periodData.expense.sections = [{ id: 's1', title: 'سارا', rows: [emptyRow('expense')] }];
-    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 7142856 /* 595238 × 12 */, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
-    plans.push({ id: 'pb', name: 'وام ب', count: 12, paidCount: 6, amount: 7142856 /* 595238 × 12 */, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 2 });
-    const pr = (pid, idx, day) => Object.assign(emptyRow('expense'), { day: String(day), desc: 'x', amount: 595238, status: 'paid', account: '', fromPlanId: pid, fromPlanIndex: idx });
+    plans.push({ id: 'pa', name: 'وام الف', count: 12, paidCount: 6, amount: 7142856, startYear: 1405, startMonth: 1, startDay: 20, expenseSectionId: 's1', expenseSectionTitle: 'سارا', createdAt: 1 });
     const pl = (amt, day) => Object.assign(emptyRow('expense'), { day: String(day), desc: '', amount: amt, status: 'paid', account: 'ملی ۲۰۰۲' });
-    archive['1405-5'] = { income: { sections: [] }, expense: { sections: [{ id: 's1', title: 'سارا', rows: [pr('pa', 4, 20), pr('pb', 4, 20), pl(1190400, 20), pl(1190400, 20)] }] } };
-    archive['1405-6'] = { income: { sections: [] }, expense: { sections: [{ id: 's1', title: 'سارا', rows: [pr('pa', 5, 20), pr('pb', 5, 20), pl(600000, 23), pl(595591, 23)] }] } };
+    archive['1405-6'] = { income: { sections: [] }, expense: { sections: [{ id: 's1', title: 'سارا', rows: [pl(600000, 23), pl(595591, 23)] }] } };
     persistCurrent(); saveArchive();
-    const out = { list: hkInstallmentRepair(false).map(x => x.plan + ':' + x.k + ':' + x.amount) };
-    /* از «بررسی تکراری‌ها» هم اول همین پنجره باز می‌شود */
     openDupCleanup(); await w(150);
-    const ov = document.getElementById('hkInstRepOv');
-    out.dlg = !!ov; out.chk = ov ? ov.querySelectorAll('.hk-rep-chk').length : 0;
-    ov.querySelector('.hk-bulk-ok').click(); await w(400);
-    const rows = m => archive['1405-' + m].expense.sections.flatMap(s => s.rows).filter(x => x.amount);
-    out.plain = [5, 6].map(m => rows(m).filter(x => !x.fromPlanId).length);
-    out.linked = [5, 6].map(m => rows(m).filter(x => x.smsLinked && x.account === 'ملی ۲۰۰۲').length);
-    out.again = hkInstallmentRepair(false).length;
-    out.amt6 = rows(6).filter(x => x.smsLinked).map(x => x.amount).sort();
-    await w(300);
+    const out = { repairDlg: !!document.getElementById('hkInstRepOv'), fns: typeof hkInstallmentRepair + '|' + typeof hkUndoWrongInstallmentLinks };
+    out.plain = archive['1405-6'].expense.sections.flatMap(s => s.rows).filter(x => x.amount && !x.fromPlanId).length;
     if (document.getElementById('hkDupOv')) document.getElementById('hkDupOv').remove();
     return out;
   });
-  await p2.waitForTimeout(3000);
-  const flag = await p2.evaluate(() => localStorage.getItem(STORAGE_KEY + '_instRepair1335'));
-  ok(rp.list.length === 4 && rp.list.filter(x => /^وام الف/.test(x)).length === 2 && rp.list.filter(x => /^وام ب/.test(x)).length === 2 && rp.list.filter(x => /:2:1190400$/.test(x)).length === 2, 'چهار ردیف معمولی پیدا شد؛ هر وام فقط یک بار (۱٬۱۹۰٬۴۰۰ = دو قسطِ هر وام) (' + rp.list.join(' | ') + ')');
-  ok(rp.dlg && rp.chk === 4, 'از «بررسی تکراری‌ها» اول پنجرهٔ ترمیم با فهرست تیک‌دار باز شد');
-  ok(rp.plain[0] === 0 && rp.plain[1] === 0 && rp.linked[0] === 4 && rp.linked[1] === 2 && rp.again === 0, 'با «وصل کردن» ردیف‌های معمولی برداشته شدند و پرداخت‌ها با بانک به ردیف قسطشان وصل شدند؛ بار دوم چیزی نمی‌ماند');
-  ok(JSON.stringify(rp.amt6) === JSON.stringify([595591, 600000]), 'مبلغ واقعی هر برداشت روی ردیف قسط نشست (۶۰۰٬۰۰۰ و ۵۹۵٬۵۹۱)');
-  ok(flag === '1', 'بررسی یک‌باره بعد از آپدیت اجرا و علامت‌گذاری شد');
+  ok(!rp.repairDlg && rp.fns === 'undefined|undefined' && rp.plain === 2, '«بررسی تکراری‌ها» دیگر پنجرهٔ ترمیم قسط باز نمی‌کند و ردیف‌های معمولی دست نمی‌خورند');
 
   /* ---------- پیوست ---------- */
   console.log('• پیوست: پخش صدا، عکس، دایره، گالری');

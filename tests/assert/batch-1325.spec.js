@@ -14,7 +14,7 @@ const ACC = 'ملت';
   /* بدون ساعت ثابت: محافظ زمانی منوها با Date.now واقعی آزموده شود */
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript(() => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
     localStorage.setItem('hesabKetabArchive_v5_autoBackup', JSON.stringify({ enabled: true }));
     window.Capacitor = { isNativePlatform: () => true, Plugins: { NativeFileExport: { saveAutoBackup: async () => ({}), listAutoBackups: async () => ({ files: [] }), deleteAutoBackup: async () => ({}), readAutoBackup: async () => ({ data: '' }) } } };
   });

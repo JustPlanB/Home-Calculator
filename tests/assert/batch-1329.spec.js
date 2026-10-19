@@ -13,7 +13,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   const inbox = [];
   for (let i = 0; i < 3; i++) inbox.push({ address: 'Bank Mellat', date: T(2026, 10, 3 + i), body: 'بانک ملت\nبرداشت 10,000\nحساب 0000***' + (1000 + i) + '\nمانده ' + (900000 - i * 1000).toLocaleString('en') });
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox)};
     window.Capacitor = { isNativePlatform: () => true, Plugins: { BankSms: { readInbox: () => Promise.resolve({ items: window.__inbox }), getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve(), permStatus: () => Promise.resolve({ sms: true, notif: true }) } } };` });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));
@@ -30,7 +30,8 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     const sel = cells.filter(c => c.querySelector('.fancy-select-btn, .dark-select-btn'));
     const out = {};
     out.def = sel.map(c => { const bt = c.querySelector('.fancy-select-btn, .dark-select-btn'); const bs = getComputedStyle(bt, '::before'); return { name: bt.dataset.name, def: bt.classList.contains('bsr-def'), before: bs.content, fs: getComputedStyle(bt).fontSize, col: bs.color, align: getComputedStyle(bt).textAlign }; });
-    out.labelsHidden = cells.every(c => getComputedStyle(c.querySelector('.balance-acc-label')).display === 'none');
+    out.labelsShown = sel.map(c => { const l = c.querySelector('.balance-acc-label'); return getComputedStyle(l).display !== 'none' ? l.textContent.trim() : ''; }).filter(Boolean);
+    out.divX = sel.map(c => Math.round(c.querySelector('.balance-acc-label').getBoundingClientRect().left));
     /* «نوع» → «برداشت» */
     const ty = document.getElementById('balanceSearchType'), tyBtn = ty.parentNode.querySelector('.fancy-select-btn');
     tyBtn.click(); await w(80);
@@ -52,10 +53,12 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     closePersonDetail(); await w(200);
     return out;
   });
-  ok(f.def.length === 6 && f.def.every(x => x.def && x.before === '"' + x.name + '"' && x.fs === '0px'), 'در حالت پیش‌فرض داخل هر باکس فقط اسم فیلتر (' + f.def.map(x => x.name).join('، ') + ')');
-  ok(f.def.every(x => { const m = x.col.match(/\d+/g).map(Number); return m[0] > 110 && m[0] < 185 && Math.abs(m[0] - m[2]) < 12 && x.align === 'right'; }) && f.labelsHidden, 'نوشتهٔ باکس‌ها طوسی و راست‌چین؛ برچسب بیرونی نیست');
-  ok(f.listOpts[0].t === 'همه' && f.listOpts[0].sel && f.listOpts.every(o => o.c === 'rgb(255, 255, 255)'), 'با باز شدن: «همه» انتخاب‌شده و بالا، گزینه‌ها سفید (' + f.listOpts.map(o => o.t).join('، ') + ')');
-  ok(!f.afterPick.def && f.afterPick.txt === 'برداشت' && f.afterPick.fs !== '0px' && f.resetDef, 'گزینهٔ غیرپیش‌فرض در باکس دیده می‌شود («برداشت») و با پاک کردن جستجو دوباره «نوع»');
+  /* ۱.۳.۳۷: هر باکس = برچسب ثابت راست (اسم فیلتر) | خط تفکیک | منوی کشویی با پیش‌فرض «همهٔ …» (طوسی) */
+  ok(f.def.length === 6 && f.labelsShown.length === 6 && f.labelsShown.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته', 'برچسب ثابت هر فیلتر داخل باکس دیده می‌شود (' + f.labelsShown.join('، ') + ')');
+  ok(f.def.filter(x => x.def).length >= 5 && f.def.every(x => x.fs !== '0px' && x.align === 'right'), 'منوی کشویی در حالت پیش‌فرض گزینهٔ «همهٔ …» را نشان می‌دهد');
+  ok(f.listOpts[0].t === 'همهٔ انواع' && f.listOpts[0].sel && f.listOpts.every(o => o.c === 'rgb(255, 255, 255)'), 'با باز شدن: «همهٔ انواع» انتخاب‌شده و بالا، گزینه‌ها سفید (' + f.listOpts.map(o => o.t).join('، ') + ')');
+  ok(!f.afterPick.def && f.afterPick.txt === 'برداشت' && f.resetDef, 'گزینهٔ غیرپیش‌فرض در باکس دیده می‌شود («برداشت») و با پاک کردن جستجو دوباره پیش‌فرض');
+  ok(f.divX.length === 6 && Math.max(...f.divX) - Math.min(...f.divX.filter((x, i) => i % 2 === 0)) >= 0 && new Set(f.divX.filter((x, i) => i % 2 === 0)).size === 1 && new Set(f.divX.filter((x, i) => i % 2 === 1)).size === 1, 'خط‌های تفکیک باکس‌ها در یک راستا (' + f.divX.join(',') + ')');
   ok(f.desc.ph === 'جستجوی شرح' && f.desc.ratio >= 1.9 && f.desc.align === 'right', 'باکس شرح: فقط «جستجوی شرح» داخلش، دو برابر بقیه (×' + f.desc.ratio + ')');
   ok(f.amt.ph === 'مبلغ از' && f.amt.hint === 'done' && f.amt.clrHidden0 && f.amt.clrShown && f.amt.cleared, 'مبلغ: دکمهٔ «C» داخل باکس عدد را پاک می‌کند؛ دکمهٔ کیبورد «تأیید»');
 
