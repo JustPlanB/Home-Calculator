@@ -107,9 +107,10 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     openVoiceInput(inp); await w(300);
     const ov = document.querySelector('.voice-overlay'), rects = ov ? [...ov.querySelectorAll('.vo-wave rect')] : [];
     const out = { n: rects.length, color: ov ? getComputedStyle(ov.querySelector('.vo-mic')).backgroundImage + '|' + getComputedStyle(ov.querySelector('.vo-mic')).backgroundColor : '', fill: rects.map(r => getComputedStyle(r).fill).filter((x, i, a) => a.indexOf(x) === i).join('|') };
-    const hs = () => rects.map(r => r.style.transform).join(',');
-    window.__vo.level({ rms: -2 }); await w(400); out.quiet = hs();
-    window.__vo.level({ rms: 10 }); await w(400); out.loud = hs();
+    const hs = () => rects.map(r => parseFloat(r.style.height) || 0);   /* ۱.۳.۴۱: ارتفاع خط (نه scale) */
+    window.__vo.level({ rms: -2 }); await w(1200); out.quiet = hs();
+    window.__vo.level({ rms: 10 }); await w(1200); out.loud = hs();
+    out.round = rects.every(r => r.getAttribute('rx') === '4' && r.getAttribute('width') === '8');
     window.__vo.partial({ text: 'خرید س*** مارکت' }); await w(30); out.partial = ov.querySelector('.vo-text').textContent;
     window.__voDone({ text: 'خرید س*** مارکت' }); await w(200);
     out.final = inp.value;
@@ -117,7 +118,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     return out;
   });
   ok(vo.n === 9 && /^none\|rgba\(0, 0, 0, 0\)$/.test(vo.color) && vo.fill === 'rgb(47, 155, 255)|rgb(124, 196, 255)', 'هنگام شنیدن (۱.۳.۴۰): فقط ۹ خط آبی در دو رنگ، بدون هیچ دایره‌ای (' + vo.color + ' / ' + vo.fill + ')');
-  ok(vo.quiet !== vo.loud && vo.loud.split(',').some(t => parseFloat(t.replace(/[^0-9.]/g, '')) > 0.6), 'ارتفاع خط‌ها با شدت صدا تغییر می‌کند');
+  ok(Math.max(...vo.loud) > Math.max(...vo.quiet) + 10 && vo.round, 'ارتفاع خط‌ها با شدت صدا تغییر می‌کند؛ خط‌ها باریک با سر کاملاً گرد (' + Math.max(...vo.quiet) + '→' + Math.max(...vo.loud) + ')');
   ok(vo.partial === 'خرید سوپر مارکت' && vo.final === 'خرید سوپر مارکت' && vo.unmask === 'سوپر', '«س***» (فیلتر سرویس گفتار) به «سوپر» برمی‌گردد');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   ok(/MASK_OFFENSIVE_WORDS",false/.test(patch), 'اندروید ۱۳+: ستاره‌دار کردن کلمه‌ها در سرویس گفتار خاموش');
