@@ -127,7 +127,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     out.vals = [...host.querySelectorAll('.hk-ar-val')].map(v => ({ t: v.textContent, c: getComputedStyle(v).color, below: v.getBoundingClientRect().bottom <= tr.top + 1 /* ۱.۳.۳۶: بالای ریل */ }));
     /* ۱.۳.۳۶: درجه‌ها زیر ریل، اولی و آخری بالای ریل (مقدار انتخاب‌شده هم بالای ریل) */
     const _tk = [...host.querySelectorAll('.hk-ar-tick')];
-    out.ticksAbove = _tk.slice(1, -1).every(t => t.getBoundingClientRect().top >= tr.bottom - 1) && [_tk[0], _tk[_tk.length - 1]].every(t => t.getBoundingClientRect().bottom <= tr.top + 1);
+    out.ticksAbove = _tk.slice(1, -1).every(t => t.getBoundingClientRect().top >= tr.bottom - 1) && [_tk[0], _tk[_tk.length - 1]].every(t => t.getBoundingClientRect().top >= tr.bottom - 1);   /* ۱.۳.۴۰: سرها هم زیر ریل */
     /* کشیدن دستگیرهٔ «تا» به وسط (۵ میلیون) */
     const drag = async (h, x) => {
       const r = h.getBoundingClientRect(), y = r.top + r.height / 2, x0 = r.left + r.width / 2;
@@ -161,7 +161,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   ok(f.tickTxt[0] === '۰' && /\+۵۰میلیون/.test(f.tickTxt[f.tickTxt.length - 1]) && /هزار/.test(f.tickTxt[1]), 'برچسب دوخطی (عدد + هزار/میلیون) و آخری «+۵۰ میلیون»');
   ok(f.tickGaps.every(g => Math.abs(g - f.tickGaps[0]) <= 2) && f.tickGaps[0] > 0, 'فاصلهٔ درجه‌ها برابر، ۰ سمت چپ (از ۱.۳.۳۱) (' + f.tickGaps[0] + 'px)');
   ok(f.track.h >= 6 && f.track.h <= 12 && parseFloat(f.track.r) >= 3 && f.track.fill === 'rgb(10, 132, 255)', 'ریل ضخیم (' + f.track.h + 'px) با سرهای گرد و بازهٔ آبی');
-  ok(/Q/.test(f.shape) && /L11 24\.5/.test(f.shape) && f.ticksAbove && f.vals.every(v => v.below && v.c === 'rgb(10, 132, 255)'), 'دستگیرهٔ سپری (بالا گرد، پایین تیز)؛ درجه‌ها زیر ریل (اولی/آخری بالا) و مقدارها بالای ریل به رنگ آبی');
+  ok(/Q/.test(f.shape) && /L11 24\.5/.test(f.shape) && f.ticksAbove && f.vals.every(v => v.below && v.c === 'rgb(10, 132, 255)'), 'دستگیرهٔ سپری (بالا گرد، پایین تیز)؛ همهٔ درجه‌ها زیر ریل و مقدارها بالای ریل به رنگ آبی');
   ok(f.hMinAt > 0 && f.amt.val && f.vals[0].t === '۲٫۵ میلیون' && f.hMaxAtLeft && /و بیشتر/.test(f.vals[1].t), 'مبلغ نوشته‌شده دستگیره را جابه‌جا کرد («' + f.vals[0].t + '»، «' + f.vals[1].t + '»)');
   ok(f.afterMax.val === '۵,۰۰۰,۰۰۰', 'کشیدن دستگیرهٔ «تا» عدد باکس را عوض کرد (' + f.afterMax.val + ')');
   ok(f.noCross.mx >= f.noCross.mn && f.noCross.mx === 2500000, 'دستگیره‌ها از هم رد نمی‌شوند');

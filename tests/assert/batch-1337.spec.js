@@ -35,14 +35,14 @@ async function page(b, extra) {
     const i = document.getElementById('balanceSearchInput'); i.value = 'نان'; i.dispatchEvent(new Event('input')); await w(300);
     const tr = document.querySelector('#search-result-body tr');
     out.firstCells = [...tr.children].map(td => td.className);
-    /* ردیف جمع: پایین جدول، چسبان نیست، زمینهٔ جدا و خط بالا */
+    /* ردیف جمع (۱.۳.۴۰): پایین جدول چسبان، زمینهٔ مات و جدا، خط ضخیم بالا */
     const ftd = document.querySelector('#search-result-foot td'), btd = document.querySelector('#search-result-body td');
     const cs = getComputedStyle(ftd);
-    out.foot = { pos: cs.position, bg: cs.backgroundColor, bodyBg: getComputedStyle(btd).backgroundColor, bt: parseFloat(cs.borderTopWidth) };
+    out.foot = { pos: cs.position, bg: cs.backgroundImage + cs.backgroundColor, bodyBg: getComputedStyle(btd).backgroundImage + getComputedStyle(btd).backgroundColor, bt: parseFloat(getComputedStyle(ftd, '::before').height) };
     const sc = document.getElementById('searchResultScroll');
     sc.scrollTop = 0; await w(50);
     const fr = ftd.getBoundingClientRect(), scr = sc.getBoundingClientRect();
-    out.footBelow = fr.top >= scr.bottom - 1;   /* ۱۶ ردیف: جمع بعد از ردیف آخر، نه روی ردیف‌ها */
+    out.footBelow = fr.bottom <= scr.bottom + 1 && fr.top < scr.bottom - 10;   /* ۱۶ ردیف: جمع پایین کادر جدول دیده می‌شود (ردیف‌ها زیرش رد می‌شوند) */
     sc.scrollTop = 99999; await w(50);
     const lastRow = [...document.querySelectorAll('#search-result-body tr')].pop().getBoundingClientRect();
     out.footAfterLast = ftd.getBoundingClientRect().top >= lastRow.bottom - 1;
@@ -82,7 +82,7 @@ async function page(b, extra) {
   await p.touchscreen.tap(s.clr.x, s.clr.y); await p.waitForTimeout(250);
   const clr = await p.evaluate(() => { const i = document.getElementById('balanceSearchInput'); return { v: i.value, f: document.activeElement === i }; });
   ok(s.th.join('،') === 'تاریخ،شرح،بانک،مبلغ' && s.firstCells[0] === 'sr-date' && s.firstCells[1] === 'sec-name', 'ستون‌های نتیجه به ترتیب: تاریخ، شرح، بانک، مبلغ');
-  ok(s.foot.pos === 'static' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول می‌ماند (چسبان نیست، روی ردیف‌ها نمی‌آید)، زمینهٔ جدا و خط بالا (' + s.foot.bg + ')');
+  ok(s.foot.pos === 'sticky' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول چسبان (همیشه دیده می‌شود)، زمینهٔ جدا و خط ضخیم بالا (' + s.foot.bg + ')');
   /* ۱.۳.۳۸: کادر جستجو بالای صفحه می‌چسبد و با اسکرول جمع می‌شود (batch-1338) */
   ok(s.panelOv === 'auto' && s.scrolled > 20, 'منوی جستجو یک‌تکه اسکرول می‌شود (' + s.scrolled + 'px)');
   ok(s.overlaps.every(n => n === 0), 'بازهٔ مبلغ: در هیچ حالتی برچسب‌ها روی هم نمی‌افتند (' + s.overlaps.join(',') + ')');

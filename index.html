@@ -1926,15 +1926,27 @@
     .hk-scroll11.on { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
     .hk-scroll11 > table { width: 100%; table-layout: fixed; }
     .hk-scroll11 thead th { position: sticky; top: 0; z-index: 1; }
-    /* ۱.۳.۳۷: ردیف‌های جمع پایین جدول می‌مانند (چسبان نیستند و روی ردیف‌های دیگر نمی‌آیند)؛ زمینهٔ متفاوت + خط بالا */
-    .hk-scroll11 tfoot td { position: static; }
-    body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { background: rgba(10,132,255,0.13) !important; font-weight: 800; }
-    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td { background: rgba(10,132,255,0.08) !important; }
+    /* ۱.۳.۴۰: ردیف‌های جمع پایین جدول چسبان‌اند (مثل ردیف عنوان‌ها همیشه دیده می‌شوند)؛ زمینهٔ مات تا ردیف‌ها از زیرشان رد شوند.
+       فاصلهٔ پایینِ هر ردیف جمع (وقتی چند ردیف است) را hkFit11 می‌گذارد */
+    .hk-scroll11 tfoot td { position: sticky; bottom: 0; z-index: 2; }
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { background: linear-gradient(rgba(10,132,255,0.13), rgba(10,132,255,0.13)), var(--tbl-bg, #2c2c2e) !important; font-weight: 800; }
+    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td { background: linear-gradient(rgba(10,132,255,0.08), rgba(10,132,255,0.08)), var(--lt-surface, #fff) !important; }
     /* ۱.۳.۳۹: خط‌های بین ردیف‌های جمع و بین ستون‌ها روی زمینهٔ آبی سفید (دیده شوند) */
     body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { border-color: rgba(255,255,255,0.4) !important; }
     html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td { border-color: var(--lt-line, #c7c7cc) !important; }
-    body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, .hk-scroll11 .summary-table tfoot tr:first-child td { border-top: 2px solid var(--tbl-stroke, rgba(255,255,255,0.55)) !important; }
-    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot tr:first-child td { border-top-color: var(--lt-line, #c7c7cc) !important; }
+    /* ۱.۳.۴۰: خط ضخیم بالای جمع‌ها یک نوار روی همهٔ خط‌های عمودی (خط عمودی از بالا داخلش نمی‌آید؛ لب‌به‌لب)
+       (خانه‌های چسبان خط‌های جدولِ collapse را می‌پوشانند؛ پس خط افقی بالای هر ردیف جمع خودش کشیده می‌شود) */
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { border-top: 0 !important; border-bottom: 0 !important; border-left: 0 !important; border-right: 0 !important; }
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td::before, .hk-scroll11 .summary-table tfoot td::before,
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td + td::after, .hk-scroll11 .summary-table tfoot td + td::after {
+      content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: rgba(255,255,255,0.4); z-index: 3; pointer-events: none; }
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td + td::after, .hk-scroll11 .summary-table tfoot td + td::after { left: auto; right: -1px; top: 1px; width: 1px; height: auto; bottom: 0; } /* جدول راست‌به‌چپ: خانهٔ دوم سمت چپ است و خط عمودی لبهٔ راستش */
+    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td::before, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td::before,
+    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td + td::after, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td + td::after { background: var(--lt-line, #c7c7cc); }
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td::before, .hk-scroll11 .summary-table tfoot tr:first-child td::before {
+      height: 2px; background: var(--tbl-stroke, rgba(255,255,255,0.55)); z-index: 4; }
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td + td::after, .hk-scroll11 .summary-table tfoot tr:first-child td + td::after { top: 2px; }
+    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td::before, html[data-theme="light"] .hk-scroll11 .summary-table tfoot tr:first-child td::before { background: var(--lt-line, #c7c7cc); }
     /* ۱.۳.۳۷: منوی جستجو یک‌تکه اسکرول می‌شود: کادر فیلترها همراه صفحه بالا می‌رود (همیشه باز)؛ عنوان ستون‌های نتیجه چسبان */
     body.search-open #panel-balance.active { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overflow-anchor: none; }
     /* ۱.۳.۳۸: بعد از نتیجه، با اولین اسکرول رو به پایین کادر جستجو نرم جمع می‌شود (فقط «جستجوی شرح» می‌ماند، بالای صفحه چسبیده)؛
@@ -3957,6 +3969,9 @@
       text-align: right;
       pointer-events: auto;
     }
+    .cell-text-popup.hk-time-pop { text-align: center; overflow: visible; }
+    .hk-time-pop .hk-time-btn { display: block; margin: 8px auto 0; padding: 5px 14px; border-radius: 8px; border: 1px solid rgba(10,132,255,0.55); background: rgba(10,132,255,0.16); color: #4da3ff; font: inherit; font-size: 0.82rem; cursor: pointer; }
+    .hk-time-pop .hk-time-inp { position: absolute; left: 50%; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; }
     /* فاصله پویا بین باکس اسامی و فیلتر روز در مانده */
     #panel-balance .balance-fixed-header .filter-bar {
       display: flex;
@@ -9209,7 +9224,7 @@
     .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 100px; pointer-events: none; }
     .hk-ar-tick { position: absolute; top: 62px; transform: translateX(-50%); text-align: center; font-size: 0.66rem; line-height: 1.15; color: var(--muted, #8e8e93); white-space: nowrap; direction: rtl; }
     .hk-ar-tick small { display: block; font-size: 0.56rem; opacity: 0.85; }
-    .hk-ar-tick.hk-ar-end { top: 2px; }
+    /* ۱.۳.۴۰: اول و آخر محور هم مثل بقیهٔ درجه‌ها زیر محور؛ بالای محور فقط عددهایی که با دستگیره جابه‌جا می‌شوند */
     .hk-ar-tick.hk-ar-off, .hk-ar-tick.hk-ar-thin { visibility: hidden; }
     .hk-ar-rg { display: inline-flex; direction: ltr; gap: 5px; align-items: baseline; }
     .hk-ar-rg > span { direction: rtl; unicode-bidi: isolate; }
@@ -10172,9 +10187,15 @@
       box-shadow: 0 10px 30px rgba(10,132,255,0.45), inset 0 2px 0 rgba(255,255,255,0.35);
       transform: scale(calc(1 + var(--vo-l, 0) * 0.16)); transition: transform 0.08s linear; -webkit-tap-highlight-color: transparent; }
     .vo-mic svg { width: 54px; height: 54px; fill: currentColor; }
-    /* ۱.۳.۳۹: هنگام شنیدن، موج صدا (۱۱ خط گرد) که ارتفاع هر خط با شدت صدا کم و زیاد می‌شود */
-    .vo-mic svg.vo-wave { width: 78px; height: 48px; }
-    .vo-wave rect { transform-box: fill-box; transform-origin: center; transition: transform 0.12s ease-out; }
+    /* ۱.۳.۴۰: هنگام شنیدن فقط خط‌های موج صدا (آبی، دو تهِ رنگ یکی در میان، بی دایره)؛ هر خط جدا و پیوسته بالا و پایین می‌رود و با شدت صدا بلندتر می‌شود */
+    .voice-overlay .vo-ring.vo-bars { width: 220px; height: 150px; }
+    .voice-overlay .vo-ring.vo-bars i { display: none; }
+    .voice-overlay .vo-mic.vo-bars { width: 200px; height: 140px; border-radius: 16px; background: none !important; box-shadow: none !important; transform: none !important; }
+    .vo-mic svg.vo-wave { width: 180px; height: 120px; overflow: visible; }
+    .vo-wave rect { transform-box: fill-box; transform-origin: center; transition: transform 0.16s ease-in-out; }
+    .vo-wave rect:nth-child(odd) { fill: #2f9bff; }
+    .vo-wave rect:nth-child(even) { fill: #7cc4ff; }
+    .voice-overlay.err .vo-wave rect { fill: #8e8e93 !important; }
     .vo-status { color: #fff; font-weight: 800; font-size: 1rem; }
     .vo-text { color: rgba(255,255,255,0.86); font-size: 0.95rem; min-height: 1.6em; max-width: 92%; text-align: center; line-height: 1.7; }
     .vo-btns { display: flex; gap: 10px; }
@@ -11745,6 +11766,28 @@
       if (last) return ('0' + last[1]).slice(-2) + ':' + last[2];
       if (ts > 0) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
       return '';
+    }
+    /* دکمهٔ «تغییر ساعت» زیر باکس ساعتِ خانهٔ روز: انتخاب‌گر ساعت سیستم؛ با انتخاب، ساعت ردیف عوض و ترتیب روز دوباره چیده می‌شود */
+    function hkTimePickBtn(pop, row, done) {
+      if (!pop || !row) return;
+      pop.classList.add('hk-time-pop');
+      var b = document.createElement('button'), inp = document.createElement('input');
+      b.type = 'button'; b.className = 'hk-time-btn'; b.textContent = row.time ? 'تغییر ساعت' : 'افزودن ساعت';
+      inp.type = 'time'; inp.className = 'hk-time-inp'; inp.value = row.time || ''; inp.tabIndex = -1;
+      inp.addEventListener('change', function () {
+        var v = String(inp.value || '').slice(0, 5);
+        if (!/^\d\d:\d\d$/.test(v)) return;
+        row.time = v; row.updatedAt = Date.now();
+        try { pop.remove(); } catch (e) {}
+        try { done && done(); } catch (e2) {}
+      });
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        try { if (typeof inp.showPicker === 'function') { inp.showPicker(); return; } } catch (e) {}
+        try { inp.focus(); inp.click(); } catch (e3) {}
+      });
+      pop.appendChild(b); pop.appendChild(inp);
+      try { var pr = pop.getBoundingClientRect(), vh = window.innerHeight; if (pr.bottom > vh - 8) pop.style.top = Math.max(8, vh - 8 - pr.height) + 'px'; } catch (eR) {}
     }
     /* فقط داخل هر دنبالهٔ پشت‌سرهمِ هم‌روز به ترتیب ساعت (ترتیب روزها و ردیف‌های دیگر دست نمی‌خورد) */
     function hkSortRunsByTime(rows) {
@@ -26605,7 +26648,7 @@ container.innerHTML = '';
             return;
           }
           /* روز پر: فقط ساعت تراکنش در باکس شناور (روز خودش در خانه هست) */
-          if (dayInp.readOnly && !row.reconGap) { try { showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); } catch (eP) {} }
+          if (dayInp.readOnly && !row.reconGap) { try { const pp = showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); if (pp) hkTimePickBtn(pp, row, sortAndRebuild); } catch (eP) {} }
         };
         dayInp.ondblclick = () => {
           if (preApp) return;
@@ -26617,6 +26660,13 @@ container.innerHTML = '';
           if (preApp) return;
           const d = clampDayValue(dayInp.value);
           row.day = d || '';
+          /* ردیف دستیِ امروز: ساعت همین لحظه (بعداً از باکس روز قابل تغییر است) */
+          try {
+            const tj = getTodayPersian();
+            if (d && !row.time && !row.viaSms && !fromPlan && currentYear === tj.y && currentMonth === tj.m && parseInt(d, 10) === tj.d) {
+              const nw = new Date(); row.time = ('0' + nw.getHours()).slice(-2) + ':' + ('0' + nw.getMinutes()).slice(-2);
+            }
+          } catch (eTm) {}
           dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
           dayInp.readOnly = isFilledVal(row.day);
           markFilled(dayInp, isFilledVal(row.day));
@@ -29442,18 +29492,19 @@ function getProjectBalance(subjectId) {
         if (smsK !== k) x.row.receivedOn = { y: info.y, m: info.m, d: parseInt(info.day, 10) || 0 };
         if (info.bank) x.row.account = info.bank;
         x.row.viaSms = true;
+        hkSmsStamp(x.row);
         try { var _rl = hkSmsRialFor(info.amount); if (_rl) x.row.amountRial = _rl; else delete x.row.amountRial; } catch (eRl) {}
         x.row.updatedAt = Date.now();
       } else {
         var pd = recMonthData(smsK, true);
         var sec = recSectionIn(pd, item, true) || ensureSmsSection('income', 'واریز بانکی', pd);
         if (!sec) return false;
-        recPlaceRow(sec, Object.assign(emptyRow('income'), {
+        recPlaceRow(sec, hkSmsStamp(Object.assign(emptyRow('income'), {
           day: info.day ? String(info.day) : '',
           desc: (info.desc && info.desc !== (item.name || '')) ? info.desc : (item.name || '') + ' (پیش‌دریافت ' + (MONTHS[(k % 100) - 1] || '') + ')',
           amount: info.amount, status: 'paid', account: info.bank || item.account || '',
           fromRecurringId: item.id, recForKey: k, viaSms: true, amountRial: hkSmsRialFor(info.amount) || undefined, createdAt: Date.now(), updatedAt: Date.now()
-        }));
+        })));
         if (!item.paidAhead) item.paidAhead = {};
         item.paidAhead[String(k)] = true;
         targetK = smsK;
@@ -30315,6 +30366,7 @@ function confirmSmsEntry() {
                 r.planCarried = !!keepMoavagh;
                 if (snap.account) linkedPlan.lastPayAccount = snap.account;
                 r.allowPlanFieldEdit = true;
+                hkSmsStamp(r);
                 applied = true;
                 appliedSec = s;
               });
@@ -30337,6 +30389,7 @@ function confirmSmsEntry() {
                 nr.desc = planInstallmentDesc(linkedPlan, linkedIdx, cnt) + (keepMoavagh ? ' (معوق)' : '');
                 nr.planCarried = !!keepMoavagh;
                 nr.allowPlanFieldEdit = true;
+                hkSmsStamp(nr);
                 var emptyIdxN = fallSec.rows.findIndex(function(r) {
                   return r && !r.desc && !r.amount && !r.day && !r.fromPlanId;
                 });
@@ -30382,6 +30435,7 @@ function confirmSmsEntry() {
           row.viaSms = true;
           try { var _rl2 = hkSmsRialFor(amount); if (_rl2) row.amountRial = _rl2; } catch (eRl2) {}
           row.allowPlanFieldEdit = true;
+          hkSmsStamp(row);
           try { row.financialContext = readSmsFinancialContext('expense'); } catch (eFcP) {}
           const emptyIdx = (sec.rows || []).findIndex(r => !r.desc && !r.amount && !r.day && !r.fromPlanId);
           if (emptyIdx >= 0) sec.rows[emptyIdx] = row;
@@ -30399,6 +30453,7 @@ function confirmSmsEntry() {
         row.status = 'paid';
         row.account = bank;
         row.viaSms = true; /* برای تشخیص «پیامک بانکی در برابر ثبت دستی» */
+        hkSmsStamp(row);
         try { var _rl = hkSmsRialFor(amount); if (_rl) row.amountRial = _rl; } catch (eRl) {}
         try {
           row.financialContext = readSmsFinancialContext(tab);
@@ -30448,6 +30503,7 @@ function confirmSmsEntry() {
         safety.status = 'paid';
         safety.account = bank || '';
         safety.viaSms = true;
+        hkSmsStamp(safety);
         try {
           safety.financialContext = readSmsFinancialContext(tab);
           if (tab === 'expense' && safety.financialContext && safety.financialContext.accountType === 'project' &&
@@ -30969,30 +31025,35 @@ function confirmSmsEntry() {
       confirmSmsEntry = gated;
       try { window.confirmSmsEntry = gated; } catch (eW) {}
     })();
-    /* ثبت تکیِ پیامک: ساعت تراکنش (از متن پیامک، وگرنه همین لحظه) روی ردیف ثبت‌شده می‌نشیند */
+    /* ===== ۱.۳.۴۰: ساعت و پیوست‌های ثبت تکیِ پیامک همان لحظهٔ ساختن/پر کردن ردیف روی خود ردیف =====
+       ساعت از متن پیامک (مثلاً «۰۷۲۶-۱۲:۵۵»)، وگرنه زمان رسیدن پیامک، وگرنه همین لحظه. هر مسیر ثبت (ردیف عادی، قسط، معوق،
+       درآمد ثابت، ردیف ایمنی) hkSmsStamp(row) را صدا می‌زند؛ دیگر ردیف بعداً با حدس (مبلغ/زمان ساخت) پیدا نمی‌شود. */
+    function hkSmsStamp(row) {
+      if (!row) return row;
+      var c = window._hkSmsCur;
+      if (!c) return row;
+      if (c.time && !row.time) row.time = c.time;
+      if (_smsAtt.list.length) {
+        var items = _smsAtt.list.slice();
+        _smsAtt.list = [];
+        if (!Array.isArray(row.att)) row.att = [];
+        items.forEach(function (a) {
+          if (a._blob) HKAttach.get(a.id).then(function (bl) { if (!bl) return HKAttach.put(a.id, a._blob); }).catch(function () { try { HKAttach.put(a.id, a._blob); } catch (e) {} });
+          var cp = Object.assign({}, a); delete cp._blob; row.att.push(cp);
+        });
+        try { hkSmsAttRender(); } catch (e) {}
+      }
+      return row;
+    }
     (function () {
       var orig = confirmSmsEntry;
       if (typeof orig !== 'function' || orig._hkTime) return;
-      var stampTime = function (pe, tm, t0) {
-        var amt = Math.round(Number(pe && pe.amount) || 0); if (!amt || !tm) return;
-        var cur = periodKey(currentYear, currentMonth), best = null;
-        iterAllPeriodData(function (pd, key) {
-          if (key === cur && pd !== periodData) return;
-          ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
-            if (!r || r.time || r.deletedAt || Math.round(Number(r.amount) || 0) !== amt) return;
-            var fresh = Math.max(Number(r.createdAt) || 0, Number(r.updatedAt) || 0) >= t0;
-            if (fresh || !best) best = { r: r, fresh: fresh, sc: sc };
-            else if (!best.fresh && fresh) best = { r: r, fresh: fresh, sc: sc };
-          }); }); });
-        });
-        if (best && best.fresh) { best.r.time = tm; try { best.sc.rows = hkSortRunsByTime(best.sc.rows); } catch (e) {} try { scheduleSave(); } catch (e2) {} }
-      };
       var w = function () {
-        var pe = pendingSmsEntry, t0 = Date.now() - 1000;
-        var tm = pe ? (hkSmsTime(pe.raw || '', 0) || hkSmsTime('', Date.now())) : '';
-        var res = orig.apply(this, arguments);
-        if (pe && tm) { setTimeout(function () { stampTime(pe, tm, t0); }, 0); setTimeout(function () { stampTime(pe, tm, t0); }, 1500); }
-        return res;
+        var pe = pendingSmsEntry;
+        var tm = pe ? (hkSmsTime(pe.raw || '', 0) || hkSmsTime('', Number(pe.ts || pe.date) || Date.now())) : '';
+        /* تا پیامک بعدی باز شود معتبر است (ثبت ممکن است بعد از پنجرهٔ تطبیق موجودی انجام شود) */
+        window._hkSmsCur = pe ? { time: tm, raw: pe.raw } : null;
+        return orig.apply(this, arguments);
       };
       for (var k in orig) { try { w[k] = orig[k]; } catch (eK) {} }
       w._hkTime = true;
@@ -31086,19 +31147,23 @@ function confirmSmsEntry() {
       } catch (e) {}
     }, 3000);
     /* موج صدا: ۱۱ خط با الگوی ارتفاعِ متقارن (بلندترین وسط)؛ هر خط با شدت صدا (و کمی تصادفی) بلند و کوتاه می‌شود */
-    var VO_WAVE = [0.24, 0.4, 0.32, 0.56, 0.7, 1, 0.82, 0.46, 0.6, 0.4, 0.24];
+    var VO_BARS = 9;
     function _voiceWaveSvg() {
-      return '<svg class="vo-wave" viewBox="0 0 106 60" aria-hidden="true">' + VO_WAVE.map(function (h, i) {
-        var H = Math.max(10, Math.round(h * 60));
-        return '<rect x="' + (i * 10) + '" y="' + ((60 - H) / 2) + '" width="6" height="' + H + '" rx="3" style="transform:scaleY(0.35)"/>';
-      }).join('') + '</svg>';
+      var out = '<svg class="vo-wave" viewBox="0 0 172 120" aria-hidden="true">';
+      for (var i = 0; i < VO_BARS; i++) out += '<rect x="' + (i * 20) + '" y="0" width="12" height="120" rx="6" style="transform:scaleY(0.3)"/>';
+      return out + '</svg>';
     }
+    /* هر ۱۶۰ میلی‌ثانیه ارتفاع تازهٔ هر خط (تصادفی، مستقل)؛ شدت صدا (۰ تا ۱) سقفش را بالا می‌برد؛ در سکوت موج آرام */
     function _voiceWave(level) {
-      if (!_voice.el) return;
-      var rs = _voice.el.querySelectorAll('.vo-wave rect');
+      if (_voice.el) _voice.level = level;
+    }
+    function _voiceWaveTick() {
+      if (!_voice.el) { clearInterval(_voice.waveT); _voice.waveT = 0; return; }
+      if (_voice.el.classList.contains('err')) return;
+      var lv = Math.max(0, Math.min(1, _voice.level || 0)), rs = _voice.el.querySelectorAll('.vo-wave rect');
       for (var i = 0; i < rs.length; i++) {
-        var k = 0.28 + 0.72 * level * (0.75 + Math.random() * 0.5);
-        rs[i].style.transform = 'scaleY(' + Math.max(0.2, Math.min(1, k)).toFixed(2) + ')';
+        var lo = 0.14 + lv * 0.25, hi = 0.38 + lv * 0.62;
+        rs[i].style.transform = 'scaleY(' + (lo + Math.random() * (hi - lo)).toFixed(2) + ')';
       }
     }
     /* فیلتر کلمات نامناسبِ سرویس گفتار گوشی‌های قدیمی‌تر «سوپر» را «س***» می‌نویسد؛ کلمه‌های رایجِ ستاره‌دار برگردانده می‌شوند */
@@ -31115,12 +31180,13 @@ function confirmSmsEntry() {
       var el = document.createElement('div');
       el.className = 'voice-overlay';
       el.setAttribute('role', 'dialog');
-      el.innerHTML = '<div class="vo-ring"><i></i><i></i><button type="button" class="vo-mic" aria-label="پایان گفتن">' + _voiceWaveSvg() + '</button></div>' +
+      el.innerHTML = '<div class="vo-ring vo-bars"><i></i><i></i><button type="button" class="vo-mic vo-bars" aria-label="پایان گفتن">' + _voiceWaveSvg() + '</button></div>' +
         '<div class="vo-status">بگویید بابت چه بود…</div><div class="vo-text"></div>' +
         '<div class="vo-btns"><button type="button" class="vo-retry">دوباره</button><button type="button" class="vo-kb">نوشتن با کیبورد</button></div>';
       document.body.appendChild(el);
       _voice.el = el;
       requestAnimationFrame(function () { el.classList.add('on'); });
+      _voice.level = 0; clearInterval(_voice.waveT); _voice.waveT = setInterval(_voiceWaveTick, 160); _voiceWaveTick();
       el.querySelector('.vo-mic').onclick = function () { try { P.stop().catch(function () {}); } catch (e) {} _voiceStatus('در حال تبدیل به متن…'); };
       el.querySelector('.vo-kb').onclick = function () { closeVoiceInput(true); };
       var add = function (ev, fn) { try { Promise.resolve(P.addListener(ev, fn)).then(function (h) { if (_voice.open) _voice.listeners.push(h); else try { h.remove(); } catch (e) {} }); } catch (e) {} };
@@ -31402,6 +31468,7 @@ function confirmSmsEntry() {
       if (raw && raw === _smsAtt.raw && _smsAtt.list.length) { hkSmsAttRender(); return; }
       hkSmsAttDiscard();
       _smsAtt.raw = raw;
+      if (window._hkSmsCur && window._hkSmsCur.raw !== raw) window._hkSmsCur = null;
       _smsAtt.t0 = Date.now(); _smsAtt.amt = Math.round(Number(amount) || 0); _smsAtt.seen = new Set();
       try { iterAllPeriodData(function (pd) { ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) { if (r) _smsAtt.seen.add(r); }); }); }); }); } catch (e) {}
       hkSmsAttRender();
@@ -34451,7 +34518,11 @@ if (item.type === 'recurring') {
               if (!c) return;
               c.used = true; r.time = c.time; n++; dirty = true;
             });
-            if (dirty) sc.rows = hkSortRunsByTime(sc.rows);
+            /* ترتیب ساعتیِ همهٔ ردیف‌های ساعت‌دار (نه فقط ردیف‌هایی که الان ساعت گرفتند) */
+            if ((sc.rows || []).some(function (r) { return r && r.time; })) {
+              var srt = hkSortRunsByTime(sc.rows);
+              if (srt.some(function (r, i) { return r !== sc.rows[i]; })) { sc.rows = srt; dirty = true; }
+            }
           }); });
           if (dirty) ctxs[k] = ctx;
         });
@@ -34462,7 +34533,7 @@ if (item.type === 'recurring') {
     }
     setTimeout(function () {
       try {
-        var K = STORAGE_KEY + '_timeFill1335';
+        var K = STORAGE_KEY + '_timeFill1340';
         if (localStorage.getItem(K) || !hkBankSmsPlugin()) return;
         hkBackfillTimes().then(function (n) { if (n >= 0) { try { localStorage.setItem(K, '1'); } catch (e) {} } });
       } catch (e) {}
@@ -41995,7 +42066,6 @@ function openProjectRowPicker(secId) {
         if (el.innerHTML !== h) el.innerHTML = h;
       };
       var setVis = function (el, v) { var x = v ? '' : 'hidden'; if (el.style.visibility !== x) el.style.visibility = x; };
-      var ends = host.querySelectorAll('.hk-ar-end');
       var W = host.clientWidth;
       var clampEl = function (el) {
         if (!W || el.style.display === 'none') return;
@@ -42003,14 +42073,11 @@ function openProjectRowPicker(secId) {
         if (c < lo) el.style.left = (lo / W * 100) + '%'; else if (c > hi) el.style.left = (hi / W * 100) + '%';
       };
       var hit = function (a, b, g) { if (!a || !b) return false; var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return ra.width > 0 && rb.width > 0 && ra.left < rb.right + g && rb.left < ra.right + g; };
-      var shown = function (v) { return v.style.display !== 'none' && v.style.visibility !== 'hidden'; };
-      /* دستگیره روی اول/آخر محور: برچسب مقدار ندارد و درجهٔ همان سر (۰ یا «+بیشترین») نشان‌دهنده‌اش است و هیچ‌وقت پنهان نمی‌شود */
+      /* دستگیره روی اول/آخر محور: عدد بالایش نمی‌آید (درجهٔ همان سر، زیر محور، نشان‌دهنده‌اش است) */
       var showA = fa > 0.001, showB = fb < 0.999;
       vs[1].style.display = '';
       vs[0].style.left = xa + '%'; put(vs[0], la); setVis(vs[0], showA);
       vs[1].style.left = xb + '%'; put(vs[1], lb); setVis(vs[1], showB);
-      if (ends[0]) ends[0].classList.remove('hk-ar-off');
-      if (ends[1]) ends[1].classList.remove('hk-ar-off');
       clampEl(vs[0]); clampEl(vs[1]);
       var merge = W ? (showA && showB && hit(vs[0], vs[1], 8)) : (showA && showB && fb - fa < 0.24);
       if (merge) {
@@ -42018,34 +42085,17 @@ function openProjectRowPicker(secId) {
         vs[0].style.left = ((xa + xb) / 2) + '%'; putRange(vs[0], la, lb); setVis(vs[0], true); vs[1].style.display = 'none';
         clampEl(vs[0]);
       }
-      if (W) {
-        [0, 1].forEach(function (k) {
-          var e = ends[k]; if (!e) return;
-          var pinned = k === 0 ? !showA : !showB;
-          var other = [vs[0], vs[1]].filter(function (v) { return shown(v) && hit(e, v, 6); })[0];
-          if (!other) return;
-          if (!pinned) { e.classList.add('hk-ar-off'); return; }
-          /* سرِ پین‌شده با برچسب دستگیرهٔ دیگر برخورد دارد: یک برچسب «از – تا» به جای هر دو (هیچ سری بی‌نوشته نمی‌ماند) */
-          e.classList.add('hk-ar-off');
-          var endTxt = k === 0 ? '۰' : lab(1, true);
-          var mid = k === 0 ? xb / 2 : (xa + 100) / 2;
-          other.style.left = mid + '%';
-          if (k === 0) putRange(other, endTxt, other === vs[1] ? lb : la + ' – ' + lb); else putRange(other, other === vs[0] ? la : la + ' – ' + lb, endTxt);
-          clampEl(other);
+      /* درجه‌های زیر محور: اگر جا نیست درجه‌های میانی یکی در میان پنهان؛ اول و آخر همیشه می‌مانند */
+      if (W && host._tw !== W) {
+        host._tw = W;
+        var all = [].slice.call(host.querySelectorAll('.hk-ar-tick')), lastEnd = all[all.length - 1], last = null;
+        all.forEach(function (t) { t.classList.remove('hk-ar-thin', 'hk-ar-off'); });
+        var endR = lastEnd ? lastEnd.getBoundingClientRect() : null;
+        all.forEach(function (t, i) {
+          var r = t.getBoundingClientRect();
+          if (i === 0 || t === lastEnd) { last = r; return; }
+          if ((last && r.left < last.right + 6) || (endR && r.right > endR.left - 6)) t.classList.add('hk-ar-thin'); else last = r;
         });
-        /* درجه‌های زیر ریل: اگر جا نیست یکی در میان پنهان */
-        if (host._tw !== W) {
-          host._tw = W;
-          var last = null;
-          [].forEach.call(host.querySelectorAll('.hk-ar-tick:not(.hk-ar-end)'), function (t) {
-            t.classList.remove('hk-ar-thin');
-            var r = t.getBoundingClientRect();
-            if (last && r.left < last.right + 6) t.classList.add('hk-ar-thin'); else last = r;
-          });
-        }
-      } else {
-        if (ends[0]) ends[0].classList.toggle('hk-ar-off', fa > 0.001 && fa < 0.16);
-        if (ends[1]) ends[1].classList.toggle('hk-ar-off', fb < 0.999 && fb > 0.84);
       }
     }
     function hkAmtRangeBind(host) {
@@ -42138,14 +42188,19 @@ function openProjectRowPicker(secId) {
           /* اگر در طول انیمیشن به بالای صفحه برگشته بود (رویداد اسکرولش نادیده ماند)، همین حالا باز شود */
           setTimeout(function () { var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll'); if (st.c && p && p.scrollTop + (inner && inner.classList.contains('on') ? inner.scrollTop : 0) <= 2) set(false); }, 60);
         }, 650);
-        /* جای خالیِ موقت زیر جدول به اندازهٔ جمع شدن کادر: صفحه کوتاه نمی‌شود، پس اسکرول سر جایش می‌ماند و کادر دوباره باز نمی‌شود */
+        /* ۱.۳.۴۰: جای خالیِ موقت زیر جدول برداشته شد؛ کادر فقط وقتی جمع می‌شود که فهرست واقعاً بلند است */
         var body = document.getElementById('balanceScrollBody');
-        if (body) {
-          if (c) { var desc = h.querySelector('.bsr-desc'); body.style.setProperty('padding-bottom', (56 + Math.max(0, h.offsetHeight - (desc ? desc.offsetHeight : 0) - 30)) + 'px', 'important'); }
-          else body.style.removeProperty('padding-bottom');
-        }
+        if (body) body.style.removeProperty('padding-bottom');
         h.classList.toggle('bsr-collapsed', c);
         if (c) { try { document.querySelectorAll('.dark-select-list.open, .fancy-select-list.open').forEach(function (l) { l.classList.remove('open'); }); document.querySelectorAll('.fancy-select-wrap.is-open').forEach(function (w) { w.classList.remove('is-open'); }); } catch (e) {} }
+      }
+      /* فهرست کوتاه: جمع نمی‌شود. جمع فقط وقتی جدول نتیجه خودش اسکرول دارد (بیش از ۱۱ ردیف) یا صفحه بعد از جمع شدن کادر
+         هنوز آن‌قدر جای اسکرول دارد که برای دیدن بقیهٔ فهرست باید پایین رفت */
+      function hkLongEnough(p, innerOn) {
+        if (innerOn) return true;
+        var h = hdr(); if (!h) return false;
+        var desc = h.querySelector('.bsr-desc'), shrink = Math.max(0, h.offsetHeight - (desc ? desc.offsetHeight : 0) - 30);
+        return p.scrollHeight - p.clientHeight > shrink + 40;
       }
       function onScroll(e) {
         var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll');
@@ -42157,6 +42212,7 @@ function openProjectRowPicker(secId) {
         if (performance.now() < st.lock) return;
         if (!st.c) {
           if (!down || top <= 6 || !document.querySelector('#search-result-body tr:not(.sr-wait)')) return;
+          if (!hkLongEnough(p, innerOn && e && e.target === inner)) return;
           set(true);
         } else if (top <= 2) set(false);
       }
@@ -42194,6 +42250,12 @@ function openProjectRowPicker(secId) {
         for (var i = 0; i < rows.length && i < 11; i++) h += rows[i].getBoundingClientRect().height;
         var fr = t.tFoot ? [].slice.call(t.tFoot.rows) : [], fh = 0;
         for (var k = fr.length - 1; k >= 0; k--) fh += fr[k].getBoundingClientRect().height;
+        /* ردیف‌های جمع چسبان: هر ردیف بالای ردیف‌های جمعِ زیرش می‌نشیند */
+        var acc = 0;
+        for (var q = fr.length - 1; q >= 0; q--) {
+          [].forEach.call(fr[q].cells, function (c) { c.style.bottom = acc + 'px'; });
+          acc += fr[q].getBoundingClientRect().height;
+        }
         var on = rows.length > 11;
         sc.classList.toggle('on', on);
         sc.style.maxHeight = on ? Math.ceil(th + h + fh + 2) + 'px' : 'none';
@@ -42420,10 +42482,10 @@ function openProjectRowPicker(secId) {
         if (rangeF !== 'all') {
           var mName = MONTHS[parseInt(rangeF, 10) - 1] || '';
           if (typeF !== 'expense' && !catF) addF('درآمد کل ' + mName, sumI, _lt ? '#3f9a5c' : '#9ee858');
-          if (typeF !== 'income') addF('خرج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
+          if (typeF !== 'income') addF('مخارج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
         } else if (list.length > 1) {
           if (sumI > 0) addF('جمع درآمد (' + toPersianDigits(String(list.filter(function (x) { return x.tab === 'income'; }).length)) + ' مورد)', sumI, _lt ? '#3f9a5c' : '#9ee858');
-          if (sumE > 0) addF('جمع خرج (' + toPersianDigits(String(list.filter(function (x) { return x.tab !== 'income'; }).length)) + ' مورد)', sumE, _lt ? '#dc2626' : '#ff6b4a');
+          if (sumE > 0) addF('جمع مخارج (' + toPersianDigits(String(list.filter(function (x) { return x.tab !== 'income'; }).length)) + ' مورد)', sumE, _lt ? '#dc2626' : '#ff6b4a');
         }
       }
       document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو (' + toPersianDigits(String(list.length)) + ' مورد)';

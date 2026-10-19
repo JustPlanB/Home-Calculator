@@ -48,7 +48,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     /* بازهٔ مبلغ */
     const host = document.getElementById('balanceAmtRange'), tr = host.querySelector('.hk-ar-track').getBoundingClientRect();
     const ticks = [...host.querySelectorAll('.hk-ar-tick')];
-    out.ends = [ticks[0], ticks[ticks.length - 1]].every(x => x.getBoundingClientRect().bottom <= tr.top + 1);
+    out.ends = [ticks[0], ticks[ticks.length - 1]].every(x => x.getBoundingClientRect().top >= tr.bottom - 1);   /* ۱.۳.۴۰: سرها هم زیر محور */
     out.mids = ticks.slice(1, -1).every(x => x.getBoundingClientRect().top >= tr.bottom - 1);
     out.nMid = ticks.length - 2;
     return out;
@@ -56,9 +56,9 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(/^کارهای من \(۲۱ مهر\)$/.test(r.todo), 'اسلاید کارهای من: تاریخ ساخت فهرست داخل پرانتز (' + r.todo + ')');
   ok(/^پیوست‌ها هم پشتیبان شوند؟/.test(r.ask) && r.ask.length < 55 && r.btnEq, 'پشتیبان: پرسش کوتاه (' + r.ask + ') و دو گزینهٔ هم‌اندازه ' + r.bs);
   ok(r.onlyResult, 'منوی جستجو فقط جدول «نتیجهٔ جستجو» (جدول ماه‌ها برداشته شد)');
-  ok(r.foot.length === 1 && /جمع خرج \(۲ مورد\)/.test(r.foot[0]) && /۵۰,۰۰۰/.test(r.foot[0]), 'شرحی که چند بار پیدا شد: جمع کلش زیر جدول (' + r.foot.join(' | ') + ')');
+  ok(r.foot.length === 1 && /جمع مخارج \(۲ مورد\)/.test(r.foot[0]) && /۵۰,۰۰۰/.test(r.foot[0]), 'شرحی که چند بار پیدا شد: جمع کلش زیر جدول (' + r.foot.join(' | ') + ')');
   ok(r.clr, 'ضربدر شرح: نوشته پاک و فیلد فعال می‌ماند (کیبورد بالا)');
-  ok(r.ends && r.mids && r.nMid >= 1, 'بازهٔ مبلغ: درجه‌ها زیر محور؛ اولی و آخری بالای محور');
+  ok(r.ends && r.mids && r.nMid >= 1, 'بازهٔ مبلغ: همهٔ درجه‌ها (اولی و آخری هم) زیر محور');
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);
   await b.close();
