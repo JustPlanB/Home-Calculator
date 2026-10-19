@@ -1581,6 +1581,8 @@ public class HkSpeechPlugin extends Plugin {
       i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
       i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
       i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE,getContext().getPackageName());
+      /* «سوپر» و … را ستاره‌دار نکند (اندروید ۱۳+: RecognizerIntent.EXTRA_MASK_OFFENSIVE_WORDS؛ روی نسخه‌های قبل بی‌اثر) */
+      i.putExtra("android.speech.extra.MASK_OFFENSIVE_WORDS",false);
       rec.startListening(i);
     }catch(Exception e){
       nextAttempt(5);

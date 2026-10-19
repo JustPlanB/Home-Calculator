@@ -46,16 +46,16 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     return { c: h.classList.contains('bsr-collapsed'), cellH: Math.round(cell.getBoundingClientRect().height), descH: Math.round(desc.getBoundingClientRect().height), top: Math.round(h.getBoundingClientRect().top), pTop: document.getElementById('panel-balance').scrollTop };
   });
   const s0 = await st();
-  await p.mouse.move(190, 600); await p.mouse.wheel(0, 140); await p.waitForTimeout(500);
+  await p.mouse.move(190, 600); await p.mouse.wheel(0, 140); await p.waitForTimeout(900);
   const s1 = await st();
   await p.mouse.wheel(0, 300); await p.waitForTimeout(400);
   const s2 = await st();
-  await p.mouse.wheel(0, -3000); await p.waitForTimeout(600);
+  await p.mouse.wheel(0, -3000); await p.waitForTimeout(1000);
   const s3 = await st();
   /* فلش زیر حالت بسته: رفتن به بالا و باز شدن */
-  await p.mouse.wheel(0, 200); await p.waitForTimeout(500);
+  await p.mouse.wheel(0, 200); await p.waitForTimeout(900);
   const s4 = await st();
-  await p.evaluate(() => document.querySelector('#balanceFixedHeader .bsr-handle').click()); await p.waitForTimeout(900);
+  await p.evaluate(() => document.querySelector('#balanceFixedHeader .bsr-handle').click()); await p.waitForTimeout(1400);
   const s5 = await st();
   ok(!s0.c && s0.cellH >= 30, 'پیش از اسکرول کادر جستجو باز است');
   ok(s1.c && s1.cellH === 0 && s1.descH >= 30, 'با اولین اسکرول رو به پایین کادر جمع شد و فقط «جستجوی شرح» ماند');
@@ -116,12 +116,12 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     return out;
   }, PNG);
   ok(sm.layout.order && sm.layout.sepShown && /142, 142, 147|142, 142, 142|rgb\(1[0-9]{2}, 1[0-9]{2}, 1[0-9]{2}\)/.test(sm.layout.grey), 'فیلد شرح: میکروفون | خط تفکیک | گیرهٔ طوسی (' + sm.layout.grey + ')');
-  ok(sm.pop.join('،') === 'گرفتن عکس+ico،انتخاب از گالری+ico،ضبط صدا+ico' && sm.popAbove && sm.waveNotMic, 'زدن گیره: پنجرهٔ کوچک رو به بالا با سه گزینه و آیکون مخصوص هر کدام (ضبط صدا = موج، نه میکروفون)');
+  ok(sm.pop.join('،') === 'دوربین+ico،گالری+ico،ضبط صدا+ico' && sm.popAbove && sm.waveNotMic, 'زدن گیره: پنجرهٔ کوچک رو به بالا با سه گزینه و آیکون مخصوص هر کدام (ضبط صدا = موج، نه میکروفون)');
   ok(sm.backClosed, 'بک اندروید فقط پنجرهٔ کوچک را می‌بندد، منوی پیامک باز می‌ماند');
   ok(sm.strip.join(',') === 'img,۰:۰۳,img' && sm.badge === '۳' && sm.afterDel === '2:gone', 'پیش‌نمایش پیوست‌ها زیر شرح با ×؛ گیره آبی با شمار؛ × فایل را پاک می‌کند');
   ok(sm.saved.join(',') === 'img,aud' && !sm.stripAfter, 'با ثبت، پیوست‌ها روی ردیف تازه نشستند');
   ok(sm.cancel === 'gone', 'با انصراف، پیوست‌های در انتظار پاک شدند');
-  ok(sm.rowBtns.join('،') === 'گرفتن عکس+ico،انتخاب از گالری+ico،ضبط صدا+ico', 'پنجرهٔ پیوستِ ردیف: آیکون کنار هر سه گزینه');
+  ok(sm.rowBtns.join('،') === 'دوربین+ico،گالری+ico،ضبط صدا+ico', 'پنجرهٔ پیوستِ ردیف: آیکون کنار هر سه گزینه');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

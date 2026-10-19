@@ -1930,22 +1930,25 @@
     .hk-scroll11 tfoot td { position: static; }
     body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { background: rgba(10,132,255,0.13) !important; font-weight: 800; }
     html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td { background: rgba(10,132,255,0.08) !important; }
+    /* ۱.۳.۳۹: خط‌های بین ردیف‌های جمع و بین ستون‌ها روی زمینهٔ آبی سفید (دیده شوند) */
+    body.search-open #panel-balance #searchResultBox .summary-table tfoot td, .hk-scroll11 .summary-table tfoot td { border-color: rgba(255,255,255,0.4) !important; }
+    html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot td { border-color: var(--lt-line, #c7c7cc) !important; }
     body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, .hk-scroll11 .summary-table tfoot tr:first-child td { border-top: 2px solid var(--tbl-stroke, rgba(255,255,255,0.55)) !important; }
     html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td, html[data-theme="light"] .hk-scroll11 .summary-table tfoot tr:first-child td { border-top-color: var(--lt-line, #c7c7cc) !important; }
     /* ۱.۳.۳۷: منوی جستجو یک‌تکه اسکرول می‌شود: کادر فیلترها همراه صفحه بالا می‌رود (همیشه باز)؛ عنوان ستون‌های نتیجه چسبان */
     body.search-open #panel-balance.active { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overflow-anchor: none; }
     /* ۱.۳.۳۸: بعد از نتیجه، با اولین اسکرول رو به پایین کادر جستجو نرم جمع می‌شود (فقط «جستجوی شرح» می‌ماند، بالای صفحه چسبیده)؛
        برگشت به بالای جدول = دوباره باز. فلش کوچک زیر حالت بسته = رفتن به بالا و باز شدن */
-    body.search-open #panel-balance .balance-fixed-header { position: sticky !important; top: 0 !important; transition: padding 0.26s ease; }
-    #balanceFixedHeader .bs-search-head, #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { transition: max-height 0.26s ease, opacity 0.2s ease, padding 0.26s ease, margin 0.26s ease; }
-    #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { max-height: 46px; }
-    #balanceFixedHeader .bsr-grid > .bs-arange-row { max-height: 100px; }
-    #balanceFixedHeader .bs-search-head { max-height: 60px; overflow: hidden; }
-    #balanceFixedHeader .bsr-grid { transition: row-gap 0.26s ease; }
+    /* ۱.۳.۳۹: جمع/باز شدن آرام‌تر (۰٫۶ ثانیه) و کامل؛ ارتفاع هر بخش روی خود گوشی اندازه گرفته می‌شود (سقف ثابت ندارد،
+       پس محور مبلغ با هر اندازهٔ نوشته داخل کادر می‌ماند) */
+    body.search-open #panel-balance .balance-fixed-header { position: sticky !important; top: 0 !important; transition: padding 0.6s ease; }
+    #balanceFixedHeader .bs-search-head, #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease, padding 0.6s ease, margin 0.6s ease; }
+    #balanceFixedHeader.bsr-anim .bs-search-head, #balanceFixedHeader.bsr-anim .bsr-grid > .bsr-cell:not(.bsr-desc) { overflow: hidden; }
+    #balanceFixedHeader .bsr-grid { transition: row-gap 0.6s ease; }
     body.search-open #panel-balance #balanceFixedHeader.bsr-collapsed .bs-search-head, #balanceFixedHeader.bsr-collapsed .bsr-grid > .bsr-cell:not(.bsr-desc) { max-height: 0 !important; opacity: 0; overflow: hidden; padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; pointer-events: none; }
     #balanceFixedHeader.bsr-collapsed .bsr-grid { row-gap: 0; }
     body.search-open #panel-balance #balanceFixedHeader.bsr-collapsed { padding-top: 8px !important; padding-bottom: 2px !important; }
-    #balanceFixedHeader .bsr-handle { display: block; width: 100%; height: 0; padding: 0; border: 0; background: none; color: var(--muted, #8e8e93); overflow: hidden; opacity: 0; transition: height 0.26s ease, opacity 0.2s ease; cursor: pointer; }
+    #balanceFixedHeader .bsr-handle { display: block; width: 100%; height: 0; padding: 0; border: 0; background: none; color: var(--muted, #8e8e93); overflow: hidden; opacity: 0; transition: height 0.6s ease, opacity 0.45s ease; cursor: pointer; }
     #balanceFixedHeader .bsr-handle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     #balanceFixedHeader.bsr-collapsed .bsr-handle { height: 20px; opacity: 1; }
     body.search-open #panel-balance .balance-scroll-body { height: auto !important; flex: none !important; overflow: visible !important; padding-top: 0 !important; }
@@ -9202,12 +9205,14 @@
     /* اسلایدر بازهٔ مبلغ: ریل ضخیم با سرهای گرد، بازهٔ بین دو دستگیره آبی، دستگیرهٔ سپری، درجه‌ها بالای ریل و مقدار زیر دستگیره */
     .bsr-grid .bs-arange-row { display: block; padding: 0 2px; }
     /* درجه‌ها زیر ریل؛ اولی و آخری (و مقدار انتخاب‌شده) بالای ریل */
-    .hk-arange { position: relative; height: 90px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
-    .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 90px; pointer-events: none; }
+    .hk-arange { position: relative; height: 100px; margin: 0 14px; direction: ltr; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .hk-ar-ticks { position: absolute; left: 0; right: 0; top: 0; height: 100px; pointer-events: none; }
     .hk-ar-tick { position: absolute; top: 62px; transform: translateX(-50%); text-align: center; font-size: 0.66rem; line-height: 1.15; color: var(--muted, #8e8e93); white-space: nowrap; direction: rtl; }
     .hk-ar-tick small { display: block; font-size: 0.56rem; opacity: 0.85; }
     .hk-ar-tick.hk-ar-end { top: 2px; }
     .hk-ar-tick.hk-ar-off, .hk-ar-tick.hk-ar-thin { visibility: hidden; }
+    .hk-ar-rg { display: inline-flex; direction: ltr; gap: 5px; align-items: baseline; }
+    .hk-ar-rg > span { direction: rtl; unicode-bidi: isolate; }
     .hk-ar-track { position: absolute; left: 0; right: 0; top: 40px; height: 11px; border-radius: 11px; background: rgba(142,142,147,0.32); }
     .hk-ar-fill { position: absolute; top: 0; bottom: 0; border-radius: 11px; background: #0a84ff; }
     .hk-ar-h { position: absolute; top: 32px; width: 24px; height: 28px; margin-left: -12px; padding: 0; border: 0; background: none; cursor: grab; touch-action: none; z-index: 2; }
@@ -10167,6 +10172,9 @@
       box-shadow: 0 10px 30px rgba(10,132,255,0.45), inset 0 2px 0 rgba(255,255,255,0.35);
       transform: scale(calc(1 + var(--vo-l, 0) * 0.16)); transition: transform 0.08s linear; -webkit-tap-highlight-color: transparent; }
     .vo-mic svg { width: 54px; height: 54px; fill: currentColor; }
+    /* ۱.۳.۳۹: هنگام شنیدن، موج صدا (۱۱ خط گرد) که ارتفاع هر خط با شدت صدا کم و زیاد می‌شود */
+    .vo-mic svg.vo-wave { width: 78px; height: 48px; }
+    .vo-wave rect { transform-box: fill-box; transform-origin: center; transition: transform 0.12s ease-out; }
     .vo-status { color: #fff; font-weight: 800; font-size: 1rem; }
     .vo-text { color: rgba(255,255,255,0.86); font-size: 0.95rem; min-height: 1.6em; max-width: 92%; text-align: center; line-height: 1.7; }
     .vo-btns { display: flex; gap: 10px; }
@@ -26148,8 +26156,8 @@ async function openPdfPrintWindow(){
         '<div class="hk-att-sub"></div>' +
         '<div class="hk-att-list"></div>' +
         '<div class="hk-att-actions">' +
-          '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>' + HK_ICON_CAM + '<span class="hk-att-lbl">گرفتن عکس</span></label>' +
-          '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>' + HK_ICON_GAL + '<span class="hk-att-lbl">انتخاب از گالری</span></label>' +
+          '<label class="hk-att-btn hk-att-cam"><input type="file" accept="image/*" capture="environment" hidden>' + HK_ICON_CAM + '<span class="hk-att-lbl">دوربین</span></label>' +
+          '<label class="hk-att-btn"><input type="file" accept="image/*" hidden>' + HK_ICON_GAL + '<span class="hk-att-lbl">گالری</span></label>' +
           '<button type="button" class="hk-att-btn hk-att-rec">' + HK_ICON_WAVE + '<span class="hk-att-lbl">ضبط صدا</span></button>' +
         '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
@@ -26220,7 +26228,7 @@ async function openPdfPrintWindow(){
             /* عکسِ آمادهٔ اندروید (JPEG کوچک‌شده) یا JPEG/PNG معمولی: همان فایل ذخیره شود */
             if (ready || (/^image\/(jpeg|png|webp)$/i.test(f.type || '') && f.size < 6 * 1048576)) { ringShow(0.6); return addBlob('img', f); }
             if (ring) { ring.remove(); ring = null; }
-            showToast('این عکس باز نشد (احتمالاً فرمت HEIC یا خیلی بزرگ). از «گرفتن عکس» یا عکس دیگری استفاده کنید', 'warn');
+            showToast('این عکس باز نشد (احتمالاً فرمت HEIC یا خیلی بزرگ). از «دوربین» یا عکس دیگری استفاده کنید', 'warn');
           });
       }
       function b64Blob(res) {
@@ -29468,7 +29476,7 @@ function getProjectBalance(subjectId) {
     function openSmsConfirmModal(parsed) {
       const m = document.getElementById('smsConfirmModal');
       if (!m) return;
-      try { if (typeof hkSmsAttBegin === 'function') hkSmsAttBegin(parsed && parsed.amount); } catch (eAt) {}
+      try { if (typeof hkSmsAttBegin === 'function') hkSmsAttBegin(parsed && parsed.amount, parsed && parsed.raw); } catch (eAt) {}
       const kind = parsed.type === 'income' ? 'واریز (درآمد)' : 'برداشت (مخارج)';
       const titleEl = document.getElementById('smsConfirmTitle');
       if (titleEl) titleEl.textContent = 'ثبت ' + kind;
@@ -31077,6 +31085,26 @@ function confirmSmsEntry() {
         if (P && P.isAvailable) P.isAvailable().then(function (r) { if (r && r.available === false) _voice.disabled = true; }).catch(function () {});
       } catch (e) {}
     }, 3000);
+    /* موج صدا: ۱۱ خط با الگوی ارتفاعِ متقارن (بلندترین وسط)؛ هر خط با شدت صدا (و کمی تصادفی) بلند و کوتاه می‌شود */
+    var VO_WAVE = [0.24, 0.4, 0.32, 0.56, 0.7, 1, 0.82, 0.46, 0.6, 0.4, 0.24];
+    function _voiceWaveSvg() {
+      return '<svg class="vo-wave" viewBox="0 0 106 60" aria-hidden="true">' + VO_WAVE.map(function (h, i) {
+        var H = Math.max(10, Math.round(h * 60));
+        return '<rect x="' + (i * 10) + '" y="' + ((60 - H) / 2) + '" width="6" height="' + H + '" rx="3" style="transform:scaleY(0.35)"/>';
+      }).join('') + '</svg>';
+    }
+    function _voiceWave(level) {
+      if (!_voice.el) return;
+      var rs = _voice.el.querySelectorAll('.vo-wave rect');
+      for (var i = 0; i < rs.length; i++) {
+        var k = 0.28 + 0.72 * level * (0.75 + Math.random() * 0.5);
+        rs[i].style.transform = 'scaleY(' + Math.max(0.2, Math.min(1, k)).toFixed(2) + ')';
+      }
+    }
+    /* فیلتر کلمات نامناسبِ سرویس گفتار گوشی‌های قدیمی‌تر «سوپر» را «س***» می‌نویسد؛ کلمه‌های رایجِ ستاره‌دار برگردانده می‌شوند */
+    function _voiceUnmask(t) {
+      return String(t || '').replace(/س\*{2,}/g, 'سوپر');
+    }
     function _voiceStatus(t) { try { if (_voice.el) _voice.el.querySelector('.vo-status').textContent = t; } catch (e) {} }
     function openVoiceInput(input) {
       if (_voice.open || !input) return false;
@@ -31087,8 +31115,7 @@ function confirmSmsEntry() {
       var el = document.createElement('div');
       el.className = 'voice-overlay';
       el.setAttribute('role', 'dialog');
-      el.innerHTML = '<div class="vo-ring"><i></i><i></i><button type="button" class="vo-mic" aria-label="پایان گفتن">' +
-        '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button></div>' +
+      el.innerHTML = '<div class="vo-ring"><i></i><i></i><button type="button" class="vo-mic" aria-label="پایان گفتن">' + _voiceWaveSvg() + '</button></div>' +
         '<div class="vo-status">بگویید بابت چه بود…</div><div class="vo-text"></div>' +
         '<div class="vo-btns"><button type="button" class="vo-retry">دوباره</button><button type="button" class="vo-kb">نوشتن با کیبورد</button></div>';
       document.body.appendChild(el);
@@ -31097,8 +31124,8 @@ function confirmSmsEntry() {
       el.querySelector('.vo-mic').onclick = function () { try { P.stop().catch(function () {}); } catch (e) {} _voiceStatus('در حال تبدیل به متن…'); };
       el.querySelector('.vo-kb').onclick = function () { closeVoiceInput(true); };
       var add = function (ev, fn) { try { Promise.resolve(P.addListener(ev, fn)).then(function (h) { if (_voice.open) _voice.listeners.push(h); else try { h.remove(); } catch (e) {} }); } catch (e) {} };
-      add('partial', function (d) { try { if (_voice.el) _voice.el.querySelector('.vo-text').textContent = (d && d.text) || ''; } catch (e) {} });
-      add('level', function (d) { var r = Math.max(0, Math.min(1, (((d && d.rms) || 0) + 2) / 12)); try { if (_voice.el) _voice.el.style.setProperty('--vo-l', r.toFixed(2)); } catch (e) {} });
+      add('partial', function (d) { try { if (_voice.el) _voice.el.querySelector('.vo-text').textContent = _voiceUnmask((d && d.text) || ''); } catch (e) {} });
+      add('level', function (d) { var r = Math.max(0, Math.min(1, (((d && d.rms) || 0) + 2) / 12)); try { if (_voice.el) { _voice.el.style.setProperty('--vo-l', r.toFixed(2)); _voiceWave(r); } } catch (e) {} });
       add('state', function (d) { if (d && d.state === 'processing') _voiceStatus('در حال تبدیل به متن…'); if (d && d.state === 'speaking') _voiceStatus('در حال گوش دادن…'); if (d && d.state === 'ready') _voiceStatus('بگویید بابت چه بود…'); });
       var retry = el.querySelector('.vo-retry');
       retry.onclick = function () {
@@ -31115,7 +31142,7 @@ function confirmSmsEntry() {
       var myRun = (_voice.run = (_voice.run || 0) + 1);
       P.start({ lang: 'fa-IR' }).then(function (res) {
         if (!_voice.open || myRun !== _voice.run) return;
-        var t = String((res && res.text) || '').trim(), inp = _voice.input;
+        var t = _voiceUnmask(String((res && res.text) || '').trim()), inp = _voice.input;
         if (!t) { _voiceError('صدایی تشخیص داده نشد. دوباره امتحان کنید.'); return; }
         if (inp) {
           var v = String(inp.value || '').trim();
@@ -31185,7 +31212,7 @@ function confirmSmsEntry() {
       } catch (e) {}
     }
     function _voiceError(msg) {
-      try { if (_voice.el) { _voice.el.classList.add('err'); _voice.el.classList.toggle('vo-long-msg', String(msg || '').length > 55); _voiceStatus(msg); _voice.el.style.setProperty('--vo-l', '0'); } } catch (e) {}
+      try { if (_voice.el) { _voice.el.classList.add('err'); _voice.el.classList.toggle('vo-long-msg', String(msg || '').length > 55); _voiceStatus(msg); _voice.el.style.setProperty('--vo-l', '0'); _voiceWave(0); } } catch (e) {}
     }
     function closeVoiceInput(showKeyboard) {
       if (!_voice.open) return false;
@@ -31237,7 +31264,7 @@ function confirmSmsEntry() {
       setTimeout(syncVoiceClass, 3600);
     })();
     /* ===== ۱.۳.۳۸: پیوست در منوی ثبت پیامک =====
-       گیرهٔ طوسی داخل فیلد شرح (کنار میکروفون، با خط تفکیک)؛ زدنش پنجرهٔ کوچک رو به بالا: گرفتن عکس / انتخاب از گالری / ضبط صدا.
+       گیرهٔ طوسی داخل فیلد شرح (کنار میکروفون، با خط تفکیک)؛ زدنش پنجرهٔ کوچک رو به بالا: دوربین / گالری / ضبط صدا.
        ردیف هنوز ساخته نشده، پس پیوست‌ها همان لحظه در حافظهٔ پیوست ذخیره و «در انتظار» نگه داشته می‌شوند؛
        با ثبت پیامک به ردیف تازه می‌چسبند و با انصراف/بعداً پاک می‌شوند. پیش‌نمایش‌ها (با ×) زیر شرح */
     var _smsAtt = { list: [], t0: 0, amt: 0, seen: null };
@@ -31334,8 +31361,8 @@ function confirmSmsEntry() {
     function hkOpenSmsAttPop(anchor) {
       if (hkCloseAttPop()) return;
       var pop = document.createElement('div'); pop.className = 'hk-attpop';
-      pop.innerHTML = '<button type="button" data-a="cam">' + HK_ICON_CAM + '<span>گرفتن عکس</span></button>' +
-        '<button type="button" data-a="gal">' + HK_ICON_GAL + '<span>انتخاب از گالری</span></button>' +
+      pop.innerHTML = '<button type="button" data-a="cam">' + HK_ICON_CAM + '<span>دوربین</span></button>' +
+        '<button type="button" data-a="gal">' + HK_ICON_GAL + '<span>گالری</span></button>' +
         '<button type="button" data-a="rec">' + HK_ICON_WAVE + '<span>ضبط صدا</span></button>';
       document.body.appendChild(pop);
       var r = anchor.getBoundingClientRect();
@@ -31369,8 +31396,12 @@ function confirmSmsEntry() {
       });
     }
     /* باز شدن منوی پیامک: پیوست‌های در انتظارِ قبلی (اگر مانده) پاک؛ ردیف‌های هم‌مبلغِ موجود یادداشت می‌شوند تا ردیف تازه شناخته شود */
-    function hkSmsAttBegin(amount) {
+    function hkSmsAttBegin(amount, raw) {
+      /* ۱.۳.۳۹: همان پیامک دوباره باز شد (مثلاً بعد از برگشت از دوربین/گالری): پیوست‌های در انتظار می‌مانند */
+      raw = String(raw || '');
+      if (raw && raw === _smsAtt.raw && _smsAtt.list.length) { hkSmsAttRender(); return; }
       hkSmsAttDiscard();
+      _smsAtt.raw = raw;
       _smsAtt.t0 = Date.now(); _smsAtt.amt = Math.round(Number(amount) || 0); _smsAtt.seen = new Set();
       try { iterAllPeriodData(function (pd) { ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) { if (r) _smsAtt.seen.add(r); }); }); }); }); } catch (e) {}
       hkSmsAttRender();
@@ -31385,6 +31416,9 @@ function confirmSmsEntry() {
       if (!_smsAtt.list.length) return;
       if (!saved) { hkSmsAttDiscard(); return; }
       var items = _smsAtt.list.slice(), seen = _smsAtt.seen || new Set(), t0 = _smsAtt.t0;
+      _smsAtt.raw = '';
+      /* فایل‌ها دوباره در حافظهٔ پیوست نوشته می‌شوند (اگر در این فاصله پاک شده بودند، از نسخهٔ داخل حافظه) */
+      items.forEach(function (a) { if (a._blob) HKAttach.get(a.id).then(function (b) { if (!b) return HKAttach.put(a.id, a._blob); }).catch(function () { try { HKAttach.put(a.id, a._blob); } catch (e) {} }); });
       var amtInp = document.getElementById('smsConfirmAmount');
       var amt = Math.round((amtInp && parseAmount(amtInp.value)) || _smsAtt.amt || 0);
       _smsAtt.list = []; hkSmsAttRender();
@@ -31399,7 +31433,7 @@ function confirmSmsEntry() {
           if (sc2 > score) { score = sc2; best = r; }
         }); }); }); });
         if (!best) {
-          if (++tries < 3) { setTimeout(tryAttach, 800); return; }
+          if (++tries < 10) { setTimeout(tryAttach, 800); return; }
           items.forEach(function (a) { HKAttach.del(a.id).catch(function () {}); });
           showToast('ردیف ثبت‌شده پیدا نشد؛ پیوست‌ها ذخیره نشدند', 'warn');
           return;
@@ -41954,35 +41988,50 @@ function openProjectRowPicker(secId) {
       };
       var la = lab(fa, false), lb = lab(fb, true);
       /* متن فقط اگر عوض شده (وگرنه MutationObserver فیلترها بی‌دلیل دوباره اجرا می‌شود) */
-      var put = function (el, t) { if (el.textContent !== t) el.textContent = t; };
+      var put = function (el, t) { if (el.textContent !== t || el.childElementCount) el.textContent = t; };
+      /* ۱.۳.۳۹: برچسب یکی‌شده هم‌جهت با محور (چپ = کمتر، راست = بیشتر): ردیف flex چپ‌به‌راست، هر طرف راست‌به‌چپ */
+      var putRange = function (el, a, b) {
+        var h = a === b ? escapeHtml(a) : '<span class="hk-ar-rg"><span>' + escapeHtml(a) + '</span><span>–</span><span>' + escapeHtml(b) + '</span></span>';
+        if (el.innerHTML !== h) el.innerHTML = h;
+      };
       var setVis = function (el, v) { var x = v ? '' : 'hidden'; if (el.style.visibility !== x) el.style.visibility = x; };
       var ends = host.querySelectorAll('.hk-ar-end');
       var W = host.clientWidth;
-      /* ۱.۳.۳۷: برچسب‌ها با اندازه‌گیری واقعی از هم دور نگه داشته می‌شوند (نه با درصد ثابت) تا هیچ‌وقت روی هم نیفتند */
       var clampEl = function (el) {
         if (!W || el.style.display === 'none') return;
         var c = parseFloat(el.style.left) / 100 * W, hw = el.offsetWidth / 2, lo = hw - 12, hi = W - hw + 12;
         if (c < lo) el.style.left = (lo / W * 100) + '%'; else if (c > hi) el.style.left = (hi / W * 100) + '%';
       };
       var hit = function (a, b, g) { if (!a || !b) return false; var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return ra.width > 0 && rb.width > 0 && ra.left < rb.right + g && rb.left < ra.right + g; };
+      var shown = function (v) { return v.style.display !== 'none' && v.style.visibility !== 'hidden'; };
+      /* دستگیره روی اول/آخر محور: برچسب مقدار ندارد و درجهٔ همان سر (۰ یا «+بیشترین») نشان‌دهنده‌اش است و هیچ‌وقت پنهان نمی‌شود */
       var showA = fa > 0.001, showB = fb < 0.999;
       vs[1].style.display = '';
       vs[0].style.left = xa + '%'; put(vs[0], la); setVis(vs[0], showA);
       vs[1].style.left = xb + '%'; put(vs[1], lb); setVis(vs[1], showB);
+      if (ends[0]) ends[0].classList.remove('hk-ar-off');
+      if (ends[1]) ends[1].classList.remove('hk-ar-off');
       clampEl(vs[0]); clampEl(vs[1]);
-      var merge = W ? (showA && showB && hit(vs[0], vs[1], 8)) : (fb - fa < 0.24);
+      var merge = W ? (showA && showB && hit(vs[0], vs[1], 8)) : (showA && showB && fb - fa < 0.24);
       if (merge) {
         /* دو دستگیرهٔ نزدیک: یک برچسب «از – تا» وسطشان */
-        vs[0].style.left = ((xa + xb) / 2) + '%'; put(vs[0], la === lb ? la : la + ' – ' + lb); setVis(vs[0], true); vs[1].style.display = 'none';
+        vs[0].style.left = ((xa + xb) / 2) + '%'; putRange(vs[0], la, lb); setVis(vs[0], true); vs[1].style.display = 'none';
         clampEl(vs[0]);
       }
-      /* درجهٔ اول/آخر (بالای ریل) اگر با برچسب مقدار برخورد دارد پنهان */
       if (W) {
-        [ends[0], ends[1]].forEach(function (e) {
-          if (!e) return;
-          e.classList.remove('hk-ar-off');
-          var off = [vs[0], vs[1]].some(function (v) { return v.style.display !== 'none' && v.style.visibility !== 'hidden' && hit(e, v, 6); });
-          e.classList.toggle('hk-ar-off', off);
+        [0, 1].forEach(function (k) {
+          var e = ends[k]; if (!e) return;
+          var pinned = k === 0 ? !showA : !showB;
+          var other = [vs[0], vs[1]].filter(function (v) { return shown(v) && hit(e, v, 6); })[0];
+          if (!other) return;
+          if (!pinned) { e.classList.add('hk-ar-off'); return; }
+          /* سرِ پین‌شده با برچسب دستگیرهٔ دیگر برخورد دارد: یک برچسب «از – تا» به جای هر دو (هیچ سری بی‌نوشته نمی‌ماند) */
+          e.classList.add('hk-ar-off');
+          var endTxt = k === 0 ? '۰' : lab(1, true);
+          var mid = k === 0 ? xb / 2 : (xa + 100) / 2;
+          other.style.left = mid + '%';
+          if (k === 0) putRange(other, endTxt, other === vs[1] ? lb : la + ' – ' + lb); else putRange(other, other === vs[0] ? la : la + ' – ' + lb, endTxt);
+          clampEl(other);
         });
         /* درجه‌های زیر ریل: اگر جا نیست یکی در میان پنهان */
         if (host._tw !== W) {
@@ -42076,7 +42125,19 @@ function openProjectRowPicker(secId) {
       function set(c) {
         var h = hdr(); if (!h) return;
         if (st.c === c) return;
-        st.c = c; st.lock = performance.now() + 340;
+        st.c = c; st.lock = performance.now() + 680;
+        /* ارتفاع واقعی هر بخش → انیمیشن از/تا همان اندازه؛ بعد از باز شدن سقف برداشته می‌شود */
+        var parts = [].slice.call(h.querySelectorAll('.bs-search-head, .bsr-grid > .bsr-cell:not(.bsr-desc)'));
+        parts.forEach(function (el) { el.style.maxHeight = el.scrollHeight + 'px'; });
+        h.classList.add('bsr-anim');
+        void h.offsetHeight;
+        clearTimeout(st.t);
+        st.t = setTimeout(function () {
+          if (!st.c) { parts.forEach(function (el) { el.style.maxHeight = ''; }); }
+          h.classList.remove('bsr-anim');
+          /* اگر در طول انیمیشن به بالای صفحه برگشته بود (رویداد اسکرولش نادیده ماند)، همین حالا باز شود */
+          setTimeout(function () { var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll'); if (st.c && p && p.scrollTop + (inner && inner.classList.contains('on') ? inner.scrollTop : 0) <= 2) set(false); }, 60);
+        }, 650);
         /* جای خالیِ موقت زیر جدول به اندازهٔ جمع شدن کادر: صفحه کوتاه نمی‌شود، پس اسکرول سر جایش می‌ماند و کادر دوباره باز نمی‌شود */
         var body = document.getElementById('balanceScrollBody');
         if (body) {
