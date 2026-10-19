@@ -13,7 +13,7 @@ const melli = (body, ts) => ({ address: 'Bank Melli', date: ts, body });
 
 async function page(b, inbox, extra) {
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
     window.__media = { photo: null, mic: { granted: true } }; window.__toasts = [];
     window.Capacitor = { isNativePlatform: () => true, Plugins: {
@@ -78,11 +78,9 @@ async function page(b, inbox, extra) {
     out.nav = currentYear + '-' + currentMonth;
     return out;
   });
-  ok(ip.mordad.filter(x => /^pa:(2|3):/.test(x) && /:ملی:L$/.test(x)).length === 2 && ip.mordad.length === 2, 'مرداد: پرداخت دو قسط با هم (۱٬۱۹۰٬۴۰۰) به همان دو ردیف قسطِ از قبل پرداخت‌شده وصل شد (بی ردیف تازه)');
-  ok(ip.shahrivar.length === 2 && ip.shahrivar.some(x => x === 'pa:4:595591:ملی:L'), 'شهریور: ۵۹۵٬۵۹۱ به ردیف قسطِ پرداخت‌شدهٔ شهریور وصل شد و بانک و مبلغ واقعی گرفت');
-  ok(ip.paid === 6, 'شمار قسط‌های پرداخت‌شده دست نخورد (۶)');
-  ok(ip.after.amt === 595591 && ip.after.acc === 'ملی' && ip.after.linked && /کمتر/.test(ip.after.desc), 'با ساخته‌شدن دوبارهٔ ردیف از روی قسط، مبلغ، بانک، پیوند پیامک و توضیح می‌ماند (' + ip.after.desc + ')');
-  ok(/۶۸۰,۰۰۰/.test(ip.sum) && /۱۴٪/.test(ip.sum) && /شبیه «وام الف» بود ولی وصل نشد/.test(ip.sum), 'برداشتی که شبیه قسط بود ولی وصل نشد، با دلیلش در خلاصه آمد');
+  /* ۱.۳.۳۷: ثبت گروهی دیگر به ردیف‌های قسط وصل نمی‌کند: هر برداشت ردیف معمولی است و ردیف‌های قسط دست نمی‌خورند */
+  ok(ip.mordad.filter(x => /^-:/.test(x)).length === 1 && ip.shahrivar.filter(x => /^-:/.test(x)).length === 2 && ip.mordad.concat(ip.shahrivar).every(x => !/^pa:.*:L$/.test(x)), 'ثبت گروهی: برداشت‌ها ردیف معمولی شدند و به قسط‌های پرداخت‌شده وصل نشدند');
+  ok(ip.paid === 6 && !/قسط شناخته شد|وصل نشد/.test(ip.sum), 'شمار قسط‌های پرداخت‌شده دست نخورد (۶) و خلاصه دربارهٔ قسط چیزی نمی‌گوید');
   ok(ip.nav === '1405-5', 'بعد از «باشه»، منوی اصلی به ماهِ شروع بازه (مرداد ۱۴۰۵) رفت');
 
   /* ---------- پیوست ---------- */

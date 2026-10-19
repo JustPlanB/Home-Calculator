@@ -13,7 +13,7 @@ const melli = (body, ts) => ({ address: 'Bank Melli', date: ts, body });
 
 async function page(b, inbox) {
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox)}.sort((a, b) => b.date - a.date);
     window.Capacitor = { isNativePlatform: () => true, Plugins: { BankSms: { readInbox: () => Promise.resolve({ items: window.__inbox }), getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve(), markHandled: () => Promise.resolve(), permStatus: () => Promise.resolve({ sms: true, notif: true }) } } };` });
   const p = await ctx.newPage();
@@ -157,12 +157,9 @@ async function page(b, inbox) {
   });
   ok(ins.one === 'pa:4', 'برداشت ۵۹۵٬۵۹۱ روز ۲۳ شهریور با دو وام هم‌مبلغ (۵۹۶٬۳۲۸ روز ۲۱): نامطمئن نیست؛ نزدیک‌ترین سررسید (شهریور) وام اول');
   ok(ins.two === 'pa:2+3:true/false', '۱٬۱۹۰٬۴۰۰ ≈ دو قسط: قسط تیر (دیرکرد) و مرداد همان وام');
-  ok(ins.mordad.length === 4 && ins.mordad.every(x => /:paid:/.test(x) && /:ملی$/.test(x)) && ins.mordad.filter(x => /^pa:/.test(x)).length === 2 && ins.mordad.filter(x => /^pb:/.test(x)).length === 2 && ins.mordadDesc.every(d => /۲ قسط با هم/.test(d)), 'مرداد: هر دو وام، هر کدام دو قسط پرداخت‌شده (تیر «معوق» + مرداد) با حساب ملی');
-  ok(ins.mordad.filter(x => /^pa:/.test(x)).reduce((s2, x) => s2 + Number(x.split(':')[3]), 0) === 1190400, 'جمع دو ردیف هر وام = مبلغ واقعی پیامک (۱٬۱۹۰٬۴۰۰)');
-  ok(ins.shahrivar.length === 2 && ins.shahrivar.some(x => /^pa:4:paid:595591$/.test(x)) && ins.shahrivar.some(x => /^pb:4:paid:600000$/.test(x)), 'شهریور: ۵۹۵٬۵۹۱ و ۶۰۰٬۰۰۰ هر کدام قسط یکی از دو وام');
-  ok(ins.paid.join() === '5,5' && ins.late.join('|') === '2|2' && ins.extra === 0 && /۶ پرداخت قسط شناخته شد/.test(ins.sum), 'شمار قسط‌ها ۵ برای هر وام، ردیف اضافه ساخته نشد (' + ins.sum.split('\n')[1] + ')');
+  /* ۱.۳.۳۷: ثبت گروهی دیگر قسط پیدا نمی‌کند: چهار برداشت چهار ردیف معمولی‌اند و قسط‌ها دست نمی‌خورند */
+  ok(ins.extra === 4 && ins.mordad.concat(ins.shahrivar).every(x => !/^p[ab]:/.test(x)) && ins.paid.join() === '2,2' && !/پرداخت قسط شناخته شد/.test(ins.sum), 'ثبت گروهی: هر چهار برداشت ردیف معمولی شد؛ هیچ قسطی خودکار پرداخت‌شده نشد (' + ins.paid.join() + ')');
 
-  /* ---------- باکس هوشمند، پروژه، پیوست ---------- */
   console.log('• باکس هوشمند، پروژه، پیوست');
   const s = await page(b, []); s.on('pageerror', e => errors.push(e.message));
   await s.goto(INDEX); await s.waitForTimeout(1600);

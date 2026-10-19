@@ -13,7 +13,7 @@ const ACC = 'ملت مصنوعی';
   const errors = [];
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: false });
   await ctx.addInitScript(() => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
     localStorage.setItem('hesabKetabArchive_v5_autoBackup', JSON.stringify({ enabled: false }));
   });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));

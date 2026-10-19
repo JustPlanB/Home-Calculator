@@ -356,6 +356,8 @@ public class NativeFileExportPlugin extends Plugin {
     try{
       if(intent==null) return false;
       String a=intent.getAction(); Uri u=null;
+      /* عکس و PDF اشتراکی = پیوست (HkMedia.captureShared)، نه فایل پشتیبان */
+      String ty=intent.getType(); if(Intent.ACTION_SEND.equals(a) && ty!=null && (ty.startsWith("image/") || ty.equals("application/pdf"))) return false;
       if(Intent.ACTION_VIEW.equals(a)) u=intent.getData();
       else if(Intent.ACTION_SEND.equals(a)){ Object x=intent.getParcelableExtra(Intent.EXTRA_STREAM); if(x instanceof Uri) u=(Uri)x; }
       if(u==null) return false;
@@ -2402,6 +2404,101 @@ public class HkMediaPlugin extends Plugin {
       call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
     }catch(Exception e){ call.reject("photo_failed",e); }
   }
+  /* خواندن عکس از Uri با کوچک‌کردن هنگام خواندن (ضلع بلند MAXS) و چرخش EXIF؛ HEIC و عکس خیلی بزرگ هم */
+  static Bitmap decodeScaled(android.content.Context ctx, Uri u, final int MAXS) throws Exception {
+      Bitmap b=null; boolean rotated=false;
+      if(android.os.Build.VERSION.SDK_INT>=28){
+        try{
+          android.graphics.ImageDecoder.Source src=android.graphics.ImageDecoder.createSource(ctx.getContentResolver(),u);
+          b=android.graphics.ImageDecoder.decodeBitmap(src,(dec,info,s)->{
+            int w=info.getSize().getWidth(), h=info.getSize().getHeight(), mx=Math.max(w,h);
+            if(mx>MAXS){ float k=MAXS/(float)mx; dec.setTargetSize(Math.max(1,Math.round(w*k)),Math.max(1,Math.round(h*k))); }
+            dec.setAllocator(android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE);
+          });
+          rotated=true;
+        }catch(Throwable t){ b=null; }
+      }
+      if(b==null){
+        BitmapFactory.Options o=new BitmapFactory.Options(); o.inJustDecodeBounds=true;
+        try(java.io.InputStream in=ctx.getContentResolver().openInputStream(u)){ BitmapFactory.decodeStream(in,null,o); }
+        int max=Math.max(o.outWidth,o.outHeight), ss=1;
+        while(max/(ss*2)>=MAXS) ss*=2;
+        BitmapFactory.Options o2=new BitmapFactory.Options(); o2.inSampleSize=ss;
+        try(java.io.InputStream in=ctx.getContentResolver().openInputStream(u)){ b=BitmapFactory.decodeStream(in,null,o2); }
+      }
+      if(b==null) return null;
+      int rot=0;
+      if(!rotated){
+        try(java.io.InputStream in=ctx.getContentResolver().openInputStream(u)){
+          androidx.exifinterface.media.ExifInterface ex=new androidx.exifinterface.media.ExifInterface(in);
+          int or=ex.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,1);
+          rot= or==6?90: or==3?180: or==8?270: 0;
+        }catch(Throwable ignored){}
+      }
+      float k=Math.min(1f,(float)MAXS/Math.max(b.getWidth(),b.getHeight()));
+      Bitmap out=b;
+      if(k<1f || rot!=0){ Matrix m=new Matrix(); m.postScale(k,k); if(rot!=0) m.postRotate(rot); out=Bitmap.createBitmap(b,0,0,b.getWidth(),b.getHeight(),m,true); }
+      return out;
+  }
+  /* ۱.۳.۳۷: عکس یا PDF که از برنامهٔ دیگر (بانک، گالری، …) با «اشتراک‌گذاری» به نرم‌افزار داده شده → پیوست یک ردیف.
+     Uriها نگه داشته می‌شوند و با takeShared (در رشتهٔ افزونه، نه رشتهٔ اصلی) کوچک و JPEG می‌شوند؛ PDF = صفحهٔ اول به‌صورت عکس */
+  private static final java.util.ArrayList<Uri> sharedUris=new java.util.ArrayList<>();
+  private static final java.util.ArrayList<String> sharedTypes=new java.util.ArrayList<>();
+  public static boolean captureShared(android.app.Activity act, Intent intent){
+    try{
+      if(intent==null) return false;
+      String a=intent.getAction(), t=intent.getType();
+      if(!(Intent.ACTION_SEND.equals(a) || Intent.ACTION_SEND_MULTIPLE.equals(a))) return false;
+      java.util.ArrayList<Uri> us=new java.util.ArrayList<>();
+      if(Intent.ACTION_SEND.equals(a)){ Object x=intent.getParcelableExtra(Intent.EXTRA_STREAM); if(x instanceof Uri) us.add((Uri)x); }
+      else { java.util.ArrayList<android.os.Parcelable> l=intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM); if(l!=null) for(android.os.Parcelable q: l) if(q instanceof Uri) us.add((Uri)q); }
+      if(us.isEmpty()) return false;
+      android.content.ContentResolver cr=act.getContentResolver();
+      boolean any=false;
+      synchronized(sharedUris){
+        for(Uri u: us){
+          if(sharedUris.size()>=10) break;
+          String mt=null; try{ mt=cr.getType(u); }catch(Exception ignored){}
+          if(mt==null) mt=t;
+          if(mt==null) continue;
+          if(mt.startsWith("image/") || mt.equals("application/pdf")){ sharedUris.add(u); sharedTypes.add(mt); any=true; }
+        }
+      }
+      if(any){ intent.setAction(Intent.ACTION_MAIN); intent.removeExtra(Intent.EXTRA_STREAM); }
+      return any;
+    }catch(Exception e){ return false; }
+  }
+  private Bitmap renderPdfFirstPage(Uri u) throws Exception {
+    android.os.ParcelFileDescriptor pfd=getContext().getContentResolver().openFileDescriptor(u,"r");
+    if(pfd==null) return null;
+    try(android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(pfd)){
+      if(r.getPageCount()<1) return null;
+      try(android.graphics.pdf.PdfRenderer.Page pg=r.openPage(0)){
+        int w=pg.getWidth(), h=pg.getHeight(); float k=1600f/Math.max(1,Math.max(w,h));
+        Bitmap b=Bitmap.createBitmap(Math.max(1,Math.round(w*k)),Math.max(1,Math.round(h*k)),Bitmap.Config.ARGB_8888);
+        b.eraseColor(android.graphics.Color.WHITE);
+        pg.render(b,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        return b;
+      }
+    }
+  }
+  @com.getcapacitor.PluginMethod public void takeShared(PluginCall call){
+    java.util.ArrayList<Uri> us; java.util.ArrayList<String> ts;
+    synchronized(sharedUris){ us=new java.util.ArrayList<>(sharedUris); ts=new java.util.ArrayList<>(sharedTypes); sharedUris.clear(); sharedTypes.clear(); }
+    com.getcapacitor.JSArray arr=new com.getcapacitor.JSArray();
+    int failed=0;
+    for(int i=0;i<us.size();i++){
+      try{
+        boolean pdf="application/pdf".equals(ts.get(i));
+        Bitmap b=pdf? renderPdfFirstPage(us.get(i)) : decodeScaled(getContext(),us.get(i),1600);
+        if(b==null){ failed++; continue; }
+        ByteArrayOutputStream bo=new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.JPEG,82,bo);
+        arr.put(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg").put("pdf",pdf));
+      }catch(Throwable e){ failed++; }
+    }
+    call.resolve(new JSObject().put("items",arr).put("failed",failed));
+  }
   /* انتخاب از گالری با انتخابگر خود اندروید: HEIC و عکس‌های خیلی بزرگ هم اینجا خوانده می‌شوند
      (ImageDecoder از اندروید ۹ با کوچک‌کردن هنگام خواندن و چرخش EXIF؛ پیش از آن BitmapFactory با inSampleSize + EXIF)؛ خروجی JPEG کوچک‌شده */
   @com.getcapacitor.PluginMethod public void pickImage(PluginCall call){
@@ -2415,38 +2512,8 @@ public class HkMediaPlugin extends Plugin {
     try{
       Intent d=result.getData(); Uri u=d==null?null:d.getData();
       if(result.getResultCode()!=android.app.Activity.RESULT_OK || u==null){ call.reject("cancelled"); return; }
-      final int MAXS=1600; Bitmap b=null; boolean rotated=false;
-      if(android.os.Build.VERSION.SDK_INT>=28){
-        try{
-          android.graphics.ImageDecoder.Source src=android.graphics.ImageDecoder.createSource(getContext().getContentResolver(),u);
-          b=android.graphics.ImageDecoder.decodeBitmap(src,(dec,info,s)->{
-            int w=info.getSize().getWidth(), h=info.getSize().getHeight(), mx=Math.max(w,h);
-            if(mx>MAXS){ float k=MAXS/(float)mx; dec.setTargetSize(Math.max(1,Math.round(w*k)),Math.max(1,Math.round(h*k))); }
-            dec.setAllocator(android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE);
-          });
-          rotated=true;
-        }catch(Throwable t){ b=null; }
-      }
-      if(b==null){
-        BitmapFactory.Options o=new BitmapFactory.Options(); o.inJustDecodeBounds=true;
-        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){ BitmapFactory.decodeStream(in,null,o); }
-        int max=Math.max(o.outWidth,o.outHeight), ss=1;
-        while(max/(ss*2)>=MAXS) ss*=2;
-        BitmapFactory.Options o2=new BitmapFactory.Options(); o2.inSampleSize=ss;
-        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){ b=BitmapFactory.decodeStream(in,null,o2); }
-      }
-      if(b==null){ call.reject("decode_failed"); return; }
-      int rot=0;
-      if(!rotated){
-        try(java.io.InputStream in=getContext().getContentResolver().openInputStream(u)){
-          androidx.exifinterface.media.ExifInterface ex=new androidx.exifinterface.media.ExifInterface(in);
-          int or=ex.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,1);
-          rot= or==6?90: or==3?180: or==8?270: 0;
-        }catch(Throwable ignored){}
-      }
-      float k=Math.min(1f,(float)MAXS/Math.max(b.getWidth(),b.getHeight()));
-      Bitmap out=b;
-      if(k<1f || rot!=0){ Matrix m=new Matrix(); m.postScale(k,k); if(rot!=0) m.postRotate(rot); out=Bitmap.createBitmap(b,0,0,b.getWidth(),b.getHeight(),m,true); }
+      Bitmap out=decodeScaled(getContext(),u,1600);
+      if(out==null){ call.reject("decode_failed"); return; }
       ByteArrayOutputStream bo=new ByteArrayOutputStream();
       out.compress(Bitmap.CompressFormat.JPEG,82,bo);
       call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
@@ -2475,6 +2542,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(HkWidgetPlugin.class);
     registerPlugin(HkMediaPlugin.class);
     super.onCreate(savedInstanceState);
+    try{ HkMediaPlugin.captureShared(this,getIntent()); }catch(Exception ignored){}
     try{ NativeFileExportPlugin.captureOpened(this,getIntent()); }catch(Exception ignored){}
     // پیش از بارگذاری صفحه: زمینهٔ تیرهٔ پیش‌فرض نرم‌افزار پشت نوارهای سیستم (جلوگیری از نوار سفید)
     try{ AppChromePlugin.apply(this, android.graphics.Color.parseColor("#1b1b1b"), false); }catch(Exception ignored){}
@@ -2487,6 +2555,7 @@ public class MainActivity extends BridgeActivity {
   @Override public void onNewIntent(android.content.Intent intent){
     super.onNewIntent(intent);
     try{ HkRemindersPlugin.saveTarget(this,intent); }catch(Exception ignored){}
+    try{ if(HkMediaPlugin.captureShared(this,intent) && getBridge()!=null) getBridge().triggerWindowJSEvent("hkShareAttach"); }catch(Exception ignored){}
     try{ if(NativeFileExportPlugin.captureOpened(this,intent) && getBridge()!=null) getBridge().triggerWindowJSEvent("hkFileOpened"); }catch(Exception ignored){}
   }
 }
@@ -2552,6 +2621,19 @@ if(fs.existsSync(manifest)){
       '                <data android:mimeType="application/octet-stream"/>\n' +
       '            </intent-filter>\n';
     s=s.replace(/(<activity\b[^>]*android:name="[.\w]*MainActivity"[\s\S]*?)(<\/activity>)/, function(m0,a,b){ return a+openFilters+'        '+b; });
+  }
+  // ۱.۳.۳۷: اشتراک‌گذاری عکس/PDF از برنامه‌های دیگر (رسید بانک، گالری) → پیوست ردیف
+  if(!s.includes('hk-share-attach')){
+    const shareFilter =
+      '            <!-- hk-share-attach -->\n' +
+      '            <intent-filter>\n' +
+      '                <action android:name="android.intent.action.SEND"/>\n' +
+      '                <action android:name="android.intent.action.SEND_MULTIPLE"/>\n' +
+      '                <category android:name="android.intent.category.DEFAULT"/>\n' +
+      '                <data android:mimeType="image/*"/>\n' +
+      '                <data android:mimeType="application/pdf"/>\n' +
+      '            </intent-filter>\n';
+    s=s.replace(/(<activity\b[^>]*android:name="[.\w]*MainActivity"[\s\S]*?)(<\/activity>)/, function(m0,a,b){ return a+shareFilter+'        '+b; });
   }
   // ثبت گروهی پیامک‌ها: خواندن صندوق ورودی (فقط با اجازهٔ کاربر، از منوی «ثبت دستی پیامک»)
   if(!s.includes('android.permission.READ_SMS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.READ_SMS"/>');

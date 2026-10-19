@@ -13,7 +13,7 @@ async function page(b, inbox, opts) {
   opts = opts || {};
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
   await ctx.addInitScript((keep) => {
-    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked'].concat(keep ? [] : ['instRepair1335']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
+    ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRepair1335'].concat(keep ? [] : ['instRevert1337']).forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1'));
   }, !!opts.keepRepair);
   if (opts.init) await ctx.addInitScript(opts.init);
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
@@ -48,20 +48,20 @@ async function page(b, inbox, opts) {
     out.m100 = !!hkMatchInstallment(100000000, { y: 1405, m: 3, d: 10 }, '', 'ملت ۳۱۰۶', {});
     const m2 = hkMatchInstallment(inst * 2, { y: 1405, m: 7, d: 10 }, '', 'ملت ۳۱۰۶', {});
     out.m2 = m2 ? m2.k + ':' + m2.idxs.join(',') : null;
-    /* بررسی یک‌بارهٔ بعد از آپدیت (۳٫۵ ثانیه بعد از باز شدن) */
+    /* ۱.۳.۳۷: برگرداندن یک‌بارهٔ همهٔ وصل‌های خودکار (۲٫۵ ثانیه بعد از باز شدن) */
     await w(3600);
     const dlg = document.getElementById('hkAsk3');
     out.dlg = dlg ? dlg.textContent : '';
     if (dlg) dlg.querySelector('.hk-ask3-btn').click();
     await w(300);
     out.rows = archive['1405-3'].expense.sections[0].rows.filter(x => x.amount).map(x => (x.fromPlanId || '-') + ':' + x.amount + ':' + (x.smsLinked ? 'L' : ''));
-    out.again = hkUndoWrongInstallmentLinks(false).length;
+    out.paid = plans[0].paidCount; out.locked = plans[0].lockedCount;
     return out;
   });
-  ok(q.inst === 595238 && !q.m100, 'برداشت ۱۰۰ میلیونی دیگر «۲ قسط» وام ۵۰ میلیونی حساب نمی‌شود (مبلغ هر قسط ' + q.inst + ')');
-  ok(q.m2 === '2:62,63', 'دو برابر مبلغ هر قسط = پرداخت ۲ قسط با هم (' + q.m2 + ')');
-  ok(/دوباره ردیف معمولی شد/.test(q.dlg) && /ملی سارا/.test(q.dlg), 'بعد از آپدیت: وصل‌های اشتباه برگشت و پیامش آمد');
-  ok(q.rows.indexOf('-:100000000:') >= 0 && !q.rows.some(x => /^pa:50000000/.test(x)) && q.again === 0, 'برداشت ۱۰۰ میلیونی دوباره یک ردیف معمولی شد و ردیف‌های قسط از روی وام ساخته شدند (' + q.rows.join(' | ') + ')');
+  ok(q.inst === 595238 && !q.m100, 'برداشت ۱۰۰ میلیونی «۲ قسط» وام ۵۰ میلیونی حساب نمی‌شود (مبلغ هر قسط ' + q.inst + ')');
+  ok(q.m2 === '2:62,63', 'پیشنهاد ثبت تکی پیامک: دو برابر مبلغ هر قسط = ۲ قسط با هم (' + q.m2 + ')');
+  ok(/دوباره ردیف معمولی شد/.test(q.dlg) && /ملی سارا/.test(q.dlg), 'بعد از آپدیت: وصل‌های خودکار برگشت و پیامش آمد');
+  ok(q.rows.filter(x => x === '-:50000000:').length === 2 && !q.rows.some(x => /^pa:/.test(x) && /:L$/.test(x)) && q.paid === 62 && q.locked === 0, 'ردیف‌های وصل‌شده ردیف معمولی شدند (بانک و مبلغ ماند) و قسط ۶۳ و ۶۴ دوباره پرداخت‌نشده (' + q.rows.join(' | ') + ' · پرداخت‌شده ' + q.paid + ')');
 
   /* ---------- کارت بعد از حذف ماه + ساعت ---------- */
   console.log('• کارت بعد از حذف ماه، ساعت تراکنش‌ها');

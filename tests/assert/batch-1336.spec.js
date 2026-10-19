@@ -10,7 +10,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const b = await chromium.launch();
   const errors = [];
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRepair1335', 'timeFill1335'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337', 'instRepair1335', 'timeFill1335'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-13T09:00:00Z'));   /* ۲۱ مهر ۱۴۰۵ */
   await p.goto(INDEX); await p.waitForTimeout(1500);

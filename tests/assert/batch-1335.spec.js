@@ -12,7 +12,7 @@ const melli = (body, ts) => ({ address: 'Bank Melli', date: ts, body });
 
 async function page(b, inbox) {
   const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true });
-  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRepair1335', 'timeFill1335'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
+  await ctx.addInitScript(() => { ['tourDone', 'bankSetupDone', 'cardSwipeHintDone', 'recCleanupAsked', 'instRevert1337', 'instRepair1335', 'timeFill1335'].forEach(k => localStorage.setItem('hesabKetabArchive_v5_' + k, '1')); });
   await ctx.addInitScript({ content: `window.__inbox = ${JSON.stringify(inbox || [])}.sort((a, b) => b.date - a.date);
     window.Capacitor = { isNativePlatform: () => true, Plugins: {
       BankSms: { readInbox: () => Promise.resolve({ items: window.__inbox }), getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve(), markHandled: () => Promise.resolve(), permStatus: () => Promise.resolve({ sms: true, notif: true }) }
@@ -74,11 +74,10 @@ async function page(b, inbox) {
   });
   ok(JSON.stringify(q.direct) === JSON.stringify(['1:0', null, '1:0', null, '1:0', '1:0']), 'بی کلمه: تلرانس کوچک (۱٪ کمتر تا ۳٪ بیشتر، ۵ روز قبل تا ۱۵ روز بعد)؛ با «قسط» در پیامک: ۵٪ و ۲۰ روز (' + JSON.stringify(q.direct) + ')');
   ok(q.back, 'بک روی پنجرهٔ تکراری‌های قبلی: فقط همان پنجره بسته شد، ثبت گروهی باز ماند');
-  ok(q.mordad.length === 1 && /^4\|0\|قسط ۵ از ۱۲ — وام خانه — پرداخت در ۱۲ شهریور$/.test(q.mordad[0]) && q.mordadTotal === 0, 'مرداد: ردیف قسط «پرداخت در ۱۲ شهریور»، بی مبلغ (دوبار حساب نمی‌شود) (' + q.mordad.join(' ; ') + ')');
-  ok(q.shah.length === 2 && /^4\|12\|500000\|ملی\|قسط ۵ از ۱۲ — وام خانه \(معوق مرداد\)/.test(q.shah[0]) && /^5\|12\|505000\|ملی\|قسط ۶ از ۱۲ — وام خانه — پرداخت ۲ قسط با هم — دیرکرد ۵,۰۰۰$/.test(q.shah[1]), '۱٬۰۰۵٬۰۰۰ در ۱۲ شهریور = معوقهٔ مرداد + سررسید شهریور؛ مبلغ، تاریخ و بانک از پیامک (' + q.shah.join(' ; ') + ')');
-  ok(q.mehr.join(';') === '6|500000|paid;-|520000|paid' && q.paid === 7, 'مهر: ۵۰۰٬۰۰۰ = قسط مهر؛ ۵۲۰٬۰۰۰ (۴٪ بیشتر، بی کلمه) قسط حساب نشد؛ معوقه‌های پرداخت‌شده از مهر برداشته شدند (' + q.mehr.join(' ; ') + ')');
+  /* ۱.۳.۳۷: ثبت گروهی دیگر قسط پیدا نمی‌کند: سه برداشت سه ردیف معمولی؛ قسط‌ها همان پرداخت‌نشده/معوق (بی «پرداخت در …») */
+  ok(q.mordad.every(x => !/پرداخت در/.test(x)) && q.shah.filter(x => /^\|/.test(x) && /\|ملی\|/.test(x)).length === 1 && q.shah.every(x => !/^\d+\|.*\|ملی\|/.test(x)), 'ثبت گروهی: ۱٬۰۰۵٬۰۰۰ ردیف معمولی شد و به هیچ قسطی وصل نشد (' + q.shah.join(' ; ') + ')');
+  ok(q.paid === 4 && q.mehr.filter(x => /^-\|/.test(x)).length === 2, 'مهر: ۵۰۰٬۰۰۰ و ۵۲۰٬۰۰۰ هر دو ردیف معمولی؛ شمار قسط‌های پرداخت‌شده همان ۴ (' + q.mehr.join(' ; ') + ')');
 
-  /* ---------- ساعت ردیف‌های قبلی ---------- */
   console.log('• ساعت ردیف‌های قبلی از صندوق پیامک');
   const p2 = await page(b, [melli('بانك ملي ايران\nبرداشت:250,000-\nحساب:62002\nمانده:1,000,000\n1405/07/03 14:25:33', T(2026, 9, 25, 10)), melli('بانك ملي ايران\nواريز:900,000+\nحساب:62002\nمانده:1,900,000\nساعت ۰۸:۰۵', T(2026, 9, 25, 4))]);
   p2.on('pageerror', e => errors.push(e.message));
