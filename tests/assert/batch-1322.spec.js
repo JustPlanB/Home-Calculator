@@ -60,7 +60,7 @@ const ACC = 'ملت مصنوعی';
   const inc = sr.rows.find(r => /اجاره/.test(r.t)), exp = sr.rows.find(r => /نان/.test(r.t));
   ok(/^ماه:?$/.test(sr.lab), 'برچسب «زمان» به «ماه» تغییر کرد (از ۱.۳.۲۷ داخل باکس، بی‌دونقطه)');
   ok(inc && inc.c === 'rgb(158, 232, 88)' && exp && exp.c === 'rgb(255, 107, 74)', 'جدول جستجو: واریز سبز، برداشت قرمز');
-  ok(sr.foot.some(f => /درآمد کل/.test(f.t) && f.c === 'rgb(158, 232, 88)') && sr.foot.some(f => /خرج کل/.test(f.t) && f.c === 'rgb(255, 107, 74)'), 'جمع درآمد سبز و جمع مخارج قرمز');
+  ok(sr.foot.some(f => /درآمد کل/.test(f.t) && f.c === 'rgb(158, 232, 88)') && sr.foot.some(f => /مخارج کل/.test(f.t) && f.c === 'rgb(255, 107, 74)'), 'جمع درآمد سبز و جمع مخارج قرمز');
 
   console.log('• کارت جدید کامل وسط صفحه');
   const cd = await p.evaluate(async () => {
