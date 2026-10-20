@@ -20,7 +20,11 @@ import android.os.Build;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -57,7 +61,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
       q.put(item);
       while(q.length()>200){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
       sp.edit().putString(QUEUE,q.toString()).apply();
-      postNotification(context,text,nid);
+      postNotification(context,text,nid,sender);
     }catch(Exception ignored){}
   }
 
@@ -147,25 +151,61 @@ public class BankSmsReceiver extends BroadcastReceiver {
     return false;
   }
 
-  static void postNotification(Context c,String text,int nid){
+  /** ۱.۳.۴۴: فرستندهٔ شمارهٔ موبایل شخصی (۰۹۰x…۰۹۴x، ۰۹۹x)؛ سرشمارهٔ خدماتی بانک (مثل ۹۸۳۰۰۰۹۴۱۷) شخصی نیست */
+  static boolean isPersonal(String sender){
+    if(sender==null) return false;
+    StringBuilder b=new StringBuilder();
+    for(int i=0;i<sender.length();i++){ char ch=sender.charAt(i); if(ch>='0'&&ch<='9') b.append(ch); else if(ch>='\\u06f0'&&ch<='\\u06f9') b.append((char)('0'+(ch-'\\u06f0'))); }
+    String d=b.toString();
+    if(d.startsWith("0098")) d=d.substring(4); else if(d.startsWith("98")) d=d.substring(2); else if(d.startsWith("0")) d=d.substring(1);
+    return d.length()==10 && d.charAt(0)=='9' && "012349".indexOf(d.charAt(1))>=0;
+  }
+
+  static NotificationCompat.Builder baseBuilder(Context c,String title,String text){
+    Intent i=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+    NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(text.replace('\\n',' ')).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
+    if(i!=null){ i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); b.setContentIntent(PendingIntent.getActivity(c,1001,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE)); }
+    return b;
+  }
+
+  static void postNotification(Context c,String text,int nid,String sender){
     if(Build.VERSION.SDK_INT>=33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return;
     NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
-    if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); nm.createNotificationChannel(ch); }
-    Intent i=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName()); if(i==null)return;
-    i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    PendingIntent pi=PendingIntent.getActivity(c,1001,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-    String shortText=text.replace('\\n',' '); if(shortText.length()>110) shortText=shortText.substring(0,110)+"…";
-    NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("تراکنش بانکی جدید").setContentText(shortText).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setContentIntent(pi).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
-    /* ۱.۳.۴۳: ثبت از خود اعلان (پاسخ مستقیم): با کمی پایین کشیدن، دکمهٔ «ثبت» و فقط فیلد «بابت چه بود؟» */
+    if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); if(Build.VERSION.SDK_INT>=29) ch.setAllowBubbles(true); nm.createNotificationChannel(ch); }
+    /* ۱.۳.۴۴: پیامک از شمارهٔ شخصی دور انداخته نمی‌شود؛ در اعلان «پیامک شخصی» با شمارهٔ فرستنده معرفی می‌شود */
+    String title=isPersonal(sender)?("⚠️ پیامک شخصی از "+sender):"تراکنش بانکی جدید";
+    NotificationCompat.Builder b=baseBuilder(c,title,text);
+    /* ۱.۳.۴۴: شکل گفتگو + حباب شناور (آیکن کنار اعلان، مثل پیامک‌ها) که باکس ثبت را روی صفحه باز می‌کند */
+    try{
+      IconCompat ic=IconCompat.createWithResource(c,c.getApplicationInfo().icon);
+      Person bank=new Person.Builder().setName(title).setKey("hk_bank").setImportant(true).setIcon(ic).build();
+      Person me=new Person.Builder().setName("حساب‌کتاب").build();
+      Intent li=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+      if(li!=null){
+        li.setAction(Intent.ACTION_VIEW);
+        ShortcutInfoCompat sc=new ShortcutInfoCompat.Builder(c,"hk_bank").setLongLived(true).setShortLabel("تراکنش بانکی").setPerson(bank).setIcon(ic).setIntent(li).build();
+        ShortcutManagerCompat.pushDynamicShortcut(c,sc);
+        NotificationCompat.MessagingStyle st=new NotificationCompat.MessagingStyle(me).setGroupConversation(false);
+        st.addMessage(text,System.currentTimeMillis(),bank);
+        b.setStyle(st).setShortcutId("hk_bank");
+        Intent bi=new Intent(c,HkQuickActivity.class); bi.setAction("ir.hesabketab.app.BUBBLE_"+nid); bi.putExtra("nid",nid);
+        int bfl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
+        PendingIntent bpi=PendingIntent.getActivity(c,nid,bi,bfl);
+        NotificationCompat.BubbleMetadata bm=new NotificationCompat.BubbleMetadata.Builder(bpi,ic).setDesiredHeight(460).setAutoExpandBubble(false).setSuppressNotification(false).build();
+        b.setBubbleMetadata(bm);
+      }
+    }catch(Throwable t){ b=baseBuilder(c,title,text); }
+    /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
       Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK); qi.putExtra("nid",nid);
       int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
       PendingIntent qpi=PendingIntent.getBroadcast(c,nid,qi,fl);
-      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چه بود؟").build();
-      NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).build();
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟").build();
+      NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
-    }catch(Exception ignored){}
-    nm.notify(nid,b.build());
+    }catch(Throwable ignored){}
+    try{ nm.notify(nid,b.build()); }
+    catch(Throwable t){ try{ nm.notify(nid,baseBuilder(c,title,text).build()); }catch(Throwable ignored){} }
   }
 }
 `;
@@ -348,6 +388,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Typeface;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
 import org.json.JSONArray;
@@ -360,6 +409,11 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
     CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC);
     String desc=cs==null?"":cs.toString().trim(); if(desc.length()>200) desc=desc.substring(0,200);
     int nid=in.getIntExtra("nid",0); if(nid==0) return;
+    boolean found=saveDesc(c,nid,desc);
+    notifyDone(c,nid,desc,found);
+  }
+  /** شرح را کنار همان پیامک در صف می‌گذارد (نرم‌افزار ردیف را می‌سازد) */
+  static boolean saveDesc(Context c,int nid,String desc){
     boolean found=false;
     try{
       SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE);
@@ -367,19 +421,160 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null && x.optInt("nid",0)==nid){ x.put("quickDesc",desc); x.put("quickAt",System.currentTimeMillis()); found=true; break; } }
       if(found) sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit();
     }catch(Exception ignored){}
+    return found;
+  }
+  static JSONObject findItem(Context c,int nid){
+    try{
+      SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE);
+      JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]"));
+      for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null && x.optInt("nid",0)==nid) return x; }
+    }catch(Exception ignored){}
+    return null;
+  }
+  /** تیک سبز گرد مثل تیک‌های داخل نرم‌افزار */
+  static Bitmap tick(int size){
+    Bitmap bm=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);
+    Canvas cv=new Canvas(bm);
+    Paint p=new Paint(Paint.ANTI_ALIAS_FLAG); p.setColor(0xFF30D158);
+    cv.drawCircle(size/2f,size/2f,size/2f,p);
+    Paint w=new Paint(Paint.ANTI_ALIAS_FLAG); w.setColor(0xFFFFFFFF); w.setStyle(Paint.Style.STROKE); w.setStrokeWidth(size*0.1f); w.setStrokeCap(Paint.Cap.ROUND); w.setStrokeJoin(Paint.Join.ROUND);
+    Path ph=new Path(); ph.moveTo(size*0.28f,size*0.53f); ph.lineTo(size*0.44f,size*0.68f); ph.lineTo(size*0.73f,size*0.36f);
+    cv.drawPath(ph,w);
+    return bm;
+  }
+  /** پیام بعد از ثبت: بالا «بابت: …»، پایین «ثبت شد» سبز با تیک */
+  static void notifyDone(Context c,int nid,String desc,boolean found){
     try{
       NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
       Intent oi=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
       PendingIntent pi=null;
       if(oi!=null){ oi.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); pi=PendingIntent.getActivity(c,1001,oi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE); }
+      CharSequence line;
+      if(found){
+        SpannableString ss=new SpannableString("ثبت شد ✔");
+        ss.setSpan(new ForegroundColorSpan(0xFF30D158),0,ss.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ss.setSpan(new StyleSpan(Typeface.BOLD),0,ss.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        line=ss;
+      } else line="این تراکنش قبلاً ثبت یا رد شده";
       NotificationCompat.Builder b=new NotificationCompat.Builder(c,BankSmsReceiver.CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle(found?"ثبت شد ✓":"این تراکنش قبلاً ثبت یا رد شده")
-        .setContentText(found?(desc.isEmpty()?"بدون شرح":"بابت: "+desc):"")
+        .setContentTitle(found?(desc.isEmpty()?"بدون شرح":"بابت: "+desc):"حساب‌کتاب")
+        .setContentText(line)
+        .setColor(0xFF30D158)
         .setOnlyAlertOnce(true).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_LOW);
+      if(found){ try{ b.setLargeIcon(tick(128)); }catch(Throwable ignored){} }
       if(pi!=null) b.setContentIntent(pi);
       if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(8000);
       nm.notify(nid,b.build());
-    }catch(Exception ignored){}
+    }catch(Throwable ignored){}
+  }
+}
+`;
+
+/* ۱.۳.۴۴: باکس شناور ثبت (حباب کنار اعلان، مثل پیامک‌ها): متن پیامک، فیلد «بابت چی بود؟» با قلم درشت و دکمهٔ «ثبت»؛
+   شرح مثل «ثبت سریع» کنار همان پیامک در صف می‌رود و نرم‌افزار ردیف را می‌سازد (یا اگر تکمیل لازم است منوی ثبت را با همین شرح باز می‌کند). */
+const quickActivity=`package ${pkg};
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.text.InputType;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import org.json.JSONObject;
+
+public class HkQuickActivity extends Activity {
+  private int nid;
+  private LinearLayout box;
+  private int dp(float v){ return (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,v,getResources().getDisplayMetrics()); }
+  private GradientDrawable round(int color,float r){ GradientDrawable g=new GradientDrawable(); g.setColor(color); g.setCornerRadius(dp(r)); return g; }
+
+  @Override protected void onCreate(Bundle b){
+    super.onCreate(b);
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    getWindow().getDecorView().setBackgroundColor(0xFF121214);
+    nid=getIntent()!=null?getIntent().getIntExtra("nid",0):0;
+    JSONObject it=nid!=0?HkQuickReplyReceiver.findItem(this,nid):null;
+    ScrollView sv=new ScrollView(this);
+    box=new LinearLayout(this);
+    box.setOrientation(LinearLayout.VERTICAL);
+    box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+    box.setPadding(dp(18),dp(18),dp(18),dp(18));
+    box.setBackground(round(0xFF1C1C1E,22));
+    LinearLayout.LayoutParams outer=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+    sv.setPadding(dp(10),dp(10),dp(10),dp(10));
+    sv.addView(box,outer);
+    setContentView(sv);
+    if(it==null){ showGone(); return; }
+    String text=it.optString("text",""), sender=it.optString("sender","");
+    boolean personal=BankSmsReceiver.isPersonal(sender);
+    TextView t=new TextView(this);
+    t.setText(personal?("⚠️ پیامک شخصی از "+sender):"تراکنش بانکی جدید");
+    t.setTextColor(personal?0xFFFF9F0A:0xFFFFFFFF); t.setTextSize(17); t.setTypeface(Typeface.DEFAULT_BOLD); t.setGravity(Gravity.START);
+    box.addView(t);
+    if(personal){
+      TextView w=new TextView(this);
+      w.setText("این پیامک از سرشمارهٔ بانک نیامده و ممکن است جعلی باشد. اگر مطمئنید، ثبتش کنید.");
+      w.setTextColor(0xFFFFB340); w.setTextSize(13); w.setPadding(0,dp(4),0,0);
+      box.addView(w);
+    }
+    TextView sms=new TextView(this);
+    sms.setText(text); sms.setTextColor(0xFFD1D1D6); sms.setTextSize(15); sms.setLineSpacing(0,1.15f);
+    sms.setBackground(round(0xFF2C2C2E,14)); sms.setPadding(dp(14),dp(12),dp(14),dp(12)); sms.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp.topMargin=dp(12);
+    box.addView(sms,lp);
+    final EditText et=new EditText(this);
+    et.setHint("بابت چی بود؟"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
+    et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
+    et.setBackground(round(0xFF2C2C2E,14)); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.START|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL);
+    LinearLayout.LayoutParams lp2=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,dp(54)); lp2.topMargin=dp(12);
+    box.addView(et,lp2);
+    LinearLayout row=new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+    Button ok=new Button(this); ok.setText("ثبت"); ok.setAllCaps(false); ok.setTextColor(0xFFFFFFFF); ok.setTextSize(17); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setBackground(round(0xFF30D158,14));
+    Button open=new Button(this); open.setText("باز کردن نرم‌افزار"); open.setAllCaps(false); open.setTextColor(0xFFFFFFFF); open.setTextSize(14); open.setBackground(round(0xFF3A3A3C,14));
+    LinearLayout.LayoutParams bl=new LinearLayout.LayoutParams(0,dp(50),1.4f); LinearLayout.LayoutParams bl2=new LinearLayout.LayoutParams(0,dp(50),1f); bl2.setMarginStart(dp(10));
+    row.addView(ok,bl); row.addView(open,bl2);
+    LinearLayout.LayoutParams lp3=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp3.topMargin=dp(14);
+    box.addView(row,lp3);
+    ok.setOnClickListener(v->submit(et.getText().toString()));
+    et.setOnEditorActionListener((v,a,e)->{ if(a==EditorInfo.IME_ACTION_DONE){ submit(et.getText().toString()); return true; } return false; });
+    open.setOnClickListener(v->{ try{ Intent li=getPackageManager().getLaunchIntentForPackage(getPackageName()); if(li!=null){ li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); startActivity(li); } }catch(Exception ignored){} finish(); });
+    et.requestFocus();
+  }
+
+  private void submit(String raw){
+    String desc=raw==null?"":raw.trim(); if(desc.length()>200) desc=desc.substring(0,200);
+    boolean found=HkQuickReplyReceiver.saveDesc(this,nid,desc);
+    HkQuickReplyReceiver.notifyDone(this,nid,desc,found);
+    try{ ((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(box.getWindowToken(),0); }catch(Exception ignored){}
+    if(!found){ showGone(); return; }
+    box.removeAllViews();
+    box.setGravity(Gravity.CENTER_HORIZONTAL);
+    ImageView iv=new ImageView(this); iv.setImageBitmap(HkQuickReplyReceiver.tick(dp(64)));
+    box.addView(iv,new LinearLayout.LayoutParams(dp(64),dp(64)));
+    TextView d=new TextView(this); d.setText(desc.isEmpty()?"بدون شرح":"بابت: "+desc); d.setTextColor(0xFFFFFFFF); d.setTextSize(16); d.setGravity(Gravity.CENTER); d.setPadding(0,dp(12),0,0);
+    box.addView(d);
+    TextView ok=new TextView(this); ok.setText("ثبت شد"); ok.setTextColor(0xFF30D158); ok.setTextSize(18); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setGravity(Gravity.CENTER); ok.setPadding(0,dp(6),0,0);
+    box.addView(ok);
+    box.postDelayed(this::finish,1300);
+  }
+
+  private void showGone(){
+    box.removeAllViews();
+    TextView t=new TextView(this); t.setText("این تراکنش قبلاً ثبت یا رد شده"); t.setTextColor(0xFFFFFFFF); t.setTextSize(16); t.setGravity(Gravity.CENTER);
+    box.addView(t);
+    box.postDelayed(this::finish,1600);
   }
 }
 `;
@@ -2628,6 +2823,7 @@ public class MainActivity extends BridgeActivity {
 fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
 fs.writeFileSync(path.join(javaDir,'HkQuickReplyReceiver.java'),quickReply);
+fs.writeFileSync(path.join(javaDir,'HkQuickActivity.java'),quickActivity);
 fs.writeFileSync(path.join(javaDir,'AppLockPlugin.java'),appLockPlugin);
 fs.writeFileSync(path.join(javaDir,'NativeFileExportPlugin.java'),nativeExport);
 fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
@@ -2663,6 +2859,8 @@ if(fs.existsSync(manifest)){
   if(!s.includes('.BankSmsReceiver')) s=s.replace('</application>', receiverTag+'\n    </application>');
   // ۱.۳.۴۳: گیرندهٔ «ثبت» از خود اعلان (فقط از PendingIntent همین برنامه؛ از بیرون قابل صدا زدن نیست)
   if(!s.includes('.HkQuickReplyReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkQuickReplyReceiver" android:exported="false"/>\n    </application>');
+  // ۱.۳.۴۴: باکس شناور ثبت (حباب اعلان) — فقط از PendingIntent خود برنامه باز می‌شود
+  if(!s.includes('.HkQuickActivity')) s=s.replace('</application>', '        <activity android:name=".HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true" android:documentLaunchMode="always" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" android:windowSoftInputMode="stateVisible|adjustResize"/>\n    </application>');
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
   // ضبط صدا داخل صفحه (getUserMedia) بدون این مجوز بی‌صدا رد می‌شود
   if(!s.includes('android.permission.MODIFY_AUDIO_SETTINGS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>');

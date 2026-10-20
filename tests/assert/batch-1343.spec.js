@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• ثبت از اعلان (پاسخ مستقیم)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
-  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چه بود؟"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت"/.test(patch) && /FLAG_MUTABLE/.test(patch),
+  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
     'اعلان تراکنش دکمهٔ «ثبت» با فیلد «بابت چه بود؟» دارد (PendingIntent قابل‌تغییر برای پاسخ)');
   ok(/class HkQuickReplyReceiver/.test(patch) && /x\.put\("quickDesc",desc\)/.test(patch) && /HkQuickReplyReceiver" android:exported="false"/.test(patch) && /r\.put\("quickDesc"/.test(patch),
     'گیرندهٔ پاسخ شرح را کنار همان پیامک در صف می‌گذارد، از بیرون صدا زده نمی‌شود و صف آن را به نرم‌افزار می‌دهد');
@@ -68,7 +68,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(200);
     return out;
   });
-  ok(sr.th.join(',') === 'ردیف:9%,تاریخ:24%,شرح:25%,بانک:17%,مبلغ:25%' && sr.nums.join(',') === '۱,۲,۳,۴', 'ستون اول «ردیف» (۱، ۲، ۳…) و عرض شرح به همان اندازه کم شد (' + sr.th.join(' ') + ')');
+  /* از ۱.۳.۴۴ ستون ردیف هم‌عرض ستون ردیف جدول مخارج (۳۰px) و شرح بقیهٔ جا را می‌گیرد (batch-1344) */
+  ok(sr.th.map(x => x.split(':')[0]).join(',') === 'ردیف,تاریخ,شرح,بانک,مبلغ' && sr.nums.join(',') === '۱,۲,۳,۴', 'ستون اول «ردیف» (۱، ۲، ۳…) و عرض شرح به همان اندازه کم شد (' + sr.th.join(' ') + ')');
   ok(sr.foot.every(c => c === 4), 'ردیف‌های جمع پایین جدول هم با ستون تازه جور است');
 
   console.log('• زدن اسلایدهای باکس هوشمند');

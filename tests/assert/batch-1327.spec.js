@@ -63,7 +63,8 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     window.cancelNativeSmsNotification = window.cancelNativeSmsNotification || function () {};
     return { personal: window.onBankSmsReceived(fee, { nid: 0, sender: '09121234567' }), notice: window.onBankSmsReceived(notice, { nid: 0, sender: 'Sepah Bank' }) };
   }, { fee: sepah.fee, notice: sepah.notice });
-  ok(live.personal === false && live.notice === false, 'پیامک لحظه‌ای از شمارهٔ شخصی یا اطلاعیه، باکس ثبت تراکنش باز نمی‌کند');
+  /* از ۱.۳.۴۴ پیامک شمارهٔ شخصی دور انداخته نمی‌شود (با هشدار «پیامک شخصی» در منوی ثبت؛ batch-1344) */
+  ok(live.personal === true && live.notice === false, 'پیامک شمارهٔ شخصی با هشدار باز می‌شود؛ اطلاعیه باکس ثبت باز نمی‌کند');
 
   /* ---------- ب) حساب قدیمی سپه با همهٔ پیامک‌ها ---------- */
   console.log('• حساب قدیمی سپه');
