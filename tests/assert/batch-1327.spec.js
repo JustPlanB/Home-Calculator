@@ -61,7 +61,11 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
 
   const live = await A.evaluate(({ fee, notice }) => {
     window.cancelNativeSmsNotification = window.cancelNativeSmsNotification || function () {};
-    return { personal: window.onBankSmsReceived(fee, { nid: 0, sender: '09121234567' }), notice: window.onBankSmsReceived(notice, { nid: 0, sender: 'Sepah Bank' }) };
+    const r = { personal: window.onBankSmsReceived(fee, { nid: 0, sender: '09121234567' }), notice: window.onBankSmsReceived(notice, { nid: 0, sender: 'Sepah Bank' }) };
+    /* از ۱.۳.۴۴ پیامک شخصی منوی ثبت را (با هشدار) باز می‌کند؛ بسته شود تا بقیهٔ تست‌ها روی صفحهٔ خالی اجرا شوند */
+    try { closeSmsConfirmModal('reject'); } catch (e) {}
+    try { smsPendingQueue.length = 0; } catch (e) {}
+    return r;
   }, { fee: sepah.fee, notice: sepah.notice });
   /* از ۱.۳.۴۴ پیامک شمارهٔ شخصی دور انداخته نمی‌شود (با هشدار «پیامک شخصی» در منوی ثبت؛ batch-1344) */
   ok(live.personal === true && live.notice === false, 'پیامک شمارهٔ شخصی با هشدار باز می‌شود؛ اطلاعیه باکس ثبت باز نمی‌کند');
