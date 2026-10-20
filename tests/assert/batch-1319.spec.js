@@ -115,11 +115,13 @@ const ACC = 'ملت مصنوعی';
   ok(rc.renewOpen && rc.startPre.d === 4 && rc.startPre.m === 7 && rc.startPre.y === 1405 && rc.endPre.y === 1406 && rc.endPre.m === 7 && /۱۵,۰۰۰,۰۰۰/.test(rc.amtPre), 'فرم تمدید: شروع = پایان قبلی، پایان = یک سال بعد، مبلغ = مبلغ قبلی');
   ok(rc.terms.length === 1 && rc.terms[0].contractStart.y === 1404 && rc.terms[0].amount === 15000000 && rc.after.e.y === 1406 && rc.after.a === 17000000 && rc.renewGone, 'بعد از تمدید: دورهٔ قبلی نگه داشته شد، دورهٔ تازه با مبلغ ۱۷ میلیون، دکمهٔ تمدید رفت');
   ok(rc.folders.length === 2 && /۱۴۰۴\/۰۷\/۰۴ تا ۱۴۰۵\/۰۷\/۰۴/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
-  ok(rc.head === 'تاریخ|شرح|مبلغ|بانک', 'ستون‌های آرشیو: تاریخ کامل | شرح | مبلغ | بانک (ستون ماه حذف شد)');
+  /* از ۱.۳.۴۶ ستون آخر × (جدا کردن اتصال) */
+  ok(rc.head === 'تاریخ|شرح|مبلغ|بانک|', 'ستون‌های آرشیو: تاریخ کامل | شرح | مبلغ | بانک | × (ستون ماه حذف شد)');
   ok(rc.rows.length === 1 && /۱۴۰۵\/۰۶\/۰۴/.test(rc.rows[0]) && rc.paidBg === 'rgb(158, 232, 88)' && rc.noSmallText, 'پوشهٔ دورهٔ قبل: واریز شهریور با مبلغ سبز (بدون متن کوچک «دریافت شد»)');
   ok(rc.tapNoop, 'زدن روی ردیف آرشیو کاری نمی‌کند (به صفحهٔ اصلی نمی‌رود)');
   ok(rc.backToFolders && rc.backClosed, 'بازگشت: از داخل پوشه به فهرست دوره‌ها، بعد بستن آرشیو و ماندن در منو');
-  ok(rc.unpaidColor === 'rgb(255, 107, 74)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان قرمز مبالغ دریافت‌نشده (‎#ff6b4a)');
+  /* از ۱.۳.۴۶ قرمز پررنگ مبالغ دریافت‌نشده */
+  ok(rc.unpaidColor === 'rgb(255, 32, 32)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان قرمز پررنگ مبالغ دریافت‌نشده (‎#ff2020)');
   ok(rc.cancelToFolders, 'بازگشت از داخل پوشهٔ تنها: به فهرست پوشه‌ها');
   ok(rc.singleFolder, 'قرارداد بدون تمدید هم پوشهٔ خودش را دارد (با آیکون پوشهٔ ثبت گروهی)');
   ok(rc.unpaidBg === 'rgb(255, 107, 74)', 'آرشیو: مبلغ دریافت‌نشده با قرمز مبالغ دریافت‌نشدهٔ درآمد');
@@ -236,7 +238,8 @@ const ACC = 'ملت مصنوعی';
     closePersonDetail(); await w(200);
     return out;
   });
-  ok(se.def === 'سارا' && se.sel.join() === 'سارا' && se.opts.join('|') === 'سارا|علی|همهٔ بخش‌ها', 'بخش: پیش‌فرض اولین کاربر، فهرست کاربران + «همهٔ بخش‌ها» (بدون انتخاب چندتایی)');
+  /* از ۱.۳.۴۶ تک‌کاربره: فقط کارت اصلی + «همهٔ بخش‌ها» */
+  ok(se.def === se.opts[0] && se.sel.length === 0 && se.opts.length === 1, 'بخش: فقط کارت اصلی و جستجو در همهٔ ردیف‌ها (' + se.opts.join('|') + ')');
   ok(se.afterAll.length === 0, 'انتخاب «همه»: همهٔ بخش‌ها');
   ok(se.rangeOpts.join('|') === 'همهٔ ماه‌ها|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند', 'منوی «ماه» (از ۱.۳.۳۱): همهٔ ماه‌ها + دوازده ماه سال');
   ok(se.dayOpts.length === 32 && se.dayOpts[0] === 'همهٔ روزها' && se.dayOpts[31] === '۳۱' && se.typeOpts.join('|') === 'همهٔ انواع|واریز|برداشت', 'منوی «روز» (همهٔ روزها + ۱ تا ۳۱) و منوی «نوع» (همهٔ انواع / واریز / برداشت)');
@@ -253,6 +256,8 @@ const ACC = 'ملت مصنوعی';
   ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
   ok(se.catLabelAlign === 'right', 'برچسب «دسته:» راست‌چین');
 
+  /* از ۱.۳.۴۶ اقساط خاموش است و «پرداخت قبلی»ها برداشته می‌شوند (batch-1346) */
+  if (false) {
   console.log('• قسط‌های پرداخت‌شده پیش از شروع کار با نرم‌افزار');
   const pa = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -284,6 +289,7 @@ const ACC = 'ملت مصنوعی';
   ok(pa.table && Number(pa.table.op) <= 0.6 && pa.table.tag === 'پرداخت قبلی', 'جدول شهریور: ردیف قسط کم‌رنگ با برچسب «پرداخت قبلی»');
   ok(pa.mainRow, 'جدول اصلی مخارج هم همان برچسب و کم‌رنگی را دارد');
 
+  }
   console.log('• دقت ریالی در تطبیق موجودی');
   const rl = await p.evaluate(() => {
     const parsed = parseBankSms('بانک ملت\nبرداشت از حساب\nمبلغ 12,345 ریال\nمانده 1,000,005 ریال');
@@ -337,10 +343,11 @@ const ACC = 'ملت مصنوعی';
     out.b1 = { months: ['مرداد', 'شهریور', 'مهر'].every(mn => new RegExp('درآمدها <small>' + mn).test(B1)), perMonth: /جمع ماه‌به‌ماه/.test(B1), noInstall: !/class="st ins"/.test(B1), noAcc: !/موجودی حساب‌ها/.test(B1), title: /گزارش مالی مرداد ۱۴۰۵ تا مهر ۱۴۰۵/.test(B1) };
     out.b2 = { onlyAli: /کتاب/.test(B2) && !/نان بربری/.test(B2), noIncome: !/class="st inc"/.test(B2), title: /علی/.test(B2) };
     out.xl = X;
-    out.b0 = /class="st inc"/.test(B0) && /موجودی حساب‌ها/.test(B0) && /class="st ins"/.test(B0);
+    /* از ۱.۳.۴۶ اقساط خاموش است و بخش اقساط در خروجی نمی‌آید */
+    out.b0 = /class="st inc"/.test(B0) && /موجودی حساب‌ها/.test(B0);
     return out;
   });
-  ok(exd.open && exd.labels.includes('درآمدها') && exd.labels.includes('مخارج') && exd.labels.includes('اقساط') && exd.labels.includes('درآمدهای ثابت (با آرشیو)') && exd.labels.includes('موجودی حساب‌ها') && !exd.labels.includes('پس‌انداز'), 'دکمهٔ PDF: پنجرهٔ تیک بخش‌ها فقط با بخش‌های دارای داده (' + exd.labels.join('، ') + ')');
+  ok(exd.open && exd.labels.includes('درآمدها') && exd.labels.includes('مخارج') && !exd.labels.includes('اقساط') && exd.labels.includes('درآمدهای ثابت (با آرشیو)') && exd.labels.includes('موجودی حساب‌ها') && !exd.labels.includes('پس‌انداز'), 'دکمهٔ PDF: پنجرهٔ تیک بخش‌ها فقط با بخش‌های دارای داده (' + exd.labels.join('، ') + ')');
   ok(exd.allChecked && exd.allSticky, '«انتخاب همه» بالای فهرست ثابت است و پیش‌فرض همه تیک دارند');
   ok(exd.rangeDefault === 'این ماه' && exd.userDefault === 'همه', 'پیش‌فرض‌ها: بازهٔ «این ماه» و بخش «همه»');
   ok(exd.disabledWhenNone && exd.enabledWithOne, '«ساخت PDF» بدون هیچ تیکی غیرفعال است');

@@ -21,10 +21,6 @@ const { chromium } = require('playwright');
   await p.evaluate(async () => { const el=document.querySelector('#homeCards .pc-smart-box'); while (el._spPages[el._spIdx].key!=='overview') smartPanelGo(el,1); });
   await p.waitForTimeout(1800);
   await p.locator('#homeCards .pc-smart-box').first().screenshot({ path: 'ov-neg.png' });
-  // reorder strip scroll
-  r.strip = await p.evaluate(async () => { for (let i=0;i<8;i++) ensurePersonSections('کارت '+i); renderHomeCards(); openCardReorderMode(allPersonTitles().slice(-1)[0]); await new Promise(r=>setTimeout(r,500)); const s=document.getElementById('cardReorderStrip'); return { sw: s.scrollWidth, cw: s.clientWidth, sl: Math.round(s.scrollLeft) }; });
-  const m = await p.locator('.cro-mini').nth(4).boundingBox();
-  await p.mouse.move(m.x + 30, m.y + 20); await p.mouse.down(); await p.mouse.move(m.x - 140, m.y + 22, { steps: 10 }); await p.mouse.up(); await p.waitForTimeout(600);
-  r.stripAfter = await p.evaluate(() => ({ sl: Math.round(document.getElementById('cardReorderStrip').scrollLeft), order: [...document.querySelectorAll('.cro-mini')].map(x=>x.dataset.title).join('|') }));
+  /* از ۱.۳.۴۶ تک‌کاربره: کارت تازه ساخته نمی‌شود؛ نوار جابه‌جایی کارت‌ها دیگر معنا ندارد */
   console.log(JSON.stringify(r), errs); await b.close();
 })();

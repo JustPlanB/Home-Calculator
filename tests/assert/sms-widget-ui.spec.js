@@ -74,7 +74,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
       const pr = parseBankSms(t); pr.raw = t; openSmsConfirmModal(pr); await new Promise(x => setTimeout(x, 500));
       return [...document.querySelectorAll('#smsConfirmModal .sms-seg button.active')].map(b => { const s = getComputedStyle(b); return [b.textContent.trim(), s.color, s.backgroundColor]; });
     });
-    ok(c.length >= 2 && c.every(x => x[1] === 'rgb(255, 255, 255)'), theme + ': نوشتهٔ گزینه‌های انتخاب‌شده سفید است (' + c.map(x => x[0]).join('، ') + ')');
+    /* ۱.۳.۴۶: نوع تراکنش فقط خلاصهٔ خواندنی است؛ گزینهٔ شخصی/پروژه می‌ماند */ ok(c.length >= 1 && c.every(x => x[1] === 'rgb(255, 255, 255)'), theme + ': نوشتهٔ گزینه‌های انتخاب‌شده سفید است (' + c.map(x => x[0]).join('، ') + ')');
     if (theme === 'light') ok(c.every(x => !/rgba\(.*0\.2/.test(x[2]) && x[2] !== 'rgba(0, 0, 0, 0)'), 'light: زمینهٔ آبی پررنگ (نه کم‌رنگ) تا نوشتهٔ سفید خوانا باشد');
     await T.ctx.close();
   }

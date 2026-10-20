@@ -21,10 +21,11 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   console.log('• اعلان (کد اندروید)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟"\)/.test(patch), 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
-  ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"پیامک شخصی \\\\u2066"\+sender/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان «پیامک شخصی …» معرفی می‌شود (از ۱.۳.۴۵ کوتاه و بی‌ایموجی)');
+  ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"فرستندهٔ شخصی"/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان معرفی می‌شود (از ۱.۳.۴۶ «فرستندهٔ شخصی»)');
   ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد ✔"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),
     'بعد از ثبت: بالا «بابت: …» و پایین‌ترین خط «ثبت شد» سبز با تیک (از ۱.۳.۴۵ تیک نرم‌افزار، batch-1345)');
-  ok(/BubbleMetadata\.Builder\(bpi,ic\)/.test(patch) && /class HkQuickActivity extends Activity/.test(patch) && /HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true"/.test(patch) && /setHint\("بابت چی بود؟"\)/.test(patch) && /setText\("ثبت"\)/.test(patch),
+  /* از ۱.۳.۴۶ به‌جای حباب، دکمهٔ «باکس» زیر اعلان (batch-1346) */
+  ok(/"باکس",bpi/.test(patch) && /class HkQuickActivity extends Activity/.test(patch) && /HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true"/.test(patch) && /setHint\("بابت چی بود؟"\)/.test(patch) && /setText\("ثبت"\)/.test(patch),
     'آیکن حباب کنار اعلان باکس شناور ثبت را باز می‌کند (فیلد «بابت چی بود؟» و دکمهٔ «ثبت»)');
   ok(/catch\(Throwable t\)\{ try\{ nm\.notify\(nid,baseBuilder\(c,title,text\)\.build\(\)\); \}/.test(patch), 'اگر شکل گفتگو/حباب روی گوشی خطا داد، اعلان ساده حتماً می‌آید');
 
@@ -68,10 +69,10 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.outside = !c.classList.contains('hk-jiggle');
     return out;
   });
-  ok(!card.del && card.edit, 'کارت اصلی دکمهٔ حذف ندارد و نامش با مداد ویرایش می‌شود');
+  ok(!card.del && !card.edit, 'کارت اصلی دکمهٔ حذف ندارد (از ۱.۳.۴۶ مداد هم ندارد؛ تغییر نام با نگه داشتن انگشت)');
   ok(!card.dots, 'نقطه‌های زیر کارت حذف شد');
   ok(card.noNew, 'دکمهٔ + دیگر کارت تازه نمی‌سازد');
-  ok(card.jig && card.anim === 'hkJiggle' && card.btns.join('،') === 'حذف ماه،حذف کلی', 'لانگ‌پرس: کارت می‌لرزد و «حذف ماه» و «حذف کلی» روی آن می‌آیند');
+  ok(card.jig && card.anim === 'hkJiggle' && card.btns.join('،') === 'تغییر نام،حذف ماه،حذف کلی', 'لانگ‌پرس: کارت می‌لرزد و «حذف ماه» و «حذف کلی» روی آن می‌آیند');
   ok(card.confirm === 'اطلاعات این ماه حذف شود؟' && card.jigOff, '«حذف ماه» اول تأیید می‌گیرد (و به سطل زباله می‌رود)');
   ok(card.outside, 'زدن بیرون کارت لرزش را تمام می‌کند');
 

@@ -84,8 +84,13 @@ const ACC = 'ملت مصنوعی';
 
   console.log('• ساخت: بخش مقصد اجباری؛ شروع در گذشته → فقط از ماه جاری؛ واریز مشابه فقط با انتخاب کاربر وصل می‌شود');
   const c0 = await create({ name: 'بی‌بخش', amount: 1000, account: ACC, contractStart: { d: 12, m: 7, y: 1405 }, contractEnd: null });
-  ok(c0.sheetOpen && /بخش مقصد را انتخاب کنید/.test(c0.toast) && await p.evaluate(() => !recurringIncomes.some(r => r.name === 'بی‌بخش')), 'بدون بخش مقصد ذخیره نمی‌شود: «بخش مقصد را انتخاب کنید»');
-  await p.evaluate(() => { const sh = document.getElementById('recurringSheet'); [...sh.querySelectorAll('button')].find(x => x.textContent.trim() === 'انصراف').click(); });
+  /* ۱.۳.۴۶ تک‌کاربره: منوی بخش مقصد حذف شد؛ درآمد ثابت خودش روی کارت اصلی می‌رود */
+  ok(!c0.sheetOpen && await p.evaluate(() => { const it = recurringIncomes.find(r => r.name === 'بی‌بخش'); return !!it && it.sectionTitle === hkMainTitle(); }), 'بی منوی بخش مقصد: درآمد ثابت روی کارت اصلی ذخیره شد');
+  await p.evaluate(() => {
+    const it = recurringIncomes.find(r => r.name === 'بی‌بخش'); if (!it) return;
+    recEachMonth((k, pd) => ['income', 'expense'].forEach(t => ((pd[t] || {}).sections || []).forEach(s => { s.rows = (s.rows || []).filter(x => x.fromRecurringId !== it.id); })));
+    recurringIncomes.splice(recurringIncomes.indexOf(it), 1); saveRecurring(); persistCurrent(); saveArchive(); renderAll();
+  });
   const cB = await create({ name: 'اجاره ب', amount: 10100000, account: ACC, sectionId: 's1', contractStart: { d: 14, m: 7, y: 1405 }, contractEnd: null, pick: null });
   let r = await rowsOf('اجاره ب');
   ok(cB.picker && /مربوط به همین قرارداد است/.test(cB.picker.title) && /هیچ‌کدام/.test(cB.picker.opts[cB.picker.opts.length - 1]) && /۱۲ مهر/.test(cB.picker.opts[0]), 'واریز مشابه ۱۲ مهر: خودکار وصل نشد؛ پرسید (واریز اول فهرست، «هیچ‌کدام» آخر)');
@@ -217,7 +222,7 @@ const ACC = 'ملت مصنوعی';
   ok(!cX.picker || !/۱۲ مهر — ۱۰,۰۰۰,۰۰۰/.test(cX.picker.opts.join('|')), 'واریزی که به قرارداد موجود وصل است دیگر پیشنهاد نمی‌شود');
   /* «اصلاح» روی ردیف «دریافت نشده»: وصل کردن واریز ثبت‌شده با هر روزی از ماه */
   const lk = await p.evaluate(async (ACC) => {
-    periodData.income.sections[1].rows.push(Object.assign(emptyRow('income'), { day: '27', desc: 'واریز دستی', amount: 10000000, status: 'paid', account: ACC }));
+    /* ۱.۳.۴۶ تک‌کاربره: یک بخش */ periodData.income.sections[periodData.income.sections.length - 1].rows.push(Object.assign(emptyRow('income'), { day: '27', desc: 'واریز دستی', amount: 10000000, status: 'paid', account: ACC }));
     persistCurrent();
     openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
     const i = recurringIncomes.findIndex(r => r.name === 'اجاره سوم‌نو');

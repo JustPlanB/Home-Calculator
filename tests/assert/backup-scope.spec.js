@@ -136,7 +136,9 @@ async function uiRestore(page, data, action) {
     const p = JSON.parse(JSON.stringify(buildBackupPayload(sel)));
     delete p.backupScope; /* دقیقاً مثل فایل‌های قدیمی: فقط backupParts */
     const t = allPersonTitles()[0];
-    p.archive[cur].income.sections.find(s => s.title === t).rows[0].desc = 'FILE_' + cur;
+    /* ۱.۳.۴۶: نام کارت اصلی ممکن است با عنوان بخش‌های ادغام‌نشدهٔ فایل فرق کند؛ ردیف C1 خود ماه را پیدا کن */
+    const sec = p.archive[cur].income.sections.find(s => s.title === t && s.rows[0] && /^C1_/.test(s.rows[0].desc)) || p.archive[cur].income.sections.find(s => s.rows.some(r => r.desc === 'C1_' + cur));
+    sec.rows.find(r => r.desc === 'C1_' + cur || /^C1_/.test(r.desc)).desc = 'FILE_' + cur;
     return p;
   }, [ACC, meta.cur]);
   ok(same(Object.keys(oneMonth.archive), [meta.cur]) && !oneMonth.backupScope, 'فایل آزمایشی فقط ماه جاری را دارد و فراداده‌اش قدیمی است');
@@ -154,6 +156,8 @@ async function uiRestore(page, data, action) {
   ok(same(cState.trash, cBefore.trash), 'سطل زبالهٔ محلی حفظ شد');
   await C.ctx.close();
 
+  /* از ۱.۳.۴۶ نرم‌افزار تک‌کاربره است و «کارت دوم» در کارت اصلی ادغام می‌شود؛ پشتیبانِ محدود به یک کارت دیگر معنا ندارد */
+  if (false) {
   console.log('• ۴) پشتیبان محدود به یک کارت (مسیر UI) کارت‌های دیگر را پاک نمی‌کند');
   const D0 = await fresh(b);
   await D0.page.evaluate(seed, [ACC, CARD2]);
@@ -176,6 +180,7 @@ async function uiRestore(page, data, action) {
   ok(same(dState.ledger, srcState.ledger), 'قرض‌ها تکثیر یا حذف نشدند');
   ok(same(dState.trash, dBefore.trash) && same(dState.todos, dBefore.todos), 'سطل زباله و کارهای محلی حفظ شدند');
   await D.ctx.close();
+  }
 
   console.log('• ۵) فایل بدون فهرست حساب، موجودی اول ماه را از دست نمی‌دهد (بازسازی خطای 700000 → 500000)');
   const files = await A.page.evaluate(() => ({

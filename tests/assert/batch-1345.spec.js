@@ -20,7 +20,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• اعلان و باکس شناور (کد اندروید)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
-  ok(/"پیامک شخصی \\\\u2066"\+sender/.test(patch) && !/"⚠️ پیامک شخصی از "\+sender/.test(patch), 'عنوان اعلان پیامک شخصی کوتاه و بی‌ایموجی، شماره چپ‌به‌راست (+ جلوی ۹۸)');
+  ok(/"فرستندهٔ شخصی"/.test(patch) && !/"⚠️ پیامک شخصی از "\+sender/.test(patch), 'عنوان اعلان پیامک شخصی کوتاه و بی‌ایموجی (از ۱.۳.۴۶: «فرستندهٔ شخصی»)');
   ok(/R\.layout\.hk_done/.test(patch) && /DecoratedCustomViewStyle/.test(patch) && /hk_done\.xml/.test(patch) && /android:text="ثبت شد"[\s\S]{0,80}android:textSize="18sp"[\s\S]{0,40}android:textStyle="bold"/.test(patch) && /android:textSize="12\.5sp"/.test(patch),
     'پیام بعد از ثبت: «بابت: …» کوچک هم‌اندازهٔ نام نرم‌افزار و «ثبت شد» درشت و بولد');
   ok(/ph\.moveTo\(5\*u,13\*u\); ph\.lineTo\(9\*u,17\*u\); ph\.lineTo\(19\*u,7\*u\)/.test(patch) && !/cv\.drawCircle\(size\/2f/.test(patch) && !/setLargeIcon\(tick/.test(patch), 'تیک همان تیک نرم‌افزار است و دایرهٔ سبز بزرگ برداشته شد');
@@ -53,11 +53,14 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const amt = rows[0].querySelector('.pd-amt');
     const before = periodData.expense.sections[0].rows.find(r => r.desc === 'نان').status;
     const c0 = getComputedStyle(amt).color;
+    /* از ۱.۳.۴۶: یک ضربه همان لحظه باکس دو گزینه‌ای وضعیت را باز می‌کند (batch-1346) */
     amt.click(); await w(30);
+    const menu = !!document.querySelector('.status-menu');
+    const un = [...document.querySelectorAll('.status-menu div')].find(d => /نشده/.test(d.textContent)); un && un.click(); await w(30);
     const after = periodData.expense.sections[0].rows.find(r => r.desc === 'نان').status;
     const c1 = getComputedStyle(amt).color;
-    const menu = !!document.querySelector('.status-menu');
     amt.click(); await w(30);
+    const pd = [...document.querySelectorAll('.status-menu div')].find(d => !/نشده/.test(d.textContent)); pd && pd.click(); await w(30);
     /* بانک پر: فقط باکس شناور نام، نه منو */
     rows[0].querySelector('.pd-acc-btn').click(); await w(100);
     const accMenu = !!document.querySelector('.dark-select-list.open');
@@ -65,7 +68,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     try { closeCellTextPopups(); } catch (e) {}
     return { before, after, c0, c1, menu, accMenu, pop };
   });
-  ok(tap.before === 'paid' && tap.after === 'unpaid' && !tap.menu, 'یک ضربه روی مبلغ همان لحظه وضعیت را عوض کرد (بی‌منو و بی‌صبر)');
+  ok(tap.before === 'paid' && tap.after === 'unpaid' && tap.menu, 'یک ضربه روی مبلغ همان لحظه باکس وضعیت را باز کرد و انتخاب، وضعیت را عوض کرد');
   ok(tap.c0 === 'rgb(255, 107, 74)' && tap.c1 === 'rgb(255, 32, 32)', 'مخارج پرداخت‌شده قرمز نرم‌افزار، پرداخت‌نشده قرمز پررنگ (' + tap.c0 + ' → ' + tap.c1 + ')');
   ok(!tap.accMenu && tap.pop === 'ملی مصنوعی', 'بانکِ ثبت‌شده با یک ضربه فقط دیده می‌شود (عوض کردنش از ویرایش)');
 
@@ -106,8 +109,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const box = document.getElementById('hkRowEdit');
     const out = { open: !!box };
     if (!box) return out;
-    out.labels = [...box.querySelectorAll('.hk-re-l')].map(l => l.childNodes[0].textContent.trim());
-    out.date = box.querySelectorAll('.hk-re-v')[0].textContent; out.time = box.querySelectorAll('.hk-re-v')[1].textContent;
+    out.labels = [...box.querySelectorAll('.hk-re-l')].map(l => l.childNodes[0].textContent.trim()).concat([...box.querySelectorAll('.hk-re-chip span')].map(x => x.textContent));
+    out.date = box.querySelectorAll('.hk-re-chip b')[0].textContent; out.time = box.querySelectorAll('.hk-re-chip b')[1].textContent;
     out.wheels = box.querySelectorAll('.hk-wheel').length;
     out.noClock = !box.querySelector('input[type="time"], input[type="date"]');
     out.desc = box.querySelector('.hk-re-desc').value; out.amt = box.querySelector('.hk-re-amt').value;
@@ -119,7 +122,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     wh[3].querySelector('.hk-wheel-sc').scrollTop = 19 * 36;
     wh[4].querySelector('.hk-wheel-sc').scrollTop = 30 * 36;
     await w(250);
-    out.date2 = box.querySelectorAll('.hk-re-v')[0].textContent; out.time2 = box.querySelectorAll('.hk-re-v')[1].textContent;
+    out.date2 = box.querySelectorAll('.hk-re-chip b')[0].textContent; out.time2 = box.querySelectorAll('.hk-re-chip b')[1].textContent;
     box.querySelector('.hk-re-desc').value = 'نان سنگک تازه';
     box.querySelector('.hk-re-segb.is-paid').click();
     box.querySelectorAll('.hk-re-sel')[0].click(); await w(80);

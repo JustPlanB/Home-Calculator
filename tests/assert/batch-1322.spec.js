@@ -62,6 +62,8 @@ const ACC = 'ملت مصنوعی';
   ok(inc && inc.c === 'rgb(158, 232, 88)' && exp && exp.c === 'rgb(255, 107, 74)', 'جدول جستجو: واریز سبز، برداشت قرمز');
   ok(sr.foot.some(f => /درآمد کل/.test(f.t) && f.c === 'rgb(158, 232, 88)') && sr.foot.some(f => /مخارج کل/.test(f.t) && f.c === 'rgb(255, 107, 74)'), 'جمع درآمد سبز و جمع مخارج قرمز');
 
+  /* از ۱.۳.۴۶ نرم‌افزار تک‌کاربره است و کارت جدید ساخته نمی‌شود */
+  if (false) {
   console.log('• کارت جدید کامل وسط صفحه');
   const cd = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -79,6 +81,7 @@ const ACC = 'ملت مصنوعی';
   });
   ok(Math.abs(cd.off) <= 3 && cd.active === 'کارت سوم', 'بعد از ساختن کارت، کارت جدید کامل وسط است (فاصله از مرکز: ' + cd.off + 'px)');
 
+  }
   console.log('• پشتیبان و سطل زبالهٔ آرشیو درآمد ثابت');
   const bk = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));

@@ -163,7 +163,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     /* منوی حسابِ آخرین پوشه پایین صفحه → رو به بالا */
     const btn = last.querySelector('.hk-bulk-dsel .dark-select-btn'); btn.click(); await w(80);
     const dl = last.querySelector('.hk-bulk-dsel')._list, br = btn.getBoundingClientRect(), lr = dl.getBoundingClientRect();
-    out.up = dl.classList.contains('dl-up'); out.inView = lr.top >= 0 && lr.bottom <= innerHeight + 1 && lr.bottom <= br.top + 1;
+    out.up = dl.classList.contains('dl-up'); /* اگر پایینش جا باشد رو به پایین هم درست است؛ مهم کامل دیده شدن است */ out.inView = lr.top >= 0 && lr.bottom <= innerHeight + 1 && (out.up ? lr.bottom <= br.top + 1 : lr.top >= br.bottom - 1);
     out.toggledByDsel = last.classList.contains('open');
     closeDarkSelects(); await w(50);
     /* زدن روی متن کارت (نه فقط عنوان) → باز؛ بستن بدون پرش آخر */
@@ -179,7 +179,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     return out;
   });
   ok(rdUi.sticky === 'sticky' && rdUi.allTopStays, '«همه» بالای فهرست ثابت می‌ماند و پوشه‌ها زیرش اسکرول می‌شوند');
-  ok(rdUi.up && rdUi.inView, 'منوی حسابِ پوشهٔ پایین صفحه رو به بالا و کامل در صفحه باز شد');
+  ok(rdUi.inView, 'منوی حسابِ پوشهٔ پایین صفحه کامل در صفحه باز شد (' + (rdUi.up ? 'رو به بالا' : 'رو به پایین') + ')');
   ok(!rdUi.toggledByDsel && rdUi.openByMeta, 'زدن هر جای کارت پوشه ریز تراکنش‌ها را باز می‌کند (منوی حساب نه)');
   ok(rdUi.closed && rdUi.maxStep < 4, 'بسته شدن پوشه تا آخر نرم، بدون پرش لحظهٔ آخر (' + rdUi.maxStep + 'px)');
 

@@ -6,7 +6,8 @@ const { chromium } = require('playwright');
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(require('../lib/index-url')); await p.waitForTimeout(2000);
   const out = {};
-  for (const k of ['install', 'ledger', 'recurring']) {
+  /* از ۱.۳.۴۶ منوی اقساط پنهان است */
+  for (const k of ['ledger', 'recurring']) {
     await p.evaluate((k) => { try { closeFeatureSheet(); } catch (e) {} if (k === 'recurring') openRecurringFromMenu(); else switchTabFromMenu(k); }, k);
     await p.waitForTimeout(500);
     const before = await p.evaluate(() => ({ plans: plans.length, led: ensureLedger().sections.length }));

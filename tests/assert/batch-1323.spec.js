@@ -151,6 +151,8 @@ const ACC = 'ملت مصنوعی';
   ok(pj.labels.join('|') === 'حذف', 'پروژهٔ بی‌ردیف: فقط «حذف» (انصراف = بازگشت یا زدن بیرون باکس)');
   ok(pj.closed, 'بازگشت = انصراف (پروژه حذف نشد)');
 
+  /* از ۱.۳.۴۶ نرم‌افزار تک‌کاربره است و کارت جدید ساخته نمی‌شود */
+  if (false) {
   console.log('• حرکت نرم به کارت جدید (پردازندهٔ کند)');
   const cdp = await ctx.newCDPSession(p);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
@@ -183,6 +185,7 @@ const ACC = 'ملت مصنوعی';
   });
 
   await b.close();
+  }
   ok(errors.length === 0, 'هیچ خطای JS در صفحه' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   console.log('\nbatch-1323: ' + passed + ' passed, ' + failed + ' failed');
   process.exit(failed ? 1 : 0);

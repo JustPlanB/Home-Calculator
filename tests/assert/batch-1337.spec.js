@@ -89,6 +89,8 @@ async function page(b, extra) {
   ok(s.overlaps.every(n => n === 0), 'بازهٔ مبلغ: در هیچ حالتی برچسب‌ها روی هم نمی‌افتند (' + s.overlaps.join(',') + ')');
   ok(clr.v === '' && clr.f, 'ضربدر شرح با لمس کار می‌کند: نوشته پاک و فیلد فعال می‌ماند');
 
+  /* از ۱.۳.۴۶ اقساط خاموش است (batch-1346) */
+  if (false) {
   console.log('• قسط: قسط‌های گذشته قفل');
   const q = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -134,6 +136,7 @@ async function page(b, extra) {
   ok(!q.menuOpened && /فقط برای دیدن/.test(q.pop), 'زدن بانکِ ردیف قفل منوی بانک را باز نمی‌کند (' + q.pop + ')');
   ok(q.afterPay.paid === 5 && q.afterPay.locked === 4, 'پرداخت قسط بعدی از تب اقساط: پرداخت‌شده ۵، مرز قفل همان ۴');
 
+  }
   console.log('• پیوست از اشتراک‌گذاری');
   const fake = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   const p2 = await page(b, `window.__shared = [{ data: ${JSON.stringify(fake)}, mime: 'image/jpeg', pdf: false }, { data: ${JSON.stringify(fake)}, mime: 'image/jpeg', pdf: true }];
