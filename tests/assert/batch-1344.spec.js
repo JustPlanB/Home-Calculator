@@ -21,9 +21,9 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   console.log('• اعلان (کد اندروید)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟"\)/.test(patch), 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
-  ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"⚠️ پیامک شخصی از "\+sender/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان «پیامک شخصی از …» معرفی می‌شود');
-  ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد ✔"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setLargeIcon\(tick\(128\)\)/.test(patch),
-    'بعد از ثبت: بالا «بابت: …» و پایین‌ترین خط «ثبت شد» سبز با تیک گرد سبز');
+  ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"پیامک شخصی \\\\u2066"\+sender/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان «پیامک شخصی …» معرفی می‌شود (از ۱.۳.۴۵ کوتاه و بی‌ایموجی)');
+  ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد ✔"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),
+    'بعد از ثبت: بالا «بابت: …» و پایین‌ترین خط «ثبت شد» سبز با تیک (از ۱.۳.۴۵ تیک نرم‌افزار، batch-1345)');
   ok(/BubbleMetadata\.Builder\(bpi,ic\)/.test(patch) && /class HkQuickActivity extends Activity/.test(patch) && /HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true"/.test(patch) && /setHint\("بابت چی بود؟"\)/.test(patch) && /setText\("ثبت"\)/.test(patch),
     'آیکن حباب کنار اعلان باکس شناور ثبت را باز می‌کند (فیلد «بابت چی بود؟» و دکمهٔ «ثبت»)');
   ok(/catch\(Throwable t\)\{ try\{ nm\.notify\(nid,baseBuilder\(c,title,text\)\.build\(\)\); \}/.test(patch), 'اگر شکل گفتگو/حباب روی گوشی خطا داد، اعلان ساده حتماً می‌آید');
@@ -39,7 +39,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     closeSmsConfirmModal('reject'); await w(300);
     return out;
   });
-  ok(per.r === true && per.open && /شمارهٔ موبایل شخصی/.test(per.warn) && /۰?۹۱۲|9121234567|۹۱۲۱۲۳۴۵۶۷/.test(per.warn), 'پیامک شمارهٔ شخصی دور انداخته نشد؛ منوی ثبت با هشدار و شمارهٔ فرستنده باز شد');
+  ok(per.r === true && per.open && /پیامک شخصی از/.test(per.warn) && /۰?۹۱۲|9121234567|۹۱۲۱۲۳۴۵۶۷/.test(per.warn), 'پیامک شمارهٔ شخصی دور انداخته نشد؛ منوی ثبت با هشدار و شمارهٔ فرستنده باز شد');
 
   console.log('• کارت کاربر');
   const card = await p.evaluate(async () => {

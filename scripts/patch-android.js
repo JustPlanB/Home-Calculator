@@ -173,7 +173,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
     NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
     if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); if(Build.VERSION.SDK_INT>=29) ch.setAllowBubbles(true); nm.createNotificationChannel(ch); }
     /* ۱.۳.۴۴: پیامک از شمارهٔ شخصی دور انداخته نمی‌شود؛ در اعلان «پیامک شخصی» با شمارهٔ فرستنده معرفی می‌شود */
-    String title=isPersonal(sender)?("⚠️ پیامک شخصی از "+sender):"تراکنش بانکی جدید";
+    /* ۱.۳.۴۵: کوتاه و بی‌ایموجی (ایموجی سطر را بلند می‌کرد و متن پیامک زیرش نصفه می‌ماند)؛ شماره چپ‌به‌راست تا «+» جلوی ۹۸ بماند */
+    String title=isPersonal(sender)?("پیامک شخصی \\u2066"+sender.replace(" ","")+"\\u2069"):"تراکنش بانکی جدید";
     NotificationCompat.Builder b=baseBuilder(c,title,text);
     /* ۱.۳.۴۴: شکل گفتگو + حباب شناور (آیکن کنار اعلان، مثل پیامک‌ها) که باکس ثبت را روی صفحه باز می‌کند */
     try{
@@ -397,6 +398,7 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
 import org.json.JSONArray;
@@ -431,14 +433,13 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
     }catch(Exception ignored){}
     return null;
   }
-  /** تیک سبز گرد مثل تیک‌های داخل نرم‌افزار */
+  /** ۱.۳.۴۵: همان تیک داخل نرم‌افزار (مسیر M5 13 l4 4 L19 7، خط گرد)، سبز و بی‌دایره */
   static Bitmap tick(int size){
     Bitmap bm=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    Paint p=new Paint(Paint.ANTI_ALIAS_FLAG); p.setColor(0xFF30D158);
-    cv.drawCircle(size/2f,size/2f,size/2f,p);
-    Paint w=new Paint(Paint.ANTI_ALIAS_FLAG); w.setColor(0xFFFFFFFF); w.setStyle(Paint.Style.STROKE); w.setStrokeWidth(size*0.1f); w.setStrokeCap(Paint.Cap.ROUND); w.setStrokeJoin(Paint.Join.ROUND);
-    Path ph=new Path(); ph.moveTo(size*0.28f,size*0.53f); ph.lineTo(size*0.44f,size*0.68f); ph.lineTo(size*0.73f,size*0.36f);
+    float u=size/24f;
+    Paint w=new Paint(Paint.ANTI_ALIAS_FLAG); w.setColor(0xFF30D158); w.setStyle(Paint.Style.STROKE); w.setStrokeWidth(3f*u); w.setStrokeCap(Paint.Cap.ROUND); w.setStrokeJoin(Paint.Join.ROUND);
+    Path ph=new Path(); ph.moveTo(5*u,13*u); ph.lineTo(9*u,17*u); ph.lineTo(19*u,7*u);
     cv.drawPath(ph,w);
     return bm;
   }
@@ -459,9 +460,16 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       NotificationCompat.Builder b=new NotificationCompat.Builder(c,BankSmsReceiver.CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)
         .setContentTitle(found?(desc.isEmpty()?"بدون شرح":"بابت: "+desc):"حساب‌کتاب")
         .setContentText(line)
-        .setColor(0xFF30D158)
         .setOnlyAlertOnce(true).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_LOW);
-      if(found){ try{ b.setLargeIcon(tick(128)); }catch(Throwable ignored){} }
+      /* ۱.۳.۴۵: چیدمان اختصاصی: «بابت: …» هم‌اندازهٔ نام نرم‌افزار، زیرش «ثبت شد» درشت و بولد با تیک نرم‌افزار */
+      if(found){
+        try{
+          RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_done);
+          rv.setTextViewText(R.id.hk_done_desc,desc.isEmpty()?"بدون شرح":"بابت: "+desc);
+          rv.setImageViewBitmap(R.id.hk_done_tick,tick(72));
+          b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomContentView(rv);
+        }catch(Throwable ignored){}
+      }
       if(pi!=null) b.setContentIntent(pi);
       if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(8000);
       nm.notify(nid,b.build());
@@ -499,6 +507,9 @@ public class HkQuickActivity extends Activity {
   private LinearLayout box;
   private int dp(float v){ return (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,v,getResources().getDisplayMetrics()); }
   private GradientDrawable round(int color,float r){ GradientDrawable g=new GradientDrawable(); g.setColor(color); g.setCornerRadius(dp(r)); return g; }
+  /** ۱.۳.۴۵: همهٔ نوشته‌ها راست‌چین */
+  private void rtl(TextView v){ v.setGravity(Gravity.RIGHT); v.setTextDirection(View.TEXT_DIRECTION_RTL); v.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY); }
+  private LinearLayout.LayoutParams full(){ return new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); }
 
   @Override protected void onCreate(Bundle b){
     super.onCreate(b);
@@ -520,30 +531,33 @@ public class HkQuickActivity extends Activity {
     String text=it.optString("text",""), sender=it.optString("sender","");
     boolean personal=BankSmsReceiver.isPersonal(sender);
     TextView t=new TextView(this);
-    t.setText(personal?("⚠️ پیامک شخصی از "+sender):"تراکنش بانکی جدید");
-    t.setTextColor(personal?0xFFFF9F0A:0xFFFFFFFF); t.setTextSize(17); t.setTypeface(Typeface.DEFAULT_BOLD); t.setGravity(Gravity.START);
-    box.addView(t);
+    t.setText(personal?("⚠️ پیامک شخصی \\u2066"+sender.replace(" ","")+"\\u2069"):"تراکنش بانکی جدید");
+    t.setTextColor(personal?0xFFFF9F0A:0xFFFFFFFF); t.setTextSize(17); t.setTypeface(Typeface.DEFAULT_BOLD); rtl(t);
+    box.addView(t,full());
     if(personal){
       TextView w=new TextView(this);
-      w.setText("این پیامک از سرشمارهٔ بانک نیامده و ممکن است جعلی باشد. اگر مطمئنید، ثبتش کنید.");
-      w.setTextColor(0xFFFFB340); w.setTextSize(13); w.setPadding(0,dp(4),0,0);
-      box.addView(w);
+      w.setText("از سرشمارهٔ بانک نیامده؛ اگر مطمئنید ثبت کنید");
+      w.setTextColor(0xFFFFB340); w.setTextSize(13); w.setPadding(0,dp(4),0,0); rtl(w);
+      box.addView(w,full());
     }
     TextView sms=new TextView(this);
     sms.setText(text); sms.setTextColor(0xFFD1D1D6); sms.setTextSize(15); sms.setLineSpacing(0,1.15f);
-    sms.setBackground(round(0xFF2C2C2E,14)); sms.setPadding(dp(14),dp(12),dp(14),dp(12)); sms.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
+    sms.setBackground(round(0xFF2C2C2E,14)); sms.setPadding(dp(14),dp(12),dp(14),dp(12)); rtl(sms);
     LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp.topMargin=dp(12);
     box.addView(sms,lp);
     final EditText et=new EditText(this);
     et.setHint("بابت چی بود؟"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
     et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
-    et.setBackground(round(0xFF2C2C2E,14)); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.START|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL);
+    et.setBackground(round(0xFF2C2C2E,14)); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+    /* ۱.۳.۴۵: نشانگر تایپ سفید (قبلاً مشکی و نامعلوم بود) */
+    if(android.os.Build.VERSION.SDK_INT>=29){ GradientDrawable cur=new GradientDrawable(); cur.setColor(0xFFFFFFFF); cur.setSize(dp(2),dp(22)); et.setTextCursorDrawable(cur); }
     LinearLayout.LayoutParams lp2=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,dp(54)); lp2.topMargin=dp(12);
     box.addView(et,lp2);
     LinearLayout row=new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-    Button ok=new Button(this); ok.setText("ثبت"); ok.setAllCaps(false); ok.setTextColor(0xFFFFFFFF); ok.setTextSize(17); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setBackground(round(0xFF30D158,14));
-    Button open=new Button(this); open.setText("باز کردن نرم‌افزار"); open.setAllCaps(false); open.setTextColor(0xFFFFFFFF); open.setTextSize(14); open.setBackground(round(0xFF3A3A3C,14));
-    LinearLayout.LayoutParams bl=new LinearLayout.LayoutParams(0,dp(50),1.4f); LinearLayout.LayoutParams bl2=new LinearLayout.LayoutParams(0,dp(50),1f); bl2.setMarginStart(dp(10));
+    /* ۱.۳.۴۵: دو دکمهٔ هم‌اندازه با قلم هم‌سایز؛ «ثبت» سبز مات مبالغ درآمد نرم‌افزار */
+    Button ok=new Button(this); ok.setText("ثبت"); ok.setAllCaps(false); ok.setTextColor(0xFF10200A); ok.setTextSize(15); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setBackground(round(0xD99EE858,14));
+    Button open=new Button(this); open.setText("باز کردن نرم‌افزار"); open.setAllCaps(false); open.setTextColor(0xFFFFFFFF); open.setTextSize(15); open.setTypeface(Typeface.DEFAULT_BOLD); open.setBackground(round(0xFF3A3A3C,14));
+    LinearLayout.LayoutParams bl=new LinearLayout.LayoutParams(0,dp(50),1f); LinearLayout.LayoutParams bl2=new LinearLayout.LayoutParams(0,dp(50),1f); bl2.setMarginStart(dp(10));
     row.addView(ok,bl); row.addView(open,bl2);
     LinearLayout.LayoutParams lp3=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp3.topMargin=dp(14);
     box.addView(row,lp3);
@@ -561,8 +575,8 @@ public class HkQuickActivity extends Activity {
     if(!found){ showGone(); return; }
     box.removeAllViews();
     box.setGravity(Gravity.CENTER_HORIZONTAL);
-    ImageView iv=new ImageView(this); iv.setImageBitmap(HkQuickReplyReceiver.tick(dp(64)));
-    box.addView(iv,new LinearLayout.LayoutParams(dp(64),dp(64)));
+    ImageView iv=new ImageView(this); iv.setImageBitmap(HkQuickReplyReceiver.tick(dp(56)));
+    box.addView(iv,new LinearLayout.LayoutParams(dp(56),dp(56)));
     TextView d=new TextView(this); d.setText(desc.isEmpty()?"بدون شرح":"بابت: "+desc); d.setTextColor(0xFFFFFFFF); d.setTextSize(16); d.setGravity(Gravity.CENTER); d.setPadding(0,dp(12),0,0);
     box.addView(d);
     TextView ok=new TextView(this); ok.setText("ثبت شد"); ok.setTextColor(0xFF30D158); ok.setTextSize(18); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setGravity(Gravity.CENTER); ok.setPadding(0,dp(6),0,0);
@@ -2977,6 +2991,48 @@ fs.writeFileSync(filePaths,
 const resDir=path.join(base,'app/src/main/res');
 fs.mkdirSync(path.join(resDir,'layout'),{recursive:true});
 fs.mkdirSync(path.join(resDir,'drawable'),{recursive:true});
+// ۱.۳.۴۵: چیدمان پیام «ثبت شد» بعد از ثبت سریع/باکس شناور
+fs.writeFileSync(path.join(resDir,'layout','hk_done.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:paddingBottom="4dp">
+    <TextView
+        android:id="@+id/hk_done_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Info"
+        android:textSize="12.5sp"
+        android:gravity="start"
+        android:textDirection="rtl"
+        android:maxLines="2"
+        android:ellipsize="end"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layoutDirection="rtl">
+        <TextView
+            android:id="@+id/hk_done_ok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ثبت شد"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#30D158"/>
+        <ImageView
+            android:id="@+id/hk_done_tick"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginStart="6dp"/>
+    </LinearLayout>
+</LinearLayout>
+`);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
