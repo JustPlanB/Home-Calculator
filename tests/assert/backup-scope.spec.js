@@ -154,6 +154,8 @@ async function uiRestore(page, data, action) {
   ok(same(cState.trash, cBefore.trash), 'سطل زبالهٔ محلی حفظ شد');
   await C.ctx.close();
 
+  /* از ۱.۳.۴۶ نرم‌افزار تک‌کاربره است و «کارت دوم» در کارت اصلی ادغام می‌شود؛ پشتیبانِ محدود به یک کارت دیگر معنا ندارد */
+  if (false) {
   console.log('• ۴) پشتیبان محدود به یک کارت (مسیر UI) کارت‌های دیگر را پاک نمی‌کند');
   const D0 = await fresh(b);
   await D0.page.evaluate(seed, [ACC, CARD2]);
@@ -176,6 +178,7 @@ async function uiRestore(page, data, action) {
   ok(same(dState.ledger, srcState.ledger), 'قرض‌ها تکثیر یا حذف نشدند');
   ok(same(dState.trash, dBefore.trash) && same(dState.todos, dBefore.todos), 'سطل زباله و کارهای محلی حفظ شدند');
   await D.ctx.close();
+  }
 
   console.log('• ۵) فایل بدون فهرست حساب، موجودی اول ماه را از دست نمی‌دهد (بازسازی خطای 700000 → 500000)');
   const files = await A.page.evaluate(() => ({

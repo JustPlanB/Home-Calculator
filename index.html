@@ -22099,8 +22099,8 @@ async function openPdfPrintWindow(){
     function hkSingleBad(t) { t = String(t || '').trim(); return !t || /^s\d+(_[a-z0-9]+)*$/i.test(t); }
     function hkMainTitle() {
       var st = ''; try { st = (localStorage.getItem(STORAGE_KEY + '_mainCard') || '').trim(); } catch (e) {}
-      if (st && !hkSingleBad(st)) return st;
       var dflt = hkSingleNorm('نام کاربر');
+      if (st && !hkSingleBad(st) && hkSingleNorm(st) !== dflt) return st;
       var pick = function (list) {
         list = list.filter(function (t) { return !hkSingleBad(t); });
         return list.filter(function (t) { return hkSingleNorm(t) !== dflt; })[0] || list[0] || '';
@@ -22126,7 +22126,16 @@ async function openPdfPrintWindow(){
         if ((ms.title || '') !== main) { ms.title = main; changed = true; }
         if (!Array.isArray(ms.rows)) ms.rows = [];
         if (secs.length > 1 || b.sections.length !== secs.length) {
-          secs.forEach(function (x) { if (x === ms) return; (x.rows || []).forEach(function (r) { if (real(r)) ms.rows.push(r); }); });
+          /* ردیف تکراری (همان شناسه، یا همان روز/ساعت/مبلغ/شرح/حساب) دوباره اضافه نمی‌شود؛ مثلاً افزودن دوبارهٔ پشتیبانی که چند کارت داشت */
+          var sig = function (r) { return [r.day || '', r.time || '', Number(r.amount) || 0, (r.desc || '').trim(), (r.account || '').trim(), r.status || ''].join('|'); };
+          var seenId = {}, seenSig = {};
+          ms.rows.forEach(function (r) { if (!r) return; if (r.id) seenId[r.id] = 1; seenSig[sig(r)] = 1; });
+          secs.forEach(function (x) { if (x === ms) return; (x.rows || []).forEach(function (r) {
+            if (!real(r)) return;
+            if ((r.id && seenId[r.id]) || seenSig[sig(r)]) return;
+            if (r.id) seenId[r.id] = 1; seenSig[sig(r)] = 1;
+            ms.rows.push(r);
+          }); });
           b.sections = [ms]; changed = true;
           var rr = ms.rows.filter(real);
           ms.rows = rr.length ? rr : [emptyRow(tab)];
@@ -22137,24 +22146,26 @@ async function openPdfPrintWindow(){
       if (Array.isArray(pd.personCardOrder) && (pd.personCardOrder.length !== 1 || pd.personCardOrder[0] !== main)) { pd.personCardOrder = [main]; changed = true; }
       return changed;
     }
-    function hkSingleCardNormalizeAll() {
+    function hkSingleCardNormalizeAll(persist) {
+      if (persist === undefined) persist = true;
       try {
         var main = hkMainTitle();
-        try { localStorage.setItem(STORAGE_KEY + '_mainCard', main); } catch (eS) {}
+        try { if (persist && localStorage.getItem(STORAGE_KEY + '_mainCard') !== main && (allPersonTitlesRaw().length || Object.keys(archive || {}).length)) localStorage.setItem(STORAGE_KEY + '_mainCard', main); } catch (eS) {}
         var ch = hkSingleCardMergePd(periodData, main);
         Object.keys(archive || {}).forEach(function (k) { if (hkSingleCardMergePd(archive[k], main)) ch = true; });
         var curInc = ((periodData.income && periodData.income.sections) || [])[0];
         (recurringIncomes || []).forEach(function (r) {
           if (!r || r.deletedAt) return;
-          if (r.sectionTitle !== main || (curInc && r.sectionId !== curInc.id)) { r.sectionTitle = main; if (curInc) r.sectionId = curInc.id; ch = true; }
+          if ((r.sectionTitle || '') !== main) { r.sectionTitle = main; if (curInc) r.sectionId = curInc.id; ch = true; }
         });
         var curExp = ((periodData.expense && periodData.expense.sections) || [])[0];
         (plans || []).forEach(function (pl) {
           if (!pl) return;
           if ((pl.expenseSectionTitle || pl.expenseSectionId) && pl.expenseSectionTitle !== main) { pl.expenseSectionTitle = main; if (curExp) pl.expenseSectionId = curExp.id; ch = true; }
         });
-        try { var go = loadGlobalCardOrder(); if (go.length !== 1 || go[0] !== main) saveGlobalCardOrder([main]); } catch (eO) {}
-        if (ch) {
+        try { var go = loadGlobalCardOrder(); if (persist && (go.length > 1 || (go.length === 1 && go[0] !== main))) saveGlobalCardOrder([main]); } catch (eO) {}
+        /* فقط بار اول و بعد از تغییر نام ذخیره؛ رسم‌های بعدی (مثلاً برگشت از بازیابی ناموفق) فقط در حافظه ادغام می‌کنند و ذخیرهٔ بعدی می‌نویسد */
+        if (ch && persist) {
           try { persistCurrent(); } catch (e1) {}
           try { saveArchive(); } catch (e2) {}
           try { saveRecurring(); } catch (e3) {}
@@ -22166,8 +22177,9 @@ async function openPdfPrintWindow(){
     function ensureDefaultPersonCard() {
       try {
         if (!window._hkSingleDone || allPersonTitlesRaw().length > 1 || ['income', 'expense'].some(function (tab) { return ((periodData[tab] && periodData[tab].sections) || []).some(function (x) { return x && hkSingleBad(x.title); }); })) {
+          var _first = !window._hkSingleDone;
           window._hkSingleDone = true;
-          hkSingleCardNormalizeAll();
+          hkSingleCardNormalizeAll(_first);
         }
       } catch (eN) {}
       try {
@@ -35514,8 +35526,9 @@ if (item.type === 'recurring') {
         if (localStorage.getItem(K)) return;
         var any = false;
         recEachMonth(function (k, pd) { ((pd && pd.expense && pd.expense.sections) || []).forEach(function (sec) { if ((sec.rows || []).some(function (r) { return r && r.fromPlanId; })) any = true; }); });
-        localStorage.setItem(K, '1');
+        /* بی ردیف قسط چیزی برای تبدیل نیست (و چیزی هم در حافظه نوشته نمی‌شود) */
         if (!any) return;
+        localStorage.setItem(K, '1');
         var go = function () { if (hkInstallmentsOffMigrate()) { try { renderAll(); renderHomeCards(); } catch (eR) {} } };
         try { safetyBackupThen('inst-off', go); } catch (eB) { go(); }
       } catch (e) {}
@@ -41871,6 +41884,15 @@ function openProjectRowPicker(secId) {
     function renderBalanceSectionFilter() {
       const wrap = document.getElementById('balanceSectionWrap');
       if (!wrap) return;
+      /* از ۱.۳.۴۶ تک‌کاربره: فقط کارت اصلی؛ جستجو همهٔ ردیف‌ها را می‌گیرد */
+      if (typeof hkMainTitle === 'function') {
+        balanceSectionAll = true; balanceSelectedTitles = [];
+        wrap.innerHTML = '';
+        const sel1 = createDarkSelect({ options: [{ value: '__all__', label: hkMainTitle() || '—' }], value: '__all__', onChange: function () {} });
+        if (sel1._list) sel1._list.classList.add('bsr-list');
+        wrap.appendChild(sel1);
+        return;
+      }
       const titles = allSectionTitles();
       if (balanceSelectedTitles.length > 1) balanceSelectedTitles = [balanceSelectedTitles[0]];
       if (balanceSelectedTitles.length && titles.indexOf(balanceSelectedTitles[0]) < 0) balanceSelectedTitles = [];

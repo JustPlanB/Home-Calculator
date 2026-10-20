@@ -110,7 +110,7 @@ async function page(b, inbox) {
     out.stillHome = document.getElementById('panel-home').classList.contains('active');
     return out;
   });
-  ok(bk.cardIn && bk.cardLbl === 'ثبت روی کارت' && bk.cardAboveRead, 'انتخاب کارت مقصد داخل بخش بازه و بالای «خواندن پیامک‌ها» (نه روی دکمه‌های پایین)');
+  /* ۱.۳.۴۶ تک‌کاربره: منوی کارت مقصد پنهان است */ ok(!bk.cardIn && bk.cardLbl === 'ثبت روی کارت', 'منوی کارت مقصد در ثبت گروهی پنهان است (تک‌کاربره)');
   ok(bk.dupLbl === 'پیدا کردن ردیف‌های تکراری قبلی', 'اسم دکمهٔ تکراری‌ها روشن‌تر شد');
   ok(bk.open.dn === 0 && bk.open.up > 4 && bk.openWrap && bk.close.up === 0 && bk.close.dn > 4 && bk.closeWrap && bk.ghosts === 1, 'باز و بسته شدن بازه یک حرکت پیوسته (باز: ' + bk.open.up + ' فریم، بسته: ' + bk.close.dn + ' فریم)');
   ok(bk.open.mx <= Math.max(40, bk.open.tot * 0.25) && bk.close.mx <= Math.max(40, bk.close.tot * 0.25), 'بی‌پرش (بیشترین گام ' + bk.open.mx + '/' + bk.close.mx + 'px)');
@@ -118,6 +118,8 @@ async function page(b, inbox) {
   ok(bk.backClosed && bk.stillHome, 'بک اندروید ثبت گروهی را می‌بندد و صفحهٔ زیرش سر جایش می‌ماند');
 
   /* ---------- قسط ---------- */
+  /* از ۱.۳.۴۶ اقساط خاموش است (batch-1346) */
+  if (false) {
   console.log('• قسط: دو وام هم‌مبلغ و پرداخت دو قسط با هم');
   const inbox2 = [
     melli('بانك ملي ايران\nبرداشت:11,904,000-\nحساب:62002\nمانده:88,096,000\n0525-10:00', T(2026, 8, 16, 7)),
@@ -160,6 +162,7 @@ async function page(b, inbox) {
   /* ۱.۳.۳۷: ثبت گروهی دیگر قسط پیدا نمی‌کند: چهار برداشت چهار ردیف معمولی‌اند و قسط‌ها دست نمی‌خورند */
   ok(ins.extra === 4 && ins.mordad.concat(ins.shahrivar).every(x => !/^p[ab]:/.test(x)) && ins.paid.join() === '2,2' && !/پرداخت قسط شناخته شد/.test(ins.sum), 'ثبت گروهی: هر چهار برداشت ردیف معمولی شد؛ هیچ قسطی خودکار پرداخت‌شده نشد (' + ins.paid.join() + ')');
 
+  }
   console.log('• باکس هوشمند، پروژه، پیوست');
   const s = await page(b, []); s.on('pageerror', e => errors.push(e.message));
   await s.goto(INDEX); await s.waitForTimeout(1600);

@@ -33,6 +33,8 @@ const ACC = 'ملت مصنوعی';
     syncPlansToExpenseAll(); persistCurrent(); saveArchive(); renderAll();
   }, ACC);
 
+  /* از ۱.۳.۴۶ اقساط خاموش است (batch-1346) */
+  if (false) {
   console.log('• جستجو: قسط‌های آتی نشان داده نمی‌شوند');
   const fs = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -47,6 +49,7 @@ const ACC = 'ملت مصنوعی';
   ok(fs.hasAban, 'ردیف قسط آبان (ماه آینده) در داده هست');
   ok(fs.rows.length > 0 && !fs.rows.some(t => /۱۴۰۵\/۰[89]/.test(t)) && fs.rows.some(t => /۱۴۰۵\/۰۷/.test(t)), 'نتیجهٔ جستجو: قسط مهر هست، قسط‌های آبان و آذر (آتی) نیستند (' + fs.rows.length + ' ردیف)');
 
+  }
   console.log('• درآمد ثابت: فلش، هم‌ترازی آیکون‌ها، «تمدید» از اول ماه پایان');
   const rc = await p.evaluate(async (ACC) => {
     const w = ms => new Promise(r => setTimeout(r, ms));

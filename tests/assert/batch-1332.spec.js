@@ -37,6 +37,8 @@ async function page(b, inbox, extra) {
   ok(/isInternal\(call\)/.test(patch) && /getFilesDir\(\),"backups"/.test(patch) && /hesab-\(auto\|safety\|latest\)/.test(patch), 'پشتیبان خودکار در حافظهٔ داخلی؛ «آخرین پشتیبان» در Downloads');
 
   /* ---------- قسط‌های از قبل پرداخت‌شده ---------- */
+  /* از ۱.۳.۴۶ اقساط خاموش است (batch-1346) */
+  if (false) {
   console.log('• ثبت گروهی: قسط‌هایی که قبلاً دستی پرداخت‌شده زده شده‌اند');
   const inbox1 = [
     melli('بانك ملي ايران\nبرداشت:11,904,000-\nحساب:62002\nمانده:88,096,000\n0525-10:00', T(2026, 8, 16, 7)),
@@ -84,6 +86,7 @@ async function page(b, inbox, extra) {
   ok(ip.nav === '1405-5', 'بعد از «باشه»، منوی اصلی به ماهِ شروع بازه (مرداد ۱۴۰۵) رفت');
 
   /* ---------- پیوست ---------- */
+  }
   console.log('• پیوست: دوربین، میکروفون، دایرهٔ بارگذاری، زوم');
   const p2 = await page(b, []); p2.on('pageerror', e => errors.push(e.message));
   await p2.goto(INDEX); await p2.waitForTimeout(1600);

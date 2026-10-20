@@ -78,7 +78,7 @@ async function page(b, inbox) {
   ok(r.shOpen === 9268987 && /موجودی اول شهریور ملی طبق پیامک‌ها تنظیم شد/.test(r.sum), 'موجودی اول شهریور از پیامک‌های همان ماه (۹٬۲۶۸٬۷۸۷) و گزارش در خلاصه');
   ok(r.shEnd === 6556787 && r.mehrOpen === 6556787, 'پایان شهریور = ماندهٔ آخرین پیامک شهریور = اول مهر (' + r.shEnd + ')');
   /* ۱.۳.۳۷: پیدا کردن خودکار قسط از ثبت گروهی برداشته شد → برداشت ۶۰۰ هزار ردیف معمولی است و قسط دست نمی‌خورد */
-  ok(r.planRows.length >= 1 && r.planRows.every(x => x.acc !== 'ملی' && x.amt !== 600000), 'ردیف قسط به پیامک وصل نشد (پیدا کردن خودکار قسط برداشته شد)');
+  /* ۱.۳.۴۶: اقساط خاموش؛ ردیف قسط ساخته نمی‌شود */ ok(r.planRows.every(x => x.acc !== 'ملی' && x.amt !== 600000), 'ردیف قسط به پیامک وصل نشد (پیدا کردن خودکار قسط برداشته شد)');
   ok(r.paidCount === 4 && r.extra600 === 1 && !/پرداخت قسط شناخته شد/.test(r.sum), 'برداشت ۶۰۰ هزار یک ردیف معمولی شد؛ شمار قسط‌های پرداخت‌شده همان ۴ ماند');
   ok(r.bal === 5856787, 'موجودی ملی = ماندهٔ آخرین پیامک (' + r.bal + ')');
 
@@ -93,7 +93,7 @@ async function page(b, inbox) {
     const seg = document.getElementById('smsExpenseSeg'), pick = document.getElementById('smsPlanPick');
     return { inst: seg && seg.querySelector('button.active') && seg.querySelector('button.active').dataset.mode, pick: pick && pick.value, meta: (document.getElementById('smsPlanPickMeta') || {}).textContent || '', rej: (document.getElementById('smsConfirmReject') || {}).textContent };
   });
-  ok(live.inst === 'installment' && live.pick === 'pl2|2' && /قسط شناخته شد/.test(live.meta), 'باکس ثبت پیامک خودش روی «پرداخت قسط» با قسط ۳ وام خودرو باز شد (' + live.meta + ')');
+  /* ۱.۳.۴۶: اقساط خاموش است → باکس دیگر روی «پرداخت قسط» باز نمی‌شود */ ok(live.inst !== 'installment' && !/قسط شناخته شد/.test(live.meta), 'اقساط خاموش: باکس ثبت پیامک روی «پرداخت قسط» باز نشد');
   ok(live.rej === 'انصراف', 'دکمهٔ «رد» حالا «انصراف» است');
 
   /* ---------- منوی کشویی، پوشهٔ شخصی ---------- */

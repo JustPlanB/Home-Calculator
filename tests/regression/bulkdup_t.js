@@ -38,7 +38,8 @@ const { chromium } = require('playwright');
     await p.waitForTimeout(300);
     console.log('rows', await p.evaluate(() => Object.keys(archive).concat(['cur']).map(k => { const pd = k === 'cur' ? periodData : archive[k]; const o = {}; ['income','expense'].forEach(t => ((pd[t]||{}).sections||[]).forEach(s => (s.rows||[]).forEach(r => { if (r.fromSmsBulk) o[s.title] = (o[s.title] || 0) + 1; }))); return k + ':' + JSON.stringify(o); }).filter(x => !/\{\}$/.test(x))));
   };
-  await run('first', 'کارت دوم');
+  /* ۱.۳.۴۶ تک‌کاربره: منوی کارت در ثبت گروهی پنهان است */
+  await run('first');
   await run('skip');
   await run('all');
   console.log(errs); await b.close(); })();
