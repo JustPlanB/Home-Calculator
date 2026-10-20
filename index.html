@@ -9088,6 +9088,14 @@
     }
     /* ۱.۳.۴۳: منوی ثبتِ تراکنشی که از اعلان ثبت می‌شود پنهان باز می‌شود (فقط اگر تکمیل لازم باشد دیده می‌شود) */
     #smsConfirmModal.hk-quick { visibility: hidden !important; }
+    /* ۱.۳.۴۴: لرزش کارت در حالت حذف */
+    @keyframes hkJiggle { 0% { rotate: -0.7deg; } 50% { rotate: 0.7deg; } 100% { rotate: -0.7deg; } }
+    .person-card.hk-jiggle { position: relative; animation: hkJiggle 0.24s ease-in-out infinite; }
+    .hk-jig-menu { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+      background: rgba(0,0,0,0.42); border-radius: inherit; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+    .hk-jig-btn { font: inherit; font-weight: 800; font-size: 0.95rem; color: #fff; background: #d63a3a; border: none; border-radius: 999px;
+      padding: 10px 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.35); cursor: pointer; }
+    .hk-jig-btn:active { transform: scale(0.96); }
     /* ۱.۳.۴۳: ردیفی که از اسلاید «خرج‌های ماه» به آن رفتیم کوتاه برجسته می‌شود */
     tr.sp-flash td { animation: spFlashRow 1.8s ease; }
     @keyframes spFlashRow { 0%, 60% { background-color: rgba(10,132,255,0.28); } 100% { background-color: transparent; } }
@@ -10724,6 +10732,10 @@
     /* ۱.۳.۴۲: تراکنش‌های ثبت‌نشده بالای فهرست (اولی برجسته)، «نگه دار تا پیامک بیاید» */
     .hk-share-sub { margin: 8px 2px 6px; font-size: 0.78rem; font-weight: 800; color: var(--muted, #8e8e93); text-align: right; }
     .hk-share-unreg { display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+    /* ۱.۳.۴۴: فهرست ثبت‌نشده‌ها در جعبهٔ ستونی جمع نشود (قبلاً تا ۲۳px فشرده می‌شد و زیر دکمه‌ها می‌رفت) */
+    .hk-share-unreg, .hk-share-keep, .hk-share-new, .hk-share-sub { flex-shrink: 0; }
+    .hk-share-unreg > .hk-share-row { flex-shrink: 0; }
+    #hkShareOv .hk-share-list { min-height: 0; flex: 1 1 auto; }
     .hk-share-row.hk-share-u.first { border-color: #0a84ff; box-shadow: 0 0 0 1px rgba(10,132,255,0.5) inset; }
     .hk-share-keep { width: 100%; margin: 8px 0 4px; padding: 10px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.18)); background: none; color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
     .hk-share-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.14)); background: var(--bg3, rgba(255,255,255,0.04)); color: var(--text); font-family: inherit; font-size: 0.84rem; text-align: right; cursor: pointer; direction: rtl; }
@@ -10864,6 +10876,10 @@
     html[data-theme="light"] .hk-info-tip { background: #ffffff; color: #1c1c1e; border-color: rgba(0,0,0,0.10); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
     @keyframes hkTipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
     #searchResultBox td.sr-date { font-size: 0.74rem; white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+    /* ۱.۳.۴۴: ستون ردیف هم‌عرض ستون ردیف جدول درآمد/مخارج؛ شرح طولانی یک‌خطی با «…» (متن کامل با زدن در باکس شناور) */
+    #searchResultBox table { table-layout: fixed; }
+    #searchResultBox th.sr-num-h { padding-left: 0 !important; padding-right: 0 !important; font-size: 0.7rem; }
+    #search-result-body td.sec-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; cursor: pointer; }
     #searchResultBox td.sr-num { color: var(--muted, #8e8e93); font-size: 0.74rem; text-align: center !important; padding-left: 1px !important; padding-right: 1px !important; }
     .export-choice-btn .ex-ico { width: 44px; height: 26px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.16); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 2px rgba(0,0,0,0.12); }
     .export-choice-btn .ex-ico svg { width: 22px; height: 22px; display: block; }
@@ -11155,19 +11171,6 @@
           </button>
         </div></div></div>
         <div class="home-box box2 hb-multi" id="homeBox2"><div class="hb-track"><div class="hb-slide">
-          <button type="button" class="home-tile" onclick="askBackupParts()" title="پشتیبان‌گیری">
-            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M7 19.4a4.6 4.6 0 0 1-.7-9.1A6.1 6.1 0 0 1 18 9.2a4.6 4.6 0 0 1 .2 10.2z"/><path d="M12 16.6v-5.4M9.5 13.6L12 11.1l2.5 2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.9"/></svg></span></span>
-            <span>پشتیبان‌گیری</span>
-          </button>
-          <button type="button" class="home-tile" onclick="triggerImportBackup()" title="بازیابی از پشتیبان">
-            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M7 19.4a4.6 4.6 0 0 1-.7-9.1A6.1 6.1 0 0 1 18 9.2a4.6 4.6 0 0 1 .2 10.2z"/><path d="M12 10.8v5.4M9.5 13.7l2.5 2.5 2.5-2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.9"/></svg></span></span>
-            <span>بازیابی</span>
-          </button>
-          <button type="button" class="home-tile" onclick="askExport()" title="خروجی اکسل / PDF">
-            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M6.1 2.8h8.1l4.6 4.6v12.4a1.6 1.6 0 0 1-1.6 1.6H6.1a1.6 1.6 0 0 1-1.6-1.6V4.4a1.6 1.6 0 0 1 1.6-1.6z"/><path d="M14 3v4.6h4.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.3"/><path d="M8 11.6h7.6M8 14.6h7.6M8 17.6h4.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.4"/></svg></span></span>
-            <span>خروجی</span>
-          </button>
-        </div><div class="hb-slide">
           <button type="button" class="home-tile" onclick="openSavingsModal()" title="پس‌انداز">
             <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M2.8 7.4v9.8c0 1.3 2.6 2.4 5.8 2.4.8 0 1.6-.1 2.3-.2a6 6 0 0 1 3.3-7.6V7.4c0 1.3-2.6 2.4-5.7 2.4S2.8 8.7 2.8 7.4z"/><ellipse cx="8.6" cy="7.2" rx="5.8" ry="2.4"/><circle cx="16.8" cy="15.4" r="5"/><path d="M3.2 11c1 .8 3 1.3 5.4 1.3M3.2 14.4c1 .8 3 1.3 5.4 1.3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M16.8 12.4v6M18.4 13.6c-.4-.5-1-.8-1.7-.8-.9 0-1.6.5-1.6 1.2 0 1.7 3.4.9 3.4 2.6 0 .7-.8 1.2-1.7 1.2-.8 0-1.5-.3-1.9-.9" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span></span>
             <span>پس‌انداز</span>
@@ -11179,6 +11182,19 @@
           <button type="button" class="home-tile" onclick="openSmsImportModal()" title="ثبت دستی پیامک">
             <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M4.6 4h14.8A1.6 1.6 0 0 1 21 5.6v10A1.6 1.6 0 0 1 19.4 17.2H10.2l-4.2 3.4v-3.4H4.6A1.6 1.6 0 0 1 3 15.6v-10A1.6 1.6 0 0 1 4.6 4z"/><path d="M7 8.6h10M7 11.6h10M7 14.4h6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.4"/></svg></span></span>
             <span class="tile-1line">ثبت دستی پیامک</span>
+          </button>
+        </div><div class="hb-slide">
+          <button type="button" class="home-tile" onclick="askBackupParts()" title="پشتیبان‌گیری">
+            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M7 19.4a4.6 4.6 0 0 1-.7-9.1A6.1 6.1 0 0 1 18 9.2a4.6 4.6 0 0 1 .2 10.2z"/><path d="M12 16.6v-5.4M9.5 13.6L12 11.1l2.5 2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.9"/></svg></span></span>
+            <span>پشتیبان‌گیری</span>
+          </button>
+          <button type="button" class="home-tile" onclick="triggerImportBackup()" title="بازیابی از پشتیبان">
+            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M7 19.4a4.6 4.6 0 0 1-.7-9.1A6.1 6.1 0 0 1 18 9.2a4.6 4.6 0 0 1 .2 10.2z"/><path d="M12 10.8v5.4M9.5 13.7l2.5 2.5 2.5-2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.9"/></svg></span></span>
+            <span>بازیابی</span>
+          </button>
+          <button type="button" class="home-tile" onclick="askExport()" title="خروجی اکسل / PDF">
+            <span class="tile-ico ti2" aria-hidden="true"><span class="ti-disc"><svg viewBox="0 0 24 24"><path d="M6.1 2.8h8.1l4.6 4.6v12.4a1.6 1.6 0 0 1-1.6 1.6H6.1a1.6 1.6 0 0 1-1.6-1.6V4.4a1.6 1.6 0 0 1 1.6-1.6z"/><path d="M14 3v4.6h4.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.3"/><path d="M8 11.6h7.6M8 14.6h7.6M8 17.6h4.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="1.4"/></svg></span></span>
+            <span>خروجی</span>
           </button>
         </div></div></div>
         <div class="home-box box3" id="homeBox3">
@@ -11360,11 +11376,12 @@
         <div class="summary-section" id="searchResultBox" style="display:none;">
           <div class="summary-header balance-h" id="searchResultTitle">نتیجهٔ جستجو</div>
           <div class="hk-scroll11" id="searchResultScroll"><table class="summary-table">
+            <colgroup><col style="width:30px"><col style="width:24%"><col><col style="width:17%"><col style="width:25%"></colgroup>
             <thead>
               <tr>
-                <th style="width:9%;">ردیف</th>
+                <th class="sr-num-h" style="width:30px;">ردیف</th>
                 <th style="width:24%;">تاریخ</th>
-                <th style="width:25%;">شرح</th>
+                <th class="sr-desc-h">شرح</th>
                 <th style="width:17%;">بانک</th>
                 <th style="width:25%;">مبلغ</th>
               </tr>
@@ -23109,7 +23126,8 @@ async function openPdfPrintWindow(){
         btnDel.textContent = '×';
         btnDel.title = 'حذف';
         btnDel.onclick = (e) => { e.stopPropagation(); askDeletePerson(title); };
-        actions.appendChild(btnDel);
+        /* ۱.۳.۴۴: کارت اصلی کاربر حذف‌شدنی نیست (فقط کارت‌های اضافهٔ قدیمی دکمهٔ حذف دارند) */
+        if (cardIdx > 0) actions.appendChild(btnDel);
         actions.appendChild(btnEdit);
         top.appendChild(name);
         top.appendChild(actions);
@@ -23178,7 +23196,7 @@ async function openPdfPrintWindow(){
             lpTimer = setTimeout(function() {
               lpTimer = null;
               try { window.appHaptic(30); } catch (eV) {}
-              openCardReorderMode(cardTitle);
+              openCardJiggle(cardEl, cardTitle);
             }, 480);
           });
           cardEl.addEventListener('pointermove', function(ev) {
@@ -23192,7 +23210,8 @@ async function openPdfPrintWindow(){
       };
       titles.forEach((title, cardIdx) => { box.appendChild(_buildCard(title, cardIdx, false)); });
       /* کارت نیمه‌نمایان «+ ایجاد کاربر» حذف شد (ایجاد کارت از دکمهٔ + باکس پایین) */
-      try { renderHomeCardDots(box, titles.length); } catch (eDots) {}
+      /* ۱.۳.۴۴: نقطه‌های شمارندهٔ کارت‌ها حذف شد */
+      try { var _dw = document.getElementById('homeCardsWrap'); var _dd = _dw && _dw.querySelector(':scope > .home-card-dots'); if (_dd) _dd.remove(); } catch (eDots) {}
       /* فقط یک کارت: کاروسل قفل */
       try {
         if (titles.length === 1) {
@@ -23283,6 +23302,7 @@ async function openPdfPrintWindow(){
     /* ===== نقاط شمارندهٔ کارت‌ها (پایین کارت) ===== */
     /* ===== نقاط شمارندهٔ کارت‌ها: یک ردیف ثابت، بیرون و زیر کارت ===== */
     function renderHomeCardDots(box, count) {
+      return;
       var wrap = document.getElementById('homeCardsWrap');
       if (!wrap) return;
       try { (box || document).querySelectorAll('.person-card > .home-card-dots').forEach(function (x) { x.remove(); }); } catch (e0) {}
@@ -23695,14 +23715,14 @@ async function openPdfPrintWindow(){
         { title: 'به حساب‌کتاب خوش آمدید 👋', text: 'در چند قدم کوتاه بخش‌های اصلی نرم‌افزار را با هم می‌بینیم. هر وقت خواستید با «رد کردن» تور را ببندید.' },
         { el: function () { return [document.getElementById('monthSelectWrap'), document.getElementById('yearSelectWrap')]; }, title: 'ماه و سال', text: 'هر ماه دفتر جداگانه دارد. با انتخاب ماه و سال، درآمدها و مخارج همان ماه نمایش داده می‌شود.' },
         { el: q('#menuBtn'), title: 'منوی اصلی', text: 'همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت، پشتیبان‌گیری و راهنما از این‌جا در دسترس است.' },
-        { el: activeCard, title: 'کارت‌ها', text: 'هر کارت برای یک نفر یا یک حساب است. با کشیدن افقی بین کارت‌ها بروید و با نگه داشتن انگشت، ترتیبشان را عوض کنید.', swipe: true },
+        { el: activeCard, title: 'کارت شما', text: 'خلاصهٔ درآمد و خرج ماه. نام کارت با مداد عوض می‌شود. با نگه داشتن انگشت روی کارت، «حذف ماه» و «حذف کلی» می‌آیند (همه به سطل زباله می‌روند و برمی‌گردند).' },
         { el: inCard('.person-stat-box'), title: 'درآمد کل', text: '«درآمد کل» جمع درآمدهای ماه است؛ «دریافت‌شده» یعنی به حساب آمده و «دریافت‌نشده» هنوز نرسیده. روی کادر بزنید تا ردیف‌ها را ببینید و ثبت کنید.' },
         { el: function () { var c = activeCard(); var b = c ? c.querySelectorAll('.person-stat-box') : []; return b[1] || null; }, title: 'خرج کل', text: 'جمع مخارج ماه، جدا به پرداخت‌شده و پرداخت‌نشده. در جدول مخارج، دوبار ضربه روی هر فیلد آن را ویرایش می‌کند.' },
         { el: inCard('.pc-smart-box'), title: 'باکس هوشمند', text: 'خلاصه‌ها و هشدارها خودکار ورق می‌خورند: وضعیت ماه، اقساط نزدیک، طلب و بدهی، دسته‌بندی مخارج و «کارهای من».' },
         { el: q('#homeBox1'), title: 'پروژه‌ها، اقساط، قرض', text: 'با کشیدن این باکس به اسلاید دوم می‌رسید: درآمد ثابت، یادآور و آمار.', swipe: true },
-        { el: q('#homeBox2'), title: 'پشتیبان و خروجی', text: 'پشتیبان‌گیری، بازیابی و خروجی PDF و Excel؛ در اسلاید دوم پس‌انداز، انتخاب حساب و ثبت دستی پیامک.', swipe: true },
+        { el: q('#homeBox2'), title: 'پس‌انداز و حساب‌ها', text: 'پس‌انداز، انتخاب حساب و ثبت دستی پیامک؛ در اسلاید دوم پشتیبان‌گیری، بازیابی و خروجی PDF و Excel.', swipe: true },
         { el: q('#homeBox3'), title: 'حذف و سطل زباله', text: 'پاک کردن ماه یا همهٔ اطلاعات. ردیف‌های حذف‌شده تا مدتی در سطل زباله قابل برگشت‌اند.' },
-        { el: function () { return [document.getElementById('homeBox4'), document.getElementById('homeBalanceCircle')]; }, title: 'کارت جدید، موجودی، جستجو', text: '+ کارت تازه می‌سازد، دایرهٔ وسط موجودی لحظه‌ای حساب‌هاست و ذره‌بین برای جستجو و ماندهٔ هر بخش.' },
+        { el: function () { return [document.getElementById('homeBox4'), document.getElementById('homeBalanceCircle')]; }, title: 'موجودی و جستجو', text: 'دایرهٔ وسط موجودی لحظه‌ای حساب‌هاست و ذره‌بین برای جستجو و ماندهٔ هر بخش.' },
         { title: 'آماده‌اید! 🎉', text: 'از «منو ← راهنما» می‌توانید این تور را دوباره ببینید.', last: true }
       ];
     }
@@ -23803,6 +23823,7 @@ async function openPdfPrintWindow(){
     /* ===== راهنمای اسکرول کارت: فقط بار اولِ اجرای برنامه، یک رفت‌وبرگشت آهسته ===== */
     var _cardHintPolling = false;
     function maybeRunCardSwipeHint() {
+      return; /* ۱.۳.۴۴: یک کارت؛ راهنمای کشیدن بین کارت‌ها لازم نیست */
       var KEY = STORAGE_KEY + '_cardSwipeHintDone';
       try { if (localStorage.getItem(KEY) === '1') return; } catch (e) { return; }
       /* تور بار اول خودش کشیدن کارت را آموزش می‌دهد */
@@ -25479,7 +25500,7 @@ async function openPdfPrintWindow(){
     })();
 
 
-    /* ===== کشیدن افقی باکس‌های منو (حلقهٔ بی‌پایان؛ اسلاید بعدی از چپ می‌آید) ===== */
+    /* ===== کشیدن افقی باکس‌های منو (۱.۳.۴۴: رفت و برگشتی؛ آخرین اسلاید بن‌بست است و باید برعکس کشید؛ اسلاید بعدی از چپ می‌آید) ===== */
     (function () {
       function setup(box) {
         if (!box || box._hb) return;
@@ -25488,42 +25509,25 @@ async function openPdfPrintWindow(){
         if (slides.length < 2) return;
         box._hb = true;
         var n = slides.length;
-        /* ترتیب چپ‌به‌راست: [کپی اسلاید اول] + اسلایدها برعکس + [کپی اسلاید آخر] */
+        /* ترتیب چپ‌به‌راست: اسلایدها برعکس (اسلاید اول سمت راست) */
         slides.slice().reverse().forEach(function (sl) { track.appendChild(sl); });
-        var c0 = slides[0].cloneNode(true), cl = slides[n - 1].cloneNode(true);
-        [c0, cl].forEach(function (c) { c.setAttribute('aria-hidden', 'true'); c.classList.add('hb-clone'); c.querySelectorAll('[id]').forEach(function (e) { e.removeAttribute('id'); }); c.querySelectorAll('clipPath').forEach(function (cp, j) { var nid = cp.id + '-c' + Math.random().toString(36).slice(2, 6); c.querySelectorAll('[clip-path="url(#' + cp.id + ')"]').forEach(function (u) { u.setAttribute('clip-path', 'url(#' + nid + ')'); }); cp.id = nid; }); });
-        track.insertBefore(c0, track.firstChild);
-        track.appendChild(cl);
-        var idxOf = function (k) { return 1 + (n - 1 - k); };
+        var idxOf = function (k) { return n - 1 - k; };
         var k = 0, pos = idxOf(0), W = 0, drag = null, blockUntil = 0;
-        function paint() {}
         function place(px, anim) {
           W = box.clientWidth || W;
           track.style.transition = anim ? 'transform 0.62s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none';
           track.style.transform = 'translateX(' + (-pos * W + (px || 0)) + 'px)';
         }
-        /* روی نسخهٔ کپی (دو سر حلقه) یا بیرون از محدوده → بی‌صدا به اسلاید واقعی همان شماره.
-           (قبلاً اگر وسط حرکت دوباره کشیده می‌شد، پایان حرکت ثبت نمی‌شد و کشیدن بعدی به بیرون ردیف = جای خالی می‌رفت) */
-        var animT = 0;
-        function normalize() {
-          clearTimeout(animT); animT = 0;
-          if (pos <= 0 || pos >= n + 1) { pos = idxOf(k); place(0, false); }
-        }
-        function go(dir) {   /* dir=+1 اسلاید بعدی (از چپ)، -1 قبلی */
-          normalize();
-          k = (k + dir + n) % n;
-          pos += dir > 0 ? -1 : 1;
+        function go(dir) {   /* dir=+1 اسلاید بعدی (از چپ)، -1 قبلی؛ بیرون از دو سر → برمی‌گردد سر جایش */
+          var nk = k + dir;
+          if (nk < 0 || nk >= n) { place(0, true); return; }
+          k = nk; pos = idxOf(k);
           place(0, true);
-          paint();
-          animT = setTimeout(normalize, 700);   /* پشتیبان اگر پایان حرکت گزارش نشد */
         }
-        track.addEventListener('transitionend', function (e) {
-          if (e.target !== track || (e.propertyName && e.propertyName !== 'transform')) return;
-          normalize();
-        });
+        box._hbGo = function (i) { k = Math.max(0, Math.min(n - 1, i | 0)); pos = idxOf(k); place(0, false); };
+        box._hbIdx = function () { return k; };
         box.addEventListener('pointerdown', function (e) {
           if (e.button != null && e.button !== 0) return;
-          normalize();
           drag = { x: e.clientX, y: e.clientY, dx: 0, on: false, id: e.pointerId };
         });
         box.addEventListener('pointermove', function (e) {
@@ -25536,7 +25540,9 @@ async function openPdfPrintWindow(){
             try { box.setPointerCapture(e.pointerId); } catch (e2) {}
           }
           drag.dx = dx;
-          place(dx, false);
+          /* سرِ بن‌بست: کمی کش می‌آید ولی جلو نمی‌رود */
+          var edge = (k === n - 1 && dx > 0) || (k === 0 && dx < 0);
+          place(edge ? dx * 0.25 : dx, false);
         });
         function end(e) {
           if (!drag) return;
@@ -25551,14 +25557,48 @@ async function openPdfPrintWindow(){
         box.addEventListener('click', function (e) { if (Date.now() < blockUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
         window.addEventListener('resize', function () { place(0, false); });
         place(0, false);
-        paint();
       }
       function init() { ['homeBox1', 'homeBox2', 'homeBox3'].forEach(function (id) { setup(document.getElementById(id)); }); }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
       setTimeout(init, 600);
     })();
+    /* ۱.۳.۴۴: «+» دیگر کارت تازه نمی‌سازد (فقط یک کارت کاربر) */
     function addPersonCard() {
-      openPersonEditSheet('', true);
+      try { showToast('کار تازهٔ این دکمه به‌زودی اضافه می‌شود'); } catch (e) {}
+    }
+    /* ۱.۳.۴۴: لانگ‌پرس روی کارت → کارت می‌لرزد (مثل حذف آیکن در آیفون) و «حذف ماه» و «حذف کلی» روی آن می‌آیند؛
+       هر کدام با تأیید و رفتن به سطل زباله (قابل برگشت) */
+    function closeCardJiggle() {
+      try {
+        document.querySelectorAll('.person-card.hk-jiggle').forEach(function (c) { c.classList.remove('hk-jiggle'); });
+        document.querySelectorAll('.hk-jig-menu').forEach(function (m) { m.remove(); });
+        if (window._hkJigOut) { document.removeEventListener('pointerdown', window._hkJigOut, true); window._hkJigOut = null; }
+      } catch (e) {}
+    }
+    function openCardJiggle(card, title) {
+      closeCardJiggle();
+      if (!card) return;
+      var titles = []; try { titles = allPersonTitles(); } catch (e0) {}
+      var isMain = titles.indexOf(title) <= 0;
+      card.classList.add('hk-jiggle');
+      var m = document.createElement('div');
+      m.className = 'hk-jig-menu';
+      var mk = function (label, fn) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'hk-jig-btn'; b.textContent = label;
+        b.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        b.onclick = function (e) { e.stopPropagation(); closeCardJiggle(); try { fn(); } catch (eF) {} };
+        m.appendChild(b);
+      };
+      mk('حذف ماه', function () { askResetCurrentMonth(); });
+      mk('حذف کلی', function () { askResetAllData(); });
+      if (!isMain) mk('حذف این کارت', function () { askDeletePerson(title); });
+      m.addEventListener('click', function (e) { e.stopPropagation(); if (e.target === m) closeCardJiggle(); });
+      card.appendChild(m);
+      setTimeout(function () {
+        window._hkJigOut = function (e) { if (!m.contains(e.target) || e.target === m) { closeCardJiggle(); } };
+        document.addEventListener('pointerdown', window._hkJigOut, true);
+      }, 50);
     }
 
     function attachKeyboardLift(box) {
@@ -31737,7 +31777,7 @@ function confirmSmsEntry() {
       try {
         if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) { cancelNativeSmsNotification(nid, true); return false; }
         /* پیامک از شمارهٔ موبایل شخصی (مثلاً پیامک بانکی که کسی فوروارد کرده) یا اطلاعیهٔ بی‌مانده («… برداشت می‌گردد») تراکنش این کاربر نیست */
-        if (sender && hkIsPersonalSender(sender)) { cancelNativeSmsNotification(nid, true); return false; }
+        /* ۱.۳.۴۴: پیامک از شمارهٔ شخصی دیگر دور انداخته نمی‌شود؛ بالای منوی ثبت هشدار «پیامک شخصی از فلان شماره» می‌آید و اگر کاربر خواست ثبت می‌شود */
         var _pn = null; try { _pn = parseBankSms(smsText); } catch (eP) {}
         if (_pn && hkIsSmsNotice(smsText, _pn)) { cancelNativeSmsNotification(nid, true); return false; }
       } catch (eO) {}
@@ -31757,8 +31797,7 @@ function confirmSmsEntry() {
       if (rec && rec.closest('#smsRecMatch') && getComputedStyle(rec.closest('#smsRecMatch')).display !== 'none' && rec.value) return 'باید تأیید شود این واریز مربوط به کدام درآمد ثابت است';
       var pp = document.getElementById('smsPlanPickBlock');
       if (pp && getComputedStyle(pp).display !== 'none' && pp.offsetHeight > 0) return 'باید قسط مربوط انتخاب شود';
-      var sw = document.getElementById('smsSenderWarn');
-      if (sw && getComputedStyle(sw).display !== 'none' && sw.offsetHeight > 0) return 'فرستندهٔ پیامک بررسی لازم دارد';
+      /* ۱.۳.۴۴: پیامک شخصی در خود اعلان «پیامک شخصی» معرفی شده؛ نوشتن شرح و «ثبت» یعنی کاربر خواسته ادامه دهد */
       var an = document.getElementById('smsAccNewNote');
       if (an && getComputedStyle(an).display !== 'none' && an.offsetHeight > 0) return 'حساب تازه است و موجودی اولیه لازم دارد';
       return '';
@@ -40381,8 +40420,8 @@ function openProjectRowPicker(secId) {
   <li><strong>منو (≡):</strong> دسترسی به همهٔ بخش‌ها، تنظیمات، حالت شب/روز، امنیت و خروجی‌ها.</li>
 </ul></div>
 <div class="help-section"><h4>کارت‌ها</h4><ul>
-  <li>هر کارت برای یک نفر یا یک حساب است. با کشیدن افقی بین کارت‌ها جابه‌جا شوید؛ بعد از کارت آخر دوباره به کارت اول می‌رسید.</li>
-  <li>روی کادر <strong>درآمد</strong> یا <strong>مخارج</strong> بزنید تا جدول ردیف‌ها باز شود. با نگه داشتن انگشت روی کارت، ترتیب کارت‌ها را عوض کنید.</li>
+  <li>کارت شما خلاصهٔ درآمد و خرج ماه است و نامش با مداد عوض می‌شود.</li>
+  <li>روی کادر <strong>درآمد</strong> یا <strong>مخارج</strong> بزنید تا جدول ردیف‌ها باز شود. با نگه داشتن انگشت روی کارت، کارت می‌لرزد و <strong>حذف ماه</strong> و <strong>حذف کلی</strong> روی آن می‌آیند؛ هر دو بعد از تأیید به سطل زباله می‌روند و قابل برگشت‌اند.</li>
   <li><strong>باکس هوشمند</strong> (سمت چپ کارت) اسلایدهای خودکار دارد: وضعیت ماه، مقایسه با ماه قبل، تعهدات، طلب و بدهی، دسته‌بندی مخارج، نکات و «کارهای من» (با دکمهٔ + آبی).</li>
 </ul></div>
 <div class="help-section"><h4>جدول درآمد و مخارج</h4><ul>
@@ -40390,7 +40429,7 @@ function openProjectRowPicker(secId) {
   <li>برای ویرایش روز، شرح یا مبلغ روی آن <strong>دوبار ضربه</strong> بزنید. وضعیت پرداخت با لمس مبلغ عوض می‌شود.</li>
 </ul></div>
 <div class="help-section"><h4>باکس‌های منوی صفحهٔ اصلی</h4><ul>
-  <li>هر باکس با کشیدن افقی اسلاید دوم دارد.</li>
+  <li>هر باکس با کشیدن افقی اسلاید دوم دارد؛ برای برگشت به اسلاید اول برعکس بکشید.</li>
   <li><strong>پروژه‌ها:</strong> واریزی‌ها و مخارج هر پروژه و طلب یا بدهی آن.</li>
   <li><strong>اقساط:</strong> وام‌ها، قسط ماهانه، سررسید بعدی و ثبت پرداخت؛ قسط‌های نزدیک با عدد قرمز و قاب قرمز مشخص می‌شوند.</li>
   <li><strong>قرض:</strong> بده‌بستان با دیگران و خلاصهٔ اینکه چه کسی به چه کسی بدهکار است.</li>
@@ -40401,7 +40440,7 @@ function openProjectRowPicker(secId) {
   <li><strong>حذف ماه، حذف کلی، سطل زباله:</strong> پاک کردن اطلاعات؛ ردیف‌های حذف‌شده تا مدتی در سطل زباله قابل برگشت‌اند.</li>
 </ul></div>
 <div class="help-section"><h4>باکس پایین</h4><ul>
-  <li><strong>+</strong> کارت جدید می‌سازد، دایرهٔ وسط <strong>موجودی</strong> لحظه‌ای حساب‌ها را نشان می‌دهد و <strong>ذره‌بین</strong> برای جستجو و ماندهٔ هر بخش است.</li>
+  <li>دایرهٔ وسط <strong>موجودی</strong> لحظه‌ای حساب‌ها را نشان می‌دهد و <strong>ذره‌بین</strong> برای جستجو و ماندهٔ هر بخش است.</li>
 </ul></div>
 <div class="help-section"><h4>حریم خصوصی و امنیت</h4><ul>
   <li>همهٔ اطلاعات مالی فقط روی همین گوشی ذخیره می‌شود و به هیچ سروری ارسال نمی‌شود (مگر همگام‌سازی خانوادگی را خودتان فعال کنید).</li>

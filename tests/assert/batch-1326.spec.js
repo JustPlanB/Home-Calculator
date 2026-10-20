@@ -216,7 +216,8 @@ async function newPage(b, list) {
     const pos = m ? Math.round(-parseFloat(m[1]) / W) : -1;
     return { pos, n };
   });
-  ok(hb && hb.pos >= 1 && hb.pos <= hb.n, 'باکس منو بعد از ۱۴ کشیدن سریع پشت‌سرهم روی اسلاید واقعی است (نه خانهٔ خالی)');
+  /* از ۱.۳.۴۴ باکس‌ها رفت‌وبرگشتی‌اند (بدون کپی دو سر): جای واقعی ۰ تا n-1 */
+  ok(hb && hb.pos >= 0 && hb.pos <= hb.n - 1, 'باکس منو بعد از ۱۴ کشیدن سریع پشت‌سرهم روی اسلاید واقعی است (نه خانهٔ خالی)');
 
   const sh = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
