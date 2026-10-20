@@ -112,7 +112,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     closeBankAccountsModal();
     return out;
   });
-  ok(bk.sel === 44 && bk.all === 16, 'حساب‌های ساخته‌شده تا ۴۴٪ ارتفاع صفحه و فهرست همهٔ بانک‌ها ۱۶٪ (قبلاً ۲۲٪ و ۲۸٪)');
+  /* از ۱.۳.۴۶ نصف‌نصف (batch-1346) */
+  ok(bk.sel === 30 && bk.all === 30, 'حساب‌های ساخته‌شده و فهرست همهٔ بانک‌ها نصف‌نصف (۳۰٪ و ۳۰٪)');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

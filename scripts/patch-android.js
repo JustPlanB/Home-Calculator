@@ -19,6 +19,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
@@ -174,27 +175,20 @@ public class BankSmsReceiver extends BroadcastReceiver {
     if(Build.VERSION.SDK_INT>=26){ NotificationChannel ch=new NotificationChannel(CHANNEL,"تراکنش‌های بانکی",NotificationManager.IMPORTANCE_HIGH); if(Build.VERSION.SDK_INT>=29) ch.setAllowBubbles(true); nm.createNotificationChannel(ch); }
     /* ۱.۳.۴۴: پیامک از شمارهٔ شخصی دور انداخته نمی‌شود؛ در اعلان «پیامک شخصی» با شمارهٔ فرستنده معرفی می‌شود */
     /* ۱.۳.۴۵: کوتاه و بی‌ایموجی (ایموجی سطر را بلند می‌کرد و متن پیامک زیرش نصفه می‌ماند)؛ شماره چپ‌به‌راست تا «+» جلوی ۹۸ بماند */
-    String title=isPersonal(sender)?("پیامک شخصی \\u2066"+sender.replace(" ","")+"\\u2069"):"تراکنش بانکی جدید";
+    /* ۱.۳.۴۶: چیدمان اختصاصی و راست‌چین: عنوان («تراکنش بانکی جدید» یا «فرستندهٔ شخصی» به رنگ هشدار) و متن کامل پیامک؛
+       به‌جای آیکن حباب، دکمهٔ «باکس» زیر اعلان همان باکس شناور را باز می‌کند */
+    boolean personal=isPersonal(sender);
+    String title=personal?"فرستندهٔ شخصی":"تراکنش بانکی جدید";
     NotificationCompat.Builder b=baseBuilder(c,title,text);
-    /* ۱.۳.۴۴: شکل گفتگو + حباب شناور (آیکن کنار اعلان، مثل پیامک‌ها) که باکس ثبت را روی صفحه باز می‌کند */
     try{
-      IconCompat ic=IconCompat.createWithResource(c,c.getApplicationInfo().icon);
-      Person bank=new Person.Builder().setName(title).setKey("hk_bank").setImportant(true).setIcon(ic).build();
-      Person me=new Person.Builder().setName("حساب‌کتاب").build();
-      Intent li=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
-      if(li!=null){
-        li.setAction(Intent.ACTION_VIEW);
-        ShortcutInfoCompat sc=new ShortcutInfoCompat.Builder(c,"hk_bank").setLongLived(true).setShortLabel("تراکنش بانکی").setPerson(bank).setIcon(ic).setIntent(li).build();
-        ShortcutManagerCompat.pushDynamicShortcut(c,sc);
-        NotificationCompat.MessagingStyle st=new NotificationCompat.MessagingStyle(me).setGroupConversation(false);
-        st.addMessage(text,System.currentTimeMillis(),bank);
-        b.setStyle(st).setShortcutId("hk_bank");
-        Intent bi=new Intent(c,HkQuickActivity.class); bi.setAction("ir.hesabketab.app.BUBBLE_"+nid); bi.putExtra("nid",nid);
-        int bfl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
-        PendingIntent bpi=PendingIntent.getActivity(c,nid,bi,bfl);
-        NotificationCompat.BubbleMetadata bm=new NotificationCompat.BubbleMetadata.Builder(bpi,ic).setDesiredHeight(460).setAutoExpandBubble(false).setSuppressNotification(false).build();
-        b.setBubbleMetadata(bm);
+      RemoteViews small=new RemoteViews(c.getPackageName(),R.layout.hk_sms_small);
+      RemoteViews big=new RemoteViews(c.getPackageName(),R.layout.hk_sms_big);
+      for(RemoteViews rv: new RemoteViews[]{small,big}){
+        rv.setTextViewText(R.id.hk_sms_title,title);
+        rv.setTextViewText(R.id.hk_sms_text,text);
+        if(personal) rv.setTextColor(R.id.hk_sms_title,0xFFFF9F0A);
       }
+      b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomContentView(small).setCustomBigContentView(big).setCustomHeadsUpContentView(small);
     }catch(Throwable t){ b=baseBuilder(c,title,text); }
     /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
@@ -204,6 +198,13 @@ public class BankSmsReceiver extends BroadcastReceiver {
       RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟").build();
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
+    }catch(Throwable ignored){}
+    /* ۱.۳.۴۶: دکمهٔ «باکس» → باکس شناور ثبت روی همان صفحه */
+    try{
+      Intent bi=new Intent(c,HkQuickActivity.class); bi.setAction("ir.hesabketab.app.BOX_"+nid); bi.putExtra("nid",nid);
+      bi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+      PendingIntent bpi=PendingIntent.getActivity(c,nid,bi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+      b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"باکس",bpi).build());
     }catch(Throwable ignored){}
     try{ nm.notify(nid,b.build()); }
     catch(Throwable t){ try{ nm.notify(nid,baseBuilder(c,title,text).build()); }catch(Throwable ignored){} }
@@ -514,7 +515,13 @@ public class HkQuickActivity extends Activity {
   @Override protected void onCreate(Bundle b){
     super.onCreate(b);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-    getWindow().getDecorView().setBackgroundColor(0xFF121214);
+    /* ۱.۳.۴۶: پنجرهٔ شناور بالای صفحه (کیبورد پایین باز می‌شود و روی «ثبت» نمی‌آید) */
+    try{
+      getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0x00000000));
+      getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+      WindowManager.LayoutParams wl=getWindow().getAttributes(); wl.gravity=Gravity.TOP; wl.y=dp(56); wl.dimAmount=0.45f; getWindow().setAttributes(wl);
+      getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+    }catch(Exception ignored){}
     nid=getIntent()!=null?getIntent().getIntExtra("nid",0):0;
     JSONObject it=nid!=0?HkQuickReplyReceiver.findItem(this,nid):null;
     ScrollView sv=new ScrollView(this);
@@ -541,10 +548,10 @@ public class HkQuickActivity extends Activity {
       box.addView(w,full());
     }
     TextView sms=new TextView(this);
-    sms.setText(text); sms.setTextColor(0xFFD1D1D6); sms.setTextSize(15); sms.setLineSpacing(0,1.15f);
-    sms.setBackground(round(0xFF2C2C2E,14)); sms.setPadding(dp(14),dp(12),dp(14),dp(12)); rtl(sms);
-    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp.topMargin=dp(12);
-    box.addView(sms,lp);
+    sms.setText(text); sms.setTextColor(0xFFD1D1D6); sms.setTextSize(14); sms.setLineSpacing(0,1.15f);
+    sms.setPadding(dp(14),dp(10),dp(14),dp(10)); rtl(sms);
+    /* متن پیامک آخرِ باکس و در قاب کوتاهِ قابل اسکرول */
+    ScrollView smsSv=new ScrollView(this); smsSv.setBackground(round(0xFF2C2C2E,14)); smsSv.addView(sms);
     final EditText et=new EditText(this);
     et.setHint("بابت چی بود؟"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
     et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -559,8 +566,12 @@ public class HkQuickActivity extends Activity {
     Button open=new Button(this); open.setText("باز کردن نرم‌افزار"); open.setAllCaps(false); open.setTextColor(0xFFFFFFFF); open.setTextSize(15); open.setTypeface(Typeface.DEFAULT_BOLD); open.setBackground(round(0xFF3A3A3C,14));
     LinearLayout.LayoutParams bl=new LinearLayout.LayoutParams(0,dp(50),1f); LinearLayout.LayoutParams bl2=new LinearLayout.LayoutParams(0,dp(50),1f); bl2.setMarginStart(dp(10));
     row.addView(ok,bl); row.addView(open,bl2);
-    LinearLayout.LayoutParams lp3=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp3.topMargin=dp(14);
+    LinearLayout.LayoutParams lp3=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); lp3.topMargin=dp(12);
     box.addView(row,lp3);
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Math.min(dp(150),ViewGroup.LayoutParams.WRAP_CONTENT)); lp.topMargin=dp(12);
+    smsSv.setLayoutParams(lp);
+    box.addView(smsSv);
+    smsSv.post(()->{ try{ if(smsSv.getHeight()>dp(150)){ ViewGroup.LayoutParams q=smsSv.getLayoutParams(); q.height=dp(150); smsSv.setLayoutParams(q);} }catch(Exception ignored){} });
     ok.setOnClickListener(v->submit(et.getText().toString()));
     et.setOnEditorActionListener((v,a,e)->{ if(a==EditorInfo.IME_ACTION_DONE){ submit(et.getText().toString()); return true; } return false; });
     open.setOnClickListener(v->{ try{ Intent li=getPackageManager().getLaunchIntentForPackage(getPackageName()); if(li!=null){ li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); startActivity(li); } }catch(Exception ignored){} finish(); });
@@ -2874,7 +2885,7 @@ if(fs.existsSync(manifest)){
   // ۱.۳.۴۳: گیرندهٔ «ثبت» از خود اعلان (فقط از PendingIntent همین برنامه؛ از بیرون قابل صدا زدن نیست)
   if(!s.includes('.HkQuickReplyReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkQuickReplyReceiver" android:exported="false"/>\n    </application>');
   // ۱.۳.۴۴: باکس شناور ثبت (حباب اعلان) — فقط از PendingIntent خود برنامه باز می‌شود
-  if(!s.includes('.HkQuickActivity')) s=s.replace('</application>', '        <activity android:name=".HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true" android:documentLaunchMode="always" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" android:windowSoftInputMode="stateVisible|adjustResize"/>\n    </application>');
+  if(!s.includes('.HkQuickActivity')) s=s.replace('</application>', '        <activity android:name=".HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true" android:documentLaunchMode="always" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" android:windowSoftInputMode="stateVisible|adjustResize"/>\n    </application>');
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
   // ضبط صدا داخل صفحه (getUserMedia) بدون این مجوز بی‌صدا رد می‌شود
   if(!s.includes('android.permission.MODIFY_AUDIO_SETTINGS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>');
@@ -2991,6 +3002,41 @@ fs.writeFileSync(filePaths,
 const resDir=path.join(base,'app/src/main/res');
 fs.mkdirSync(path.join(resDir,'layout'),{recursive:true});
 fs.mkdirSync(path.join(resDir,'drawable'),{recursive:true});
+// ۱.۳.۴۶: چیدمان اختصاصی اعلان تراکنش (راست‌چین)
+for(const [fn,lines] of [['hk_sms_small.xml',2],['hk_sms_big.xml',14]]){
+  fs.writeFileSync(path.join(resDir,'layout',fn),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layoutDirection="rtl">
+    <TextView
+        android:id="@+id/hk_sms_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+        android:textStyle="bold"
+        android:gravity="start"
+        android:textDirection="rtl"
+        android:textAlignment="viewStart"
+        android:maxLines="1"
+        android:ellipsize="end"/>
+    <TextView
+        android:id="@+id/hk_sms_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:textAppearance="@style/TextAppearance.Compat.Notification"
+        android:gravity="start"
+        android:textDirection="rtl"
+        android:textAlignment="viewStart"
+        android:lineSpacingMultiplier="1.1"
+        android:maxLines="${lines}"
+        android:ellipsize="end"/>
+</LinearLayout>
+`);
+}
 // ۱.۳.۴۵: چیدمان پیام «ثبت شد» بعد از ثبت سریع/باکس شناور
 fs.writeFileSync(path.join(resDir,'layout','hk_done.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
