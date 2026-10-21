@@ -156,7 +156,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     closePersonDetail(); await w(200);
     return out;
   });
-  ok(f.hs.length === 7 && f.hs.every(h => h === 36) && f.amtHidden, 'همهٔ فیلترها و شرح دقیقاً ۳۶px؛ باکس‌های مبلغ از ۱.۳.۳۱ حذف (فقط محور)')
+  /* ۱.۳.۴۷: بی منوی «بخش» */ ok(f.hs.length === 6 && f.hs.every(h => h === 36) && f.amtHidden, 'همهٔ فیلترها و شرح دقیقاً ۳۶px؛ باکس‌های مبلغ از ۱.۳.۳۱ حذف (فقط محور)')
   ok(f.ticks.join() === '0,100000,500000,1000000,5000000,10000000,50000000', 'درجه‌ها خودکار تا صدک ۹۵ مبلغ‌ها: ' + f.tickTxt.join(' | '));
   ok(f.tickTxt[0] === '۰' && /\+۵۰میلیون/.test(f.tickTxt[f.tickTxt.length - 1]) && /هزار/.test(f.tickTxt[1]), 'برچسب دوخطی (عدد + هزار/میلیون) و آخری «+۵۰ میلیون»');
   ok(f.tickGaps.every(g => Math.abs(g - f.tickGaps[0]) <= 2) && f.tickGaps[0] > 0, 'فاصلهٔ درجه‌ها برابر، ۰ سمت چپ (از ۱.۳.۳۱) (' + f.tickGaps[0] + 'px)');

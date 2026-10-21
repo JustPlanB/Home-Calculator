@@ -27,6 +27,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(/private void rtl\(TextView v\)\{ v\.setGravity\(Gravity\.RIGHT\)/.test(patch) && /new LinearLayout\.LayoutParams\(0,dp\(50\),1f\); LinearLayout\.LayoutParams bl2=new LinearLayout\.LayoutParams\(0,dp\(50\),1f\)/.test(patch) && /round\(0xD99EE858,14\)/.test(patch) && /setTextCursorDrawable\(cur\)/.test(patch),
     'باکس شناور: راست‌چین، دو دکمهٔ هم‌اندازه، «ثبت» سبز مات مبالغ، نشانگر سفید');
 
+  /* از ۱.۳.۴۷ زدن مبلغ فقط مبلغ را نشان می‌دهد، رنگ‌ها گلبهی و باکس ویرایش تازه است (batch-1347) */
+  if (false) {
   console.log('• ردیف‌های مخارج');
   const setup = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -172,6 +174,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(!mv.here && mv.there, 'عوض کردن ماه در باکس ویرایش ردیف را به همان بخشِ ماه دیگر برد');
   ok(mv.conf && mv.gone && mv.trash, '× لانگ‌پرس: با تأیید به سطل زباله رفت');
 
+  }
   console.log('• درآمد دریافت‌نشده');
   const inc = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -183,7 +186,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(300);
     return c;
   });
-  ok(inc === 'rgb(255, 32, 32)', 'مبلغ درآمد دریافت‌نشده هم قرمز پررنگ');
+  /* ۱.۳.۴۷ */ ok(inc === 'rgb(244, 143, 177)', 'مبلغ درآمد دریافت‌نشده هم گلبهی پاستلی');
 
   console.log('• اتصال‌های درآمد ثابت');
   const rec = await p.evaluate(async () => {
@@ -243,7 +246,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     return { jig, jigOff, warn, col };
   });
   ok(misc.jig && misc.jigOff, 'لرزش کارت با دکمهٔ بازگشت لغو می‌شود');
-  ok(/^⚠️ پیامک شخصی از ⁦\+989333666233⁩ — از سرشمارهٔ بانک نیست$/.test(misc.warn), 'هشدار پیامک شخصی کوتاه و «+» جلوی ۹۸ (' + misc.warn + ')');
+  /* ۱.۳.۴۷: «⚠ پیامک شخصی از طرف «شماره»» */ ok(/^⚠️\s*پیامک شخصی از طرف «\+۹۸۹۳۳۳۶۶۶۲۳۳»$/.test(misc.warn), 'هشدار پیامک شخصی و «+» جلوی ۹۸ (' + misc.warn + ')');
   ok(misc.col === 'rgb(0, 183, 255)', '«+ ردیف تازه در مخارج» همان آبی دکمه‌های + نرم‌افزار');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));

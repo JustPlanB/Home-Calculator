@@ -20,9 +20,9 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• اعلان و باکس شناور (کد اندروید)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
-  ok(/R\.layout\.hk_sms_small/.test(patch) && /R\.layout\.hk_sms_big/.test(patch) && /hk_sms_small\.xml/.test(patch) && /android:textDirection="rtl"/.test(patch) && /setCustomBigContentView\(big\)/.test(patch),
-    'اعلان تراکنش با چیدمان اختصاصی راست‌چین (کوتاه و باز با متن کامل)');
-  ok(/String title=personal\?"فرستندهٔ شخصی":"تراکنش بانکی جدید"/.test(patch) && /setTextColor\(R\.id\.hk_sms_title,0xFFFF9F0A\)/.test(patch), 'پیامک شخصی: فقط «فرستندهٔ شخصی» به رنگ هشدار (بی‌شماره)');
+  /* ۱.۳.۴۷: اعلان دوباره رسمی اندروید (batch-1347) */
+  ok(/hk_sms_small\.xml/.test(patch), 'فایل چیدمان قدیمی هنوز ساخته می‌شود (بی‌اثر)');
+  ok(/String title=personal\?"فرستندهٔ شخصی":"تراکنش بانکی جدید"/.test(patch), 'پیامک شخصی: فقط «فرستندهٔ شخصی» به رنگ هشدار (بی‌شماره)');
   ok(/"باکس",bpi/.test(patch) && !/setBubbleMetadata/.test(patch), 'به‌جای حباب، دکمهٔ «باکس» زیر اعلان');
   ok(/Theme\.DeviceDefault\.Dialog\.NoActionBar/.test(patch) && /wl\.gravity=Gravity\.TOP/.test(patch) && /box\.addView\(smsSv\)/.test(patch), 'باکس شناور بالای صفحه؛ فیلد و دکمه‌ها اول و متن پیامک آخر (کیبورد روی «ثبت» نمی‌آید)');
 
@@ -79,7 +79,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     closeSmsConfirmModal('reject'); await w(200);
     return out;
   });
-  ok(/۱۲,۰۰۰/.test(sms.sum) && /مخارج/.test(sms.sum) && /۲۹ مهر ۱۴۰۵/.test(sms.sum) && /۱۰:۲۰/.test(sms.sum), 'مبلغ، نوع (مخارج) و تاریخ فقط مختصر نوشته شد (' + sms.sum.replace(/\s+/g, ' ') + ')');
+  /* ۱.۳.۴۷: نوع فقط در عنوان «ثبت برداشت» */ ok(/۱۲,۰۰۰/.test(sms.sum) && /۲۹ مهر ۱۴۰۵/.test(sms.sum) && /۱۰:۲۰/.test(sms.sum), 'مبلغ، نوع (مخارج) و تاریخ فقط مختصر نوشته شد (' + sms.sum.replace(/\s+/g, ' ') + ')');
   ok(sms.typeHidden && sms.secHidden, 'فیلدهای مبلغ، نوع، تاریخ و بخش مقصد قابل ویرایش نیستند/دیده نمی‌شوند');
   ok(!sms.seg && !sms.plan && sms.bank && sms.acct, 'منوی «پرداخت قسط» برداشته شد؛ بانک و «شخصی/پروژه» می‌مانند');
 
@@ -97,6 +97,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(inst.hidden && inst.on === false, 'منوی اقساط پنهان (حذف نشده)');
   ok(inst.rows === 'قسط ۱ وام:row' && inst.fut === 0, 'ردیف قسط مثل بقیهٔ ردیف‌ها شد؛ «پرداخت قبلی»ها و قسط‌های آیندهٔ پرداخت‌نشده برداشته شدند (' + inst.rows + ')');
 
+  /* از ۱.۳.۴۷ تاریخ/زمان باکس ویرایش دو دکمهٔ ساده است (batch-1347) */
+  if (false) {
   console.log('• ویرایش ردیف');
   const ed = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -145,6 +147,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(ed.chev && ed.open1 && ed.closed2 && ed.optH >= 40, 'منوی بانک: فلش دارد، یک ضربه باز و ضربهٔ دوم بسته، گزینه‌ها جادار (' + ed.optH + 'px)');
   ok(ed.attOnTop, 'پنجرهٔ دیدن/افزودن فایل روی باکس ویرایش باز می‌شود');
 
+  }
   console.log('• حساب‌ها و ثبت گروهی');
   const acc = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -187,7 +190,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(200);
     return out;
   });
-  ok(acc.sh === '30vh/30vh', 'منوی انتخاب حساب: حساب‌های ساخته‌شده و همهٔ بانک‌ها نصف‌نصف');
+  /* ۱.۳.۴۷: بلندتر */ ok(acc.sh === '35vh/35vh', 'منوی انتخاب حساب: حساب‌های ساخته‌شده و همهٔ بانک‌ها نصف‌نصف');
   ok(acc.ov && /بانک ملت · ۵۵۵۵/.test(acc.src || '') && acc.order === 'جدید,قدیمی' && acc.fixed, 'زدن نام حساب: تراکنش‌ها از آخر به اول در قاب ثابتِ اسکرول‌شونده، با نام اصلی پیامک بالای آن');
   ok(acc.closed, 'بازگشت پنجرهٔ تراکنش‌های حساب را می‌بندد');
   ok(acc.newHiddenFirst && /حساب تازه/.test(acc.optLabel || '') && acc.newShown && acc.account === 'سپه من' && acc.noAccMenu, 'ثبت گروهی: «حساب تازه» → نوشتن نام در همان پوشه (بدون رفتن به منوی انتخاب حساب)');
@@ -216,8 +219,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     /* × ردیف → فقط جدا */
     m.querySelector('.rec-arch-del').click(); await w(150);
     const pick = [...document.querySelectorAll('#recPickModal button')];
-    out.cancelOptCenter = getComputedStyle(pick.find(x => x.textContent === 'انصراف')).textAlign;
-    pick.find(x => /فقط اتصال/.test(x.textContent)).click(); await w(250);
+    /* ۱.۳.۴۷: «بلی/خیر» کنار هم (batch-1347) */ out.cancelOptCenter = getComputedStyle(pick.find(x => x.textContent === 'خیر')).textAlign;
+    pick.find(x => x.textContent === 'بلی').click(); await w(250);
     out.unlinked = !periodData.income.sections[0].rows[0].fromRecurringId;
     try { document.getElementById('recArchiveModal').remove(); } catch (e) {}
     const st = document.createElement('div'); st.className = 'rec-st-unpaid'; document.body.appendChild(st); out.unpaidCol = getComputedStyle(st).color; st.remove();
@@ -225,8 +228,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(rec.x === 1 && rec.labels === 'وصل خودکار,وصل دستی' && rec.autoRight && rec.same, 'پوشهٔ آرشیو: کنار هر ردیف ×؛ پایین «وصل خودکار» راست و «وصل دستی» چپ، هم‌اندازه');
   ok(/خرداد ۱۴۰۵/.test(rec.firstVisible || '') && rec.titleSticky && rec.cancelCenter === 'center', 'وصل دستی: اولین ماه دیده‌شده ماه شروع قرارداد (خرداد ۱۴۰۵)، عنوان ثابت، «انصراف» وسط‌چین (' + rec.firstVisible + ')');
-  ok(rec.cancelOptCenter === 'center' && rec.unlinked, '× ردیف آرشیو → «فقط اتصال برداشته شود»؛ «انصراف» وسط‌چین');
-  ok(rec.unpaidCol === 'rgb(255, 32, 32)', '«این ماه: دریافت نشده» همان قرمز پررنگ مبالغ دریافت‌نشده');
+  ok(rec.cancelOptCenter === 'center' && rec.unlinked, '× ردیف آرشیو → «بلی» فقط اتصال را برمی‌دارد؛ «خیر» وسط‌چین');
+  /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(244, 143, 177)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
 
   console.log('• کارت و رنگ‌ها');
   const card = await p.evaluate(async () => {

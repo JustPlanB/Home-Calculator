@@ -54,11 +54,11 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     return out;
   });
   /* ۱.۳.۳۷: هر باکس = برچسب ثابت راست (اسم فیلتر) | خط تفکیک | منوی کشویی با پیش‌فرض «همهٔ …» (طوسی) */
-  ok(f.def.length === 6 && f.labelsShown.length === 6 && f.labelsShown.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته', 'برچسب ثابت هر فیلتر داخل باکس دیده می‌شود (' + f.labelsShown.join('، ') + ')');
+  /* ۱.۳.۴۷: منوی «بخش» برداشته شد */ ok(f.def.length === 5 && f.labelsShown.length === 5 && f.labelsShown.join('،') === 'نوع،ماه،روز،حساب،دسته', 'برچسب ثابت هر فیلتر داخل باکس دیده می‌شود (' + f.labelsShown.join('، ') + ')');
   ok(f.def.filter(x => x.def).length >= 5 && f.def.every(x => x.fs !== '0px' && x.align === 'right'), 'منوی کشویی در حالت پیش‌فرض گزینهٔ «همهٔ …» را نشان می‌دهد');
   ok(f.listOpts[0].t === 'همهٔ انواع' && f.listOpts[0].sel && f.listOpts.every(o => o.c === 'rgb(255, 255, 255)'), 'با باز شدن: «همهٔ انواع» انتخاب‌شده و بالا، گزینه‌ها سفید (' + f.listOpts.map(o => o.t).join('، ') + ')');
   ok(!f.afterPick.def && f.afterPick.txt === 'برداشت' && f.resetDef, 'گزینهٔ غیرپیش‌فرض در باکس دیده می‌شود («برداشت») و با پاک کردن جستجو دوباره پیش‌فرض');
-  ok(f.divX.length === 6 && Math.max(...f.divX) - Math.min(...f.divX.filter((x, i) => i % 2 === 0)) >= 0 && new Set(f.divX.filter((x, i) => i % 2 === 0)).size === 1 && new Set(f.divX.filter((x, i) => i % 2 === 1)).size === 1, 'خط‌های تفکیک باکس‌ها در یک راستا (' + f.divX.join(',') + ')');
+  /* ۱.۳.۴۷: پنج باکس (دسته تمام‌عرض) */ ok(f.divX.length === 5 && Math.max(...f.divX) - Math.min(...f.divX.filter((x, i) => i % 2 === 0)) >= 0 && new Set(f.divX.filter((x, i) => i % 2 === 0)).size === 1 && new Set(f.divX.filter((x, i) => i % 2 === 1)).size === 1, 'خط‌های تفکیک باکس‌ها در یک راستا (' + f.divX.join(',') + ')');
   ok(f.desc.ph === 'جستجوی شرح' && f.desc.ratio >= 1.9 && f.desc.align === 'right', 'باکس شرح: فقط «جستجوی شرح» داخلش، دو برابر بقیه (×' + f.desc.ratio + ')');
   ok(f.amt.ph === 'مبلغ از' && f.amt.hint === 'done' && f.amt.clrHidden0 && f.amt.clrShown && f.amt.cleared, 'مبلغ: دکمهٔ «C» داخل باکس عدد را پاک می‌کند؛ دکمهٔ کیبورد «تأیید»');
 

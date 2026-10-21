@@ -13,10 +13,12 @@ const { chromium } = require('playwright');
   // Sepah deposit 1M, balance 5M, unknown account
   await p.evaluate(x => enqueueBankSms(x), `بانک سپه\nواریز 10,000,000\nحساب 0303***7777\nمانده 50,000,000\n${dt}-10:00`); await p.waitForTimeout(1500);
   console.log('open', await p.evaluate(() => ({ sel: document.getElementById('smsConfirmBank').value, note: (document.getElementById('smsAccNewNote')||{}).textContent, list: !!document.querySelector('.fancy-select-list.open') })));
-  await p.evaluate(() => confirmSmsEntry()); await p.waitForTimeout(300);
+  /* ۱.۳.۴۷: بانکی که حسابی از آن نیست → فیلد نام حساب تازه؛ خالی = ثبت نمی‌شود؛ بعد مسیر قدیمی منوی حساب آزموده می‌شود */
+  await p.evaluate(() => { const n = document.getElementById('smsNewAccName'); if (n) n.value = ''; confirmSmsEntry(); }); await p.waitForTimeout(300);
+  await p.evaluate(() => { const nw = document.getElementById('smsNewAccWrap'); const s = document.getElementById('smsConfirmBank'); const aw = s.parentNode.classList.contains('fancy-select-wrap') ? s.parentNode : s; aw.style.display = ''; window.__nw = nw; });
   console.log('blocked', await p.evaluate(() => document.getElementById('smsConfirmModal').classList.contains('open')));
   // choose existing ملت → mismatch dialog with 3 buttons → back
-  await p.evaluate(() => { const s = document.getElementById('smsConfirmBank'); s.value = 'ملت'; confirmSmsEntry(); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { if (window.__nw) window.__nw.remove(); const s = document.getElementById('smsConfirmBank'); s.value = 'ملت'; confirmSmsEntry(); }); await p.waitForTimeout(400);
   console.log('dlg', await p.evaluate(() => [...document.querySelectorAll('#hkReconDlg button')].map(x => x.textContent)));
   await p.click('.hk-recon-back'); await p.waitForTimeout(300);
   console.log('after back', await p.evaluate(() => ({ modal: document.getElementById('smsConfirmModal').classList.contains('open'), rows: (periodData.income.sections||[]).reduce((n,s)=>n+(s.rows||[]).filter(r=>r.amount).length,0) })));
@@ -39,7 +41,7 @@ const { chromium } = require('playwright');
   console.log('saved2', await p.evaluate(() => globalAccountBalances()['پاسارگاد']));
   // mismatch + add gap
   await p.evaluate(x => enqueueBankSms(x), `بانک ملت\nبرداشت 1,000,000\nحساب 1111***2222\nمانده 80,000,000\n${dt}-12:00`); await p.waitForTimeout(1500);
-  await p.evaluate(() => { const s = document.getElementById('smsConfirmBank'); s.value = 'ملت'; confirmSmsEntry(); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { if (window.__nw) window.__nw.remove(); const s = document.getElementById('smsConfirmBank'); s.value = 'ملت'; confirmSmsEntry(); }); await p.waitForTimeout(400);
   await p.click('.hk-recon-add'); await p.waitForTimeout(600);
   console.log('gap', await p.evaluate(() => ({ modal: document.getElementById('smsConfirmModal').classList.contains('open'), bal: globalAccountBalances()['ملت'] })));
   console.log(errs); await b.close(); })();

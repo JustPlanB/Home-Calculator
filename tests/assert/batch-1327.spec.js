@@ -87,7 +87,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     selectedBankAccounts.push({ id: 'bs', bank: 'بانک سپه', label: 'سپه', openingBalance: 14488275, createdAt: { y: 1404, m: 1, d: 1 } }); saveBankAccountsSelection();
     smsAccountBankMap['L4:0128'] = 'سپه'; saveSmsAccountBankMap();
     openSmsBulkModal(); await w(150); await hkBulkRead(); await w(1000);
-    const cards = [...document.querySelectorAll('.hk-bulk-folder')].map(c => ({ name: c.querySelector('.hk-bulk-fname').textContent, personal: c.classList.contains('personal'), on: c.classList.contains('on'), tag: (c.querySelector('.hk-bulk-ptag') || {}).textContent || '', v: c.querySelector('.hk-bulk-dsel').getValue() }));
+    const cards = [...document.querySelectorAll('.hk-bulk-folder')].map(c => ({ name: c.querySelector('.hk-bulk-fname').textContent, personal: c.classList.contains('personal'), on: c.classList.contains('on'), tag: (c.querySelector('.hk-bulk-ptag') || {}).textContent || '', v: (c.querySelector('.hk-bulk-dsel') ? c.querySelector('.hk-bulk-dsel').getValue() : (c.querySelector('.hk-bulk-newinp') || {}).value) }));
     const fo = _hkBulk.folders.find(f => !f.personal);
     const allTx = fo ? fo.all.length : 0;
     document.querySelector('.hk-bulk-allchk').click(); await w(80);
@@ -100,7 +100,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
   });
   const bank = rb.cards.filter(c => !c.personal), pers = rb.cards.filter(c => c.personal);
   ok(bank.length === 1 && bank[0].v === 'سپه' && rb.allTx === 5, 'همهٔ پیامک‌های این حساب (حقوق، پایا، سودها، کارمزد) در یک پوشه؛ اطلاعیه کنار رفت (' + rb.allTx + ' پیامک)');
-  ok(pers.length === 1 && /شمارهٔ شخصی/.test(pers[0].tag) && pers[0].v === '' && !pers[0].on, 'پیامک شمارهٔ شخصی: پوشهٔ جدا با برچسب «از شمارهٔ شخصی، نه بانک»، بی‌حساب و بی‌تیک؛ فوروارد همان پیامک بانک حذف شد');
+  /* ۱.۳.۴۷: همان پیام باکس ثبت */ ok(pers.length === 1 && /پیامک شخصی از طرف/.test(pers[0].tag) && pers[0].v === '' && !pers[0].on, 'پیامک شمارهٔ شخصی: پوشهٔ جدا با برچسب «از شمارهٔ شخصی، نه بانک»، بی‌حساب و بی‌تیک؛ فوروارد همان پیامک بانک حذف شد');
   ok(rb.onAfterAll.filter(Boolean).length === 1 && rb.onAfterAll[rb.cards.findIndex(c => !c.personal)], '«همه» فقط پوشه‌های بانک را انتخاب می‌کند');
   ok(rb.open === 513853 && rb.bal === 453853, 'موجودی اول مهر از پیامک همین ماه (۵۱۳٬۸۵۳)، نه حقوق ۱۴۰۴؛ موجودی = ماندهٔ آخرین پیامک (' + rb.bal + ')');
   ok(rb.rows.filter(r => /^21:60000:سپه/.test(r)).length === 1, 'کارمزد فقط یک بار ثبت شد (اطلاعیه ثبت نشد)');
@@ -159,13 +159,16 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     out.sticky = getComputedStyle(all).position;
     list.scrollTop = 99999; await w(100);
     out.allTopStays = Math.abs(all.getBoundingClientRect().top - list.getBoundingClientRect().top) < 2;
-    const cards = [...list.querySelectorAll('.hk-bulk-folder')], last = cards[cards.length - 1];
+    const cards = [...list.querySelectorAll('.hk-bulk-folder')], last = cards.filter(c => c.querySelector('.hk-bulk-dsel')).pop();
     /* منوی حسابِ آخرین پوشه پایین صفحه → رو به بالا */
+    /* ۱.۳.۴۷: پوشه‌های بی‌حسابِ بانک تازه منوی کشویی ندارند (فیلد نام) */
+    if (!last) { out.up = true; out.inView = true; out.toggledByDsel = false; } else {
     const btn = last.querySelector('.hk-bulk-dsel .dark-select-btn'); btn.click(); await w(80);
     const dl = last.querySelector('.hk-bulk-dsel')._list, br = btn.getBoundingClientRect(), lr = dl.getBoundingClientRect();
     out.up = dl.classList.contains('dl-up'); /* اگر پایینش جا باشد رو به پایین هم درست است؛ مهم کامل دیده شدن است */ out.inView = lr.top >= 0 && lr.bottom <= innerHeight + 1 && (out.up ? lr.bottom <= br.top + 1 : lr.top >= br.bottom - 1);
     out.toggledByDsel = last.classList.contains('open');
     closeDarkSelects(); await w(50);
+    }
     /* زدن روی متن کارت (نه فقط عنوان) → باز؛ بستن بدون پرش آخر */
     const c0 = cards[0]; c0.querySelector('.hk-bulk-fmeta').click(); await w(560);
     out.openByMeta = c0.classList.contains('open');
@@ -199,9 +202,9 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     return out;
   });
   /* از ۱.۳.۳۱ باکس‌های مبلغ حذف شدند (فقط محور بازهٔ مبلغ) */
-  ok(new Set(ui2.widths).size === 1 && ui2.widths.length === 6, 'شش فیلتر جستجو هم‌اندازه (' + ui2.widths[0] + 'px)');
+  /* ۱.۳.۴۷: پنج فیلتر؛ «دسته» تمام‌عرض */ ok(new Set(ui2.widths.slice(0, 4)).size === 1 && ui2.widths.length === 5, 'پنج فیلتر جستجو هم‌اندازه (' + ui2.widths[0] + 'px)');
   /* از ۱.۳.۲۹ اسم فیلتر به‌جای برچسب جدا، متن خود باکس است (batch-1329) */
-  ok(ui2.names.join('،') === 'بخش،نوع،ماه،روز،حساب،دسته', 'شش فیلتر با اسم‌های درست');
+  ok(ui2.names.join('،') === 'نوع،ماه،روز،حساب،دسته', 'پنج فیلتر با اسم‌های درست');
   ok(ui2.desc, 'ردیف «شرح» دست نخورده');
 
   const rec = await A.evaluate(async () => {

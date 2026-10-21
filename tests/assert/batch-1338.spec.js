@@ -37,7 +37,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     }
     return out;
   });
-  ok(f.length === 6 && f.every(x => /:true$/.test(x)), 'با باز شدن هر منو، برچسب ثابت بالای آن می‌ماند (' + f.join('، ') + ')');
+  /* ۱.۳.۴۷: پنج منو */ ok(f.length === 5 && f.every(x => /:true$/.test(x)), 'با باز شدن هر منو، برچسب ثابت بالای آن می‌ماند (' + f.join('، ') + ')');
 
   console.log('• جمع و باز شدن کادر جستجو');
   await p.evaluate(async () => { const i = document.getElementById('balanceSearchInput'); i.value = 'نان'; i.dispatchEvent(new Event('input')); await new Promise(r => setTimeout(r, 300)); });
