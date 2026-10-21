@@ -177,25 +177,16 @@ public class BankSmsReceiver extends BroadcastReceiver {
     /* ۱.۳.۴۵: کوتاه و بی‌ایموجی (ایموجی سطر را بلند می‌کرد و متن پیامک زیرش نصفه می‌ماند)؛ شماره چپ‌به‌راست تا «+» جلوی ۹۸ بماند */
     /* ۱.۳.۴۶: چیدمان اختصاصی و راست‌چین: عنوان («تراکنش بانکی جدید» یا «فرستندهٔ شخصی» به رنگ هشدار) و متن کامل پیامک؛
        به‌جای آیکن حباب، دکمهٔ «باکس» زیر اعلان همان باکس شناور را باز می‌کند */
+    /* ۱.۳.۴۷: دوباره چیدمان رسمی اندروید (BigTextStyle)؛ چیدمان اختصاصی ۱.۳.۴۶ برداشته شد */
     boolean personal=isPersonal(sender);
     String title=personal?"فرستندهٔ شخصی":"تراکنش بانکی جدید";
     NotificationCompat.Builder b=baseBuilder(c,title,text);
-    try{
-      RemoteViews small=new RemoteViews(c.getPackageName(),R.layout.hk_sms_small);
-      RemoteViews big=new RemoteViews(c.getPackageName(),R.layout.hk_sms_big);
-      for(RemoteViews rv: new RemoteViews[]{small,big}){
-        rv.setTextViewText(R.id.hk_sms_title,title);
-        rv.setTextViewText(R.id.hk_sms_text,text);
-        if(personal) rv.setTextColor(R.id.hk_sms_title,0xFFFF9F0A);
-      }
-      b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomContentView(small).setCustomBigContentView(big).setCustomHeadsUpContentView(small);
-    }catch(Throwable t){ b=baseBuilder(c,title,text); }
     /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
       Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK); qi.putExtra("nid",nid);
       int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
       PendingIntent qpi=PendingIntent.getBroadcast(c,nid,qi,fl);
-      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟").build();
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ (شرح)").build();
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
     }catch(Throwable ignored){}
@@ -553,7 +544,7 @@ public class HkQuickActivity extends Activity {
     /* متن پیامک آخرِ باکس و در قاب کوتاهِ قابل اسکرول */
     ScrollView smsSv=new ScrollView(this); smsSv.setBackground(round(0xFF2C2C2E,14)); smsSv.addView(sms);
     final EditText et=new EditText(this);
-    et.setHint("بابت چی بود؟"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
+    et.setHint("بابت چی بود؟ (شرح)"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
     et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
     et.setBackground(round(0xFF2C2C2E,14)); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
     /* ۱.۳.۴۵: نشانگر تایپ سفید (قبلاً مشکی و نامعلوم بود) */
