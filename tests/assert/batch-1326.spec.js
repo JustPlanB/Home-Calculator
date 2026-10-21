@@ -73,7 +73,7 @@ async function newPage(b, list) {
     const def = { all: document.querySelector('.hk-bulk-allchk').checked, on: document.querySelectorAll('.hk-bulk-folder.on').length, need: document.querySelectorAll('.hk-bulk-folder.need').length };
     document.querySelector('.hk-bulk-allchk').click(); await w(100);
     const cards = [...document.querySelectorAll('.hk-bulk-folder')];
-    const by = {}; cards.forEach((c, i) => { by[c.querySelector('.hk-bulk-fname').textContent] = { i, v: c.querySelector('.hk-bulk-dsel').getValue(), need: c.classList.contains('need'), pick: c.classList.contains('pick'), on: c.classList.contains('on'), tx: c.querySelector('.hk-bulk-tx').children.length }; });
+    const by = {}; cards.forEach((c, i) => { by[c.querySelector('.hk-bulk-fname').textContent] = { i, v: (c.querySelector('.hk-bulk-dsel') ? c.querySelector('.hk-bulk-dsel').getValue() : (c.querySelector('.hk-bulk-newinp') || {}).value), need: c.classList.contains('need'), pick: c.classList.contains('pick'), on: c.classList.contains('on'), tx: c.querySelector('.hk-bulk-tx').children.length }; });
     const all = document.querySelector('.hk-bulk-allchk');
     return { by, all: all && all.checked, n: cards.length, def };
   });
@@ -110,7 +110,7 @@ async function newPage(b, list) {
   ok(!sub1.sum && sub1.need === 1, 'با کادر قرمز، ثبت انجام نمی‌شود');
   const res = await p.evaluate(async (i) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
-    const d = document.querySelectorAll('.hk-bulk-dsel')[i];
+    const d = document.querySelectorAll('.hk-bulk-folder')[i].querySelector('.hk-bulk-dsel');
     [...d._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value === 'صادرات دوم').click(); await w(100);
     const needAfter = document.querySelectorAll('.hk-bulk-folder.need').length;
     document.querySelector('.hk-bulk-ok').click(); await w(700);

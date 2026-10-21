@@ -184,6 +184,8 @@ async function page(b, inbox, opts) {
   ok(sr.pad && sr.thMid && sr.thC, JSON.stringify([sr.pad, sr.thMid, sr.thC]) + ' متن خانه‌ها از لبه فاصله دارد و عنوان ستون‌ها وسط‌چین است');
 
   /* ---------- باکس هوشمند ---------- */
+  /* از ۱.۳.۴۷ اسلاید اقساط (تعهدات) برداشته شد */
+  if (false) {
   console.log('• باکس هوشمند: اندازهٔ خوانا، بی بیرون‌زدگی');
   const sp = await p3.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -210,6 +212,7 @@ async function page(b, inbox, opts) {
   ok(sp.wrapped && sp.scrolls, 'اسم طولانی به سطر بعد می‌رود و محتوای اضافه داخل اسلاید اسکرول عمودی می‌شود');
   ok(sp.fs >= 0.9 && sp.minPx >= 9.5, 'نوشته‌ها ریز نمی‌شوند (کمینهٔ خوانا: ' + sp.minPx.toFixed(1) + 'px)');
 
+  }
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);
   await b.close();

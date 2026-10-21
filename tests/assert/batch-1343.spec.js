@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• ثبت از اعلان (پاسخ مستقیم)');
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
-  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
+  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
     'اعلان تراکنش دکمهٔ «ثبت» با فیلد «بابت چه بود؟» دارد (PendingIntent قابل‌تغییر برای پاسخ)');
   ok(/class HkQuickReplyReceiver/.test(patch) && /x\.put\("quickDesc",desc\)/.test(patch) && /HkQuickReplyReceiver" android:exported="false"/.test(patch) && /r\.put\("quickDesc"/.test(patch),
     'گیرندهٔ پاسخ شرح را کنار همان پیامک در صف می‌گذارد، از بیرون صدا زده نمی‌شود و صف آن را به نرم‌افزار می‌دهد');
@@ -102,7 +102,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(sp.ov === 'ok' && sp.ovRes, 'اسلاید «وضعیت ماه» → جدول مخارج همان کاربر (' + (sp.keys || []).join('،') + ')');
   ok(sp.st !== 'ok' || sp.stRes, 'اسلاید «مقایسه با ماه قبل» → بخش آمار');
   const keysSrc = await p.evaluate(() => { const s = document.documentElement.outerHTML; return ['overview', 'stats', 'obligations', 'ledger', 'projects', 'upcoming', 'jump', 'biggest', 'insight'].filter(k => new RegExp("key: '" + k + "', build: \\w+, onTap").test(s)).length; });
-  ok(keysSrc === 9, 'همهٔ اسلایدها مقصد دارند: وضعیت ماه، مقایسه، تعهدات→اقساط، طلب و بدهی→قرض، پروژه‌ها، ۷ روز آینده، جهش خرج، خرج‌های ماه، نکات');
+  /* ۱.۳.۴۷: اسلاید تعهدات (اقساط) برداشته شد */ ok(keysSrc === 8, 'همهٔ اسلایدها مقصد دارند: وضعیت ماه، مقایسه، طلب و بدهی→قرض، پروژه‌ها، ۷ روز آینده، جهش خرج، خرج‌های ماه، نکات');
 
   console.log('• منوی انتخاب حساب');
   const bk = await p.evaluate(async () => {
@@ -113,7 +113,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     return out;
   });
   /* از ۱.۳.۴۶ نصف‌نصف (batch-1346) */
-  ok(bk.sel === 30 && bk.all === 30, 'حساب‌های ساخته‌شده و فهرست همهٔ بانک‌ها نصف‌نصف (۳۰٪ و ۳۰٪)');
+  /* ۱.۳.۴۷: بلندتر */ ok(bk.sel === 35 && bk.all === 35, 'حساب‌های ساخته‌شده و فهرست همهٔ بانک‌ها نصف‌نصف (۳۵٪ و ۳۵٪)');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

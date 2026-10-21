@@ -121,7 +121,7 @@ const ACC = 'ملت مصنوعی';
   ok(rc.tapNoop, 'زدن روی ردیف آرشیو کاری نمی‌کند (به صفحهٔ اصلی نمی‌رود)');
   ok(rc.backToFolders && rc.backClosed, 'بازگشت: از داخل پوشه به فهرست دوره‌ها، بعد بستن آرشیو و ماندن در منو');
   /* از ۱.۳.۴۶ قرمز پررنگ مبالغ دریافت‌نشده */
-  ok(rc.unpaidColor === 'rgb(255, 32, 32)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان قرمز پررنگ مبالغ دریافت‌نشده (‎#ff2020)');
+  /* ۱.۳.۴۷: گلبهی پاستلی */ ok(rc.unpaidColor === 'rgb(244, 143, 177)' && /دریافت نشده/.test(rc.unpaidText), '«این ماه: دریافت نشده» با همان گلبهی مبالغ دریافت‌نشده');
   ok(rc.cancelToFolders, 'بازگشت از داخل پوشهٔ تنها: به فهرست پوشه‌ها');
   ok(rc.singleFolder, 'قرارداد بدون تمدید هم پوشهٔ خودش را دارد (با آیکون پوشهٔ ثبت گروهی)');
   ok(rc.unpaidBg === 'rgb(255, 107, 74)', 'آرشیو: مبلغ دریافت‌نشده با قرمز مبالغ دریافت‌نشدهٔ درآمد');
@@ -252,8 +252,9 @@ const ACC = 'ملت مصنوعی';
   if (L.length === 8 && /مبلغ/.test(L[6].t) && L[7].y > L[6].y && L[6].y > L[4].y) L.splice(6, 1);
   /* از ۱.۳.۲۷ «مبلغ از» و «مبلغ تا» دو باکس هم‌اندازه در یک سطر */
   if (L.length === 9 && /مبلغ از/.test(L[6].t) && /مبلغ تا/.test(L[7].t) && L[6].y === L[7].y && L[8].y > L[6].y) L.splice(6, 2);
-  ok(L.length === 7 && L[0].y === L[1].y && L[2].y === L[3].y && L[4].y === L[5].y && L[2].y > L[0].y && L[4].y > L[2].y && L[6].y > L[4].y && /بخش/.test(L[0].t) && /نوع/.test(L[1].t) && /ماه/.test(L[2].t) && /روز/.test(L[3].t) && /حساب/.test(L[4].t) && /دسته/.test(L[5].t) && /شرح/.test(L[6].t), 'چیدمان: [بخش][نوع] / [زمان][روز] / [حساب][دسته] / شرح');
-  ok(se.sizes.length === 6 && se.sizes.every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
+  for (let i = L.length - 1; i >= 0; i--) if (/مبلغ/.test(L[i].t)) L.splice(i, 1);
+  /* ۱.۳.۴۷: بی منوی «بخش»؛ دسته تمام‌عرض */ ok(L.length === 6 && L[0].y === L[1].y && L[2].y === L[3].y && L[2].y > L[0].y && L[4].y > L[2].y && L[5].y > L[4].y && /نوع/.test(L[0].t) && /ماه/.test(L[1].t) && /روز/.test(L[2].t) && /حساب/.test(L[3].t) && /دسته/.test(L[4].t) && /شرح/.test(L[5].t), 'چیدمان: [نوع][ماه] / [روز][حساب] / [دسته] / شرح');
+  ok(se.sizes.length === 5 && se.sizes.slice(0, 4).every(x => x === se.sizes[0]) && !/^0x/.test(se.sizes[0]), 'همهٔ باکس‌ها به جز شرح یک اندازه (' + se.sizes.join('، ') + ')');
   ok(se.catLabelAlign === 'right', 'برچسب «دسته:» راست‌چین');
 
   /* از ۱.۳.۴۶ اقساط خاموش است و «پرداخت قبلی»ها برداشته می‌شوند (batch-1346) */
@@ -340,7 +341,7 @@ const ACC = 'ملت مصنوعی';
     const X = buildXlsxSheets().sheets.map(s => s.name);
     _hkExportOpts = null;
     const B0 = buildPdfBlocks().map(x => x.html).join('');
-    out.b1 = { months: ['مرداد', 'شهریور', 'مهر'].every(mn => new RegExp('درآمدها <small>' + mn).test(B1)), perMonth: /جمع ماه‌به‌ماه/.test(B1), noInstall: !/class="st ins"/.test(B1), noAcc: !/موجودی حساب‌ها/.test(B1), title: /گزارش مالی مرداد ۱۴۰۵ تا مهر ۱۴۰۵/.test(B1) };
+    out.b1 = { months: ['مرداد', 'شهریور', 'مهر'].every(mn => new RegExp('درآمدها <small>' + mn).test(B1)), perMonth: /جمع ماه‌به‌ماه/.test(B1), noInstall: !/class="st ins"/.test(B1), noAcc: !/موجودی حساب‌ها/.test(B1), title: /گزارش مالی .*مرداد ۱۴۰۵ تا مهر ۱۴۰۵/.test(B1) };
     out.b2 = { onlyAli: /کتاب/.test(B2) && !/نان بربری/.test(B2), noIncome: !/class="st inc"/.test(B2), title: /علی/.test(B2) };
     out.xl = X;
     /* از ۱.۳.۴۶ اقساط خاموش است و بخش اقساط در خروجی نمی‌آید */

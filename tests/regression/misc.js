@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
     let n=0; const R=(d,s,a,st)=>Object.assign(emptyRow('expense'),{id:'q'+(n++),day:String(d),desc:s,amount:a,status:st||'paid'});
     findSectionByTitle('income',t).rows=[R(1,'حقوق',2000000)]; findSectionByTitle('expense',t).rows=[R(1,'اجاره',7000000)];
     renderHomeCards(); const el=document.querySelector('#homeCards .pc-smart-box');
-    while (el._spPages[el._spIdx].key!=='obligations') smartPanelGo(el,1);
+    /* ۱.۳.۴۷: اسلاید تعهدات (اقساط) برداشته شد */ for (let g=0; g<20 && el._spPages[el._spIdx].key!=='ledger'; g++) smartPanelGo(el,1);
     await new Promise(r=>setTimeout(r,600));
     return [...document.querySelectorAll('.sp-page:not(.sp-out) .sp-row .sp-l')].map(x=>x.textContent);
   });
