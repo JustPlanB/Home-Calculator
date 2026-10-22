@@ -75,7 +75,7 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
     return out;
   }, { PNG, SMS });
   ok(sh.unreg.length === 1 && /۱۷:۳۳/.test(sh.unreg[0]) && /۶۵۱,۱۰۰/.test(sh.unreg[0]) && sh.firstHi, 'پنجرهٔ اشتراک: تراکنش ثبت‌نشده (ساعت و مبلغ) بالای همه و برجسته (' + sh.unreg.join(' | ') + ')');
-  ok(sh.order.indexOf('hk-share-unreg') < sh.order.indexOf('hk-share-keep') && sh.order.indexOf('hk-share-keep') < sh.order.indexOf('hk-bulk-list'), 'ترتیب: ثبت‌نشده‌ها، «نگه دار…»، ردیف تازه، ثبت‌شده‌ها');
+  /* ۱.۳.۴۸: «نگه دار…» برداشته شد */ ok(sh.order.indexOf('hk-share-unreg') < sh.order.indexOf('hk-bulk-list') && sh.order.indexOf('hk-share-keep') < 0, 'ترتیب: ثبت‌نشده‌ها، ردیف تازه، ثبت‌شده‌ها (بدون «نگه دار…»)');
   ok(sh.modal && sh.strip === 1, 'زدن تراکنش ثبت‌نشده: منوی ثبت همان تراکنش باز شد و رسید زیر شرح پیوست شد');
   ok(sh.row && sh.row.att === 1 && sh.row.time === '17:33' && sh.queueLeft === 0, 'با «ثبت» هم تراکنش (ساعت ۱۷:۳۳) و هم رسید ثبت شد');
 
@@ -98,6 +98,8 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
   }, PNG);
   ok(many.n === 3 && /۳ تراکنش ثبت‌نشده/.test(many.sub) && many.opened, 'سه تراکنش ثبت‌نشده: هر سه در فهرست، کاربر هر کدام را بخواهد انتخاب می‌کند (' + many.sub + ')');
 
+  /* ۱.۳.۴۸: گزینهٔ «نگه دار تا پیامک بیاید» برداشته شد */
+  if (false) {
   console.log('• «نگه دار تا پیامک بیاید»');
   const kp = await p.evaluate(async (PNG) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
@@ -135,6 +137,7 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
   ok(kp.row === '1:true' && kp.pendEnd === 0, 'ثبت: رسید روی همان ردیف نشست و صف خالی شد');
   ok(kp.expired === 0, 'رسیدِ در انتظارِ بیش از ۲۴ ساعت پاک می‌شود');
 
+  }
   console.log('• باکس‌های قرض');
   const ld = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));

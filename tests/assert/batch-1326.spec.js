@@ -83,7 +83,8 @@ async function newPage(b, list) {
   ok(fo.by[F('پاسارگاد')].v === 'پاسارگاد من', 'پوشهٔ با رقم‌های آموخته‌شده → همان حساب');
   ok(fo.by[F('ملت')].v === 'ملت', 'تنها حساب بانک → خودکار همان حساب');
   ok(fo.by[F('ملی')].v === 'ملی ۲۲۲۲', 'بانک بدون حساب → حساب تازهٔ «ملی ۲۲۲۲» پیشنهاد و انتخاب شد');
-  ok(fo.by[F('صادرات')].v === '' && fo.by[F('صادرات')].pick && !fo.by[F('صادرات')].need && Object.keys(fo.by).filter(k => fo.by[k].pick).length === 1, 'دو حساب از یک بانک و رقم ناشناس → فقط کادر حساب همان پوشه آبی (قرمز فقط بعد از «ثبت»)');
+  /* ۱.۳.۴۸: بانکِ آشنا همیشه پیش‌فرض یکی از حساب‌های قبلی را می‌گیرد (منو: حساب‌های قبلی + «＋ حساب جدید») */
+  ok(/^صادرات/.test(fo.by[F('صادرات')].v || '') && !fo.by[F('صادرات')].need, 'دو حساب از یک بانک و رقم ناشناس → پیش‌فرض یکی از حساب‌های قبلی همان بانک (' + fo.by[F('صادرات')].v + ')');
   ok(Object.values(fo.by).every(x => x.tx === 0), 'ردیف‌های تراکنش پوشه‌ها تا باز شدن ساخته نمی‌شوند');
 
   const lazy = await p.evaluate(async (i) => {
@@ -101,13 +102,7 @@ async function newPage(b, list) {
   ok(lazy.tx === 5 && lazy.open, 'با باز کردن پوشه، فهرست همان لحظه ساخته شد (' + lazy.tx + ' ردیف)');
   ok(lazy.shut && lazy.stillOpen && lazy.arrow === 'none' && lazy.closed, 'بستن پوشه: فلش همان لحظه برمی‌گردد و فهرست بعد از انیمیشن بسته می‌شود');
 
-  console.log('• ثبت: کادر قرمز، بعد بدون هیچ سؤال');
-  const sub1 = await p.evaluate(async () => {
-    const w = ms => new Promise(r => setTimeout(r, ms));
-    document.querySelector('.hk-bulk-ok').click(); await w(200);
-    return { sum: !!document.querySelector('.hk-bulk-sum'), need: document.querySelectorAll('.hk-bulk-folder.need').length };
-  });
-  ok(!sub1.sum && sub1.need === 1, 'با کادر قرمز، ثبت انجام نمی‌شود');
+  console.log('• ثبت: بدون هیچ سؤال');
   const res = await p.evaluate(async (i) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const d = document.querySelectorAll('.hk-bulk-folder')[i].querySelector('.hk-bulk-dsel');
@@ -124,7 +119,7 @@ async function newPage(b, list) {
       open: Object.assign({}, periodData.accountOpeningInstant), rows, needAfter
     };
   }, fo.by[F('صادرات')].i);
-  ok(res.needAfter === 0, 'انتخاب حساب برای پوشهٔ قرمز → رنگ قرمز رفت');
+  ok(res.needAfter === 0, 'تغییر حساب پوشه از منوی حساب‌های قبلی، بدون کادر قرمز');
   ok(!res.ask, 'هیچ پنجرهٔ سؤالی (مغایرت/تکراری/اختلاف) باز نشد');
   ok(res.bal['ملت'] === 2260000, 'ملت: موجودی = ماندهٔ آخرین پیامک (' + res.bal['ملت'] + ')');
   ok(res.open['ملت'] === 2000000 && /موجودی اول مهر ملت طبق پیامک‌ها تنظیم شد/.test(res.sum), 'موجودی اول مهر ملت از زنجیرهٔ پیامک‌ها (۲٬۰۰۰٬۰۰۰) و گزارش در خلاصه');
@@ -173,8 +168,10 @@ async function newPage(b, list) {
     out.arr = [a, y].map(e => e ? getComputedStyle(e, '::after').width : '');
     openBankAccountsModal(false); await w(200);
     const banks = document.getElementById('bankBanksScroll');
-    const last = banks.lastElementChild;
-    out.customLast = !!(last && last.querySelector('#bankCustomName'));
+    /* ۱.۳.۴۸: ردیف نام دلخواه اولین گزینهٔ فهرست بانک‌هاست */
+    const cIn = banks.querySelector('#bankCustomName');
+    const kids = [...banks.children]; const ci = cIn ? kids.findIndex(k => k.contains(cIn)) : -1;
+    out.customLast = ci >= 0 && ci <= 1;
     document.getElementById('bankCustomAdd').click(); await w(100);
     out.noEditorEmpty = !document.getElementById('bankAddEditor');
     document.getElementById('bankCustomName').value = 'بانک آزمایشی';
@@ -194,7 +191,7 @@ async function newPage(b, list) {
     return out;
   });
   ok(ui.arr[0] === '16px' && ui.arr[1] === '16px', 'فلش منوی ماه و سال همان شکل، بزرگ‌تر (۱۶px)');
-  ok(ui.customLast && ui.noEditorEmpty, 'زیر فهرست بانک‌ها ردیف «بانک دیگر (نام دلخواه)»؛ بدون نام باز نمی‌شود');
+  ok(ui.customLast && ui.noEditorEmpty, 'اول فهرست بانک‌ها ردیف «بانک دیگر (نام دلخواه)»؛ بدون نام باز نمی‌شود');
   ok(/بانک آزمایشی/.test(ui.editor) && ui.name === 'آزمایشی' && ui.manual, 'نام دلخواه → ویرایشگر حساب با همان نام (بدون پیامک → کادر موجودی دستی)');
   ok(ui.chev === 'none' && ui.stillOpen && ui.closed, 'فلش درآمد ثابت همان لحظه برمی‌گردد و ردیف بعد از انیمیشن بسته می‌شود');
 
