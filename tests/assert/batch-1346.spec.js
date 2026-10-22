@@ -179,7 +179,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const nb = card.querySelector('.hk-bulk-newacc');
     out.newHiddenFirst = getComputedStyle(nb).display === 'none';
     dsel.querySelector('.dark-select-btn').click(); await w(80);
-    const opt = [...document.querySelectorAll('.dark-select-item, .dark-select-option')].find(o => /حساب تازه/.test(o.textContent));
+    const opt = [...document.querySelectorAll('.dark-select-item, .dark-select-option')].find(o => /حساب جدید/.test(o.textContent));
     out.optLabel = opt && opt.textContent;
     opt && opt.click(); await w(120);
     out.newShown = getComputedStyle(nb).display !== 'none';
@@ -193,7 +193,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   /* ۱.۳.۴۷: بلندتر */ ok(acc.sh === '35vh/35vh', 'منوی انتخاب حساب: حساب‌های ساخته‌شده و همهٔ بانک‌ها نصف‌نصف');
   ok(acc.ov && /بانک ملت · ۵۵۵۵/.test(acc.src || '') && acc.order === 'جدید,قدیمی' && acc.fixed, 'زدن نام حساب: تراکنش‌ها از آخر به اول در قاب ثابتِ اسکرول‌شونده، با نام اصلی پیامک بالای آن');
   ok(acc.closed, 'بازگشت پنجرهٔ تراکنش‌های حساب را می‌بندد');
-  ok(acc.newHiddenFirst && /حساب تازه/.test(acc.optLabel || '') && acc.newShown && acc.account === 'سپه من' && acc.noAccMenu, 'ثبت گروهی: «حساب تازه» → نوشتن نام در همان پوشه (بدون رفتن به منوی انتخاب حساب)');
+  /* ۱.۳.۴۸: پوشهٔ بی‌حساب کادر نام را از اول نشان می‌دهد */ ok(/حساب جدید/.test(acc.optLabel || '') && acc.newShown && acc.account === 'سپه من' && acc.noAccMenu, 'ثبت گروهی: «＋ حساب جدید» → نوشتن نام در همان پوشه (بدون رفتن به منوی انتخاب حساب)');
 
   console.log('• آرشیو درآمد ثابت');
   const rec = await p.evaluate(async () => {
@@ -229,7 +229,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(rec.x === 1 && rec.labels === 'وصل خودکار,وصل دستی' && rec.autoRight && rec.same, 'پوشهٔ آرشیو: کنار هر ردیف ×؛ پایین «وصل خودکار» راست و «وصل دستی» چپ، هم‌اندازه');
   ok(/خرداد ۱۴۰۵/.test(rec.firstVisible || '') && rec.titleSticky && rec.cancelCenter === 'center', 'وصل دستی: اولین ماه دیده‌شده ماه شروع قرارداد (خرداد ۱۴۰۵)، عنوان ثابت، «انصراف» وسط‌چین (' + rec.firstVisible + ')');
   ok(rec.cancelOptCenter === 'center' && rec.unlinked, '× ردیف آرشیو → «بلی» فقط اتصال را برمی‌دارد؛ «خیر» وسط‌چین');
-  /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(244, 143, 177)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
+  /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(230, 177, 44)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
 
   console.log('• کارت و رنگ‌ها');
   const card = await p.evaluate(async () => {

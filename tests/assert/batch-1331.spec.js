@@ -94,7 +94,7 @@ async function page(b, inbox) {
     const out = { cardIn: !!cw.closest('.hk-bulk-rwrap') && getComputedStyle(cw).display !== 'none', cardLbl: cw.querySelector('.hk-bulk-rlbl').textContent };
     const cr = cw.getBoundingClientRect(), rd = ov.querySelector('.hk-bulk-read').getBoundingClientRect(), bt = ov.querySelector('.hk-bulk-btns').getBoundingClientRect();
     out.cardAboveRead = cr.bottom <= rd.top + 1 && cr.bottom < bt.top;
-    out.dupLbl = ov.querySelector('.hk-bulk-dupbtn').textContent;
+    out.noDup = !ov.querySelector('.hk-bulk-dupbtn');
     hkBulkRead(); await w(1000);
     const bar = ov.querySelector('.hk-bulk-rbar'), list = document.getElementById('hkBulkList');
     out.chev = getComputedStyle(bar.querySelector('.hk-chev')).color;
@@ -111,7 +111,7 @@ async function page(b, inbox) {
     return out;
   });
   /* ۱.۳.۴۶ تک‌کاربره: منوی کارت مقصد پنهان است */ ok(!bk.cardIn && bk.cardLbl === 'ثبت روی کارت', 'منوی کارت مقصد در ثبت گروهی پنهان است (تک‌کاربره)');
-  ok(bk.dupLbl === 'پیدا کردن ردیف‌های تکراری قبلی', 'اسم دکمهٔ تکراری‌ها روشن‌تر شد');
+  /* ۱.۳.۴۸ */ ok(bk.noDup, 'دکمهٔ «پیدا کردن ردیف‌های تکراری قبلی» برداشته شد');
   ok(bk.open.dn === 0 && bk.open.up > 4 && bk.openWrap && bk.close.up === 0 && bk.close.dn > 4 && bk.closeWrap && bk.ghosts === 1, 'باز و بسته شدن بازه یک حرکت پیوسته (باز: ' + bk.open.up + ' فریم، بسته: ' + bk.close.dn + ' فریم)');
   ok(bk.open.mx <= Math.max(40, bk.open.tot * 0.25) && bk.close.mx <= Math.max(40, bk.close.tot * 0.25), 'بی‌پرش (بیشترین گام ' + bk.open.mx + '/' + bk.close.mx + 'px)');
   ok(bk.chev !== 'rgb(10, 132, 255)' && bk.allShadow === 'none', 'فلش نوار بازه هم‌رنگ بقیهٔ فلش‌ها؛ لبهٔ تیرهٔ زیر ردیف «همه» برداشته شد');

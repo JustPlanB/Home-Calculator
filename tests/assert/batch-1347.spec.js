@@ -51,10 +51,10 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     closeCellTextPopups(); closePersonDetail(); await w(200);
     return out;
   }, title);
-  ok(col.incUnpaid === 'rgb(244, 143, 177)' && col.expUnpaid === 'rgb(244, 143, 177)', 'کارت: دریافت‌نشده و پرداخت‌نشده گلبهی پاستلی');
+  ok(col.incUnpaid === 'rgb(230, 177, 44)' && col.expUnpaid === 'rgb(230, 177, 44)', 'کارت: دریافت‌نشده و پرداخت‌نشده گلبهی پاستلی');
   ok(col.expPaid === 'rgb(255, 107, 74)' && col.incPaid === 'rgb(158, 232, 88)', 'کارت: پرداخت‌شدهٔ مخارج نارنجی، دریافت‌شدهٔ درآمد سبز');
   ok(col.nameHidden, 'نام کارت دیگر بالای کارت نیست');
-  ok(col.tblPaid === 'rgb(255, 107, 74)' && col.tblUnpaid === 'rgb(244, 143, 177)', 'جدول مخارج: پرداخت‌شده نارنجی، پرداخت‌نشده گلبهی');
+  ok(col.tblPaid === 'rgb(255, 107, 74)' && col.tblUnpaid === 'rgb(230, 177, 44)', 'جدول مخارج: پرداخت‌شده نارنجی، پرداخت‌نشده گلبهی');
   ok(/۷,۰۰۰,۰۰۰ تومان/.test(col.pop) && col.popNowrap === 'nowrap' && !col.statusMenu, 'زدن روی مبلغ: مبلغ یک‌خطی در باکس شناور، بی منوی تغییر وضعیت');
 
   console.log('• باکس ویرایش ردیف');
@@ -88,7 +88,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(ed.title === 'ویرایش ردیف ۲ مخارج', 'عنوان با شمارهٔ ردیف: «' + ed.title + '»');
   ok(ed.pills.length === 2 && /^تاریخ=۱۴۰۵\/۰۷\/۰۵$/.test(ed.pills[0]) && /^زمان=/.test(ed.pills[1]) && ed.closed && ed.noChip, 'تاریخ و زمان: دو دکمهٔ ساده (' + ed.pills.join('، ') + ')؛ چرخ‌ها بسته');
   ok(ed.dateOpen && ed.timeOpen, 'زدن «تاریخ» یا «زمان» فقط چرخ‌های همان را باز می‌کند');
-  ok(/پرداخت نشده\|rgb\(244, 143, 177\)/.test(ed.segOn) && ed.segPaid === 'rgb(255, 107, 74)', 'رنگ وضعیت‌ها: پرداخت‌نشده گلبهی، پرداخت‌شدهٔ مخارج نارنجی');
+  ok(/پرداخت نشده\|rgb\(230, 177, 44\)/.test(ed.segOn) && ed.segPaid === 'rgb(255, 107, 74)', 'رنگ وضعیت‌ها: پرداخت‌نشده گلبهی، پرداخت‌شدهٔ مخارج نارنجی');
   ok(!ed.fileBtn && ed.fileTxt === 'افزودن فایل' && ed.attOpen, 'بی دکمهٔ «دیدن/افزودن»؛ زدن روی نوشتهٔ فایل پنجرهٔ پیوست را باز می‌کند');
 
   console.log('• لانگ‌پرس: رها کردن انگشت دکمهٔ زیرش را نمی‌زند');

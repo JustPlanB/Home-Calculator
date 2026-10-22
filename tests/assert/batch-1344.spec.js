@@ -131,7 +131,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     window.onBankSmsReceived('بانک ملی\nبرداشت:70,000-\nحساب:62002\nمانده:500,000\n0728-10:30', { nid: 95 }); await w(500);
     hkOpenSharePicker([{ data: 'AAAA', mime: 'image/jpeg' }]); await w(300);
     const u = document.querySelector('.hk-share-u'), ur = u.getBoundingClientRect();
-    const keep = document.querySelector('.hk-share-keep').getBoundingClientRect();
+    const keepEl = document.querySelector('.hk-share-keep') || document.querySelector('.hk-share-new') || document.querySelector('.hk-share-unreg').nextElementSibling;
+    const keep = keepEl.getBoundingClientRect();
     const box = document.querySelector('.hk-share-unreg').getBoundingClientRect();
     const top = document.elementFromPoint(ur.left + ur.width / 2, ur.bottom - 3);
     const out = { uh: ur.height, boxH: box.height, gap: keep.top - ur.bottom, topIsRow: !!(top && top.closest('.hk-share-u')) };

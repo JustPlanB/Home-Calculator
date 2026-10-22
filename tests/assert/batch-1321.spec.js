@@ -123,15 +123,15 @@ const ACC = 'ملت مصنوعی';
     const d = document.createElement('div'); d.innerHTML = html;
     const tables = [...d.querySelectorAll('table')];
     const heads = tables.map(t => [...t.querySelectorAll('thead th')].map(th => th.textContent).join('|'));
-    const top = tables.find(t => /نام \(مقصد\)/.test(t.textContent));
+    const top = tables.find(t => /^نام\|مبلغ ماهانه/.test([...t.querySelectorAll('thead th')].map(th => th.textContent).join('|')));
     const names = top ? [...top.querySelectorAll('tbody tr')].map(tr => tr.cells[0].textContent) : [];
     return { heads, names, xl: xs ? xs.rows.filter(r => r.length && r[0] && /نام/.test(r[0].v || '')).map(r => r.map(c => c.v).join('|')) : [] };
   });
-  ok(pdf.heads.includes('نام (مقصد)|مبلغ ماهانه|رهن|شروع قرارداد|پایان قرارداد|حساب'), 'PDF جدول بالا: نام (مقصد) | مبلغ ماهانه | رهن | شروع | پایان | حساب');
+  /* ۱.۳.۴۸: ستون اول فقط «نام» */ ok(pdf.heads.includes('نام|مبلغ ماهانه|رهن|شروع قرارداد|پایان قرارداد|حساب'), 'PDF جدول بالا: نام | مبلغ ماهانه | رهن | شروع | پایان | حساب');
   ok(pdf.heads.includes('نام (شرح)|تاریخ|مبلغ|بانک|وضعیت پرداخت'), 'PDF جدول پایین: نام (شرح) | تاریخ | مبلغ | بانک | وضعیت پرداخت');
   const dayOrder = pdf.names.filter(n => !/جمع/.test(n));
   ok(dayOrder.length >= 2, 'جدول بالا به ترتیب روز (' + dayOrder.join('، ') + ')');
-  ok(pdf.xl.some(r => /^نام \(مقصد\)\|مبلغ ماهانه\|رهن/.test(r)), 'Excel هم همان ستون‌ها را دارد');
+  ok(pdf.xl.some(r => /^نام\|مبلغ ماهانه\|رهن/.test(r)), 'Excel هم همان ستون‌ها را دارد');
 
   console.log('• رمزنگاری پشتیبان خودکار');
   const enc = await p.evaluate(async () => {

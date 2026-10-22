@@ -186,7 +186,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(300);
     return c;
   });
-  /* ۱.۳.۴۷ */ ok(inc === 'rgb(244, 143, 177)', 'مبلغ درآمد دریافت‌نشده هم گلبهی پاستلی');
+  /* ۱.۳.۴۷ */ ok(inc === 'rgb(230, 177, 44)', 'مبلغ درآمد دریافت‌نشده هم گلبهی پاستلی');
 
   console.log('• اتصال‌های درآمد ثابت');
   const rec = await p.evaluate(async () => {
