@@ -84,14 +84,19 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const tt = document.getElementById('smsConfirmTitle'); out.line = getComputedStyle(tt).borderBottomStyle;
     g.querySelector('.sms-cat-more').click(); await w(150);
     out.moreOpen = !!document.getElementById('smsCatMore'); onBackGuard(); await w(300); out.moreClosed = !document.getElementById('smsCatMore') && document.getElementById('smsConfirmModal').classList.contains('open');
-    g.querySelector('.sms-cat[data-cat="food"]').click(); await w(1500);
+    g.querySelector('.sms-cat[data-cat="food"]').click(); await w(400);
+    out.stillOpen = document.getElementById('smsConfirmModal').classList.contains('open') && window._hkSmsCat === 'food';
+    try { var bs = document.getElementById('smsConfirmBank'); if (bs && !bs.value && bs.options && bs.options.length > 1) { bs.value = [...bs.options].map(o => o.value).find(v => v && v !== '__add_account__') || ''; } } catch (eB) {}
+    document.getElementById('smsConfirmDesc').value = '';
+    confirmSmsEntry(); await w(1500);
     out.saved = !document.getElementById('smsConfirmModal').classList.contains('open') && findSectionByTitle('expense', t).rows.some(r => r.desc === 'خوراکی' && Number(r.amount) > 0);
     out.use = JSON.parse(localStorage.getItem(STORAGE_KEY + '_catUse') || '{}').food;
     return out;
   }, title);
   ok(sm.n === 6 && sm.more && sm.noScroll && sm.oneRow, '۵ دستهٔ هوشمند + «بیشتر…» در یک ردیف، بدون اسکرول');
   ok(sm.moreOpen && sm.moreClosed, '«بیشتر…» بقیهٔ دسته‌ها را در پنجرهٔ جدا باز می‌کند؛ بازگشت فقط همان را می‌بندد');
-  ok(sm.saved && sm.use === 1, 'زدن یک دسته = ثبت همان لحظه (یک کلیک) و شمارش دسته برای ترتیب بعدی');
+  ok(sm.stillOpen, '۱.۳.۵۰: زدن دسته فقط انتخاب است (باکس باز می‌ماند)');
+  ok(sm.saved && sm.use === 1, 'با «ثبت» و شرح خالی: شرح = اسم دسته و شمارش دسته برای ترتیب بعدی');
   ok(sm.line === 'solid', 'عنوان «ثبت برداشت/واریز» با یک خط باریک از کادر زیرش جدا شده');
 
   console.log('• درآمد ثابت');
@@ -121,8 +126,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     recLinkPicked(it, [{ key: 140507, row: a, sec: s }, { key: 140507, row: c, sec: s }], function () {});
     await w(200);
     asked = (document.getElementById('confirmMsg') || {}).textContent || '';
-    document.getElementById('confirmYes').click(); await w(300);
-    out.asked = asked; out.merged = a.amount; out.day = a.day; out.acc = a.account; out.gone = s.rows.indexOf(c) < 0; out.linked = a.fromRecurringId === 'rq1';
+    out.asked = asked; out.sep = a.amount === 3000000 && c.amount === 2000000 && s.rows.indexOf(c) >= 0 && a.fromRecurringId === 'rq1' && c.fromRecurringId === 'rq1';
     try { closeFeatureSheet(); } catch (e) {}
     return out;
   }, title);
@@ -131,7 +135,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(rc.folder && rc.noFix && rc.arch, '«اصلاح» و نوشتهٔ «آرشیو» برداشته شد؛ آیکون پوشه کنار ادیت آرشیو را باز می‌کند');
   ok(/230, 177, 44/.test(rc.archCol), 'آرشیو: دریافت‌نشده‌ها زرد (' + rc.archCol + ')');
   ok(rc.glow === 'none', 'عنوان «درآمدهای ثابت» بی افکت نور');
-  ok(/با قبلی جمع شود؟/.test(rc.asked) && rc.merged === 5000000 && rc.day === '5' && rc.acc === 'ملت' && rc.gone && rc.linked, 'دو واریز یک ماه: «با قبلی جمع شود؟» → جمع با ردیف اول، تاریخ و حساب همان اولی');
+  ok(!/با قبلی جمع شود؟/.test(rc.asked) && rc.sep, '۱.۳.۵۰: دو واریز یک ماه بی سؤال جمع، هر کدام ردیف جدا و وصل');
 
   console.log('• منو، شِیر، ثبت گروهی');
   const mn = await p.evaluate(async () => {
