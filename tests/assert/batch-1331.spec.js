@@ -105,6 +105,9 @@ async function page(b, inbox) {
     out.close = mono(await run()); out.closeWrap = getComputedStyle(ov.querySelector('.hk-bulk-rwrap')).display === 'none';
     out.ghosts = ov.querySelectorAll('.hk-bulk-box > .hk-bulk-rwrap').length;
     /* بک اندروید: فقط همین پنجره بسته شود */
+    /* ۱.۳.۵۲: بازگشت اول = برگشت به تعیین بازه؛ دوم = بستن پنجره */
+    onBackGuard(); await w(500);
+    out.backToRange = !!document.getElementById('smsBulkOv') && !document.getElementById('hkBulkList').children.length;
     onBackGuard(); await w(300);
     out.backClosed = !document.getElementById('smsBulkOv');
     out.stillHome = document.getElementById('panel-home').classList.contains('active');
@@ -115,7 +118,7 @@ async function page(b, inbox) {
   ok(bk.open.dn === 0 && bk.open.up > 4 && bk.openWrap && bk.close.up === 0 && bk.close.dn > 4 && bk.closeWrap && bk.ghosts === 1, 'باز و بسته شدن بازه یک حرکت پیوسته (باز: ' + bk.open.up + ' فریم، بسته: ' + bk.close.dn + ' فریم)');
   ok(bk.open.mx <= Math.max(40, bk.open.tot * 0.25) && bk.close.mx <= Math.max(40, bk.close.tot * 0.25), 'بی‌پرش (بیشترین گام ' + bk.open.mx + '/' + bk.close.mx + 'px)');
   ok(bk.chev !== 'rgb(10, 132, 255)' && bk.allShadow === 'none', 'فلش نوار بازه هم‌رنگ بقیهٔ فلش‌ها؛ لبهٔ تیرهٔ زیر ردیف «همه» برداشته شد');
-  ok(bk.backClosed && bk.stillHome, 'بک اندروید ثبت گروهی را می‌بندد و صفحهٔ زیرش سر جایش می‌ماند');
+  ok(bk.backToRange && bk.backClosed && bk.stillHome, 'بک اندروید: اول برگشت به تعیین بازه، بعد بستن ثبت گروهی؛ صفحهٔ زیرش سر جایش می‌ماند');
 
   /* ---------- قسط ---------- */
   /* از ۱.۳.۴۶ اقساط خاموش است (batch-1346) */
