@@ -205,6 +205,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
        به‌جای آیکن حباب، دکمهٔ «باکس» زیر اعلان همان باکس شناور را باز می‌کند */
     /* ۱.۳.۴۷: دوباره چیدمان رسمی اندروید (BigTextStyle)؛ چیدمان اختصاصی ۱.۳.۴۶ برداشته شد */
     boolean personal=isPersonal(sender);
+    /* ۱.۳.۵۳: شخصی‌سازی: اعلان پیامک شخصی خاموش (پیامک در صف می‌ماند و در نرم‌افزار نشان داده می‌شود) */
+    try{ if(personal && "0".equals(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("hk_npersonal","1"))) return; }catch(Throwable ignored){}
     final boolean clean=isClean(c,text,sender);
     String title=personal?"فرستندهٔ شخصی":"تراکنش بانکی جدید";
     NotificationCompat.Builder b=baseBuilder(c,title,text);
@@ -241,6 +243,14 @@ public class BankSmsReceiver extends BroadcastReceiver {
         RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_tx);
         rv.setTextViewText(R.id.hk_tx_text,text);
         int[] ids={R.id.hk_c0,R.id.hk_c1,R.id.hk_c2,R.id.hk_c3};
+        /* ۱.۳.۵۳: دکمهٔ پنجم «بیشتر…» → باکس ثبت در نرم‌افزار با فهرست کامل دسته‌ها */
+        try{
+          rv.setTextViewText(R.id.hk_c4,"بیشتر…");
+          Intent mi=new Intent(c,HkCatActivity.class); mi.setAction("ir.hesabketab.app.MORE_"+nid);
+          mi.putExtra("nid",nid); mi.putExtra("cat","__more__"); mi.putExtra("label","");
+          mi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          rv.setOnClickPendingIntent(R.id.hk_c4,PendingIntent.getActivity(c,nid*8+6,mi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+        }catch(Throwable ignored){}
         for(int k=0;k<ids.length;k++){
           JSONObject ct=k<cats.length()?cats.optJSONObject(k):null;
           if(ct==null){ rv.setViewVisibility(ids[k],android.view.View.GONE); continue; }
@@ -312,7 +322,8 @@ public class BankSmsPlugin extends Plugin {
   @com.getcapacitor.PluginMethod public void setNotifCats(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]"))
-      .putString("hk_nacc4",call.getString("acc4","[]")).putString("hk_nrec",call.getString("rec","[]")).apply();
+      .putString("hk_nacc4",call.getString("acc4","[]")).putString("hk_nrec",call.getString("rec","[]"))
+      .putString("hk_npersonal",call.getString("personal","1")).apply();
     call.resolve();
   }
   /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */
@@ -2901,19 +2912,32 @@ public class HkMediaPlugin extends Plugin {
   @com.getcapacitor.PluginMethod public void pickImage(PluginCall call){
     try{
       Intent i=new Intent(Intent.ACTION_GET_CONTENT); i.setType("image/*"); i.addCategory(Intent.CATEGORY_OPENABLE);
+      /* ۱.۳.۵۳: چند عکس با هم (نگه داشتن روی یک عکس در گالری = حالت انتخاب چندتایی) */
+      i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
       startActivityForResult(call,i,"pickCb");
     }catch(Exception e){ call.reject("picker_failed",e); }
   }
   @ActivityCallback private void pickCb(PluginCall call, ActivityResult result){
     if(call==null) return;
     try{
-      Intent d=result.getData(); Uri u=d==null?null:d.getData();
-      if(result.getResultCode()!=android.app.Activity.RESULT_OK || u==null){ call.reject("cancelled"); return; }
-      Bitmap out=decodeScaled(getContext(),u,1600);
-      if(out==null){ call.reject("decode_failed"); return; }
-      ByteArrayOutputStream bo=new ByteArrayOutputStream();
-      out.compress(Bitmap.CompressFormat.JPEG,82,bo);
-      call.resolve(new JSObject().put("data",Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP)).put("mime","image/jpeg"));
+      Intent d=result.getData();
+      java.util.ArrayList<Uri> uris=new java.util.ArrayList<>();
+      if(d!=null && d.getClipData()!=null){ android.content.ClipData cd=d.getClipData(); for(int k=0;k<cd.getItemCount()&&k<10;k++){ Uri cu=cd.getItemAt(k).getUri(); if(cu!=null) uris.add(cu); } }
+      else if(d!=null && d.getData()!=null) uris.add(d.getData());
+      if(result.getResultCode()!=android.app.Activity.RESULT_OK || uris.isEmpty()){ call.reject("cancelled"); return; }
+      com.getcapacitor.JSArray items=new com.getcapacitor.JSArray();
+      String first=null;
+      for(Uri u:uris){
+        Bitmap out=decodeScaled(getContext(),u,1600);
+        if(out==null) continue;
+        ByteArrayOutputStream bo=new ByteArrayOutputStream();
+        out.compress(Bitmap.CompressFormat.JPEG,82,bo);
+        String b64=Base64.encodeToString(bo.toByteArray(),Base64.NO_WRAP);
+        if(first==null) first=b64;
+        items.put(new JSObject().put("data",b64).put("mime","image/jpeg"));
+      }
+      if(first==null){ call.reject("decode_failed"); return; }
+      call.resolve(new JSObject().put("data",first).put("mime","image/jpeg").put("items",items));
     }catch(Throwable e){ call.reject("pick_failed",e instanceof Exception?(Exception)e:new Exception(e)); }
   }
 }
@@ -3180,6 +3204,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_tx.xml'),
         <TextView android:id="@+id/hk_c1" style="@style/HkChip"/>
         <TextView android:id="@+id/hk_c2" style="@style/HkChip"/>
         <TextView android:id="@+id/hk_c3" style="@style/HkChip"/>
+        <TextView android:id="@+id/hk_c4" style="@style/HkChip"/>
     </LinearLayout>
 </LinearLayout>
 `);
@@ -3198,11 +3223,11 @@ fs.writeFileSync(path.join(resDir,'values','hk_chip.xml'),
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">32dp</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginStart">3dp</item>
-        <item name="android:layout_marginEnd">3dp</item>
+        <item name="android:layout_marginStart">2dp</item>
+        <item name="android:layout_marginEnd">2dp</item>
         <item name="android:gravity">center</item>
         <item name="android:background">@drawable/hk_chip_bg</item>
-        <item name="android:textSize">12.5sp</item>
+        <item name="android:textSize">11.5sp</item>
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textAppearance">@style/TextAppearance.Compat.Notification</item>
