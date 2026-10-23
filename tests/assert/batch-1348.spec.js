@@ -56,13 +56,15 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
       first: boxes.map(x => x.querySelector('.sp-tip').textContent),
       second: boxes.map(x => (x.querySelectorAll('.sp-tip')[1] || {}).textContent),
       colored: boxes.every(x => /color/.test(x.querySelector('.sp-pj-t').getAttribute('style') || '')),
-      sizes: [...new Set(boxes.flatMap(x => [...x.querySelectorAll('.sp-tip')].map(y => getComputedStyle(y).fontSize)))].length
+      sizes: [...new Set(boxes.flatMap(x => [...x.querySelectorAll('.sp-tip:not(.sp-pj-t)')].map(y => getComputedStyle(y).fontSize)))].length,
+      bigTitle: boxes.every(x => parseFloat(getComputedStyle(x.querySelector('.sp-pj-t')).fontSize) > parseFloat(getComputedStyle(x.querySelectorAll('.sp-tip')[1]).fontSize))
     };
   }, title);
   ok(pj.n === 2 && pj.full, 'هر پروژه یک نمای کامل اسلاید (۲ پروژه، اسکرول عمودی)');
   ok(pj.first.every(s => /^پروژه /.test(s)) && pj.second.every(s => s === 'این ماه:'), 'اسم پروژه بالا، «این ماه:» در خط بعد');
   ok(pj.colored, 'عنوان «پروژه فلان» به رنگ همان پروژه');
-  ok(pj.sizes === 1, 'همهٔ نوشته‌های اسلاید پروژه هم‌اندازه');
+  /* ۱.۳.۴۹: اسم پروژه درشت‌تر، بقیهٔ متن‌ها هم‌اندازه */
+  ok(pj.sizes === 1 && pj.bigTitle, 'اسم پروژه درشت‌تر از متن زیرش؛ بقیهٔ نوشته‌ها هم‌اندازه');
 
   console.log('• رفتن اسلایدها به ردیف/تب مرتبط');
   const nav = await p.evaluate(async (t) => {
@@ -112,14 +114,15 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.evaluate(() => closeSideMenu());
   await p.tap('#menuBtn'); await p.waitForTimeout(500);
   await p.tap('#menuUserName'); await p.waitForTimeout(400);
+  /* ۱.۳.۴۹: همان باکس نام در منو به پایین باز می‌شود (بی پنجرهٔ جدا) */
   const pf = await p.evaluate(() => {
-    const ov = document.querySelector('.hk-prof-ov');
-    return ov ? { txt: ov.innerText, btns: ['.hk-prof-rename', '.hk-prof-recap', '.hk-prof-bknow'].every(s => !!ov.querySelector(s)) } : null;
+    const ov = document.getElementById('menuUserPanel');
+    return ov && ov.classList.contains('open') && !document.querySelector('.hk-prof-ov') ? { txt: ov.innerText, btns: ['.hk-prof-rename', '.hk-prof-recap', '.hk-prof-bknow'].every(s => !!ov.querySelector(s)) } : null;
   });
-  ok(!!pf, 'لمس نام کاربر در منو (لمس واقعی) پنجرهٔ پروفایل را باز می‌کند');
+  ok(!!pf, 'لمس نام کاربر در منو (لمس واقعی) همان باکس را به پایین باز می‌کند');
   ok(pf && pf.btns && /موجودی کل/.test(pf.txt) && /حساب‌ها/.test(pf.txt) && /شروع/.test(pf.txt) && /آخرین پشتیبان/.test(pf.txt), 'پروفایل: تغییر نام، خلاصهٔ سریع، ماهی که گذشت، آخرین پشتیبان + پشتیبان‌گیری الان');
   await p.tap('.hk-prof-rename'); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => !!document.querySelector('.person-edit-sheet') && !document.querySelector('.hk-prof-ov')), '«تغییر نام» پنجرهٔ تغییر نام را باز می‌کند');
+  ok(await p.evaluate(() => !!document.querySelector('.person-edit-sheet')), '«تغییر نام» پنجرهٔ تغییر نام را باز می‌کند');
   await p.evaluate(() => closePersonEditSheet());
 
   console.log('• PDF و Excel');
