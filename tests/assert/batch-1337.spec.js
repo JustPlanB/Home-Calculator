@@ -82,7 +82,7 @@ async function page(b, extra) {
   await p.touchscreen.tap(s.clr.x, s.clr.y); await p.waitForTimeout(250);
   const clr = await p.evaluate(() => { const i = document.getElementById('balanceSearchInput'); return { v: i.value, f: document.activeElement === i }; });
   /* ۱.۳.۴۳: شمارهٔ ردیف ستون اول */
-  ok(s.th.join('،') === 'ردیف،تاریخ،شرح،بانک،مبلغ' && s.firstCells[0] === 'sr-num' && s.firstCells[1] === 'sr-date' && s.firstCells[2] === 'sec-name', 'ستون‌های نتیجه به ترتیب: ردیف، تاریخ، شرح، بانک، مبلغ');
+  ok(s.th.join('،') === 'ردیف،تاریخ،شرح،حساب،مبلغ' && s.firstCells[0] === 'sr-num' && s.firstCells[1] === 'sr-date' && s.firstCells[2] === 'sec-name', 'ستون‌های نتیجه به ترتیب: ردیف، تاریخ، شرح، حساب، مبلغ');
   ok(s.foot.pos === 'sticky' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول چسبان (همیشه دیده می‌شود)، زمینهٔ جدا و خط ضخیم بالا (' + s.foot.bg + ')');
   /* ۱.۳.۳۸: کادر جستجو بالای صفحه می‌چسبد و با اسکرول جمع می‌شود (batch-1338) */
   ok(s.panelOv === 'auto' && s.scrolled > 20, 'منوی جستجو یک‌تکه اسکرول می‌شود (' + s.scrolled + 'px)');
@@ -163,7 +163,8 @@ async function page(b, extra) {
     window.__shared = [{ data: 'iVBORw0KGgo=', mime: 'image/jpeg' }];
     window.dispatchEvent(new Event('hkShareAttach')); await w(600);
     const ov2 = document.getElementById('hkShareOv'); out.open2 = !!ov2;
-    if (ov2) ov2.querySelector('.hk-share-new').click();
+    /* ۱.۳.۴۹: «ردیف تازه در مخارج» برداشته شد */
+    out.noNew = !!ov2 && !ov2.querySelector('.hk-share-new'); if (ov2) ov2.remove();
     await w(600);
     const nr = periodData.expense.sections.flatMap(s => s.rows).find(x => !x.amount && Array.isArray(x.att) && x.att.length);
     out.newRow = nr ? nr.day + ':' + nr.att.length : '';
@@ -172,7 +173,7 @@ async function page(b, extra) {
   });
   ok(sh.open && sh.title === 'پیوست به کدام ردیف؟' && /۱ عکس و ۱ PDF/.test(sh.hint) && sh.rows[0] === 'خرید', 'عکس/PDF اشتراکی: پنجرهٔ «پیوست به کدام ردیف؟» با ردیف‌های این ماه (تازه‌ترها بالا) (' + sh.hint + ')');
   ok(sh.att.join() === 'img:share,img:pdf' && sh.attWin, 'با انتخاب ردیف، هر دو فایل پیوست آن ردیف شدند و پنجرهٔ پیوست‌ها باز شد');
-  ok(sh.open2 && sh.newRow === '21:1', '«ردیف تازه»: ردیف امروز در مخارج با همان پیوست ساخته شد (' + sh.newRow + ')');
+  ok(sh.open2 && sh.noNew, 'گزینهٔ «ردیف تازه در مخارج» در پنجرهٔ اشتراک نیست');
 
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   ok(/hk-share-attach/.test(patch) && /android\.intent\.action\.SEND_MULTIPLE/.test(patch) && /mimeType="image\/\*"/.test(patch) && /mimeType="application\/pdf"/.test(patch), 'اندروید: نرم‌افزار در فهرست «اشتراک‌گذاری» عکس و PDF (تکی و چندتایی)');

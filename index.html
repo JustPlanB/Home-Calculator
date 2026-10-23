@@ -11277,6 +11277,7 @@
     html[data-theme="light"] .hk-bulk-newsep { background: var(--text) !important; opacity: 0.6; }
     .hk-bulk-folder.on:not(.personal) { border-color: #00b7ff !important; box-shadow: 0 0 0 1px rgba(0,183,255,0.45) !important; }
     .hk-bulk-folder.pick .hk-bulk-dsel { outline-color: #00b7ff; }
+    .hk-bulk-folder.need .hk-bulk-dsel { outline-color: #ff453a; }
     /* منوی حساب پوشهٔ شخصی هم مثل کادر «حساب جدید» */
     .hk-bulk-folder .hk-bulk-dsel .dark-select-btn, .hk-bulk-folder.personal .hk-bulk-dsel .dark-select-btn { background: var(--bg3, #2c2c2e) !important; border: 1px solid #00b7ff !important; border-radius: 10px !important; }
     /* ۱.۳.۴۹: ۵ دستهٔ هوشمند + «بیشتر…» در یک ردیف، بدون اسکرول */
@@ -38953,7 +38954,7 @@ if (item.type === 'recurring') {
     }
     /* یک‌بار: پاک‌سازی ردیف‌های «دریافت نشده»ای که نسخه‌های قبل در ماه‌های گذشته/آینده ساخته بودند */
     function recOfferCleanupOnce() {
-      var flag = STORAGE_KEY + '_recCleanupAsked2';
+      var flag = STORAGE_KEY + '_recCleanupAsked';
       try { if (localStorage.getItem(flag)) return; } catch (e) { return; }
       if (!recStaleUnpaidRows().length) return;
       setTimeout(function () {
@@ -38964,7 +38965,7 @@ if (item.type === 'recurring') {
         var stale = recStaleUnpaidRows();
         if (!stale.length) return;
         try { localStorage.setItem(flag, '1'); } catch (e) {}
-        recAsk('نسخهٔ قبل برای درآمدهای ثابت در ماه‌های دیگر هم ' + toPersianDigits(stale.length) + ' ردیف «دریافت نشده» ساخته بود. از این نسخه ردیف هر ماه فقط وقتی آن ماه برسد ساخته می‌شود. این ردیف‌ها پاک شوند؟ (ردیف‌های دریافت‌شده و ماه جاری دست نمی‌خورند)',
+        recAsk('نسخهٔ قبل برای درآمدهای ثابت در ماه‌های آینده هم ' + toPersianDigits(stale.length) + ' ردیف «دریافت نشده» ساخته بود. از این نسخه ردیف هر ماه فقط وقتی آن ماه برسد ساخته می‌شود. این ردیف‌ها پاک شوند؟ (ماه جاری و ماه‌های گذشته دست نمی‌خورند و پاک‌شده‌ها به سطل زباله می‌روند)',
           'پاک شوند', 'بمانند', function () {
             var list = recStaleUnpaidRows();
             list.forEach(function (x) { try { pushToTrash('row', (x.row.desc || 'ردیف') + (x.row.amount ? ' · ' + formatNum(x.row.amount) : ''), { tab: 'income', sectionId: x.sec.id, sectionTitle: x.sec.title, periodKey: periodKey(Math.floor(x.key / 100), x.key % 100), row: JSON.parse(JSON.stringify(x.row)), sourceLabel: 'درآمد ثابت / ماه‌های آینده' }); } catch (eT) {} });
@@ -39811,7 +39812,8 @@ if (item.type === 'recurring') {
       const labStart = document.createElement('div');
       labStart.className = 'date-mask-label rec-date-lab';
       labStart.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;';
-      labStart.innerHTML = '<span>شروع قرارداد</span>'; /* ۱.۳.۴۹: اینفوباکس برداشته شد */
+      /* ۱.۳.۴۹: اینفوباکس برداشته شد؛ فقط برای مورد قدیمیِ بی‌تاریخ شروع، تذکر می‌ماند */
+      labStart.innerHTML = '<span>شروع قرارداد</span>' + ((index >= 0 && !recStartKey(existing)) ? hkInfoBtnHtml('این مورد تاریخ شروع نداشت؛ آن را تأیید کنید تا ساخت ماهانه ادامه یابد.') : '');
       sheet.appendChild(labStart);
       let endTouched = !!existing.contractEnd;
       const plusYear = (d) => ({ d: d.d, m: d.m, y: d.y + 1 });

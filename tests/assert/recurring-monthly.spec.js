@@ -105,7 +105,7 @@ const ACC = 'ملت مصنوعی';
     const t = document.getElementById('recurringBox').textContent; closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
     return { kind: recTodayState(recurringIncomes.find(r => r.name === 'اجاره')).kind, list: t, tag: (() => { const tr = document.createElement('table'); const it = recurringIncomes.find(r => r.name === 'اجاره'); const row = recRowsOf(it)[0].row; const el = buildRowEl('s1', row, 0, 'دریافت شده', 'دریافت نشده'); return !!el.querySelector('.rec-row-tag') && el.querySelector('.rec-row-tag').textContent; })() };
   });
-  ok(st1.kind === 'linked' && st1.list.includes('این ماه: دریافت شد (۱۲ مهر)') && !/وصل به واریز/.test(st1.list) && /اصلاح/.test(st1.list) && !/جدا کن|جابه‌جایی/.test(st1.list), 'فهرست: «این ماه: دریافت شد (۱۲ مهر)» به رنگ سبز با دکمهٔ «اصلاح»');
+  ok(st1.kind === 'linked' && st1.list.includes('این ماه: دریافت شد (۱۲ مهر)') && !/وصل به واریز/.test(st1.list) && !/اصلاح/.test(st1.list) && !/جدا کن|جابه‌جایی/.test(st1.list), 'فهرست: «این ماه: دریافت شد (۱۲ مهر)» به رنگ سبز با دکمهٔ «اصلاح»');
  ok(st1.list.includes('این ماه: دریافت نشده (۱۴ مهر)'), 'خط وضعیت برای «اجاره ب»: «این ماه: دریافت نشده (۱۴ مهر)»');
   ok(st1.tag === 'درآمد ثابت: اجاره', 'ردیف واریزِ وصل‌شده در جدول برچسب «درآمد ثابت: اجاره» دارد');
   ok(await p.evaluate(() => (archive[periodKey(1405, 6)].income.sections || []).every(s => s.rows.every(r => !r.fromRecurringId))), 'شهریور (گذشته) هیچ ردیفی نگرفت');
@@ -226,8 +226,8 @@ const ACC = 'ملت مصنوعی';
     persistCurrent();
     openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
     const i = recurringIncomes.findIndex(r => r.name === 'اجاره سوم‌نو');
-    const b = document.querySelector('[data-rec-link="' + i + '"]'); if (!b) return { btn: false };
-    b.click(); await new Promise(r => setTimeout(r, 150));
+    /* ۱.۳.۴۹: دکمهٔ «اصلاح» برداشته شد؛ همان روند مستقیم آزموده می‌شود */
+    recLinkExistingFlow(recurringIncomes[i], function () {}); await new Promise(r => setTimeout(r, 150));
     const opts = [...document.querySelectorAll('#recPickModal .rec-pick-opt')];
     const o = opts.find(x => /۲۷ مهر/.test(x.textContent)); if (o) o.click();
     await new Promise(r => setTimeout(r, 300));
@@ -235,7 +235,7 @@ const ACC = 'ملت مصنوعی';
     closeFeatureSheet(); await new Promise(r => setTimeout(r, 200));
     return { btn: true, found: !!o, rows };
   }, ACC);
-  ok(lk.btn && lk.found && lk.rows.join() === 'paid:27', '«اصلاح» زیر «دریافت نشده»: واریز دستی ۲۷ مهر وصل شد و ردیف دریافت‌نشده حذف شد');
+  ok(lk.btn && lk.found && lk.rows.join() === 'paid:27', 'وصل واریز ثبت‌شده: واریز دستی ۲۷ مهر وصل شد و ردیف دریافت‌نشده حذف شد');
 
   console.log('• پیامک واریز: پیشنهاد خودکار، پیش‌واریز، چند گزینه');
   await create({ name: 'اجارهٔ دوم', amount: 7000000, account: ACC, sectionId: 's1', contractStart: { d: 1, m: 7, y: 1405 }, contractEnd: null });
@@ -309,7 +309,7 @@ const ACC = 'ملت مصنوعی';
   const mv = await p.evaluate(async () => {
     openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 400));
     const ia = recurringIncomes.findIndex(r => r.name === 'الف');
-    document.querySelector('[data-rec-unlink="' + ia + '"]').click(); await new Promise(r => setTimeout(r, 150));
+    recUnlinkFlow(recurringIncomes[ia], function () { try { renderRecurringBar(); } catch (e) {} }); await new Promise(r => setTimeout(r, 150));
     const pm = document.getElementById('recPickModal');
     const opts = [...pm.querySelectorAll('.rec-pick-opt')];
     opts.find(o => /«ب»/.test(o.textContent)).click(); await new Promise(r => setTimeout(r, 300));
@@ -363,7 +363,7 @@ const ACC = 'ملت مصنوعی';
     ok(res.n0 === 0, 'تا تاریخ شروع تنظیم نشود ردیف تازه ساخته نمی‌شود');
     ok(res.legacyBadge, 'در فهرست: «تاریخ شروع ندارد؛ برای ادامهٔ ساخت ماهانه ویرایش کنید»');
     ok(/ردیف «دریافت نشده» ساخته بود/.test(res.q), 'یک‌بار پیشنهاد پاک‌سازی ردیف‌های دریافت‌نشدهٔ ماه‌های دیگر (با تأیید)');
-    ok(res.left.join() === '140505:paid,140507:unpaid', 'پس از تأیید: دریافت‌شدهٔ مرداد و ردیف ماه جاری ماندند؛ بقیه پاک شدند (' + res.left.join('، ') + ')');
+    /* ۱.۳.۴۹: فقط ماه‌های آینده پاک می‌شوند */ ok(res.left.join() === '140505:paid,140506:unpaid,140507:unpaid', 'پس از تأیید: فقط ردیف‌های ماه‌های آینده پاک شدند؛ دریافت‌نشدهٔ شهریور و ماه جاری ماندند (' + res.left.join('، ') + ')');
     const again = await lp.evaluate(async () => { closeFeatureSheet(); await new Promise(r => setTimeout(r, 200)); openFeatureSheet('recurring'); await new Promise(r => setTimeout(r, 700)); return document.getElementById('confirmModal').classList.contains('open'); });
     ok(!again, 'پیشنهاد پاک‌سازی فقط یک بار');
     /* تنظیم تاریخ شروع */
@@ -383,7 +383,7 @@ const ACC = 'ملت مصنوعی';
       const it = recurringIncomes[0];
       return { hint, start: recStartKey(it), fromKey: it.fromKey, keys: recRowsOf(it).map(x => x.key).sort() };
     });
-    ok(set.hint && set.start === 140401 && set.fromKey === 140507 && set.keys.join() === '140505,140507', 'تاریخ شروع (۱۴۰۴) تنظیم شد: از همین ماه ادامه می‌دهد و ماه‌های گذشته ساخته نشد');
+    ok(set.hint && set.start === 140401 && set.fromKey === 140507 && set.keys.join() === '140505,140506,140507', 'تاریخ شروع (۱۴۰۴) تنظیم شد: از همین ماه ادامه می‌دهد و ماه‌های گذشته ساخته نشد');
     await L.ctx.close();
   }
 

@@ -82,7 +82,7 @@ const ACC = 'ملت مصنوعی';
     recLinkRow(item, periodData.income.sections[0].rows[0]);
     recLinkRow(item, archive[periodKey(1405, 6)].income.sections[0].rows[0]);
     openFeatureSheet('recurring'); await w(400);
-    document.querySelector('[data-rec-arch="' + (recurringIncomes.length - 1) + '"].rec-arch-btn').click(); await w(150);
+    document.querySelector('[data-rec-arch="' + (recurringIncomes.length - 1) + '"].rec-folder-btn').click(); await w(150);
     /* قرارداد فعلی هم پیش از تمدید پوشهٔ خودش را دارد */
     const folderCount = document.querySelectorAll('#recArchiveModal .rec-term-folder').length;
     document.querySelector('#recArchiveModal .rec-term-folder').click(); await w(100);
