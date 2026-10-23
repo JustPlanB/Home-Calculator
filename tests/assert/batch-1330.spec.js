@@ -55,14 +55,19 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     const cs0 = getComputedStyle(pc);
     const out = { style0: cs0.borderTopStyle, bc0: cs0.borderTopColor, bg: cs0.backgroundColor };
     pc.querySelector('.hk-bulk-chk').click(); await w(60);
-    const cs1 = getComputedStyle(pc), dsel = pc.querySelector('.hk-bulk-dsel');
+    const cs1 = getComputedStyle(pc), dsel = pc.querySelector('.hk-bulk-dsel') || pc.querySelector('.hk-bulk-newacc');
     out.style1 = cs1.borderTopStyle; out.bc1 = cs1.borderTopColor; out.bw1 = cs1.borderTopWidth;
     out.pick = pc.classList.contains('pick'); out.need = pc.classList.contains('need'); out.outline = getComputedStyle(dsel).outlineColor;
     document.querySelector('.hk-bulk-ok').click(); await w(150);
     out.afterOk = { need: pc.classList.contains('need'), outline: getComputedStyle(dsel).outlineColor, sum: !!document.querySelector('.hk-bulk-sum') };
-    dsel.setValue && dsel.setValue('');
-    const it = [...dsel._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value && x.dataset.value !== '__add_account__');
-    if (it) it.click(); await w(60);
+    if (dsel._list) {
+      dsel.setValue && dsel.setValue('');
+      const it = [...dsel._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value && x.dataset.value !== '__add_account__');
+      if (it) it.click(); await w(60);
+    } else {
+      /* ۱.۳.۵۱: پوشهٔ شخصی: نوشتن نام حساب جدید */
+      const ni = pc.querySelector('.hk-bulk-newinp'); ni.value = 'حساب تست'; ni.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+    }
     out.afterPick = { need: pc.classList.contains('need'), pick: pc.classList.contains('pick') };
     pc.querySelector('.hk-bulk-chk').click(); await w(60);
     out.unchecked = !pc.classList.contains('need') && !pc.classList.contains('pick');
@@ -71,7 +76,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   });
   ok(fo.style0 !== 'dashed' && fo.style1 !== 'dashed' && /255, 159, 10/.test(fo.bg), 'پوشهٔ شخصی: بی‌خط‌چین، پس‌زمینهٔ نارنجی (' + fo.bg + ')');
   ok(fo.bc0 === 'rgba(0, 0, 0, 0)' && fo.bc1 === 'rgb(255, 159, 10)' && fo.bw1 === '1px', 'با تیک خوردن، دورش یک خط نازک نارنجی');
-  ok(fo.pick && fo.need && fo.outline === 'rgb(255, 69, 58)', 'پوشهٔ تیک‌خوردهٔ بی‌حساب: کادر حساب قرمز (۱.۳.۵۰)');
+  ok(!fo.pick && fo.need && fo.outline === 'rgb(255, 69, 58)', 'پوشهٔ تیک‌خوردهٔ بی‌حساب: فقط کادر قرمز، بی آبی (۱.۳.۵۱)');
   ok(fo.afterOk.need && fo.afterOk.outline === 'rgb(255, 69, 58)' && !fo.afterOk.sum, 'زدن «ثبت» بدون انتخاب حساب → کادر قرمز و ثبت نشد');
   ok(!fo.afterPick.need && !fo.afterPick.pick && fo.unchecked, 'با انتخاب حساب (یا برداشتن تیک) رنگ کادر رفت');
 
