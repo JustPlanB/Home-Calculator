@@ -209,7 +209,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.unlinked = wrong && !wrong.fromRecurringId;
     document.querySelector('#recLinksModal .hk-rl-add').click();
     out.p2 = await pick(/مهر ۱۴۰۵/);
-    out.p3 = await pick(/واریز درست/); await w(200);
+    out.p3 = await (async () => { await w(120); const m2 = document.getElementById('recAddPrevModal'); const lb = m2 && [...m2.querySelectorAll('.rec-pick-row')].find(x => /واریز درست/.test(x.textContent)); if (!lb) return false; lb.querySelector('input').click(); m2.querySelector('[data-act="ok"]').click(); return true; })(); await w(200);
     const right = periodData.income.sections[0].rows.find(r => r.desc === 'واریز درست');
     out.linked = right && right.fromRecurringId === 'rec_syn';
     out.items2 = document.querySelectorAll('#recLinksModal .hk-rl-it').length;

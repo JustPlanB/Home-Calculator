@@ -209,7 +209,7 @@ async function page(b, inbox) {
     openPersonDetail('سارا', 'expense'); await w(500);
     document.querySelector('#panel-expense .pd-file-btn').click(); await w(200); /* ۱.۳.۳۴: ستون «فایل» */
     const ov = document.getElementById('hkAttachOv');
-    out.att = { open: !!ov, beta: ov ? ov.querySelector('.hk-att-beta').textContent : '', btns: ov ? [...ov.querySelectorAll('.hk-att-btn')].map(x => x.textContent.trim()) : [], cam: !!(ov && ov.querySelector('input[capture="environment"]')) };
+    out.att = { open: !!ov, beta: ov ? !!ov.querySelector('.hk-att-beta') : true, btns: ov ? [...ov.querySelectorAll('.hk-att-btn')].map(x => x.textContent.trim()) : [], cam: !!(ov && ov.querySelector('input[capture="environment"]')) };
     return out;
   });
   ok(sm.slide.join('،') === 'شیر،قبض،نان✓', 'اسلاید کارها: انجام‌نشده‌ها بالا، انجام‌شده پایین (' + sm.slide.join('، ') + ')');
@@ -218,7 +218,7 @@ async function page(b, inbox) {
   ok(sm.ledger2.debt === 500000, 'نام کارت با فاصلهٔ اضافه («سارا ») هم شناخته می‌شود (بدهی ' + sm.ledger2.debt + ')');
   ok(sm.tipGap === '18px' && sm.tipPad === '3px', 'بین نکته‌ها فاصله (۱۸px) تا حرکت/همزهٔ نکتهٔ بعد در نکتهٔ قبلی دیده نشود');
   ok(sm.projMehr === 0 && sm.cashMehr === 0 && sm.projSh === 1 && sm.cashSh === 9000000, 'پروژه فقط در ماه تراکنشش (شهریور) کنار موجودی ملی با دایرهٔ رنگی و مبلغ همان ماه');
-  ok(sm.att.open && sm.att.beta === 'آزمایشی' && sm.att.btns.join('،') === 'دوربین،گالری،صدا' && sm.att.cam, 'زدن گیرهٔ ستون فایل: پنجرهٔ پیوست (آزمایشی) با گرفتن عکس / گالری / ضبط صدا');
+  ok(sm.att.open && !sm.att.beta && sm.att.btns.join('،') === 'دوربین،گالری،صدا' && sm.att.cam, 'زدن گیرهٔ ستون فایل: پنجرهٔ پیوست (بی برچسب «آزمایشی») با گرفتن عکس / گالری / ضبط صدا');
 
   /* عکس بزرگ → فشرده */
   const big = await s.evaluate(() => { const c = document.createElement('canvas'); c.width = 4000; c.height = 3000; const g = c.getContext('2d'); for (let i = 0; i < 600; i++) { g.fillStyle = 'hsl(' + i + ',70%,50%)'; g.fillRect((i * 97) % 4000, (i * 53) % 3000, 260, 180); } return c.toDataURL('image/png').split(',')[1]; });

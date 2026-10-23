@@ -183,9 +183,11 @@ public class BankSmsReceiver extends BroadcastReceiver {
     NotificationCompat.Builder b=baseBuilder(c,title,text);
     /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
-      Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK); qi.putExtra("nid",nid);
+      /* ۱.۳.۵۰: ثبت سریع از راه HkCatActivity: نرم‌افزار بالا می‌آید و ثبت می‌کند؛ اگر مغایرت/حساب ناموجود بود همان‌جا می‌ماند تا کاربر تکمیل کند */
+      Intent qi=new Intent(c,HkCatActivity.class); qi.setAction("ir.hesabketab.app.QUICK_"+nid); qi.putExtra("nid",nid);
+      qi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
-      PendingIntent qpi=PendingIntent.getBroadcast(c,nid,qi,fl);
+      PendingIntent qpi=PendingIntent.getActivity(c,nid,qi,fl);
       RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ (شرح)").build();
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
@@ -196,6 +198,27 @@ public class BankSmsReceiver extends BroadcastReceiver {
       bi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
       PendingIntent bpi=PendingIntent.getActivity(c,nid,bi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
       b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"باکس",bpi).build());
+    }catch(Throwable ignored){}
+    /* ۱.۳.۵۰: اعلان اختصاصی: متن پیامک + چهار دستهٔ پرکاربرد؛ زدن دسته = ثبت با همان دسته (شرح = اسم دسته) */
+    try{
+      SharedPreferences sp=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+      boolean inc=text.contains("واریز")||text.contains("+");
+      JSONArray cats=new JSONArray(sp.getString(inc?"hk_ncats_in":"hk_ncats_out","[]"));
+      if(cats.length()>0){
+        RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_tx);
+        rv.setTextViewText(R.id.hk_tx_text,text);
+        int[] ids={R.id.hk_c0,R.id.hk_c1,R.id.hk_c2,R.id.hk_c3};
+        for(int k=0;k<ids.length;k++){
+          JSONObject ct=k<cats.length()?cats.optJSONObject(k):null;
+          if(ct==null){ rv.setViewVisibility(ids[k],android.view.View.GONE); continue; }
+          rv.setTextViewText(ids[k],ct.optString("l"));
+          Intent ci=new Intent(c,HkCatActivity.class); ci.setAction("ir.hesabketab.app.CAT_"+nid+"_"+k);
+          ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
+          ci.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          rv.setOnClickPendingIntent(ids[k],PendingIntent.getActivity(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+        }
+        b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomBigContentView(rv);
+      }
     }catch(Throwable ignored){}
     try{ nm.notify(nid,b.build()); }
     catch(Throwable t){ try{ nm.notify(nid,baseBuilder(c,title,text).build()); }catch(Throwable ignored){} }
@@ -244,6 +267,12 @@ public class BankSmsPlugin extends Plugin {
       sp.edit().putString(QUEUE,n.toString()).apply(); call.resolve();
     }catch(Exception e){call.reject("pending_sms_error",e);}
   }
+  /** ۱.۳.۵۰: دسته‌های پرکاربرد برای دکمه‌های اعلان */
+  @com.getcapacitor.PluginMethod public void setNotifCats(PluginCall call){
+    SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+    sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]")).apply();
+    call.resolve();
+  }
   /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */
   @com.getcapacitor.PluginMethod public void getAllPending(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
@@ -253,7 +282,7 @@ public class BankSmsPlugin extends Plugin {
       for(int i=0;i<q.length();i++){
         JSONObject x=q.optJSONObject(i); if(x==null) continue;
         JSObject r=new JSObject(); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); r.put("nid",x.optInt("nid",0));
-        if(x.has("quickDesc")){ r.put("quick",true); r.put("quickDesc",x.optString("quickDesc","")); r.put("quickAt",x.optLong("quickAt",0)); }
+        if(x.has("quickDesc")){ r.put("quick",true); r.put("quickDesc",x.optString("quickDesc","")); r.put("quickAt",x.optLong("quickAt",0)); r.put("quickCat",x.optString("quickCat","")); r.put("quickOpen",x.optBoolean("quickOpen",false)); }
         out.put(r);
       }
       call.resolve(new JSObject().put("items",out).put("count",out.length()));
@@ -466,6 +495,46 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(8000);
       nm.notify(nid,b.build());
     }catch(Throwable ignored){}
+  }
+}
+`;
+
+/* ۱.۳.۵۰: دکمهٔ دسته / ثبت سریع اعلان: شرح و دسته را کنار پیامک در صف می‌گذارد، اعلان را برمی‌دارد و نرم‌افزار را باز می‌کند.
+   نرم‌افزار ثبت می‌کند و اگر همه‌چیز درست بود خودش را کوچک می‌کند؛ اگر مغایرت یا حساب ناموجود بود باز می‌ماند تا کاربر تکمیل کند. */
+const catActivity=`package ${pkg};
+
+import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import androidx.core.app.RemoteInput;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class HkCatActivity extends Activity {
+  @Override protected void onCreate(Bundle s){
+    super.onCreate(s);
+    try{
+      Intent in=getIntent();
+      int nid=in.getIntExtra("nid",0);
+      String cat=in.getStringExtra("cat"); if(cat==null) cat="";
+      String desc=in.getStringExtra("label");
+      Bundle res=RemoteInput.getResultsFromIntent(in);
+      if(res!=null){ CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC); desc=cs==null?"":cs.toString().trim(); }
+      if(desc==null) desc=""; if(desc.length()>200) desc=desc.substring(0,200);
+      if(nid!=0){
+        SharedPreferences sp=getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE);
+        JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]"));
+        for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null && x.optInt("nid",0)==nid){ x.put("quickDesc",desc); x.put("quickCat",cat); x.put("quickOpen",true); x.put("quickAt",System.currentTimeMillis()); break; } }
+        sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit();
+        ((NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE)).cancel(nid);
+      }
+      Intent oi=getPackageManager().getLaunchIntentForPackage(getPackageName());
+      if(oi!=null){ oi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); startActivity(oi); }
+    }catch(Throwable ignored){}
+    finish();
   }
 }
 `;
@@ -2840,6 +2909,7 @@ fs.writeFileSync(path.join(javaDir,'BankSmsReceiver.java'),receiver);
 fs.writeFileSync(path.join(javaDir,'BankSmsPlugin.java'),bankPlugin);
 fs.writeFileSync(path.join(javaDir,'HkQuickReplyReceiver.java'),quickReply);
 fs.writeFileSync(path.join(javaDir,'HkQuickActivity.java'),quickActivity);
+fs.writeFileSync(path.join(javaDir,'HkCatActivity.java'),catActivity);
 fs.writeFileSync(path.join(javaDir,'AppLockPlugin.java'),appLockPlugin);
 fs.writeFileSync(path.join(javaDir,'NativeFileExportPlugin.java'),nativeExport);
 fs.writeFileSync(path.join(javaDir,'MainActivity.java'),main);
@@ -2876,6 +2946,7 @@ if(fs.existsSync(manifest)){
   // ۱.۳.۴۳: گیرندهٔ «ثبت» از خود اعلان (فقط از PendingIntent همین برنامه؛ از بیرون قابل صدا زدن نیست)
   if(!s.includes('.HkQuickReplyReceiver')) s=s.replace('</application>', '        <receiver android:name=".HkQuickReplyReceiver" android:exported="false"/>\n    </application>');
   // ۱.۳.۴۴: باکس شناور ثبت (حباب اعلان) — فقط از PendingIntent خود برنامه باز می‌شود
+  if(!s.includes('.HkCatActivity')) s=s.replace('</application>', '        <activity android:name=".HkCatActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" android:taskAffinity="" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>\n    </application>');
   if(!s.includes('.HkQuickActivity')) s=s.replace('</application>', '        <activity android:name=".HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true" android:documentLaunchMode="always" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" android:windowSoftInputMode="stateVisible|adjustResize"/>\n    </application>');
   if(!s.includes('android.permission.RECORD_AUDIO')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>');
   // ضبط صدا داخل صفحه (getUserMedia) بدون این مجوز بی‌صدا رد می‌شود
@@ -3029,6 +3100,62 @@ for(const [fn,lines] of [['hk_sms_small.xml',2],['hk_sms_big.xml',14]]){
 `);
 }
 // ۱.۳.۴۵: چیدمان پیام «ثبت شد» بعد از ثبت سریع/باکس شناور
+// ۱.۳.۵۰: اعلان اختصاصی پیامک با دکمه‌های دسته
+fs.writeFileSync(path.join(resDir,'layout','hk_tx.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layoutDirection="rtl">
+    <TextView
+        android:id="@+id/hk_tx_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Compat.Notification"
+        android:gravity="start"
+        android:textDirection="rtl"
+        android:maxLines="6"
+        android:ellipsize="end"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:layoutDirection="rtl">
+        <TextView android:id="@+id/hk_c0" style="@style/HkChip"/>
+        <TextView android:id="@+id/hk_c1" style="@style/HkChip"/>
+        <TextView android:id="@+id/hk_c2" style="@style/HkChip"/>
+        <TextView android:id="@+id/hk_c3" style="@style/HkChip"/>
+    </LinearLayout>
+</LinearLayout>
+`);
+fs.writeFileSync(path.join(resDir,'drawable','hk_chip_bg.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#26888888"/>
+    <corners android:radius="14dp"/>
+</shape>
+`);
+fs.mkdirSync(path.join(resDir,'values'),{recursive:true});
+fs.writeFileSync(path.join(resDir,'values','hk_chip.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="HkChip">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">3dp</item>
+        <item name="android:layout_marginEnd">3dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@drawable/hk_chip_bg</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAppearance">@style/TextAppearance.Compat.Notification</item>
+    </style>
+</resources>
+`);
 fs.writeFileSync(path.join(resDir,'layout','hk_done.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

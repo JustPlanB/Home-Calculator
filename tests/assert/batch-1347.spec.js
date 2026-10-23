@@ -75,7 +75,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.noChip = !box.querySelector('.hk-re-chip');
     const on = box.querySelector('.hk-re-segb.on');
     out.segOn = on.textContent + '|' + getComputedStyle(on).color;
-    const paidB = box.querySelector('.hk-re-segb.is-paid'); paidB.click(); await w(50);
+    const paidB = box.querySelector('.hk-re-segb.is-paid'); paidB.click(); await w(50); out.firstTapOnlyClose = !paidB.classList.contains('on'); paidB.click(); await w(50);
     out.segPaid = getComputedStyle(paidB).color;
     out.fileBtn = !!box.querySelector('.hk-re-fbtn');
     const fl = box.querySelector('.hk-re-flink'); out.fileTxt = fl ? fl.textContent : '';
@@ -88,7 +88,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(ed.title === 'ویرایش ردیف ۲ مخارج', 'عنوان با شمارهٔ ردیف: «' + ed.title + '»');
   ok(ed.pills.length === 2 && /^تاریخ=۱۴۰۵\/۰۷\/۰۵$/.test(ed.pills[0]) && /^زمان=/.test(ed.pills[1]) && ed.closed && ed.noChip, 'تاریخ و زمان: دو دکمهٔ ساده (' + ed.pills.join('، ') + ')؛ چرخ‌ها بسته');
   ok(ed.dateOpen && ed.timeOpen, 'زدن «تاریخ» یا «زمان» فقط چرخ‌های همان را باز می‌کند');
-  ok(/پرداخت نشده\|rgb\(230, 177, 44\)/.test(ed.segOn) && ed.segPaid === 'rgb(255, 107, 74)', 'رنگ وضعیت‌ها: پرداخت‌نشده گلبهی، پرداخت‌شدهٔ مخارج نارنجی');
+  ok(/پرداخت نشده\|rgb\(230, 177, 44\)/.test(ed.segOn) && ed.segPaid === 'rgb(255, 107, 74)' && ed.firstTapOnlyClose, 'رنگ وضعیت‌ها: پرداخت‌نشده گلبهی، پرداخت‌شدهٔ مخارج نارنجی');
   ok(!ed.fileBtn && ed.fileTxt === 'افزودن فایل' && ed.attOpen, 'بی دکمهٔ «دیدن/افزودن»؛ زدن روی نوشتهٔ فایل پنجرهٔ پیوست را باز می‌کند');
 
   console.log('• لانگ‌پرس: رها کردن انگشت دکمهٔ زیرش را نمی‌زند');
