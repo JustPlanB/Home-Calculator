@@ -43994,10 +43994,11 @@ function openProjectRowPicker(secId) {
       if (pri) { var k = pri.indexOf(id); return (k >= 0 ? (5000 - k) * 10 : 0) - i * 0.01; }
       return (use[id] || 0) * 10 - i * 0.01;
     }
-    function hkApplyPrefs() {
+    function hkApplyPrefs(init) {
       var p = hkPrefs(), b = document.body, h = document.documentElement;
       if (b) b.classList.toggle('hk-privacy', !!p.privacy);
       h.style.fontSize = p.font === 's' ? '14px' : p.font === 'l' ? '18px' : '';
+      if (init) return;
       try { hkSyncNotifCats(); } catch (e) {}
       try { renderHomeCards(); } catch (e2) {}
     }
@@ -44104,7 +44105,7 @@ function openProjectRowPicker(secId) {
     (function () {
       /* اسلایدهای خاموش‌شده ساخته نمی‌شوند */
       try { SMART_PANEL_PAGES.forEach(function (pg) { var b0 = pg.build; pg.build = function (D) { if ((hkPrefs().spOff || []).indexOf(pg.key) >= 0) return null; return b0.apply(this, arguments); }; }); } catch (e) {}
-      try { hkApplyPrefs(); } catch (e2) {}
+      try { hkApplyPrefs(true); } catch (e2) {}
       /* صفحهٔ اول */
       setTimeout(function () { try { var sp = hkPrefs().startPage; if ((sp === 'expense' || sp === 'income') && !document.querySelector('.modal-overlay.open, #tourOverlay.open') && !document.body.classList.contains('detail-open')) openPersonDetail(hkMainTitle(), sp); } catch (e) {} }, 900);
     })();
