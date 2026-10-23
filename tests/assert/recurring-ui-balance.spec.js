@@ -65,7 +65,7 @@ const ACC = 'ملت مصنوعی';
     return out;
   });
   ok(form.secDefault === 's1', 'فقط یک بخش درآمد هست: همان پیش‌فرض بخش مقصد شد');
-  ok(form.startInfo && form.endInfo && !form.hintText, 'توضیح‌ها داخل آیکون اطلاعات کنار «شروع قرارداد» و «پایان قرارداد» (متن شلوغ زیر تاریخ‌ها حذف شد)');
+  /* ۱.۳.۴۹: اینفوباکس‌های شروع و پایان قرارداد برداشته شد */ ok(!form.startInfo && !form.endInfo && !form.hintText, 'کنار «شروع قرارداد» و «پایان قرارداد» اینفوباکس نیست (متن شلوغ هم نیست)');
   ok(form.endDefault.d === 24 && form.endDefault.m === 7 && form.endDefault.y === 1406, 'پایان قرارداد: پیش‌فرض یک سال بعد از شروع (۲۴ مهر ۱۴۰۶)');
   ok(form.endFollows.m === 8 && form.endFollows.y === 1406, 'تا پایان دستی عوض نشده، با تغییر شروع جابه‌جا می‌شود (۲۴ آبان ۱۴۰۶)');
   ok(form.boxAfterCreate, 'بعد از ثبت، فهرست درآمدهای ثابت دیده می‌شود');
@@ -79,7 +79,8 @@ const ACC = 'ملت مصنوعی';
     document.getElementById('addRecurringBtn').click(); await w(300);
     const out = {};
     /* باکس اطلاعات داخل فرم */
-    document.querySelector('#recurringSheet .rec-date-lab .hk-info-btn').click(); await w(100);
+    /* ۱.۳.۴۹: اینفوباکس فرم برداشته شد؛ همان رفتار با یک باکس اطلاعات دستی آزموده می‌شود */
+    { const ib = document.createElement('span'); ib.innerHTML = hkInfoBtnHtml('آزمایش'); document.querySelector('#recurringSheet').appendChild(ib); ib.querySelector('.hk-info-btn').click(); await w(100); }
     out.tipOpen = !!document.getElementById('hkInfoTip');
     await back();
     out.tipClosed = !document.getElementById('hkInfoTip');
@@ -95,11 +96,12 @@ const ACC = 'ملت مصنوعی';
     /* قرارداد آزمایشی در مهر با یک واریزِ وصل‌شده */
     try { const it0 = recurringIncomes[0]; it0.contractStart = { d: 24, m: 7, y: 1405 }; const dep = periodData.income.sections[0].rows.find(r => r.desc === 'حقوق'); recLinkRow(it0, dep); } catch (e) {}
     renderRecurringBar(); await w(150);
-    const btn = document.querySelector('[data-rec-unlink]');
+    /* ۱.۳.۴۹: «اصلاح» برداشته شد؛ آیکون پوشه آرشیو را باز می‌کند */
+    const btn = document.querySelector('.rec-folder-btn');
     out.hasBtn = !!btn;
     if (btn) {
-      out.btnText = btn.textContent.trim();
-      btn.click(); await w(150); out.pickOpen = !!document.getElementById('recPickModal'); await back(); out.pickClosed = !document.getElementById('recPickModal'); out.featureAfterPick = _featureActive === 'recurring';
+      out.btnText = btn.getAttribute('aria-label');
+      btn.click(); await w(150); out.pickOpen = !!document.getElementById('recArchiveModal'); await back(); out.pickClosed = !document.getElementById('recArchiveModal'); out.featureAfterPick = _featureActive === 'recurring';
     }
     /* باکس اطلاعات روی منوی اصلی بعد از بستن همه */
     await back();
@@ -108,8 +110,8 @@ const ACC = 'ملت مصنوعی';
   });
   ok(bk.tipOpen && bk.tipClosed && bk.sheetStill && bk.featureStill, 'بازگشت با باکس اطلاعات باز: فقط باکس بسته شد؛ فرم و منوی درآمد ثابت سر جایشان');
   ok(bk.listOpen && bk.listClosed, 'بازگشت با فهرست کشویی باز: فقط فهرست بسته شد');
-  ok(bk.hasBtn && bk.btnText === 'اصلاح', 'دکمهٔ خط وضعیت «اصلاح» است');
-  ok(bk.pickOpen && bk.pickClosed && bk.featureAfterPick, 'بازگشت با پنجرهٔ «اصلاح» باز: فقط پنجره بسته شد و منو ماند');
+  ok(bk.hasBtn && bk.btnText === 'آرشیو', 'آیکون پوشهٔ آرشیو کنار ادیت (بی دکمهٔ «اصلاح»)');
+  ok(bk.pickOpen && bk.pickClosed && bk.featureAfterPick, 'بازگشت با آرشیو باز: فقط آرشیو بسته شد و منو ماند');
   ok(bk.featureClosedNow, 'بازگشت بعدی: منوی درآمد ثابت بسته شد');
 
   console.log('• موجودی ماه‌های آینده');

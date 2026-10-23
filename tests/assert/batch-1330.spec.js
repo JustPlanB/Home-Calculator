@@ -71,7 +71,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   });
   ok(fo.style0 !== 'dashed' && fo.style1 !== 'dashed' && /255, 159, 10/.test(fo.bg), 'پوشهٔ شخصی: بی‌خط‌چین، پس‌زمینهٔ نارنجی (' + fo.bg + ')');
   ok(fo.bc0 === 'rgba(0, 0, 0, 0)' && fo.bc1 === 'rgb(255, 159, 10)' && fo.bw1 === '1px', 'با تیک خوردن، دورش یک خط نازک نارنجی');
-  ok(fo.pick && !fo.need && fo.outline === 'rgb(10, 132, 255)', 'پوشهٔ تیک‌خوردهٔ بی‌حساب: کادر حساب آبی');
+  ok(fo.pick && !fo.need && fo.outline === 'rgb(0, 183, 255)', 'پوشهٔ تیک‌خوردهٔ بی‌حساب: کادر حساب آبی (همان آبی ۱.۳.۴۹)');
   ok(fo.afterOk.need && fo.afterOk.outline === 'rgb(255, 69, 58)' && !fo.afterOk.sum, 'زدن «ثبت» بدون انتخاب حساب → کادر قرمز و ثبت نشد');
   ok(!fo.afterPick.need && !fo.afterPick.pick && fo.unchecked, 'با انتخاب حساب (یا برداشتن تیک) رنگ کادر رفت');
 
@@ -92,7 +92,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
   });
   ok(ar.pr === '8px' && ar.pl === '8px', 'شرح جدول آرشیو با فاصلهٔ ۸px از لبه (مثل بقیهٔ جدول‌ها)');
   ok(ar.n === 3 && new Set(ar.tops).size === 1 && ar.divs.every(x => x === 'solid') && ar.sumW >= ar.headW - 30, 'جمع دریافتی / دریافت‌شده / دریافت نشده: یک نوار تمام‌عرض با خط‌های عمودی');
-  ok(ar.cols[0] === 'rgb(48, 209, 88)' && ar.cols[2] === 'rgb(255, 107, 74)', 'عددهای سبز/قرمز همان قبلی');
+  ok(ar.cols[0] === 'rgb(48, 209, 88)' && ar.cols[2] === 'rgb(230, 177, 44)', 'عدد دریافت‌شده سبز، دریافت‌نشده زرد (۱.۳.۴۹)');
 
   console.log('• فیلترهای جستجو، مبلغ و اسلایدر');
   const f = await p.evaluate(async () => {

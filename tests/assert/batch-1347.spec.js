@@ -265,7 +265,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(/پیامک شخصی از طرف «\+۹۸۹۱۲۱۲۳۴۵۶۷»/.test(sms.warn) && /⚠/.test(sms.warn) && sms.warnColor === 'rgb(255, 255, 255)' && sms.warnJustify === 'center', 'پیامک شخصی: «⚠ پیامک شخصی از طرف «شماره»» وسط‌چین با نوشتهٔ سفید');
   ok(sms.tomanLeft && sms.noTypeChip && sms.dateBold >= 700, '«تومان» سمت چپ عدد؛ بی آیکون نوع جلوی تاریخ؛ تاریخ و زمان پررنگ');
   ok(sms.descLabel === 'بابت چی بود؟ (شرح)', 'عنوان شرح: «بابت چی بود؟ (شرح)»');
-  ok(sms.cats >= 10 && sms.icons === sms.cats && sms.catRows >= 2 && sms.catRows <= 3, 'دسته‌ها زیر شرح: ' + sms.cats + ' آیکون در ' + sms.catRows + ' ردیف');
+  /* ۱.۳.۴۹: ۵ دستهٔ هوشمند + «بیشتر…» */ ok(sms.cats === 6 && sms.icons === sms.cats, 'دسته‌ها زیر شرح: ' + sms.cats + ' آیکون (۵ دسته + بیشتر)');
   ok(sms.newMsg === 'حساب ملی ۱۲۳۴ هنوز ساخته نشده' && sms.dropHidden && sms.newVal === 'ملی ۱۲۳۴', 'حساب تازه: «' + sms.newMsg + '»؛ به‌جای منوی کشویی فیلد نام (پیشنهاد: ' + sms.newVal + ')');
   ok(/قبلاً هست|هست؛/.test(sms.dupHint) && sms.blockedDup, 'نام تکراری: هشدار و ثبت انجام نشد');
   ok(sms.created && sms.closed && sms.mapped === 'ملی ۱۲۳۴' && sms.opening === 700000 && sms.bal === 500000, 'با «ثبت» حساب «ملی ۱۲۳۴» با موجودیِ پیامک ساخته شد (موجودی ' + sms.bal + ')');
