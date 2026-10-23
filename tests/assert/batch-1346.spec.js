@@ -249,12 +249,11 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const detail = document.body.classList.contains('detail-open');
     const off = !c.classList.contains('hk-jiggle');
     pe('pointerdown'); await w(650); pe('pointerup');
-    [...c.querySelectorAll('.hk-jig-btn')].find(x => x.textContent === 'تغییر نام').click(); await w(250);
-    const sheet = !!document.querySelector('.person-edit-sheet');
+    const sheet = ![...c.querySelectorAll('.hk-jig-btn')].some(x => x.textContent === 'تغییر نام');
     try { closePersonEditSheet(); } catch (e) {}
     return { btns: btns.join('،'), dur, detail, off, sheet, pencil: !!c.querySelector('.btn-edit-title'), pal: PROJECT_HIGHLIGHT_PALETTE.slice(0, 3).map(x => x.id).join(',') };
   });
-  ok(card.btns === 'تغییر نام،حذف ماه،حذف کلی' && !card.pencil && card.sheet, 'مداد کارت برداشته شد؛ «تغییر نام» در منوی نگه داشتن انگشت');
+  ok(card.btns === 'حذف ماه،حذف کلی' && !card.pencil && card.sheet, '۱.۳.۵۱: «تغییر نام» از لانگ‌پرس کارت برداشته شد (فقط منوی همبرگری)');
   ok(card.dur === '0.42s', 'لرزش نرم‌تر و کندتر (' + card.dur + ')');
   ok(card.off && !card.detail, 'در حالت لرزش، زدن جای دیگر فقط لرزش را لغو کرد (جدول باز نشد)');
   ok(card.pal === 'purple,blue,yellow', 'اولویت رنگ دوم و سوم پروژه جابه‌جا شد');

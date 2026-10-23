@@ -116,6 +116,9 @@ async function page(b, inbox) {
     const bdi = pc.querySelector('.hk-bulk-ptag bdi'); out.bdi = bdi && getComputedStyle(bdi).direction; out.num = bdi && bdi.textContent;
     const open = () => { const btn = document.querySelector('.hk-bulk-dsel .dark-select-btn'); btn.click(); return document.querySelector('.dark-select-list.open'); };
     const list = document.getElementById('hkBulkList');
+    /* ۱.۳.۵۱: پوشهٔ شخصی منوی حساب ندارد؛ اگر پوشهٔ بانکیِ منو‌دار نیست، این بخش رد می‌شود */
+    out.personalNoMenu = !pc.querySelector('.hk-bulk-dsel') && !!pc.querySelector('.hk-bulk-newacc');
+    if (!document.querySelector('.hk-bulk-dsel .dark-select-btn')) { out.skipD = true; return out; }
     out.o1 = !!open(); await w(50);
     /* شروع کشیدن برای اسکرول روی فهرست پوشه‌ها (لمس و نگه‌داشتن) */
     const lr = list.getBoundingClientRect();
@@ -136,8 +139,9 @@ async function page(b, inbox) {
   ok(u.reopened, 'زدن نوار بازه، بازه را دوباره باز می‌کند');
   ok(u.pColor === 'rgb(255, 159, 10)' && u.pIcon === '#ff9f0a', 'پوشهٔ شمارهٔ شخصی: آیکون و نوشته نارنجیِ «تمدید»');
   ok(u.bdi === 'ltr' && /^\+۹۸/.test(u.num), 'شماره چپ‌به‌راست، «+» پیش از ۹۸ (' + u.num + ')');
-  ok(u.o1 && u.closedByScroll && u.o2 && u.closedByTouch, 'منوی حساب باز با شروع اسکرول یا لمس بیرون همان لحظه بسته شد');
-  ok(u.o3 && u.listScrollKeeps, 'لمس و اسکرولِ خودِ فهرست منو آن را نمی‌بندد');
+  ok(u.personalNoMenu, '۱.۳.۵۱: پوشهٔ شخصی بی منوی حساب، فقط فیلد «حساب جدید»');
+  ok(u.skipD || (u.o1 && u.closedByScroll && u.o2 && u.closedByTouch), 'منوی حساب باز با شروع اسکرول یا لمس بیرون همان لحظه بسته شد');
+  ok(u.skipD || (u.o3 && u.listScrollKeeps), 'لمس و اسکرولِ خودِ فهرست منو آن را نمی‌بندد');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);
