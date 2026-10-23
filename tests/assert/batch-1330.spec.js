@@ -57,9 +57,9 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     pc.querySelector('.hk-bulk-chk').click(); await w(60);
     const cs1 = getComputedStyle(pc), dsel = pc.querySelector('.hk-bulk-dsel') || pc.querySelector('.hk-bulk-newacc');
     out.style1 = cs1.borderTopStyle; out.bc1 = cs1.borderTopColor; out.bw1 = cs1.borderTopWidth;
-    out.pick = pc.classList.contains('pick'); out.need = pc.classList.contains('need'); out.outline = getComputedStyle(dsel).outlineColor;
+    out.pick = pc.classList.contains('pick'); out.need = pc.classList.contains('need'); out.outline = dsel.classList.contains('hk-bulk-newacc') ? getComputedStyle(dsel).borderTopColor : getComputedStyle(dsel).outlineColor;
     document.querySelector('.hk-bulk-ok').click(); await w(150);
-    out.afterOk = { need: pc.classList.contains('need'), outline: getComputedStyle(dsel).outlineColor, sum: !!document.querySelector('.hk-bulk-sum') };
+    out.afterOk = { need: pc.classList.contains('need'), outline: dsel.classList.contains('hk-bulk-newacc') ? getComputedStyle(dsel).borderTopColor : getComputedStyle(dsel).outlineColor, sum: !!document.querySelector('.hk-bulk-sum') };
     if (dsel._list) {
       dsel.setValue && dsel.setValue('');
       const it = [...dsel._list.querySelectorAll('.dark-select-item')].find(x => x.dataset.value && x.dataset.value !== '__add_account__');
