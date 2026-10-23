@@ -35,6 +35,32 @@ public class BankSmsReceiver extends BroadcastReceiver {
   static final String CHANNEL="bank_sms";
   static final String KEY_DESC="hk_quick_desc";
   static final String ACTION_QUICK="ir.hesabketab.app.QUICK_REPLY";
+  static final String ACTION_CAT="ir.hesabketab.app.QUICK_CAT";
+  /** ۱.۳.۵۱: تراکنش «بی‌مشکل» از قبل معلوم است؟ (حساب شناخته‌شده، شخصی نیست، مبلغش مثل درآمد ثابت نیست)
+      بی‌مشکل → ثبت سریع و دکمه‌های دسته داخل خود اعلان (بی باز شدن نرم‌افزار)؛ وگرنه نرم‌افزار باز می‌شود تا تکمیل شود */
+  static boolean isClean(Context c,String text,String sender){
+    try{
+      if(isPersonal(sender)) return false;
+      SharedPreferences sp=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+      StringBuilder nb=new StringBuilder();
+      for(char ch:text.toCharArray()){
+        if(ch>='۰'&&ch<='۹') nb.append((char)('0'+(ch-'۰')));
+        else if(ch>='٠'&&ch<='٩') nb.append((char)('0'+(ch-'٠')));
+        else if(ch==','||ch=='،'||ch=='٬') continue;
+        else nb.append(ch);
+      }
+      java.util.ArrayList<String> nums=new java.util.ArrayList<>();
+      java.util.regex.Matcher m=java.util.regex.Pattern.compile("[0-9]+").matcher(nb);
+      while(m.find()) nums.add(m.group());
+      JSONArray acc=new JSONArray(sp.getString("hk_nacc4","[]"));
+      boolean known=false;
+      for(int i=0;i<acc.length()&&!known;i++){ String a=acc.optString(i); if(a.length()<3) continue; for(String n:nums){ if(n.length()>=a.length()&&n.endsWith(a)){ known=true; break; } } }
+      if(!known) return false;
+      JSONArray rec=new JSONArray(sp.getString("hk_nrec","[]"));
+      for(int i=0;i<rec.length();i++){ String a=rec.optString(i); for(String n:nums){ if(n.equals(a)) return false; } }
+      return true;
+    }catch(Throwable t){ return false; }
+  }
 
   @Override public void onReceive(Context context, Intent intent) {
     if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
@@ -179,15 +205,22 @@ public class BankSmsReceiver extends BroadcastReceiver {
        به‌جای آیکن حباب، دکمهٔ «باکس» زیر اعلان همان باکس شناور را باز می‌کند */
     /* ۱.۳.۴۷: دوباره چیدمان رسمی اندروید (BigTextStyle)؛ چیدمان اختصاصی ۱.۳.۴۶ برداشته شد */
     boolean personal=isPersonal(sender);
+    final boolean clean=isClean(c,text,sender);
     String title=personal?"فرستندهٔ شخصی":"تراکنش بانکی جدید";
     NotificationCompat.Builder b=baseBuilder(c,title,text);
     /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
       /* ۱.۳.۵۰: ثبت سریع از راه HkCatActivity: نرم‌افزار بالا می‌آید و ثبت می‌کند؛ اگر مغایرت/حساب ناموجود بود همان‌جا می‌ماند تا کاربر تکمیل کند */
-      Intent qi=new Intent(c,HkCatActivity.class); qi.setAction("ir.hesabketab.app.QUICK_"+nid); qi.putExtra("nid",nid);
-      qi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
-      PendingIntent qpi=PendingIntent.getActivity(c,nid,qi,fl);
+      PendingIntent qpi;
+      if(clean){
+        Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK); qi.putExtra("nid",nid);
+        qpi=PendingIntent.getBroadcast(c,nid,qi,fl);
+      }else{
+        Intent qi=new Intent(c,HkCatActivity.class); qi.setAction("ir.hesabketab.app.QUICK_"+nid); qi.putExtra("nid",nid);
+        qi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        qpi=PendingIntent.getActivity(c,nid,qi,fl);
+      }
       RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ (شرح)").build();
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
@@ -212,10 +245,18 @@ public class BankSmsReceiver extends BroadcastReceiver {
           JSONObject ct=k<cats.length()?cats.optJSONObject(k):null;
           if(ct==null){ rv.setViewVisibility(ids[k],android.view.View.GONE); continue; }
           rv.setTextViewText(ids[k],ct.optString("l"));
-          Intent ci=new Intent(c,HkCatActivity.class); ci.setAction("ir.hesabketab.app.CAT_"+nid+"_"+k);
-          ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
-          ci.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          rv.setOnClickPendingIntent(ids[k],PendingIntent.getActivity(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+          PendingIntent cpi;
+          if(clean){
+            Intent ci=new Intent(c,HkQuickReplyReceiver.class); ci.setAction(ACTION_CAT+"_"+nid+"_"+k);
+            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
+            cpi=PendingIntent.getBroadcast(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+          }else{
+            Intent ci=new Intent(c,HkCatActivity.class); ci.setAction("ir.hesabketab.app.CAT_"+nid+"_"+k);
+            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
+            ci.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            cpi=PendingIntent.getActivity(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+          }
+          rv.setOnClickPendingIntent(ids[k],cpi);
         }
         b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomBigContentView(rv);
       }
@@ -270,7 +311,8 @@ public class BankSmsPlugin extends Plugin {
   /** ۱.۳.۵۰: دسته‌های پرکاربرد برای دکمه‌های اعلان */
   @com.getcapacitor.PluginMethod public void setNotifCats(PluginCall call){
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-    sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]")).apply();
+    sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]"))
+      .putString("hk_nacc4",call.getString("acc4","[]")).putString("hk_nrec",call.getString("rec","[]")).apply();
     call.resolve();
   }
   /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */
@@ -427,7 +469,18 @@ import org.json.JSONObject;
 
 public class HkQuickReplyReceiver extends BroadcastReceiver {
   @Override public void onReceive(Context c, Intent in){
-    if(in==null || !BankSmsReceiver.ACTION_QUICK.equals(in.getAction())) return;
+    if(in==null || in.getAction()==null) return;
+    /* ۱.۳.۵۱: دکمهٔ دستهٔ اعلانِ بی‌مشکل: ثبت همان‌جا (شرح = اسم دسته) */
+    if(in.getAction().startsWith(BankSmsReceiver.ACTION_CAT)){
+      int cn=in.getIntExtra("nid",0); if(cn==0) return;
+      String lab=in.getStringExtra("label"); if(lab==null) lab="";
+      String cat=in.getStringExtra("cat"); if(cat==null) cat="";
+      boolean ok=saveDesc(c,cn,lab);
+      if(ok){ try{ SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE); JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]")); for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null&&x.optInt("nid",0)==cn){ x.put("quickCat",cat); break; } } sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit(); }catch(Exception ignored){} }
+      notifyDone(c,cn,lab,ok);
+      return;
+    }
+    if(!BankSmsReceiver.ACTION_QUICK.equals(in.getAction())) return;
     Bundle res=RemoteInput.getResultsFromIntent(in); if(res==null) return;
     CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC);
     String desc=cs==null?"":cs.toString().trim(); if(desc.length()>200) desc=desc.substring(0,200);
