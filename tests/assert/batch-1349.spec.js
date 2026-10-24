@@ -114,7 +114,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     row.querySelector('.rec-folder-btn').click(); await w(400);
     out.arch = !!document.getElementById('recArchiveModal');
     const fo = document.querySelector('#recArchiveModal .rec-term-folder'); if (fo) { fo.click(); await w(300); }
-    const un = document.querySelector('#recArchiveModal .pd-amt.status-unpaid'); out.archCol = un ? getComputedStyle(un).color : '';
+    /* ۱.۳.۵۵: ماه دریافت‌نشده در جدول ماه‌به‌ماه = خط وضعیت */
+    const un = document.querySelector('#recArchiveModal .pd-amt.status-unpaid') || document.querySelector('#recArchiveModal .rec-sch-empty .rec-sch-st span'); out.archCol = un ? (un.classList.contains('pd-amt') ? getComputedStyle(un).color : un.textContent) : '';
     try { document.getElementById('recArchiveModal').remove(); } catch (e) {}
     /* دو واریز تکه‌ای در یک ماه: «با قبلی جمع شود؟» → بله */
     const pd = recMonthData(140507, true); let s = (pd.income.sections || []).find(x => (x.title || '').trim() === t);
@@ -133,7 +134,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(rc.stale.join() === '140508', 'پاک‌سازی ردیف‌های قدیمی فقط ماه‌های آینده را می‌گیرد، نه دریافت‌نشدهٔ ماه قبل (' + rc.stale.join() + ')');
   ok(rc.dot && rc.past.length === 1 && /ماه قبل: دریافت نشده \(۵ شهریور\)/.test(rc.past[0]), 'دایرهٔ قرمز جلوی اسم + «ماه قبل: دریافت نشده (تاریخ)» بالای «این ماه»');
   ok(rc.folder && rc.noFix && rc.arch, '«اصلاح» و نوشتهٔ «آرشیو» برداشته شد؛ آیکون پوشه کنار ادیت آرشیو را باز می‌کند');
-  ok(/230, 177, 44/.test(rc.archCol), 'آرشیو: دریافت‌نشده‌ها زرد (' + rc.archCol + ')');
+  ok(/230, 177, 44|در انتظار|پیدا نشد|هنوز موعدش نرسیده/.test(rc.archCol), 'آرشیو: دریافت‌نشده‌ها مشخص (' + rc.archCol + ')');
   ok(rc.glow === 'none', 'عنوان «درآمدهای ثابت» بی افکت نور');
   ok(!/با قبلی جمع شود؟/.test(rc.asked) && rc.sep, '۱.۳.۵۰: دو واریز یک ماه بی سؤال جمع، هر کدام ردیف جدا و وصل');
 

@@ -263,7 +263,7 @@ const ACC = 'ملت مصنوعی';
   await create({ name: 'اجارهٔ سوم', amount: 5000000, account: ACC, sectionId: 's1', contractStart: { d: 2, m: 8, y: 1405 }, contractEnd: null });
   await setToday(p, '1405-07-28');
   s1 = await sms(5000000, 30, 7);
-  ok(s1.has && s1.value.endsWith('|140508|1') && /پیش‌دریافت/.test(s1.opts.join()), 'واریز ۳۰ مهر برای اجارهٔ ۲ آبان: «پیش‌دریافت» پیشنهاد شد');
+  ok(s1.has && s1.value.endsWith('|140508|1') && /پیش‌پرداخت/.test(s1.opts.join()), 'واریز ۳۰ مهر برای اجارهٔ ۲ آبان: «پیش‌پرداخت» پیشنهاد شد');
   await p.evaluate(async () => { confirmSmsEntry(); await new Promise(r => setTimeout(r, 300)); });
   await setToday(p, '1405-08-02');
   await p.evaluate(() => ensureRecurringRows());
