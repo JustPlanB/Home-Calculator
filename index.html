@@ -22926,8 +22926,8 @@ async function openPdfPrintWindow(){
         loadFinancialSubjects().forEach(function (s) {
           if (!s || !s.id || s.id === 'personal') return;
           var r = 0, c = 0;
-          /* فقط پروژه‌هایی که در همین ماه روی این حساب تراکنش دارند */
-          var mk = periodKey(currentYear, currentMonth);
+          /* ۱.۳.۵۴: پروژه‌هایی که تا همین ماه روی این حساب حساب باز (تسویه‌نشده) دارند */
+          var mk = '<=' + periodKey(currentYear, currentMonth);
           try { r = Number(projectReceivableOnAccounts(s.id, set, mk)) || 0; } catch (e1) {}
           try { c = typeof projectMoneyOnAccounts === 'function' ? (Number(projectMoneyOnAccounts(s.id, set, mk)) || 0) : 0; } catch (e2) {}
           if (Math.abs(r) <= 0.5 && Math.abs(c) <= 0.5) return;
@@ -23067,8 +23067,8 @@ async function openPdfPrintWindow(){
               body.innerHTML = '';
               return;
             }
-            /* پروژه فقط در ماهی که تراکنشش انجام شده و فقط با مبلغ همان ماه روی همان کارت */
-            var monthKey = periodKey(currentYear, currentMonth);
+            /* ۱.۳.۵۴: پروژه تا همین ماه (جمع از ابتدا) روی همان کارت؛ تسویه‌شده نشان داده نمی‌شود */
+            var monthKey = '<=' + periodKey(currentYear, currentMonth);
             projects.forEach(function(s) {
               var touches = (typeof projectTouchesAccounts === 'function')
                 ? projectTouchesAccounts(s.id, accountSet, monthKey) : false;
@@ -30798,6 +30798,12 @@ container.innerHTML = '';
      */
     
     /** آیا پروژه روی حداقل یکی از حساب‌های داده‌شده تراکنش دارد؟ */
+    /* ۱.۳.۵۴: «<=1405-7» = همهٔ ماه‌ها تا همان ماه (بدهی/طلب و موجودی پروژه با ماه بعد از بین نمی‌رود) */
+    function hkKeyIn(key, onlyKey) {
+      if (String(onlyKey).indexOf('<=') !== 0) return key === onlyKey;
+      var n = function (k) { var p = String(k).split('-'); return (parseInt(p[0], 10) || 0) * 100 + (parseInt(p[1], 10) || 0); };
+      return n(key) <= n(String(onlyKey).slice(2));
+    }
     function projectTouchesAccounts(subjectId, accountSet, onlyKey) {
       subjectId = (subjectId || '').trim();
       if (!subjectId || subjectId === 'personal') return false;
@@ -30810,7 +30816,7 @@ container.innerHTML = '';
         iterAllPeriodData(function(pd, key) {
           if (seen) return;
           if (key === curKey && pd !== periodData) return;
-          if (onlyKey && key !== onlyKey) return;   /* فقط یک ماه */
+          if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ['income', 'expense'].forEach(function(tab) {
             if (seen) return;
             ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
@@ -30842,7 +30848,7 @@ function projectMoneyOnAccounts(subjectId, accountSet, onlyKey) {
       if (typeof iterAllPeriodData !== 'function') return 0;
       iterAllPeriodData(function(pd, key) {
         if (key === curKey && pd !== periodData) return;
-          if (onlyKey && key !== onlyKey) return;   /* فقط یک ماه */
+          if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {
@@ -30900,7 +30906,7 @@ function getProjectBalance(subjectId) {
       try {
         iterAllPeriodData(function(pd, key) {
           if (key === curKey && pd !== periodData) return;
-          if (onlyKey && key !== onlyKey) return;   /* فقط یک ماه */
+          if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ((pd.expense && pd.expense.sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {
               if (!r || (r.status || 'paid') !== 'paid') return;

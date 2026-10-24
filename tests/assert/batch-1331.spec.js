@@ -204,6 +204,7 @@ async function page(b, inbox) {
     archive['1405-6'] = sh; saveArchive();
     out.projMehr = hkAccountProjectColors('ملی').length;
     out.cashMehr = projectMoneyOnAccounts('pj1', new Set(['ملی']), periodKey(1405, 7));
+    out.cumMehr = projectMoneyOnAccounts('pj1', new Set(['ملی']), '<=' + periodKey(1405, 7));
     navigateToPeriod(1405, 6); await w(250);
     out.projSh = hkAccountProjectColors('ملی').length;
     out.cashSh = projectMoneyOnAccounts('pj1', new Set(['ملی']), periodKey(1405, 6));
@@ -220,7 +221,7 @@ async function page(b, inbox) {
   ok(sm.ledger.n === 1 && /«علی» به «من» .*بدهکار است|«من» به «علی» .*بدهکار است/.test(sm.ledger.html.replace(/<[^>]+>/g, '')) /* ۱.۳.۳۵: «x به y مبلغ بدهکار است» */ && /طلب و بدهی/.test(sm.ledger.html), 'قرضی که نامش با کارت جور نیست هم در باکس هوشمند دیده می‌شود');
   ok(sm.ledger2.debt === 500000, 'نام کارت با فاصلهٔ اضافه («سارا ») هم شناخته می‌شود (بدهی ' + sm.ledger2.debt + ')');
   ok(sm.tipGap === '18px' && sm.tipPad === '3px', 'بین نکته‌ها فاصله (۱۸px) تا حرکت/همزهٔ نکتهٔ بعد در نکتهٔ قبلی دیده نشود');
-  ok(sm.projMehr === 0 && sm.cashMehr === 0 && sm.projSh === 1 && sm.cashSh === 9000000, 'پروژه فقط در ماه تراکنشش (شهریور) کنار موجودی ملی با دایرهٔ رنگی و مبلغ همان ماه');
+  ok(sm.projMehr === 1 && sm.cashMehr === 0 && sm.cumMehr === 9000000 && sm.projSh === 1 && sm.cashSh === 9000000, '۱.۳.۵۴: پروژهٔ تسویه‌نشدهٔ شهریور در مهر هم با دایرهٔ رنگی کنار موجودی ملی می‌ماند (جمع از ابتدا)');
   ok(sm.att.open && !sm.att.beta && sm.att.btns.join('،') === 'دوربین،گالری،صدا' && sm.att.cam, 'زدن گیرهٔ ستون فایل: پنجرهٔ پیوست (بی برچسب «آزمایشی») با گرفتن عکس / گالری / ضبط صدا');
 
   /* عکس بزرگ → فشرده */
