@@ -87,7 +87,7 @@ const ACC = 'ملت مصنوعی';
     const folderCount = document.querySelectorAll('#recArchiveModal .rec-term-folder').length;
     document.querySelector('#recArchiveModal .rec-term-folder').click(); await w(100);
     const m = document.getElementById('recArchiveModal');
-    const months = [...m.querySelectorAll('.rec-arch-row td:first-child')].map(td => td.textContent);
+    const months = [...m.querySelectorAll('.rec-arch-row td.rec-arch-date')].map(td => td.firstChild.textContent);
     const text = m.innerText;
     /* افزودن واریزهای قبلی */
     document.getElementById('recArchAddPrev').click(); await w(150);
@@ -95,7 +95,7 @@ const ACC = 'ملت مصنوعی';
     const candText = pm ? pm.innerText : '';
     if (pm) { pm.querySelector('input[type=checkbox]').checked = true; pm.querySelector('[data-act="ok"]').click(); }
     await w(200);
-    const months2 = [...document.querySelectorAll('#recArchiveModal .rec-arch-row td:first-child')].map(td => td.textContent);
+    const months2 = [...document.querySelectorAll('#recArchiveModal .rec-arch-row td.rec-arch-date')].map(td => td.firstChild.textContent);
     /* بازگشت: اول به فهرست پوشه‌ها، بعد بستن آرشیو */
     onBackGuard(); await w(300);
     const backToFolder = !!document.querySelector('#recArchiveModal .rec-term-folder');

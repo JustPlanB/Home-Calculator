@@ -39090,13 +39090,6 @@ if (item.type === 'recurring') {
           ], function (v) { if (!v) return; delete item.extPaid[k]; item.updatedAt = Date.now(); reopen(); });
         };
       });
-      /* جدول ماه‌به‌ماه: لانگ‌پرس روی ردیف پرداخت‌شده = جدا کردن از آرشیو (همان پرسش ×) */
-      if (sched) box.querySelectorAll('.rec-sch-table tr.is-paid[data-i]').forEach(function (tr) {
-        var tm = 0;
-        var clear = function () { clearTimeout(tm); };
-        tr.addEventListener('pointerdown', function () { clear(); tm = setTimeout(function () { var fake = document.createElement('button'); fake.setAttribute('data-i', tr.getAttribute('data-i')); fake.className = 'rec-arch-del'; fake.style.display = 'none'; box.appendChild(fake); bindDel(fake); fake.click(); fake.remove(); }, 600); });
-        ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { tr.addEventListener(ev, clear); });
-      });
       function bindDel(b) {
         b.onclick = function (e) {
           e.stopPropagation();
@@ -39189,19 +39182,20 @@ if (item.type === 'recurring') {
         if (r.recForKey) tag = recDayIndex(d.y, d.m, d.d) > recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100))) ? 'معوقه' : 'پیش‌پرداخت';
         stat.sum += Number(r.amount) || 0;
         return '<tr class="rec-arch-row is-paid" data-i="' + z.i + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(d) + (tag ? '<small class="rec-sch-tag">' + tag + '</small>' : '') + '</td>' +
-          '<td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(r.desc || item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td></tr>';
+          '<td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(r.desc || item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td>' +
+          '<td class="rec-arch-x"><button type="button" class="rec-arch-del" data-i="' + z.i + '" aria-label="جدا کردن">×</button></td></tr>';
       };
       /* ۱.۳.۵۵: ستون شرح (یک‌خطی؛ با زدن متن کامل) */
-      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:14%"><col style="width:23%"><col><col style="width:22%"><col style="width:14%"></colgroup>' +
-        '<thead><tr><th>بابت</th><th>تاریخ تراکنش</th><th>شرح</th><th>مبلغ</th><th>بانک</th></tr></thead><tbody>';
+      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:14%"><col style="width:22%"><col><col style="width:21%"><col style="width:13%"><col style="width:1.8em"></colgroup>' +
+        '<thead><tr><th>بابت</th><th>تاریخ تراکنش</th><th>شرح</th><th>مبلغ</th><th>بانک</th><th></th></tr></thead><tbody>';
       keys.forEach(function (k) {
         var list = byKey[k];
         if (list && list.length) { stat.paid++; list.forEach(function (z) { h += paidTr(k, z); }); return; }
         var ex = (item.extPaid || {})[String(k)];
         if (ex) {
           stat.paid++;
-          if (ex.y) { stat.sum += Number(ex.amount) || 0; h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(ex) + '<small class="rec-sch-tag">فقط آرشیو</small></td><td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(ex.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(ex.bank || '—') + '</td></tr>'; }
-          else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="4" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
+          if (ex.y) { stat.sum += Number(ex.amount) || 0; h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(ex) + '<small class="rec-sch-tag">فقط آرشیو</small></td><td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(ex.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(ex.bank || '—') + '</td><td></td></tr>'; }
+          else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="5" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
           return;
         }
         var dIdx = recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100)));
@@ -39209,7 +39203,7 @@ if (item.type === 'recurring') {
         if (dIdx > tIdx) { st = 'هنوز موعدش نرسیده'; cls = 'future'; }
         else if (tIdx - dIdx <= 10) { st = 'در انتظار'; cls = 'wait'; }
         else { st = 'پیدا نشد'; cls = 'miss'; stat.miss++; btns = '<button type="button" class="rec-sch-btn" data-act="link" data-k="' + k + '">وصل دستی</button><button type="button" class="rec-sch-btn" data-act="mark" data-k="' + k + '">پرداخت شده</button>'; }
-        h += '<tr class="rec-sch-empty ' + cls + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="4" class="rec-sch-st"><span>' + st + '</span>' + btns + '</td></tr>';
+        h += '<tr class="rec-sch-empty ' + cls + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="5" class="rec-sch-st"><span>' + st + '</span>' + btns + '</td></tr>';
       });
       extra.forEach(function (z) { h += paidTr(z.k, z); });
       h += '</tbody></table>';
