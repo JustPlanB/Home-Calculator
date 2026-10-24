@@ -39189,18 +39189,19 @@ if (item.type === 'recurring') {
         if (r.recForKey) tag = recDayIndex(d.y, d.m, d.d) > recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100))) ? 'معوقه' : 'پیش‌پرداخت';
         stat.sum += Number(r.amount) || 0;
         return '<tr class="rec-arch-row is-paid" data-i="' + z.i + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(d) + (tag ? '<small class="rec-sch-tag">' + tag + '</small>' : '') + '</td>' +
-          '<td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td></tr>';
+          '<td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(r.desc || item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td></tr>';
       };
-      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:17%"><col style="width:31%"><col style="width:28%"><col></colgroup>' +
-        '<thead><tr><th>بابت</th><th>تاریخ تراکنش</th><th>مبلغ</th><th>بانک</th></tr></thead><tbody>';
+      /* ۱.۳.۵۵: ستون شرح (یک‌خطی؛ با زدن متن کامل) */
+      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:14%"><col style="width:23%"><col><col style="width:22%"><col style="width:14%"></colgroup>' +
+        '<thead><tr><th>بابت</th><th>تاریخ تراکنش</th><th>شرح</th><th>مبلغ</th><th>بانک</th></tr></thead><tbody>';
       keys.forEach(function (k) {
         var list = byKey[k];
         if (list && list.length) { stat.paid++; list.forEach(function (z) { h += paidTr(k, z); }); return; }
         var ex = (item.extPaid || {})[String(k)];
         if (ex) {
           stat.paid++;
-          if (ex.y) { stat.sum += Number(ex.amount) || 0; h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(ex) + '<small class="rec-sch-tag">فقط آرشیو</small></td><td><span class="pd-amt status-paid">' + formatNum(Number(ex.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(ex.bank || '—') + '</td></tr>'; }
-          else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="3" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
+          if (ex.y) { stat.sum += Number(ex.amount) || 0; h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(ex) + '<small class="rec-sch-tag">فقط آرشیو</small></td><td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(ex.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(ex.bank || '—') + '</td></tr>'; }
+          else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="4" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
           return;
         }
         var dIdx = recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100)));
@@ -39208,7 +39209,7 @@ if (item.type === 'recurring') {
         if (dIdx > tIdx) { st = 'هنوز موعدش نرسیده'; cls = 'future'; }
         else if (tIdx - dIdx <= 10) { st = 'در انتظار'; cls = 'wait'; }
         else { st = 'پیدا نشد'; cls = 'miss'; stat.miss++; btns = '<button type="button" class="rec-sch-btn" data-act="link" data-k="' + k + '">وصل دستی</button><button type="button" class="rec-sch-btn" data-act="mark" data-k="' + k + '">پرداخت شده</button>'; }
-        h += '<tr class="rec-sch-empty ' + cls + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="3" class="rec-sch-st"><span>' + st + '</span>' + btns + '</td></tr>';
+        h += '<tr class="rec-sch-empty ' + cls + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="4" class="rec-sch-st"><span>' + st + '</span>' + btns + '</td></tr>';
       });
       extra.forEach(function (z) { h += paidTr(z.k, z); });
       h += '</tbody></table>';
