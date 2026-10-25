@@ -11462,6 +11462,30 @@
     .hk-pri-row { user-select: none; -webkit-user-select: none; background: var(--card); transition: background 0.15s; }
     .hk-pri-row.drag { background: rgba(0,183,255,0.12); border-radius: 8px; }
     .hk-pri-h { display: flex; align-items: center; justify-content: center; width: 34px; height: 30px; color: var(--text-muted, #8e8e93); touch-action: none; cursor: grab; font-style: normal; }
+/* ۱.۳.۵۶ */
+    .rec-due-seg { align-items: center; }
+    .rec-due-lab { flex: 0 0 auto; padding: 0 8px; font-size: 0.74rem; color: var(--muted, #8e8e93); white-space: nowrap; }
+    .rec-due-seg button[data-due="late"].on { background: rgba(255,69,58,0.18) !important; color: #ff453a !important; }
+    .rec-due-seg button[data-due="cur"].on { background: rgba(48,209,88,0.18) !important; color: #30d158 !important; }
+    .rec-due-seg button[data-due="ahead"].on { background: rgba(10,132,255,0.18) !important; color: #0a84ff !important; }
+    .rec-sch-k { white-space: nowrap; overflow: hidden; text-overflow: clip; }
+    .rec-arch-foot .rec-arch-fbtn:only-child { flex: 1 1 100%; }
+    .hk-re-pill .hk-re-greg { display: block; width: 100%; font-size: 0.7rem; font-weight: 600; color: var(--muted, #8e8e93); text-align: center; margin-top: 1px; font-family: inherit; }
+    .hk-re-pill:has(.hk-re-greg:not(:empty)) { flex-wrap: wrap; }
+/* ۱.۳.۵۶: قرض پیوسته */
+    #sections-ledger .hk-led-date { width: 100%; border: none; background: transparent; color: var(--text); font-family: inherit; font-size: 0.74rem; font-weight: 700; padding: 4px 2px; white-space: nowrap; text-align: center; cursor: pointer; }
+    #sections-ledger .hk-led-date.is-empty { min-height: 26px; }
+    .hk-led-tick { width: 18px; height: 18px; fill: none; stroke: #30d158; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+    tr.hk-led-settled td:not(.col-num) { opacity: 0.6; }
+    .hk-row-act-btn.hk-ra-settle { color: #30d158; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; font-weight: 800; font-size: 0.78rem; }
+    .hk-row-act-btn.hk-ra-settle svg { width: 18px; height: 18px; }
+    #panel-ledger #sections-ledger .section-body.hk-led-scroll, #sections-ledger .section-body.hk-led-scroll { overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    #panel-ledger #sections-ledger .section-body table :is(th, td).col-day { width: 74px !important; min-width: 74px !important; max-width: 74px !important; padding-left: 2px !important; padding-right: 2px !important; }
+    #panel-ledger #sections-ledger .section-body tbody td .cell.hk-led-date:not(.is-empty) { border-color: transparent !important; }
+    #sections-ledger .section-body.hk-led-scroll thead th { position: sticky; top: 0; z-index: 2; }
+    .hk-led-date-box { max-width: 320px; }
+    .hk-led-date-greg { text-align: center; font-size: 0.74rem; color: var(--muted, #8e8e93); margin: 6px 0 2px; }
+    .hk-led-day.hk-re-sel { flex-direction: column; align-items: center; justify-content: center; gap: 0; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -14147,7 +14171,8 @@ function onPeriodChange() {
           var _add = archive[_bestK].ledger.sections.filter(function (s) { return s && s.id && !_have[s.id] && ((s.personA || '').trim() || (s.personB || '').trim()); });
           if (_add.length) {
             var _sec = periodData.ledger.sections.filter(function (s) { return (s.personA || '').trim() || (s.personB || '').trim() || (s.rows || []).some(function (r) { return r && (r.amount || r.desc); }); });
-            periodData.ledger.sections = _sec.concat(JSON.parse(JSON.stringify(_add)));
+            /* ۱.۳.۵۶: فقط خود رابطه (ردیف‌های تسویه‌نشدهٔ قبلی در جدول پیوسته از ماه خودشان نشان داده می‌شوند) */
+            periodData.ledger.sections = _sec.concat(_add.map(function (s) { return { id: s.id, personA: s.personA || '', personB: s.personB || '', collapsed: s.collapsed, createdBy: s.createdBy, createdByName: s.createdByName, rows: [emptyLedgerRow()] }; }));
           }
         }
       } catch (eLc) {}
@@ -19365,7 +19390,8 @@ function askBackupUserCards(selectedParts) {
         var ab = 0, ba = 0;
         list.forEach(function (r) {
           var cr = r.status === 'credit', amt = Number(r.amount) || 0;
-          if (cr) ba += amt; else ab += amt;
+          /* ۱.۳.۵۶: تسویه‌شده در جمع نیست */
+          if (!r.settled) { if (cr) ba += amt; else ab += amt; }
           lr.push([T(rel), dayNum(r) === '' ? T('') : N(dayNum(r)), T(r.desc || ''), T(cr ? b : a), T(cr ? a : b), N(amt), T(r.createdByName || '')]);
         });
         var net = ab - ba;
@@ -19937,7 +19963,7 @@ function askBackupUserCards(selectedParts) {
             var cr = r.status === 'credit', amt = Number(r.amount) || 0;
             /* debt: نفر اول به نفر دوم بدهکار است؛ credit: برعکس */
             var debtor = cr ? b : a, creditor = cr ? a : b;
-            if (cr) ba += amt; else ab += amt;
+            if (!r.settled) { if (cr) ba += amt; else ab += amt; }
             lh += '<tr><td class="c">' + toPersianDigits(i + 1) + '</td><td class="c">' + (r.day ? toPersianPad2(r.day) : '') + '</td><td>' + E(r.desc || '') + '</td>' +
               '<td class="c">' + E(debtor) + '</td><td class="c">' + E(creditor) + '</td><td class="n">' + pdfMoney(amt) + '</td>' + byTd(E(r.createdByName || '')) + '</tr>';
           });
@@ -23622,6 +23648,29 @@ async function openPdfPrintWindow(){
       else go();
     })();
 
+    /* ۱.۳.۵۶: تراکنش‌های پیامکی که هنوز ثبت نشده‌اند (در صف) موقتاً روی موجودی و ویجت اعمال می‌شوند؛
+       با ثبت یا رد کردن پیامک از صف بیرون می‌روند و عدد خودش درست می‌شود (دوبار حساب نمی‌شود) */
+    function hkPendingDelta() {
+      var out = { tot: 0, by: {}, today: 0, n: 0 };
+      try {
+        var list = (typeof smsPendingQueue !== 'undefined' && smsPendingQueue ? smsPendingQueue.slice() : []);
+        if (typeof pendingSmsEntry !== 'undefined' && pendingSmsEntry) list.push(pendingSmsEntry);
+        var t = getTodayPersian();
+        list.forEach(function (p) {
+          if (!p || p._hkDismissed) return;
+          var a = Number(p.amount) || 0;
+          if (!a || (p.type !== 'income' && p.type !== 'expense')) return;
+          if (p.sender && hkIsPersonalSender(p.sender)) return;
+          var sg = p.type === 'income' ? 1 : -1;
+          out.tot += sg * a; out.n++;
+          var lb = String(p.bank || '').trim();
+          if (lb) out.by[lb] = (out.by[lb] || 0) + sg * a;
+          if (sg < 0 && (!p.day || +p.day === t.d) && (!p.month || +p.month === t.m)) out.today += a;
+        });
+      } catch (e) {}
+      return out;
+    }
+    function hkPendingRefresh() { setTimeout(function () { try { updateHomeBalanceCircle(); } catch (e) {} try { pushHomeWidget(); } catch (e2) {} }, 250); }
     var _hbcReady = false;
     var _hbcReplayAfterUnlock = false;
     function updateHomeBalanceCircle(force) {
@@ -23637,6 +23686,7 @@ async function openPdfPrintWindow(){
       if (!force && amt._hbcBusy) { amt._hbcPend = true; return; }
       var iv = 0;
       try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
+      try { var _pd = hkPendingDelta(); if (_pd.n && !hkIsFutureView()) iv += _pd.tot; } catch (ePd) {}
       if (!isFinite(iv)) iv = 0;
       var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
       try { pushHomeWidget(); } catch (eW) {}
@@ -23686,14 +23736,18 @@ async function openPdfPrintWindow(){
             });
           });
           var locked = false; try { locked = !!(await lockIsEnabled()); } catch (eL) {}
+          /* ۱.۳.۵۶: پیامک‌های ثبت‌نشده (در صف) موقتاً حساب می‌شوند */
+          var pdl = hkPendingDelta(); bal += pdl.tot; spent += pdl.today;
           /* ویجت حساب‌ها: موجودی هر حساب (کارت) جدا */
           var accs = [];
           try {
             var gb = globalAccountBalances() || {};
-            selectedAccountLabels().forEach(function (lb) { var v = Number(gb[lb]) || 0; var pc = []; try { pc = hkAccountProjectColors(lb).map(hkHexColor).filter(Boolean); } catch (eP) {} accs.push({ l: lb, b: (v < 0 ? '-' : '') + formatNum(Math.abs(v)), n: v < 0, p: pc }); });
+            selectedAccountLabels().forEach(function (lb) { var v = (Number(gb[lb]) || 0) + (pdl.by[lb] || 0); var pc = []; try { pc = hkAccountProjectColors(lb).map(hkHexColor).filter(Boolean); } catch (eP) {} accs.push({ l: lb, b: (v < 0 ? '-' : '') + formatNum(Math.abs(v)), n: v < 0, p: pc, v: v }); });
             /* موجودی کل (همان جمع نرم‌افزار، شامل ردیف‌های بدون حساب) — آخرین عضو با t:true */
-            if (accs.length) { var tot = 0; Object.keys(gb).forEach(function (k) { tot += Number(gb[k]) || 0; }); accs.push({ l: 'موجودی کل', b: (tot < 0 ? '-' : '') + formatNum(Math.abs(tot)), n: tot < 0, t: true }); }
+            if (accs.length) { var tot = pdl.tot; Object.keys(gb).forEach(function (k) { tot += Number(gb[k]) || 0; }); accs.push({ l: 'موجودی کل', b: (tot < 0 ? '-' : '') + formatNum(Math.abs(tot)), n: tot < 0, t: true, v: tot }); }
           } catch (eA) {}
+          /* چهار رقم آخر کارت → حساب (برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک، وقتی نرم‌افزار بسته است) */
+          var a4m = {}; try { Object.keys(smsAccountBankMap || {}).forEach(function (k) { if (k.indexOf('L4:') === 0 && smsAccountBankMap[k]) a4m[k.slice(3)] = smsAccountBankMap[k]; }); } catch (eM) {}
           await P.update({
             accounts: JSON.stringify(accs),
             title: 'حساب‌کتاب · ' + MONTHS[t.m - 1],
@@ -23702,6 +23756,7 @@ async function openPdfPrintWindow(){
             todayNone: !(spent > 0),
             balance: (bal < 0 ? '-' : '') + formatNum(Math.abs(bal)),
             today: formatNum(spent),
+            balRaw: Math.round(bal), todayRaw: Math.round(spent), acc4Map: JSON.stringify(a4m),
             negative: bal < 0,
             locked: locked,
             light: document.documentElement.getAttribute('data-theme') === 'light'
@@ -26803,6 +26858,8 @@ async function openPdfPrintWindow(){
       };
       /* RTL: نیمهٔ راست ویرایش، نیمهٔ چپ حذف */
       ov.appendChild(mk('hk-ra-edit', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>', 'ویرایش', opts.onEdit));
+      /* ۱.۳.۵۶: گزینهٔ سبز «تسویه شد» بین ویرایش و حذف (قرض) */
+      if (opts.onSettle) ov.appendChild(mk('hk-ra-settle', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>' + (opts.settled ? 'تسویه نشده' : 'تسویه شد') + '</span>', opts.settled ? 'تسویه نشده' : 'تسویه شد', opts.onSettle));
       ov.appendChild(mk('hk-ra-del' + (opts.canDelete ? '' : ' hk-ra-off'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>', 'حذف', opts.onDelete));
       ov._hkCancel = hkCloseRowActions;
       document.body.appendChild(ov);
@@ -26899,6 +26956,23 @@ async function openPdfPrintWindow(){
       sec.rows.push(row);
       recPersist();
     }
+    /* ۱.۳.۵۶: تبدیل تاریخ شمسی به میلادی (الگوریتم ۳۳ساله؛ برای ۱۳۰۰ تا ۱۵۰۰ دقیق) → [سال، ماه، روز] */
+    function hkJ2G(jy, jm, jd) {
+      jy = +jy; jm = +jm; jd = +jd;
+      var gy, gm, gd, days;
+      jy += 1595;
+      days = -355668 + (365 * jy) + (~~(jy / 33) * 8) + ~~(((jy % 33) + 3) / 4) + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+      gy = 400 * ~~(days / 146097); days %= 146097;
+      if (days > 36524) { gy += 100 * ~~(--days / 36524); days %= 36524; if (days >= 365) days++; }
+      gy += 4 * ~~(days / 1461); days %= 1461;
+      if (days > 365) { gy += ~~((days - 1) / 365); days = (days - 1) % 365; }
+      gd = days + 1;
+      var ml = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      for (gm = 0; gm < 13 && gd > ml[gm]; gm++) gd -= ml[gm];
+      return [gy, gm, gd];
+    }
+    var HK_GM = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function hkGregStr(y, m, d) { if (!y || !m || !d) return ''; var g = hkJ2G(y, m, d); return g[2] + ' ' + HK_GM[g[1] - 1] + ' ' + g[0]; }
     function hkOpenRowEdit(ctx) {
       var row = ctx.row, tab = ctx.tab, fromPlan = !!row.fromPlanId;
       var old = document.getElementById('hkRowEdit'); if (old) old.remove();
@@ -26918,6 +26992,8 @@ async function openPdfPrintWindow(){
       var dtRow = document.createElement('div'); dtRow.className = 'hk-re-dtrow'; box.appendChild(dtRow);
       var mkPill = function (lab) { var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-re-pill'; b.innerHTML = '<span>' + lab + '</span><b dir="ltr"></b>'; dtRow.appendChild(b); return b; };
       var dVal = mkPill('تاریخ'), tVal = mkPill('زمان');
+      /* ۱.۳.۵۶: تاریخ میلادی هم زیر تاریخ شمسی */
+      var dGreg = document.createElement('small'); dGreg.className = 'hk-re-greg'; dGreg.dir = 'ltr'; dVal.appendChild(dGreg);
       var fD = document.createElement('div'); fD.className = 'hk-re-pnl'; box.appendChild(fD);
       var years = []; for (var yy = 1390; yy <= 1420; yy++) years.push(yy);
       var days = ['—']; for (var dd = 1; dd <= 31; dd++) days.push(toPersianDigits(String(dd)));
@@ -26950,6 +27026,7 @@ async function openPdfPrintWindow(){
       function upd() {
         var d = wD.getIndex(), m = wM.getIndex() + 1, y = years[wY.getIndex()];
         dVal.querySelector('b').textContent = toPersianDigits(String(y)) + '/' + p2(m) + (d ? '/' + p2(d) : '');
+        try { dGreg.textContent = d ? hkGregStr(y, m, d) : ''; } catch (eG) {}
         var hi = wH.getIndex();
         tVal.querySelector('b').textContent = hi ? (p2(hi - 1) + ':' + p2(wMi.getIndex())) : '—';
         wMi.classList.toggle('hk-wheel-off', !hi);
@@ -27298,36 +27375,37 @@ async function openPdfPrintWindow(){
         if (!cand.length) { showToast('در ' + recKeyLabel(k) + ' ردیف درآمدی برای وصل کردن نیست'); return; }
         recCheckPick(item, 'کدام ردیف‌های ' + recKeyLabel(k) + ' مربوط به «' + (item.name || '') + '» است؟', cand, function (picked, due) {
           if (!picked.length) return;
-          /* ۱.۳.۵۴: بابت سررسید ماه بعد (پیش‌دریافت) یا ماه قبل (دیرکرد) */
-          if (due === 'ahead' || due === 'late') { recLinkOtherDue(item, k, picked, due); if (after) after(); return; }
-          /* ردیف «دریافت نشده»ٔ همین ماه جای خود را به ردیف‌های انتخاب‌شده می‌دهد */
-          try { recRemoveRows(recRowsOf(item).filter(function (z) { return z.key === k && !recIsPaid(z.row); })); } catch (e0) {}
-          picked.forEach(function (x) { delete x.row.recForKey; recLinkRow(item, x.row); });
-          try { recInferTiming(item); } catch (eIt) {}
-          recPersist();
-          try { saveRecurring(); } catch (e1) {}
-          try { recRefreshViews(); } catch (e2) {}
-          showToast(toPersianDigits(String(picked.length)) + ' ردیف ' + recKeyLabel(k) + ' به «' + (item.name || '') + '» وصل شد');
+          recLinkAsBab(item, k, picked, due);
           if (after) after();
         });
       });
     }
-    /* فهرست تیک‌دار ردیف‌ها؛ ردیفی که الان به درآمد ثابت دیگری وصل است کادر نارنجی و برچسب «وصل به …» دارد */
-    function recLinkOtherDue(item, k, picked, due) {
-      var y = Math.floor(k / 100), m = k % 100;
-      var nk = due === 'ahead' ? (m === 12 ? (y + 1) * 100 + 1 : k + 1) : (m === 1 ? (y - 1) * 100 + 12 : k - 1);
-      /* ۱.۳.۵۵: ردیف‌ها همان‌جا (ماه واریز) می‌مانند و بابت ماه دیگر حساب می‌شوند؛ شرح «اسم _ معوقه/پیش‌پرداخت روز ماه»؛
-         ردیف «دریافت نشده»ٔ ماه سررسید حذف می‌شود و دیگر ساخته نمی‌شود */
-      if (recRowsOf(item).some(function (z) { return z.key === nk && recIsPaid(z.row); })) { showToast('سررسید ' + recKeyLabel(nk) + ' «' + (item.name || '') + '» قبلاً پرداخت شده', 'warn'); return; }
-      picked.forEach(function (x) { x.row.fromRecurringId = item.id; x.row.recLinked = true; x.row.recForKey = nk; x.row.desc = recOtherDueDesc(item, nk, due === 'ahead' ? 'ahead' : 'late'); x.row.updatedAt = Date.now(); });
-      if (!item.paidAhead) item.paidAhead = {};
-      item.paidAhead[String(nk)] = true;
-      try { recRemoveRows(recRowsOf(item).filter(function (z) { return z.key === nk && !recIsPaid(z.row); })); } catch (e0) {}
+    /* ۱.۳.۵۶: وصل دستی: «ماه قبل / این ماه / ماه بعد» = بابت کدام ماه؛ سررسید آن ماه از نوع قرارداد (ابتدا/پایان ماه) معلوم می‌شود.
+       ردیف همان‌جا (ماه واریز) می‌ماند؛ برچسب معوقه/پیش‌پرداخت فقط وقتی ماه واریز نه ماه «بابت» است نه ماه سررسید */
+    function recLinkAsBab(item, k, picked, due) {
+      var babK = due === 'late' ? recPrevKey(k) : due === 'ahead' ? recNextKey(k) : k;
+      try { var p0 = recPayDateOf(picked[0]); recInferTiming(item, p0); } catch (eT) {}
+      var dueK = recTiming(item) === 'end' ? recNextKey(babK) : babK;
+      if (recRowsOf(item).some(function (z) { return z.key === dueK && recIsPaid(z.row) && picked.every(function (x) { return x.row !== z.row; }); }) || (dueK !== k && item.paidAhead && item.paidAhead[String(dueK)] && recArchiveRows(item).some(function (z) { return recIsPaid(z.row) && (parseInt(z.row.recForKey, 10) || z.key) === dueK && picked.every(function (x) { return x.row !== z.row; }); }))) {
+        showToast('بابت ' + recKeyLabel(babK) + '، «' + (item.name || '') + '» قبلاً پرداخت شده', 'warn'); return;
+      }
+      try { recRemoveRows(recRowsOf(item).filter(function (z) { return z.key === dueK && !recIsPaid(z.row) && picked.every(function (x) { return x.row !== z.row; }); })); } catch (e0) {}
+      picked.forEach(function (x) {
+        recLinkRow(item, x.row);
+        if (dueK === x.key) { delete x.row.recForKey; if (recIsAutoDesc(item, x.row.desc)) x.row.desc = item.name || x.row.desc; }
+        else {
+          x.row.recForKey = dueK;
+          if (!item.paidAhead) item.paidAhead = {};
+          item.paidAhead[String(dueK)] = true;
+          if (recIsAutoDesc(item, x.row.desc)) x.row.desc = recDueDesc(item, dueK, x.key);
+        }
+        x.row.updatedAt = Date.now();
+      });
       try { recInferTiming(item); } catch (eIt) {}
       recPersist();
       try { saveRecurring(); } catch (e1) {}
       try { recRefreshViews(); } catch (e2) {}
-      showToast(toPersianDigits(String(picked.length)) + ' ردیف بابت ' + recKeyLabel(nk) + ' (' + (due === 'ahead' ? 'پیش‌دریافت' : 'دیرکرد') + ') به «' + (item.name || '') + '» وصل شد');
+      showToast(toPersianDigits(String(picked.length)) + ' ردیف بابت ' + recKeyLabel(babK) + ' به «' + (item.name || '') + '» وصل شد');
     }
     function recCheckPick(item, title, cands, onOk) {
       var old = document.getElementById('recAddPrevModal'); if (old) old.remove();
@@ -27347,7 +27425,8 @@ async function openPdfPrintWindow(){
           escapeHtml(recRowLabel(c.row, c.key)) + (same ? '<br><small class="rec-pick-tag">از قبل وصل به همین درآمد</small>' : other ? '<br><small class="rec-pick-tag">وصل به «' + escapeHtml(other.name || '') + '»</small>' : '') + '</span></label>';
       });
       /* ۱.۳.۵۴: یک خط کوچک «بابت سررسید»؛ پیش‌فرض همین ماه (فقط در وصل دستی) */
-      if (onOk.length >= 2) html += '</div><div class="rec-due-row"><span>بابت سررسید:</span><div class="rec-due-seg"><button type="button" data-due="cur" class="on">همین ماه</button><button type="button" data-due="ahead">ماه بعد</button><button type="button" data-due="late">ماه قبل</button></div>';
+      /* ۱.۳.۵۶: ترتیب ماه قبل / این ماه / ماه بعد (قرمز / سبز / آبی)؛ «بابت سررسید» داخل همان کادر */
+      if (onOk.length >= 2) html += '</div><div class="rec-due-row"><div class="rec-due-seg"><span class="rec-due-lab">بابت سررسید</span><button type="button" data-due="late">ماه قبل</button><button type="button" data-due="cur" class="on">این ماه</button><button type="button" data-due="ahead">ماه بعد</button></div>';
       html += '</div><div style="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);">' +
         '<button type="button" data-act="ok" style="flex:1;padding:9px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;">افزودن</button>' +
         '<button type="button" data-act="cancel" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--bg3);color:var(--text);font-family:inherit;font-weight:700;">انصراف</button></div></div>';
@@ -29147,6 +29226,7 @@ container.innerHTML = '';
     }
     /* mode: (خالی) ثبت شد | 'reject' رد شد | 'later' بعداً */
     function closeSmsConfirmModal(mode) {
+      try { hkPendingRefresh(); } catch (ePr) {}
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}
       /* پیوست‌های در انتظار: ثبت → روی ردیف تازه؛ رد/بعداً → پاک */
       try { if (typeof hkSmsAttFinish === 'function') hkSmsAttFinish(!mode); } catch (eAt) {}
@@ -30999,6 +31079,19 @@ function getProjectBalance(subjectId) {
         return m ? m[1].replace(/\s+/g, ' ').trim() : '';
       } catch (e) { return ''; }
     }
+    function recHabitOffset(item) {
+      try {
+        var due = recDueDay(item), offs = [];
+        recArchiveRows(item).forEach(function (x) {
+          if (!recIsPaid(x.row)) return;
+          var k = parseInt(x.row.recForKey, 10) || x.key, p = recPayDateOf(x);
+          offs.push(recDayIndex(p.y, p.m, p.d) - recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100))));
+        });
+        if (!offs.length) return 0;
+        offs.sort(function (a, b) { return a - b; });
+        return Math.max(-10, Math.min(10, offs[Math.floor(offs.length / 2)]));
+      } catch (e) { return 0; }
+    }
     function recFindSmsCandidates(amount, bank, y, m, d, raw) {
       var out = [];
       amount = Number(amount) || 0;
@@ -31011,6 +31104,22 @@ function getProjectBalance(subjectId) {
         if (!item || item.deletedAt || !item.id) return;
         var hint = !!(payer && (item.payerHints || []).indexOf(payer) >= 0);
         var rows = recRowsOf(item);
+        /* ۱.۳.۵۶: اولین واریز قرارداد (هنوز واریزی وصل نیست): ۱۰ روز قبل تا ۵۰ روز بعد از شروع؛ نوع قرارداد از همین واریز */
+        var t0 = (item.contractStart && item.contractStart.y && !recPaysOf(item).length) ? recTimingFromFirst(item, { y: y, m: m, d: d }) : '';
+        if (t0) {
+          var exp0 = Number(item.amount) || 0, acc0 = (item.account || '').trim();
+          if (exp0 && Math.abs(exp0 - amount) <= exp0 * 0.05 && !(acc0 && bank && acc0 !== bank)) {
+            var sk0 = recStartKey(item), tk0 = t0 === 'end' ? recNextKey(sk0) : sk0;
+            var x0 = rows.find(function (z) { return z.key === tk0 && !recIsPaid(z.row); });
+            if (x0) {
+              var dd0 = parseInt(toEnglishDigits(String(x0.row.day || '')), 10) || recDueDay(item);
+              out.push({ recId: item.id, key: tk0, name: item.name || '', diff: smsIdx - recDayIndex(Math.floor(tk0 / 100), tk0 % 100, dd0), exact: exp0 === amount, hint: hint, due: dd0, ahead: false, late: smsK > tk0, early: smsK < tk0 });
+              return;
+            }
+          }
+        }
+        /* عادت مستاجر: میانگین فاصلهٔ واریزهای قبلی تا سررسیدشان (بازهٔ ۱۰ روزه دور همین عادت) */
+        var habit = recHabitOffset(item);
         rows.forEach(function (x) {
           if (recIsPaid(x.row)) return;
           var exp = Number(x.row.amount) || Number(item.amount) || 0;
@@ -31019,8 +31128,8 @@ function getProjectBalance(subjectId) {
           if (acc && bank && acc !== bank) return;
           var dd = parseInt(toEnglishDigits(String(x.row.day || '')), 10) || parseInt(recDayFor(item, x.key), 10) || 1;
           var diff = smsIdx - recDayIndex(Math.floor(x.key / 100), x.key % 100, dd);
-          /* ۱.۳.۵۵: تا ۱۰ روز قبل/بعد از سررسید (معوقه/پیش‌پرداخت) */
-          if (Math.abs(diff) > 10) return;
+          /* ۱.۳.۵۵: تا ۱۰ روز قبل/بعد از سررسید (معوقه/پیش‌پرداخت)؛ ۱.۳.۵۶: دور عادت مستاجر */
+          if (Math.abs(diff - habit) > 10) return;
           out.push({ recId: item.id, key: x.key, name: item.name || '', diff: diff, exact: exp === amount, hint: hint, due: dd, ahead: false, late: smsK > x.key, early: smsK < x.key });
         });
         /* پیش‌واریز برای ماه بعد که هنوز ردیفش ساخته نشده */
@@ -31031,7 +31140,7 @@ function getProjectBalance(subjectId) {
           if (exp2 && Math.abs(exp2 - amount) <= exp2 * 0.05 && !(acc2 && bank && acc2 !== bank)) {
             var dd2 = parseInt(recDayFor(item, nk), 10) || 1;
             var diff2 = smsIdx - recDayIndex(Math.floor(nk / 100), nk % 100, dd2);
-            if (diff2 <= 0 && diff2 >= -10) out.push({ recId: item.id, key: nk, name: item.name || '', diff: diff2, exact: exp2 === amount, hint: hint, due: dd2, ahead: true });
+            if (diff2 <= 0 && Math.abs(diff2 - habit) <= 10) out.push({ recId: item.id, key: nk, name: item.name || '', diff: diff2, exact: exp2 === amount, hint: hint, due: dd2, ahead: true });
           }
         }
       });
@@ -31157,7 +31266,7 @@ function getProjectBalance(subjectId) {
         if (!sec) return false;
         recPlaceRow(sec, hkSmsStamp(Object.assign(emptyRow('income'), {
           day: info.day ? String(info.day) : '',
-          desc: recOtherDueDesc(item, k, smsK > k ? 'late' : 'ahead'),
+          desc: recDueDesc(item, k, smsK),
           amount: info.amount, status: 'paid', account: info.bank || item.account || '',
           fromRecurringId: item.id, recForKey: k, viaSms: true, amountRial: hkSmsRialFor(info.amount) || undefined, createdAt: Date.now(), updatedAt: Date.now()
         })));
@@ -32946,6 +33055,7 @@ function confirmSmsEntry() {
         if (smsPendingQueue.some(x => x && String(x.raw || '').trim() === rawKey)) return false;
       }
       smsPendingQueue.push(parsed);
+      try { hkPendingRefresh(); } catch (ePr) {}
       /* صف به ترتیب تاریخ خود پیامک (نه زمان رسیدن)؛ پیامک‌های یک روز به همان ترتیب رسیدن می‌مانند */
       try {
         const dk = (x) => ((parseInt(x && x.year, 10) || 0) * 10000) + ((parseInt(x && x.month, 10) || 0) * 100) + (parseInt(x && x.day, 10) || 0);
@@ -38789,6 +38899,20 @@ if (item.type === 'recurring') {
       var d = recDayFor(item, k);
       return (item.name || '') + ' _ ' + (kind === 'late' ? 'معوقه ' : 'پیش‌پرداخت ') + (d ? toPersianDigits(String(d)) + ' ' : '') + (MONTHS[(k % 100) - 1] || '');
     }
+    /* ۱.۳.۵۶: برچسب فقط وقتی ماه واریز نه ماه «بابت» است نه ماه سررسید (برای هر دو نوع قرارداد) */
+    function recLabelFor(item, dueK, payK) {
+      var bab = recTiming(item) === 'end' ? recPrevKey(dueK) : dueK;
+      if (payK === bab || payK === dueK) return '';
+      return payK > dueK ? 'late' : 'ahead';
+    }
+    function recDueDesc(item, dueK, payK) { var l = recLabelFor(item, dueK, payK); return l ? recOtherDueDesc(item, dueK, l) : (item.name || ''); }
+    /* شرحی که خود نرم‌افزار گذاشته (اسم قرارداد، «اسم _ معوقه …»، «اسم (پیش‌دریافت …)») — شرح نوشتهٔ کاربر دست نمی‌خورد */
+    function recIsAutoDesc(item, desc) {
+      var d = String(desc || '').trim(), n = String((item && item.name) || '').trim();
+      if (!d) return true;
+      if (!n) return false;
+      return d === n || d.indexOf(n + ' _ معوقه') === 0 || d.indexOf(n + ' _ پیش‌پرداخت') === 0 || d.indexOf(n + ' (پیش‌دریافت') === 0;
+    }
     function recRowLabel(r, k) {
       return (r.day ? toPersianDigits(String(r.day)) + ' ' : '') + (MONTHS[(k % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(k / 100))) + ' — ' + formatNum(Number(r.amount) || 0) +
         (r.account ? ' — ' + r.account : '') + (r.desc ? ' — «' + r.desc + '»' : '');
@@ -39054,7 +39178,7 @@ if (item.type === 'recurring') {
       /* ۱.۳.۴۶: دو دکمهٔ هم‌اندازه: «وصل خودکار» راست (پیدا کردن واریزهای قبلی) و «وصل دستی» چپ */
       var foot = '<div class="rec-arch-foot" style="padding:8px 10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
         '<button type="button" id="recArchAddPrev" class="rec-arch-fbtn">وصل خودکار</button>' +
-        '<button type="button" id="recArchManual" class="rec-arch-fbtn">وصل دستی</button></div>';
+        (sched ? '' : '<button type="button" id="recArchManual" class="rec-arch-fbtn">وصل دستی</button>') + '</div>';
       box.innerHTML = head + body + foot;
       ov.appendChild(box);
       document.body.appendChild(ov);
@@ -39069,7 +39193,7 @@ if (item.type === 'recurring') {
       /* شرح: مثل بقیهٔ سلول‌ها با یک ضربه متن کامل یک‌خطی در باکس شناور (بالای این پنجره) */
       box.querySelectorAll('.rec-arch-desc').forEach(function (d) { d.onclick = function (e) { e.stopPropagation(); try { var pp = showCellTextPopup(d, d.textContent); if (pp) pp.style.zIndex = '100400'; } catch (eP) {} }; });
       box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
-      box.querySelector('#recArchManual').onclick = function () { recManualLinkFlow(item, function () { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} }); };
+      if (box.querySelector('#recArchManual')) box.querySelector('#recArchManual').onclick = function () { recManualLinkFlow(item, function () { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} }); };
       /* ۱.۳.۴۷: × هر ردیف فقط اتصال را برمی‌دارد (ردیف سر جایش می‌ماند)؛ برگشت یا زدن بیرون = انصراف */
       var reopen = function () { try { saveRecurring(); } catch (eS) {} try { recRefreshViews(); renderRecurringBar(); } catch (eR) {} recOpenArchive(item, termIdx); };
       box.querySelectorAll('.rec-sch-btn').forEach(function (b) {
@@ -39133,19 +39257,60 @@ if (item.type === 'recurring') {
       return { y: Math.floor(x.key / 100), m: x.key % 100, d: parseInt(toEnglishDigits(String(r.day || '')), 10) || 1 };
     }
     /* از اولین پرداخت (وصل‌شده یا ثبت‌شده در آرشیو) نوع قرارداد را تعیین می‌کند؛ در «پایان ماه» ردیف دریافت‌نشدهٔ ماه شروع حذف می‌شود */
-    function recInferTiming(item, firstPay) {
-      if (!item || item.payTiming || !item.contractStart || !item.contractStart.y) return false;
-      var p = firstPay;
-      if (!p) {
-        var paid = recArchiveRows(item).filter(function (x) { return recIsPaid(x.row); }).map(recPayDateOf);
-        Object.keys(item.extPaid || {}).forEach(function (k) { var e = item.extPaid[k]; if (e && e.y) paid.push({ y: e.y, m: e.m, d: e.d }); });
-        paid.sort(function (a, b) { return recDayIndex(a.y, a.m, a.d) - recDayIndex(b.y, b.m, b.d); });
-        p = paid[0];
-      }
-      if (!p) return false;
+    /* ۱.۳.۵۶: از همان اولین واریز: کمتر از ۱۵ روز بعد از شروع = ابتدای ماه؛ ۱۵ تا ۵۰ روز = پایان ماه.
+       از سومین واریز به بعد، اگر همهٔ واریزها با فرض دیگر خیلی جورترند، خودکار اصلاح می‌شود */
+    function recTimingFromFirst(item, p) {
       var s = item.contractStart, diff = recDayIndex(p.y, p.m, p.d) - recDayIndex(s.y, s.m, s.d || 1);
-      var t = Math.abs(diff) <= 10 ? 'start' : (Math.abs(diff - 30) <= 10 ? 'end' : '');
-      if (!t) return false;
+      return (diff >= -10 && diff < 15) ? 'start' : (diff >= 15 && diff <= 50) ? 'end' : '';
+    }
+    function recPaysOf(item) {
+      var paid = recArchiveRows(item).filter(function (x) { return recIsPaid(x.row); }).map(recPayDateOf);
+      Object.keys(item.extPaid || {}).forEach(function (k) { var e = item.extPaid[k]; if (e && e.y) paid.push({ y: e.y, m: e.m, d: e.d }); });
+      paid.sort(function (a, b) { return recDayIndex(a.y, a.m, a.d) - recDayIndex(b.y, b.m, b.d); });
+      return paid;
+    }
+    /* سررسیدهای قرارداد با فرض نوع t */
+    function recDueList(item, t, n) {
+      var s = item.contractStart, due = recDueDay(item), k0 = recMonthKey(s.y, s.m), out = [];
+      if (t === 'end') k0 = recNextKey(k0);
+      for (var k = k0, g = 0; g < (n || 120); g++, k = recNextKey(k)) out.push({ k: k, i: recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100))) });
+      return out;
+    }
+    /* هم‌ترازی به ترتیب (واریزها و سررسیدها هر دو به ترتیب زمان؛ ماه جاافتاده و واریز اضافه مجاز): [{cost, at:[اندیس سررسید یا -1]}] */
+    function recAlign(pis, dues, lims) {
+      var n = pis.length, m = dues.length, INF = 1e9, SKIP_P = 25, SKIP_D = 6;
+      var D = [], B = [];
+      for (var i = 0; i <= n; i++) { D.push(new Array(m + 1).fill(INF)); B.push(new Array(m + 1).fill(0)); }
+      D[0][0] = 0;
+      for (var j = 1; j <= m; j++) { D[0][j] = D[0][j - 1] + SKIP_D; B[0][j] = 2; }
+      for (i = 1; i <= n; i++) {
+        D[i][0] = D[i - 1][0] + SKIP_P; B[i][0] = 1;
+        for (j = 1; j <= m; j++) {
+          var best = D[i - 1][j] + SKIP_P, how = 1;
+          if (D[i][j - 1] + SKIP_D < best) { best = D[i][j - 1] + SKIP_D; how = 2; }
+          var d = Math.abs(pis[i - 1] - dues[j - 1].i);
+          if (d <= (lims ? lims[i - 1] : 20) && D[i - 1][j - 1] + d < best) { best = D[i - 1][j - 1] + d; how = 3; }
+          D[i][j] = best; B[i][j] = how;
+        }
+      }
+      /* پایان: هر تعداد سررسید آخر بی‌واریز رایگان (ماه‌های آینده) */
+      var bj = 0, bc = INF; for (j = 0; j <= m; j++) if (D[n][j] < bc) { bc = D[n][j]; bj = j; }
+      var at = new Array(n).fill(-1); i = n; j = bj;
+      while (i > 0 || j > 0) { var h = B[i][j]; if (h === 3) { at[i - 1] = j - 1; i--; j--; } else if (h === 1) i--; else j--; }
+      return { cost: bc, at: at };
+    }
+    function recTimingCost(item, pays, t) {
+      var pis = pays.map(function (p) { return recDayIndex(p.y, p.m, p.d); });
+      return recAlign(pis, recDueList(item, t, Math.max(24, pays.length + 6))).cost;
+    }
+    function recInferTiming(item, firstPay) {
+      if (!item || !item.contractStart || !item.contractStart.y) return false;
+      var pays = recPaysOf(item);
+      if (firstPay && !pays.some(function (q) { return q.y === firstPay.y && q.m === firstPay.m && q.d === firstPay.d; })) { pays.push(firstPay); pays.sort(function (a, b) { return recDayIndex(a.y, a.m, a.d) - recDayIndex(b.y, b.m, b.d); }); }
+      if (!pays.length) return false;
+      var t = recTimingFromFirst(item, pays[0]) || item.payTiming || '';
+      if (pays.length >= 3) { var cs = recTimingCost(item, pays, 'start'), ce = recTimingCost(item, pays, 'end'); if (ce + 15 < cs) t = 'end'; else if (cs + 15 < ce) t = 'start'; }
+      if (!t || item.payTiming === t) return false;
       item.payTiming = t; item.updatedAt = Date.now();
       if (t === 'end') {
         var sk = recStartKey(item);
@@ -39176,17 +39341,17 @@ if (item.type === 'recurring') {
         (byKey[k] = byKey[k] || []).push({ x: x, i: i });
       });
       var stat = { paid: 0, miss: 0, sum: 0 };
-      var lab = function (k) { var b = recTiming(item) === 'end' ? recPrevKey(k) : k; return (MONTHS[(b % 100) - 1] || '') + (Math.floor(b / 100) !== today.y ? ' ' + toPersianDigits(String(Math.floor(b / 100)).slice(2)) : ''); };
+      var lab = function (k) { var b = recTiming(item) === 'end' ? recPrevKey(k) : k; return MONTHS[(b % 100) - 1] || ''; };
       var paidTr = function (k, z) {
         var r = z.x.row, d = recPayDateOf(z.x), tag = '';
-        if (r.recForKey) tag = recDayIndex(d.y, d.m, d.d) > recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100))) ? 'معوقه' : 'پیش‌پرداخت';
+        var _lb = recLabelFor(item, k, recMonthKey(d.y, d.m)); if (_lb) tag = _lb === 'late' ? 'معوقه' : 'پیش‌پرداخت';
         stat.sum += Number(r.amount) || 0;
         return '<tr class="rec-arch-row is-paid" data-i="' + z.i + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(d) + (tag ? '<small class="rec-sch-tag">' + tag + '</small>' : '') + '</td>' +
           '<td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(r.desc || item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td>' +
           '<td class="rec-arch-x"><button type="button" class="rec-arch-del" data-i="' + z.i + '" aria-label="جدا کردن">×</button></td></tr>';
       };
       /* ۱.۳.۵۵: ستون شرح (یک‌خطی؛ با زدن متن کامل) */
-      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:14%"><col style="width:22%"><col><col style="width:21%"><col style="width:13%"><col style="width:1.8em"></colgroup>' +
+      var h = '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:19%"><col style="width:21%"><col><col style="width:20%"><col style="width:13%"><col style="width:1.8em"></colgroup>' +
         '<thead><tr><th>بابت</th><th>تاریخ تراکنش</th><th>شرح</th><th>مبلغ</th><th>بانک</th><th></th></tr></thead><tbody>';
       keys.forEach(function (k) {
         var list = byKey[k];
@@ -39252,7 +39417,7 @@ if (item.type === 'recurring') {
       var ov = document.createElement('div'); ov.id = 'recAddPrevModal';
       ov.style.cssText = 'position:fixed;inset:0;z-index:100450;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;';
       var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
-      var lab = function (k) { var b = recTiming(item) === 'end' ? recPrevKey(k) : k; return (MONTHS[(b % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(b / 100)).slice(2)); };
+      var lab = function (k) { var b = recTiming(item) === 'end' ? recPrevKey(k) : k; return MONTHS[(b % 100) - 1] || ''; };
       var h = '<div style="width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:14px;direction:rtl;overflow:hidden;">' +
         '<div style="padding:12px;font-weight:800;font-size:0.9rem;text-align:center;line-height:1.7;">واریزهای «' + escapeHtml(item.name || '') + '» در پیامک‌های گوشی</div><div style="overflow:auto;flex:1;padding:0 8px 6px;">' +
         '<table class="person-detail-table rec-arch-table rec-sch-table"><colgroup><col style="width:2.2em"><col style="width:17%"><col style="width:28%"><col style="width:27%"><col></colgroup>' +
@@ -39297,7 +39462,7 @@ if (item.type === 'recurring') {
         }
         if (hit) {
           recLinkRow(item, hit);
-          if (c.k !== pk) { hit.recForKey = c.k; hit.desc = recOtherDueDesc(item, c.k, c.k < pk ? 'late' : 'ahead'); if (!item.paidAhead) item.paidAhead = {}; item.paidAhead[String(c.k)] = true; }
+          if (c.k !== pk) { hit.recForKey = c.k; if (recIsAutoDesc(item, hit.desc)) hit.desc = recDueDesc(item, c.k, pk); if (!item.paidAhead) item.paidAhead = {}; item.paidAhead[String(c.k)] = true; }
         } else {
           if (!item.extPaid) item.extPaid = {};
           item.extPaid[String(c.k)] = { y: c.j.y, m: c.j.m, d: c.j.d, amount: c.amount, bank: c.bank || '' };
@@ -39308,6 +39473,88 @@ if (item.type === 'recurring') {
       if (n) { item.updatedAt = Date.now(); recPersist(); try { saveRecurring(); } catch (e1) {} try { recRefreshViews(); } catch (e2) {} }
       return n;
     }
+    /* ===== ۱.۳.۵۶: ترمیم یک‌باره =====
+       درآمد ثابت: نوع قرارداد (ابتدا/پایان ماه) از واریزها دوباره تشخیص داده می‌شود و «بابت» هر واریز وصل‌شده از نزدیک‌ترین سررسید؛
+       برچسب‌هایی که خود نرم‌افزار گذاشته بود اصلاح می‌شوند (شرح نوشتهٔ کاربر دست نمی‌خورد)؛ واریز وصل‌نشده‌ای که شرحش دقیقاً اسم
+       قرارداد است و در بازهٔ درست افتاده وصل می‌شود.
+       قسط (غیرفعال): ردیف‌های پرداخت‌نشده حذف و پرداخت‌شده‌ها ردیف معمولی مخارج می‌شوند (موجودی عوض نمی‌شود) */
+    function hkRecRepairItem(item) {
+      if (!item || item.deletedAt || !item.id || !item.contractStart || !item.contractStart.y) return 0;
+      var amt = Number(item.amount) || 0, name = String(item.name || '').trim(), changed = 0;
+      var linked = recArchiveRows(item).filter(function (x) { return recIsPaid(x.row) && !(x.row.receivedOn && x.row.receivedOn.y); });
+      var free = [];
+      if (name && amt) recEachMonth(function (k, pd) {
+        ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || !recIsPaid(r) || r.fromPlanId) return;
+            if (r.fromRecurringId && (r.fromRecurringId === item.id || recLiveItem(r.fromRecurringId))) return;
+            if (String(r.desc || '').trim() !== name || Math.abs((Number(r.amount) || 0) - amt) > amt * 0.05) return;
+            free.push({ key: k, row: r, sec: sec, free: true });
+          });
+        });
+      });
+      var all = linked.concat(free).map(function (x) { var p = recPayDateOf(x); x.pi = recDayIndex(p.y, p.m, p.d); x.p = p; return x; });
+      if (!all.length) return 0;
+      all.sort(function (a, b) { return a.pi - b.pi; });
+      var pays = all.map(function (x) { return x.p; });
+      var t = recTimingFromFirst(item, pays[0]) || item.payTiming || 'start';
+      if (pays.length >= 3) { var cs = recTimingCost(item, pays, 'start'), ce = recTimingCost(item, pays, 'end'); if (ce + 15 < cs) t = 'end'; else if (cs + 15 < ce) t = 'start'; }
+      if (item.payTiming !== t) { item.payTiming = t; changed++; }
+      var dues = recDueList(item, t, Math.max(24, all.length + 12)), pa = {};
+      var al = recAlign(all.map(function (x) { return x.pi; }), dues, all.map(function (x) { return x.free ? 12 : 20; }));
+      all.forEach(function (x, xi) {
+        var best = al.at[xi];
+        if (best < 0) { if (!x.free && x.row.recForKey) pa[String(x.row.recForKey)] = true; return; }
+        var dk = dues[best].k, r = x.row;
+        if (x.free) { recLinkRow(item, r); changed++; }
+        if (dk === x.key) { if (r.recForKey) { delete r.recForKey; changed++; } }
+        else { if (parseInt(r.recForKey, 10) !== dk) { r.recForKey = dk; changed++; } pa[String(dk)] = true; }
+        if (recIsAutoDesc(item, r.desc)) { var nd = recDueDesc(item, dk, x.key); if (nd && nd !== r.desc) { r.desc = nd; changed++; } }
+        r.updatedAt = Date.now();
+      });
+      var oldPa = JSON.stringify(item.paidAhead || {}); item.paidAhead = pa; if (JSON.stringify(pa) !== oldPa) changed++;
+      /* ردیف «دریافت نشده»ای که سررسیدش حالا پرداخت‌شده است (یا ماه شروع در قرارداد پایان ماه) */
+      var paidKeys = {}; recRowsOf(item).forEach(function (z) { if (recIsPaid(z.row)) paidKeys[z.key] = 1; });
+      var sk = recStartKey(item);
+      var stale = recRowsOf(item).filter(function (z) { return !recIsPaid(z.row) && (pa[String(z.key)] || paidKeys[z.key] || (t === 'end' && z.key === sk)); });
+      if (stale.length) { recRemoveRows(stale); changed += stale.length; }
+      if (changed) item.updatedAt = Date.now();
+      return changed;
+    }
+    function hkInstRepair() {
+      if (typeof HK_INSTALLMENTS_ON !== 'undefined' && HK_INSTALLMENTS_ON) return 0;
+      var n = 0, curK = periodKey(currentYear, currentMonth);
+      var each = function (pd) {
+        ((pd && pd.expense && pd.expense.sections) || []).forEach(function (sec) {
+          if (!Array.isArray(sec.rows)) return;
+          var keep = [];
+          sec.rows.forEach(function (r) {
+            if (!r || !r.fromPlanId) { keep.push(r); return; }
+            n++;
+            if ((r.status || 'paid') !== 'paid') return;
+            ['fromPlanId', 'fromPlanIndex', 'planCarried', 'planEarlyPay', 'planLockedAmt', 'planPaidLater', 'planLocked', 'planNote'].forEach(function (f) { delete r[f]; });
+            r.updatedAt = Date.now();
+            keep.push(r);
+          });
+          sec.rows = keep.length ? keep : [emptyRow('expense')];
+        });
+      };
+      each(periodData);
+      Object.keys(archive || {}).forEach(function (k) { if (k !== curK && archive[k]) each(archive[k]); });
+      return n;
+    }
+    function hkMig1356() {
+      var flag = STORAGE_KEY + '_mig1356';
+      try { if (localStorage.getItem(flag)) return; } catch (e) { return; }
+      var n = 0;
+      try { (recurringIncomes || []).forEach(function (it) { n += hkRecRepairItem(it); }); } catch (e1) {}
+      try { n += hkInstRepair(); } catch (e2) {}
+      /* پرچم فقط وقتی داده‌ای برای ترمیم بوده (نصب تازه/بی‌داده چیزی در حافظه نمی‌نویسد) */
+      if (n || (recurringIncomes || []).some(function (it) { return it && it.contractStart; })) { try { localStorage.setItem(flag, '1'); } catch (e3) {} }
+      if (n) { recPersist(); try { saveRecurring(); } catch (e4) {} try { renderAll(); renderRecurringBar(); } catch (e5) {} }
+      return n;
+    }
+    setTimeout(function () { try { hkMig1356(); } catch (eM) {} }, 2600);
     /* تمدید قرارداد: دورهٔ فعلی به دوره‌های قبلی می‌رود و دورهٔ تازه (پیش‌فرض: از پایان قبلی، یک سال، همان مبلغ) شروع می‌شود */
     function recRenewItem(item, start, end, amount, deposit) {
       var oldEndK = recEndKey(item);
@@ -43475,7 +43722,149 @@ function openProjectRowPicker(secId) {
     /* —— بده‌بستان (بخش‌محور) —— */
     let ledgerSelectedPerson = '';
 
+
+    /* ===== ۱.۳.۵۶: قرض پیوسته =====
+       هر ردیف در ماهِ تاریخ خودش ذخیره می‌شود (r.ly / r.lm / r.day)؛ جدول هر رابطه همهٔ ردیف‌های همان ماه + ردیف‌های
+       تسویه‌نشدهٔ ماه‌های قبل را پشت‌سرهم نشان می‌دهد. «تسویه شد» ردیف را نگه می‌دارد ولی از جمع‌ها بیرون می‌برد */
+    var _ledViewMap = {};
+    function hkLedKey(r, y, m) { var d = parseInt(toEnglishDigits(String((r && r.day) || '')), 10) || 0; if (!d) return 99999999; return (parseInt(r.ly, 10) || y) * 10000 + (parseInt(r.lm, 10) || m) * 100 + d; }
+    function hkLedHasData(r) { return !!(r && !r.deletedAt && (Number(r.amount) || String(r.desc || '').trim())); }
+    function hkLedCarried(secId) {
+      var curN = currentYear * 100 + currentMonth, curK = periodKey(currentYear, currentMonth), out = [];
+      Object.keys(archive || {}).forEach(function (k) {
+        if (k === curK) return;
+        var p = String(k).split('-'), y = +p[0], m = +p[1];
+        if (!(y * 100 + m < curN)) return;
+        var pd = archive[k];
+        ((pd && pd.ledger && pd.ledger.sections) || []).forEach(function (s) {
+          if (!s || s.id !== secId) return;
+          (s.rows || []).forEach(function (r) {
+            /* تسویه‌شده تا همان ماهی که تسویه شد دیده می‌شود (با تیک)، بعد از آن نه */
+            if (!hkLedHasData(r) || (r.settled && !((parseInt(r.settledN, 10) || 0) >= curN))) return;
+            out.push({ row: r, sec: s, pd: pd, k: k, y: y, m: m });
+          });
+        });
+      });
+      return out;
+    }
+    function hkLedViewRows(sec) {
+      var curK = periodKey(currentYear, currentMonth);
+      var own = (sec.rows || []).map(function (r) { return { row: r, sec: sec, pd: periodData, k: curK, y: currentYear, m: currentMonth }; });
+      var all = hkLedCarried(sec.id).concat(own);
+      return all.map(function (x, i) { x.i = i; return x; }).sort(function (a, b) { return (hkLedKey(a.row, a.y, a.m) - hkLedKey(b.row, b.y, b.m)) || (hkTimeCmp(a.row, b.row) || a.i - b.i); });
+    }
+    function hkLedResolve(secId, idx) {
+      var v = _ledViewMap[secId];
+      if (v && v[idx]) return v[idx];
+      var sec = (ensureLedger().sections || []).find(function (s) { return s.id === secId; });
+      return (sec && sec.rows && sec.rows[idx]) ? { row: sec.rows[idx], sec: sec, pd: periodData, k: periodKey(currentYear, currentMonth), y: currentYear, m: currentMonth } : null;
+    }
+    function hkLedDateText(r, y, m) {
+      var d = parseInt(toEnglishDigits(String((r && r.day) || '')), 10) || 0; if (!d) return '';
+      var yy = parseInt(r.ly, 10) || y, mm = parseInt(r.lm, 10) || m;
+      return toPersianDigits(String(d)) + ' ' + (MONTHS[mm - 1] || '') + (yy !== currentYear ? ' ' + toPersianDigits(String(yy).slice(2)) : '');
+    }
+    /* انتقال ردیف به ماه تاریخش (همان رابطه) */
+    function hkLedPlace(x) {
+      var r = x.row, y = parseInt(r.ly, 10) || x.y, m = parseInt(r.lm, 10) || x.m;
+      if (y === x.y && m === x.m) return false;
+      var tk = periodKey(y, m), tpd = (y === currentYear && m === currentMonth) ? periodData : recMonthData(recMonthKey(y, m), true);
+      if (!tpd.ledger || !Array.isArray(tpd.ledger.sections)) tpd.ledger = { sections: [], nextId: 1 };
+      var ts = tpd.ledger.sections.find(function (s) { return s && s.id === x.sec.id; });
+      if (!ts) { ts = { id: x.sec.id, personA: x.sec.personA || '', personB: x.sec.personB || '', collapsed: false, rows: [] }; tpd.ledger.sections.push(ts); }
+      if (!Array.isArray(ts.rows)) ts.rows = [];
+      ts.rows = ts.rows.filter(hkLedHasData);
+      var i = x.sec.rows.indexOf(r); if (i >= 0) x.sec.rows.splice(i, 1);
+      if (!x.sec.rows.length) x.sec.rows.push(emptyLedgerRow());
+      ts.rows.push(r);
+      return true;
+    }
+    /* باکس جمع‌وجور انتخاب تاریخ (چرخ‌های همان باکس ویرایش ردیف) */
+    function hkLedDatePick(init, onPick) {
+      var old = document.getElementById('hkLedDate'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkLedDate'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
+      var box = document.createElement('div'); box.className = 'hk-re-box hk-led-date-box';
+      box.innerHTML = '<div class="hk-re-title">تاریخ</div>';
+      var years = []; for (var yy = 1390; yy <= 1420; yy++) years.push(yy);
+      var days = []; for (var dd = 1; dd <= 31; dd++) days.push(toPersianDigits(String(dd)));
+      var wrap = document.createElement('div'); wrap.className = 'hk-re-wheels';
+      var lab = document.createElement('div'); lab.className = 'hk-led-date-greg'; lab.dir = 'ltr';
+      var upd = function () { try { lab.textContent = hkGregStr(years[wY.getIndex()], wM.getIndex() + 1, wD.getIndex() + 1); } catch (e) {} };
+      var wD = hkWheel(days, Math.max(0, (init.d || 1) - 1), upd), wM = hkWheel(MONTHS.slice(), (init.m || 1) - 1, upd), wY = hkWheel(years.map(function (v) { return toPersianDigits(String(v)); }), Math.max(0, years.indexOf(init.y)), upd);
+      wrap.appendChild(wD); wrap.appendChild(wM); wrap.appendChild(wY);
+      box.appendChild(wrap); box.appendChild(lab);
+      var btns = document.createElement('div'); btns.className = 'hk-re-btns';
+      btns.innerHTML = '<button type="button" class="hk-re-ok">ثبت</button><button type="button" class="hk-re-no">انصراف</button>';
+      box.appendChild(btns); ov.appendChild(box); document.body.appendChild(ov);
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      btns.querySelector('.hk-re-no').onclick = close;
+      btns.querySelector('.hk-re-ok').onclick = function () {
+        var m = wM.getIndex() + 1, d = Math.min(wD.getIndex() + 1, recMonthLen(m));
+        close(); onPick({ y: years[wY.getIndex()], m: m, d: d });
+      };
+      requestAnimationFrame(function () { [wD, wM, wY].forEach(function (w) { w._init(); }); upd(); });
+    }
+    function hkLedSetDate(secId, idx, dt) {
+      var x = hkLedResolve(secId, idx); if (!x) return;
+      if (!canEditRow(x.row)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+      x.row.day = String(dt.d); x.row.ly = dt.y; x.row.lm = dt.m; x.row.updatedAt = Date.now();
+      stampRowOwner(x.row);
+      var moved = hkLedPlace(x);
+      try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e) {}
+      if (moved && dt.y * 100 + dt.m > currentYear * 100 + currentMonth) showToast('ردیف به ' + MONTHS[dt.m - 1] + ' ' + toPersianDigits(String(dt.y)) + ' رفت و از همان ماه دیده می‌شود');
+      try { renderLedgerTab(); } catch (eR) {}
+    }
+    function hkLedToggleSettled(secId, idx) {
+      var x = hkLedResolve(secId, idx); if (!x) return;
+      if (!canEditRow(x.row)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+      if (x.row.settled) { delete x.row.settled; delete x.row.settledN; } else { x.row.settled = true; x.row.settledN = currentYear * 100 + currentMonth; }
+      x.row.updatedAt = Date.now();
+      try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e) {}
+      showToast(x.row.settled ? 'تسویه شد؛ ردیف می‌ماند ولی در جمع‌ها حساب نمی‌شود' : 'از حالت تسویه برگشت');
+      try { renderLedgerTab(); } catch (eR) {}
+    }
+    /* یک‌بار: کپی‌های تکراری ردیف‌ها که با رفتن به ماه‌های بعد ساخته شده بود برداشته و ماه هر ردیف ثبت می‌شود */
+    var _hkLedMigDone = false;
+    function hkLedMigOnce() {
+      if (_hkLedMigDone) return; _hkLedMigDone = true;
+      var flag = STORAGE_KEY + '_ledMig1356';
+      try { if (localStorage.getItem(flag)) return; } catch (e) { return; }
+      try {
+        var curK = periodKey(currentYear, currentMonth), list = [];
+        Object.keys(archive || {}).forEach(function (k) { if (k !== curK && archive[k]) list.push({ k: k, pd: archive[k] }); });
+        list.push({ k: curK, pd: periodData });
+        var n = function (k) { var p = String(k).split('-'); return (+p[0]) * 100 + (+p[1]); };
+        list.sort(function (a, b) { return n(a.k) - n(b.k); });
+        var seen = {}, changed = 0;
+        list.forEach(function (it) {
+          var p = String(it.k).split('-'), y = +p[0], m = +p[1];
+          ((it.pd && it.pd.ledger && it.pd.ledger.sections) || []).forEach(function (s) {
+            if (!s || !Array.isArray(s.rows)) return;
+            var sid = s.id || ((s.personA || '') + '|' + (s.personB || ''));
+            var bag = seen[sid] || (seen[sid] = {});
+            var keep = [];
+            s.rows.forEach(function (r) {
+              if (!hkLedHasData(r)) { keep.push(r); return; }
+              var sig = r.id ? 'i' + r.id : r.createdAt ? 'c' + r.createdAt + '|' + (r.createdBy || '') : 'v' + [r.day || '', r.desc || '', Number(r.amount) || 0, r.status || ''].join('|');
+              if (bag[sig]) {
+                var e = bag[sig]; ['day', 'desc', 'amount', 'status', 'statusPicked', 'settled', 'updatedAt', 'time'].forEach(function (f) { if (r[f] !== undefined) e[f] = r[f]; });
+                changed++; return;
+              }
+              if (!r.ly) { r.ly = y; r.lm = m; changed++; }
+              bag[sig] = r; keep.push(r);
+            });
+            if (keep.length !== s.rows.length) s.rows = keep.length ? keep : [emptyLedgerRow()];
+          });
+        });
+        var anyRows = Object.keys(seen).some(function (k) { return Object.keys(seen[k]).length; });
+        if (anyRows || changed) localStorage.setItem(flag, '1');
+        if (changed) { persistCurrent(); saveArchive(); }
+      } catch (eM) {}
+    }
     function ensureLedger() {
+      try { hkLedMigOnce(); } catch (eLm) {}
       if (!periodData.ledger || typeof periodData.ledger !== 'object') {
         periodData.ledger = { sections: [], nextId: 1 };
       }
@@ -43548,11 +43937,7 @@ function openProjectRowPicker(secId) {
       sec.rows = sec.rows
         .map((r, i) => ({ r, i }))
         .sort((a, b) => {
-          const da = parseInt(a.r.day, 10) || 0;
-          const db = parseInt(b.r.day, 10) || 0;
-          if (!da && !db) return a.i - b.i;
-          if (!da) return 1;
-          if (!db) return -1;
+          const da = hkLedKey(a.r, currentYear, currentMonth), db = hkLedKey(b.r, currentYear, currentMonth);
           if (da !== db) return da - db;
           return hkTimeCmp(a.r, b.r) || a.i - b.i;
         })
@@ -43632,20 +44017,18 @@ function openProjectRowPicker(secId) {
     }
 
     function deleteLedgerRow(secId, idx) {
-      const led0 = ensureLedger();
-      const sec0 = led0.sections.find(s => s.id === secId);
-      const row0 = sec0 && sec0.rows && sec0.rows[idx];
+      const x0 = hkLedResolve(secId, idx);
+      const row0 = x0 && x0.row;
       if (row0 && !canEditRow(row0)) { showToast(OWNERSHIP_LOCK_MSG); return; }
       askConfirm('این ردیف حذف شود؟', () => {
         try {
-          const ledT = ensureLedger();
-          const secT = ledT.sections.find(s => s.id === secId);
-          const rowT = secT && secT.rows && secT.rows[idx];
-          if (rowT) pushToTrash('ledger_row', rowT.desc || 'ردیف بده‌بستان', { sourceLabel: 'بده‌بستان', sectionId: secId, row: JSON.parse(JSON.stringify(rowT)) });
+          if (row0) pushToTrash('ledger_row', row0.desc || 'ردیف بده‌بستان', { sourceLabel: 'بده‌بستان', sectionId: secId, row: JSON.parse(JSON.stringify(row0)) });
         } catch (e) {}
-        const led = ensureLedger();
-        const sec = led.sections.find(s => s.id === secId);
+        /* ۱.۳.۵۶: ردیف ممکن است در ماه دیگری (ردیف منتقل‌شده) باشد */
+        const sec = x0 && x0.sec;
         if (!sec) return;
+        idx = sec.rows.indexOf(row0);
+        if (idx < 0) return;
         const row = sec.rows[idx];
         if (row && row.id && sharedAccountId) {
           row.deletedAt = Date.now();
@@ -43672,9 +44055,9 @@ function openProjectRowPicker(secId) {
     }
 
     function updateLedgerRowField(secId, idx, field, raw) {
-      const sec = ensureLedger().sections.find(s => s.id === secId);
-      if (!sec || !sec.rows[idx]) return;
-      const row = sec.rows[idx];
+      const _x = hkLedResolve(secId, idx);
+      if (!_x || !_x.row) return;
+      const row = _x.row;
       if (!canEditRow(row)) { showToast(OWNERSHIP_LOCK_MSG); return; }
       if (field === 'amount') {
         row.amount = typeof raw === 'number' ? raw : (parseAmount(raw) || 0);
@@ -43683,6 +44066,7 @@ function openProjectRowPicker(secId) {
         if (d < 0) d = 0;
         if (d > 31) d = 31;
         row.day = d ? String(d) : '';
+        if (d && !row.ly) { row.ly = _x.y; row.lm = _x.m; }
       } else if (field === 'status') {
         row.status = (raw === 'credit') ? 'credit' : 'debt';
         if (row.status === 'debt') row.statusPicked = true;
@@ -43711,9 +44095,9 @@ function openProjectRowPicker(secId) {
         const a = (sec.personA || '').trim();
         const b = (sec.personB || '').trim();
         if (!a || !b || a === b) return;
-        (sec.rows || []).forEach(r => {
+        hkLedViewRows(sec).map(x => x.row).forEach(r => {
           const amt = Number(r.amount) || 0;
-          if (!amt) return;
+          if (!amt || r.settled || r.deletedAt) return;
           if (r.status === 'credit') {
             const key = b + '\t' + a;
             nets[key] = (nets[key] || 0) + amt;
@@ -43824,52 +44208,26 @@ function openProjectRowPicker(secId) {
       tdNum.style.color = 'var(--muted)';
       tdNum.style.fontSize = '0.75rem';
       tdNum.textContent = toPersianDigits(idx + 1);
+      /* ۱.۳.۵۶: تسویه‌شده: تیک سبز در سلول ردیف (ردیف می‌ماند، در جمع‌ها نیست) */
+      if (r.settled) { tdNum.innerHTML = '<svg class="hk-led-tick" viewBox="0 0 24 24" aria-label="تسویه شد"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; tr.classList.add('hk-led-settled'); }
 
+      /* ۱.۳.۵۶: سلول «تاریخ» (روز + ماه، و سال اگر سال دیگری است)؛ زدن روی آن = باکس کوچک انتخاب تاریخ */
+      const _xv = hkLedResolve(sec.id, idx) || { y: currentYear, m: currentMonth };
       const tdDay = document.createElement('td');
       tdDay.className = 'col-day';
-      const dayInp = document.createElement('input');
-      dayInp.className = 'cell day-input';
-      dayInp.inputMode = 'numeric';
-      dayInp.pattern = '[0-9]*';
-      dayInp.maxLength = 2;
-      dayInp.placeholder = '';
-      dayInp.setAttribute('enterkeyhint', 'next');
-      dayInp.value = r.day ? toPersianDigits(r.day) : '';
-      dayInp.oninput = () => {
-        if (!canEditRow(r)) return;
-        let v = toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '');
-        if (v.length > 2) v = v.slice(0, 2);
-        let num = v ? parseInt(v, 10) : 0;
-        if (num > 31) num = 31;
-        dayInp.value = num ? toPersianDigits(num) : '';
-        updateLedgerRowField(sec.id, idx, 'day', num ? String(num) : '');
-        syncEmptyClass(dayInp);
-      };
-      dayInp.onblur = () => {
-        syncEmptyClass(dayInp);
-        const rowNow = ((ensureLedger().sections || []).find(s => s.id === sec.id) || sec).rows[idx];
-        scheduleLedgerRowSort(sec.id, rowNow, dayInp.closest('tr'));
-      };
-      dayInp.onkeydown = (e) => {
-        if (e.key === 'Enter' || e.keyCode === 13) {
-          e.preventDefault();
-          e.stopPropagation();
-          const tr = dayInp.closest('tr');
-          const next = tr && tr.querySelector('.desc-input');
-          if (next) {
-            try { lockField(next, false); } catch (err) {
-              next.classList.remove('is-empty', 'locked');
-              next.classList.add('unlocked');
-              if (next.tagName !== 'SELECT') next.readOnly = false;
-            }
-            try { next.focus({ preventScroll: true }); } catch (err) { try { next.focus(); } catch (e2) {} }
-          } else {
-            try { dayInp.blur(); } catch (err) {}
-          }
-        }
+      const dayInp = document.createElement('button');
+      dayInp.type = 'button';
+      dayInp.className = 'cell day-input hk-led-date' + (r.day ? '' : ' is-empty');
+      dayInp.textContent = hkLedDateText(r, _xv.y, _xv.m) || '';
+      dayInp.onclick = (e) => {
+        e.stopPropagation();
+        if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
+        const t0 = getTodayPersian();
+        const dflt = (currentYear === t0.y && currentMonth === t0.m) ? t0 : { y: currentYear, m: currentMonth, d: 1 };
+        const init = r.day ? { y: parseInt(r.ly, 10) || _xv.y, m: parseInt(r.lm, 10) || _xv.m, d: parseInt(r.day, 10) || 1 } : dflt;
+        hkLedDatePick(init, (dt) => hkLedSetDate(sec.id, idx, dt));
       };
       tdDay.appendChild(dayInp);
-      setupLockable(dayInp, !!(r.day), !canEditRow(r), OWNERSHIP_LOCK_MSG);
 
       const tdDesc = document.createElement('td');
       tdDesc.className = 'col-desc';
@@ -43938,7 +44296,7 @@ function openProjectRowPicker(secId) {
       };
       amtInp.onblur = () => {
         syncEmptyClass(amtInp);
-        const rowNow = ((ensureLedger().sections || []).find(s => s.id === sec.id) || sec).rows[idx];
+        const rowNow = (hkLedResolve(sec.id, idx) || {}).row;
         scheduleLedgerRowSort(sec.id, rowNow, amtInp.closest('tr'));
       };
       amtInp.onkeydown = (e) => {
@@ -44238,7 +44596,7 @@ function openProjectRowPicker(secId) {
       try {
         hkBindRowLongPress(tr, function () {
           if (!canEditRow(r)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-          hkOpenRowActions(tr, { canDelete: true, onDelete: function () { deleteLedgerRow(sec.id, idx); }, onEdit: function () { hkOpenLedgerEdit(sec, idx); } });
+          hkOpenRowActions(tr, { canDelete: true, onDelete: function () { deleteLedgerRow(sec.id, idx); }, onEdit: function () { hkOpenLedgerEdit(sec, idx); }, onSettle: function () { hkLedToggleSettled(sec.id, idx); }, settled: !!r.settled });
         });
       } catch (eLp) {}
       return tr;
@@ -44463,13 +44821,19 @@ function openProjectRowPicker(secId) {
       var ov = document.createElement('div'); ov.id = 'hkLedEdit'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
       var st = r.status === 'debt' ? 'debt' : 'credit';
       ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">ویرایش ردیف ' + toPersianDigits(String(idx + 1)) + '</div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">روز</div><input class="hk-re-in hk-led-day" inputmode="numeric" maxlength="2"></div>' +
+        '<div class="hk-re-f"><div class="hk-re-l">تاریخ</div><button type="button" class="hk-re-in hk-re-sel hk-led-day"></button></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">شرح</div><textarea class="hk-re-in hk-led-desc" rows="1"></textarea></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">مبلغ</div><input class="hk-re-in hk-led-amt" inputmode="numeric" dir="ltr"></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">وضعیت</div><div class="hk-re-seg hk-led-seg"><button type="button" class="hk-re-segb is-paid is-inc" data-v="credit">بستانکار</button><button type="button" class="hk-re-segb is-paid is-exp" data-v="debt">بدهکار</button></div></div>' +
         '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ثبت</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
       var q = function (s) { return ov.querySelector(s); };
-      q('.hk-led-day').value = r.day ? toPersianDigits(r.day) : '';
+      /* ۱.۳.۵۶: کل تاریخ (روز، ماه، سال) قابل ویرایش */
+      var _xe = hkLedResolve(sec.id, idx) || { y: currentYear, m: currentMonth };
+      var t0e = getTodayPersian();
+      var dt = r.day ? { y: parseInt(r.ly, 10) || _xe.y, m: parseInt(r.lm, 10) || _xe.m, d: parseInt(r.day, 10) || 1 } : ((currentYear === t0e.y && currentMonth === t0e.m) ? { y: t0e.y, m: t0e.m, d: t0e.d } : { y: currentYear, m: currentMonth, d: 1 });
+      var dtTxt = function () { q('.hk-led-day').innerHTML = '<span>' + toPersianDigits(String(dt.d)) + ' ' + MONTHS[dt.m - 1] + ' ' + toPersianDigits(String(dt.y)) + '</span><small dir="ltr" class="hk-re-greg">' + hkGregStr(dt.y, dt.m, dt.d) + '</small>'; };
+      dtTxt();
+      q('.hk-led-day').onclick = function () { hkLedDatePick(dt, function (v) { dt = v; dtTxt(); }); };
       q('.hk-led-desc').value = r.desc || '';
       q('.hk-led-amt').value = r.amount ? formatNum(r.amount) : '';
       q('.hk-led-amt').addEventListener('input', function () { var d = toEnglishDigits(this.value).replace(/[^0-9]/g, ''); this.value = d ? formatNum(parseInt(d, 10)) : ''; });
@@ -44481,14 +44845,12 @@ function openProjectRowPicker(secId) {
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       q('.hk-re-no').onclick = close;
       q('.hk-re-ok').onclick = function () {
-        updateLedgerRowField(sec.id, idx, 'day', q('.hk-led-day').value);
         updateLedgerRowField(sec.id, idx, 'desc', q('.hk-led-desc').value);
         updateLedgerRowField(sec.id, idx, 'amount', parseAmount(q('.hk-led-amt').value) || 0);
         updateLedgerRowField(sec.id, idx, 'status', st);
         r.statusPicked = true;
         close();
-        try { persistCurrent(); scheduleSave(); } catch (eS) {}
-        try { renderLedgerTab(); } catch (eR) {}
+        hkLedSetDate(sec.id, idx, dt);
       };
       document.body.appendChild(ov);
     }
@@ -44706,16 +45068,25 @@ function openProjectRowPicker(secId) {
         const thead = document.createElement('thead');
         thead.innerHTML = '<tr>' +
           '<th class="col-num">ردیف</th>' +
-          '<th class="col-day">روز</th>' +
+          '<th class="col-day">تاریخ</th>' +
           '<th class="col-desc th-desc">شرح</th>' +
           '<th class="col-amount">مبلغ</th>' +
           '<th class="col-actions"></th></tr>';
         table.appendChild(thead);
         const tbody = document.createElement('tbody');
         const secRef = sec;
-        (secRef.rows || []).forEach((_, i) => tbody.appendChild(buildLedgerRowEl(secRef, i)));
+        /* ۱.۳.۵۶: جدول پیوسته: ردیف‌های این ماه + تسویه‌نشده‌های ماه‌های قبل، به ترتیب تاریخ */
+        const _view = hkLedViewRows(secRef);
+        _ledViewMap[secRef.id] = _view;
+        const vsec = Object.assign({}, secRef, { rows: _view.map(x => x.row) });
+        vsec.rows.forEach((_, i) => tbody.appendChild(buildLedgerRowEl(vsec, i)));
         table.appendChild(tbody);
         body.appendChild(table);
+        /* بیش از ۱۰ ردیف: جدول ثابت و از ردیف ۱۱ داخل خودش اسکرول */
+        if (vsec.rows.length > 10) {
+          body.classList.add('hk-led-scroll');
+          requestAnimationFrame(() => { try { const trs = tbody.querySelectorAll('tr'); let h = thead.offsetHeight; for (let q = 0; q < 10 && q < trs.length; q++) h += trs[q].offsetHeight; if (h > 40) body.style.setProperty('max-height', h + 'px', 'important'); } catch (eH) {} });
+        }
         // ＋ خارج از ناحیه اسکرول — پایین جدول ثابت
         div.classList.add('shaped-card', 'frame-step-sm');
         div.classList.remove('frame-with-step');
