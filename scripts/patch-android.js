@@ -88,6 +88,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
       q.put(item);
       while(q.length()>200){ JSONArray nq=new JSONArray(); for(int i=1;i<q.length();i++) nq.put(q.get(i)); q=nq; }
       sp.edit().putString(QUEUE,q.toString()).apply();
+      /* ۱.۳.۵۶: همان لحظه روی ویجت (تا نرم‌افزار باز شود و دقیق حساب کند) */
+      try{ HkWidgetDraw.applySms(context,text,sender); }catch(Throwable ignored){}
       postNotification(context,text,nid,sender);
     }catch(Exception ignored){}
   }
@@ -2287,6 +2289,72 @@ final class HkWidgetDraw {
     }catch(Exception ignored){}
   }
 
+  /** ۱.۳.۵۶: پیامک تراکنش، همان لحظه روی ویجت: موجودی، خرج امروز و حساب (از مبلغ‌های خام که نرم‌افزار آخرین بار فرستاده).
+      فقط وقتی مبلغ و نوع (واریز/برداشت) بی‌ابهام است؛ با باز شدن نرم‌افزار عدد دقیق جایش می‌نشیند */
+  static String fmtFa(long v){
+    String s=String.format(java.util.Locale.US,"%,d",Math.abs(v)); StringBuilder b=new StringBuilder();
+    for(int i=0;i<s.length();i++){ char ch=s.charAt(i); b.append(ch>='0'&&ch<='9' ? (char)(0x06F0+(ch-'0')) : ch); }
+    return (v<0?"-":"")+b.toString();
+  }
+  static long smsAmount(String t){
+    String[] kws={"مبلغ","واریز","برداشت","خرید","انتقال","پرداخت"};
+    for(String kw:kws){
+      int i=t.indexOf(kw);
+      while(i>=0){
+        int j=i+kw.length(), lim=Math.min(t.length(), j+16);
+        while(j<lim && !(t.charAt(j)>='0'&&t.charAt(j)<='9')) j++;
+        StringBuilder d=new StringBuilder(); int k=j;
+        while(k<t.length() && ((t.charAt(k)>='0'&&t.charAt(k)<='9') || t.charAt(k)==',')){ if(t.charAt(k)!=',') d.append(t.charAt(k)); k++; }
+        boolean masked = k<t.length() && (t.charAt(k)=='*' || t.charAt(k)=='-' && k+1<t.length() && t.charAt(k+1)>='0' && t.charAt(k+1)<='9');
+        if(j<lim && d.length()>=3 && d.length()<=14 && !masked){ try{ return Long.parseLong(d.toString()); }catch(Exception ignored){} }
+        i=t.indexOf(kw,i+1);
+      }
+    }
+    return 0;
+  }
+  static void applySms(Context c,String text,String sender){
+    try{
+      if(BankSmsReceiver.isPersonal(sender)) return;
+      SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+      if(!sp.contains("balRaw")) return;
+      String t=BankSmsReceiver.normFa(text);
+      long amt=smsAmount(t);
+      if(amt<=0) return;
+      boolean inc=t.contains("واریز")||t.contains("بستانکار"), exp=t.contains("برداشت")||t.contains("خرید")||t.contains("پرداخت")||t.contains("بدهکار");
+      if(inc==exp) return;
+      if(!(t.contains("تومان")||t.contains("تومن"))) amt=Math.round(amt/10.0);
+      long sg=inc?1:-1;
+      /* حساب از چهار رقم آخر کارت */
+      String label=null;
+      try{
+        org.json.JSONObject map=new org.json.JSONObject(sp.getString("acc4Map","{}"));
+        java.util.ArrayList<String> runs=new java.util.ArrayList<>(); StringBuilder r=new StringBuilder();
+        for(int i=0;i<=t.length();i++){ char ch=i<t.length()?t.charAt(i):' '; if(ch>='0'&&ch<='9') r.append(ch); else { if(r.length()>=4) runs.add(r.toString()); r.setLength(0); } }
+        java.util.Iterator<String> it=map.keys();
+        while(it.hasNext() && label==null){ String a=it.next(); if(a.length()<3) continue; for(String n:runs){ if(n.endsWith(a)){ label=map.optString(a,null); break; } } }
+      }catch(Exception ignored){}
+      long bal=sp.getLong("balRaw",0)+sg*amt;
+      SharedPreferences.Editor e=sp.edit();
+      e.putLong("balRaw",bal); e.putString("balance",fmtFa(bal)); e.putBoolean("neg",bal<0);
+      String[] td=todayFa();
+      if(sg<0 && td!=null){
+        boolean same=td[1].equals(sp.getString("dayKey",""));
+        long today=(same?sp.getLong("todayRaw",0):0)+amt;
+        e.putLong("todayRaw",today); e.putString("today",fmtFa(today)); e.putBoolean("todayNone",false); e.putString("dayKey",td[1]);
+      }
+      try{
+        org.json.JSONArray arr=new org.json.JSONArray(sp.getString("accounts","[]"));
+        for(int i=0;i<arr.length();i++){
+          org.json.JSONObject o=arr.optJSONObject(i); if(o==null || !o.has("v")) continue;
+          if(o.optBoolean("t",false) || (label!=null && label.equals(o.optString("l")))){ long v=o.optLong("v")+sg*amt; o.put("v",v); o.put("b",fmtFa(v)); o.put("n",v<0); }
+        }
+        e.putString("accounts",arr.toString());
+      }catch(Exception ignored){}
+      e.apply();
+      HkWidgetProvider.refreshAll(c);
+    }catch(Throwable ignored){}
+  }
+
   static Data load(Context c){
     SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     Data d=new Data();
@@ -2719,6 +2787,8 @@ public class HkWidgetPlugin extends Plugin {
       e.putBoolean("light", Boolean.TRUE.equals(call.getBoolean("light",false)));
       e.putString("accounts", call.getString("accounts","[]"));
       e.putString("dayKey", call.getString("dayKey",""));
+      /* ۱.۳.۵۶: مبلغ‌های خام برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک */
+      try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
       e.apply();
       HkWidgetProvider.refreshAll(getContext());
       call.resolve();

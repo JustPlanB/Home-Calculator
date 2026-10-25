@@ -207,8 +207,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const m = document.getElementById('recArchiveModal');
     const btns = [...m.querySelectorAll('.rec-arch-fbtn')];
     const br = btns.map(x => x.getBoundingClientRect());
-    const out = { x: m.querySelectorAll('.rec-arch-del').length, labels: btns.map(x => x.textContent).join(','), autoRight: br[0] && br[0].left > br[1].left, same: br[0] && Math.abs(br[0].width - br[1].width) <= 1 };
-    btns[1].click(); await w(250);
+    const out = { x: m.querySelectorAll('.rec-arch-del').length, labels: btns.map(x => x.textContent).join(',') };
+    recManualLinkFlow(item, function () {}); await w(250);
     const mp = document.getElementById('recPickModal');
     const list = mp.querySelector('.hk-mp-list'), first = [...mp.querySelectorAll('.hk-mp-it')].find(x => x.getBoundingClientRect().top >= list.getBoundingClientRect().top - 1);
     out.firstVisible = first && first.textContent;
@@ -226,7 +226,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const st = document.createElement('div'); st.className = 'rec-st-unpaid'; document.body.appendChild(st); out.unpaidCol = getComputedStyle(st).color; st.remove();
     return out;
   });
-  ok(rec.x === 1 && rec.labels === 'وصل خودکار,وصل دستی' && rec.autoRight && rec.same, 'پوشهٔ آرشیو: کنار هر ردیف ×؛ پایین «وصل خودکار» راست و «وصل دستی» چپ، هم‌اندازه');
+  /* ۱.۳.۵۶: «وصل دستی» کنار هر ماه پیدانشده؛ پایین فقط «وصل خودکار» تمام‌عرض */
+  ok(rec.x === 1 && rec.labels === 'وصل خودکار', 'پوشهٔ آرشیو: کنار هر ردیف ×؛ پایین فقط «وصل خودکار» (' + rec.labels + ')');
   ok(/خرداد ۱۴۰۵/.test(rec.firstVisible || '') && rec.titleSticky && rec.cancelCenter === 'center', 'وصل دستی: اولین ماه دیده‌شده ماه شروع قرارداد (خرداد ۱۴۰۵)، عنوان ثابت، «انصراف» وسط‌چین (' + rec.firstVisible + ')');
   ok(rec.cancelOptCenter === 'center' && rec.unlinked, '× ردیف آرشیو → «بلی» فقط اتصال را برمی‌دارد؛ «خیر» وسط‌چین');
   /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(230, 177, 44)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
