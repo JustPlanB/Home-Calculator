@@ -39549,7 +39549,8 @@ if (item.type === 'recurring') {
       var n = 0;
       try { (recurringIncomes || []).forEach(function (it) { n += hkRecRepairItem(it); }); } catch (e1) {}
       try { n += hkInstRepair(); } catch (e2) {}
-      try { localStorage.setItem(flag, '1'); } catch (e3) {}
+      /* پرچم فقط وقتی داده‌ای برای ترمیم بوده (نصب تازه/بی‌داده چیزی در حافظه نمی‌نویسد) */
+      if (n || (recurringIncomes || []).some(function (it) { return it && it.contractStart; })) { try { localStorage.setItem(flag, '1'); } catch (e3) {} }
       if (n) { recPersist(); try { saveRecurring(); } catch (e4) {} try { renderAll(); renderRecurringBar(); } catch (e5) {} }
       return n;
     }
@@ -43857,7 +43858,8 @@ function openProjectRowPicker(secId) {
             if (keep.length !== s.rows.length) s.rows = keep.length ? keep : [emptyLedgerRow()];
           });
         });
-        localStorage.setItem(flag, '1');
+        var anyRows = Object.keys(seen).some(function (k) { return Object.keys(seen[k]).length; });
+        if (anyRows || changed) localStorage.setItem(flag, '1');
         if (changed) { persistCurrent(); saveArchive(); }
       } catch (eM) {}
     }
