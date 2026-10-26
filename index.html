@@ -11502,6 +11502,14 @@
     #panel-ledger #sections-ledger .section-body table thead th { text-align: center !important; }
     #panel-ledger #sections-ledger .section-body table thead tr.hk-led-title-row th { font-size: 0.95rem; font-weight: 800; padding: 8px 6px !important; }
     #sections-ledger .hk-led-date { direction: ltr; font-size: 0.7rem; }
+    /* ۱.۳.۵۹: قرض — عنوان رابطه مثل عنوان جدول درآمد/مخارج؛ عرض ستون‌ها */
+    #panel-ledger #sections-ledger .section-body table thead tr.hk-led-title-row th { background: var(--bg) !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 1.15rem !important; font-weight: 800 !important; padding: 14px 12px 10px !important; }
+    #panel-ledger #sections-ledger .section-body table { table-layout: fixed !important; width: 100% !important; }
+    #panel-ledger #sections-ledger .section-body table col.hk-lc-num { width: 2.4em; }
+    #panel-ledger #sections-ledger .section-body table col.hk-lc-day { width: 78px; }
+    #panel-ledger #sections-ledger .section-body table col.hk-lc-amt { width: 30%; }
+    #panel-ledger #sections-ledger .section-body table :is(th, td).col-num { width: auto !important; min-width: 0 !important; max-width: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+    #panel-ledger #sections-ledger .section-body table :is(th, td).col-day { width: auto !important; min-width: 0 !important; max-width: none !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -39406,6 +39414,8 @@ if (item.type === 'recurring') {
         (byKey[k] = byKey[k] || []).push({ x: x, i: i });
       });
       var stat = { paid: 0, miss: 0, sum: 0 };
+      /* ۱.۳.۵۹: هنوز هیچ پرداختی نیامده = اول‌ماهی یا آخرماهی بودن معلوم نیست؛ هر ماه تا موعد دیرتر (آخر همان ماه) صبر می‌کند */
+      var _amb = recTiming(item) === 'start' && !recPaysOf(item).length;
       var lab = function (k) { var b = recTiming(item) === 'end' ? recPrevKey(k) : k; return MONTHS[(b % 100) - 1] || ''; };
       var paidTr = function (k, z) {
         var r = z.x.row, d = recPayDateOf(z.x), tag = '';
@@ -39428,7 +39438,8 @@ if (item.type === 'recurring') {
           else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="5" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
           return;
         }
-        var dIdx = recDayIndex(Math.floor(k / 100), k % 100, Math.min(due, recMonthLen(k % 100)));
+        var dk = _amb ? recNextKey(k) : k;
+        var dIdx = recDayIndex(Math.floor(dk / 100), dk % 100, Math.min(due, recMonthLen(dk % 100)));
         var st, cls = '', btns = '';
         if (dIdx > tIdx) { st = 'هنوز موعدش نرسیده'; cls = 'future'; }
         else if (tIdx - dIdx <= 10) { st = 'در انتظار'; cls = 'wait'; }
@@ -44658,7 +44669,6 @@ function openProjectRowPicker(secId) {
       tr.appendChild(tdDay);
       tr.appendChild(tdDesc);
       tr.appendChild(tdAmt);
-      tr.appendChild(tdAct);
       /* ۱.۳.۵۱: ویرایش/حذف ردیف قرض مثل برداشت/واریز: لانگ‌پرس روی ردیف (ضربدر برداشته شد) */
       try {
         hkBindRowLongPress(tr, function () {
@@ -45034,6 +45044,11 @@ function openProjectRowPicker(secId) {
       }, 50);
     }
 
+    /* بیش از ۱۰ ردیف: ارتفاع = سرستون‌ها + ۱۰ ردیف اول (فقط وقتی باز است اندازه‌گیری می‌شود) */
+    function hkLedCap(body, thead, tbody) {
+      if (!body || !body.classList.contains('hk-led-scroll')) return;
+      try { const trs = tbody.querySelectorAll('tr'); let h = thead.offsetHeight; for (let q = 0; q < 10 && q < trs.length; q++) h += trs[q].offsetHeight; if (h > 40) body.style.setProperty('max-height', h + 'px', 'important'); } catch (eH) {}
+    }
     function renderLedgerTab() {
       const led = ensureLedger();
       renderLedgerFilters();
@@ -45124,23 +45139,27 @@ function openProjectRowPicker(secId) {
           const target = (ledNow.sections || []).find(s => s.id === sid);
           if (!target) return;
           target.collapsed = !target.collapsed;
-          hkSlideSet(div, !target.collapsed, function (o) { div.classList.toggle('collapsed', !o); });
+          /* ۱.۳.۵۹: سقف ۱۰ ردیف همان لحظهٔ باز شدن اندازه گرفته می‌شود تا انیمیشن به ارتفاع نهایی برود */
+          hkSlideSet(div, !target.collapsed, function (o) { div.classList.toggle('collapsed', !o); if (o) hkLedCap(body, thead, tbody); });
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
-          persistCurrent();
-          scheduleSave();
+          /* ۱.۳.۵۹: ذخیره بعد از انیمیشن (ذخیرهٔ هم‌زمان باز/بسته شدن را روی گوشی گیر می‌انداخت) */
+          setTimeout(() => { persistCurrent(); scheduleSave(); }, 480);
         };
 
         // همیشه بدنه را بساز؛ جمع‌شدن فقط با کلاس CSS (مثل درآمد)
         const body = document.createElement('div');
         body.className = 'section-body';
         const table = document.createElement('table');
+        /* ۱.۳.۵۹: عرض ستون‌ها مثل بقیهٔ جدول‌ها (ردیف باریک، بقیه برای شرح)؛ ستون حذف نداریم (حذف فقط با لانگ‌پرس) */
+        const cg = document.createElement('colgroup');
+        cg.innerHTML = '<col class="hk-lc-num"><col class="hk-lc-day"><col><col class="hk-lc-amt">';
+        table.appendChild(cg);
         const thead = document.createElement('thead');
-        thead.innerHTML = '<tr class="hk-led-title-row"><th colspan="5">' + escapeHtml(ledgerSectionTitle(sec)) + '</th></tr><tr>' +
+        thead.innerHTML = '<tr class="hk-led-title-row"><th colspan="4">' + escapeHtml(ledgerSectionTitle(sec)) + '</th></tr><tr>' +
           '<th class="col-num">ردیف</th>' +
           '<th class="col-day">تاریخ</th>' +
           '<th class="col-desc th-desc">شرح</th>' +
-          '<th class="col-amount">مبلغ</th>' +
-          '<th class="col-actions"></th></tr>';
+          '<th class="col-amount">مبلغ</th></tr>';
         table.appendChild(thead);
         const tbody = document.createElement('tbody');
         const secRef = sec;
@@ -45156,7 +45175,7 @@ function openProjectRowPicker(secId) {
         /* بیش از ۱۰ ردیف: جدول ثابت و از ردیف ۱۱ داخل خودش اسکرول */
         if (vsec.rows.length > 10) {
           body.classList.add('hk-led-scroll');
-          requestAnimationFrame(() => { try { const trs = tbody.querySelectorAll('tr'); let h = thead.offsetHeight; for (let q = 0; q < 10 && q < trs.length; q++) h += trs[q].offsetHeight; if (h > 40) body.style.setProperty('max-height', h + 'px', 'important'); } catch (eH) {} });
+          if (!sec.collapsed) requestAnimationFrame(() => hkLedCap(body, thead, tbody));
         }
         // ＋ خارج از ناحیه اسکرول — پایین جدول ثابت
         div.classList.add('shaped-card', 'frame-step-sm');
