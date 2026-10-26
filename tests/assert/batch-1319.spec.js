@@ -115,7 +115,7 @@ const ACC = 'ملت مصنوعی';
   ok(rc.clearedOnLeave && rc.closedAgain, 'خروج از منو: همه دوباره بسته شدند');
   ok(rc.renewOpen && rc.startPre.d === 4 && rc.startPre.m === 7 && rc.startPre.y === 1405 && rc.endPre.y === 1406 && rc.endPre.m === 7 && /۱۵,۰۰۰,۰۰۰/.test(rc.amtPre), 'فرم تمدید: شروع = پایان قبلی، پایان = یک سال بعد، مبلغ = مبلغ قبلی');
   ok(rc.terms.length === 1 && rc.terms[0].contractStart.y === 1404 && rc.terms[0].amount === 15000000 && rc.after.e.y === 1406 && rc.after.a === 17000000 && rc.renewGone, 'بعد از تمدید: دورهٔ قبلی نگه داشته شد، دورهٔ تازه با مبلغ ۱۷ میلیون، دکمهٔ تمدید رفت');
-  ok(rc.folders.length === 2 && /۱۴۰۴\/۰۷\/۰۴ تا ۱۴۰۵\/۰۷\/۰۴/.test(rc.folders[0]) && /۱ دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
+  ok(rc.folders.length === 2 && /۱۴۰۴\/۰۷\/۰۴ تا ۱۴۰۵\/۰۷\/۰۴/.test(rc.folders[0]) && /۱ (ماه )?دریافت/.test(rc.folders[0]) && /فعلی/.test(rc.folders[1]), 'آرشیو: هر دوره یک پوشه (بازه، مبلغ، تعداد دریافت)؛ قدیمی بالا (' + rc.folders.join(' / ') + ')');
   /* از ۱.۳.۴۶ ستون آخر × (جدا کردن اتصال) */
   /* ۱.۳.۵۵: جدول ماه‌به‌ماه */
   ok(rc.head === 'بابت|تاریخ تراکنش|شرح|مبلغ|بانک|', 'ستون‌های آرشیو: بابت | تاریخ تراکنش | شرح | مبلغ | بانک (' + rc.head + ')');
