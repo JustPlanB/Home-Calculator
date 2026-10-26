@@ -11468,7 +11468,7 @@
     .rec-due-seg button[data-due="late"].on { background: rgba(255,69,58,0.18) !important; color: #ff453a !important; }
     .rec-due-seg button[data-due="cur"].on { background: rgba(48,209,88,0.18) !important; color: #30d158 !important; }
     .rec-due-seg button[data-due="ahead"].on { background: rgba(10,132,255,0.18) !important; color: #0a84ff !important; }
-    .rec-sch-k { white-space: nowrap; overflow: hidden; text-overflow: clip; }
+    .rec-sch-k { white-space: nowrap; overflow: hidden; text-overflow: clip; text-align: right !important; }
     .rec-arch-foot .rec-arch-fbtn:only-child { flex: 1 1 100%; }
     .hk-re-pill .hk-re-greg { display: block; width: 100%; font-size: 0.7rem; font-weight: 600; color: var(--muted, #8e8e93); text-align: center; margin-top: 1px; font-family: inherit; }
     .hk-re-pill:has(.hk-re-greg:not(:empty)) { flex-wrap: wrap; }
@@ -11486,6 +11486,15 @@
     .hk-led-date-box { max-width: 320px; }
     .hk-led-date-greg { text-align: center; font-size: 0.74rem; color: var(--muted, #8e8e93); margin: 6px 0 2px; }
     .hk-led-day.hk-re-sel { flex-direction: column; align-items: center; justify-content: center; gap: 0; }
+/* ۱.۳.۵۷: تسویه = #64748B (لانگ‌پرس: زمینهٔ مات، نوشتهٔ پررنگ‌تر)؛ تسویه نشد = قرمز پررنگ */
+    .hk-row-act-btn.hk-ra-settle { color: #64748B !important; background: rgba(100,116,139,0.20) !important; border-right: 1px solid rgba(255,255,255,0.14) !important; }
+    html[data-theme="light"] .hk-row-act-btn.hk-ra-settle { color: #334155 !important; background: rgba(100,116,139,0.22) !important; }
+    .hk-row-act-btn.hk-ra-settle.is-undo { color: #ff3b30 !important; background: rgba(255,59,48,0.18) !important; font-weight: 900; }
+    html[data-theme="light"] .hk-row-act-btn.hk-ra-settle.is-undo { color: #c81e1e !important; }
+    .hk-led-seg .hk-led-st-settled.on { background: rgba(100,116,139,0.25) !important; color: #64748B !important; }
+    html[data-theme="light"] .hk-led-seg .hk-led-st-settled.on { color: #475569 !important; }
+    .hk-led-seg .hk-led-st-settled { color: var(--muted, #8e8e93); }
+    #recArchiveModal .rec-sch-table td.rec-sch-k, #recAddPrevModal .rec-sch-table td.rec-sch-k, .person-detail-table.rec-sch-table td.rec-sch-k { text-align: right !important; padding-right: 8px !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -26073,6 +26082,8 @@ async function openPdfPrintWindow(){
           var panel = document.getElementById('panel-home');
           if (!panel || !panel.classList.contains('active')) return;
           if (document.body.classList.contains('card-reorder-mode')) return;
+          /* ۱.۳.۵۷: فهرست کشویی (مثلاً انتخاب سال) باز است: اسلایدها حرکت نکنند تا فهرست بسته نشود */
+          if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) return;
           var t = getActiveHomeCardTitle();
           var now = Date.now();
           document.querySelectorAll('#homeCards .pc-smart-box.sp-panel').forEach(function (el) {
@@ -26859,7 +26870,7 @@ async function openPdfPrintWindow(){
       /* RTL: نیمهٔ راست ویرایش، نیمهٔ چپ حذف */
       ov.appendChild(mk('hk-ra-edit', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>', 'ویرایش', opts.onEdit));
       /* ۱.۳.۵۶: گزینهٔ سبز «تسویه شد» بین ویرایش و حذف (قرض) */
-      if (opts.onSettle) ov.appendChild(mk('hk-ra-settle', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>' + (opts.settled ? 'تسویه نشده' : 'تسویه شد') + '</span>', opts.settled ? 'تسویه نشده' : 'تسویه شد', opts.onSettle));
+      if (opts.onSettle) ov.appendChild(mk('hk-ra-settle' + (opts.settled ? ' is-undo' : ''), (opts.settled ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>') + '<span>' + (opts.settled ? 'تسویه نشد' : 'تسویه شد') + '</span>', opts.settled ? 'تسویه نشد' : 'تسویه شد', opts.onSettle));
       ov.appendChild(mk('hk-ra-del' + (opts.canDelete ? '' : ' hk-ra-off'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>', 'حذف', opts.onDelete));
       ov._hkCancel = hkCloseRowActions;
       document.body.appendChild(ov);
@@ -27378,6 +27389,42 @@ async function openPdfPrintWindow(){
           recLinkAsBab(item, k, picked, due);
           if (after) after();
         });
+      });
+    }
+    /* ۱.۳.۵۷: «وصل دستی»ِ یک ماه از آرشیو: بابت همان ماه ثابت است؛ واریزهای هم‌مبلغِ وصل‌نشدهٔ چند ماه اطراف با تیک */
+    function recLinkForDue(item, dueK, after) {
+      var amt = Number(item.amount) || 0, acc = (item.account || '').trim(), cands = [];
+      var lo = recPrevKey(recPrevKey(dueK)), hi = recNextKey(recNextKey(recNextKey(dueK)));
+      recEachMonth(function (k, pd) {
+        if (k < lo || k > hi) return;
+        ((pd && pd.income && pd.income.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || r.fromPlanId || !recIsPaid(r)) return;
+            if (r.fromRecurringId && (r.fromRecurringId === item.id || recLiveItem(r.fromRecurringId))) return;
+            var a = Number(r.amount) || 0;
+            if (!a || !amt || a > amt * 1.05 || a < amt * 0.05) return;
+            if (acc && (r.account || '').trim() && (r.account || '').trim() !== acc) return;
+            cands.push({ key: k, row: r, sec: sec });
+          });
+        });
+      });
+      cands.sort(function (a, b) { return (a.key - b.key) || ((parseInt(a.row.day, 10) || 0) - (parseInt(b.row.day, 10) || 0)); });
+      var babK = recTiming(item) === 'end' ? recPrevKey(dueK) : dueK;
+      if (!cands.length) { showToast('واریز وصل‌نشده‌ای با همین مبلغ در ماه‌های اطراف ' + MONTHS[(babK % 100) - 1] + ' پیدا نشد'); return; }
+      recCheckPick(item, 'کدام واریزها بابت ' + recKeyLabel(babK) + ' «' + (item.name || '') + '» است؟', cands, function (picked) {
+        if (!picked.length) return;
+        try { recRemoveRows(recRowsOf(item).filter(function (z) { return z.key === dueK && !recIsPaid(z.row); })); } catch (e0) {}
+        picked.forEach(function (x) {
+          recLinkRow(item, x.row);
+          if (x.key === dueK) { delete x.row.recForKey; if (recIsAutoDesc(item, x.row.desc)) x.row.desc = item.name || x.row.desc; }
+          else { x.row.recForKey = dueK; if (!item.paidAhead) item.paidAhead = {}; item.paidAhead[String(dueK)] = true; if (recIsAutoDesc(item, x.row.desc)) x.row.desc = recDueDesc(item, dueK, x.key); }
+          x.row.updatedAt = Date.now();
+        });
+        recPersist();
+        try { saveRecurring(); } catch (e1) {}
+        try { recRefreshViews(); } catch (e2) {}
+        showToast(toPersianDigits(String(picked.length)) + ' واریز بابت ' + recKeyLabel(babK) + ' وصل شد');
+        if (after) after();
       });
     }
     /* ۱.۳.۵۶: وصل دستی: «ماه قبل / این ماه / ماه بعد» = بابت کدام ماه؛ سررسید آن ماه از نوع قرارداد (ابتدا/پایان ماه) معلوم می‌شود.
@@ -29723,6 +29770,8 @@ container.innerHTML = '';
       function shouldIgnore(t) {
         try {
           if (!t || !t.closest) return false;
+          /* ۱.۳.۵۷: اسکرول اسلایدهای باکس هوشمند فهرست باز را نبندد */
+          if (t.closest('.sp-panel, .pc-smart-box')) return true;
           if (t.closest('.fancy-select-list')) return true;
           if (t.closest('.dark-select-list')) return true;
           return false;
@@ -39176,7 +39225,8 @@ if (item.type === 'recurring') {
       }
       body += '</div>';
       /* ۱.۳.۴۶: دو دکمهٔ هم‌اندازه: «وصل خودکار» راست (پیدا کردن واریزهای قبلی) و «وصل دستی» چپ */
-      var foot = '<div class="rec-arch-foot" style="padding:8px 10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
+      /* ۱.۳.۵۷: فهرست پوشه‌ها: بی‌دکمه؛ داخل پوشه: فقط «وصل خودکار» (وصل دستی کنار هر ماه) */
+      var foot = folderView ? '' : '<div class="rec-arch-foot" style="padding:8px 10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
         '<button type="button" id="recArchAddPrev" class="rec-arch-fbtn">وصل خودکار</button>' +
         (sched ? '' : '<button type="button" id="recArchManual" class="rec-arch-fbtn">وصل دستی</button>') + '</div>';
       box.innerHTML = head + body + foot;
@@ -39192,7 +39242,7 @@ if (item.type === 'recurring') {
       box.querySelectorAll('.rec-term-folder').forEach(function (b) { b.onclick = function () { recOpenArchive(item, parseInt(b.getAttribute('data-t'), 10)); }; });
       /* شرح: مثل بقیهٔ سلول‌ها با یک ضربه متن کامل یک‌خطی در باکس شناور (بالای این پنجره) */
       box.querySelectorAll('.rec-arch-desc').forEach(function (d) { d.onclick = function (e) { e.stopPropagation(); try { var pp = showCellTextPopup(d, d.textContent); if (pp) pp.style.zIndex = '100400'; } catch (eP) {} }; });
-      box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
+      if (box.querySelector('#recArchAddPrev')) box.querySelector('#recArchAddPrev').onclick = function () { recAddPreviousFlow(item, function (n) { if (n) { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} showToast(toPersianDigits(String(n)) + ' واریز به آرشیو اضافه شد'); } }); };
       if (box.querySelector('#recArchManual')) box.querySelector('#recArchManual').onclick = function () { recManualLinkFlow(item, function () { recOpenArchive(item, termIdx); try { renderRecurringBar(); } catch (e) {} }); };
       /* ۱.۳.۴۷: × هر ردیف فقط اتصال را برمی‌دارد (ردیف سر جایش می‌ماند)؛ برگشت یا زدن بیرون = انصراف */
       var reopen = function () { try { saveRecurring(); } catch (eS) {} try { recRefreshViews(); renderRecurringBar(); } catch (eR) {} recOpenArchive(item, termIdx); };
@@ -39200,7 +39250,7 @@ if (item.type === 'recurring') {
         b.onclick = function (e) {
           e.stopPropagation();
           var k = parseInt(b.getAttribute('data-k'), 10);
-          if (b.getAttribute('data-act') === 'link') { recManualLinkFlow(item, reopen); return; }
+          if (b.getAttribute('data-act') === 'link') { recLinkForDue(item, k, reopen); return; }
           recPickModal('سررسید ' + recKeyLabel(k) + ' بدون پیامک پرداخت شده؟ (فقط در آرشیو علامت می‌خورد و در موجودی اثری ندارد)', [
             { label: 'بلی', value: 'y', primary: true, short: true }, { label: 'خیر', value: null, short: true }
           ], function (v) { if (!v) return; if (!item.extPaid) item.extPaid = {}; item.extPaid[String(k)] = { manual: true }; item.updatedAt = Date.now(); reopen(); });
@@ -44324,6 +44374,8 @@ function openProjectRowPicker(secId) {
         amtInp.classList.toggle('status-unpaid', !credit);
       }
       applyLedgerAmountColor(isCredit ? 'credit' : 'debt');
+      /* ۱.۳.۵۷: تسویه‌شده: مبلغ به رنگ تسویه */
+      if (r.settled) { amtInp.style.setProperty('color', '#64748B', 'important'); amtInp.style.setProperty('-webkit-text-fill-color', '#64748B', 'important'); }
       function applyLedgerStatusVisual(v) {
         const credit = v === 'credit';
         r.status = credit ? 'credit' : 'debt';
@@ -44505,6 +44557,8 @@ function openProjectRowPicker(secId) {
           try { e.preventDefault(); } catch (err2) {}
         }
         if (isLedEditing()) return;
+        /* ۱.۳.۵۷: وضعیت فقط از «ویرایش»؛ زدن روی مبلغ پر کاری نمی‌کند */
+        if (r.amount) return;
 
         const now = Date.now();
         const last = tdAmt._lastTapTs || 0;
@@ -44819,12 +44873,12 @@ function openProjectRowPicker(secId) {
       var r = sec.rows[idx]; if (!r) return;
       var old = document.getElementById('hkLedEdit'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkLedEdit'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
-      var st = r.status === 'debt' ? 'debt' : 'credit';
+      var st = r.settled ? 'settled' : (r.status === 'debt' ? 'debt' : 'credit');
       ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">ویرایش ردیف ' + toPersianDigits(String(idx + 1)) + '</div>' +
         '<div class="hk-re-f"><div class="hk-re-l">تاریخ</div><button type="button" class="hk-re-in hk-re-sel hk-led-day"></button></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">شرح</div><textarea class="hk-re-in hk-led-desc" rows="1"></textarea></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">مبلغ</div><input class="hk-re-in hk-led-amt" inputmode="numeric" dir="ltr"></div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">وضعیت</div><div class="hk-re-seg hk-led-seg"><button type="button" class="hk-re-segb is-paid is-inc" data-v="credit">بستانکار</button><button type="button" class="hk-re-segb is-paid is-exp" data-v="debt">بدهکار</button></div></div>' +
+        '<div class="hk-re-f"><div class="hk-re-l">وضعیت</div><div class="hk-re-seg hk-led-seg"><button type="button" class="hk-re-segb is-paid is-inc" data-v="credit">بستانکار</button><button type="button" class="hk-re-segb hk-led-st-settled" data-v="settled">تسویه</button><button type="button" class="hk-re-segb is-paid is-exp" data-v="debt">بدهکار</button></div></div>' +
         '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ثبت</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
       var q = function (s) { return ov.querySelector(s); };
       /* ۱.۳.۵۶: کل تاریخ (روز، ماه، سال) قابل ویرایش */
@@ -44847,7 +44901,9 @@ function openProjectRowPicker(secId) {
       q('.hk-re-ok').onclick = function () {
         updateLedgerRowField(sec.id, idx, 'desc', q('.hk-led-desc').value);
         updateLedgerRowField(sec.id, idx, 'amount', parseAmount(q('.hk-led-amt').value) || 0);
-        updateLedgerRowField(sec.id, idx, 'status', st);
+        /* ۱.۳.۵۷: «تسویه» = ردیف می‌ماند و از جمع‌ها بیرون می‌رود؛ بستانکار/بدهکارِ قبلی نگه داشته می‌شود */
+        if (st === 'settled') { if (!r.settled) { r.settled = true; r.settledN = currentYear * 100 + currentMonth; } }
+        else { delete r.settled; delete r.settledN; updateLedgerRowField(sec.id, idx, 'status', st); }
         r.statusPicked = true;
         close();
         hkLedSetDate(sec.id, idx, dt);
