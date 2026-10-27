@@ -11510,6 +11510,14 @@
     #panel-ledger #sections-ledger .section-body table col.hk-lc-amt { width: 30%; }
     #panel-ledger #sections-ledger .section-body table :is(th, td).col-num { width: auto !important; min-width: 0 !important; max-width: none !important; padding-left: 0 !important; padding-right: 0 !important; }
     #panel-ledger #sections-ledger .section-body table :is(th, td).col-day { width: auto !important; min-width: 0 !important; max-width: none !important; }
+    /* ۱.۳.۶۰: قرض — اسم رابطه یک جا: بسته = در هدر، باز = فقط عنوان جدول؛ اندازهٔ هدر در هر دو حالت یکی */
+    #panel-ledger #sections-ledger .section.collapsed .section-header { padding: 12px !important; }
+    #panel-ledger #sections-ledger .section .section-header .title-display { font-size: 0.95rem !important; }
+    #panel-ledger #sections-ledger .section .section-header .title-display { transition: opacity 0.3s ease; }
+    #panel-ledger #sections-ledger .section:not(.collapsed):not(.hk-shutting) .section-header .title-display { opacity: 0 !important; }
+    /* ۱.۳.۶۰: پس‌زمینهٔ جدول قرض مثل جدول درآمد/مخارج */
+    #panel-ledger #sections-ledger .section-body table { background: #2c2c2e !important; }
+    html[data-theme="light"] #panel-ledger #sections-ledger .section-body table { background: var(--lt-surface) !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -15580,6 +15588,8 @@ function onPeriodChange() {
         });
         recurringIncomes = Object.keys(map).map(k => map[k]);
         try { saveRecurring(); 
+        /* ۱.۳.۶۰: هنگام بالا آمدن نرم‌افزار، صفحه بعداً یک‌بار کامل ساخته می‌شود؛ اینجا فقط ذخیره (بی‌رندر و بی‌تغییر زمان ویرایش) */
+        if (_hkBoot) { setTimeout(function () { try { persistCurrent(); } catch (e1) {} _hkSkipSame = true; try { saveArchive(); } catch (e2) {} _hkSkipSame = false; }, 450); } else {
         try { scheduleSave(); } catch (e) {}
         try { renderHomeCards(); } catch (e) {}
         try {
@@ -15587,6 +15597,7 @@ function onPeriodChange() {
             renderPersonDetailPanel('income', _detailContext.title);
           }
         } catch (e) {}
+        }
 } catch (e) {}
       }
       if (obj.members && typeof obj.members === 'object') {
@@ -15595,6 +15606,7 @@ function onPeriodChange() {
       if (obj.updatedAt) localUpdatedAt = Math.max(localUpdatedAt || 0, obj.updatedAt || 0);
     }
 
+    var _hkBoot = false, _hkSkipSame = false;
     function touchLocal() {
       localUpdatedAt = Date.now();
     }
@@ -15621,6 +15633,8 @@ function onPeriodChange() {
       } catch (eT) {}
     }
     function hkStorageSet(key, value) {
+      /* ۱.۳.۶۰: فقط ذخیرهٔ هنگام شروع: همان مقدار از قبل ذخیره است → نوشتن دوباره لازم نیست (نوشتن بزرگ روی گوشی کند است) */
+      if (_hkSkipSame) { try { if (localStorage.getItem(key) === value) return true; } catch (eG) {} }
       try { localStorage.setItem(key, value); return true; }
       catch (e) { hkPersistFailed(key, e); return false; }
     }
@@ -43634,7 +43648,7 @@ function openProjectRowPicker(secId) {
       /* ۱.۳.۵۱: باکس اسم دو نفر (قرض) و ویرایش ردیف قرض: بازگشت = انصراف */
       try { var _pm = document.getElementById('hkCatPriModal') || document.getElementById('hkPrefsModal'); if (_pm) { _pm._hkCancel ? _pm._hkCancel() : _pm.remove(); return; } } catch (ePm) {}
       try { var _lns = document.getElementById('ledgerNameSheet'); if (_lns) { if (_lns._hkCancel) _lns._hkCancel(); else { _lns.remove(); try { hideNameSheetBackdrop(); } catch (eB) {} } return; } } catch (eLns) {}
-      try { var _hb = document.getElementById('hkLedEdit') || document.getElementById('hkRecapOv') || document.getElementById('hkAccTxOv') || document.getElementById('hkRowEdit') || document.getElementById('recLinksModal') || document.querySelector('.hk-row-act') || document.querySelector('.hk-jig-menu'); if (_hb) { if (_hb._hkCancel) _hb._hkCancel(); else _hb.remove(); return; } } catch (eHb) {}
+      try { var _hb = document.getElementById('hkLedDate') || document.getElementById('hkLedEdit') || document.getElementById('hkRecapOv') || document.getElementById('hkAccTxOv') || document.getElementById('hkRowEdit') || document.getElementById('recLinksModal') || document.querySelector('.hk-row-act') || document.querySelector('.hk-jig-menu'); if (_hb) { if (_hb._hkCancel) _hb._hkCancel(); else _hb.remove(); return; } } catch (eHb) {}
       try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */
       try { var _spt = document.querySelector('.sp-trash-ov'); if (_spt) { if (_spt._hkClose) _spt._hkClose(); else _spt.remove(); document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); }); return; } } catch (eSpt) {}
@@ -43997,7 +44011,7 @@ function openProjectRowPicker(secId) {
       const led0 = ensureLedger();
       const sec0 = (led0.sections || []).find(s => s.id === secId);
       if (sec0 && !canEditRow(sec0)) { showToast(OWNERSHIP_LOCK_MSG); return; }
-      askConfirm('این بده‌بستان حذف شود؟', () => {
+      askConfirm('این رابطه حذف شود؟', () => {
         try {
           const ledT = ensureLedger();
           const secT = ledT.sections.find(s => s.id === secId);
@@ -46010,6 +46024,7 @@ function openProjectRowPicker(secId) {
     loadRecurring();
     try { loadUserReminders(); } catch (e) {}
     try { checkUserReminders(true); } catch (e) {} /* بدون تأخیر: باکس یادآور هم‌زمان با بقیهٔ صفحه ظاهر شود */
+    _hkBoot = true;
     loadArchive();
     loadCurrent();
     /* هر بار باز شدن: ماه نمایش‌داده‌شده = ماه امروز (اگر روی ماه آینده بسته شده بود، برمی‌گردد) */
@@ -46066,6 +46081,7 @@ function openProjectRowPicker(secId) {
       try { syncMatchCardWidth(); } catch (e2) {}
     } catch (e) { console.error('home boot', e); }
     renderAll();
+    _hkBoot = false;
     /* بعد از بارگذاری کامل داده — فقط یک‌بار عدد نهایی موجودی */
     try {
       _hbcReady = true;
