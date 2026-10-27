@@ -15589,7 +15589,7 @@ function onPeriodChange() {
         recurringIncomes = Object.keys(map).map(k => map[k]);
         try { saveRecurring(); 
         /* ۱.۳.۶۰: هنگام بالا آمدن نرم‌افزار، صفحه بعداً یک‌بار کامل ساخته می‌شود؛ اینجا فقط ذخیره (بی‌رندر و بی‌تغییر زمان ویرایش) */
-        if (_hkBoot) { setTimeout(function () { try { persistCurrent(); } catch (e1) {} try { saveArchive(); } catch (e2) {} }, 450); } else {
+        if (_hkBoot) { setTimeout(function () { try { persistCurrent(); } catch (e1) {} _hkSkipSame = true; try { saveArchive(); } catch (e2) {} _hkSkipSame = false; }, 450); } else {
         try { scheduleSave(); } catch (e) {}
         try { renderHomeCards(); } catch (e) {}
         try {
@@ -15606,7 +15606,7 @@ function onPeriodChange() {
       if (obj.updatedAt) localUpdatedAt = Math.max(localUpdatedAt || 0, obj.updatedAt || 0);
     }
 
-    var _hkBoot = false;
+    var _hkBoot = false, _hkSkipSame = false;
     function touchLocal() {
       localUpdatedAt = Date.now();
     }
@@ -15633,8 +15633,8 @@ function onPeriodChange() {
       } catch (eT) {}
     }
     function hkStorageSet(key, value) {
-      /* ۱.۳.۶۰: همان مقدار از قبل ذخیره است → نوشتن دوباره لازم نیست (نوشتن بزرگ روی گوشی کند است) */
-      try { if (localStorage.getItem(key) === value) return true; } catch (eG) {}
+      /* ۱.۳.۶۰: فقط ذخیرهٔ هنگام شروع: همان مقدار از قبل ذخیره است → نوشتن دوباره لازم نیست (نوشتن بزرگ روی گوشی کند است) */
+      if (_hkSkipSame) { try { if (localStorage.getItem(key) === value) return true; } catch (eG) {} }
       try { localStorage.setItem(key, value); return true; }
       catch (e) { hkPersistFailed(key, e); return false; }
     }
