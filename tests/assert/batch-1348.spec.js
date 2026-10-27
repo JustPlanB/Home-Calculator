@@ -35,7 +35,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   console.log('• رنگ زرد و اسکرول');
   const c = await p.evaluate(() => ({
     v: getComputedStyle(document.documentElement).getPropertyValue('--unpaid-c').trim(),
-    ease: /4 \* t \* t \* t/.test(hkSlowScrollTo.toString()),
+    ease: /4\s*\*\s*t\s*\*\s*t\s*\*\s*t/.test(hkSlowScrollTo.toString()),
     bulk: (() => { const el = document.querySelector('.hk-bulk-open-btn'); return el ? getComputedStyle(el).backgroundColor : ''; })()
   }));
   ok(c.v === '#e6b12c', 'رنگ پرداخت/دریافت‌نشده: زرد کمی تیره (#e6b12c)');
@@ -79,7 +79,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     return { fixDesc: flRow && flRow.desc, statsSrc: pages.stats.onTap.toString() };
   }, title);
   ok(nav.fixDesc === 'زرشکپلو', 'اسلاید «خرج بدون دسته» → اسکرول و هایلایت همان ردیف (' + nav.fixDesc + ')');
-  ok(/mode: 'daily'/.test(nav.statsSrc) && /focus: 'stCmp'/.test(nav.statsSrc), 'اسلاید آمار → منوی آمار روی تب ماه و بخش مقایسه');
+  ok(/mode:\s*['"]daily['"]/.test(nav.statsSrc) && /focus:\s*['"]stCmp['"]/.test(nav.statsSrc), 'اسلاید آمار → منوی آمار روی تب ماه و بخش مقایسه');
   const st = await p.evaluate(async (t) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     HKStats.open({ mode: 'daily', card: t, focus: 'stCmp' }); await w(1600);
