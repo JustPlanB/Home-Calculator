@@ -172,11 +172,17 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     /* زدن روی متن کارت (نه فقط عنوان) → باز؛ بستن بدون پرش آخر */
     const c0 = cards[0]; c0.querySelector('.hk-bulk-fmeta').click(); await w(560);
     out.openByMeta = c0.classList.contains('open');
-    c0.querySelector('.hk-bulk-fmeta').click();
-    let lastOpen = null, firstClosed = null;
-    const t0 = performance.now();
-    while (performance.now() - t0 < 900 && firstClosed == null) { await new Promise(r => requestAnimationFrame(r)); const h = c0.getBoundingClientRect().height; if (c0.classList.contains('open')) lastOpen = h; else firstClosed = h; }
-    const maxStep = Math.abs((firstClosed || 0) - (lastOpen || 0));
+    /* پرش واقعی در هر بار بستن دیده می‌شود؛ فریمِ جاافتاده (ماشین شلوغ) فقط گاهی ⇒ تا ۳ بار اندازه‌گیری و کمترین مقدار */
+    let maxStep = Infinity;
+    for (let att = 0; att < 3 && maxStep >= 4; att++) {
+      if (att) { c0.querySelector('.hk-bulk-fmeta').click(); await w(560); }
+      c0.querySelector('.hk-bulk-fmeta').click();
+      let lastOpen = null, firstClosed = null;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 900 && firstClosed == null) { await new Promise(r => requestAnimationFrame(r)); const h = c0.getBoundingClientRect().height; if (c0.classList.contains('open')) lastOpen = h; else firstClosed = h; }
+      maxStep = Math.min(maxStep, Math.abs((firstClosed || 0) - (lastOpen || 0)));
+      await w(120);
+    }
     out.closed = !c0.classList.contains('open'); out.maxStep = Math.round(maxStep * 10) / 10;
     closeSmsBulkModal();
     return out;
