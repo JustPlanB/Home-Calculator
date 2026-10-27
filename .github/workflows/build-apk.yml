@@ -46,6 +46,7 @@ jobs:
           node --check scripts/patch-android-release.js
           node --check scripts/patch-android-icons.js
           node --check scripts/make-update-feed.js
+          node --check scripts/build-web.js
           bash -n scripts/publish-release.sh
 
       - name: Decode release keystore (only when secrets exist)
@@ -62,10 +63,9 @@ jobs:
       - name: Remove lock-screen bypass flags
         run: node scripts/fix-android-lock.js
 
+      # نسخهٔ داخل APK: همان index.html، فقط کوچک‌شده (بدون توضیحات و فاصله‌های اضافه؛ رفتار و ظاهر یکسان)
       - name: Prepare web assets
-        run: |
-          mkdir -p www
-          cp index.html www/index.html
+        run: node scripts/build-web.js index.html www/index.html
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -89,9 +89,9 @@ jobs:
         run: |
           set -e
           APK=android/app/build/outputs/apk/release/app-release.apk
-          SRC=$(sha256sum index.html | cut -d' ' -f1)
+          SRC=$(sha256sum www/index.html | cut -d' ' -f1)
           IN=$(unzip -p "$APK" assets/public/index.html | sha256sum | cut -d' ' -f1)
-          echo "index.html source=$SRC apk=$IN"
+          echo "index.html built=$SRC apk=$IN"
           test "$SRC" = "$IN"
           AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)
           "$AAPT" dump xmltree --file AndroidManifest.xml "$APK" > "$RUNNER_TEMP/manifest.txt"
