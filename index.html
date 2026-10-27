@@ -10774,8 +10774,6 @@
     .hk-recon-back { border: 1px solid var(--border, rgba(255,255,255,0.15)); background: transparent; color: var(--muted, #9a9a9a); }
     .hk-recon-skip { border: 1px solid var(--border, rgba(255,255,255,0.15)); background: transparent; color: var(--text, #f2f2f7); }
     tr.recon-gap td { background: rgba(255,197,49,0.12) !important; }
-    tr.recon-gap input, tr.recon-gap textarea, tr.recon-gap .pd-cell { color: #e0a800 !important; -webkit-text-fill-color: #e0a800 !important; }
-    html[data-theme="light"] tr.recon-gap input, html[data-theme="light"] tr.recon-gap textarea, html[data-theme="light"] tr.recon-gap .pd-cell { color: #9a6b00 !important; -webkit-text-fill-color: #9a6b00 !important; }
     .hk-info-shield { position: fixed; inset: 0; z-index: 100699; background: transparent; touch-action: none; -webkit-tap-highlight-color: transparent; }
     .hk-info-tip { white-space: pre-line; position: fixed; z-index: 100700; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; background: #2c2c2e; color: #f2f2f7; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Vazirmatn', Tahoma, sans-serif; font-size: 0.76rem; line-height: 1.8; text-align: right; direction: rtl; animation: hkTipIn 0.14s ease-out; }
     html[data-theme="light"] .hk-info-tip { background: #ffffff; color: #1c1c1e; border-color: rgba(0,0,0,0.10); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
@@ -11297,6 +11295,11 @@
     /* ۱.۳.۶۰: پس‌زمینهٔ جدول قرض مثل جدول درآمد/مخارج */
     #panel-ledger #sections-ledger .section-body table { background: #2c2c2e !important; }
     html[data-theme="light"] #panel-ledger #sections-ledger .section-body table { background: var(--lt-surface) !important; }
+    /* ۱.۳.۶۲: ردیف اختلاف: فقط پس‌زمینهٔ زرد (متن و مبلغ مثل ردیف معمولی)؛ دکمهٔ «ردیف معمولی» در لانگ‌پرس */
+    tr.recon-gap td { background: rgba(230,177,44,0.14) !important; }
+    html[data-theme="light"] tr.recon-gap td { background: rgba(230,177,44,0.16) !important; }
+    .hk-row-act-btn.hk-ra-normal { display: flex; align-items: center; justify-content: center; font-family: inherit; font-weight: 800; font-size: 0.78rem; color: #e6b12c !important; background: #3a3220 !important; border-right: 1px solid rgba(255,255,255,0.14) !important; }
+    html[data-theme="light"] .hk-row-act-btn.hk-ra-normal { color: #a87b0e !important; background: #f6ecd2 !important; border-right-color: rgba(0,0,0,0.08) !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -26679,6 +26682,8 @@ async function openPdfPrintWindow(){
       ov.appendChild(mk('hk-ra-edit', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>', 'ویرایش', opts.onEdit));
       /* ۱.۳.۵۶: گزینهٔ سبز «تسویه شد» بین ویرایش و حذف (قرض) */
       if (opts.onSettle) ov.appendChild(mk('hk-ra-settle' + (opts.settled ? ' is-undo' : ''), (opts.settled ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>') + '<span>' + (opts.settled ? 'تسویه نشد' : 'تسویه شد') + '</span>', opts.settled ? 'تسویه نشد' : 'تسویه شد', opts.onSettle));
+      /* ۱.۳.۶۲: ردیف اختلاف → «ردیف معمولی» (زرد) بین ویرایش و حذف */
+      if (opts.onNormal) ov.appendChild(mk('hk-ra-normal', '<span>ردیف معمولی</span>', 'ردیف معمولی', opts.onNormal));
       ov.appendChild(mk('hk-ra-del' + (opts.canDelete ? '' : ' hk-ra-off'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>', 'حذف', opts.onDelete));
       ov._hkCancel = hkCloseRowActions;
       document.body.appendChild(ov);
@@ -27040,7 +27045,6 @@ async function openPdfPrintWindow(){
         row.day = d ? String(d) : '';
         var hi = wH.getIndex();
         row.time = hi ? (String(hi - 1).padStart(2, '0') + ':' + String(wMi.getIndex()).padStart(2, '0')) : '';
-        if (row.reconGap) { row.reconGap = false; }
         row.updatedAt = Date.now();
         var k = recMonthKey(y, m);
         /* درآمد ثابت */
@@ -28250,12 +28254,8 @@ container.innerHTML = '';
         dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
         dayInp.readOnly = isFilledVal(row.day);
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
-        /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پررنگ و روزش «؟» */
-        if (row.reconGap) {
-          tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟';
-          /* کاربر ردیف را ویرایش کرد (هر فیلدی) → ردیف معمولی شود */
-          tr.addEventListener('input', function () { if (!row.reconGap) return; row.reconGap = false; tr.classList.remove('recon-gap'); try { scheduleSave(); } catch (eS) {} }, true);
-        }
+        /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پس‌زمینهٔ زرد؛ ۱.۳.۶۲: روز عادی و ویرایش زردی را برنمی‌دارد (فقط «ردیف معمولی» در لانگ‌پرس) */
+        if (row.reconGap) tr.classList.add('recon-gap');
         dayInp.oninput = () => {
           if (row.reconGap) row.reconGapDayEdited = true;
           const eng = toEnglishDigits(dayInp.value).replace(/[^0-9]/g, '');
@@ -28620,7 +28620,8 @@ container.innerHTML = '';
           hkOpenRowActions(tr, {
             canDelete: true,
             onDelete: () => { deleteRow(); },
-            onEdit: () => { if (preApp) { lockedMsg(tdDesc); return; } hkOpenRowEdit({ row: row, tab: tab, title: title, sec: sec, num: idx + 1, onSaved: sortAndRebuild, onAtt: markAtt }); }
+            onEdit: () => { if (preApp) { lockedMsg(tdDesc); return; } hkOpenRowEdit({ row: row, tab: tab, title: title, sec: sec, num: idx + 1, onSaved: sortAndRebuild, onAtt: markAtt }); },
+            onNormal: row.reconGap ? () => { row.reconGap = false; row.updatedAt = Date.now(); tr.classList.remove('recon-gap'); try { persistCurrent(); } catch (eP) {} try { scheduleSave(); } catch (eS) {} } : null
           });
         });
         /* هایلایت ماژیکی پروژه روی ردیف جزئیات کارت */
@@ -32337,7 +32338,9 @@ function confirmSmsEntry() {
         if (snap.y !== currentYear || snap.m !== currentMonth) { showToast('ماه این تراکنش باز نیست'); return; }
         var tab = diff < 0 ? 'expense' : 'income', amt = Math.abs(diff);
         var row = emptyRow(tab);
-        row.day = snap.day ? String(snap.day) : '';
+        /* ۱.۳.۶۲: روز همان تراکنش؛ اگر معلوم نبود امروز (تا ردیف بی‌روز ته جدول نرود) */
+        var _td = getTodayPersian();
+        row.day = snap.day ? String(snap.day) : ((_td && _td.y === snap.y && _td.m === snap.m) ? String(_td.d) : '');
         row.amount = amt;
         row.status = 'paid';
         row.account = snap.bank;
@@ -41365,12 +41368,8 @@ field('حساب بانکی', accSelRec);
       dayInp.placeholder = '';
       dayInp.setAttribute('enterkeyhint', 'next');
       dayInp.value = row.day ? toPersianDigits(row.day) : '';
-      /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پررنگ و روزش «؟» تا کاربر بداند تاریخ دقیقش معلوم نیست */
-      if (row.reconGap) {
-        tr.classList.add('recon-gap'); if (!row.reconGapDayEdited) dayInp.value = '؟';
-        /* کاربر ردیف را ویرایش کرد (هر فیلدی) → ردیف معمولی شود */
-        tr.addEventListener('input', function () { if (!row.reconGap) return; row.reconGap = false; tr.classList.remove('recon-gap'); try { scheduleSave(); } catch (eS) {} }, true);
-      }
+      /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پس‌زمینهٔ زرد */
+      if (row.reconGap) tr.classList.add('recon-gap');
       dayInp.oninput = () => {
         if (row.reconGap) row.reconGapDayEdited = true;
         if (!row.fromPlanId && !canEditRow(row)) return;
