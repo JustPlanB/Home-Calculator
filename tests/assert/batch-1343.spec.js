@@ -101,7 +101,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(sp.ov === 'ok' && sp.ovRes, 'اسلاید «وضعیت ماه» → جدول مخارج همان کاربر (' + (sp.keys || []).join('،') + ')');
   ok(sp.st !== 'ok' || sp.stRes, 'اسلاید «مقایسه با ماه قبل» → بخش آمار');
-  const keysSrc = await p.evaluate(() => { const s = document.documentElement.outerHTML; return ['overview', 'stats', 'obligations', 'ledger', 'projects', 'upcoming', 'jump', 'biggest', 'insight'].filter(k => new RegExp("key: '" + k + "', build: \\w+, onTap").test(s)).length; });
+  const keysSrc = await p.evaluate(() => { const s = document.documentElement.outerHTML; return ['overview', 'stats', 'obligations', 'ledger', 'projects', 'upcoming', 'jump', 'biggest', 'insight'].filter(k => new RegExp("key:\\s*['\"]" + k + "['\"],\\s*build:\\s*\\w+,\\s*onTap").test(s)).length; });
   /* ۱.۳.۴۷: اسلاید تعهدات (اقساط) برداشته شد */ ok(keysSrc === 8, 'همهٔ اسلایدها مقصد دارند: وضعیت ماه، مقایسه، طلب و بدهی→قرض، پروژه‌ها، ۷ روز آینده، جهش خرج، خرج‌های ماه، نکات');
 
   console.log('• منوی انتخاب حساب');
