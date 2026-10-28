@@ -197,6 +197,9 @@ public class BankSmsReceiver extends BroadcastReceiver {
     return b;
   }
 
+  /** ۱.۳.۶۴: نوع تراکنش برای رنگ اعلان (همان تشخیص ویجت): ۱ واریز، ‎-۱ برداشت، ۰ نامعلوم */
+  static int txSign(String text){ try{ return HkWidgetDraw.smsSign(normFa(text)); }catch(Throwable e){ return 0; } }
+  static String txTitle(int sg){ return sg>0?"واریز جدید":(sg<0?"برداشت جدید":"تراکنش بانکی جدید"); }
   static void postNotification(Context c,String text,int nid,String sender){
     if(Build.VERSION.SDK_INT>=33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return;
     NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -210,8 +213,19 @@ public class BankSmsReceiver extends BroadcastReceiver {
     /* ۱.۳.۵۳: شخصی‌سازی: اعلان پیامک شخصی خاموش (پیامک در صف می‌ماند و در نرم‌افزار نشان داده می‌شود) */
     try{ if(personal && "0".equals(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("hk_npersonal","1"))) return; }catch(Throwable ignored){}
     final boolean clean=isClean(c,text,sender);
-    String title=personal?"فرستندهٔ شخصی":"تراکنش بانکی جدید";
+    final int sg=txSign(text);
+    String title=personal?"فرستندهٔ شخصی":txTitle(sg);
     NotificationCompat.Builder b=baseBuilder(c,title,text);
+    /* ۱.۳.۶۴: رنگ عملیات: عنوان و رنگ اعلان، واریز سبز و برداشت قرمز (پس‌زمینهٔ کامل را اندروید فقط برای موزیک/تماس اجازه می‌دهد) */
+    if(!personal && sg!=0){
+      try{
+        int col=sg>0?0xFF34C759:0xFFFF3B30;
+        android.text.SpannableString st=new android.text.SpannableString(title);
+        st.setSpan(new android.text.style.ForegroundColorSpan(col),0,st.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        st.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),0,st.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setContentTitle(st).setColor(col);
+      }catch(Throwable ignored){}
+    }
     /* ۱.۳.۴۳: «ثبت سریع» از خود اعلان (پاسخ مستقیم): با زدنش فیلد «بابت چی بود؟» پایین می‌آید و با ارسال ثبت می‌شود */
     try{
       /* ۱.۳.۵۰: ثبت سریع از راه HkCatActivity: نرم‌افزار بالا می‌آید و ثبت می‌کند؛ اگر مغایرت/حساب ناموجود بود همان‌جا می‌ماند تا کاربر تکمیل کند */
@@ -239,7 +253,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     /* ۱.۳.۵۰: اعلان اختصاصی: متن پیامک + چهار دستهٔ پرکاربرد؛ زدن دسته = ثبت با همان دسته (شرح = اسم دسته) */
     try{
       SharedPreferences sp=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-      boolean inc=text.contains("واریز")||text.contains("+");
+      boolean inc=sg!=0?sg>0:(text.contains("واریز")||text.contains("+"));
       JSONArray cats=new JSONArray(sp.getString(inc?"hk_ncats_in":"hk_ncats_out","[]"));
       if(cats.length()>0){
         RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_tx);
@@ -664,8 +678,10 @@ public class HkQuickActivity extends Activity {
     String text=it.optString("text",""), sender=it.optString("sender","");
     boolean personal=BankSmsReceiver.isPersonal(sender);
     TextView t=new TextView(this);
-    t.setText(personal?("⚠️ پیامک شخصی \\u2066"+sender.replace(" ","")+"\\u2069"):"تراکنش بانکی جدید");
-    t.setTextColor(personal?0xFFFF9F0A:0xFFFFFFFF); t.setTextSize(17); t.setTypeface(Typeface.DEFAULT_BOLD); rtl(t);
+    /* ۱.۳.۶۴: عنوان به رنگ عملیات (سبز واریز / قرمز برداشت نرم‌افزار) */
+    final int qsg=BankSmsReceiver.txSign(text);
+    t.setText(personal?("⚠️ پیامک شخصی \\u2066"+sender.replace(" ","")+"\\u2069"):BankSmsReceiver.txTitle(qsg));
+    t.setTextColor(personal?0xFFFF9F0A:(qsg>0?0xFF9EE858:(qsg<0?0xFFFF6B4A:0xFFFFFFFF))); t.setTextSize(17); t.setTypeface(Typeface.DEFAULT_BOLD); rtl(t);
     box.addView(t,full());
     if(personal){
       TextView w=new TextView(this);
@@ -681,7 +697,8 @@ public class HkQuickActivity extends Activity {
     final EditText et=new EditText(this);
     et.setHint("بابت چی بود؟ (شرح)"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
     et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
-    et.setBackground(round(0xFF2C2C2E,14)); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+    /* ۱.۳.۶۴: هایلایت آبی (همان آبی نرم‌افزار) تا فیلد شرح سریع پیدا شود */
+    GradientDrawable etBg=round(0xFF28363E,14); etBg.setStroke(Math.max(2,dp(1.5f)),0xFF0090D4); et.setBackground(etBg); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
     /* ۱.۳.۴۵: نشانگر تایپ سفید (قبلاً مشکی و نامعلوم بود) */
     if(android.os.Build.VERSION.SDK_INT>=29){ GradientDrawable cur=new GradientDrawable(); cur.setColor(0xFFFFFFFF); cur.setSize(dp(2),dp(22)); et.setTextCursorDrawable(cur); }
     LinearLayout.LayoutParams lp2=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,dp(54)); lp2.topMargin=dp(12);
@@ -2297,7 +2314,7 @@ final class HkWidgetDraw {
     return (v<0?"-":"")+b.toString();
   }
   static long smsAmount(String t){
-    String[] kws={"مبلغ","واریز","برداشت","خرید","انتقال","پرداخت"};
+    String[] kws={"مبلغ","واریز","برداشت","خرید","انتقال","پرداخت","بستانکار","بدهکار","دریافت","برگشت"};
     for(String kw:kws){
       int i=t.indexOf(kw);
       while(i>=0){
@@ -2312,18 +2329,80 @@ final class HkWidgetDraw {
     }
     return 0;
   }
-  static void applySms(Context c,String text,String sender){
+  static boolean isD(char ch){ return ch>='0'&&ch<='9'; }
+  static boolean hasAny(String t,String... ws){ for(String w:ws) if(t.contains(w)) return true; return false; }
+  /** ۱.۳.۶۴: نوع تراکنش با همان ترتیب نرم‌افزار (detectTxnTypeFromSms): ۱ واریز، ‎-۱ برداشت، ۰ نامعلوم */
+  static int smsSign(String t){
+    int n=t.length();
+    /* علامت چسبیده به مبلغِ برچسب‌دار: «انتقال:2,000,000+» یا «برداشت:-500,000» */
+    String[] labels={"واریز","برداشت","انتقال","مبلغ","خرید","پرداخت"};
+    for(String lb:labels){
+      int i=t.indexOf(lb);
+      while(i>=0){
+        int j=i+lb.length();
+        while(j<n && (t.charAt(j)==' '||t.charAt(j)==':'||t.charAt(j)=='\uff1a')) j++;
+        char pre=j<n?t.charAt(j):' ';
+        if(pre=='+'||pre=='-'){ j++; while(j<n&&t.charAt(j)==' ') j++; }
+        if(j<n && isD(t.charAt(j))){
+          if(pre=='+') return 1; if(pre=='-') return -1;
+          int k=j; while(k<n && (isD(t.charAt(k))||t.charAt(k)==',')) k++;
+          while(k<n&&t.charAt(k)==' ') k++;
+          if(k<n && (t.charAt(k)=='+'||t.charAt(k)=='-') && (k+1>=n || !isD(t.charAt(k+1)))) return t.charAt(k)=='+'?1:-1;
+        }
+        i=t.indexOf(lb,i+1);
+      }
+    }
+    if(hasAny(t,"برگشت وجه","برگشت خرید","برگشت تراکنش","استرداد","سود سپرده","سود حساب")) return 1;
+    if(hasAny(t,"واریز به","واریز مبلغ","واریز وجه","واریز شد","واریز:","دریافت مبلغ","سود واریز","پاداش")) return 1;
+    if(t.contains("واریز") && !hasAny(t,"برداشت","خرید","پرداخت قبض")) return 1;
+    if(t.contains("بستانکار") && !t.contains("بدهکار")) return 1;
+    if(hasAny(t,"برداشت","خرید","پرداخت","کسر","کارمزد","بدهکار")) return -1;
+    /* عنوان مبهم («انتقال»، «تراکنش»): علامت کنار عدد، به‌جز کنار مانده/موجودی */
+    for(int i=0;i<n;i++){
+      char ch=t.charAt(i);
+      boolean s1=(ch=='+'||ch=='-') && i+1<n && isD(t.charAt(i+1)) && i>0 && (t.charAt(i-1)==':'||t.charAt(i-1)==' ');
+      boolean s2=(ch=='+'||ch=='-') && i>0 && isD(t.charAt(i-1)) && (i+1>=n || Character.isWhitespace(t.charAt(i+1)));
+      if(!s1 && !s2) continue;
+      String back=t.substring(Math.max(0,i-24),i);
+      if(back.contains("مانده")||back.contains("موجودی")) continue;
+      return ch=='+'?1:-1;
+    }
+    if(t.contains("انتقال")) return -1;
+    return 0;
+  }
+  static boolean sameDay(long at){
+    if(at<=0) return true;
+    java.util.Calendar a=java.util.Calendar.getInstance(), b=java.util.Calendar.getInstance(); a.setTimeInMillis(at);
+    return a.get(java.util.Calendar.YEAR)==b.get(java.util.Calendar.YEAR) && a.get(java.util.Calendar.DAY_OF_YEAR)==b.get(java.util.Calendar.DAY_OF_YEAR);
+  }
+  static void applySms(Context c,String text,String sender){ if(applySmsTo(c,text,sender,0)) HkWidgetProvider.refreshAll(c); }
+  /** ۱.۳.۶۴: پیامک‌های صف که نرم‌افزار هنوز در حسابش نیاورده (seen = شناسه‌هایی که خودش حساب کرده یا تعیین تکلیف کرده)،
+      بعد از هر به‌روزرسانی از طرف نرم‌افزار دوباره روی ویجت اعمال می‌شوند تا اثرشان پاک نشود */
+  static void applyUnseen(Context c,String seenJson){
     try{
-      if(BankSmsReceiver.isPersonal(sender)) return;
+      java.util.HashSet<Integer> seen=new java.util.HashSet<>();
+      org.json.JSONArray sa=new org.json.JSONArray(seenJson==null?"[]":seenJson);
+      for(int i=0;i<sa.length();i++) seen.add(sa.optInt(i));
+      org.json.JSONArray q=new org.json.JSONArray(c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE).getString(BankSmsReceiver.QUEUE,"[]"));
+      for(int i=0;i<q.length();i++){
+        org.json.JSONObject x=q.optJSONObject(i); if(x==null) continue;
+        int nid=x.optInt("nid",0); if(nid==0 || seen.contains(nid)) continue;
+        applySmsTo(c,x.optString("text",""),x.optString("sender",""),x.optLong("receivedAt",0));
+      }
+    }catch(Throwable ignored){}
+  }
+  static boolean applySmsTo(Context c,String text,String sender,long at){
+    try{
+      if(BankSmsReceiver.isPersonal(sender)) return false;
       SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-      if(!sp.contains("balRaw")) return;
+      if(!sp.contains("balRaw")) return false;
       String t=BankSmsReceiver.normFa(text);
       long amt=smsAmount(t);
-      if(amt<=0) return;
-      boolean inc=t.contains("واریز")||t.contains("بستانکار"), exp=t.contains("برداشت")||t.contains("خرید")||t.contains("پرداخت")||t.contains("بدهکار");
-      if(inc==exp) return;
+      if(amt<=0) return false;
+      int sgn=smsSign(t);
+      if(sgn==0) return false;
       if(!(t.contains("تومان")||t.contains("تومن"))) amt=Math.round(amt/10.0);
-      long sg=inc?1:-1;
+      long sg=sgn;
       /* حساب از چهار رقم آخر کارت */
       String label=null;
       try{
@@ -2337,7 +2416,7 @@ final class HkWidgetDraw {
       SharedPreferences.Editor e=sp.edit();
       e.putLong("balRaw",bal); e.putString("balance",fmtFa(bal)); e.putBoolean("neg",bal<0);
       String[] td=todayFa();
-      if(sg<0 && td!=null){
+      if(sg<0 && td!=null && sameDay(at)){
         boolean same=td[1].equals(sp.getString("dayKey",""));
         long today=(same?sp.getLong("todayRaw",0):0)+amt;
         e.putLong("todayRaw",today); e.putString("today",fmtFa(today)); e.putBoolean("todayNone",false); e.putString("dayKey",td[1]);
@@ -2351,8 +2430,8 @@ final class HkWidgetDraw {
         e.putString("accounts",arr.toString());
       }catch(Exception ignored){}
       e.apply();
-      HkWidgetProvider.refreshAll(c);
-    }catch(Throwable ignored){}
+      return true;
+    }catch(Throwable ignored){ return false; }
   }
 
   static Data load(Context c){
@@ -2790,6 +2869,8 @@ public class HkWidgetPlugin extends Plugin {
       /* ۱.۳.۵۶: مبلغ‌های خام برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک */
       try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
       e.apply();
+      /* ۱.۳.۶۴: پیامک‌های تازهٔ صف که نرم‌افزار هنوز نخوانده، روی عدد تازه دوباره اعمال شوند */
+      try{ org.json.JSONObject dj2=call.getData(); if(dj2.has("seenNids")) HkWidgetDraw.applyUnseen(getContext(), dj2.optString("seenNids","[]")); }catch(Exception ignored){}
       HkWidgetProvider.refreshAll(getContext());
       call.resolve();
     }catch(Exception ex){ call.reject("widget_failed",ex); }
