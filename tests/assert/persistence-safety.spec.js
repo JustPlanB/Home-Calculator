@@ -104,12 +104,15 @@ async function uiDeleteAccount(page, ACC) {
     const r = [saveArchive(), saveArchive(), saveArchive()];
     __failOff();
     const after = __lsSnap();
-    return { r, toasts: window.__toasts.slice(), warns: window.__warns.slice(), unchanged: __lsSame(before, after),
+    /* ۱.۳.۶۳: تنها کلید تازهٔ مجاز، علامت «نسخهٔ دوم (IndexedDB) جلوتر است» برای بازگشت در بالا آمدن بعدی */
+    const flagKey = 'hesabKetabArchive_v5_mirrorAhead', flagSet = after[flagKey] === '1'; delete after[flagKey];
+    return { r, toasts: window.__toasts.slice(), warns: window.__warns.slice(), unchanged: __lsSame(before, after), flagSet,
       inMemory: JSON.stringify(archive).indexOf('MEM_ONLY_SECRET') >= 0 };
   });
   ok(s1.r.every(x => x === false), 'saveArchive نتیجهٔ false برمی‌گرداند');
   ok(s1.toasts.length === 1 && /حافظهٔ ذخیره‌سازی پر است/.test(s1.toasts[0]), 'خطای پر بودن حافظه: دقیقاً یک پیام (نه سه پیام)');
   ok(s1.unchanged, 'با شکست کلید اول، بقیهٔ کلیدهای آرشیو هم نوشته نشدند (ذخیره‌ها ناهمسان نشدند)');
+  ok(s1.flagSet, 'علامت «نسخهٔ دوم جلوتر است» ماند تا بار بعد از IndexedDB برگردد');
   ok(s1.inMemory, 'دادهٔ حافظه دست‌نخورده ماند');
   ok(s1.warns.length >= 1 && s1.warns.every(w => w.indexOf('MEM_ONLY_SECRET') < 0 && w.indexOf('123456789') < 0), 'در کنسول فقط نام کلید و نوع خطا؛ هیچ دادهٔ مالی');
   const s2 = await S.page.evaluate(() => {

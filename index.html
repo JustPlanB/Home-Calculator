@@ -15427,7 +15427,13 @@ function onPeriodChange() {
       try {
         if (!localUpdatedAt) localUpdatedAt = Date.now();
         const bundle = getBundle();
-        ok = hkStorageSet(familyStorageKey(familyCode), JSON.stringify(bundle)) &&
+        const bundleStr = JSON.stringify(bundle);
+        /* ۱.۳.۶۳: نسخهٔ دوم در IndexedDB (بی‌سقف ۵ میلیون حرفی)؛ علامت «جلوتر» قبل از نوشتن اصلی گذاشته و بعد از موفقیت برداشته می‌شود */
+        if (!_hkMirrorHold) {
+          try { if (!_hkSkipSame) localStorage.setItem(HK_MIRROR_FLAG, '1'); } catch (eF) {}
+          hkMirrorSchedule(bundleStr, localUpdatedAt);
+        }
+        ok = hkStorageSet(familyStorageKey(familyCode), bundleStr) &&
         hkStorageSet(STORAGE_KEY + '_meta', JSON.stringify({
           familyCode: familyCode,
           memberName: memberName,
@@ -15442,12 +15448,81 @@ function onPeriodChange() {
           currentTab: currentTab,
           localUpdatedAt: localUpdatedAt
         })) &&
-        hkStorageSet(STORAGE_KEY, JSON.stringify(Object.assign({}, bundle, {
-          currentYear, currentMonth, currentTab, memberName
-        })));
+        /* ۱.۳.۶۳: کلید اصلی دیگر نسخهٔ تکراری کل داده نیست (نصف فضا آزاد می‌شود)؛ داده فقط در کلید خانواده */
+        hkStorageSet(STORAGE_KEY, JSON.stringify({ currentYear, currentMonth, currentTab, memberName }));
+        if (ok && !_hkMirrorHold) { try { localStorage.removeItem(HK_MIRROR_FLAG); } catch (eR) {} }
       } catch (e) { hkPersistFailed('archive', e); ok = false; }
       scheduleRemotePush();
       return ok;
+    }
+    /* ===== ۱.۳.۶۳: نسخهٔ دوم آرشیو در IndexedDB =====
+       بعد از هر ذخیره (با کمی مکث) آخرین آرشیو آنجا هم نوشته می‌شود. فقط وقتی به کار می‌رود که آخرین نوشتن اصلی
+       شکست خورده باشد (علامت HK_MIRROR_FLAG مانده باشد)؛ آن‌وقت در بالا آمدن بعدی، اگر نسخهٔ IndexedDB جدیدتر باشد، همان خوانده می‌شود. */
+    var HK_MIRROR_FLAG = STORAGE_KEY + '_mirrorAhead';
+    /* وضعیت لحظهٔ بالا آمدن (پیش از هر ذخیره)؛ تا بررسی نسخهٔ دوم تمام نشده، ذخیره‌ها به علامت و نسخهٔ دوم دست نمی‌زنند */
+    var _hkMirrorBoot = null, _hkMirrorHold = false;
+    function hkMirrorNoteBoot(diskUpd) {
+      if (_hkMirrorBoot) return;
+      var flag = false, missing = false;
+      try { flag = !!localStorage.getItem(HK_MIRROR_FLAG); missing = !localStorage.getItem(familyStorageKey(familyCode)); } catch (e) {}
+      _hkMirrorBoot = { flag: flag, missing: missing, upd: Number(diskUpd) || 0 };
+      _hkMirrorHold = flag || missing;
+    }
+    var HKStore = (function () {
+      var DB = 'hk-store', ST = 'kv', _db = null;
+      function db() {
+        if (_db) return Promise.resolve(_db);
+        return new Promise(function (res, rej) {
+          try {
+            var rq = indexedDB.open(DB, 1);
+            rq.onupgradeneeded = function () { if (!rq.result.objectStoreNames.contains(ST)) rq.result.createObjectStore(ST); };
+            rq.onsuccess = function () { _db = rq.result; res(_db); };
+            rq.onerror = function () { rej(rq.error); };
+          } catch (e) { rej(e); }
+        });
+      }
+      function put(k, v) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(ST, 'readwrite'); t.objectStore(ST).put(v, k); t.oncomplete = function () { res(true); }; t.onerror = function () { rej(t.error); }; }); }); }
+      function get(k) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(ST, 'readonly'), rq = t.objectStore(ST).get(k); rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { rej(rq.error); }; }); }); }
+      function del(k) { return db().then(function (d) { return new Promise(function (res) { var t = d.transaction(ST, 'readwrite'); t.objectStore(ST).delete(k); t.oncomplete = function () { res(true); }; t.onerror = function () { res(false); }; }); }); }
+      return { put: put, get: get, del: del };
+    })();
+    var _hkMirrorT = null, _hkMirrorPending = null;
+    function hkMirrorSchedule(str, upd) {
+      if (typeof indexedDB === 'undefined') return;
+      _hkMirrorPending = { v: str, upd: Number(upd) || 0, at: Date.now() };
+      clearTimeout(_hkMirrorT);
+      _hkMirrorT = setTimeout(hkMirrorFlush, 1500);
+    }
+    function hkMirrorFlush() {
+      clearTimeout(_hkMirrorT); _hkMirrorT = null;
+      var p = _hkMirrorPending; _hkMirrorPending = null;
+      if (!p) return Promise.resolve(false);
+      return HKStore.put('archive', p).catch(function () { return false; });
+    }
+    /* رفتن نرم‌افزار به پس‌زمینه: نوشتن معوق همان لحظه انجام شود */
+    try { document.addEventListener('visibilitychange', function () { if (document.hidden && _hkMirrorPending) hkMirrorFlush(); }); window.addEventListener('pagehide', function () { if (_hkMirrorPending) hkMirrorFlush(); }); } catch (eVis) {}
+    function hkMirrorClear() {
+      clearTimeout(_hkMirrorT); _hkMirrorT = null; _hkMirrorPending = null;
+      try { localStorage.removeItem(HK_MIRROR_FLAG); } catch (e) {}
+      try { return HKStore.del('archive'); } catch (e2) { return Promise.resolve(false); }
+    }
+    /* بالا آمدن: اگر آخرین نوشتن اصلی ناموفق بوده و نسخهٔ IndexedDB جدیدتر است، یا کلید داده اصلاً نیست، همان جایگزین می‌شود */
+    function hkMirrorRecover() {
+      var st = _hkMirrorBoot || { flag: false, missing: false, upd: 0 };
+      function done(r) { _hkMirrorHold = false; return r; }
+      if ((!st.flag && !st.missing) || typeof indexedDB === 'undefined') return Promise.resolve(done(false));
+      return HKStore.get('archive').then(function (m) {
+        if (!m || !m.v || !(st.missing || Number(m.upd) > st.upd)) return done(false);
+        var obj = JSON.parse(m.v);
+        if (!obj || typeof obj !== 'object' || !obj.archive) return done(false);
+        _hkMirrorHold = false;
+        applyBundle(obj);
+        localUpdatedAt = Math.max(Number(localUpdatedAt) || 0, Number(m.upd) || 0);
+        try { loadCurrent(); } catch (e1) {}
+        try { renderAll(); } catch (e2) {}
+        try { if (saveArchive()) localStorage.removeItem(HK_MIRROR_FLAG); } catch (e3) {}
+        return true;
+      }).catch(function () { return done(false); });
     }
 
     function loadArchive() {
@@ -15468,8 +15543,9 @@ function onPeriodChange() {
           if (['expense', 'income', 'install', 'balance'].includes(meta.currentTab)) currentTab = meta.currentTab;
           if (meta.localUpdatedAt) localUpdatedAt = meta.localUpdatedAt;
         }
+        try { hkMirrorNoteBoot(localUpdatedAt); } catch (eMb) {}
         let raw = localStorage.getItem(familyStorageKey(familyCode));
-        if (!raw) raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) { raw = localStorage.getItem(STORAGE_KEY); if (raw && raw.indexOf('"archive"') < 0) raw = null; /* ۱.۳.۶۳: کلید اصلی کوچک‌شده داده ندارد */ }
         if (!raw) raw = localStorage.getItem('hesabKetabArchive_v4');
         if (!raw) raw = localStorage.getItem('hesabKetabArchive_v3');
         if (!raw) raw = localStorage.getItem('hesabKetabArchive_v2');
@@ -18518,6 +18594,8 @@ function askBackupUserCards(selectedParts) {
       /* اول کلیدهای تازه و تغییرکرده برداشته می‌شوند (فضا آزاد شود)، بعد مقدارهای قبلی نوشته می‌شوند */
       Object.keys(cur).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(snap, k) || snap[k] !== cur[k]) { try { localStorage.removeItem(k); } catch (e) {} } });
       Object.keys(snap).forEach(function (k) { if (localStorage.getItem(k) !== snap[k]) { try { localStorage.setItem(k, snap[k]); } catch (e) {} } });
+      /* ۱.۳.۶۳: نسخهٔ دوم (IndexedDB) هم به همان دادهٔ برگشتی برمی‌گردد */
+      try { var fk = familyStorageKey(familyCode), mu = 0; try { mu = JSON.parse(snap[STORAGE_KEY + '_meta'] || '{}').localUpdatedAt; } catch (eU) {} if (snap[fk]) hkMirrorSchedule(snap[fk], mu); } catch (eM) {}
       var after = hkSnapshotStorage(), ka = Object.keys(after), ks = Object.keys(snap);
       return ka.length === ks.length && ks.every(function (k) { return after[k] === snap[k]; });
     }
@@ -20827,6 +20905,7 @@ async function openPdfPrintWindow(){
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_KEY + '_meta');
         try { localStorage.removeItem(familyStorageKey(familyCode)); } catch (e) {}
+        try { hkMirrorClear(); } catch (eMc) {}
         localStorage.removeItem('hesabKetabArchive_v4');
         localStorage.removeItem('hesabKetabArchive_v3');
         localStorage.removeItem('hesabKetabArchive_v2');
@@ -45860,6 +45939,7 @@ function openProjectRowPicker(secId) {
     } catch (e) { console.error('home boot', e); }
     renderAll();
     _hkBoot = false;
+    try { setTimeout(function () { hkMirrorRecover(); }, 600); } catch (eMr) {}
     /* بعد از بارگذاری کامل داده — فقط یک‌بار عدد نهایی موجودی */
     try {
       _hbcReady = true;
