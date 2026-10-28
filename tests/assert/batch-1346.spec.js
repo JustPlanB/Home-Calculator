@@ -22,7 +22,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   /* ۱.۳.۴۷: اعلان دوباره رسمی اندروید (batch-1347) */
   ok(/hk_sms_small\.xml/.test(patch), 'فایل چیدمان قدیمی هنوز ساخته می‌شود (بی‌اثر)');
-  ok(/String title=personal\?"فرستندهٔ شخصی":"تراکنش بانکی جدید"/.test(patch), 'پیامک شخصی: فقط «فرستندهٔ شخصی» به رنگ هشدار (بی‌شماره)');
+  /* ۱.۳.۶۴: عنوان پیامک بانکی به رنگ عملیات (واریز/برداشت جدید)؛ نامعلوم همان «تراکنش بانکی جدید» */
+  ok(/String title=personal\?"فرستندهٔ شخصی":(?:"تراکنش بانکی جدید"|txTitle\(sg\))/.test(patch) && /"تراکنش بانکی جدید"/.test(patch), 'پیامک شخصی: فقط «فرستندهٔ شخصی» به رنگ هشدار (بی‌شماره)');
   ok(/"باکس",bpi/.test(patch) && !/setBubbleMetadata/.test(patch), 'به‌جای حباب، دکمهٔ «باکس» زیر اعلان');
   ok(/Theme\.DeviceDefault\.Dialog\.NoActionBar/.test(patch) && /wl\.gravity=Gravity\.TOP/.test(patch) && /box\.addView\(smsSv\)/.test(patch), 'باکس شناور بالای صفحه؛ فیلد و دکمه‌ها اول و متن پیامک آخر (کیبورد روی «ثبت» نمی‌آید)');
 
