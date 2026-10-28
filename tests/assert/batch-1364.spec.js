@@ -118,6 +118,42 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(JSON.stringify(s) === JSON.stringify([11, 12, 21]), 'پیامک‌های در صف و تعیین‌تکلیف‌شده به ویجت گفته می‌شوند');
 
+  console.log('• دایرهٔ «+» صفحهٔ اصلی: ثبت درآمد / ثبت خرج');
+  const h = await p.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    try { closeSmsConfirmModal('reject'); } catch (e) {}
+    document.querySelectorAll('#hkRowEdit').forEach(x => x.remove());
+    const out = {};
+    document.querySelector('.home-circle-add').click(); await w(200);
+    const its = [...document.querySelectorAll('#hkAddPop .hk-add-it')];
+    out.items = its.map(x => x.textContent);
+    out.colors = its.map(x => getComputedStyle(x).color);
+    document.documentElement.setAttribute('data-theme', 'light');
+    out.lightColors = its.map(x => getComputedStyle(x).color);
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const sec = periodData.expense.sections.find(s => s.title === hkMainTitle());
+    const n0 = sec.rows.length;
+    document.querySelector('#hkAddPop .hk-add-it.exp').click(); await w(400);
+    out.title = (document.querySelector('#hkRowEdit .hk-re-title') || {}).textContent;
+    const btn = t => [...document.querySelectorAll('#hkRowEdit button')].find(x => x.textContent.trim() === t);
+    btn('ثبت').click(); await w(150);
+    out.needAmount = !!document.getElementById('hkRowEdit');
+    btn('انصراف').click(); await w(150);
+    out.cancelNoRow = sec.rows.length === n0;
+    document.querySelector('.home-circle-add').click(); await w(200);
+    document.querySelector('#hkAddPop .hk-add-it.inc').click(); await w(400);
+    const amt = document.querySelector('#hkRowEdit .hk-re-amt'); amt.value = '1,200,000'; amt.dispatchEvent(new Event('input'));
+    btn('ثبت').click(); await w(500);
+    const isec = periodData.income.sections.find(s => s.title === hkMainTitle());
+    out.saved = isec.rows.filter(r => Number(r.amount) === 1200000).map(r => r.day + '|' + r.status);
+    return out;
+  });
+  ok(JSON.stringify(h.items) === '["ثبت درآمد","ثبت خرج"]', 'باکس کوچک: بالا «ثبت درآمد»، پایین «ثبت خرج»');
+  ok(h.colors[0] === 'rgb(158, 232, 88)' && h.colors[1] === 'rgb(255, 107, 74)' && h.lightColors[0] === 'rgb(63, 154, 92)' && h.lightColors[1] === 'rgb(220, 38, 38)', 'سبز و قرمز خود نرم‌افزار در هر دو تم');
+  ok(h.title === 'ثبت خرج' && h.needAmount, 'باکس ثبت ردیف با عنوان «ثبت خرج»؛ بی‌مبلغ ثبت نمی‌شود');
+  ok(h.cancelNoRow, 'انصراف: ردیفی اضافه نمی‌شود');
+  ok(h.saved.length === 1 && h.saved[0] === '5|paid', 'ثبت درآمد با تاریخ امروز ذخیره شد');
+
   ok(errors.length === 0, 'هیچ خطای JS ' + (errors[0] || ''));
   await b.close();
   console.log('\nbatch-1364: ' + passed + ' passed, ' + failed + ' failed');
