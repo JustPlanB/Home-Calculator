@@ -92,7 +92,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     accB.click(); await w(150);
     const items = [...document.querySelectorAll('.hk-re-list .dark-select-option')].map(x => x.textContent);
     [...document.querySelectorAll('.hk-re-list .dark-select-option')].pop().click(); await w(200);
-    const inp = document.querySelector('#hkRowEdit .sms-newacc-in');
+    const inp = document.querySelector('#hkRowEdit .hk-bulk-newinp');
     const out = { last: items[items.length - 1], inp: !!inp, hidden: accB.style.display === 'none' };
     const okBtn = [...document.querySelectorAll('#hkRowEdit button')].find(x => x.textContent.trim() === 'ثبت');
     inp.value = 'ملت'; okBtn.click(); await w(200);
