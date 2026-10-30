@@ -39,20 +39,23 @@ async function page(b, extra) {
     const ftd = document.querySelector('#search-result-foot td'), btd = document.querySelector('#search-result-body td');
     const cs = getComputedStyle(ftd);
     out.foot = { pos: cs.position, bg: cs.backgroundImage + cs.backgroundColor, bodyBg: getComputedStyle(btd).backgroundImage + getComputedStyle(btd).backgroundColor, bt: parseFloat(getComputedStyle(ftd, '::before').height) };
-    const sc = document.getElementById('searchResultScroll');
+    /* ۱.۳.۶۶: ناحیهٔ اسکرول نتیجه balanceScrollBody است */
+    const sc = document.getElementById('balanceScrollBody');
     sc.scrollTop = 0; await w(50);
     const fr = ftd.getBoundingClientRect(), scr = sc.getBoundingClientRect();
     out.footBelow = fr.bottom <= scr.bottom + 1 && fr.top < scr.bottom - 10;   /* ۱۶ ردیف: جمع پایین کادر جدول دیده می‌شود (ردیف‌ها زیرش رد می‌شوند) */
     sc.scrollTop = 99999; await w(50);
+    sc.scrollTop = 0; await w(50);
+    sc.scrollTop = 99999; await w(50);
     const lastRow = [...document.querySelectorAll('#search-result-body tr')].pop().getBoundingClientRect();
     out.footAfterLast = ftd.getBoundingClientRect().top >= lastRow.bottom - 1;
-    /* اسکرول یک‌تکه: کادر فیلترها همراه صفحه بالا می‌رود */
-    const panel = document.getElementById('panel-balance'), head = document.getElementById('balanceFixedHeader');
-    out.panelOv = getComputedStyle(panel).overflowY;
-    const h0 = head.getBoundingClientRect().top;
-    panel.scrollTop = 200; await w(80);
-    out.headMoved = Math.round(h0 - head.getBoundingClientRect().top); out.scrolled = Math.round(panel.scrollTop);
-    panel.scrollTop = 0; await w(50);
+    /* ۱.۳.۶۶: فقط یک ناحیهٔ اسکرول (جدول‌ها)؛ خود صفحه و جدول نتیجه اسکرول جدا ندارند */
+    const panel = document.getElementById('panel-balance');
+    sc.scrollTop = 0; await w(50);
+    out.panelOv = getComputedStyle(sc).overflowY + '/' + getComputedStyle(panel).overflowY;
+    sc.scrollTop = 200; panel.scrollTop = 200; await w(80);
+    out.scrolled = Math.round(sc.scrollTop); out.panelScrolled = Math.round(panel.scrollTop); out.innerOn = document.getElementById('searchResultScroll').classList.contains('on');
+    sc.scrollTop = 0; panel.scrollTop = 0; await w(50); try { hkSearchCollapse(false); } catch (e) {} await w(750);
     /* بازهٔ مبلغ: هیچ دو برچسبِ دیده‌شده روی هم نمی‌افتند */
     const mn = document.getElementById('balanceSearchAmtMin'), mx = document.getElementById('balanceSearchAmtMax');
     const host = document.getElementById('balanceAmtRange');
@@ -85,7 +88,7 @@ async function page(b, extra) {
   ok(s.th.join('،') === 'ردیف،تاریخ،شرح،حساب،مبلغ' && s.firstCells[0] === 'sr-num' && s.firstCells[1] === 'sr-date' && s.firstCells[2] === 'sec-name', 'ستون‌های نتیجه به ترتیب: ردیف، تاریخ، شرح، حساب، مبلغ');
   ok(s.foot.pos === 'sticky' && s.foot.bg !== s.foot.bodyBg && s.foot.bt >= 2 && s.footBelow && s.footAfterLast, 'ردیف جمع پایین جدول چسبان (همیشه دیده می‌شود)، زمینهٔ جدا و خط ضخیم بالا (' + s.foot.bg + ')');
   /* ۱.۳.۳۸: کادر جستجو بالای صفحه می‌چسبد و با اسکرول جمع می‌شود (batch-1338) */
-  ok(s.panelOv === 'auto' && s.scrolled > 20, 'منوی جستجو یک‌تکه اسکرول می‌شود (' + s.scrolled + 'px)');
+  ok(s.panelOv === 'auto/hidden' && s.scrolled > 20 && s.panelScrolled === 0 && !s.innerOn, 'منوی جستجو یک ناحیهٔ اسکرول دارد؛ جدول نتیجه اسکرول تو در تو ندارد (' + s.panelOv + ' ' + s.scrolled + 'px)');
   ok(s.overlaps.every(n => n === 0), 'بازهٔ مبلغ: در هیچ حالتی برچسب‌ها روی هم نمی‌افتند (' + s.overlaps.join(',') + ')');
   ok(clr.v === '' && clr.f, 'ضربدر شرح با لمس کار می‌کند: نوشته پاک و فیلد فعال می‌ماند');
 
