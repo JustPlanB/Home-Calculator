@@ -1899,12 +1899,14 @@
     body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td + td::after, .hk-scroll11 .summary-table tfoot tr:first-child td + td::after { top: 2px; }
     html[data-theme="light"] body.search-open #panel-balance #searchResultBox .summary-table tfoot tr:first-child td::before, html[data-theme="light"] .hk-scroll11 .summary-table tfoot tr:first-child td::before { background: var(--lt-line, #c7c7cc); }
     /* ۱.۳.۳۷: منوی جستجو یک‌تکه اسکرول می‌شود: کادر فیلترها همراه صفحه بالا می‌رود (همیشه باز)؛ عنوان ستون‌های نتیجه چسبان */
-    body.search-open #panel-balance.active { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overflow-anchor: none; }
+    /* ۱.۳.۶۶: اسکرول از نو: کادر فیلترها بیرون از ناحیهٔ اسکرول (بالای صفحه) و فقط یک ناحیهٔ اسکرول برای جدول‌ها؛
+       جدول نتیجه دیگر اسکرول داخلی ندارد (اسکرول تو در تو نیست)؛ عنوان ستون‌ها بالا و ردیف‌های جمع پایین همان ناحیه چسبان‌اند */
+    body.search-open #panel-balance.active { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
     /* ۱.۳.۳۸: بعد از نتیجه، با اولین اسکرول رو به پایین کادر جستجو نرم جمع می‌شود (فقط «جستجوی شرح» می‌ماند، بالای صفحه چسبیده)؛
        برگشت به بالای جدول = دوباره باز. فلش کوچک زیر حالت بسته = رفتن به بالا و باز شدن */
     /* ۱.۳.۳۹: جمع/باز شدن آرام‌تر (۰٫۶ ثانیه) و کامل؛ ارتفاع هر بخش روی خود گوشی اندازه گرفته می‌شود (سقف ثابت ندارد،
        پس محور مبلغ با هر اندازهٔ نوشته داخل کادر می‌ماند) */
-    body.search-open #panel-balance .balance-fixed-header { position: sticky !important; top: 0 !important; transition: padding 0.6s ease; }
+    body.search-open #panel-balance .balance-fixed-header { position: relative !important; top: auto !important; flex: 0 0 auto !important; transition: padding 0.6s ease; }
     #balanceFixedHeader .bs-search-head, #balanceFixedHeader .bsr-grid > .bsr-cell:not(.bsr-desc) { transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease, padding 0.6s ease, margin 0.6s ease; }
     #balanceFixedHeader.bsr-anim .bs-search-head, #balanceFixedHeader.bsr-anim .bsr-grid > .bsr-cell:not(.bsr-desc) { overflow: hidden; }
     #balanceFixedHeader .bsr-grid { transition: row-gap 0.6s ease; }
@@ -1914,7 +1916,11 @@
     #balanceFixedHeader .bsr-handle { display: block; width: 100%; height: 0; padding: 0; border: 0; background: none; color: var(--muted, #8e8e93); overflow: hidden; opacity: 0; transition: height 0.6s ease, opacity 0.45s ease; cursor: pointer; }
     #balanceFixedHeader .bsr-handle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     #balanceFixedHeader.bsr-collapsed .bsr-handle { height: 20px; opacity: 1; }
-    body.search-open #panel-balance .balance-scroll-body { height: auto !important; flex: none !important; overflow: visible !important; padding-top: 0 !important; }
+    body.search-open #panel-balance .balance-scroll-body { flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overflow-anchor: none; padding-top: 0 !important; border-radius: 10px; }
+    body.search-open #panel-balance .balance-scroll-body .summary-section { overflow: clip !important; }
+    body.search-open #panel-balance #balanceScrollBody { padding-bottom: 0 !important; }
+    body.search-open #panel-balance #balanceScrollBody > #searchResultBox { margin-bottom: calc(10px + var(--nav-safe, 0px)); }
+    body.search-open #panel-balance .hk-scroll11, body.search-open #panel-balance .hk-scroll11.on { max-height: none !important; overflow: visible !important; }
     body.search-open #panel-balance .balance-fixed-header .bsr-grid { padding-top: 0 !important; }
     body.search-open .bs-search-head { margin-bottom: 6px !important; }
     body.search-open #panel-balance .summary-section > .summary-header, body.search-open .bs-search-head { padding: 10px 12px 6px !important; }
@@ -11022,6 +11028,19 @@
     .hk-bulk-folder.personal .hk-bulk-dsel .dark-select-btn { background: linear-gradient(rgba(255,159,10,0.08), rgba(255,159,10,0.08)), var(--bg3, #2c2c2e) !important; }
     /* ۱.۳.۴۸: همهٔ دکمه‌های آبیِ ثبت یک رنگ */
     .hk-bulk-ok, .hk-bulk-read, .hk-re-ok, .hk-rc-done { background: var(--accent) !important; background-color: var(--accent) !important; color: #fff !important; }
+    /* ۱.۳.۶۶: باکس «حساب جدید» ویرایش ردیف: هم‌اندازهٔ منوی حساب، با فلش برگشت به فهرست */
+    .hk-re-box { max-height: min(88vh, 100%); }
+    .hk-re-newacc { margin-top: 0; }
+    .hk-re-newacc .hk-bulk-newacc { margin-top: 0; border-radius: 11px; padding: 0 10px; align-items: center; }
+    .hk-re-newacc .hk-bulk-newlab { padding: 0; font-size: 0.74rem; }
+    .hk-re-newacc .hk-bulk-newsep { margin: 0 7px; align-self: stretch; margin-top: 7px; margin-bottom: 7px; }
+    .hk-re-newacc .hk-bulk-newacc .hk-bulk-newinp { padding: 0; height: 100%; font-size: 0.9rem; }
+    .hk-re-newacc .hk-acc-dup { display: none; }
+    .hk-re-newacc .hk-bulk-newacc.hk-dup { border-color: #ff453a; }
+    .hk-re-newback .hk-re-chev { width: 16px; height: 16px; flex: 0 0 16px; }
+    .hk-re-newback { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; padding: 0 0 0 2px; margin: 0; cursor: pointer; align-self: stretch; }
+    /* ۱.۳.۶۶: متن همهٔ دکمه‌های آبی سفید */
+    .modal-btn.primary, .cro-done, #pinSetupOverlay .pin-ok, #securityModal .sec-btn-primary, .filter-chip.active { color: #fff !important; -webkit-text-fill-color: #fff !important; }
     /* ۱.۳.۴۸: باکس ویرایش جمع‌وجورتر (همه‌چیز بی اسکرول دیده شود) */
     .hk-re-box { padding: 12px 12px 10px; }
     .hk-re-title { margin-bottom: 8px; font-size: 0.95rem; }
@@ -13277,8 +13296,8 @@
           try { scheduleSave(); } catch (e0) {}
         } else if (was === 'ledger') {
           var ledX = ensureLedger();
+          /* ۱.۳.۶۶: فقط حالت نمایش؛ ذخیرهٔ کامل لازم نیست */
           (ledX.sections || []).forEach(function(s){ s.collapsed = true; });
-          try { scheduleSave(); } catch (e1) {}
         } else if (was === 'recurring') {
           try { recExpanded.clear(); } catch (e2) {}
         }
@@ -14023,6 +14042,7 @@ function onPeriodChange() {
         });
         if (_bestK) {
           var _have = {}; (periodData.ledger.sections || []).forEach(function (s) { if (s && s.id) _have[s.id] = 1; });
+          try { hkLedGone().forEach(function (id) { _have[id] = 1; }); } catch (eG) {}
           var _add = archive[_bestK].ledger.sections.filter(function (s) { return s && s.id && !_have[s.id] && ((s.personA || '').trim() || (s.personB || '').trim()); });
           if (_add.length) {
             var _sec = periodData.ledger.sections.filter(function (s) { return (s.personA || '').trim() || (s.personB || '').trim() || (s.rows || []).some(function (r) { return r && (r.amount || r.desc); }); });
@@ -14362,6 +14382,7 @@ function onPeriodChange() {
         const pd = ensurePeriodInArchive(pk);
         if (!pd.ledger) pd.ledger = { sections: [], nextId: 1 };
         let sec = (pd.ledger.sections || []).find(s => s.id === rec.section_id);
+        if (!sec && rec.section_id && hkLedGone().indexOf(rec.section_id) >= 0) return 'ignored';
         if (!sec) {
           sec = { id: rec.section_id || newRecordId(), personA: '', personB: '', collapsed: false, rows: [] };
           pd.ledger.sections.push(sec);
@@ -14388,6 +14409,7 @@ function onPeriodChange() {
         const pd = ensurePeriodInArchive(pk);
         if (!pd.ledger) pd.ledger = { sections: [], nextId: 1 };
         let sec = (pd.ledger.sections || []).find(s => s.id === (rec.section_id || payload.id));
+        if (!sec && hkLedGone().indexOf(rec.section_id || payload.id) >= 0) return 'ignored';
         if (!sec) {
           sec = { id: rec.section_id || payload.id || newRecordId(), personA: '', personB: '', collapsed: false, rows: [] };
           pd.ledger.sections.push(sec);
@@ -26532,7 +26554,10 @@ async function openPdfPrintWindow(){
       document.body.appendChild(ov);
       try {
         var r = btn.getBoundingClientRect(), bw = box.offsetWidth, bh = box.offsetHeight;
-        var left = Math.max(8, Math.min(innerWidth - bw - 8, r.left + r.width / 2 - bw / 2));
+        /* ۱.۳.۶۶: سمت راست دایرهٔ «+» (میان آن و دایرهٔ موجودی)، در همان ارتفاع قبلی */
+        var bc = document.getElementById('homeBalanceCircle'), br = bc ? bc.getBoundingClientRect() : null;
+        var mid = (br && br.width && br.left > r.right) ? (r.right + br.left) / 2 : r.right + 6 + bw / 2;
+        var left = Math.max(8, Math.min(innerWidth - bw - 8, Math.max(r.left + r.width / 2, mid - bw / 2)));
         box.style.left = Math.round(left) + 'px';
         box.style.top = Math.round(Math.max(8, r.top - bh - 10)) + 'px';
       } catch (eP) {}
@@ -27006,6 +27031,8 @@ async function openPdfPrintWindow(){
       var dVal = mkPill('تاریخ'), tVal = mkPill('زمان');
       /* ۱.۳.۵۶: تاریخ میلادی هم زیر تاریخ شمسی */
       var dGreg = document.createElement('small'); dGreg.className = 'hk-re-greg'; dGreg.dir = 'ltr'; dVal.appendChild(dGreg);
+      /* ۱.۳.۶۶: زمان هم مثل تاریخ یک خط دوم با رقم لاتین دارد */
+      var tGreg = document.createElement('small'); tGreg.className = 'hk-re-greg'; tGreg.dir = 'ltr'; tVal.appendChild(tGreg);
       var fD = document.createElement('div'); fD.className = 'hk-re-pnl'; box.appendChild(fD);
       var years = []; for (var yy = 1390; yy <= 1420; yy++) years.push(yy);
       var days = ['—']; for (var dd = 1; dd <= 31; dd++) days.push(toPersianDigits(String(dd)));
@@ -27041,6 +27068,7 @@ async function openPdfPrintWindow(){
         try { dGreg.textContent = d ? hkGregStr(y, m, d) : ''; } catch (eG) {}
         var hi = wH.getIndex();
         tVal.querySelector('b').textContent = hi ? (p2(hi - 1) + ':' + p2(wMi.getIndex())) : '—';
+        tGreg.textContent = hi ? (String(hi - 1).padStart(2, '0') + ':' + String(wMi.getIndex()).padStart(2, '0')) : '';
         wMi.classList.toggle('hk-wheel-off', !hi);
       }
       /* مبلغ */
@@ -27124,13 +27152,26 @@ async function openPdfPrintWindow(){
       /* همان فیلد «حساب جدید» باکس پیامک: منو پنهان، فیلد نام جایش؛ با «ذخیره» حساب ساخته و برای این ردیف انتخاب می‌شود */
       var hkReNewAcc = function () {
         if (st.newAccIn && st.newAccIn.isConnected) { try { st.newAccIn.focus(); } catch (eF0) {} return; }
+        /* ۱.۳.۶۶: باکس نام دقیقاً جای همان منو (همان پهنا و ارتفاع) و فلش همان منو در کنارش: زدنش به فهرست حساب‌ها برمی‌گردد */
+        var ar = accB.getBoundingClientRect();
         accB.style.display = 'none';
         /* ۱.۳.۶۵: همان باکس ثبت گروهی */
         var nb = hkNewAccBox('ملی', '');
         var nw = nb.wrap; nw.classList.add('hk-re-newacc');
         var ni = nb.input;
+        var nbx = nw.querySelector('.hk-bulk-newacc');
+        if (ar.height > 0) nbx.style.height = ar.height + 'px';
+        var back = document.createElement('button'); back.type = 'button'; back.className = 'hk-re-newback'; back.setAttribute('aria-label', 'انتخاب از حساب‌ها'); back.innerHTML = HK_RE_CHEV;
+        nbx.appendChild(back);
+        ni.addEventListener('input', function () { nbx.classList.toggle('hk-dup', hkAccNameTaken(ni.value)); });
         accB.insertAdjacentElement('afterend', nw);
         st.newAccIn = ni;
+        back.onclick = function (e) {
+          e.stopPropagation();
+          nw.remove(); st.newAccIn = null; accB.style.display = '';
+          try { ni.blur(); } catch (eB) {}
+          setTimeout(function () { try { accB.click(); } catch (eC) {} }, 40);
+        };
         setTimeout(function () { try { ni.focus(); } catch (eF) {} }, 80);
       };
       /* ۱.۳.۵۰: دسته (فقط مخارج) نیمهٔ چپ همان ردیف حساب */
@@ -27194,7 +27235,20 @@ async function openPdfPrintWindow(){
       box.appendChild(btns);
       ov.appendChild(box);
       var reSaved = false;
+      /* ۱.۳.۶۶: با بالا آمدن صفحه‌کلید، پنجره به بخش دیده‌شدهٔ صفحه می‌رود و فیلد در حال تایپ دیده می‌ماند */
+      var reVV = function () {
+        var vv = window.visualViewport; if (!vv || !ov.isConnected) return;
+        var kb = vv.height < window.innerHeight * 0.85;
+        ov.style.top = kb ? vv.offsetTop + 'px' : ''; ov.style.height = kb ? vv.height + 'px' : ''; ov.style.bottom = kb ? 'auto' : '';
+        var a = document.activeElement;
+        if (a && box.contains(a) && a.matches && a.matches('input, textarea')) setTimeout(function () { try { a.scrollIntoView({ block: 'nearest' }); } catch (eS) {} }, 30);
+      };
+      try { if (window.visualViewport) { window.visualViewport.addEventListener('resize', reVV); window.visualViewport.addEventListener('scroll', reVV); } } catch (eV) {}
+      window.addEventListener('resize', reVV);
+      box.addEventListener('focusin', function () { setTimeout(reVV, 320); });
       var close = function () {
+        try { if (window.visualViewport) { window.visualViewport.removeEventListener('resize', reVV); window.visualViewport.removeEventListener('scroll', reVV); } } catch (eV2) {}
+        window.removeEventListener('resize', reVV);
         try { document.querySelectorAll('.hk-re-list').forEach(function (l) { l.remove(); }); } catch (e) {} ov.remove();
         /* ۱.۳.۶۴: ردیف تازه (دکمهٔ «+» صفحهٔ اصلی) با انصراف برداشته می‌شود */
         if (!reSaved && ctx.onCancel) { try { ctx.onCancel(); } catch (eC) {} }
@@ -35672,9 +35726,23 @@ function confirmSmsEntry() {
         const d = item.data || {};
         const sec = d.section;
         if (!sec) return false;
+        try { hkLedGoneSet(sec.id, false); } catch (e) {}
+        /* ۱.۳.۶۶: بستهٔ همهٔ ماه‌ها به ماه‌های خودش برمی‌گردد */
+        const cur = periodKey(currentYear, currentMonth);
+        if (d.months && typeof d.months === 'object') {
+          Object.keys(d.months).forEach(k => {
+            if (k === cur) return;
+            const pd = archive[k];
+            if (!pd) return;
+            if (!pd.ledger) pd.ledger = { sections: [], nextId: 1 };
+            pd.ledger.sections = (pd.ledger.sections || []).filter(s => !s || s.id !== sec.id);
+            pd.ledger.sections.push(JSON.parse(JSON.stringify(d.months[k])));
+          });
+          if (!d.months[cur] && d.curKey !== cur) return true;
+        }
         const led = ensureLedger();
-        led.sections = led.sections || [];
-        led.sections.push(sec);
+        led.sections = (led.sections || []).filter(s => !s || s.id !== sec.id);
+        led.sections.push(d.months && d.months[cur] ? JSON.parse(JSON.stringify(d.months[cur])) : sec);
         return true;
       }
       if (item.type === 'ledger_row') {
@@ -44380,16 +44448,44 @@ function openProjectRowPicker(secId) {
       const sec0 = (led0.sections || []).find(s => s.id === secId);
       if (sec0 && !canEditRow(sec0)) { showToast(OWNERSHIP_LOCK_MSG); return; }
       askConfirm('این رابطه حذف شود؟', () => {
+        /* ۱.۳.۶۶: رابطه از همهٔ ماه‌ها برداشته می‌شود (یک بستهٔ سطل زباله) + نشان «حذف‌شده» تا از ماه قبل دوباره نیاید */
+        const cur = periodKey(currentYear, currentMonth), months = {};
         try {
+          Object.keys(archive || {}).forEach(k => {
+            const pd = k === cur ? periodData : archive[k];
+            const s = pd && pd.ledger && Array.isArray(pd.ledger.sections) && pd.ledger.sections.find(x => x && x.id === secId);
+            if (s) months[k] = JSON.parse(JSON.stringify(s));
+          });
           const ledT = ensureLedger();
           const secT = ledT.sections.find(s => s.id === secId);
-          if (secT) pushToTrash('ledger_section', secT.title || 'بده‌بستان', { sourceLabel: 'بده‌بستان', section: JSON.parse(JSON.stringify(secT)) });
+          if (secT) months[cur] = JSON.parse(JSON.stringify(secT));
+          const first = secT || months[Object.keys(months)[0]];
+          if (first) pushToTrash('ledger_section', first.title || ((first.personA || '') + (first.personB ? ' / ' + first.personB : '')) || 'بده‌بستان', { sourceLabel: 'بده‌بستان', section: JSON.parse(JSON.stringify(first)), months: months, curKey: cur });
         } catch (e) {}
+        Object.keys(archive || {}).forEach(k => {
+          const pd = archive[k];
+          if (pd && pd.ledger && Array.isArray(pd.ledger.sections)) pd.ledger.sections = pd.ledger.sections.filter(s => !s || s.id !== secId);
+        });
         const led = ensureLedger();
         led.sections = led.sections.filter(s => s.id !== secId);
+        hkLedGoneSet(secId, true);
+        persistCurrent();
         renderLedgerTab();
         scheduleSave();
       });
+    }
+    /* شناسهٔ رابطه‌های حذف‌شده (فقط برای جلوگیری از برگشتِ خودکار از ماه‌های قبل یا همگام‌سازی) */
+    function hkLedGone() {
+      try { const a = JSON.parse(localStorage.getItem(STORAGE_KEY + '_ledGone') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+    }
+    function hkLedGoneSet(id, on) {
+      if (!id) return;
+      try {
+        let a = hkLedGone().filter(x => x !== id);
+        if (on) a.push(id);
+        if (a.length > 400) a = a.slice(-400);
+        localStorage.setItem(STORAGE_KEY + '_ledGone', JSON.stringify(a));
+      } catch (e) {}
     }
 
     function sortLedgerSectionRows(secId) {
@@ -44427,6 +44523,7 @@ function openProjectRowPicker(secId) {
       if (!container) return false;
       const sectionEl = container.querySelector('.section[data-sec-id="' + secId + '"]');
       if (!sectionEl) return false;
+      if (sectionEl._hkLedBuild) sectionEl._hkLedBuild();
       sectionEl.classList.remove('collapsed');
       const rows = sectionEl.querySelectorAll('tbody tr');
       const idx = Math.max(0, rows.length - Math.max(1, countBack || 1));
@@ -45521,11 +45618,12 @@ function openProjectRowPicker(secId) {
           const target = (ledNow.sections || []).find(s => s.id === sid);
           if (!target) return;
           target.collapsed = !target.collapsed;
-          /* ۱.۳.۵۹: سقف ۱۰ ردیف همان لحظهٔ باز شدن اندازه گرفته می‌شود تا انیمیشن به ارتفاع نهایی برود */
-          hkSlideSet(div, !target.collapsed, function (o) { div.classList.toggle('collapsed', !o); if (o) hkLedCap(body, thead, tbody); });
+          /* ۱.۳.۶۶: ردیف‌ها اولین بار همین‌جا ساخته می‌شوند و سقف ۱۰ ردیف فقط یک بار، پیش از شروع حرکت، اندازه گرفته می‌شود */
+          if (!target.collapsed) buildRows();
+          let capped = !body.classList.contains('hk-led-scroll') || !!body.style.getPropertyValue('max-height');
+          hkSlideSet(div, !target.collapsed, function (o) { div.classList.toggle('collapsed', !o); if (o && !capped) { capped = true; hkLedCap(body, thead, tbody); } });
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
-          /* ۱.۳.۵۹: ذخیره بعد از انیمیشن (ذخیرهٔ هم‌زمان باز/بسته شدن را روی گوشی گیر می‌انداخت) */
-          setTimeout(() => { persistCurrent(); scheduleSave(); }, 480);
+          /* ۱.۳.۶۶: باز/بسته بودن فقط حالت نمایش است (منو همیشه بسته باز می‌شود) — هیچ ذخیره‌ای پشت این ضربه نیست */
         };
 
         // همیشه بدنه را بساز؛ جمع‌شدن فقط با کلاس CSS (مثل درآمد)
@@ -45551,7 +45649,11 @@ function openProjectRowPicker(secId) {
         const _view = hkLedViewRows(secRef);
         _ledViewMap[secRef.id] = _view;
         const vsec = Object.assign({}, secRef, { rows: _view.map(x => x.row) });
-        vsec.rows.forEach((_, i) => tbody.appendChild(buildLedgerRowEl(vsec, i)));
+        /* ۱.۳.۶۶: رابطهٔ بسته ردیف نمی‌سازد؛ ساخت ردیف‌ها به اولین باز شدن موکول می‌شود */
+        let rowsBuilt = false;
+        const buildRows = () => { if (rowsBuilt) return; rowsBuilt = true; vsec.rows.forEach((_, i) => tbody.appendChild(buildLedgerRowEl(vsec, i))); };
+        div._hkLedBuild = buildRows;
+        if (!sec.collapsed) buildRows();
         table.appendChild(tbody);
         body.appendChild(table);
         /* بیش از ۱۰ ردیف: جدول ثابت و از ردیف ۱۱ داخل خودش اسکرول */
@@ -45839,9 +45941,13 @@ function openProjectRowPicker(secId) {
     /* ===== ۱.۳.۳۸: جمع و باز شدن کادر جستجو با اسکرول =====
        جمع: نتیجه هست، اسکرول رو به پایین (صفحه یا جدول بلند) و بعد از جمع شدن هنوز جا برای اسکرول هست (وگرنه باز/بسته پشت سر هم).
        باز: برگشت به بالای همه‌چیز. در طول انیمیشن تصمیم تازه گرفته نمی‌شود. */
+    /* ۱.۳.۶۶: از نو: فقط یک ناحیهٔ اسکرول (balanceScrollBody) و کادر فیلترها بیرون از آن.
+       جمع: نتیجه هست، اسکرول رو به پایین و بعد از جمع شدن هنوز جای اسکرول هست (وگرنه باز/بسته پشت سر هم).
+       باز: برگشت به بالای ناحیه یا زدن فلش. جمع شدن کادر جای نوشته‌های داخل ناحیه را عوض نمی‌کند (اسکرول نمی‌پرد). */
     var hkSearchCollapse = (function () {
       var st = { c: false, lock: 0, last: 0 };
       var hdr = function () { return document.getElementById('balanceFixedHeader'); };
+      var scroller = function () { return document.getElementById('balanceScrollBody'); };
       function set(c) {
         var h = hdr(); if (!h) return;
         if (st.c === c) return;
@@ -45855,42 +45961,36 @@ function openProjectRowPicker(secId) {
         st.t = setTimeout(function () {
           if (!st.c) { parts.forEach(function (el) { el.style.maxHeight = ''; }); }
           h.classList.remove('bsr-anim');
-          /* اگر در طول انیمیشن به بالای صفحه برگشته بود (رویداد اسکرولش نادیده ماند)، همین حالا باز شود */
-          setTimeout(function () { var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll'); if (st.c && p && p.scrollTop + (inner && inner.classList.contains('on') ? inner.scrollTop : 0) <= 2) set(false); }, 60);
+          /* اگر در طول انیمیشن به بالا برگشته بود (رویداد اسکرولش نادیده ماند)، همین حالا باز شود */
+          setTimeout(function () { var sc = scroller(); if (st.c && sc && sc.scrollTop <= 2) set(false); }, 60);
         }, 650);
-        /* ۱.۳.۴۰: جای خالیِ موقت زیر جدول برداشته شد؛ کادر فقط وقتی جمع می‌شود که فهرست واقعاً بلند است */
-        var body = document.getElementById('balanceScrollBody');
-        if (body) body.style.removeProperty('padding-bottom');
         h.classList.toggle('bsr-collapsed', c);
         if (c) { try { document.querySelectorAll('.dark-select-list.open, .fancy-select-list.open').forEach(function (l) { l.classList.remove('open'); }); document.querySelectorAll('.fancy-select-wrap.is-open').forEach(function (w) { w.classList.remove('is-open'); }); } catch (e) {} }
       }
-      /* فهرست کوتاه: جمع نمی‌شود. جمع فقط وقتی جدول نتیجه خودش اسکرول دارد (بیش از ۱۱ ردیف) یا صفحه بعد از جمع شدن کادر
-         هنوز آن‌قدر جای اسکرول دارد که برای دیدن بقیهٔ فهرست باید پایین رفت */
-      function hkLongEnough(p, innerOn) {
-        if (innerOn) return true;
+      /* فهرست کوتاه جمع نمی‌شود: بعد از جمع شدن کادر (که ناحیه به همان اندازه بلندتر می‌شود) باید هنوز جای اسکرول بماند */
+      function longEnough(sc) {
         var h = hdr(); if (!h) return false;
         var desc = h.querySelector('.bsr-desc'), shrink = Math.max(0, h.offsetHeight - (desc ? desc.offsetHeight : 0) - 30);
-        return p.scrollHeight - p.clientHeight > shrink + 40;
+        return sc.scrollHeight - sc.clientHeight > shrink + 40;
       }
       function onScroll(e) {
-        var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll');
-        if (!p || (e && e.target !== p && e.target !== inner)) return;
+        var sc = scroller();
+        if (!sc || !e || e.target !== sc) return;
         if (!document.body.classList.contains('search-open')) { set(false); return; }
-        var innerOn = !!(inner && inner.classList.contains('on'));
-        var top = p.scrollTop + (innerOn ? inner.scrollTop : 0), down = top > st.last;
+        var top = sc.scrollTop, down = top > st.last;
         st.last = top;
         if (performance.now() < st.lock) return;
         if (!st.c) {
           if (!down || top <= 6 || !document.querySelector('#search-result-body tr:not(.sr-wait)')) return;
-          if (!hkLongEnough(p, innerOn && e && e.target === inner)) return;
+          if (!longEnough(sc)) return;
           set(true);
         } else if (top <= 2) set(false);
       }
       document.addEventListener('scroll', onScroll, true);
       document.addEventListener('click', function (e) {
         var b = e.target && e.target.closest && e.target.closest('#balanceFixedHeader .bsr-handle'); if (!b) return;
-        var p = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll');
-        try { if (inner) inner.scrollTo({ top: 0, behavior: 'smooth' }); p.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e2) { if (inner) inner.scrollTop = 0; p.scrollTop = 0; }
+        var sc = scroller(); if (!sc) return;
+        try { sc.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e2) { sc.scrollTop = 0; }
         setTimeout(function () { set(false); }, 360);
       });
       return set;
@@ -45926,7 +46026,8 @@ function openProjectRowPicker(secId) {
           [].forEach.call(fr[q].cells, function (c) { c.style.bottom = acc + 'px'; });
           acc += fr[q].getBoundingClientRect().height;
         }
-        var on = rows.length > 11;
+        /* ۱.۳.۶۶: داخل منوی جستجو جدول اسکرول داخلی ندارد (کل ناحیهٔ نتیجه یک اسکرول است) */
+        var on = rows.length > 11 && !(sc.closest && sc.closest('#panel-balance'));
         sc.classList.toggle('on', on);
         sc.style.maxHeight = on ? Math.ceil(th + h + fh + 2) + 'px' : 'none';
       } catch (e) {}

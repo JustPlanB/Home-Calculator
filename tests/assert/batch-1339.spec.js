@@ -70,7 +70,8 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
   await p.waitForTimeout(700);
   const done = await st();
   await p.mouse.wheel(0, 200); await p.waitForTimeout(100);
-  await p.evaluate(() => { const pn = document.getElementById('panel-balance'), inner = document.getElementById('searchResultScroll'); if (inner) inner.scrollTop = 0; pn.scrollTop = 0; });
+  /* ۱.۳.۶۶: ناحیهٔ اسکرول نتیجه balanceScrollBody است */
+  await p.evaluate(() => { document.getElementById('balanceScrollBody').scrollTop = 0; });
   await p.waitForTimeout(1300);
   const back = await st();
   ok(mid.c && mid.h > 0 && done.h === 0, 'جمع شدن آرام (نیمه‌راه هنوز ' + mid.h + 'px) و کامل (۰)');

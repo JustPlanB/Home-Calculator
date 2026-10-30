@@ -43,7 +43,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
   await p.evaluate(async () => { const i = document.getElementById('balanceSearchInput'); i.value = 'نان'; i.dispatchEvent(new Event('input')); await new Promise(r => setTimeout(r, 300)); });
   const st = () => p.evaluate(() => {
     const h = document.getElementById('balanceFixedHeader'), cell = h.querySelector('.bsr-grid > .bsr-cell:not(.bsr-desc)'), desc = h.querySelector('.bsr-desc');
-    return { c: h.classList.contains('bsr-collapsed'), cellH: Math.round(cell.getBoundingClientRect().height), descH: Math.round(desc.getBoundingClientRect().height), top: Math.round(h.getBoundingClientRect().top), pTop: document.getElementById('panel-balance').scrollTop };
+    return { c: h.classList.contains('bsr-collapsed'), cellH: Math.round(cell.getBoundingClientRect().height), descH: Math.round(desc.getBoundingClientRect().height), top: Math.round(h.getBoundingClientRect().top), pTop: document.getElementById('balanceScrollBody').scrollTop };
   });
   const s0 = await st();
   await p.mouse.move(190, 600); await p.mouse.wheel(0, 140); await p.waitForTimeout(900);

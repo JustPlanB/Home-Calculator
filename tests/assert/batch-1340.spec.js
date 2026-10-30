@@ -87,8 +87,9 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
     persistCurrent();
     openPersonDetail(allPersonTitles()[0], 'balance'); await w(500);
     const i = document.getElementById('balanceSearchInput'); i.value = 'نان'; i.dispatchEvent(new Event('input')); await w(400);
-    const sc = document.getElementById('searchResultScroll'), foot = document.getElementById('search-result-foot');
-    sc.scrollIntoView({ block: 'end' }); sc.scrollTop = 150; await w(100);
+    /* ۱.۳.۶۶: ناحیهٔ اسکرول نتیجه balanceScrollBody است (جدول اسکرول داخلی ندارد) */
+    const sc = document.getElementById('balanceScrollBody'), foot = document.getElementById('search-result-foot');
+    sc.scrollTop = 150; await w(100);
     const scr = sc.getBoundingClientRect(), rows = [...foot.rows];
     const r0 = rows[0].cells[0].getBoundingClientRect(), r1 = rows[1].cells[0].getBoundingClientRect();
     const out = { labels: rows.map(r => r.cells[0].textContent), pos: getComputedStyle(rows[0].cells[0]).position };
@@ -112,6 +113,8 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
   console.log('• محور مبلغ: سرها زیر محور');
   const sl = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
+    /* ۱.۳.۶۶: اسکرول جدول کادر را جمع کرده؛ برگشت به بالا تا محور کامل دیده شود */
+    document.getElementById('balanceScrollBody').scrollTop = 0; await w(60); hkSearchCollapse(false); await w(800);
     const host = document.getElementById('balanceAmtRange'), tr = host.querySelector('.hk-ar-track').getBoundingClientRect();
     const mn = document.getElementById('balanceSearchAmtMin'), mx = document.getElementById('balanceSearchAmtMax');
     mn.value = '200,000'; mn.dispatchEvent(new Event('input', { bubbles: true })); mx.value = ''; mx.dispatchEvent(new Event('input', { bubbles: true })); await w(200);
