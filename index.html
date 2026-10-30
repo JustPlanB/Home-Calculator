@@ -36979,6 +36979,7 @@ if (item.type === 'recurring') {
        (همان حساب و همان روز؛ اول ردیف بعدی، بعد قبلی). پیدا نشد → دست نمی‌خورد. یک‌بار. */
     function hkGapTimeFix() {
       var ctxs = {}, n = 0;
+      hkGapTimeFix.seen = 0;
       var keys = Object.keys(archive || {}).concat([periodKey(currentYear, currentMonth)]).filter(function (k, i, a) { return a.indexOf(k) === i; });
       keys.forEach(function (k) {
         var pk = k.split('-'), y = +pk[0], m = +pk[1]; if (!y || !m) return;
@@ -36988,6 +36989,7 @@ if (item.type === 'recurring') {
             var rows = sec.rows || [];
             rows.forEach(function (r, i) {
               if (!r || !r.reconGap || r.time || r.deletedAt) return;
+              hkGapTimeFix.seen++;
               var acc = String(r.account || '').trim(), d = String(r.day || '');
               var ok = function (x) { return x && x !== r && !x.reconGap && !x.deletedAt && x.time && String(x.account || '').trim() === acc && String(x.day || '') === d; };
               var nb = ok(rows[i + 1]) ? rows[i + 1] : (ok(rows[i - 1]) ? rows[i - 1] : null);
@@ -37007,7 +37009,8 @@ if (item.type === 'recurring') {
         var KG = STORAGE_KEY + '_gapTime1365';
         if (localStorage.getItem(KG)) return;
         hkGapTimeFix();
-        localStorage.setItem(KG, '1');
+        /* علامت «انجام شد» فقط وقتی ردیف اختلافِ بی‌ساعتی بود (وگرنه چیزی در حافظه نوشته نمی‌شود) */
+        if (hkGapTimeFix.seen) localStorage.setItem(KG, '1');
       } catch (e) {}
     }, 2500);
     setTimeout(function () {
