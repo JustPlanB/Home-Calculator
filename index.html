@@ -6430,10 +6430,17 @@
       z-index: 100;
     }
     .toast.show { opacity: 1; }
+    /* ۱.۳.۶۵: راه‌اندازی بار اول (همان ظاهر ثبت گروهی) */
+    #hkSetupOv .hk-setup-fields { display: flex; flex-direction: column; gap: 0; }
+    #hkSetupOv .hk-setup-bal .hk-bulk-newinp { text-align: left; }
+    #hkSetupOv .hk-setup-seg { margin-bottom: 4px; }
+    #hkSetupOv .hk-setup-note { margin: 0 0 6px; }
+    #hkSetupOv .hk-setup-add { width: 100%; margin-top: 2px; }
     /* ۱.۳.۶۴: باکس کوچک دایرهٔ «+» */
     .hk-add-ov { position: fixed; inset: 0; z-index: 100400; background: transparent; }
-    .hk-add-pop { position: fixed; display: flex; flex-direction: column; min-width: 132px; background: var(--bg2, #1c1c1e); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
-    .hk-add-it { font-family: inherit; font-size: 0.95rem; font-weight: 700; padding: 12px 18px; background: transparent; border: none; text-align: center; cursor: pointer; }
+    /* ۱.۳.۶۵: به اندازهٔ نوشته‌ها، مستطیل عمودی، نوشته‌ها راست‌چین */
+    .hk-add-pop { position: fixed; display: flex; flex-direction: column; width: max-content; background: var(--bg2, #1c1c1e); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45); direction: rtl; }
+    .hk-add-it { font-family: inherit; font-size: 0.95rem; font-weight: 700; padding: 0 14px; min-height: 54px; background: transparent; border: none; text-align: right; cursor: pointer; white-space: nowrap; }
     .hk-add-it + .hk-add-it { border-top: 1px solid var(--border); }
     .hk-add-it.inc { color: #9ee858; } .hk-add-it.exp { color: #ff6b4a; }
     html[data-theme="light"] .hk-add-pop { box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
@@ -21733,7 +21740,19 @@ async function openPdfPrintWindow(){
     document.addEventListener('focusin', function (e) {
       var t = e.target;
       if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || t.readOnly) return;
-      if (t.classList && (t.classList.contains('unlocked') || t.dataset.lastTap)) caretToEnd(t);
+      if (t.classList && (t.classList.contains('unlocked') || t.dataset.lastTap)) { caretToEnd(t); return; }
+      /* ۱.۳.۶۵: هر جای نرم‌افزار که ویرایش شروع شود: نشانگر بعد از آخرین کلمه / جلوی یکانِ مبلغ
+         (مگر جایی که خود کد عمداً همهٔ متن را انتخاب کرده باشد) */
+      var ty = t.tagName === 'TEXTAREA' ? 'textarea' : String(t.type || 'text').toLowerCase();
+      if (['text', 'search', 'tel', 'url', 'email', 'number', 'textarea'].indexOf(ty) < 0) return;
+      setTimeout(function () {
+        try {
+          if (document.activeElement !== t) return;
+          var n = (t.value || '').length;
+          if (n && t.selectionStart === 0 && t.selectionEnd === n) return;
+          caretToEnd(t);
+        } catch (eCe) {}
+      }, 0);
     }, true);
     /* هر جا با دبل‌کلیک ویرایش شروع شود (مبلغ، شرح، روز، ...) نشانگر به آخر برود */
     /* فاز capture: بعضی سلول‌ها (مثل مبلغ در جدول کارت) رویداد را stopPropagation می‌کنند و قبلاً به این‌جا نمی‌رسید */
@@ -24429,6 +24448,8 @@ async function openPdfPrintWindow(){
         root.classList.add('out');
         setTimeout(function () { try { root.remove(); } catch (e) {} }, 320);
         window.removeEventListener('resize', show);
+        /* ۱.۳.۶۵: نصب تازه: بعد از راهنما «حساب‌هایت را پیدا کنیم» */
+        try { if (!force && typeof hkSetupNeeded === 'function' && hkSetupNeeded()) setTimeout(function () { try { hkOpenSetup(); } catch (eS) {} }, 450); } catch (eS0) {}
       }
       root.querySelector('.tour-next').onclick = function () { if (i >= steps.length - 1) { close(); return; } i++; show(); };
       root.querySelector('.tour-prev').onclick = function () { if (i > 0) { i--; show(); } };
@@ -27104,14 +27125,10 @@ async function openPdfPrintWindow(){
       var hkReNewAcc = function () {
         if (st.newAccIn && st.newAccIn.isConnected) { try { st.newAccIn.focus(); } catch (eF0) {} return; }
         accB.style.display = 'none';
-        var nw = document.createElement('div'); nw.className = 'sms-newacc hk-re-newacc';
-        nw.innerHTML = '<div class="sms-newacc-msg">حساب جدید</div>';
-        var ni = document.createElement('input'); ni.type = 'text'; ni.className = 'sms-newacc-in'; ni.dir = 'rtl';
-        ni.placeholder = 'نام حساب (مثلاً ملی)';
-        var dh = document.createElement('div'); dh.className = 'hk-acc-dup';
-        var chk = function () { dh.textContent = hkAccNameTaken(ni.value) ? 'این نام در «انتخاب حساب» هست؛ نام دیگری بنویسید' : ''; };
-        ni.addEventListener('input', chk); ni.addEventListener('focus', function () { try { ni.select(); } catch (eS) {} });
-        nw.appendChild(ni); nw.appendChild(dh);
+        /* ۱.۳.۶۵: همان باکس ثبت گروهی */
+        var nb = hkNewAccBox('ملی', '');
+        var nw = nb.wrap; nw.classList.add('hk-re-newacc');
+        var ni = nb.input;
         accB.insertAdjacentElement('afterend', nw);
         st.newAccIn = ni;
         setTimeout(function () { try { ni.focus(); } catch (eF) {} }, 80);
@@ -32710,6 +32727,8 @@ function confirmSmsEntry() {
                 String(r.day || '') === String(snap.day || '')) { hit = r; hitSec = sec; }
           });
         });
+        /* ۱.۳.۶۵: ساعت همان تراکنش؛ بی‌ساعت آخر روز می‌افتاد و تراکنش‌های بعدی (مثلاً کارت دیگر) بالایش می‌رفتند */
+        row.time = (hit && hit.time) || snap.time || '';
         if (tab === snap.type && hit && hitSec) { hitSec.rows.splice(hitSec.rows.indexOf(hit), 0, row); placed = true; }
         /* نوع مخالف (مثلاً پیامک برداشت ولی اختلاف درآمد): در همان کارت، جدول دیگر — نه کارت تازه */
         if (!placed && hitSec && (hitSec.title || '').trim()) {
@@ -32824,7 +32843,9 @@ function confirmSmsEntry() {
           if (yy > 0 && yy < 100) yy = Math.floor((currentYear || 1400) / 100) * 100 + yy;
           var amtNow = parseAmount(g('smsConfirmAmount') || pe.amount);
           return { balance: pe.balance, balanceRial: pe.balanceRial, amountRial: hkSmsRialFor(amtNow), bank: bank, type: g('smsConfirmType') === 'income' ? 'income' : 'expense',
-            amount: amtNow, day: (dd >= 1 && dd <= 31) ? dd : 0, m: mm, y: yy };
+            amount: amtNow, day: (dd >= 1 && dd <= 31) ? dd : 0, m: mm, y: yy,
+            /* ۱.۳.۶۵: ساعت همین پیامک (ردیف اختلاف با همین ساعت، درست قبل از تراکنش) */
+            time: (function () { try { return hkSmsTime(pe.raw, Number(pe.receivedAt) || 0) || ''; } catch (eT) { return ''; } })() };
         } catch (e) { return null; }
       }
       var wrapped = function () {
@@ -32866,7 +32887,8 @@ function confirmSmsEntry() {
       try {
         var t = normalizeSmsText(raw || '');
         /* «6037-99**-****-2222» → «603799******2222» */
-        t = t.replace(/([0-9*xX×•])[\-\s](?=[0-9*xX×•])/g, '$1');
+        /* ۱.۳.۶۵: فقط فاصله/خط تیره داخل یک سطر؛ سطر بعدی (مثلاً تاریخ «0727-09:00») به شماره نمی‌چسبد */
+        t = t.replace(/([0-9*xX×•])[\- \t\u00a0](?=[0-9*xX×•])/g, '$1');
         var m = t.match(/[0-9]{0,8}[*xX×•.]{2,}[0-9]{3,}/);
         var tok = m ? m[0] : '';
         if (!tok) {
@@ -33002,17 +33024,11 @@ function confirmSmsEntry() {
             /* ۱.۳.۴۷: حساب تازه: «حساب ملی ۱۲۳۴ هنوز ساخته نشده» + فیلد نام (پیشنهادی، قابل تایپ)؛ با «ثبت» حساب با موجودیِ پیامک ساخته می‌شود */
             var aw = (sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
             aw.style.display = 'none';
-            var nw = document.createElement('div'); nw.id = 'smsNewAccWrap'; nw.className = 'sms-newacc';
-            var accTxt = manual ? 'حساب جدید' : 'حساب ' + (route.bankShort ? route.bankShort + ' ' : '') + (route.acc4 ? toPersianDigits(route.acc4) + ' ' : '') + 'هنوز ساخته نشده';
-            nw.innerHTML = '<div class="sms-newacc-msg">' + escapeHtml(accTxt) + '</div>';
-            var ni = document.createElement('input'); ni.id = 'smsNewAccName'; ni.type = 'text'; ni.className = 'sms-newacc-in'; ni.dir = 'rtl';
-            ni.placeholder = 'نام حساب (مثلاً ' + (route.bankShort || 'ملی') + (route.acc4 ? ' ' + toPersianDigits(route.acc4) : '') + ')';
+            /* ۱.۳.۶۵: همان باکس ثبت گروهی (بانک و چهار رقم در نام پیشنهادی/جای‌نما) */
             var sug = (route.bankShort || '') + (route.acc4 ? (route.bankShort ? ' ' : 'حساب ') + toPersianDigits(route.acc4) : '');
-            if (sug && !hkAccNameTaken(sug)) ni.value = sug;
-            var dh = document.createElement('div'); dh.className = 'hk-acc-dup';
-            var chk = function () { dh.textContent = hkAccNameTaken(ni.value) ? 'این نام در «انتخاب حساب» هست؛ نام دیگری بنویسید' : ''; };
-            ni.addEventListener('input', chk); ni.addEventListener('focus', function () { try { ni.select(); } catch (eS) {} });
-            nw.appendChild(ni); nw.appendChild(dh); chk();
+            var nb = hkNewAccBox((route.bankShort || 'ملی') + (route.acc4 ? ' ' + toPersianDigits(route.acc4) : ''), (sug && !hkAccNameTaken(sug)) ? sug : '');
+            var nw = nb.wrap; nw.id = 'smsNewAccWrap'; nw.classList.add('sms-newacc-box');
+            var ni = nb.input; ni.id = 'smsNewAccName';
             nw._route = route;
             aw.insertAdjacentElement('afterend', nw);
           }
@@ -36291,6 +36307,21 @@ if (item.type === 'recurring') {
     /* حساب هر پوشه بدون سؤال: (۱) رقم‌های آخرِ آموخته‌شده (۲) تنها حسابِ آزادِ همان بانک (۳) حساب تازه با نام «ملت ۱۲۳۴».
        اگر بانک چند حساب دارد و معلوم نیست کدام است، فقط کادر حساب همان پوشه قرمز می‌شود. */
     /* نام حساب تازه با یکی از حساب‌های «انتخاب حساب» یکی است؟ (ي/ی، ک، فاصله و نیم‌فاصله یکسان) */
+    /* ۱.۳.۶۵: باکس «حساب جدید» همه‌جا دقیقاً مثل ثبت گروهی: قاب آبی، «حساب جدید:» داخل باکس | خط تفکیک | نام */
+    function hkNewAccBox(placeholder, value) {
+      var wrap = document.createElement('div'); wrap.className = 'hk-bulk-newwrap';
+      var box = document.createElement('div'); box.className = 'hk-bulk-newacc';
+      box.innerHTML = '<span class="hk-bulk-newlab">حساب جدید:</span><span class="hk-bulk-newsep" aria-hidden="true"></span>';
+      var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'hk-bulk-newinp'; inp.dir = 'rtl';
+      inp.placeholder = placeholder || 'ملی';
+      if (value) inp.value = value;
+      box.appendChild(inp);
+      var dup = document.createElement('div'); dup.className = 'hk-acc-dup';
+      var chk = function () { dup.textContent = hkAccNameTaken(inp.value) ? 'این نام در «انتخاب حساب» هست؛ نام دیگری بنویسید' : ''; };
+      inp.addEventListener('input', chk);
+      wrap.appendChild(box); wrap.appendChild(dup); chk();
+      return { wrap: wrap, input: inp, dup: dup };
+    }
     function hkAccNameTaken(name, labels) {
       var n = hkNormTitle(String(name || '')); if (!n) return false;
       return (labels || selectedAccountLabels()).some(function (lb) { return hkNormTitle(lb) === n; });
@@ -36944,6 +36975,44 @@ if (item.type === 'recurring') {
         return n;
       }).catch(function () { return 0; });
     }
+    /* ۱.۳.۶۵: ردیف‌های اختلافِ قبلی که ساعت نداشتند: ساعت تراکنشی که موقع ساختن درست کنارش گذاشته شده بود
+       (همان حساب و همان روز؛ اول ردیف بعدی، بعد قبلی). پیدا نشد → دست نمی‌خورد. یک‌بار. */
+    function hkGapTimeFix() {
+      var ctxs = {}, n = 0;
+      hkGapTimeFix.seen = 0;
+      var keys = Object.keys(archive || {}).concat([periodKey(currentYear, currentMonth)]).filter(function (k, i, a) { return a.indexOf(k) === i; });
+      keys.forEach(function (k) {
+        var pk = k.split('-'), y = +pk[0], m = +pk[1]; if (!y || !m) return;
+        var ctx = getWritablePeriodData(y, m), pd = ctx.data, dirty = false;
+        ['expense', 'income'].forEach(function (tab) {
+          ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+            var rows = sec.rows || [];
+            rows.forEach(function (r, i) {
+              if (!r || !r.reconGap || r.time || r.deletedAt) return;
+              hkGapTimeFix.seen++;
+              var acc = String(r.account || '').trim(), d = String(r.day || '');
+              var ok = function (x) { return x && x !== r && !x.reconGap && !x.deletedAt && x.time && String(x.account || '').trim() === acc && String(x.day || '') === d; };
+              var nb = ok(rows[i + 1]) ? rows[i + 1] : (ok(rows[i - 1]) ? rows[i - 1] : null);
+              if (!nb) return;
+              r.time = nb.time; n++; dirty = true;
+            });
+          });
+        });
+        if (dirty) ctxs[k] = ctx;
+      });
+      Object.keys(ctxs).forEach(function (k) { try { commitWritablePeriodData(ctxs[k]); } catch (e) {} });
+      if (n) { try { persistCurrent(); saveArchive(); scheduleSave(); } catch (e2) {} try { renderAll(); } catch (e3) {} }
+      return n;
+    }
+    setTimeout(function () {
+      try {
+        var KG = STORAGE_KEY + '_gapTime1365';
+        if (localStorage.getItem(KG)) return;
+        hkGapTimeFix();
+        /* علامت «انجام شد» فقط وقتی ردیف اختلافِ بی‌ساعتی بود (وگرنه چیزی در حافظه نوشته نمی‌شود) */
+        if (hkGapTimeFix.seen) localStorage.setItem(KG, '1');
+      } catch (e) {}
+    }, 2500);
     setTimeout(function () {
       try {
         if (!hkBankSmsPlugin()) return;
@@ -37237,11 +37306,179 @@ if (item.type === 'recurring') {
           localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1');
           return;
         }
+        /* ۱.۳.۶۵: بار اول: بعد از راهنما «حساب‌هایت را پیدا کنیم» (راهنما که تمام شود خودش باز می‌کند) */
+        if (localStorage.getItem(STORAGE_KEY + '_tourDone') !== '1') return;
       } catch (e) {}
       setTimeout(() => {
-        try { openBankAccountsModal(false); } catch (e) {}
+        try { hkOpenSetup(); } catch (e) {}
       }, 600);
     }
+    /* ===== ۱.۳.۶۵: راه‌اندازی بار اول: کارت‌ها و مانده‌هایشان از پیامک‌های بانکی (همه روی گوشی) =====
+       ظاهر همان پنجرهٔ ثبت گروهی (قاب، عنوان، کارت پوشه، باکس «حساب جدید»، دکمه‌ها). تا «تأیید» زده نشود هیچ حسابی ساخته نمی‌شود. */
+    var HK_SETUP_DAYS = 90, HK_SETUP_STALE_DAYS = 30;
+    function hkSetupNeeded() {
+      try { return localStorage.getItem(STORAGE_KEY + '_bankSetupDone') !== '1' && !(selectedBankAccounts || []).length; } catch (e) { return false; }
+    }
+    function hkSetupFinish() { try { localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1'); } catch (e) {} }
+    function hkSetupDetect(items) {
+      var map = {}, now = Date.now(), seen = {};
+      (items || []).forEach(function (it) {
+        try {
+          var body = String(it.body || ''); if (!body) return;
+          if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
+          if (hkIsPersonalSender(it.address)) return;
+          var p = parseBankSms(body); if (!p || !p.amount) return;
+          if (hkIsSmsNotice(body, p)) return;
+          var ts = Number(it.date) || 0, k0 = body + '|' + Math.round(ts / 60000);
+          if (seen[k0]) return; seen[k0] = 1;
+          var acc4 = hkSmsAcc4(body), bank = '';
+          try { bank = detectBankFromSms(body) || ''; } catch (eB) {}
+          if (!bank) return;
+          var key = bank + '|' + (acc4 || '');
+          var fo = map[key] || (map[key] = { key: key, bank: bank, acc4: acc4 || '', n: 0, lastTs: 0, bal: null, balTs: 0 });
+          if (ts && now - ts <= HK_SETUP_DAYS * 86400000) fo.n++;
+          if (ts > fo.lastTs) fo.lastTs = ts;
+          if (p.balance != null && ts >= fo.balTs) { fo.bal = Number(p.balance); fo.balTs = ts; }
+        } catch (e) {}
+      });
+      return Object.keys(map).map(function (k) { return map[k]; }).filter(function (fo) { return fo.n > 0; })
+        .sort(function (a, b) { return b.lastTs - a.lastTs; });
+    }
+    function hkOpenSetup() {
+      var old = document.getElementById('hkSetupOv'); if (old) old.remove();
+      var B = hkBankSmsPlugin(), canRead = !!(B && typeof B.readInbox === 'function');
+      var ov = document.createElement('div'); ov.id = 'hkSetupOv'; ov.className = 'hk-bulk-ov';
+      ov.innerHTML = '<div class="hk-bulk-box">' +
+        '<div class="hk-bulk-title">حساب‌هایت را پیدا کنیم</div>' +
+        '<div class="hk-bulk-list" id="hkSetupList"><div class="hk-bulk-hint">' +
+          (canRead ? 'نرم‌افزار پیامک‌های بانکی ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «تأیید» نزنید چیزی ساخته نمی‌شود.'
+                   : 'حساب‌هایتان را با نام و ماندهٔ فعلی اضافه کنید.') +
+        '</div></div>' +
+        '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok">' + (canRead ? 'پیدا کن' : 'افزودن حساب') + '</button><button type="button" class="hk-bulk-close">بعداً</button></div>' +
+      '</div>';
+      document.body.appendChild(ov);
+      var list = ov.querySelector('#hkSetupList'), okB = ov.querySelector('.hk-bulk-ok'), closeB = ov.querySelector('.hk-bulk-close');
+      var close = function () { try { ov.remove(); } catch (e) {} hkSetupFinish(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      closeB.onclick = close;
+      var cards = [], mode = 'today';
+      var amtBox = function (val) {
+        var box = document.createElement('div'); box.className = 'hk-bulk-newacc hk-setup-bal';
+        box.innerHTML = '<span class="hk-bulk-newlab">مانده:</span><span class="hk-bulk-newsep" aria-hidden="true"></span>';
+        var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'hk-bulk-newinp'; inp.dir = 'ltr'; inp.inputMode = 'numeric'; inp.placeholder = '۰';
+        if (val != null) inp.value = formatNum(val);
+        inp.addEventListener('input', function () { var d = toEnglishDigits(inp.value).replace(/[^0-9-]/g, ''); inp.value = d && d !== '-' ? formatNum(parseInt(d, 10) || 0) : d; });
+        box.appendChild(inp);
+        return { box: box, input: inp };
+      };
+      var addCard = function (fo) {
+        var manual = !fo;
+        fo = fo || { bank: '', acc4: '', bal: null, balTs: 0, n: 0 };
+        var stale = !manual && (fo.bal == null || Date.now() - fo.balTs > HK_SETUP_STALE_DAYS * 86400000);
+        var card = document.createElement('div'); card.className = 'hk-bulk-folder on' + (stale ? ' hk-setup-stale' : '');
+        var short = String(fo.bank || '').replace(/^بانک\s*/, '');
+        card.innerHTML = '<div class="hk-bulk-fhead"><input type="checkbox" class="hk-bulk-chk" checked aria-label="انتخاب">' +
+          '<span class="hk-bulk-fico">' + HK_FOLDER_SVG + '</span>' +
+          '<span class="hk-bulk-fname">' + (manual ? 'حساب دیگر' : escapeHtml(fo.bank) + (fo.acc4 ? ' · ' + toPersianDigits(fo.acc4) : '')) + '</span></div>' +
+          (manual ? '' : '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.n)) + ' تراکنش در ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر' +
+            (fo.bal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.bal) + ' (' + hkJStr(hkJalaliOfTs(fo.balTs)) + ')' : '<br>مانده در پیامک‌ها نیست') +
+            (stale ? '<br><span class="hk-bulk-unsure">ماندهٔ فعلی را بنویسید (اختیاری)</span>' : '') + '</div>');
+        var sug = manual ? '' : (short + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
+        var nb = hkNewAccBox(manual ? 'مثلاً نقدی' : sug, sug && !hkAccNameTaken(sug) && !cards.some(function (c) { return c.name.input.value === sug; }) ? sug : '');
+        var bb = amtBox(fo.bal);
+        var fields = document.createElement('div'); fields.className = 'hk-setup-fields';
+        fields.appendChild(nb.wrap); fields.appendChild(bb.box);
+        card.appendChild(fields);
+        var chk = card.querySelector('.hk-bulk-chk');
+        var c = { fo: fo, manual: manual, card: card, chk: chk, name: nb, bal: bb };
+        var sync = function () { card.classList.toggle('on', chk.checked); fields.style.display = (chk.checked && mode === 'today') ? '' : 'none'; };
+        chk.addEventListener('change', sync);
+        card.querySelector('.hk-bulk-fhead').addEventListener('click', function (e) { if (e.target !== chk) { chk.checked = !chk.checked; sync(); } });
+        c.sync = sync;
+        cards.push(c);
+        return c;
+      };
+      var renderList = function (found) {
+        list.innerHTML = '';
+        /* شروع: از امروز (پیش‌فرض) یا از اول همین ماه (با تراکنش‌ها، در ثبت گروهی) */
+        var seg = document.createElement('div'); seg.className = 'hk-re-seg hk-setup-seg';
+        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="today">از امروز</button><button type="button" class="hk-re-segb" data-m="month">از اول همین ماه</button>';
+        var note = document.createElement('div'); note.className = 'hk-bulk-hint hk-setup-note';
+        var setMode = function (m) {
+          mode = m;
+          seg.querySelectorAll('.hk-re-segb').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
+          note.textContent = m === 'today' ? 'موجودی هر حساب همان ماندهٔ فعلی است؛ گذشته وارد نمی‌شود.' : 'تراکنش‌های این ماه در «ثبت گروهی» نشان داده می‌شوند تا تأیید کنید؛ حساب‌ها و موجودی اول ماه همان‌جا ساخته می‌شوند.';
+          cards.forEach(function (c) { c.sync(); if (c.manual) c.card.style.display = m === 'today' ? '' : 'none'; });
+          addB.style.display = m === 'today' ? '' : 'none';
+          okB.textContent = m === 'today' ? 'تأیید و ساختن حساب‌ها' : 'ادامه در ثبت گروهی';
+        };
+        seg.querySelectorAll('.hk-re-segb').forEach(function (b) { b.onclick = function () { setMode(b.getAttribute('data-m')); }; });
+        if (canRead && found.length) { list.appendChild(seg); list.appendChild(note); }
+        else if (canRead) { var h = document.createElement('div'); h.className = 'hk-bulk-hint'; h.textContent = 'پیامک بانکی‌ای پیدا نشد؛ حساب‌ها را دستی اضافه کنید.'; list.appendChild(h); }
+        found.forEach(function (fo) { list.appendChild(addCard(fo).card); });
+        var addB = document.createElement('button'); addB.type = 'button'; addB.className = 'hk-bulk-read hk-setup-add'; addB.textContent = '＋ حساب دیگر';
+        addB.onclick = function () { var c = addCard(null); list.insertBefore(c.card, addB); c.sync(); setTimeout(function () { try { c.name.input.focus(); } catch (e) {} }, 60); };
+        list.appendChild(addB);
+        if (!found.length) addB.onclick();
+        setMode('today');
+        okB.onclick = confirm;
+      };
+      var confirm = function () {
+        var picked = cards.filter(function (c) { return c.chk.checked && c.card.style.display !== 'none'; });
+        if (mode === 'month') {
+          ov.remove(); hkSetupFinish();
+          try {
+            openSmsBulkModal();
+            setTimeout(function () { try { var rb = document.querySelector('#smsBulkOv .hk-bulk-read'); if (rb) rb.click(); } catch (e) {} }, 250);
+          } catch (eB) {}
+          return;
+        }
+        if (!picked.length) { showToast('حسابی انتخاب نشده'); return; }
+        var names = [];
+        for (var i = 0; i < picked.length; i++) {
+          var c = picked[i], nm = String(c.name.input.value || '').replace(/\s+/g, ' ').trim();
+          if (!nm) { showToast('نام حساب را بنویسید'); try { c.name.input.focus(); } catch (e) {} return; }
+          if (hkAccNameTaken(nm) || names.indexOf(nm) >= 0) { showToast('نام «' + nm + '» تکراری است'); try { c.name.input.focus(); } catch (e) {} return; }
+          names.push(nm);
+        }
+        var t = getTodayPersian(), total = 0;
+        picked.forEach(function (c, i) {
+          var nm = names[i], d = toEnglishDigits(String(c.bal.input.value || '')).replace(/[^0-9-]/g, ''), bal = parseInt(d, 10) || 0;
+          selectedBankAccounts.push({ id: 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6) + i, bank: c.fo.bank || '', label: nm,
+            srcName: (c.fo.bank || '') + (c.fo.acc4 ? ' · ' + toPersianDigits(c.fo.acc4) : ''), openingBalance: bal, createdAt: { y: t.y, m: t.m, d: t.d } });
+          if (c.fo.acc4) { try { smsAccountBankMap['L4:' + c.fo.acc4] = nm; } catch (eM) {} }
+          total += bal;
+        });
+        try { normalizeSelectedBanks(); } catch (eN) {}
+        try { saveBankAccountsSelection(); } catch (eS) {}
+        try { saveSmsAccountBankMap(); } catch (eSm) {}
+        ov.remove(); hkSetupFinish();
+        try { renderAll(); } catch (eR) {}
+        try { updateHomeBalanceCircle(true); } catch (eH) {}
+        try { pushHomeWidget(); } catch (eW) {}
+        showToast(toPersianDigits(String(picked.length)) + ' حساب با موجودی ' + formatNum(total) + ' آماده شد', 3200);
+      };
+      okB.onclick = function () {
+        if (!canRead) { renderList([]); return; }
+        okB.disabled = true;
+        list.innerHTML = '<div class="hk-bulk-hint">در حال خواندن پیامک‌ها…</div>';
+        B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
+          okB.disabled = false;
+          renderList(hkSetupDetect((res && res.items) || []));
+        }).catch(function (err) {
+          okB.disabled = false;
+          var m = String((err && (err.message || err.code)) || '');
+          canRead = false;
+          renderList([]);
+          var h = document.createElement('div'); h.className = 'hk-bulk-hint';
+          h.textContent = /permission/.test(m) ? 'اجازهٔ خواندن پیامک داده نشد؛ حساب‌ها را دستی اضافه کنید (بعداً از «ثبت گروهی» هم می‌شود).' : 'خواندن پیامک‌ها ممکن نشد؛ حساب‌ها را دستی اضافه کنید.';
+          list.insertBefore(h, list.firstChild);
+        });
+      };
+      return ov;
+    }
+    try { window.hkOpenSetup = hkOpenSetup; } catch (eWs) {}
     let _bankModalFromMenu = true;
     function refreshSmsConfirmBankSelect() {
       try {
@@ -37276,10 +37513,8 @@ if (item.type === 'recurring') {
           setTimeout(function() {
             try { bankSel.value = keepPrev; } catch (e1) {}
             try { if (bankSel._fancyRender) bankSel._fancyRender(); } catch (eF) {}
-            try {
-              window._returnToSmsConfirm = true;
-              if (typeof openBankAccountsModal === 'function') openBankAccountsModal(false);
-            } catch (eA) {}
+            /* ۱.۳.۶۵: همان باکس «حساب جدید» (مثل بار اول باز شدن باکس پیامک)، نه پنجرهٔ حساب‌ها */
+            try { if (window.hkSmsInlineNewAcc) window.hkSmsInlineNewAcc(bankSel); } catch (eA) {}
           }, 0);
         };
         try { if (bankSel._fancyRender) bankSel._fancyRender(); } catch (eR) {}
@@ -43780,6 +44015,7 @@ function openProjectRowPicker(secId) {
       /* ۱.۳.۵۱: باکس اسم دو نفر (قرض) و ویرایش ردیف قرض: بازگشت = انصراف */
       try { var _pm = document.getElementById('hkCatPriModal') || document.getElementById('hkPrefsModal'); if (_pm) { _pm._hkCancel ? _pm._hkCancel() : _pm.remove(); return; } } catch (ePm) {}
       try { var _lns = document.getElementById('ledgerNameSheet'); if (_lns) { if (_lns._hkCancel) _lns._hkCancel(); else { _lns.remove(); try { hideNameSheetBackdrop(); } catch (eB) {} } return; } } catch (eLns) {}
+      try { var _hs = document.getElementById('hkSetupOv') || document.getElementById('hkAddPop'); if (_hs) { if (_hs._hkCancel) _hs._hkCancel(); else _hs.remove(); return; } } catch (eHs) {}
       try { var _hb = document.getElementById('hkLedDate') || document.getElementById('hkLedEdit') || document.getElementById('hkRecapOv') || document.getElementById('hkAccTxOv') || document.getElementById('hkRowEdit') || document.getElementById('recLinksModal') || document.querySelector('.hk-row-act') || document.querySelector('.hk-jig-menu'); if (_hb) { if (_hb._hkCancel) _hb._hkCancel(); else _hb.remove(); return; } } catch (eHb) {}
       try { var _rpm = document.getElementById('recPickModal') || document.getElementById('recAddPrevModal') || document.getElementById('recRenewModal') || document.getElementById('recArchiveModal') || document.getElementById('hkExportModal') || document.querySelector('.hk-enc-ov'); if (_rpm) { if (_rpm._hkCancel) _rpm._hkCancel(); else _rpm.remove(); return; } } catch (eRp) {}
       /* لایهٔ سطل زبالهٔ اسلاید باکس هوشمند (لانگ‌پرس): بازگشت = حالت عادی */

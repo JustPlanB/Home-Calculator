@@ -238,7 +238,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.catRows = grid ? Math.ceil(out.cats / 5) : 0;
     out.icons = grid ? grid.querySelectorAll('.sms-cat i svg').length : 0;
     const nw = document.getElementById('smsNewAccWrap');
-    out.newMsg = nw ? nw.querySelector('.sms-newacc-msg').textContent : '';
+    /* ۱.۳.۶۵: باکس همان ثبت گروهی: «حساب جدید:» داخل قاب، جای‌نما «ملی ۱۲۳۴» */
+    out.newMsg = nw ? (nw.querySelector('.hk-bulk-newlab').textContent + '|' + (document.getElementById('smsNewAccName') || {}).placeholder) : '';
     out.newVal = (document.getElementById('smsNewAccName') || {}).value || '';
     const bs = document.getElementById('smsConfirmBank'); const aw = bs.parentNode.classList.contains('fancy-select-wrap') ? bs.parentNode : bs;
     out.dropHidden = getComputedStyle(aw).display === 'none';
@@ -266,7 +267,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(sms.tomanLeft && sms.noTypeChip && sms.dateBold >= 700, '«تومان» سمت چپ عدد؛ بی آیکون نوع جلوی تاریخ؛ تاریخ و زمان پررنگ');
   ok(sms.descLabel === 'بابت چی بود؟ (شرح)', 'عنوان شرح: «بابت چی بود؟ (شرح)»');
   /* ۱.۳.۴۹: ۵ دستهٔ هوشمند + «بیشتر…» */ ok(sms.cats === 6 && sms.icons === sms.cats, 'دسته‌ها زیر شرح: ' + sms.cats + ' آیکون (۵ دسته + بیشتر)');
-  ok(sms.newMsg === 'حساب ملی ۱۲۳۴ هنوز ساخته نشده' && sms.dropHidden && sms.newVal === 'ملی ۱۲۳۴', 'حساب تازه: «' + sms.newMsg + '»؛ به‌جای منوی کشویی فیلد نام (پیشنهاد: ' + sms.newVal + ')');
+  ok(sms.newMsg === 'حساب جدید:|ملی ۱۲۳۴' && sms.dropHidden && sms.newVal === 'ملی ۱۲۳۴', 'حساب تازه: «' + sms.newMsg + '»؛ به‌جای منوی کشویی فیلد نام (پیشنهاد: ' + sms.newVal + ')');
   ok(/قبلاً هست|هست؛/.test(sms.dupHint) && sms.blockedDup, 'نام تکراری: هشدار و ثبت انجام نشد');
   ok(sms.created && sms.closed && sms.mapped === 'ملی ۱۲۳۴' && sms.opening === 700000 && sms.bal === 500000, 'با «ثبت» حساب «ملی ۱۲۳۴» با موجودیِ پیامک ساخته شد (موجودی ' + sms.bal + ')');
   ok(sms.cat === 'food', 'انتخاب دستهٔ «خوراکی» برای همین شرح یاد گرفته شد');
