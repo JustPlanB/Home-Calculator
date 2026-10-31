@@ -527,7 +527,8 @@ html[data-theme="light"] {
       cursor: pointer;
       color: var(--text);
     }
-    .menu-item:hover { background: var(--bg3); }
+    @media (hover: hover) { .menu-item:hover { background: var(--bg3); } }
+    .menu-item:active { background: var(--bg3); }
     .menu-item.danger { color: #c0392b; }
     .menu-section-label {
       display: flex;
@@ -667,7 +668,8 @@ html[data-theme="light"] {
       color: var(--text);
       text-align: right;
     }
-    .menu-theme-row:hover { background: var(--bg3); }
+    @media (hover: hover) { .menu-theme-row:hover { background: var(--bg3); } }
+    .menu-theme-row:active { background: var(--bg3); }
 
     /* Professional mode toggle */
     .menu-pro-row {
@@ -11486,12 +11488,15 @@ html[data-theme="light"] {
     html body #panel-home #homeCards .person-card .person-stat-box .person-stat-line.unpaid { font-size: calc(15px * var(--pc-fs, 1)) !important; line-height: 1.6; }
     /* باکس هوشمند: هرچه جا بماند مال اوست */
     #panel-home.active .home-tools > #homeSmartBox {
-      flex: 1 1 auto !important; margin-top: 0 !important; min-height: 120px; height: auto !important;
+      flex: 0 0 auto !important; margin-top: 0 !important; min-height: 120px; height: var(--hk-home-third, auto) !important;
       padding: 0 !important; position: relative; display: block !important; border-radius: var(--hk-r-card);
     }
     #homeSmartBox .pc-smart-box { position: absolute; inset: 0; border-radius: inherit; background: transparent; border: none; box-sizing: border-box; }
     #homeSmartBox .pc-smart-box.sp-panel { overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: default; }
-    #homeSmartBox .sp-page { padding: 14px 16px 18px !important; }
+    #homeSmartBox .sp-page { padding: 14px 16px 16px !important; }
+    /* ۱.۳.۶۹: اسلایدهای «وضعیت این ماه» و «مقایسه» وسط باکس با فاصلهٔ برابر، نه چسبیده به پایین؛ دسته‌ها با فاصلهٔ عمودی تمیز */
+    #homeSmartBox .sp-even, #homeSmartBox .sp-cmp { justify-content: center !important; gap: calc(12px * var(--sp-fs, 1)) !important; }
+    #homeSmartBox .sp-cat { gap: 6px; justify-content: center; }
     /* اسلایدِ کم‌محتوا (مثلاً یک طلب/بدهی): وسط ارتفاع؛ اگر زیاد شد مثل قبل از بالا و با اسکرول */
     #homeSmartBox .sp-free { display: flex; flex-direction: column; }
     #homeSmartBox .sp-free > :first-child { margin-top: auto; }
@@ -11516,7 +11521,7 @@ html[data-theme="light"] {
       position: absolute; z-index: 0; pointer-events: none; border-radius: 50%;
       width: calc(var(--hk-bal-d) + 2 * var(--hk-notch-gap)); height: calc(var(--hk-bal-d) + 2 * var(--hk-notch-gap));
       left: 50%; margin-left: calc(-0.5 * var(--hk-bal-d) - var(--hk-notch-gap));
-      background: var(--hk-page-bg, #1b1b1b);
+      background: var(--bg, #1b1b1b);
       box-shadow: 2px 2px 6px rgba(0,0,0,0.5), -1px -1px 4px rgba(255,255,255,0.06);
     }
     #homeDockTop .hk-notch { top: calc(var(--hk-dock-h) + var(--hk-dock-gap) / 2 - var(--hk-bal-d) / 2 - var(--hk-notch-gap)); }
@@ -11553,6 +11558,60 @@ html[data-theme="light"] {
     .hk-re-seg.hk-seg-anim > .hk-re-segb { z-index: 1; transition: color 0.34s ease; }
     html body .hk-re-seg.hk-seg-anim > .hk-re-segb.on { background: transparent !important; }
     .hk-re-seg.hk-seg-anim > .hk-re-segb.on::after { display: none !important; }
+    /* ===== ۱.۳.۶۹: منوی ویرایش ردیف یکدست: مبلغ درشت + شرح، وضعیت، فهرست پیوستهٔ جزئیات ===== */
+    .hk-re-box { display: flex; flex-direction: column; gap: 12px; }
+    .hk-re-box > .hk-re-title { margin: 0 !important; }
+    .hk-re-hero { background: var(--bg3, #2c2c2e); border-radius: 16px; padding: 12px 14px 0; display: flex; flex-direction: column; }
+    html body .hk-re-hero .hk-re-amt { background: transparent !important; border: none !important; box-shadow: none !important; outline: none;
+      text-align: center; direction: ltr; font-size: 28px !important; font-weight: 700 !important; height: auto !important; min-height: 0 !important; padding: 4px 0 10px !important;
+      color: var(--re-amt-c, var(--text)) !important; -webkit-text-fill-color: var(--re-amt-c, var(--text)) !important; transition: color 0.34s ease, -webkit-text-fill-color 0.34s ease; }
+    html body .hk-re-hero .hk-re-amt::placeholder { color: var(--muted); -webkit-text-fill-color: var(--muted); font-size: 18px; font-weight: 600; }
+    html body .hk-re-hero .hk-re-desc { background: transparent !important; border: none !important; border-top: 1px solid var(--border, rgba(255,255,255,0.12)) !important;
+      border-radius: 0 !important; box-shadow: none !important; text-align: center; padding: 11px 2px 12px !important; font-size: var(--hk-fs-control) !important; resize: none; min-height: 0 !important; }
+    .hk-re-hero .hk-re-note { text-align: center; padding-bottom: 10px; }
+    .hk-re-group { background: var(--bg3, #2c2c2e); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+    .hk-re-group > .hk-re-row + .hk-re-row, .hk-re-group > .hk-re-pnl + .hk-re-row, .hk-re-group > .hk-re-newacc { border-top: 1px solid var(--border, rgba(255,255,255,0.1)) !important; }
+    html body .hk-re-group > .hk-re-row { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 10px; width: 100%; min-height: 50px; height: auto !important;
+      margin: 0 !important; padding: 6px 14px !important; box-sizing: border-box; background: transparent !important; border: none; border-radius: 0 !important; box-shadow: none !important;
+      font: inherit; font-size: var(--hk-fs-body) !important; color: var(--text); text-align: right; cursor: pointer; }
+    .hk-re-group .hk-re-rl { flex: 0 0 auto; color: var(--muted, var(--hk-muted)); font-weight: 400; }
+    .hk-re-group .hk-re-rv { flex: 1 1 auto; min-width: 0; text-align: left; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hk-re-group .hk-re-rv.mute { color: var(--muted, var(--hk-muted)); font-weight: 400; }
+    .hk-re-group .hk-re-rv.blue { color: var(--hk-primary, #08b5f5); }
+    .hk-re-group > .hk-re-row > svg { flex: 0 0 auto; width: 14px; height: 14px; opacity: 0.6; transform: rotate(90deg); transition: transform 0.25s ease; }
+    .hk-re-group > .hk-re-row.open > svg { transform: rotate(-90deg); }
+    .hk-re-group > .hk-re-ro { cursor: default; }
+    html body .hk-re-group > .hk-re-row[style*="display: none"] { display: none !important; }
+    /* ردیف تاریخ و زمان: زمان راست، خط جداکننده، تاریخ چپ (میلادی زیر شمسی) */
+    html body .hk-re-group > .hk-re-dtrow { gap: 0; padding: 4px 14px !important; }
+    .hk-re-dtrow > .hk-re-rl { margin-left: auto; }
+    html body .hk-re-group .hk-re-dtrow .hk-re-pill { flex: 0 0 auto; background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 10px;
+      padding: 4px 10px !important; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .hk-re-group .hk-re-dtrow .hk-re-pill > span { display: none; }
+    .hk-re-group .hk-re-dtrow .hk-re-pill b { font-size: var(--hk-fs-control); }
+    .hk-re-group .hk-re-dtrow .hk-re-pill.on b { color: var(--hk-primary, #08b5f5); }
+    .hk-re-group .hk-re-dtrow .hk-re-pill .hk-re-greg { margin-top: 0; }
+    .hk-re-dtsep { flex: 0 0 auto; width: 1px; align-self: stretch; margin: 6px 4px; background: var(--border, rgba(255,255,255,0.14)); }
+    .hk-re-group > .hk-re-pnl { border-top: 1px solid var(--border, rgba(255,255,255,0.1)); padding: 4px 10px; }
+    /* کادر «حساب جدید» درست جای ردیف حساب */
+    .hk-re-group > .hk-re-newacc { padding: 6px 10px; margin: 0 !important; }
+    .hk-re-group > .hk-re-newacc .hk-bulk-newacc { height: 38px !important; }
+    .hk-re-stseg { flex-shrink: 0; }
+    /* ۱.۳.۶۹: آیکن ویرایش و حذف رابطهٔ قرض در حالت باز و بسته یک اندازه و یک جا (پیش‌تر موقع بستن کوچک و جابه‌جا می‌شدند) */
+    html body #panel-ledger #sections-ledger .section .section-header .btn-edit-title {
+      width: 32px !important; height: 32px !important; min-width: 32px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important;
+      font-size: 13.3333px !important; padding: 0 !important; flex: 0 0 auto !important;
+    }
+    html body #panel-ledger #sections-ledger .section .section-header .btn-edit-title svg { width: 16px !important; height: 16px !important; }
+    html body #panel-ledger #sections-ledger .section > .section-header { padding-left: 12px !important; padding-right: 12px !important; }
+    /* ۱.۳.۶۹: اسکرول داخل جدول رابطه: عنوان رابطه و نام ستون‌ها بالای جدول ثابت می‌مانند */
+    html body #panel-ledger #sections-ledger .section-body.hk-led-scroll thead { position: sticky; top: 0; z-index: 3; }
+    html body #panel-ledger #sections-ledger .section-body.hk-led-scroll > table { overflow: clip !important; }
+    html body #panel-ledger #sections-ledger .section-body.hk-led-scroll thead .hk-led-title-row th { background: var(--card, #1c1c1e) !important; }
+    html[data-theme="light"] body #panel-ledger #sections-ledger .section-body.hk-led-scroll thead .hk-led-title-row th { background: var(--lt-surface) !important; }
+    /* ۱.۳.۶۹: سه دکمهٔ بالا (منو، ماه، سال) کمی بلندتر */
+    html body .top-bar .menu-btn, html body .top-bar #monthSelectWrap .dark-select-btn, html body .top-bar #yearSelectWrap .dark-select-btn { height: 46px !important; min-height: 46px !important; }
+    html body .top-bar .menu-btn { width: 46px !important; min-width: 46px !important; }
     /* ===== HK-DS-ROLES: قواعد نقش‌ها (دکمه، پنجره، فیلد، نوشته، لمس) — design/system/refine.css ===== */
 /* =====================================================================
    حساب‌کتاب — لایهٔ تثبیت سیستم طراحی (نمونهٔ اولیه، روی نرم‌افزار فعلی)
@@ -11670,7 +11729,6 @@ button, input, select, textarea { font-family: inherit; }
       --unpaid-c: #9a6700;
       --hk-shadow-inset: var(--lt-neu-in); --hk-shadow-raised: var(--lt-elev);
       --hk-shadow-modal: 0 18px 40px rgba(40,52,78,0.22);
-      --hk-page-bg: #e3e7ee;
     }
     html[data-theme="light"] body, html[data-theme="light"] .sticky-chrome { background: var(--bg) !important; }
     /* نوار بالا (ماه/سال/منو): برجسته روی زمینه */
@@ -11809,6 +11867,7 @@ button, input, select, textarea { font-family: inherit; }
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openRecurringFromMenu();">درآمدهای ثابت</button>
         <button type="button" class="menu-item" style="display:none" onclick="event.stopPropagation(); switchTabFromMenu('install');">اقساط</button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); switchTabFromMenu('ledger');">قرض</button>
+        <button type="button" class="menu-item" id="menuSubjectsBtn" onclick="event.stopPropagation(); openSubjectsModal();">پروژه‌ها</button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openUserRemindersModal();">یادآور</button>
         <button type="button" class="menu-item" onclick="event.stopPropagation(); openStatsSheet();">آمار</button>
         <button type="button" class="menu-item" id="menuRecapBtn" onclick="event.stopPropagation(); closeSideMenu(); openMonthRecap();">ماهی که گذشت</button>
@@ -11819,7 +11878,6 @@ button, input, select, textarea { font-family: inherit; }
           <span>حالت حرفه‌ای</span>
           <span class="pro-mode-switch" id="proModeSwitch" aria-hidden="true"><span class="pro-knob"></span></span>
         </button>
-        <button type="button" class="menu-item" id="menuSubjectsBtn" onclick="event.stopPropagation(); openSubjectsModal();">پروژه‌ها</button>
         <button type="button" class="menu-theme-row" onclick="event.stopPropagation(); toggleTheme();">
           <span>حالت شب / روز</span>
           <span class="hk-switch" id="themeSwitch" aria-hidden="true"><i></i></span>
@@ -24481,14 +24539,21 @@ async function openPdfPrintWindow(){
       /* ۱.۳.۶۸: کارت، باکس هوشمند (باقی جا) و دو باکس پایین با دایرهٔ موجودی میانشان.
          رنگ قرص فرورفتگی = رنگ زمینهٔ صفحه؛ اگر باکس هوشمند خیلی کوتاه شد، کارت کمی کوتاه‌تر می‌شود */
       try {
-        var el0 = stack, bgc = '';
-        while (el0 && !bgc) { var c0 = getComputedStyle(el0).backgroundColor; if (c0 && c0 !== 'transparent' && !/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(c0)) bgc = c0; el0 = el0.parentElement; }
-        if (!bgc) bgc = getComputedStyle(document.body).backgroundColor;
-        if (bgc) root.setProperty('--hk-page-bg', bgc);
-        var sm = document.getElementById('homeSmartBox'), card0 = document.querySelector('#homeCards .person-card');
-        if (sm && card0) {
-          var minSm = 150, hs = sm.getBoundingClientRect().height;
-          if (hs < minSm) root.setProperty('--hc-card-h', Math.max(170, card0.offsetHeight - (minSm - hs)) + 'px');
+        /* ۱.۳.۶۹: رنگ قرص فرورفتگی مستقیم از رنگ زمینهٔ تم (CSS)، تا با عوض شدن تم همان لحظه عوض شود */
+        root.removeProperty('--hk-page-bg');
+        /* ۱.۳.۶۹: سه باکس هم‌ارتفاع با فاصلهٔ برابر: کارت، باکس هوشمند، و دو باکس پایین با دایرهٔ میانشان */
+        var sm = document.getElementById('homeSmartBox'), dock = document.getElementById('homeDock');
+        if (sm && dock) {
+          var stH = stack.getBoundingClientRect().height;
+          var third = Math.floor((stH - 2 * off) / 3);
+          if (third > 150) {
+            var dockGap = 12, dockH = Math.floor((third - dockGap) / 2);
+            root.setProperty('--hc-card-h', third + 'px');
+            root.setProperty('--hk-home-third', third + 'px');
+            root.setProperty('--hk-dock-h', dockH + 'px');
+            root.setProperty('--hk-dock-gap', dockGap + 'px');
+            root.setProperty('--hk-bal-d', Math.min(124, Math.max(96, Math.round(third * 0.56))) + 'px');
+          }
         }
       } catch (eC) {}
       try { fitHomeCardStats(); } catch (eF) {}
@@ -25491,59 +25556,25 @@ async function openPdfPrintWindow(){
             });
           });
         } catch (e) {}
+        /* ۱.۳.۶۹: وضعیت کلی هر پروژه (از اول تا امروز)، نه فقط این ماه: جمع واریزی، جمع مخارج و مانده/بدهی.
+           پروژه‌ای نمایش داده می‌شود که این ماه تراکنش دارد یا از قبل مانده/بدهی دارد */
         var out = [];
-        Object.keys(ids).forEach(function (sid) {
-          var sub = getSubjectById(sid);
-          if (!sub || sub.id === 'personal') return;
-          var rec = ids[sid].rec, exp = ids[sid].exp;
-          if (!rec && !exp) return;
-          var net = rec - exp, lines = [], p = 35, state = '';
-          lines.push('این ماه:');
-          if (exp > rec) {
-            lines.push('مخارج پروژه از مبلغ دریافتی بیشتر شده است.');
-            lines.push(spAmt(exp - rec) + ' تومان بدهکار است.');
-            p = 55; state = 'over';
-            if (rec > 0 && (exp - rec) <= exp * 0.1) { lines.push('نزدیک به تسویه است.'); state = 'near'; }
-          } else if (rec > 0 && exp > 0) {
-            lines.push(spPct(exp / rec * 100) + ' از مبلغ دریافتی خرج شده.');
-            if (net > 0) lines.push(spAmt(net) + ' تومان از واریزی باقی مانده.');
-            else { lines.push('پروژه تسویه است.'); state = 'even'; }
-            state = state || 'spent';
-          } else if (rec > 0) {
-            lines.push(spAmt(rec) + ' تومان دریافت شده و هنوز خرجی ثبت نشده.');
-            state = 'recv';
-          }
-          if (!lines.length) return;
-          out.push({ id: 'proj:' + sid + ':' + state, type: 'project', p: p, abs: Math.abs(net), title: 'پروژه ' + sub.name, text: lines.join(' '), sid: sid, lines: lines });
-        });
-        /* ۱.۳.۴۹: پروژه‌ای که از ماه‌های قبل طلب/بدهی مانده دارد، در این ماه هم (بی تراکنش) اسلاید دارد؛
-           پروژه‌ای که هنوز شروع نشده (ماه‌های قبل از اولین تراکنشش) هیچ‌جا نشان داده نمی‌شود */
         try {
-          var curN = currentYear * 100 + currentMonth, prev = {};
-          iterAllPeriodData(function (pd, key) {
-            var kp = String(key).split('-'), kn = (+kp[0]) * 100 + (+kp[1]);
-            if (!(kn < curN)) return;
-            ['income', 'expense'].forEach(function (tab) {
-              ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
-                if (((sec && sec.title) || '').trim() !== t) return;
-                (sec.rows || []).forEach(function (r) {
-                  if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
-                  var fc = rowFinancialContext(r);
-                  if (!(fc.subjectId && fc.subjectId !== 'personal' && (fc.classification === 'third_party' || fc.accountType === 'project'))) return;
-                  var o = prev[fc.subjectId] || (prev[fc.subjectId] = 0);
-                  prev[fc.subjectId] = o + (tab === 'income' ? 1 : -1) * (Number(r.amount) || 0);
-                });
-              });
-            });
+          (loadFinancialSubjects() || []).forEach(function (sub) {
+            if (!sub || !sub.id || sub.id === 'personal') return;
+            var rep = null; try { rep = computeSubjectReport(sub.id); } catch (eR) {}
+            if (!rep) return;
+            var rec = Number(rep.received) || 0, exp = Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0;
+            if (!rec && !exp) return;
+            var net = Math.round(rec - exp);
+            if (!ids[sub.id] && Math.abs(net) < 1) return;
+            var lines = ['جمع واریزی ' + spAmt(rec) + '، جمع مخارج ' + spAmt(exp)], p = 35, state;
+            if (net < 0) { lines.push(spAmt(-net) + ' تومان بدهکار است.'); p = 55; state = 'over'; }
+            else if (net > 0) { lines.push(spAmt(net) + ' تومان از واریزی باقی مانده.'); state = 'left'; }
+            else { lines.push('پروژه تسویه است.'); state = 'even'; }
+            out.push({ id: 'proj:' + sub.id + ':' + state, type: 'project', p: p, abs: Math.abs(net), title: 'پروژه ' + sub.name, text: lines.join(' '), sid: sub.id, lines: lines });
           });
-          Object.keys(prev).forEach(function (sid) {
-            if (ids[sid]) return;
-            var sub = getSubjectById(sid), bal = Math.round(prev[sid]);
-            if (!sub || sub.id === 'personal' || Math.abs(bal) < 1) return;
-            var ls = ['این ماه:', 'تراکنشی ثبت نشده.', bal < 0 ? 'از ماه‌های قبل ' + spAmt(-bal) + ' تومان بدهکار است.' : 'از ماه‌های قبل ' + spAmt(bal) + ' تومان از واریزی باقی مانده.'];
-            out.push({ id: 'proj:' + sid + ':carry', type: 'project', p: bal < 0 ? 50 : 30, abs: Math.abs(bal), title: 'پروژه ' + sub.name, text: ls.join(' '), sid: sid, lines: ls });
-          });
-        } catch (eCarry) {}
+        } catch (eP) {}
         return out.sort(function (a, b) { return b.p - a.p || b.abs - a.abs; }).slice(0, 3);
       }
 
@@ -26236,7 +26267,7 @@ async function openPdfPrintWindow(){
         while (f2 > 0.9 && overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); }
         /* جای خالی بود → فونت بزرگ‌تر تا متن باکس را پر کند */
         if (!overT()) {
-          while (f2 < (pg.closest('#homeSmartBox') ? 1.95 : 1.45)) { f2 += 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); if (overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); break; } }
+          while (f2 < (pg.closest('#homeSmartBox') ? 1.3 : 1.45)) { f2 += 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); if (overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); break; } }
         }
         /* ۱.۳.۶۸: بزرگ شدن عنوان، ارتفاع نما را کم می‌کند؛ هر نکته دوباره هم‌قد نما شود (و اگر لازم شد کمی کوچک) */
         var hh2 = tips.clientHeight;
@@ -26247,7 +26278,7 @@ async function openPdfPrintWindow(){
       if (fr) {
         pg.style.setProperty('--sp-fs', '1');
         /* ۱.۳.۶۸: در باکس جدا، اگر جا هست درشت‌تر (تا پیش از اسکرول شدن) */
-        if (pg.closest('#homeSmartBox')) { var g1 = 1; while (g1 < 1.95 && fr.scrollHeight <= fr.clientHeight + 1) { g1 += 0.05; pg.style.setProperty('--sp-fs', g1.toFixed(2)); } if (fr.scrollHeight > fr.clientHeight + 1 && g1 > 1) pg.style.setProperty('--sp-fs', (g1 - 0.05).toFixed(2)); }
+        if (pg.closest('#homeSmartBox')) { var g1 = 1; while (g1 < 1.3 && fr.scrollHeight <= fr.clientHeight + 1) { g1 += 0.05; pg.style.setProperty('--sp-fs', g1.toFixed(2)); } if (fr.scrollHeight > fr.clientHeight + 1 && g1 > 1) pg.style.setProperty('--sp-fs', (g1 - 0.05).toFixed(2)); }
         fr.scrollTop = 0;
         var mark = function () { fr.classList.toggle('sp-more', fr.scrollHeight - fr.clientHeight - fr.scrollTop > 2); };
         mark();
@@ -26264,7 +26295,7 @@ async function openPdfPrintWindow(){
         if (h > 10 && pg.closest('#homeSmartBox')) {
           var catOver = function () { for (var q = 0; q < cats.length; q++) if (cats[q].scrollHeight > cats[q].clientHeight + 1) return true; return false; };
           var g2 = 1; pg.style.setProperty('--sp-fs', '1');
-          while (g2 < 1.7 && !catOver()) { g2 += 0.05; pg.style.setProperty('--sp-fs', g2.toFixed(2)); }
+          while (g2 < 1.15 && !catOver()) { g2 += 0.05; pg.style.setProperty('--sp-fs', g2.toFixed(2)); }
           if (catOver() && g2 > 1) pg.style.setProperty('--sp-fs', (g2 - 0.05).toFixed(2));
         }
         spAutoScroll(sc);
@@ -26306,7 +26337,7 @@ async function openPdfPrintWindow(){
          ۱.۳.۶۸: در باکس هوشمندِ جدا، همهٔ اسلایدها تا جایی که جا هست درشت می‌شوند تا نوشته‌ها کل ارتفاع را پر کنند */
       var _home = !!pg.closest('#homeSmartBox');
       if ((_home || pg.querySelector('.sp-tip')) && !over()) {
-        while (f < (_home ? 1.95 : 1.45)) { f += 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); if (over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); break; } }
+        while (f < (_home ? 1.3 : 1.45)) { f += 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); if (over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); break; } }
       }
     }
     /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
@@ -27506,7 +27537,7 @@ async function openPdfPrintWindow(){
       [['paid', paidL], ['unpaid', unpaidL]].forEach(function (o) {
         var b = document.createElement('button'); b.type = 'button'; b.textContent = o[1]; b.dataset.v = o[0];
         b.className = 'hk-re-segb ' + (o[0] === 'paid' ? (isInc ? 'is-paid is-inc' : 'is-paid is-exp') : 'is-unpaid');
-        b.onclick = function () { st.status = o[0]; seg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x.dataset.v === st.status); }); };
+        b.onclick = function () { st.status = o[0]; seg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x.dataset.v === st.status); }); reAmtColor(); };
         seg.appendChild(b);
       });
       seg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x.dataset.v === st.status); });
@@ -27518,7 +27549,7 @@ async function openPdfPrintWindow(){
       var pjSeg = document.createElement('div'); pjSeg.className = 'hk-re-seg hk-re-pjseg';
       var subjects = []; try { subjects = (loadFinancialSubjects() || []).filter(function (s) { return s && s.id && s.id !== 'personal'; }); } catch (eSb) {}
       var pjB = document.createElement('button'); pjB.type = 'button'; pjB.className = 'hk-re-in hk-re-sel hk-re-pjsel';
-      var pjTxt = function () { var sb = subjects.find(function (s) { return s.id === st.proj; }); pjB.innerHTML = '<span>' + escapeHtml(sb ? sb.name : 'انتخاب پروژه') + '</span>' + HK_RE_CHEV; };
+      var pjTxt = function () { var sb = st.proj && subjects.find(function (s) { return s.id === st.proj; }); pjB.innerHTML = '<span class="hk-re-rl">پروژه</span><span class="hk-re-rv' + (sb ? '' : ' mute') + '">' + escapeHtml(sb ? sb.name : 'ندارد') + '</span>' + HK_RE_CHEV; };
       var pjSync = function () {
         pjSeg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', (x.dataset.v === 'project') === !!st.projMode); });
         /* ۱.۳.۵۵: فیلد پروژه داخل یک قاب با ارتفاع متحرک باز/بسته می‌شود (پدینگ و حاشیهٔ دکمه یک‌جا جابه‌جا نمی‌شوند) */
@@ -27548,12 +27579,17 @@ async function openPdfPrintWindow(){
         };
         pjSeg.appendChild(b);
       });
-      pjB.onclick = function (e) { e.stopPropagation(); hkReList(pjB, subjects.map(function (s) { return { v: s.id, l: s.name }; }), st.proj, function (v) { st.proj = v; pjTxt(); }); };
+      /* ۱.۳.۶۹: یک ردیف «پروژه»: ندارد / نام پروژه (جای دکمهٔ معمولی/پروژه) */
+      pjB.onclick = function (e) {
+        e.stopPropagation();
+        if (!subjects.length) { showToast('پروژه‌ای تعریف نشده؛ از منوی «پروژه‌ها» بسازید'); return; }
+        hkReList(pjB, [{ v: '', l: 'ندارد' }].concat(subjects.map(function (s) { return { v: s.id, l: s.name }; })), st.proj, function (v) { st.proj = v; st.projMode = !!v; pjTxt(); });
+      };
       fPj.appendChild(pjSeg); fPj.appendChild(pjWrap); pjSync();
       /* بانک */
       var fB = field('بانک / حساب');
       var accB = document.createElement('button'); accB.type = 'button'; accB.className = 'hk-re-in hk-re-sel';
-      var accTxt = function () { accB.innerHTML = '<span>' + escapeHtml(st.account ? st.account : 'بدون حساب') + '</span>' + HK_RE_CHEV; };
+      var accTxt = function () { accB.innerHTML = '<span class="hk-re-rl">حساب</span><span class="hk-re-rv' + (st.account ? '' : ' mute') + '">' + escapeHtml(st.account ? st.account : 'بدون حساب') + '</span>' + HK_RE_CHEV; };
       accTxt();
       accB.onclick = function (e) {
         e.stopPropagation();
@@ -27574,6 +27610,7 @@ async function openPdfPrintWindow(){
         /* ۱.۳.۶۶: باکس نام دقیقاً جای همان منو (همان پهنا و ارتفاع) و فلش همان منو در کنارش: زدنش به فهرست حساب‌ها برمی‌گردد */
         var ar = accB.getBoundingClientRect();
         accB.style.display = 'none';
+        /* ۱.۳.۶۹: در فهرست یکدست، کادر نام حساب تازه درست جای همان ردیف «حساب» می‌نشیند */
         /* ۱.۳.۶۵: همان باکس ثبت گروهی */
         var nb = hkNewAccBox('ملی', '');
         var nw = nb.wrap; nw.classList.add('hk-re-newacc');
@@ -27600,7 +27637,7 @@ async function openPdfPrintWindow(){
         st.cat0 = st.cat;
         var fC = field('دسته');
         var catB = document.createElement('button'); catB.type = 'button'; catB.className = 'hk-re-in hk-re-sel';
-        var catTxt = function () { var c = st.cat && HKCategorizer.byId[st.cat]; catB.innerHTML = '<span>' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
+        var catTxt = function () { var c = st.cat && HKCategorizer.byId[st.cat]; catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
@@ -27616,7 +27653,7 @@ async function openPdfPrintWindow(){
         var fR = field('درآمد ثابت');
         var recB = document.createElement('button'); recB.type = 'button'; recB.className = 'hk-re-in hk-re-sel';
         var live = (recurringIncomes || []).filter(function (r) { return r && !r.deletedAt; });
-        var recTxt = function () { var it = live.find(function (r) { return r.id === st.rec; }); recB.innerHTML = '<span>' + escapeHtml(it ? (it.name || 'درآمد ثابت') : 'وصل نیست') + '</span>' + HK_RE_CHEV; };
+        var recTxt = function () { var it = live.find(function (r) { return r.id === st.rec; }); recB.innerHTML = '<span class="hk-re-rl">درآمد ثابت</span><span class="hk-re-rv' + (it ? '' : ' mute') + '">' + escapeHtml(it ? (it.name || 'درآمد ثابت') : 'وصل نیست') + '</span>' + HK_RE_CHEV; };
         recTxt();
         recB.onclick = function (e) {
           e.stopPropagation();
@@ -27628,17 +27665,37 @@ async function openPdfPrintWindow(){
       if (fromPlan) {
         var fP = field('قسط');
         var pv = document.createElement('div'); pv.className = 'hk-re-ro';
-        try { var pl = (plans || []).find(function (p) { return p && p.id === row.fromPlanId; }); pv.textContent = pl ? (pl.name || 'قسط') : 'قسط'; } catch (ePl) { pv.textContent = 'قسط'; }
+        var plName = 'قسط'; try { var pl = (plans || []).find(function (p) { return p && p.id === row.fromPlanId; }); plName = pl ? (pl.name || 'قسط') : 'قسط'; } catch (ePl) {}
+        pv.innerHTML = '<span class="hk-re-rl">قسط</span><span class="hk-re-rv">' + escapeHtml(plName) + '</span>';
         fP.appendChild(pv);
       }
       /* فایل‌ها */
       var fF = field('فایل‌ها');
       /* ۱.۳.۴۷: بی دکمه؛ زدن روی «۲ فایل» (یا «افزودن فایل») پنجرهٔ پیوست‌ها را باز می‌کند */
       var fRow = document.createElement('button'); fRow.type = 'button'; fRow.className = 'hk-re-files hk-re-flink';
-      var cnt = function () { var n = Array.isArray(row.att) ? row.att.length : 0; fRow.textContent = n ? toPersianDigits(String(n)) + ' فایل' : 'افزودن فایل'; };
+      var cnt = function () { var n = Array.isArray(row.att) ? row.att.length : 0; fRow.innerHTML = '<span class="hk-re-rl">فایل‌ها</span><span class="hk-re-rv blue">' + (n ? toPersianDigits(String(n)) + ' فایل' : 'افزودن') + '</span>' + HK_RE_CHEV; };
       cnt();
       fRow.onclick = function () { try { openRowAttachments(row, function () { cnt(); try { if (ctx.onAtt) ctx.onAtt(); } catch (e0) {} }); } catch (eO) {} };
       fF.appendChild(fRow);
+      /* ===== ۱.۳.۶۹: چیدمان یکدست: بالا مبلغ درشت + شرح، بعد وضعیت، بعد فهرست پیوستهٔ جزئیات ===== */
+      function reAmtColor() { box.style.setProperty('--re-amt-c', st.status === 'unpaid' ? 'var(--hk-unsettled)' : (isInc ? 'var(--hk-income)' : 'var(--hk-expense)')); }
+      reAmtColor();
+      amt.placeholder = 'مبلغ'; ds.placeholder = 'شرح';
+      var hero = document.createElement('div'); hero.className = 'hk-re-hero';
+      hero.appendChild(amt); hero.appendChild(ds);
+      if (typeof nA !== 'undefined' && nA) hero.appendChild(nA);
+      var grp = document.createElement('div'); grp.className = 'hk-re-group';
+      /* تاریخ و زمان در یک ردیف: زمان (راست)، خط جداکننده، تاریخ با میلادی زیرش (چپ) */
+      var dtLab = document.createElement('span'); dtLab.className = 'hk-re-rl'; dtLab.textContent = 'تاریخ و زمان';
+      var dtSep = document.createElement('i'); dtSep.className = 'hk-re-dtsep'; dtSep.setAttribute('aria-hidden', 'true');
+      dtRow.innerHTML = ''; dtRow.classList.add('hk-re-row');
+      dtRow.appendChild(dtLab); dtRow.appendChild(tVal); dtRow.appendChild(dtSep); dtRow.appendChild(dVal);
+      grp.appendChild(dtRow); grp.appendChild(fD); grp.appendChild(fT);
+      [accB, (typeof catB !== 'undefined' ? catB : null), pjB, (typeof recB !== 'undefined' ? recB : null), (typeof pv !== 'undefined' ? pv : null), fRow].forEach(function (el) { if (el) { el.classList.add('hk-re-row'); grp.appendChild(el); } });
+      box.querySelectorAll('.hk-re-f, .hk-re-pair').forEach(function (f) { f.remove(); });
+      seg.classList.add('hk-re-stseg');
+      var ttl = box.querySelector('.hk-re-title');
+      ttl.insertAdjacentElement('afterend', grp); ttl.insertAdjacentElement('afterend', seg); ttl.insertAdjacentElement('afterend', hero);
       /* دکمه‌ها: هم‌اندازه */
       var btns = document.createElement('div'); btns.className = 'hk-re-btns';
       var bOk = document.createElement('button'); bOk.type = 'button'; bOk.className = 'hk-re-ok'; bOk.textContent = 'ثبت';
