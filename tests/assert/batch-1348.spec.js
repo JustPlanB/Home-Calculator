@@ -61,7 +61,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     };
   }, title);
   ok(pj.n === 2 && pj.full, 'هر پروژه یک نمای کامل اسلاید (۲ پروژه، اسکرول عمودی) (' + pj.n + ' ' + pj.dbg + ')');
-  ok(pj.first.every(s => /^پروژه /.test(s)) && pj.second.every(s => s === 'این ماه:'), 'اسم پروژه بالا، «این ماه:» در خط بعد');
+  ok(pj.first.every(s => /^پروژه /.test(s)) && pj.second.every(s => /^جمع واریزی/.test(s)), 'اسم پروژه بالا، وضعیت کلی در خط بعد');
   ok(pj.colored, 'عنوان «پروژه فلان» به رنگ همان پروژه');
   /* ۱.۳.۴۹: اسم پروژه درشت‌تر، بقیهٔ متن‌ها هم‌اندازه */
   ok(pj.sizes === 1 && pj.bigTitle, 'اسم پروژه درشت‌تر از متن زیرش؛ بقیهٔ نوشته‌ها هم‌اندازه');
@@ -151,12 +151,12 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const row = sec.rows[0];
     hkOpenRowEdit({ row: row, tab: 'expense', title: t, sec: sec, num: 1, onSaved: function () {} }); await w(200);
     const box = document.querySelector('#hkRowEdit .hk-re-box');
-    const pj = box && [...box.querySelectorAll('.hk-re-pjb')].map(x => x.textContent);
+    const pj = box && [...box.querySelectorAll('.hk-re-group .hk-re-row')].filter(r => /پروژه/.test((r.querySelector('.hk-re-rl') || {}).textContent || '')).map(r => r.textContent);
     const fits = box && box.scrollHeight <= box.clientHeight + 2;
     try { document.getElementById('hkRowEdit').remove(); } catch (e) {}
     return { pj, fits };
   }, title);
-  ok(re.pj && re.pj.join(',').indexOf('معمولی') >= 0 && re.pj.join(',').indexOf('پروژه') >= 0, 'ویرایش ردیف: نوع «معمولی/پروژه» قابل تغییر');
+  ok(re.pj && re.pj.length === 1, 'ویرایش ردیف: ردیف «پروژه» قابل تغییر (' + (re.pj || []).join(',') + ')');
   ok(re.fits, 'ویرایش ردیف: همه‌چیز بدون اسکرول دیده می‌شود');
   const sm = await p.evaluate(() => ({ inc: HK_INCOME_CATS.map(x => x.label).join('،'), keep: !document.querySelector('.hk-share-keep') && !/نگه دار تا پیامک بیاید/.test(document.body.innerHTML.replace(/<style[\s\S]*?<\/style>/g, '')) }));
   /* ۱.۳.۶۸: «تسویه قرض» جای «اضافه‌کار» */

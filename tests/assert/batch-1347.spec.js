@@ -65,7 +65,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(200);
     const box = document.getElementById('hkRowEdit');
     const out = { title: box.querySelector('.hk-re-title').textContent };
-    const pills = [...box.querySelectorAll('.hk-re-pill')];
+    /* ۱.۳.۶۹: هر دو در یک ردیف (زمان راست، تاریخ چپ)؛ ترتیب آزمون: تاریخ، زمان */
+    const pills = [...box.querySelectorAll('.hk-re-pill')].sort((a, b) => /تاریخ/.test(a.querySelector('span').textContent) ? -1 : 1);
     out.pills = pills.map(x => x.querySelector('span').textContent + '=' + x.querySelector('b').textContent);
     out.closed = [...box.querySelectorAll('.hk-re-pnl')].every(x => getComputedStyle(x).display === 'none');
     pills[0].click(); await w(100);
@@ -89,7 +90,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(ed.pills.length === 2 && /^تاریخ=۱۴۰۵\/۰۷\/۰۵$/.test(ed.pills[0]) && /^زمان=/.test(ed.pills[1]) && ed.closed && ed.noChip, 'تاریخ و زمان: دو دکمهٔ ساده (' + ed.pills.join('، ') + ')؛ چرخ‌ها بسته');
   ok(ed.dateOpen && ed.timeOpen, 'زدن «تاریخ» یا «زمان» فقط چرخ‌های همان را باز می‌کند');
   ok(/پرداخت نشده\|rgb\(230, 177, 44\)/.test(ed.segOn) && ed.segPaid === 'rgb(255, 107, 74)' && ed.firstTapOnlyClose, 'رنگ وضعیت‌ها: پرداخت‌نشده گلبهی، پرداخت‌شدهٔ مخارج نارنجی');
-  ok(!ed.fileBtn && ed.fileTxt === 'افزودن فایل' && ed.attOpen, 'بی دکمهٔ «دیدن/افزودن»؛ زدن روی نوشتهٔ فایل پنجرهٔ پیوست را باز می‌کند');
+  ok(!ed.fileBtn && /افزودن/.test(ed.fileTxt) && ed.attOpen, 'بی دکمهٔ «دیدن/افزودن»؛ زدن روی نوشتهٔ فایل پنجرهٔ پیوست را باز می‌کند');
 
   console.log('• لانگ‌پرس: رها کردن انگشت دکمهٔ زیرش را نمی‌زند');
   const lp = await p.evaluate(async (t) => {

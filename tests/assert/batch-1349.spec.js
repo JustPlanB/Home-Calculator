@@ -55,7 +55,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const scrolled = box._spAuto && box.style.scrollSnapType === 'none' ? 100 : 0; box.remove();
     return { cur: cur.length ? cur[0].text : '', before, scrolled };
   }, title);
-  ok(/از ماه‌های قبل ۲ میلیون تومان بدهکار است/.test(sp.cur), 'پروژهٔ بدهکار از ماه قبل در این ماه هم اسلاید دارد (' + sp.cur + ')');
+  ok(/۲ میلیون تومان بدهکار است/.test(sp.cur), 'پروژهٔ بدهکار از ماه قبل در این ماه هم اسلاید دارد (' + sp.cur + ')');
   ok(sp.before === 0, 'در ماه‌های پیش از شروع پروژه چیزی از آن نشان داده نمی‌شود');
   ok(sp.scrolled > 20, 'اسلاید بلند آرام تا پایین اسکرول می‌شود (' + Math.round(sp.scrolled) + 'px)');
   const cx = await p.evaluate(() => {

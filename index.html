@@ -11570,7 +11570,7 @@ html[data-theme="light"] {
       border-radius: 0 !important; box-shadow: none !important; text-align: center; padding: 11px 2px 12px !important; font-size: var(--hk-fs-control) !important; resize: none; min-height: 0 !important; }
     .hk-re-hero .hk-re-note { text-align: center; padding-bottom: 10px; }
     .hk-re-group { background: var(--bg3, #2c2c2e); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
-    .hk-re-group > .hk-re-row + .hk-re-row, .hk-re-group > .hk-re-pnl + .hk-re-row, .hk-re-group > .hk-re-newacc { border-top: 1px solid var(--border, rgba(255,255,255,0.1)) !important; }
+    .hk-re-group > .hk-re-row + .hk-re-row, .hk-re-group > .hk-re-pnl + .hk-re-row, .hk-re-group > .hk-re-row:not([style*="display: none"]) + .hk-re-newacc, .hk-re-group > .hk-re-pnl + .hk-re-newacc { border-top: 1px solid var(--border, rgba(255,255,255,0.1)) !important; }
     html body .hk-re-group > .hk-re-row { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 10px; width: 100%; min-height: 50px; height: auto !important;
       margin: 0 !important; padding: 6px 14px !important; box-sizing: border-box; background: transparent !important; border: none; border-radius: 0 !important; box-shadow: none !important;
       font: inherit; font-size: var(--hk-fs-body) !important; color: var(--text); text-align: right; cursor: pointer; }
@@ -25583,9 +25583,15 @@ async function openPdfPrintWindow(){
         try {
           (loadFinancialSubjects() || []).forEach(function (sub) {
             if (!sub || !sub.id || sub.id === 'personal') return;
-            var rep = null; try { rep = computeSubjectReport(sub.id); } catch (eR) {}
-            if (!rep) return;
-            var rec = Number(rep.received) || 0, exp = Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0;
+            /* جمع از اول تا همین ماهِ باز (نه ماه‌های بعد)؛ پیش از شروع پروژه چیزی نشان داده نمی‌شود */
+            var rec = 0, exp = 0, curN = currentYear * 100 + currentMonth;
+            try {
+              var rep = computeSubjectReport(sub.id);
+              (rep && rep.rows || []).forEach(function (x) {
+                var kp = String(x.key || '').split('-'); if ((+kp[0]) * 100 + (+kp[1]) > curN) return;
+                if (x.tab === 'income') rec += Number(x.amt) || 0; else exp += Number(x.amt) || 0;
+              });
+            } catch (eR) {}
             if (!rec && !exp) return;
             var net = Math.round(rec - exp);
             if (!ids[sub.id] && Math.abs(net) < 1) return;
