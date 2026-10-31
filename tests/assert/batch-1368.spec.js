@@ -167,7 +167,8 @@ async function seedRows(page) {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const t = hkMainTitle(), sec = findSectionByTitle('expense', t);
     hkOpenRowEdit({ row: sec.rows[2], tab: 'expense', title: t, sec: sec, num: 3 }); await w(700);
-    const labs = [...document.querySelectorAll('.hk-re-l')].map(x => x.textContent.trim());
+    /* ۱.۳.۶۹: مبلغ و شرح در یک کادر بالای منو (مبلغ درشت، شرح زیرش) */
+    const hero = document.querySelector('.hk-re-hero');
     const seg = document.querySelector('.hk-re-seg'), ind = seg && seg.querySelector('.hk-seg-ind');
     const x0 = ind ? ind.getBoundingClientRect().left : null;
     const off = [...seg.querySelectorAll('.hk-re-segb')].find(x => !x.classList.contains('on'));
@@ -176,9 +177,9 @@ async function seedRows(page) {
     await w(500);
     const x1 = ind.getBoundingClientRect().left, onB = seg.querySelector('.hk-re-segb.on').getBoundingClientRect().left;
     const c = getComputedStyle(ind, '::after').backgroundColor, bc = getComputedStyle(seg.querySelector('.hk-re-segb.on')).color;
-    return { di: labs.indexOf('شرح'), ai: labs.indexOf('مبلغ'), x0, xMid, x1, onB, same: c === bc };
+    return { hero: !!(hero && hero.querySelector('.hk-re-amt') && hero.querySelector('.hk-re-desc')), x0, xMid, x1, onB, same: c === bc };
   });
-  ok(re.di >= 0 && re.di < re.ai, 'ویرایش ردیف: «شرح» بالای «مبلغ»');
+  ok(re.hero, 'ویرایش ردیف: مبلغ و شرح با هم در کادر بالای منو');
   ok(re.x0 != null && Math.abs(re.x1 - re.onB) < 2 && Math.min(re.x0, re.x1) < re.xMid && re.xMid < Math.max(re.x0, re.x1), 'نشانگر و خط زیر گزینه با حرکت به گزینهٔ تازه سُر خورد (' + [re.x0, re.xMid, re.x1].map(Math.round).join('→') + ')');
   ok(re.same, 'رنگ خط زیر همان رنگ گزینهٔ تازه');
   await T.ctx.close();
