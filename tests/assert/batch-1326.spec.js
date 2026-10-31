@@ -198,6 +198,8 @@ async function newPage(b, list) {
   const hb = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const box = document.querySelector('.home-box.hb-multi'); if (!box) return null;
+    /* ۱.۳.۶۸: باکس‌های اسلایدی از خانه پنهان شدند؛ برای آزمودن منطق اسلایدر موقتاً نمایش داده می‌شود */
+    box.style.setProperty('display', 'flex', 'important'); await w(100);
     const track = box.querySelector('.hb-track'), W = box.clientWidth;
     const r = box.getBoundingClientRect(), cy = r.top + r.height / 2;
     const ev = (t, x, id) => box.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: x, clientY: cy, pointerId: id, button: 0, pointerType: 'touch' }));
@@ -211,6 +213,7 @@ async function newPage(b, list) {
     await w(1000);
     const m = /translateX\((-?[\d.]+)px\)/.exec(track.style.transform);
     const pos = m ? Math.round(-parseFloat(m[1]) / W) : -1;
+    box.style.removeProperty('display');
     return { pos, n };
   });
   /* از ۱.۳.۴۴ باکس‌ها رفت‌وبرگشتی‌اند (بدون کپی دو سر): جای واقعی ۰ تا n-1 */

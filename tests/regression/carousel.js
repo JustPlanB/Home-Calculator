@@ -15,7 +15,7 @@ const { chromium } = require('playwright');
   await drag(250, 250, 400, 10); out.afterCardSwipe = await S();
   await drag(400, 250, 250, 10); out.back = await S();
   // short swipe on smart panel (left part of card): 50px right -> panel page only
-  const pb = await p.locator('#homeCards .person-card').first().locator('.pc-smart-box').boundingBox();
+  const pb = await p.locator('#homeSmartBox .pc-smart-box').boundingBox();
   await drag(pb.x + 20, pb.y + 80, pb.x + 75, 8); out.shortOnPanel = await S();
   // long swipe on smart panel: 220px right -> card changes
   await drag(pb.x + 10, pb.y + 80, pb.x + 230, 16); out.longOnPanel = await S();

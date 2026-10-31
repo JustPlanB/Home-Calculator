@@ -26,16 +26,16 @@ const { chromium } = require('playwright');
     for (let k = 1; k <= 3; k++) mkPrev(k, [R(2, 'رستوران', 900000), R(3, 'بنزین', 800000), R(4, 'سوپرمارکت', 1200000), R(5, 'اسنپ', 300000), R(6, 'قبض برق', 500000), R(1, 'اجاره', 15000000)]);
     HKCategorizer.learn('لواشک و کیسه زباله', ['food', 'home']);
     renderHomeCards();
-    const el = document.querySelector('#homeCards .pc-smart-box');
+    const el = document.querySelector('#homeSmartBox .pc-smart-box');
     return { pages: el._spPages.map(x => x.key), alerts: HKAlerts.forCard(t).map(a => a.type + ' | ' + a.title + ' | ' + a.text) };
   });
   console.log(JSON.stringify(info, null, 1));
   const n = info.pages.length;
-  await p.evaluate(() => { const el = document.querySelector('#homeCards .pc-smart-box'); while (el._spIdx !== 0) smartPanelGo(el, 1); });
+  await p.evaluate(() => { const el = document.querySelector('#homeSmartBox .pc-smart-box'); while (el._spIdx !== 0) smartPanelGo(el, 1); });
   for (let i = 0; i < n; i++) {
     await p.waitForTimeout(1200);
-    await p.locator('#homeCards .pc-smart-box').first().screenshot({ path: out + '-' + i + '.png' });
-    await p.evaluate(() => smartPanelGo(document.querySelector('#homeCards .pc-smart-box'), 1));
+    await p.locator('#homeSmartBox .pc-smart-box').first().screenshot({ path: out + '-' + i + '.png' });
+    await p.evaluate(() => smartPanelGo(document.querySelector('#homeSmartBox .pc-smart-box'), 1));
   }
   const pc = await p.evaluate(() => { const D = spCollect(allPersonTitles()[0]); return { items: D.cats.items.map(x => x.label + ' ' + x.pct), sum: D.cats.items.reduce((a, x) => a + x.pct, 0), insight: spInsights(D).map(x => x.t) }; });
   await p.screenshot({ path: out + '-full.png' });
