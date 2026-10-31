@@ -2271,7 +2271,7 @@ final class HkWidgetDraw {
   /* کادر فشردهٔ متن نسبت به اندازهٔ فونت (اندازه‌گیری‌شده برای وزیرمتن) */
   private static final float TXT_A=0.74f, TXT_D=0.36f, NUM_A=0.70f, NUM_D=0.20f;
 
-  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none; }
+  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none, hidden, mask; }
 
   static final String[] MONTHS_FA={"فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"};
   static final String ACTION_MIDNIGHT="ir.hesabketab.app.WIDGET_MIDNIGHT";
@@ -2442,6 +2442,9 @@ final class HkWidgetDraw {
     d.today=sp.getString("today","—");
     d.neg=sp.getBoolean("neg",false);
     d.locked=sp.getBoolean("locked",false);
+    /* ۱.۳.۶۹: دکمهٔ چشم روی ویجت: مبالغ پنهان/نمایان (فقط روی ویجت، ذخیره‌شده) */
+    d.hidden=sp.getBoolean("hidden",false);
+    d.mask=d.locked||d.hidden;
     d.light=sp.getBoolean("light",false);
     d.none=sp.getBoolean("todayNone",false);
     d.accounts=sp.getString("accounts","[]");
@@ -2483,7 +2486,7 @@ final class HkWidgetDraw {
   private static int muted(Data d){ return d.light?Color.parseColor("#6e6e76"):Color.parseColor("#98989f"); }
   private static int text(Data d){ return d.light?Color.parseColor("#1c1c1e"):Color.WHITE; }
   private static int balColor(Data d){
-    if(d.locked) return text(d);
+    if(d.mask) return text(d);
     return d.neg?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858"));
   }
   private static Paint paint(Typeface tf, float size, int color, Paint.Align al){
@@ -2515,9 +2518,10 @@ final class HkWidgetDraw {
     java.util.ArrayList<Line> L=new java.util.ArrayList<>();
     L.add(new Line(true,false,BOLD,1.0f,0,"حساب‌کتاب",text(d)));
     L.add(new Line(false,false,REG,0.95f,0.55f,"موجودی",muted(d)));
-    L.add(new Line(false,true,BOLD,1.7f,0.12f,d.locked?"••••••":d.balance,balColor(d)));
+    L.add(new Line(false,true,BOLD,1.7f,0.12f,d.mask?"••••••":d.balance,balColor(d)));
     L.add(new Line(false,false,REG,0.95f,0.5f,"خرج امروز",muted(d)));
     if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، نرم‌افزار را باز کنید",text(d)));
+    else if(d.hidden) L.add(new Line(false,true,BOLD,1.7f,0.12f,"••••••",text(d)));
     else if(d.none) L.add(new Line(false,false,REG,1.05f,0.12f,"هنوز خرجی نداشتی",text(d)));
     else L.add(new Line(false,true,BOLD,1.7f,0.12f,d.today,Color.parseColor("#ff6b4a")));
     float units=0, gaps=0;
@@ -2536,8 +2540,10 @@ final class HkWidgetDraw {
         float s1=fit(BOLD,size,l.t,aw*0.55f);
         cv.drawText(l.t, W-padX, y+TXT_A*size, paint(BOLD,s1,l.col,Paint.Align.RIGHT));
         String m=d.month==null?"":d.month;
-        float s2=fit(REG,size,m,aw*0.42f);
-        cv.drawText(m, padX, y+TXT_A*size, paint(REG,s2,muted(d),Paint.Align.LEFT));
+        /* ۱.۳.۶۹: گوشهٔ بالا-چپ جای دکمهٔ چشم است؛ ماه کمی راست‌تر */
+        float eyeW=24*k;
+        float s2=fit(REG,size,m,aw*0.42f-eyeW);
+        cv.drawText(m, padX+eyeW, y+TXT_A*size, paint(REG,s2,muted(d),Paint.Align.LEFT));
         y+=size*(TXT_A+TXT_D);
         continue;
       }
@@ -2578,7 +2584,7 @@ final class HkWidgetDraw {
     float hs=fit(BOLD,u,"حساب‌کتاب",aw*0.55f);
     cv.drawText("حساب‌کتاب", W-padX, y+TXT_A*u, paint(BOLD,hs,text(d),Paint.Align.RIGHT));
     String m=d.month==null?"":d.month;
-    cv.drawText(m, padX, y+TXT_A*u, paint(REG,fit(REG,u*0.9f,m,aw*0.42f),muted(d),Paint.Align.LEFT));
+    cv.drawText(m, padX+24*k, y+TXT_A*u, paint(REG,fit(REG,u*0.9f,m,aw*0.42f-24*k),muted(d),Paint.Align.LEFT));
     y+=u*(TXT_A+TXT_D);
     if(empty && !d.locked){
       y+=gap*u+extra;
@@ -2597,12 +2603,12 @@ final class HkWidgetDraw {
       float ls=fit(tot?BOLD:REG,u*rowR,r[0],aw*0.45f);
       Paint lpn=paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT);
       cv.drawText(r[0], W-padX, y+NUM_A*u, lpn);
-      String val=d.locked?"••••••":r[1];
-      int col=d.locked?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
+      String val=d.mask?"••••••":r[1];
+      int col=d.mask?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
       Paint vp=paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT);
       cv.drawText(val, padX, y+NUM_A*u, vp);
       /* نقطه(های) رنگ پروژه درست جلوی عدد موجودی (مثل موجودی آنی نرم‌افزار) */
-      if(!d.locked && r.length>4 && r[4]!=null && r[4].length()>0){
+      if(!d.mask && r.length>4 && r[4]!=null && r[4].length()>0){
         float dr=Math.max(2.2f*k, ls*0.17f), dx=padX+vp.measureText(val)+dr+5*k, dy=y+NUM_A*u-ls*0.32f;
         for(String hc: r[4].split(",")){
           try{ Paint dp=new Paint(Paint.ANTI_ALIAS_FLAG); dp.setColor(Color.parseColor(hc.trim())); cv.drawCircle(dx, dy, dr, dp); }catch(Exception ignored){}
@@ -2613,8 +2619,8 @@ final class HkWidgetDraw {
     }
     y+=gap*u+extra;
     cv.drawText("خرج امروز", W-padX, y+NUM_A*u, paint(REG,fit(REG,u,"خرج امروز",aw*0.45f),muted(d),Paint.Align.RIGHT));
-    String tv=d.locked?"••••••":(d.none?"۰":d.today);
-    cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.locked?text(d):Color.parseColor("#ff6b4a"),Paint.Align.LEFT));
+    String tv=d.mask?"••••••":(d.none?"۰":d.today);
+    cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.mask?text(d):Color.parseColor("#ff6b4a"),Paint.Align.LEFT));
     return bm;
   }
 
@@ -2628,8 +2634,9 @@ final class HkWidgetDraw {
     float padX=14*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-btnW;
     String label=page==0?"موجودی":"خرج امروز";
     String val; boolean num=true; Typeface vf=BOLD; float vr=1.9f; int vc=text(d);
-    if(page==0){ val=d.locked?"••••••":d.balance; vc=balColor(d); }
+    if(page==0){ val=d.mask?"••••••":d.balance; vc=balColor(d); }
     else if(d.locked){ val="نرم‌افزار را باز کنید"; num=false; vf=REG; vr=1.1f; }
+    else if(d.hidden){ val="••••••"; }
     else if(d.none){ val="هنوز خرجی نداشتی"; num=false; vf=REG; vr=1.1f; }
     else{ val=d.today; vc=Color.parseColor("#ff6b4a"); }
     float b1=TXT_A+TXT_D, b2=num?(NUM_A+NUM_D):(TXT_A+TXT_D), gap=0.1f;
@@ -2640,7 +2647,7 @@ final class HkWidgetDraw {
     s=fit(vf,vs,val,aw);
     if(num) cv.drawText(val, btnW+6*k, y+a*vs, paint(vf,s,vc,Paint.Align.LEFT));
     else cv.drawText(val, W-padX, y+a*vs, paint(vf,s,vc,Paint.Align.RIGHT));
-    float cx=10*k, cy=H/2f, r=2.2f*k;
+    float cx=10*k, cy=H-11*k, r=2.2f*k;
     for(int i=0;i<2;i++){
       Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
       p.setColor(i==page?text(d):(d.light?Color.parseColor("#c7c7cc"):Color.parseColor("#48484a")));
@@ -2675,8 +2682,14 @@ public class HkWidgetProvider extends AppWidgetProvider {
     render(ctx, mgr, id);
   }
   /* نیمه‌شب: تاریخ و «خرج امروز» همهٔ ویجت‌ها بدون باز شدن نرم‌افزار به‌روز شوند */
+  static final String ACTION_EYE="ir.hesabketab.app.WIDGET_EYE";
   @Override public void onReceive(Context ctx, Intent intent){
     if(intent!=null && HkWidgetDraw.ACTION_MIDNIGHT.equals(intent.getAction())){ refreshAll(ctx); return; }
+    /* ۱.۳.۶۹: دکمهٔ چشم: مبالغ همهٔ ویجت‌ها همان لحظه پنهان/نمایان */
+    if(intent!=null && ACTION_EYE.equals(intent.getAction())){
+      try{ android.content.SharedPreferences sp=ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE); sp.edit().putBoolean("hidden", !sp.getBoolean("hidden",false)).apply(); }catch(Exception ignored){}
+      refreshAll(ctx); return;
+    }
     super.onReceive(ctx, intent);
   }
 
@@ -2691,6 +2704,19 @@ public class HkWidgetProvider extends AppWidgetProvider {
     try{ HkWidgetAccountsProvider.refreshAll(ctx); }catch(Exception ignored){}
   }
 
+  static PendingIntent eyeIntent(Context ctx){
+    Intent i=new Intent(ctx, HkWidgetProvider.class).setAction(ACTION_EYE);
+    int fl=PendingIntent.FLAG_UPDATE_CURRENT; if(Build.VERSION.SDK_INT>=23) fl|=PendingIntent.FLAG_IMMUTABLE;
+    return PendingIntent.getBroadcast(ctx, 77, i, fl);
+  }
+  /** آیکن چشم: باز = مبالغ پیدا، بسته = پنهان؛ رنگ کم‌رنگ هم‌تم ویجت */
+  static void applyEye(Context ctx, RemoteViews v, int viewId, HkWidgetDraw.Data d){
+    v.setImageViewResource(viewId, d.hidden ? R.drawable.hk_ic_eye_off : R.drawable.hk_ic_eye);
+    v.setInt(viewId, "setColorFilter", d.light ? 0xFF6E6E76 : 0xFF98989F);
+    v.setViewVisibility(viewId, d.locked ? android.view.View.GONE : android.view.View.VISIBLE);
+    v.setOnClickPendingIntent(viewId, eyeIntent(ctx));
+    v.setContentDescription(viewId, d.hidden ? "نمایش مبالغ" : "پنهان کردن مبالغ");
+  }
   static PendingIntent openApp(Context ctx, boolean mutable){
     Intent open=new Intent(ctx, MainActivity.class);
     open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -2708,6 +2734,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
       v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.full(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, openApp(ctx, false));
+      applyEye(ctx, v, R.id.hk_w_eye, d);
       mgr.updateAppWidget(id, v);
     }catch(Exception ignored){}
   }
@@ -2742,6 +2769,7 @@ public class HkWidgetAccountsProvider extends AppWidgetProvider {
       v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.accounts(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, HkWidgetProvider.openApp(ctx, false));
+      HkWidgetProvider.applyEye(ctx, v, R.id.hk_w_eye, d);
       mgr.updateAppWidget(id, v);
     }catch(Exception ignored){}
   }
@@ -2794,6 +2822,7 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
       v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
       v.setScrollPosition(R.id.hk_ws_list, LOOP_COUNT/2);
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
+      HkWidgetProvider.applyEye(ctx, v, R.id.hk_ws_eye, d);
       mgr.updateAppWidget(id, v);
       mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_ws_list);
     }catch(Exception ignored){}
@@ -3435,6 +3464,9 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget.xml'),
     android:background="@drawable/hk_widget_bg">
     <ImageView android:id="@+id/hk_w_img" android:layout_width="match_parent" android:layout_height="match_parent"
         android:scaleType="fitCenter" android:contentDescription="حساب‌کتاب"/>
+    <ImageView android:id="@+id/hk_w_eye" android:layout_width="34dp" android:layout_height="34dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="4dp" android:layout_marginTop="2dp"
+        android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
 </FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
@@ -3446,6 +3478,9 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
     android:background="@drawable/hk_widget_bg">
     <ListView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
         android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none" android:listSelector="@android:color/transparent" android:overScrollMode="never" android:fadingEdge="none"/>
+    <ImageView android:id="@+id/hk_ws_eye" android:layout_width="28dp" android:layout_height="28dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="2dp" android:layout_marginTop="1dp"
+        android:padding="6dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
 </FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
@@ -3457,6 +3492,23 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
     android:adjustViewBounds="true"
     android:scaleType="fitXY"
     android:contentDescription="حساب‌کتاب"/>
+`);
+// ۱.۳.۶۹: آیکن چشم ویجت (باز / بسته)
+fs.writeFileSync(path.join(resDir,'drawable','hk_ic_eye.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M2,12C4.5,7 8,5 12,5s7.5,2 10,7c-2.5,5 -6,7 -10,7s-7.5,-2 -10,-7z"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:pathData="M12,12m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"/>
+</vector>
+`);
+fs.writeFileSync(path.join(resDir,'drawable','hk_ic_eye_off.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M3.5,8.5C2.9,9.6 2.4,10.7 2,12c2.5,5 6,7 10,7c1.6,0 3.1,-0.3 4.5,-1M8.5,5.5C9.6,5.2 10.8,5 12,5c4,0 7.5,2 10,7c-0.6,1.2 -1.3,2.3 -2.1,3.2"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M3,3L21,21"/>
+</vector>
 `);
 // فونت وزیرمتن برای متن ویجت
 fs.mkdirSync(path.join(resDir,'font'),{recursive:true});

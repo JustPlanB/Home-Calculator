@@ -11612,6 +11612,27 @@ html[data-theme="light"] {
     /* ۱.۳.۶۹: سه دکمهٔ بالا (منو، ماه، سال) کمی بلندتر */
     html body .top-bar .menu-btn, html body .top-bar #monthSelectWrap .dark-select-btn, html body .top-bar #yearSelectWrap .dark-select-btn { height: 46px !important; min-height: 46px !important; }
     html body .top-bar .menu-btn { width: 46px !important; min-width: 46px !important; }
+    /* ۱.۳.۶۹: یادداشت دست‌نویس باکس هوشمند */
+    .hk-todo-pick { display: flex; flex-direction: column; gap: 10px; }
+    .hk-tp-opt { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); color: var(--text); font: inherit; text-align: right; cursor: pointer; }
+    .hk-tp-opt svg { flex: 0 0 auto; width: 26px; height: 26px; fill: none; stroke: #08b5f5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-tp-opt span { display: flex; flex-direction: column; gap: 2px; font-weight: 700; font-size: var(--hk-fs-control); }
+    .hk-tp-opt small { font-weight: 400; font-size: var(--hk-fs-label); color: var(--muted, var(--hk-muted)); }
+    .hk-ink-box { width: min(94vw, 440px) !important; max-width: none !important; }
+    .hk-ink-pad { position: relative; border-radius: 14px; background: var(--bg3, #2c2c2e); color: var(--text); overflow: hidden; touch-action: none; }
+    .hk-ink-pad canvas { display: block; touch-action: none; }
+    .hk-ink-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted, var(--hk-muted)); font-size: var(--hk-fs-body); pointer-events: none; }
+    .hk-ink-tools { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; }
+    .hk-ink-colors { display: flex; gap: 8px; margin-left: auto; }
+    .hk-ink-colors button { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; background: none; padding: 4px; cursor: pointer; }
+    .hk-ink-colors button.on { border-color: var(--hk-primary, #08b5f5); }
+    .hk-ink-colors button i { display: block; width: 100%; height: 100%; border-radius: 50%; }
+    .hk-ink-colors button[data-c="t"] i { background: var(--text); } .hk-ink-colors button[data-c="b"] i { background: #08b5f5; } .hk-ink-colors button[data-c="r"] i { background: var(--hk-expense, #ff6b4a); }
+    .hk-ink-undo { width: 40px; height: 36px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .hk-ink-undo svg { width: 20px; height: 20px; fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-ink-clear { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); color: var(--hk-danger, #ff453a); font: inherit; font-weight: 700; cursor: pointer; }
+    .sp-ink { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; color: var(--text); }
+    .sp-ink svg { width: 100%; height: 100%; max-height: 100%; }
     /* ===== HK-DS-ROLES: قواعد نقش‌ها (دکمه، پنجره، فیلد، نوشته، لمس) — design/system/refine.css ===== */
 /* =====================================================================
    حساب‌کتاب — لایهٔ تثبیت سیستم طراحی (نمونهٔ اولیه، روی نرم‌افزار فعلی)
@@ -25977,7 +25998,7 @@ async function openPdfPrintWindow(){
       /* نسخهٔ قبلی (یک فهرست بدون ماه) → فهرستِ ماه جاری */
       if (Array.isArray(v)) { var o = {}; o[todoYm()] = v.length ? [{ id: 'l' + Date.now().toString(36), items: v }] : []; v = o; m[k] = v; try { localStorage.setItem(TODO_KEY, JSON.stringify(m)); } catch (e0) {} }
       var lists = (v && Array.isArray(v[todoYm()])) ? v[todoYm()] : [];
-      return lists.filter(function (l) { return l && l.id && Array.isArray(l.items) && l.items.length; });
+      return lists.filter(function (l) { return l && l.id && ((Array.isArray(l.items) && l.items.length) || (Array.isArray(l.ink) && l.ink.length)); });
     }
     function saveTodoList(title, id, items) {
       try {
@@ -26008,6 +26029,9 @@ async function openPdfPrintWindow(){
       var lists = loadTodoLists(D.title);
       if (!lists.length) return null;
       return lists.map(function (l) {
+        /* ۱.۳.۶۹: یادداشت دست‌نویس: خط‌ها به‌صورت برداری، با رنگ همان تم کشیده می‌شوند */
+        if (Array.isArray(l.ink)) return { key: 'todo-' + l.id, onTap: function (title) { openInkEditor(title, l.id); },
+          html: spHead('یادداشت' + hkTodoDateLabel(l)) + '<div class="sp-ink">' + hkInkSvg(l.ink) + '</div>' };
         return {
           key: 'todo-' + l.id,
           onTap: function (title) { openTodoEditor(title, l.id); },
@@ -26107,6 +26131,114 @@ async function openPdfPrintWindow(){
       requestAnimationFrame(function () { ov.classList.add('open'); });
     }
     try { window.openTodoEditor = openTodoEditor; window.closeTodoEditor = closeTodoEditor; } catch (eW) {}
+    /* ===== ۱.۳.۶۹: اسلاید تازهٔ باکس هوشمند: «یادداشت دست‌نویس» (انگشت یا قلم) یا «فهرست کارها» ===== */
+    function openTodoChooser(title) {
+      var old = document.getElementById('hkTodoPick'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkTodoPick'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:660;display:flex;align-items:center;justify-content:center;';
+      var box = document.createElement('div'); box.className = 'modal-box hk-prefs hk-todo-pick'; ov.appendChild(box);
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      box.innerHTML = '<div class="hk-prefs-t">اسلاید تازه</div>' +
+        '<button type="button" class="hk-tp-opt" data-k="ink"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>یادداشت دست‌نویس<small>با انگشت یا قلم بنویس یا بکش</small></span></button>' +
+        '<button type="button" class="hk-tp-opt" data-k="todo"><svg viewBox="0 0 24 24"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M12 20h8"/></svg><span>فهرست کارها<small>کارهایی که باید انجام بدی</small></span></button>';
+      box.querySelector('[data-k="ink"]').onclick = function () { close(); openInkEditor(title, null); };
+      box.querySelector('[data-k="todo"]').onclick = function () { close(); openTodoEditor(title, null); };
+      document.body.appendChild(ov);
+    }
+    /* خط‌ها: [{c:'t'|'b'|'r', w, p:[[x,y],…]}] با مختصات ۰ تا ۱۰۰۰ (افقی) و ۰ تا ۶۲۰ (عمودی) */
+    var HK_INK_W = 1000, HK_INK_H = 620;
+    function hkInkColor(c) { return c === 'b' ? '#08b5f5' : c === 'r' ? 'var(--hk-expense, #ff6b4a)' : 'currentColor'; }
+    function hkInkPath(pts) {
+      if (!pts || !pts.length) return '';
+      if (pts.length === 1) return 'M' + pts[0][0] + ' ' + pts[0][1] + 'l0.1 0';
+      var d = 'M' + pts[0][0] + ' ' + pts[0][1];
+      for (var i = 1; i < pts.length - 1; i++) { var mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2; d += 'Q' + pts[i][0] + ' ' + pts[i][1] + ' ' + mx.toFixed(1) + ' ' + my.toFixed(1); }
+      var l = pts[pts.length - 1]; return d + 'L' + l[0] + ' ' + l[1];
+    }
+    function hkInkSvg(strokes) {
+      return '<svg viewBox="0 0 ' + HK_INK_W + ' ' + HK_INK_H + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + (strokes || []).map(function (st) {
+        return '<path d="' + hkInkPath(st.p) + '" fill="none" stroke="' + hkInkColor(st.c) + '" stroke-width="' + (st.w || 6) + '" stroke-linecap="round" stroke-linejoin="round"/>';
+      }).join('') + '</svg>';
+    }
+    function saveInkNote(title, id, strokes) {
+      try {
+        var m = loadTodoMap(), k = (title || '').trim(), ym = todoYm();
+        if (!m[k] || Array.isArray(m[k])) { loadTodoLists(k); m = loadTodoMap(); }
+        if (!m[k] || typeof m[k] !== 'object') m[k] = {};
+        var lists = Array.isArray(m[k][ym]) ? m[k][ym] : [], at = -1;
+        lists.forEach(function (l, i) { if (l && l.id === id) at = i; });
+        if (strokes && strokes.length) { if (at >= 0) { lists[at].ink = strokes; delete lists[at].items; } else lists.push({ id: id, ink: strokes, at: Date.now() }); }
+        else if (at >= 0) lists.splice(at, 1);
+        if (lists.length) m[k][ym] = lists; else delete m[k][ym];
+        if (!Object.keys(m[k]).length) delete m[k];
+        return hkStorageSet(TODO_KEY, JSON.stringify(m));
+      } catch (e) { hkPersistFailed(TODO_KEY, e); return false; }
+    }
+    function openInkEditor(title, noteId) {
+      var t = (title || '').trim();
+      var id = noteId || ('n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
+      var cur = noteId ? (loadTodoLists(t).filter(function (x) { return x.id === noteId; })[0] || {}) : {};
+      var strokes = Array.isArray(cur.ink) ? JSON.parse(JSON.stringify(cur.ink)) : [];
+      var old = document.getElementById('hkInkEd'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkInkEd'; ov.className = 'todo-overlay hk-ink-ov'; ov.setAttribute('data-hk-back', '1');
+      ov.innerHTML = '<div class="todo-box hk-ink-box" role="dialog" aria-label="یادداشت دست‌نویس">' +
+        '<div class="todo-title">یادداشت دست‌نویس</div>' +
+        '<div class="hk-ink-pad"><canvas></canvas><div class="hk-ink-hint">با انگشت یا قلم بنویس</div></div>' +
+        '<div class="hk-ink-tools">' +
+          '<div class="hk-ink-colors"><button type="button" data-c="t" class="on" aria-label="رنگ اصلی"><i></i></button><button type="button" data-c="b" aria-label="آبی"><i></i></button><button type="button" data-c="r" aria-label="قرمز"><i></i></button></div>' +
+          '<button type="button" class="hk-ink-undo" aria-label="برگشت یک قدم"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>' +
+          '<button type="button" class="hk-ink-clear">پاک کردن</button>' +
+        '</div>' +
+        '<div class="todo-actions"><button type="button" class="todo-cancel">انصراف</button><button type="button" class="todo-save">ثبت</button></div></div>';
+      document.body.appendChild(ov);
+      var pad = ov.querySelector('.hk-ink-pad'), cv = pad.querySelector('canvas'), ctx2 = cv.getContext('2d'), hint = pad.querySelector('.hk-ink-hint');
+      var color = 't', drawing = null, scale = 1, dpr = window.devicePixelRatio || 1;
+      var inkCol = function (c) { if (c === 't') return getComputedStyle(pad).color; if (c === 'b') return '#08b5f5'; return getComputedStyle(document.documentElement).getPropertyValue('--hk-expense').trim() || '#ff6b4a'; };
+      var size = function () { var w = pad.clientWidth; cv.style.width = w + 'px'; cv.style.height = (w * HK_INK_H / HK_INK_W) + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(w * HK_INK_H / HK_INK_W * dpr); scale = cv.width / HK_INK_W; redraw(); };
+      var drawStroke = function (st) {
+        var pts = st.p; if (!pts.length) return;
+        ctx2.strokeStyle = inkCol(st.c); ctx2.lineWidth = (st.w || 6) * scale; ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
+        ctx2.beginPath(); ctx2.moveTo(pts[0][0] * scale, pts[0][1] * scale);
+        if (pts.length === 1) ctx2.lineTo(pts[0][0] * scale + 0.1, pts[0][1] * scale);
+        for (var i = 1; i < pts.length - 1; i++) { var mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2; ctx2.quadraticCurveTo(pts[i][0] * scale, pts[i][1] * scale, mx * scale, my * scale); }
+        if (pts.length > 1) { var l = pts[pts.length - 1]; ctx2.lineTo(l[0] * scale, l[1] * scale); }
+        ctx2.stroke();
+      };
+      var redraw = function () { ctx2.clearRect(0, 0, cv.width, cv.height); strokes.forEach(drawStroke); if (drawing) drawStroke(drawing); hint.style.display = (strokes.length || drawing) ? 'none' : ''; };
+      var pt = function (e) { var r = cv.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * HK_INK_W), Math.round((e.clientY - r.top) / r.height * HK_INK_H)]; };
+      cv.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (eC) {}
+        /* قلم: ضخامت با فشار؛ انگشت: ضخامت ثابت */
+        var w = e.pointerType === 'pen' && e.pressure > 0 ? Math.max(3, Math.min(10, 3 + e.pressure * 7)) : 6;
+        drawing = { c: color, w: Math.round(w * 10) / 10, p: [pt(e)] }; redraw();
+      });
+      cv.addEventListener('pointermove', function (e) {
+        if (!drawing) return; e.preventDefault();
+        var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+        evs.forEach(function (ce) { var q = pt(ce), l = drawing.p[drawing.p.length - 1]; if (Math.abs(q[0] - l[0]) + Math.abs(q[1] - l[1]) >= 3) drawing.p.push(q); });
+        redraw();
+      });
+      var end = function () { if (!drawing) return; strokes.push(drawing); drawing = null; redraw(); };
+      cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+      ov.querySelectorAll('.hk-ink-colors button').forEach(function (b) { b.onclick = function () { color = b.dataset.c; ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+      ov.querySelector('.hk-ink-undo').onclick = function () { strokes.pop(); redraw(); };
+      ov.querySelector('.hk-ink-clear').onclick = function () { strokes = []; redraw(); };
+      var close = function () { ov.classList.remove('open'); window.removeEventListener('resize', size); setTimeout(function () { try { ov.remove(); } catch (e) {} }, 200); };
+      ov._hkCancel = close;
+      ov.querySelector('.todo-cancel').onclick = close;
+      ov.querySelector('.todo-save').onclick = function () {
+        saveInkNote(t, id, strokes);
+        close();
+        refreshSmartPanelsFor(t, strokes.length ? ('todo-' + id) : 'todoAdd');
+      };
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      window.addEventListener('resize', size);
+      requestAnimationFrame(function () { ov.classList.add('open'); size(); });
+    }
+    try { window.openInkEditor = openInkEditor; window.openTodoChooser = openTodoChooser; } catch (eW2) {}
+
 
     var SMART_PANEL_PAGES = [
       { key: 'warn', build: spPageWarn, onTap: function (title) { spDismissDupPrompt(title); } },
@@ -26130,7 +26262,7 @@ async function openPdfPrintWindow(){
         spGo(function () { openPersonDetail(title, it.tab); spFlashRow(title, function () { return it.row; }, it.tab); });
       } },
       { key: 'insight', build: spPageInsight, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCats' }); }); } },
-      { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoEditor(title, null); } }
+      { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoChooser(title); } }
     ];
     function spDismissDupPrompt(title) {
       var d = HKAlerts.duplicates(title)[0];
@@ -26267,7 +26399,7 @@ async function openPdfPrintWindow(){
         while (f2 > 0.9 && overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); }
         /* جای خالی بود → فونت بزرگ‌تر تا متن باکس را پر کند */
         if (!overT()) {
-          while (f2 < (pg.closest('#homeSmartBox') ? 1.3 : 1.45)) { f2 += 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); if (overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); break; } }
+          while (f2 + 0.04 <= (pg.closest('#homeSmartBox') ? 1.3 : 1.45) + 1e-6) { f2 += 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); if (overT()) { f2 -= 0.04; pg.style.setProperty('--sp-fs', f2.toFixed(2)); break; } }
         }
         /* ۱.۳.۶۸: بزرگ شدن عنوان، ارتفاع نما را کم می‌کند؛ هر نکته دوباره هم‌قد نما شود (و اگر لازم شد کمی کوچک) */
         var hh2 = tips.clientHeight;
@@ -26278,7 +26410,7 @@ async function openPdfPrintWindow(){
       if (fr) {
         pg.style.setProperty('--sp-fs', '1');
         /* ۱.۳.۶۸: در باکس جدا، اگر جا هست درشت‌تر (تا پیش از اسکرول شدن) */
-        if (pg.closest('#homeSmartBox')) { var g1 = 1; while (g1 < 1.3 && fr.scrollHeight <= fr.clientHeight + 1) { g1 += 0.05; pg.style.setProperty('--sp-fs', g1.toFixed(2)); } if (fr.scrollHeight > fr.clientHeight + 1 && g1 > 1) pg.style.setProperty('--sp-fs', (g1 - 0.05).toFixed(2)); }
+        if (pg.closest('#homeSmartBox')) { var g1 = 1; while (g1 + 0.05 <= 1.3 + 1e-6 && fr.scrollHeight <= fr.clientHeight + 1) { g1 += 0.05; pg.style.setProperty('--sp-fs', g1.toFixed(2)); } if (fr.scrollHeight > fr.clientHeight + 1 && g1 > 1) pg.style.setProperty('--sp-fs', (g1 - 0.05).toFixed(2)); }
         fr.scrollTop = 0;
         var mark = function () { fr.classList.toggle('sp-more', fr.scrollHeight - fr.clientHeight - fr.scrollTop > 2); };
         mark();
@@ -26295,7 +26427,7 @@ async function openPdfPrintWindow(){
         if (h > 10 && pg.closest('#homeSmartBox')) {
           var catOver = function () { for (var q = 0; q < cats.length; q++) if (cats[q].scrollHeight > cats[q].clientHeight + 1) return true; return false; };
           var g2 = 1; pg.style.setProperty('--sp-fs', '1');
-          while (g2 < 1.15 && !catOver()) { g2 += 0.05; pg.style.setProperty('--sp-fs', g2.toFixed(2)); }
+          while (g2 + 0.05 <= 1.15 + 1e-6 && !catOver()) { g2 += 0.05; pg.style.setProperty('--sp-fs', g2.toFixed(2)); }
           if (catOver() && g2 > 1) pg.style.setProperty('--sp-fs', (g2 - 0.05).toFixed(2));
         }
         spAutoScroll(sc);
@@ -26337,7 +26469,7 @@ async function openPdfPrintWindow(){
          ۱.۳.۶۸: در باکس هوشمندِ جدا، همهٔ اسلایدها تا جایی که جا هست درشت می‌شوند تا نوشته‌ها کل ارتفاع را پر کنند */
       var _home = !!pg.closest('#homeSmartBox');
       if ((_home || pg.querySelector('.sp-tip')) && !over()) {
-        while (f < (_home ? 1.3 : 1.45)) { f += 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); if (over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); break; } }
+        while (f + 0.04 <= (_home ? 1.3 : 1.45) + 1e-6) { f += 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); if (over()) { f -= 0.04; pg.style.setProperty('--sp-fs', f.toFixed(2)); break; } }
       }
     }
     /* جابه‌جایی صفحه: dir = +1 بعدی، -1 قبلی (صفحهٔ بعدی از سمت چپ می‌آید؛ RTL) */
@@ -26403,7 +26535,8 @@ async function openPdfPrintWindow(){
         try {
           var lists = loadTodoLists(title), l = lists.filter(function (x) { return x.id === listId; })[0];
           if (!l) return;
-          pushToTrash('todo_list', 'کارهای من (' + toPersianDigits(String(l.items.length)) + ' مورد)', { sourceLabel: 'باکس هوشمند — ' + (title || ''), title: title, ym: todoYm(), id: l.id, items: JSON.parse(JSON.stringify(l.items)) });
+          if (Array.isArray(l.ink)) pushToTrash('todo_list', 'یادداشت دست‌نویس', { sourceLabel: 'باکس هوشمند — ' + (title || ''), title: title, ym: todoYm(), id: l.id, ink: JSON.parse(JSON.stringify(l.ink)) });
+          else pushToTrash('todo_list', 'کارهای من (' + toPersianDigits(String(l.items.length)) + ' مورد)', { sourceLabel: 'باکس هوشمند — ' + (title || ''), title: title, ym: todoYm(), id: l.id, items: JSON.parse(JSON.stringify(l.items)) });
           saveTodoList(title, listId, []);
           refreshSmartPanelsFor(title, 'todoAdd');
           showToast('فهرست به سطل زباله رفت');
@@ -36320,12 +36453,12 @@ if (item.type === 'recurring') {
       /* فهرست «کارهای من» باکس هوشمند */
       if (item.type === 'todo_list') {
         const d = item.data || {};
-        if (!d.id || !Array.isArray(d.items)) return false;
+        if (!d.id || !(Array.isArray(d.items) || Array.isArray(d.ink))) return false;
         try {
           const m = loadTodoMap(), k = (d.title || '').trim(), ym = d.ym || todoYm();
           if (!m[k] || typeof m[k] !== 'object' || Array.isArray(m[k])) m[k] = {};
           const lists = Array.isArray(m[k][ym]) ? m[k][ym] : [];
-          if (!lists.some(function (x) { return x && x.id === d.id; })) lists.push({ id: d.id, items: d.items });
+          if (!lists.some(function (x) { return x && x.id === d.id; })) lists.push(Array.isArray(d.ink) ? { id: d.id, ink: d.ink, at: Date.now() } : { id: d.id, items: d.items });
           m[k][ym] = lists;
           localStorage.setItem(TODO_KEY, JSON.stringify(m));
           refreshSmartPanelsFor(k, 'todo-' + d.id);
