@@ -183,6 +183,12 @@ async function seedRows(page) {
   ok(re.same, 'رنگ خط زیر همان رنگ گزینهٔ تازه');
   await T.ctx.close();
 
+  console.log('• دسته‌های واریز در باکس ثبت پیامک');
+  const Ic = await fresh(b);
+  const ic = await Ic.page.evaluate(() => ({ labs: HK_INCOME_CATS.map(c => c.label), icon: !!HK_CAT_ICONS.in_loanback }));
+  ok(ic.labs.indexOf('تسویه قرض') >= 0 && ic.labs.indexOf('اضافه‌کار') < 0 && ic.icon, 'دستهٔ «اضافه‌کار» برداشته و «تسویه قرض» (با آیکن) جایش آمد (' + ic.labs.join('، ') + ')');
+  await Ic.ctx.close();
+
   console.log('• حالت روز');
   const Lt = await fresh(b, 'light');
   await seedRows(Lt.page);

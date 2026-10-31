@@ -159,7 +159,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(re.pj && re.pj.join(',').indexOf('معمولی') >= 0 && re.pj.join(',').indexOf('پروژه') >= 0, 'ویرایش ردیف: نوع «معمولی/پروژه» قابل تغییر');
   ok(re.fits, 'ویرایش ردیف: همه‌چیز بدون اسکرول دیده می‌شود');
   const sm = await p.evaluate(() => ({ inc: HK_INCOME_CATS.map(x => x.label).join('،'), keep: !document.querySelector('.hk-share-keep') && !/نگه دار تا پیامک بیاید/.test(document.body.innerHTML.replace(/<style[\s\S]*?<\/style>/g, '')) }));
-  ok(['حقوق', 'اجاره', 'اضافه‌کار', 'پاداش', 'هدیه', 'فروش', 'سود'].every(x => sm.inc.indexOf(x) >= 0), 'دسته‌های درآمد: حقوق، اجاره، اضافه‌کار، پاداش، هدیه، فروش، سود');
+  /* ۱.۳.۶۸: «تسویه قرض» جای «اضافه‌کار» */
+  ok(['حقوق', 'اجاره', 'تسویه قرض', 'پاداش', 'هدیه', 'فروش', 'سود'].every(x => sm.inc.indexOf(x) >= 0), 'دسته‌های درآمد: حقوق، اجاره، تسویه قرض، پاداش، هدیه، فروش، سود');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ' — ' + errors.join(' | ') : ''));
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
