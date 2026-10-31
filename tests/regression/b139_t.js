@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   // 1) trash overlay + back
   const title = await p.evaluate(() => allPersonTitles()[0]);
   await p.evaluate(t => { saveTodoList(t, 'lx1', [{ t: 'نان', done: false }]); refreshSmartPanelsFor(t, 'todo-lx1'); }, title); await p.waitForTimeout(500);
-  await p.evaluate(() => { const el = document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box'); spShowTodoTrash(el, el._spPages[el._spIdx]); });
+  await p.evaluate(() => { const el = document.querySelector('#homeSmartBox .pc-smart-box'); spShowTodoTrash(el, el._spPages[el._spIdx]); });
   const before = await p.evaluate(() => !!document.querySelector('.sp-trash-ov'));
   await p.waitForTimeout(300); await p.evaluate(() => onBackGuard()); await p.waitForTimeout(200);
   console.log('trash ov before/after back', before, await p.evaluate(() => !!document.querySelector('.sp-trash-ov')), 'lists', await p.evaluate(t => loadTodoLists(t).length, title));

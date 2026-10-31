@@ -7,16 +7,16 @@ const { chromium } = require('playwright');
   // todo list create
   const title = await p.evaluate(() => allPersonTitles()[0]);
   await p.evaluate(t => { saveTodoList(t, 'lx1', [{ t: 'خرید نان', done: false }]); refreshSmartPanelsFor(t, 'todo-lx1'); }, title); await p.waitForTimeout(600);
-  const box = await p.evaluate(() => { const el = document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box'); const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, key: el._spPages[el._spIdx].key }; });
+  const box = await p.evaluate(() => { const el = document.querySelector('#homeSmartBox .pc-smart-box'); const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, key: el._spPages[el._spIdx].key }; });
   console.log('page', box.key);
-  console.log('efp', await p.evaluate(b => { const e = document.elementFromPoint(b.x, b.y); window._lg=[]; ['pointerdown','pointercancel','pointerup','touchstart','touchend'].forEach(n=>document.addEventListener(n,ev=>window._lg.push(n+':'+(ev.target.closest&&ev.target.closest('.pc-smart-box')?'sb':ev.target.className)),true)); const sb=document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box'); return [e && e.className, sb.contains(e)]; }, box));
+  console.log('efp', await p.evaluate(b => { const e = document.elementFromPoint(b.x, b.y); window._lg=[]; ['pointerdown','pointercancel','pointerup','touchstart','touchend'].forEach(n=>document.addEventListener(n,ev=>window._lg.push(n+':'+(ev.target.closest&&ev.target.closest('.pc-smart-box')?'sb':ev.target.className)),true)); const sb=document.querySelector('#homeSmartBox .pc-smart-box'); return [e && e.className, sb.contains(e)]; }, box));
   // long press via touch: use CDP touch events
   const cdp = await ctx.newCDPSession(p);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x, y: box.y }] });
   await p.waitForTimeout(200);
-  console.log('mid', await p.evaluate(()=>{const sb=document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box'); return [sb._spLpArmed, sb._spIdx, sb._spPages[sb._spIdx].key, typeof HomeCarousel!=='undefined'&&HomeCarousel.busy()];}));
+  console.log('mid', await p.evaluate(()=>{const sb=document.querySelector('#homeSmartBox .pc-smart-box'); return [sb._spLpArmed, sb._spIdx, sb._spPages[sb._spIdx].key, typeof HomeCarousel!=='undefined'&&HomeCarousel.busy()];}));
   await p.waitForTimeout(450);
-  console.log('mid2', await p.evaluate(()=>{const sb=document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box'); return [sb._spLpArmed, !!sb.querySelector('.sp-trash-ov'), !!document.querySelector('.sp-trash-ov')];}), errs);
+  console.log('mid2', await p.evaluate(()=>{const sb=document.querySelector('#homeSmartBox .pc-smart-box'); return [sb._spLpArmed, !!sb.querySelector('.sp-trash-ov'), !!document.querySelector('.sp-trash-ov')];}), errs);
   await p.waitForTimeout(50);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await p.waitForTimeout(300);
