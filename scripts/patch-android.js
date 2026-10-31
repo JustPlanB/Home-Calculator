@@ -698,7 +698,7 @@ public class HkQuickActivity extends Activity {
     et.setHint("بابت چی بود؟ (شرح)"); et.setHintTextColor(0xFF8E8E93); et.setTextColor(0xFFFFFFFF); et.setTextSize(19);
     et.setSingleLine(true); et.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); et.setImeOptions(EditorInfo.IME_ACTION_DONE);
     /* ۱.۳.۶۴: هایلایت آبی (همان آبی نرم‌افزار) تا فیلد شرح سریع پیدا شود */
-    GradientDrawable etBg=round(0xFF28363E,14); etBg.setStroke(Math.max(2,dp(1.5f)),0xFF0090D4); et.setBackground(etBg); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+    GradientDrawable etBg=round(0xFF28363E,14); etBg.setStroke(Math.max(2,dp(1.5f)),0xFF08B5F5); et.setBackground(etBg); et.setPadding(dp(14),dp(12),dp(14),dp(12)); et.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL); et.setTextDirection(View.TEXT_DIRECTION_RTL); et.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
     /* ۱.۳.۴۵: نشانگر تایپ سفید (قبلاً مشکی و نامعلوم بود) */
     if(android.os.Build.VERSION.SDK_INT>=29){ GradientDrawable cur=new GradientDrawable(); cur.setColor(0xFFFFFFFF); cur.setSize(dp(2),dp(22)); et.setTextCursorDrawable(cur); }
     LinearLayout.LayoutParams lp2=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,dp(54)); lp2.topMargin=dp(12);
