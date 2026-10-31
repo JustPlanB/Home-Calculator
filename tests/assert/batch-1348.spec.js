@@ -46,13 +46,13 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const pj = await p.evaluate(async (t) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     renderHomeCards(); await w(200);
-    const el = document.querySelector('#homeCards .person-card:not(.hc-clone) .pc-smart-box');
+    const el = document.querySelector('#homeSmartBox .pc-smart-box');
     _smartPanelState[t] = _smartPanelState[t] || {}; _smartPanelState[t].key = 'projects';
     mountSmartPanel(el, t); fitSmartPanel(el); await w(300);
     const boxes = [...el.querySelectorAll('.sp-projs .sp-tipbox')];
     const sc = el.querySelector('.sp-projs');
     return {
-      n: boxes.length, full: boxes.every(x => Math.abs(x.clientHeight - sc.clientHeight) <= 2),
+      n: boxes.length, full: boxes.every(x => Math.abs(x.clientHeight - sc.clientHeight) <= 2), dbg: boxes.map(x => x.clientHeight + '/' + sc.clientHeight).join(','),
       first: boxes.map(x => x.querySelector('.sp-tip').textContent),
       second: boxes.map(x => (x.querySelectorAll('.sp-tip')[1] || {}).textContent),
       colored: boxes.every(x => /color/.test(x.querySelector('.sp-pj-t').getAttribute('style') || '')),
@@ -60,7 +60,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
       bigTitle: boxes.every(x => parseFloat(getComputedStyle(x.querySelector('.sp-pj-t')).fontSize) > parseFloat(getComputedStyle(x.querySelectorAll('.sp-tip')[1]).fontSize))
     };
   }, title);
-  ok(pj.n === 2 && pj.full, 'هر پروژه یک نمای کامل اسلاید (۲ پروژه، اسکرول عمودی)');
+  ok(pj.n === 2 && pj.full, 'هر پروژه یک نمای کامل اسلاید (۲ پروژه، اسکرول عمودی) (' + pj.n + ' ' + pj.dbg + ')');
   ok(pj.first.every(s => /^پروژه /.test(s)) && pj.second.every(s => s === 'این ماه:'), 'اسم پروژه بالا، «این ماه:» در خط بعد');
   ok(pj.colored, 'عنوان «پروژه فلان» به رنگ همان پروژه');
   /* ۱.۳.۴۹: اسم پروژه درشت‌تر، بقیهٔ متن‌ها هم‌اندازه */

@@ -149,7 +149,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     return out;
   });
   ok(JSON.stringify(h.items) === '["ثبت درآمد","ثبت خرج"]', 'باکس کوچک: بالا «ثبت درآمد»، پایین «ثبت خرج»');
-  ok(h.colors[0] === 'rgb(158, 232, 88)' && h.colors[1] === 'rgb(255, 107, 74)' && h.lightColors[0] === 'rgb(63, 154, 92)' && h.lightColors[1] === 'rgb(220, 38, 38)', 'سبز و قرمز خود نرم‌افزار در هر دو تم');
+  ok(h.colors[0] === 'rgb(158, 232, 88)' && h.colors[1] === 'rgb(255, 107, 74)' && h.lightColors[0] === 'rgb(23, 131, 74)' /* ۱.۳.۶۸: سبز عمیق‌تر حالت روز */ && h.lightColors[1] === 'rgb(220, 38, 38)', 'سبز و قرمز خود نرم‌افزار در هر دو تم');
   ok(h.title === 'ثبت خرج' && h.needAmount, 'باکس ثبت ردیف با عنوان «ثبت خرج»؛ بی‌مبلغ ثبت نمی‌شود');
   ok(h.cancelNoRow, 'انصراف: ردیفی اضافه نمی‌شود');
   ok(h.saved.length === 1 && h.saved[0] === '5|paid', 'ثبت درآمد با تاریخ امروز ذخیره شد');

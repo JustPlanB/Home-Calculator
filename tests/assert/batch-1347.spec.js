@@ -75,7 +75,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.noChip = !box.querySelector('.hk-re-chip');
     const on = box.querySelector('.hk-re-segb.on');
     out.segOn = on.textContent + '|' + getComputedStyle(on).color;
-    const paidB = box.querySelector('.hk-re-segb.is-paid'); paidB.click(); await w(50); out.firstTapOnlyClose = !paidB.classList.contains('on'); paidB.click(); await w(50);
+    const paidB = box.querySelector('.hk-re-segb.is-paid'); paidB.click(); await w(50); out.firstTapOnlyClose = !paidB.classList.contains('on'); paidB.click(); await w(450); /* ۱.۳.۶۸: رنگ با حرکت ۰٫۳۴ ثانیه‌ای عوض می‌شود */
     out.segPaid = getComputedStyle(paidB).color;
     out.fileBtn = !!box.querySelector('.hk-re-fbtn');
     const fl = box.querySelector('.hk-re-flink'); out.fileTxt = fl ? fl.textContent : '';
