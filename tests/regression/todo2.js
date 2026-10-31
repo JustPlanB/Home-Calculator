@@ -15,10 +15,10 @@ const { chromium } = require('playwright');
     await p.mouse.click(c[0], c[1]); await p.waitForTimeout(350);
   };
   // + → new list (editor empty)
-  await tapPage('^todoAdd$');
+  await tapPage('^todoAdd$'); await p.click('#hkTodoPick [data-k="todo"]'); await p.waitForTimeout(300); /* ۱.۳.۶۹: «+» اول می‌پرسد: دست‌نویس یا فهرست */
   out.newEmpty = await p.evaluate(() => document.querySelectorAll('.todo-row').length);
   await p.fill('.todo-input', 'کار الف'); await p.click('.todo-save'); await p.waitForTimeout(500);
-  await tapPage('^todoAdd$');
+  await tapPage('^todoAdd$'); await p.click('#hkTodoPick [data-k="todo"]'); await p.waitForTimeout(300); /* ۱.۳.۶۹: «+» اول می‌پرسد: دست‌نویس یا فهرست */
   out.newEmpty2 = await p.evaluate(() => document.querySelectorAll('.todo-row').length);
   await p.fill('.todo-input', 'کار ب'); await p.click('.todo-save'); await p.waitForTimeout(500);
   out.afterTwo = await keys();

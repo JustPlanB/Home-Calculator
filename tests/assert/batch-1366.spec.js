@@ -142,16 +142,16 @@ async function fresh(b, theme) {
     const row = Object.assign(emptyRow('expense'), { day: '5', desc: 'نان', amount: 50000, status: 'paid', time: '14:05' });
     sec.rows.push(row);
     hkOpenRowEdit({ row, tab: 'expense', sec, num: 1, title: sec.title }); await w(300);
-    const pills = [...document.querySelectorAll('#hkRowEdit .hk-re-pill')];
+    const pills = [...document.querySelectorAll('#hkRowEdit .hk-re-pill')].sort((a, b) => (/:/.test(a.querySelector('b').textContent) ? 1 : 0) - (/:/.test(b.querySelector('b').textContent) ? 1 : 0)); /* ۱.۳.۶۹: ترتیب تاریخ/ساعت عوض شد */
     const tSmall = pills[1].querySelector('.hk-re-greg'), dSmall = pills[0].querySelector('.hk-re-greg');
     const out = { t: pills[1].querySelector('b').textContent, tg: tSmall ? tSmall.textContent : null, dg: dSmall ? dSmall.textContent : null };
-    const acc = document.querySelector('#hkRowEdit .hk-re-pair .hk-re-f:first-child .hk-re-sel');
+    const acc = [...document.querySelectorAll('#hkRowEdit .hk-re-group .hk-re-row')].find(r => (r.querySelector('.hk-re-rl') || {}).textContent === 'حساب');
     const r0 = acc.getBoundingClientRect();
     acc.click(); await w(150);
     const opts = [...document.querySelectorAll('.hk-re-list .dark-select-option')];
     opts[opts.length - 1].click(); await w(250);
     const box = document.querySelector('#hkRowEdit .hk-re-newacc .hk-bulk-newacc');
-    const r1 = box.getBoundingClientRect();
+    const r1 = box.closest('.hk-re-newacc').getBoundingClientRect(); /* ۱.۳.۶۹: قاب باکس جای ردیف حساب */
     out.same = ['left', 'top', 'width', 'height'].every(k => Math.abs(r0[k] - r1[k]) < 0.6);
     out.dims = [r0.width, r0.height, r1.width, r1.height].map(v => Math.round(v * 10) / 10).join('/');
     out.focus = document.activeElement === box.querySelector('.hk-bulk-newinp');
