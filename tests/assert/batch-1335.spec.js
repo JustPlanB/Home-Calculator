@@ -138,17 +138,19 @@ async function page(b, inbox) {
     out.led = [...el.querySelectorAll('.sp-tip')].map(x => x.textContent).join(' | ');
     periodData.expense.sections[0].rows = [['انتقال به کارت مامان', 9000000], ['نان', 200000], ['بنزین', 500000]].map(([d, a], k) => Object.assign(emptyRow('expense'), { day: String(k + 2), desc: d, amount: a, status: 'paid' }));
     el.innerHTML = spPageBiggest({ title: t });
-    out.big = [el.querySelector('.sp-item .sp-l').textContent, el.querySelector('.sp-item .sp-right') ? el.querySelector('.sp-item .sp-right').textContent : ''].join('|');
+    out.big = [el.querySelector('.sp-h').textContent, el.querySelector('.sp-item .sp-l').textContent, el.querySelector('.sp-item .sp-v').textContent].join('|');
     return out;
   });
-  ok(u.cols === '2.4em,21.5%', 'ستون روز کمی پهن‌تر و شرح کمی باریک‌تر (' + u.cols + ')');
+  /* ۱.۳.۶۸: ستون روز همان ۲٫۴em؛ شرح عرض ثابت ندارد و هرچه از ستون مبلغِ باریک‌شده بماند مال اوست */
+  ok(u.cols === '2.4em,', 'ستون روز ۲٫۴em و شرح باقی عرض (' + u.cols + ')');
   ok(u.normal && !u.msOn, 'جستجو فقط یک جدول دارد: «نتیجهٔ جستجو» (جدول ماه‌ها برداشته شد)');
   ok(u.td === 'rgba(0, 0, 0, 0)' && u.fh, 'جدول‌های جستجو مثل جدول‌های درآمد/مخارج (ردیف‌ها روی زمینهٔ جدول)؛ کادر فیلترها همرنگ عنوان جدول‌ها');
   ok(u.x === 'rgba(0, 0, 0, 0),rgba(0, 0, 0, 0),rgb(255, 69, 58),rgb(255, 69, 58)' && u.play === '26px', '× پیوست‌ها بی پس‌زمینه (فقط ضربدر قرمز)؛ دکمهٔ پخش کوچک‌تر (' + u.x + ' / ' + u.play + ')');
   ok(/پیوست‌ها هم پشتیبان شوند/.test(u.ask) && /۲ فایل/.test(u.ask) && u.round, 'پشتیبان دستی: پیشنهاد پشتیبان از عکس‌ها و صداها؛ فایل‌ها در پشتیبان ذخیره و با بازیابی برمی‌گردند');
   ok(/^sp-row\|.*٪.*\|true\|true\|.*میلیون/.test(u.ov), 'وضعیت این ماه: درصد بالای لوله (چپ‌چین)، مبلغ زیر لوله (راست‌چین) (' + u.ov + ')');
   ok(u.led === '«سارا» از «علی» ۲ میلیون طلبکار است | «سارا» به «رضا» ۵۰۰,۰۰۰ بدهکار است', 'طلب و بدهی: «x از y مبلغ طلبکار است» / «x به y مبلغ بدهکار است»');
-  ok(u.big === 'بزرگ‌ترین خرج: انتقال به کارت مامان|۹ میلیون', 'بزرگ‌ترین خرج: شرح بی نقطه، مبلغ راست‌چین زیرش (' + u.big + ')');
+  /* ۱.۳.۶۸: اسلاید «بزرگ‌ترین خرج‌های ماه»: هر خرج یک سطر (شرح و مبلغ) */
+  ok(/^بزرگ‌ترین خرج‌های ماه\|انتقال به کارت مامان\|۹ میلیون$/.test(u.big), 'بزرگ‌ترین خرج‌ها: شرح و مبلغ هر خرج در یک سطر (' + u.big + ')');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

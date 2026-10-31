@@ -78,13 +78,20 @@ async function fresh(b, theme) {
       led.sections.push({ id: 'S' + s, personA: 'من', personB: 'نفر ' + s, collapsed: true, rows });
     }
     persistCurrent(); touchLocal(); await saveArchive();
-    openFeatureSheet('ledger'); await w(600);
   });
-  const lz = await L.page.evaluate(() => {
+  /* ۱.۳.۶۸: ردیف‌های روابط بسته هنگام باز شدن منو ساخته نمی‌شوند؛ بعد، در زمان بیکاری، پنهان آماده می‌شوند */
+  const lz = await L.page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    openFeatureSheet('ledger');
     const secs = [...document.querySelectorAll('#sections-ledger .section')];
-    return { n: secs.length, allCollapsed: secs.every(s => s.classList.contains('collapsed')), rows: secs.map(s => s.querySelectorAll('tbody tr').length) };
+    const now = secs.map(s => s.querySelectorAll('tbody tr').length);
+    await w(2500);
+    const later = secs.map(s => s.querySelectorAll('tbody tr').length);
+    const hidden = secs.every(s => s.classList.contains('collapsed') && s.querySelector('.section-body').getBoundingClientRect().height === 0);
+    return { n: secs.length, allCollapsed: secs.every(s => s.classList.contains('collapsed')), rows: now, later, hidden };
   });
-  ok(lz.n === 4 && lz.allCollapsed && lz.rows.every(n => n === 0), 'منو با روابط بسته باز می‌شود و ردیف‌ها تا اولین باز شدن ساخته نمی‌شوند (' + lz.rows.join(',') + ')');
+  ok(lz.n === 4 && lz.allCollapsed && lz.rows.every(n => n === 0), 'منو با روابط بسته باز می‌شود و ردیف‌ها همان لحظه ساخته نمی‌شوند (' + lz.rows.join(',') + ')');
+  ok(lz.later.every(n => n === 18) && lz.hidden, 'بعد از باز شدن منو، ردیف‌ها در زمان بیکاری پنهان و بی‌ارتفاع آماده شدند (' + lz.later.join(',') + ')');
   await L.page.evaluate(() => {
     window.__saves = 0;
     const s0 = window.scheduleSave, a0 = window.saveArchive, t0 = window.touchLocal;
@@ -118,7 +125,7 @@ async function fresh(b, theme) {
     if (fr.maxGap < 120) break;
   }
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-  ok(best.opened && best.built === 18 && best.capped && best.closed, 'باز شدن: ۱۸ ردیف همان لحظه ساخته و سقف ۱۰ ردیف یک بار اندازه گرفته شد؛ بسته شدن دوباره');
+  ok(best.opened && best.built === 18 && best.capped && best.closed, 'باز شدن: ۱۸ ردیف آماده و سقف ۱۰ ردیف اندازه گرفته شده؛ بسته شدن دوباره');
   ok(best.maxGap < 120, 'پردازندهٔ ۴ برابر کندتر: بلندترین فاصلهٔ فریم در باز/بسته شدن ' + best.maxGap + 'ms (کلیک ' + best.clickMs + 'ms)');
   await L.page.waitForTimeout(800);
   const sv = await L.page.evaluate(() => window.__saves);
@@ -164,11 +171,12 @@ async function fresh(b, theme) {
     const btn = document.querySelector('.home-circle-add'), bc = document.getElementById('homeBalanceCircle');
     hkHomeAddMenu(btn); await new Promise(r => setTimeout(r, 200));
     const pop = document.querySelector('#hkAddPop .hk-add-pop'), r = btn.getBoundingClientRect(), p = pop.getBoundingClientRect(), c = bc.getBoundingClientRect();
-    const out = { right: p.left >= r.left + r.width / 2 - 1 && p.left + p.width / 2 > r.right, between: p.right <= c.left + 12, top: Math.abs(p.top - Math.max(8, r.top - p.height - 10)) < 1.5, above: p.bottom <= r.top };
+    /* ۱.۳.۶۸: صفحهٔ خانهٔ تازه: باکس درست بالای «+» و هم‌محور با آن، بی‌آنکه روی دایرهٔ موجودی بیفتد */
+    const out = { right: Math.abs((p.left + p.width / 2) - (r.left + r.width / 2)) < 2 || p.left <= 8.5, between: p.right <= c.left, top: Math.abs(p.top - Math.max(8, r.top - p.height - 10)) < 1.5, above: p.bottom <= r.top };
     document.getElementById('hkAddPop').remove();
     return out;
   });
-  ok(ap.right && ap.between && ap.top && ap.above, 'باکس «+» سمت راست دایره، میان آن و دایرهٔ موجودی، در همان ارتفاع قبلی (' + JSON.stringify(ap) + ')');
+  ok(ap.right && ap.between && ap.top && ap.above, 'باکس «+» درست بالای آن، دور از دایرهٔ موجودی (' + JSON.stringify(ap) + ')');
   await R.ctx.close();
 
   console.log('• متن سفید دکمه‌های آبی');
