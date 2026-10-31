@@ -1,0 +1,89 @@
+/* =====================================================================
+   حساب‌کتاب — لایهٔ تثبیت سیستم طراحی (نمونهٔ اولیه، روی نرم‌افزار فعلی)
+   این فایل فقط برای پیش‌نمایش است و در index.html نیست. آخر از همه بار می‌شود و
+   فقط مقدارهای ناهماهنگ را به توکن‌ها برمی‌گرداند؛ چیدمان، جای اجزا، رفتارها،
+   سایه‌های فرورفتهٔ خانه و رنگ‌های واریز/برداشت دست نمی‌خورند.
+   هر بخش شمارهٔ یافتهٔ متناظر در گزارش ممیزی را دارد (F1…F10).
+   ===================================================================== */
+
+/* ---------- پل توکن‌های قدیمی به توکن‌های تازه (بدون تغییر نام در کد) ---------- */
+html:not([data-theme="light"]) {
+  --accent: var(--hk-primary); --accent2: var(--hk-primary);
+  --btn-danger: var(--hk-danger);
+  --muted: var(--hk-muted);
+  --unpaid-c: var(--hk-unsettled);
+}
+html[data-theme="light"] {
+  --accent: var(--hk-primary); --accent2: var(--hk-primary);
+  --btn-danger: var(--hk-danger);
+  --unpaid-c: var(--hk-unsettled);
+  /* F7: برداشت در حالت روشن همه‌جا همان قرمز تأییدشده (این متغیر هنوز #ff6b4a بود) */
+  --red-tx: var(--hk-expense);
+}
+
+/* ---------- F1: یک آبی برای همهٔ دکمه‌های اصلی (پنج آبی ← یکی) ---------- */
+/* «بلی» تأیید حذف و «پاک کردن» سطل زباله عمداً قرمز می‌مانند (کار مخرب) */
+.modal-btn.yes:not(#confirmYes):not(#rcReplace):not([onclick*="emptyTrash"]), .modal-btn.primary, .modal-btn[style*="0a84ff"]:not(#confirmYes),
+#securityModal .sec-btn-primary, #pinSetupOverlay .pin-ok, .cro-done,
+.hk-bulk-ok, .hk-bulk-read, .hk-re-ok, .hk-rc-done,
+#backupMergeBtn, #hkExpGo, #bankAddOk, #urOk, #rcRename, .upd-prompt-go, #updDlg .upd-go.upd-dl, .vo-offline, .vo-retry, .sv-editor .sv-ok {
+  background: var(--hk-primary) !important; background-color: var(--hk-primary) !important;
+  color: var(--hk-on-primary) !important; -webkit-text-fill-color: var(--hk-on-primary) !important; border-color: var(--hk-primary) !important;
+}
+.hk-switch.on, .perm-row.on .perm-sw, .hk-ar-fill { background: var(--hk-primary) !important; }
+.hk-ar-val { color: var(--hk-primary) !important; }
+
+/* ---------- F2: دکمه‌های عمل پنجره‌ها: یک اندازه، یک گردی، یک نوشته ---------- */
+.modal-box .modal-btn, .modal-box .modal-actions button, #securityModal .sec-btn-primary,
+.hk-bulk-btns > button, .hk-re-btns > button, #pinSetupOverlay .pin-ok {
+  min-height: var(--hk-h-btn) !important; border-radius: var(--hk-r-control) !important;
+  font-family: inherit !important; font-size: var(--hk-fs-control) !important; font-weight: var(--hk-fw-bold) !important;
+}
+/* دکمهٔ ثانویه (انصراف/بستن): یک زمینه در هر حالت؛ «بستن» امنیت دیگر خاکستری جدا (#6b6b6b) ندارد */
+.modal-btn.no, .modal-box .modal-btn:not(.yes):not(.primary):not(.danger):not(.hk-bulk-open-btn):not([style*="background"]), #securityModal .modal-btn:not(.sec-btn-primary):not(.yes), .hk-re-no, .hk-bulk-btns > button:not(.hk-bulk-ok):not(.hk-bulk-read) {
+  background: var(--btn-sec) !important; background-color: var(--btn-sec) !important; color: var(--btn-sec-tx) !important;
+}
+
+/* ---------- F3: قاب پنجره‌ها: سه گردی (۱۲/۱۴/۱۸) ← یکی؛ سایهٔ هر حالت یکی ---------- */
+.modal-box, .hk-bulk-box, .hk-re-box { border-radius: var(--hk-r-card) !important; box-shadow: var(--hk-shadow-modal) !important; }
+/* استثنا: باکس ویرایش ردیف فشرده می‌ماند (فاصلهٔ داخلی کمتر عمداً، تا بی‌اسکرول جا شود) */
+
+/* ---------- F4: فیلدهای پنجره‌ها: یک ارتفاع و گردی ---------- */
+.modal-box input[type="text"], .modal-box input[type="search"], .modal-box input[type="tel"], .modal-box input[type="number"], .modal-box input[type="password"], .modal-box input:not([type]),
+.modal-box select, .modal-box .fancy-select-btn, .modal-box .dark-select-btn, .hk-re-in:not(textarea) {
+  min-height: 40px; border-radius: var(--hk-r-control) !important;
+}
+
+/* ---------- F5: کمترین اندازهٔ نوشته ۱۱px (۸٫۹ تا ۱۰٫۹px قبلی) ---------- */
+.home-tile span, .home-box.box3 .home-tile span, .home-tile span.tile-1line,
+.person-detail-table th.pd-file-h, #searchResultBox th.sr-num-h, .hk-ar-tick, .preapp-tag, .person-stat-meter .m-lab,
+.st-skip-note, .st-card-h small, .ib-acc-detail, .instant-bal-sub, .hk-prof-tile small, .hk-prof-bk small, .hk-rc-row b small, .hk-rc-big small,
+.sms-cat-strip .sms-cat, .sms-cat-row .sms-cat, select.status-select, .hk-att-beta {
+  font-size: var(--hk-fs-caption) !important;
+}
+.hk-ar-tick small, .rec-row-tag, .rec-row-tag.preapp-tag, .sp-cat-chip.sm { font-size: 10px !important; } /* استثنا: واحد زیر عدد محور، جای بیشتری ندارد */
+.st-ax, .st-dc2 { font-size: 10.5px !important; }
+
+/* ---------- F6: ناحیهٔ لمس دکمه‌های آیکنی کوچک (ظاهر همان؛ ناحیهٔ نامرئی ۴۰px) ---------- */
+/* فقط آن‌هایی که امروز static هستند position می‌گیرند؛ بقیه (absolute) دست نمی‌خورند تا جایشان عوض نشود */
+.btn-edit-title, .btn-del-row, .pd-file-btn, .hk-re-newback { position: relative; }
+.btn-edit-title::after, .btn-del-row::after, .pd-file-btn::after, .bs-desc-clr::after, .hk-re-newback::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: var(--hk-hit-min); height: var(--hk-hit-min); transform: translate(-50%, -50%);
+}
+
+/* ---------- F8: تسویه‌نشده در همه‌جا یک رنگ (زرد/نارنجی/قرمز ← زرد تأییدشده) ---------- */
+.stats-sheet { --st-unpaid: var(--hk-unsettled) !important; }
+.hk-rl-st.u, .sp-page .def { color: var(--hk-unsettled) !important; }
+.sp-bar i.def { background: var(--hk-unsettled) !important; }
+/* «تسویه» قرض: همان خاکستری‌آبی ۱.۳.۵۷، از توکن */
+.hk-led-seg .hk-led-st-settled.on { color: var(--hk-settled) !important; }
+
+/* ---------- F9: هشدار «نیاز به توجه» یک رنگ (#ffc531 در تیره، کهربایی خوانا در روشن) ---------- */
+html[data-theme="light"] .sms-acc-new, html[data-theme="light"] .hk-recon-grid .hk-recon-diff, html[data-theme="light"] .hk-bulk-fdup, html[data-theme="light"] .rec-term-range { color: var(--hk-warning) !important; }
+html[data-theme="light"] .pd-acc-btn.acc-missing, html[data-theme="light"] .sms-acc-need .fancy-select-btn { border-color: var(--hk-warning) !important; }
+
+/* ---------- F10: کار مخرب یک قرمز ---------- */
+.modal-btn.danger, .modal-btn[onclick*="emptyTrash"], #confirmYes.danger { background: var(--hk-danger) !important; }
+
+/* ---------- عمومی: دکمه‌هایی که فونت مرورگر (۱۳٫۳px) می‌گرفتند ---------- */
+button, input, select, textarea { font-family: inherit; }
