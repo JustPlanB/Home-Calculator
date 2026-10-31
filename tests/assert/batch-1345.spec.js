@@ -247,7 +247,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(misc.jig && misc.jigOff, 'لرزش کارت با دکمهٔ بازگشت لغو می‌شود');
   /* ۱.۳.۴۷: «⚠ پیامک شخصی از طرف «شماره»» */ ok(/^⚠️\s*پیامک شخصی از طرف «\+۹۸۹۳۳۳۶۶۶۲۳۳»$/.test(misc.warn), 'هشدار پیامک شخصی و «+» جلوی ۹۸ (' + misc.warn + ')');
-  ok(misc.col === 'rgb(0, 183, 255)', '«+ ردیف تازه در مخارج» همان آبی دکمه‌های + نرم‌افزار');
+  ok(misc.col === 'rgb(8, 181, 245)', '«+ ردیف تازه در مخارج» همان آبی دکمه‌های + نرم‌افزار');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

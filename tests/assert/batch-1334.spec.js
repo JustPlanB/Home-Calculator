@@ -104,7 +104,7 @@ async function page(b, inbox, opts) {
     out.pop = (document.querySelector('.pd-desc-popup') || {}).textContent || '';
     out.hdr = [...document.querySelectorAll('#panel-expense .person-detail-sticky th')].map(x => x.textContent);
     const fb = [...document.querySelectorAll('#panel-expense .pd-file-btn')];
-    out.fileGrey = fb.length === 2 && fb.every(x => !x.classList.contains('has-att')) && getComputedStyle(fb[0]).color === 'rgb(142, 142, 147)';
+    out.fileGrey = fb.length === 2 && fb.every(x => !x.classList.contains('has-att')) && /^rgb\((142, 142, 147|152, 152, 159|110, 110, 118)\)$/.test(getComputedStyle(fb[0]).color);
     fb[0].click(); await w(200);
     out.attOpen = !!document.getElementById('hkAttachOv');
     const ov = document.getElementById('hkAttachOv');

@@ -160,7 +160,7 @@ const ACC = 'ملت مصنوعی';
   ok(sw.autoIsSwitch && sw.autoOff, 'پشتیبان خودکار: به جای چک‌باکس، کلید روشن/خاموش');
   ok(sw.encDisabled && sw.autoOn && sw.encEnabled && sw.offAgain, 'رمزنگاری پشتیبان خودکار تا وقتی پشتیبان خودکار خاموش است پنهان است (از ۱.۳.۲۳)');
   ok(sw.encNoText, 'کلید رمزنگاری بدون نوشته');
-  ok(sw.size === '38px x 22px'.replace(' x ', 'x') && sw.onBg === 'rgb(10, 132, 255)' && sw.sameAsNotif, 'اندازهٔ کلیدها مثل کلید اعلان‌ها و داخلشان آبی (' + sw.size + ', ' + sw.onBg + ')');
+  ok(sw.size === '38px x 22px'.replace(' x ', 'x') && sw.onBg === 'rgb(8, 181, 245)' && sw.sameAsNotif, 'اندازهٔ کلیدها مثل کلید اعلان‌ها و داخلشان آبی (' + sw.size + ', ' + sw.onBg + ')');
   ok(sw.pwSwitch && sw.box && sw.mismatch && sw.pwOn && sw.pwOff, '«رمز فایل پشتیبان»: کلید روشن/خاموش؛ روشن کردن باکس دو فیلد رمز باز می‌کند و رمز تکراری را می‌سنجد');
   ok(sw.backCancel, 'بازگشت روی باکس رمز: انصراف و کلید خاموش ماند');
 

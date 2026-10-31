@@ -63,7 +63,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const x = s.filter(r => r.selectorText && r.selectorText.indexOf('.sp-pick-x') === 0).pop();
     return x ? { c: x.style.color, bg: x.style.background || x.style.backgroundColor } : null;
   });
-  ok(cx && /255, 69, 58|#ff453a/i.test(cx.c) && /none/.test(cx.bg), '× حذف دسته: آیکون کوچک قرمز بدون دایره و فریم');
+  ok(cx && /255, 69, 58|#ff453a|--hk-danger/i.test(cx.c) && /none/.test(cx.bg), '× حذف دسته: آیکون کوچک قرمز بدون دایره و فریم');
   const fl = await p.evaluate(() => [...document.styleSheets].flatMap(x => { try { return [...x.cssRules]; } catch (e) { return []; } }).some(r => r.name === 'spFlashRowSh'));
   ok(fl, 'هایلایت ردیف با سایهٔ داخلی (روی ردیف پروژه هم آبی دیده می‌شود)');
 
@@ -170,7 +170,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   });
   ok(mn.first === 'menuSmsLater', '«پیامک‌های ثبت‌نشده» اولین آیتم بخش‌ها');
   ok(!mn.newRow && mn.rows === 40 && mn.more && mn.after > 40, 'شِیر: «ردیف تازه» برداشته شد؛ ۴۰ ردیف + «بیشتر» برای قدیمی‌ترها');
-  ok(mn.lab === 'حساب جدید:' && /0, 183, 255/.test(mn.onCol), 'ثبت گروهی: «حساب جدید:» و آبی دور پوشهٔ تیک‌خورده همان آبی');
+  ok(mn.lab === 'حساب جدید:' && /8, 181, 245/.test(mn.onCol), 'ثبت گروهی: «حساب جدید:» و آبی دور پوشهٔ تیک‌خورده همان آبی');
   ok(mn.backToRange && mn.closed, 'ثبت گروهی: «بستن» بعد از آمدن پوشه‌ها به انتخاب بازه برمی‌گردد؛ بار دوم می‌بندد');
 
   console.log('• آیکون ادیت با «بازگشت»');

@@ -35,7 +35,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     window.onBankSmsReceived('بانک ملت\nبرداشت 25,000,000\n05/08/05-10:00', { nid: 11 }); await w(700);
     const d = document.getElementById('smsConfirmDesc');
     const cs = getComputedStyle(d);
-    out.blue = cs.borderTopColor === 'rgb(0, 144, 212)' && /rgba\(0, 144, 212, 0\.1/.test(cs.backgroundColor);
+    out.blue = cs.borderTopColor === 'rgb(8, 181, 245)' && /rgba\(8, 181, 245, 0\.1/.test(cs.backgroundColor);
     out.hint = d.getAttribute('enterkeyhint');
     out.rpt = !!document.getElementById('smsRptMatch');
     out.rptRed = out.rpt && /255, 107, 74/.test(getComputedStyle(document.getElementById('smsRptMatch')).borderTopColor);
