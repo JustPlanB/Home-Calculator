@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حساب‌کتاب سه طرح</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Noto+Naskh+Arabic:wght@500;600;700&display=swap">
+<style>
+/* صفحهٔ نمایش: نوار انتخاب طرح/صفحه/حالت + قاب گوشی (۳۹۰×۸۴۴) روی صفحهٔ بزرگ؛ روی گوشی تمام‌عرض.
+   هر طرح توکن‌های خودش را روی .phone[data-d] دارد؛ حالت تیره با data-m="dark". */
+:root {
+  --page: #e6e8ec; --page-fg: #1d232b; --chip: #ffffff; --chip-fg: #1d232b; --chip-on: #1d232b; --chip-on-fg: #ffffff; --line: #cfd4db;
+  --f-ui: 'Vazirmatn', 'Tahoma', sans-serif; --f-naskh: 'Noto Naskh Arabic', 'Vazirmatn', 'Tahoma', serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #15181d; --page-fg: #e7eaee; --chip: #22262d; --chip-fg: #e7eaee; --chip-on: #e7eaee; --chip-on-fg: #15181d; --line: #343a43; color-scheme: dark; } }
+:root[data-theme="dark"] { --page: #15181d; --page-fg: #e7eaee; --chip: #22262d; --chip-fg: #e7eaee; --chip-on: #e7eaee; --chip-on-fg: #15181d; --line: #343a43; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--page-fg); font-family: var(--f-ui); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: center; padding-block: 14px 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.seg { display: inline-flex; background: var(--chip); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; color: var(--chip-fg); padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-fg); }
+.note { text-align: center; font-size: 12.5px; opacity: .72; margin: 0 0 12px; padding-inline: 16px; }
+.stage { display: flex; justify-content: center; padding-bottom: 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.phone { width: 390px; max-width: 100%; height: 844px; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 0 0 10px #0d0f12, 0 30px 60px -20px rgba(0,0,0,.45); display: flex; flex-direction: column; }
+.phone .scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.phone .scroll::-webkit-scrollbar { display: none; }
+.statusbar { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; font-size: 14px; font-weight: 600; direction: ltr; }
+@media (max-width: 460px) {
+  .stage { padding-left: 0; padding-right: 0; padding-bottom: 0; }
+  .phone { width: 100%; height: calc(100dvh - 104px); min-height: 640px; border-radius: 0; box-shadow: none; }
+  .statusbar { display: none; }
+}
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ============ طرح ۱ «دفتر»: مینیمال، خوانایی عدد، بی‌کارت؛ خط‌های مو و ستون مبلغ چپ‌چین ============ */
+.phone[data-d="a"] {
+  --bg: #fbfbfc; --fg: #14171c; --fg2: #59606b; --fg3: #8b929c; --rule: #e7e9ed; --soft: #f1f2f5;
+  --accent: #2346c7; --inc: #3f9a5c; --exp: #dc2626; --pend: #5b5fc7; --pend-bg: #ecedfb;
+  background: var(--bg); color: var(--fg); font-family: var(--f-ui);
+}
+.phone[data-d="a"][data-m="dark"] {
+  --bg: #111317; --fg: #f2f3f5; --fg2: #a7adb7; --fg3: #737a85; --rule: #23262c; --soft: #1a1d22;
+  --accent: #8ea6ff; --inc: #9ee858; --exp: #ff6b4a; --pend: #a9aefc; --pend-bg: #23254a;
+}
+.a-top { display: flex; align-items: center; justify-content: space-between; padding: 6px 22px 0; }
+.a-month { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font-size: 15px; font-weight: 600; padding: 8px 0; cursor: pointer; }
+.a-month svg { width: 16px; height: 16px; color: var(--fg3); }
+.a-iconbtn { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--fg2); border-radius: 12px; cursor: pointer; }
+.a-iconbtn svg { width: 22px; height: 22px; }
+.a-hero { padding: 26px 22px 22px; }
+.a-hero .lab { font-size: 13px; color: var(--fg2); margin: 0 0 6px; }
+.a-hero .bal { font-size: 44px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin: 0; }
+.a-hero .bal small { font-size: 15px; font-weight: 500; color: var(--fg3); margin-right: 6px; letter-spacing: 0; }
+.a-flow { display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 22px 0 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.a-flow div { padding: 12px 0; display: flex; flex-direction: column; gap: 3px; }
+.a-flow div + div { border-right: 1px solid var(--rule); padding-right: 14px; }
+.a-flow span { font-size: 12px; color: var(--fg2); }
+.a-flow b { font-size: 16px; font-weight: 600; }
+.a-sec { padding: 22px 22px 6px; display: flex; align-items: baseline; justify-content: space-between; }
+.a-sec h2 { font-size: 15px; font-weight: 700; margin: 0; }
+.a-sec a, .a-sec button { font-size: 13px; color: var(--accent); background: none; border: 0; padding: 6px 0; cursor: pointer; font-weight: 600; text-decoration: none; }
+.a-accts { list-style: none; margin: 0; padding: 0 22px; }
+.a-accts li { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.a-accts li:last-child { border-bottom: 0; }
+.a-accts .an { display: flex; flex-direction: column; gap: 2px; }
+.a-accts .an small { font-size: 12px; color: var(--fg3); }
+.a-accts .amt { font-weight: 600; }
+.a-day { position: sticky; top: 0; z-index: 1; background: var(--bg); display: flex; justify-content: space-between; padding: 14px 22px 6px; font-size: 12.5px; color: var(--fg2); font-weight: 600; border-bottom: 1px solid var(--rule); }
+.a-tx { list-style: none; margin: 0; padding: 0; }
+.a-tx li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 13px 22px; border-bottom: 1px solid var(--rule); }
+.a-tx .d { font-size: 15px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a-tx .m { font-size: 12.5px; color: var(--fg3); display: flex; gap: 10px; }
+.a-tx .v { grid-row: 1 / span 2; grid-column: 2; align-self: center; text-align: left; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.a-tx .v.inc { color: var(--inc); } .a-tx .v.exp { color: var(--exp); }
+.a-pend { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--pend); }
+.a-pend::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.6px solid currentColor; box-sizing: border-box; }
+.a-tx li.is-pend .v > .ltr { opacity: .62; }
+.a-search { margin: 6px 22px 0; display: flex; align-items: center; gap: 10px; background: var(--soft); border-radius: 12px; padding: 0 14px; height: 46px; color: var(--fg3); font-size: 15px; }
+.a-search svg { width: 19px; height: 19px; flex: none; }
+.a-filters { display: flex; gap: 22px; padding: 14px 22px 0; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
+.a-filters button { border: 0; background: none; padding: 10px 0 12px; font-size: 14px; color: var(--fg2); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.a-filters button[aria-pressed="true"] { color: var(--fg); border-bottom-color: var(--fg); }
+.a-filters em { font-style: normal; color: var(--fg3); font-weight: 500; margin-right: 4px; }
+.a-sum { display: flex; justify-content: space-between; padding: 14px 22px; font-size: 13px; color: var(--fg2); }
+.a-sum b { color: var(--fg); font-weight: 600; }
+.a-nav { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--rule); background: var(--bg); padding: 6px 6px 18px; }
+.a-nav button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--fg3); padding: 6px 0; cursor: pointer; min-height: 48px; }
+.a-nav button svg { width: 23px; height: 23px; }
+.a-nav button[aria-current="page"] { color: var(--fg); font-weight: 700; }
+.a-nav .add span { width: 44px; height: 44px; border-radius: 14px; background: var(--fg); color: var(--bg); display: grid; place-items: center; }
+.a-nav .add svg { width: 22px; height: 22px; }
+
+/* ============ طرح ۲ «فیروزه»: گرم و آرام؛ نسخ برای عنوان‌ها، نقش گره در کارت موجودی، کاشی‌های نرم ============ */
+.phone[data-d="b"] {
+  --bg: #eef0ea; --surface: #fbfbf8; --fg: #1f2a28; --fg2: #5d6764; --fg3: #8b9491; --rule: #e1e4dc;
+  --tq: #17706c; --tq-soft: #d7ebe7; --hero: #134e4b; --hero-fg: #f2f7f5; --hero-2: #9fd3cb;
+  --inc: #3f9a5c; --exp: #dc2626; --pend: #a5640e; --pend-bg: #f8ead2; --ok: #17706c;
+  background: var(--bg); color: var(--fg); font-family: var(--f-ui);
+}
+.phone[data-d="b"][data-m="dark"] {
+  --bg: #121a19; --surface: #1a2423; --fg: #ecf1ef; --fg2: #a9b5b2; --fg3: #73807d; --rule: #253230;
+  --tq: #5cc4b8; --tq-soft: #1d3a37; --hero: #0f3532; --hero-fg: #eef6f4; --hero-2: #7cc7bc;
+  --inc: #9ee858; --exp: #ff6b4a; --pend: #f0b25a; --pend-bg: #3a2c16; --ok: #5cc4b8;
+}
+.b-top { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px 4px; }
+.b-greet { font-family: var(--f-naskh); font-size: 21px; font-weight: 700; margin: 0; }
+.b-greet small { display: block; font-family: var(--f-ui); font-size: 12.5px; font-weight: 500; color: var(--fg2); margin-top: 2px; }
+.b-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--tq-soft); color: var(--tq); display: grid; place-items: center; border: 0; cursor: pointer; }
+.b-avatar svg { width: 22px; height: 22px; }
+.b-hero { margin: 14px 16px 0; border-radius: 26px; background: var(--hero); color: var(--hero-fg); padding: 22px 22px 18px; position: relative; overflow: hidden; }
+.b-hero .girih { position: absolute; inset: 0; opacity: .14; pointer-events: none; }
+.b-hero > *:not(.girih) { position: relative; }
+.b-hero .lab { font-size: 13px; opacity: .8; margin: 0; }
+.b-hero .bal { font-size: 36px; font-weight: 700; margin: 6px 0 0; line-height: 1.15; }
+.b-hero .bal small { font-size: 14px; font-weight: 500; opacity: .75; margin-right: 6px; }
+.b-hero .row { display: flex; gap: 10px; margin-top: 18px; }
+.b-hero .pill { flex: 1; background: rgba(255,255,255,.09); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.b-hero .pill span { font-size: 11.5px; opacity: .78; }
+.b-hero .pill b { font-size: 15px; font-weight: 600; }
+.b-hero .pill b.in { color: var(--hero-2); }
+.b-h2 { font-family: var(--f-naskh); font-size: 17px; font-weight: 700; margin: 0; }
+.b-sec { display: flex; justify-content: space-between; align-items: baseline; padding: 24px 22px 10px; }
+.b-sec button { border: 0; background: none; color: var(--tq); font-size: 13px; font-weight: 600; padding: 6px 0; cursor: pointer; }
+.b-due { margin: 0 16px; background: var(--surface); border-radius: 20px; padding: 6px 16px; }
+.b-due-it { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.b-due-it + .b-due-it { border-top: 1px solid var(--rule); }
+.b-due-it .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.b-due-it .t b { font-size: 14.5px; font-weight: 600; }
+.b-due-it .t small { font-size: 12px; color: var(--fg3); }
+.b-due-it .v { font-weight: 600; font-size: 15px; }
+.b-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+.b-tag.pend { color: var(--pend); background: var(--pend-bg); border: 1px dashed currentColor; }
+.b-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--tq-soft); color: var(--tq); }
+.b-ico svg { width: 21px; height: 21px; }
+.b-ico.inc { background: color-mix(in srgb, var(--inc) 16%, transparent); color: var(--inc); }
+.b-ring { display: flex; gap: 18px; align-items: center; margin: 0 16px; background: var(--surface); border-radius: 20px; padding: 16px; }
+.b-ring svg { width: 92px; height: 92px; flex: none; }
+.b-ring ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.b-ring li { display: flex; justify-content: space-between; font-size: 13.5px; align-items: center; gap: 8px; }
+.b-ring li i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; margin-left: 7px; }
+.b-day { padding: 18px 22px 8px; display: flex; justify-content: space-between; align-items: baseline; }
+.b-day b { font-family: var(--f-naskh); font-size: 15.5px; font-weight: 700; }
+.b-day span { font-size: 12.5px; color: var(--fg3); }
+.b-card { margin: 0 16px; background: var(--surface); border-radius: 20px; padding: 2px 14px; }
+.b-tx { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.b-tx + .b-tx { border-top: 1px solid var(--rule); }
+.b-tx .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.b-tx .t b { font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-tx .t small { font-size: 12px; color: var(--fg3); display: flex; gap: 8px; align-items: center; }
+.b-tx .v { text-align: left; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-weight: 600; font-size: 15px; }
+.b-tx .v.inc { color: var(--inc); } .b-tx .v.exp { color: var(--exp); }
+.b-seal { width: 14px; height: 14px; color: var(--ok); }
+.b-searchrow { display: flex; gap: 10px; padding: 8px 16px 0; }
+.b-search { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 16px; height: 48px; padding: 0 14px; color: var(--fg3); font-size: 14.5px; }
+.b-search svg, .b-filterbtn svg { width: 19px; height: 19px; }
+.b-filterbtn { width: 48px; height: 48px; border-radius: 16px; border: 0; background: var(--surface); color: var(--tq); display: grid; place-items: center; cursor: pointer; }
+.b-chips { display: flex; gap: 8px; padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+.b-chips button { border: 1px solid var(--rule); background: var(--surface); padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--fg2); white-space: nowrap; cursor: pointer; min-height: 38px; }
+.b-chips button[aria-pressed="true"] { background: var(--tq); border-color: var(--tq); color: var(--surface); }
+.b-totals { display: flex; margin: 14px 16px 0; background: var(--tq-soft); border-radius: 18px; padding: 12px 16px; justify-content: space-between; font-size: 12.5px; color: var(--fg2); }
+.b-totals div { display: flex; flex-direction: column; gap: 2px; }
+.b-totals b { font-size: 15px; color: var(--fg); font-weight: 600; }
+.b-nav { flex: none; padding: 8px 16px 18px; background: linear-gradient(to top, var(--bg) 70%, transparent); }
+.b-nav nav { display: flex; justify-content: space-around; align-items: center; background: var(--surface); border-radius: 24px; height: 64px; box-shadow: 0 8px 24px -14px rgba(16, 40, 38, .5); }
+.b-nav button { border: 0; background: none; color: var(--fg3); width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; cursor: pointer; }
+.b-nav button svg { width: 23px; height: 23px; }
+.b-nav button[aria-current="page"] { color: var(--tq); background: var(--tq-soft); }
+.b-nav .add { background: var(--tq); color: var(--surface); width: 50px; height: 50px; border-radius: 50%; }
+
+/* ============ طرح ۳ «پیشخوان»: داده‌محور، تیره‌اول؛ نمودار موجودی روزانه با پیش‌بینی، جریان نقدی، مانده پس از هر تراکنش ============ */
+.phone[data-d="c"] {
+  --bg: #f5f7fa; --surface: #ffffff; --fg: #0f1a2a; --fg2: #4b5a6e; --fg3: #8492a6; --rule: #e3e8ef; --grid: #eef2f6;
+  --accent: #2563eb; --line: #2563eb; --area: rgba(37, 99, 235, .12);
+  --inc: #3f9a5c; --exp: #dc2626; --pend: #7c3aed; --pend-bg: #efe7fd;
+  background: var(--bg); color: var(--fg); font-family: var(--f-ui);
+}
+.phone[data-d="c"][data-m="dark"] {
+  --bg: #0b1220; --surface: #121b2d; --fg: #e8eef7; --fg2: #9fb0c6; --fg3: #6a7b92; --rule: #1e2a40; --grid: #18233a;
+  --accent: #5b9dff; --line: #6aa8ff; --area: rgba(106, 168, 255, .16);
+  --inc: #9ee858; --exp: #ff6b4a; --pend: #b794ff; --pend-bg: #2a2146;
+}
+.c-top { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 0; }
+.c-top .m { display: flex; flex-direction: column; }
+.c-top .m b { font-size: 16px; font-weight: 700; }
+.c-top .m small { font-size: 12px; color: var(--fg3); }
+.c-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--rule); background: var(--surface); display: grid; place-items: center; color: var(--fg2); cursor: pointer; }
+.c-btn svg { width: 20px; height: 20px; }
+.c-hero { margin: 12px 12px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 18px; padding: 16px 16px 8px; }
+.c-hero .lab { font-size: 12.5px; color: var(--fg2); display: flex; justify-content: space-between; }
+.c-hero .bal { font-size: 34px; font-weight: 800; margin: 4px 0 0; letter-spacing: -.3px; }
+.c-hero .bal small { font-size: 13px; font-weight: 500; color: var(--fg3); margin-right: 6px; letter-spacing: 0; }
+.c-delta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--fg2); margin-top: 4px; }
+.c-delta b { font-weight: 700; }
+.c-chart { margin-top: 8px; }
+.c-chart svg, .c-panel svg { width: 100%; height: auto; display: block; direction: ltr; }
+.c-chart text, .c-panel svg text { fill: var(--fg3); font-size: 10px; font-family: var(--f-ui); }
+.c-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--fg2); padding: 4px 0 6px; flex-wrap: wrap; }
+.c-legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--line); vertical-align: middle; margin-left: 5px; }
+.c-legend i.dash { border-top-style: dashed; border-color: var(--pend); }
+.c-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 12px 0; }
+.c-kpi { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.c-kpi span { font-size: 11.5px; color: var(--fg2); }
+.c-kpi b { font-size: 15px; font-weight: 700; }
+.c-kpi small { font-size: 11px; color: var(--fg3); }
+.c-panel { margin: 8px 12px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 18px; padding: 14px 16px; }
+.c-panel h2 { font-size: 14px; font-weight: 700; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+.c-panel h2 small { font-size: 11.5px; color: var(--fg3); font-weight: 500; }
+.c-stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.c-cats { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.c-cats li { display: flex; justify-content: space-between; font-size: 12.5px; gap: 6px; }
+.c-cats li span { display: flex; align-items: center; gap: 6px; color: var(--fg2); min-width: 0; }
+.c-cats li i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.c-acc { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 7px 0; }
+.c-acc .bar { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; display: block; padding: 0; }
+.c-acc .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.c-acc b { font-weight: 600; }
+.c-filters { display: flex; gap: 6px; padding: 10px 12px 0; overflow-x: auto; scrollbar-width: none; }
+.c-filters button { border: 1px solid var(--rule); background: var(--surface); color: var(--fg2); border-radius: 10px; padding: 7px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; min-height: 36px; }
+.c-filters button em { font-style: normal; color: var(--fg3); margin-right: 4px; font-weight: 500; }
+.c-filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.c-strip { display: grid; grid-template-columns: repeat(3, 1fr); margin: 10px 12px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; }
+.c-strip div { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.c-strip div + div { border-right: 1px solid var(--rule); }
+.c-strip span { font-size: 11px; color: var(--fg3); }
+.c-strip b { font-size: 14px; font-weight: 700; }
+.c-table { margin: 10px 12px 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
+.c-thead, .c-row { display: grid; grid-template-columns: 1fr 92px 92px; gap: 8px; padding: 0 12px; align-items: center; }
+.c-thead { font-size: 11px; color: var(--fg3); height: 32px; border-bottom: 1px solid var(--rule); background: var(--grid); position: sticky; top: 0; z-index: 1; }
+.c-thead span:not(:first-child), .c-row .v, .c-row .rb { text-align: left; }
+.c-dayrow { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 6px; font-size: 11.5px; font-weight: 700; color: var(--fg2); background: var(--surface); border-bottom: 1px solid var(--rule); }
+.c-dayrow .net { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.c-dayrow .net i { display: inline-block; height: 4px; border-radius: 2px; }
+.c-row { min-height: 54px; border-bottom: 1px solid var(--rule); padding-block: 8px; }
+.c-row .t { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.c-row .t b { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-row .t small { font-size: 11px; color: var(--fg3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.c-row .v { font-size: 13.5px; font-weight: 700; }
+.c-row .v.inc { color: var(--inc); } .c-row .v.exp { color: var(--exp); }
+.c-row .rb { font-size: 12px; color: var(--fg2); }
+.c-row.is-pend { background: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--pend) 7%, transparent) 7px 9px); }
+.c-row.is-pend .v { opacity: .75; }
+.c-pend { font-size: 10.5px; font-weight: 700; color: var(--pend); background: var(--pend-bg); border-radius: 5px; padding: 1px 6px; }
+.c-nav { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--rule); padding: 4px 4px 18px; }
+.c-nav button { border: 0; background: none; color: var(--fg3); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; padding: 6px 0; min-height: 48px; cursor: pointer; }
+.c-nav button svg { width: 22px; height: 22px; }
+.c-nav button[aria-current="page"] { color: var(--accent); font-weight: 700; }
+.c-nav .add span { width: 46px; height: 34px; border-radius: 11px; background: var(--accent); color: #fff; display: grid; place-items: center; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="bar" role="toolbar" aria-label="انتخاب نمونه">
+  <div class="seg" id="segD" aria-label="طرح">
+    <button type="button" data-v="a" id="btnA">۱ · دفتر</button>
+    <button type="button" data-v="b" id="btnB">۲ · فیروزه</button>
+    <button type="button" data-v="c" id="btnC">۳ · پیشخوان</button>
+  </div>
+  <div class="seg" id="segS" aria-label="صفحه">
+    <button type="button" data-v="home" id="btnHome">صفحهٔ اصلی</button>
+    <button type="button" data-v="tx" id="btnTx">تراکنش‌ها</button>
+  </div>
+  <div class="seg" id="segM" aria-label="حالت">
+    <button type="button" data-v="light" id="btnLight">روشن</button>
+    <button type="button" data-v="dark" id="btnDark">تاریک</button>
+  </div>
+</div>
+<p class="note">نمونهٔ طراحی با دادهٔ ساختگی یکسان؛ دکمه‌ها فقط برای نمایش‌اند.</p>
+<div class="stage"><div class="phone" id="phone"></div></div>
+
+<script>
+(function () {
+  /* ---------- دادهٔ ساختگی مشترک (هر سه طرح) ---------- */
+  var MONTH = 'آبان ۱۴۰۵', TODAY = 8;
+  var ACCOUNTS = [
+    { name: 'ملت', sub: 'کارت ۴۲۱۸', bal: 48250000 },
+    { name: 'ملی', sub: 'حساب ۱۲۳۴', bal: 12800000 },
+    { name: 'نقدی', sub: 'کیف پول', bal: 1450000 }
+  ];
+  /* type: inc واریز / exp برداشت؛ pend: تسویه‌نشده */
+  var TX = [
+    { d: 8, t: '09:42', desc: 'حقوق آبان', acc: 'ملت', amt: 32000000, type: 'inc', cat: 'salary', pend: false },
+    { d: 8, t: '13:15', desc: 'سوپرمارکت محله', acc: 'ملت', amt: 1840000, type: 'exp', cat: 'food', pend: false },
+    { d: 7, t: '20:30', desc: 'قسط وام مسکن', acc: 'ملی', amt: 7500000, type: 'exp', cat: 'loan', pend: true },
+    { d: 7, t: '18:05', desc: 'تاکسی اینترنتی', acc: 'ملت', amt: 320000, type: 'exp', cat: 'car', pend: false },
+    { d: 6, t: '11:00', desc: 'اجارهٔ واحد دوم', acc: 'ملی', amt: 6000000, type: 'inc', cat: 'key', pend: true },
+    { d: 6, t: '10:12', desc: 'قبض برق', acc: 'ملت', amt: 640000, type: 'exp', cat: 'bolt', pend: false },
+    { d: 5, t: '19:48', desc: 'رستوران', acc: 'نقدی', amt: 1250000, type: 'exp', cat: 'food', pend: false },
+    { d: 5, t: '08:30', desc: 'واریز پروژهٔ طراحی', acc: 'ملت', amt: 6500000, type: 'inc', cat: 'brief', pend: false },
+    { d: 4, t: '16:20', desc: 'داروخانه', acc: 'ملت', amt: 410000, type: 'exp', cat: 'health', pend: false },
+    { d: 3, t: '12:00', desc: 'شهریهٔ کلاس زبان', acc: 'ملی', amt: 2800000, type: 'exp', cat: 'book', pend: true },
+    { d: 2, t: '17:40', desc: 'بنزین', acc: 'نقدی', amt: 500000, type: 'exp', cat: 'drop', pend: false },
+    { d: 1, t: '09:00', desc: 'انتقال به پس‌انداز', acc: 'ملت', amt: 5000000, type: 'exp', cat: 'save', pend: false }
+  ];
+  var CAT = { salary: 'حقوق', food: 'خوراک', loan: 'قسط', car: 'حمل‌ونقل', key: 'اجاره', bolt: 'قبوض', brief: 'پروژه', health: 'سلامت', book: 'آموزش', drop: 'سوخت', save: 'پس‌انداز' };
+  var SIX = [['خرداد', 41, 33], ['تیر', 39, 36], ['مرداد', 44, 30], ['شهریور', 40, 38], ['مهر', 46, 34], ['آبان', 38.5, 9.96]]; /* میلیون تومان */
+
+  /* ---------- قالب‌بندی ---------- */
+  var nf = new Intl.NumberFormat('fa-IR');
+  var fa = function (s) { return String(s).replace(/\d/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'[c]; }); };
+  var money = function (n) { return nf.format(Math.round(n)); };
+  var sgn = function (x) { return (x.type === 'inc' ? '+' : '−') + money(x.amt); };
+  var mil = function (n) { var v = n / 1e6; return fa((Math.round(v * 10) / 10).toString().replace('.', '٫')) + ' م'; };
+  var DAYN = { 8: 'امروز', 7: 'دیروز' };
+  var WEEK = { 6: 'سه‌شنبه', 5: 'دوشنبه', 4: 'یکشنبه', 3: 'شنبه', 2: 'جمعه', 1: 'پنجشنبه' };
+  var dayLabel = function (d) { return (DAYN[d] || WEEK[d]) + '، ' + fa(d) + ' آبان'; };
+
+  var total = ACCOUNTS.reduce(function (s, a) { return s + a.bal; }, 0);
+  var sum = function (f) { return TX.filter(f).reduce(function (s, x) { return s + x.amt; }, 0); };
+  var incOk = sum(function (x) { return x.type === 'inc' && !x.pend; }), incP = sum(function (x) { return x.type === 'inc' && x.pend; });
+  var expOk = sum(function (x) { return x.type === 'exp' && !x.pend; }), expP = sum(function (x) { return x.type === 'exp' && x.pend; });
+  var pendN = TX.filter(function (x) { return x.pend; }).length;
+  var days = []; TX.forEach(function (x) { if (days.indexOf(x.d) < 0) days.push(x.d); });
+  var byDay = function (d, list) { return (list || TX).filter(function (x) { return x.d === d; }); };
+  var dayNet = function (d) { return byDay(d).filter(function (x) { return !x.pend; }).reduce(function (s, x) { return s + (x.type === 'inc' ? x.amt : -x.amt); }, 0); };
+  /* مانده پس از هر تراکنش تسویه‌شده (از جدیدترین به قدیمی) */
+  var running = {}; (function () { var b = total; TX.forEach(function (x, i) { running[i] = b; if (!x.pend) b -= (x.type === 'inc' ? x.amt : -x.amt); }); })();
+  /* موجودی پایان هر روز ۱..۸ */
+  var start = total - (incOk - expOk), series = [], b0 = start;
+  for (var dd = 1; dd <= TODAY; dd++) { b0 += dayNet(dd); series.push(b0); }
+  var projected = total + incP - expP;
+
+  /* ---------- آیکن‌ها ---------- */
+  var P = {
+    home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    chev: '<path d="m6 9 6 6 6-6"/>',
+    bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
+    salary: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    food: '<path d="M3 4h2l2.4 11h11.2L21 7H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>',
+    loan: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+    car: '<path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13" r=".8"/><circle cx="16.5" cy="13" r=".8"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/>',
+    bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    brief: '<path d="M4 20h16M6 16l9-9 3 3-9 9H6z"/>',
+    health: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/>',
+    book: '<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-4a3 3 0 0 0-3 3"/><path d="M20 4v14h-6"/>',
+    drop: '<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>',
+    save: '<path d="M12 3v11M7.5 9.5 12 14l4.5-4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
+    seal: '<path d="M12 2.5 14.4 4.3l3 .1.9 2.9 2.4 1.8-.9 2.9.9 2.9-2.4 1.8-.9 2.9-3 .1L12 21.5l-2.4-1.8-3-.1-.9-2.9-2.4-1.8.9-2.9-.9-2.9 2.4-1.8.9-2.9 3-.1z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" stroke-width="2"/>'
+  };
+  var I = function (k, sw) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[k] + '</svg>'; };
+
+  var state = { d: 'a', s: 'home', m: 'light', f: 'all' };
+  try { var sv = JSON.parse(localStorage.getItem('hk-proto') || 'null'); if (sv) Object.assign(state, sv); } catch (e) {}
+  if (!localStorage || !(function () { try { return localStorage.getItem('hk-proto'); } catch (e) { return null; } })()) {
+    try { if (window.matchMedia('(prefers-color-scheme: dark)').matches) state.m = 'dark'; } catch (e) {}
+  }
+  var filtered = function () {
+    return TX.filter(function (x) { return state.f === 'all' || (state.f === 'pend' ? x.pend : x.type === state.f); });
+  };
+  var counts = { all: TX.length, inc: TX.filter(function (x) { return x.type === 'inc'; }).length, exp: TX.filter(function (x) { return x.type === 'exp'; }).length, pend: pendN };
+  var FL = [['all', 'همه'], ['inc', 'واریز'], ['exp', 'برداشت'], ['pend', 'تسویه‌نشده']];
+  var status = '<div class="statusbar"><span>۹:۴۱</span><span>●●● ▮</span></div>';
+
+  /* ============ طرح ۱ ============ */
+  function navA() {
+    var it = [['home', 'home', 'خانه'], ['tx', 'list', 'تراکنش‌ها'], ['add', 'plus', ''], ['rep', 'chart', 'گزارش'], ['more', 'more', 'بیشتر']];
+    return '<nav class="a-nav" aria-label="ناوبری">' + it.map(function (x) {
+      if (x[0] === 'add') return '<button type="button" class="add" aria-label="ثبت تراکنش"><span>' + I('plus', 2.2) + '</span></button>';
+      return '<button type="button" data-go="' + x[0] + '"' + (state.s === x[0] ? ' aria-current="page"' : '') + '>' + I(x[1]) + x[2] + '</button>';
+    }).join('') + '</nav>';
+  }
+  function txListA(list) {
+    var ds = []; list.forEach(function (x) { if (ds.indexOf(x.d) < 0) ds.push(x.d); });
+    return ds.map(function (d) {
+      var net = dayNet(d);
+      return '<div class="a-day"><span>' + dayLabel(d) + '</span><span class="num ltr">' + (net >= 0 ? '+' : '−') + money(Math.abs(net)) + '</span></div><ul class="a-tx">' +
+        byDay(d, list).map(function (x) {
+          return '<li class="' + (x.pend ? 'is-pend' : '') + '"><span class="d">' + x.desc + '</span><span class="m"><span>' + x.acc + '</span><span class="num">' + fa(x.t) + '</span><span>' + CAT[x.cat] + '</span></span>' +
+            '<span class="v num ' + x.type + '"><span class="ltr">' + sgn(x) + '</span>' + (x.pend ? '<span class="a-pend">' + (x.type === 'inc' ? 'دریافت‌نشده' : 'پرداخت‌نشده') + '</span>' : '') + '</span></li>';
+        }).join('') + '</ul>';
+    }).join('');
+  }
+  function homeA() {
+    return '<div class="a-top"><button type="button" class="a-month">' + MONTH + I('chev') + '</button><button type="button" class="a-iconbtn" aria-label="اعلان‌ها">' + I('bell') + '</button></div>' +
+      '<section class="a-hero"><p class="lab">موجودی همهٔ حساب‌ها</p><p class="bal num">' + money(total) + '<small>تومان</small></p>' +
+      '<div class="a-flow"><div><span>واریز این ماه</span><b class="num">' + mil(incOk) + '</b></div><div><span>برداشت این ماه</span><b class="num">' + mil(expOk) + '</b></div><div><span>تسویه‌نشده</span><b class="num">' + fa(pendN) + ' مورد</b></div></div></section>' +
+      '<div class="a-sec"><h2>حساب‌ها</h2><button type="button">مدیریت</button></div>' +
+      '<ul class="a-accts">' + ACCOUNTS.map(function (a) { return '<li><span class="an">' + a.name + '<small>' + fa(a.sub) + '</small></span><span class="amt num">' + money(a.bal) + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="a-sec"><h2>تراکنش‌های اخیر</h2><button type="button" data-go="tx">همه</button></div>' + txListA(TX.slice(0, 5));
+  }
+  function txA() {
+    var l = filtered();
+    return '<div class="a-top"><button type="button" class="a-month">' + MONTH + I('chev') + '</button><button type="button" class="a-iconbtn" aria-label="فیلترهای بیشتر">' + I('filter') + '</button></div>' +
+      '<div class="a-search">' + I('search') + 'جستجو در شرح، حساب یا مبلغ</div>' +
+      '<div class="a-filters">' + FL.map(function (f) { return '<button type="button" data-f="' + f[0] + '" aria-pressed="' + (state.f === f[0]) + '">' + f[1] + '<em class="num">' + fa(counts[f[0]]) + '</em></button>'; }).join('') + '</div>' +
+      '<div class="a-sum"><span>واریز <b class="num">' + mil(incOk) + '</b></span><span>برداشت <b class="num">' + mil(expOk) + '</b></span><span>تسویه‌نشده <b class="num">' + mil(incP + expP) + '</b></span></div>' + txListA(l);
+  }
+
+  /* ============ طرح ۲ ============ */
+  var girih = (function () {
+    /* نقش گره هشت‌پر (تکرارشونده) */
+    var star = 'M20 4l4.2 6.8 7.8-1.9-1.9 7.8L36.9 20.9l-6.8 4.2 1.9 7.8-7.8-1.9L20 37.8l-4.2-6.8-7.8 1.9 1.9-7.8L3.1 20.9l6.8-4.2-1.9-7.8 7.8 1.9z';
+    return '<svg class="girih" viewBox="0 0 360 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><pattern id="gp" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="translate(0 -1)"><path d="' + star + '" fill="none" stroke="#ffffff" stroke-width="1"/><path d="M20 12 28 20 20 28 12 20z" fill="none" stroke="#ffffff" stroke-width=".8"/></pattern></defs><rect width="360" height="220" fill="url(#gp)"/></svg>';
+  })();
+  function navB() {
+    var it = [['home', 'home', 'خانه'], ['tx', 'list', 'تراکنش‌ها'], ['add', 'plus', 'ثبت'], ['rep', 'chart', 'گزارش'], ['more', 'user', 'من']];
+    return '<div class="b-nav"><nav aria-label="ناوبری">' + it.map(function (x) {
+      return '<button type="button" ' + (x[0] === 'add' ? 'class="add"' : 'data-go="' + x[0] + '"') + (state.s === x[0] ? ' aria-current="page"' : '') + ' aria-label="' + x[2] + '">' + I(x[1], x[0] === 'add' ? 2.2 : 1.8) + '</button>';
+    }).join('') + '</nav></div>';
+  }
+  function txItemB(x) {
+    return '<div class="b-tx"><span class="b-ico ' + (x.type === 'inc' ? 'inc' : '') + '">' + I(x.cat) + '</span><span class="t"><b>' + x.desc + '</b><small><span>' + CAT[x.cat] + '</span><span>' + x.acc + '</span><span class="num">' + fa(x.t) + '</span></small></span>' +
+      '<span class="v num ' + x.type + '"><span class="ltr">' + sgn(x) + '</span>' + (x.pend ? '<span class="b-tag pend">در انتظار</span>' : '<span class="b-seal" title="تسویه شد">' + I('seal', 1.4) + '</span>') + '</span></div>';
+  }
+  function txListB(list) {
+    var ds = []; list.forEach(function (x) { if (ds.indexOf(x.d) < 0) ds.push(x.d); });
+    return ds.map(function (d) {
+      var net = dayNet(d);
+      return '<div class="b-day"><b>' + dayLabel(d) + '</b><span class="num ltr">' + (net >= 0 ? '+' : '−') + money(Math.abs(net)) + '</span></div><div class="b-card">' + byDay(d, list).map(txItemB).join('') + '</div>';
+    }).join('');
+  }
+  function ringB() {
+    var parts = [[expOk, 'var(--exp)', 'برداشت شده'], [expP, 'var(--pend)', 'پرداخت‌نشده'], [Math.max(0, incOk - expOk), 'var(--tq)', 'باقی از درآمد']];
+    var tot = parts.reduce(function (s, p) { return s + p[0]; }, 0), acc = 0, r = 38, C = 2 * Math.PI * r;
+    var arcs = parts.map(function (p) { var len = p[0] / tot * C, s = '<circle cx="46" cy="46" r="' + r + '" fill="none" stroke="' + p[1] + '" stroke-width="10" stroke-dasharray="' + Math.max(0, len - 3) + ' ' + C + '" stroke-dashoffset="' + (-acc) + '" transform="rotate(-90 46 46)" stroke-linecap="round"/>'; acc += len; return s; }).join('');
+    var pct = Math.round((expOk + expP) / incOk * 100);
+    return '<div class="b-ring"><svg viewBox="0 0 92 92">' + '<circle cx="46" cy="46" r="38" fill="none" stroke="var(--rule)" stroke-width="10"/>' + arcs +
+      '<text x="46" y="44" text-anchor="middle" font-size="16" font-weight="700" fill="var(--fg)" font-family="Vazirmatn">' + fa(pct) + '٪</text><text x="46" y="60" text-anchor="middle" font-size="9" fill="var(--fg3)" font-family="Vazirmatn">از درآمد</text></svg>' +
+      '<ul>' + parts.map(function (p) { return '<li><span><i style="background:' + p[1] + '"></i>' + p[2] + '</span><b class="num">' + mil(p[0]) + '</b></li>'; }).join('') + '</ul></div>';
+  }
+  function homeB() {
+    var due = TX.filter(function (x) { return x.pend; });
+    return '<div class="b-top"><h1 class="b-greet">عصر بخیر<small>' + MONTH + '، هشتمین روز ماه</small></h1><button type="button" class="b-avatar" aria-label="حساب کاربری">' + I('user') + '</button></div>' +
+      '<section class="b-hero">' + girih + '<p class="lab">موجودی همهٔ حساب‌ها</p><p class="bal num">' + money(total) + '<small>تومان</small></p>' +
+      '<div class="row"><div class="pill"><span>واریز این ماه</span><b class="num in">' + mil(incOk) + '</b></div><div class="pill"><span>برداشت این ماه</span><b class="num">' + mil(expOk) + '</b></div></div></section>' +
+      '<div class="b-sec"><h2 class="b-h2">در انتظار تسویه</h2><button type="button" data-go="tx" data-setf="pend">همه</button></div>' +
+      '<div class="b-due">' + due.map(function (x) {
+        return '<div class="b-due-it"><span class="b-ico ' + (x.type === 'inc' ? 'inc' : '') + '">' + I(x.cat) + '</span><span class="t"><b>' + x.desc + '</b><small>' + (x.type === 'inc' ? 'دریافت‌نشده' : 'پرداخت‌نشده') + '، از ' + fa(x.d) + ' آبان</small></span><span class="v num ltr" style="color:var(--' + x.type + ')">' + sgn(x) + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="b-sec"><h2 class="b-h2">این ماه تا امروز</h2></div>' + ringB() +
+      '<div class="b-sec"><h2 class="b-h2">تراکنش‌های اخیر</h2><button type="button" data-go="tx">همه</button></div>' + txListB(TX.slice(0, 4)) + '<div style="height:16px"></div>';
+  }
+  function txB() {
+    return '<div class="b-top"><h1 class="b-greet">تراکنش‌ها<small>' + MONTH + '</small></h1><button type="button" class="b-avatar" aria-label="حساب کاربری">' + I('user') + '</button></div>' +
+      '<div class="b-searchrow"><div class="b-search">' + I('search') + 'جستجو در شرح، حساب یا مبلغ</div><button type="button" class="b-filterbtn" aria-label="فیلترهای بیشتر">' + I('filter') + '</button></div>' +
+      '<div class="b-chips">' + FL.map(function (f) { return '<button type="button" data-f="' + f[0] + '" aria-pressed="' + (state.f === f[0]) + '">' + f[1] + ' ' + '<span class="num">' + fa(counts[f[0]]) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="b-totals"><div><span>واریز</span><b class="num">' + mil(incOk) + '</b></div><div><span>برداشت</span><b class="num">' + mil(expOk) + '</b></div><div><span>در انتظار</span><b class="num">' + mil(incP + expP) + '</b></div></div>' +
+      txListB(filtered()) + '<div style="height:16px"></div>';
+  }
+
+  /* ============ طرح ۳ ============ */
+  function navC() {
+    var it = [['home', 'chart', 'پیشخوان'], ['tx', 'list', 'تراکنش‌ها'], ['add', 'plus', ''], ['rep', 'search', 'جستجو'], ['more', 'more', 'بیشتر']];
+    return '<nav class="c-nav" aria-label="ناوبری">' + it.map(function (x) {
+      if (x[0] === 'add') return '<button type="button" class="add" aria-label="ثبت تراکنش"><span>' + I('plus', 2.2) + '</span></button>';
+      return '<button type="button" data-go="' + x[0] + '"' + (state.s === x[0] ? ' aria-current="page"' : '') + '>' + I(x[1]) + x[2] + '</button>';
+    }).join('') + '</nav>';
+  }
+  function chartC() {
+    /* زمان راست‌به‌چپ: روز ۱ سمت راست، پایان ماه سمت چپ. خط پر = واقعی تا امروز؛ خط‌چین = پیش‌بینی با تسویه‌نشده‌ها */
+    var W = 340, H = 130, pl = 6, pr = 34, pt = 10, pb = 22, endD = 30;
+    var vals = series.concat([projected]), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var pad = (hi - lo) * .15; lo -= pad; hi += pad;
+    var x = function (d) { return W - pr - (d - 1) / (endD - 1) * (W - pr - pl); };
+    var y = function (v) { return pt + (hi - v) / (hi - lo) * (H - pt - pb); };
+    var pts = series.map(function (v, i) { return x(i + 1).toFixed(1) + ',' + y(v).toFixed(1); });
+    var area = 'M' + x(1) + ',' + (H - pb) + ' L' + pts.join(' L') + ' L' + x(TODAY) + ',' + (H - pb) + 'Z';
+    var ticks = [lo + (hi - lo) * .2, lo + (hi - lo) * .5, lo + (hi - lo) * .8];
+    var g = ticks.map(function (t) { return '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--grid)" stroke-width="1"/><text x="' + (W - 2) + '" y="' + (y(t) + 3) + '" text-anchor="end">' + mil(t) + '</text>'; }).join('');
+    var xl = [1, 8, 15, 22, 30].map(function (d) { return '<text x="' + x(d) + '" y="' + (H - 6) + '" text-anchor="middle">' + fa(d) + '</text>'; }).join('');
+    return '<div class="c-chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="موجودی روزانهٔ آبان">' + g + xl +
+      '<path d="' + area + '" fill="var(--area)"/><polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--line)" stroke-width="2.2" stroke-linejoin="round"/>' +
+      '<line x1="' + x(TODAY) + '" y1="' + y(total) + '" x2="' + x(endD) + '" y2="' + y(projected) + '" stroke="var(--pend)" stroke-width="2" stroke-dasharray="5 4"/>' +
+      '<circle cx="' + x(TODAY) + '" cy="' + y(total) + '" r="4.5" fill="var(--surface)" stroke="var(--line)" stroke-width="2.2"/>' +
+      '<circle cx="' + x(endD) + '" cy="' + y(projected) + '" r="3.5" fill="var(--pend)"/></svg>' +
+      '<div class="c-legend"><span><i></i>موجودی واقعی</span><span><i class="dash"></i>با تسویه‌نشده‌ها: <b class="num">' + money(projected) + '</b></span></div></div>';
+  }
+  function flowC() {
+    var W = 320, H = 120, mid = 58, max = 50, bw = 14;
+    var col = function (i) { return W - 26 - i * ((W - 40) / 5); };
+    var bars = SIX.map(function (m, i) {
+      var cx = col(i), hi = m[1] / max * (mid - 8), he = m[2] / max * (mid - 8);
+      return '<rect x="' + (cx - bw / 2) + '" y="' + (mid - hi) + '" width="' + bw + '" height="' + hi + '" rx="3" fill="var(--inc)"/>' +
+        '<rect x="' + (cx - bw / 2) + '" y="' + (mid + 2) + '" width="' + bw + '" height="' + he + '" rx="3" fill="var(--exp)" opacity=".85"/>' +
+        '<text x="' + cx + '" y="' + (H - 2) + '" text-anchor="middle">' + m[0] + '</text>';
+    }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="واریز و برداشت شش ماه اخیر"><line x1="8" x2="' + (W - 8) + '" y1="' + (mid + 1) + '" y2="' + (mid + 1) + '" stroke="var(--rule)"/>' + bars + '</svg>';
+  }
+  function catsC() {
+    var m = {}; TX.forEach(function (x) { if (x.type === 'exp') m[x.cat] = (m[x.cat] || 0) + x.amt; });
+    var ks = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }).slice(0, 6), tot = ks.reduce(function (s, k) { return s + m[k]; }, 0);
+    var pal = ['var(--accent)', 'var(--pend)', '#14b8a6', '#f59e0b', '#ec4899', 'var(--fg3)'];
+    return '<div class="c-stack">' + ks.map(function (k, i) { return '<span style="flex:' + m[k] + ';background:' + pal[i] + '"></span>'; }).join('') + '</div>' +
+      '<ul class="c-cats">' + ks.map(function (k, i) { return '<li><span><i style="background:' + pal[i] + '"></i>' + CAT[k] + '</span><b class="num">' + fa(Math.round(m[k] / tot * 100)) + '٪</b></li>'; }).join('') + '</ul>';
+  }
+  function homeC() {
+    var prevBal = 57100000, dlt = total - prevBal;
+    return '<div class="c-top"><div class="m"><b>پیشخوان</b><small>' + MONTH + '، تا ' + fa(TODAY) + 'ام</small></div><button type="button" class="c-btn" aria-label="اعلان‌ها">' + I('bell') + '</button></div>' +
+      '<section class="c-hero"><div class="lab"><span>موجودی همهٔ حساب‌ها</span><span>تومان</span></div><p class="bal num">' + money(total) + '</p>' +
+      '<div class="c-delta"><span>نسبت به پایان مهر <b class="num ltr" style="color:var(--inc)">+' + money(dlt) + '</b></span><span>تسویه‌نشده <b class="num">' + fa(pendN) + ' مورد</b></span></div>' + chartC() + '</section>' +
+      '<div class="c-kpis"><div class="c-kpi"><span>ورودی</span><b class="num" style="color:var(--inc)">' + mil(incOk) + '</b><small>+' + mil(incP) + ' در انتظار</small></div>' +
+      '<div class="c-kpi"><span>خروجی</span><b class="num" style="color:var(--exp)">' + mil(expOk) + '</b><small>+' + mil(expP) + ' در انتظار</small></div>' +
+      '<div class="c-kpi"><span>خالص ماه</span><b class="num">' + mil(incOk - expOk) + '</b><small>نرخ پس‌انداز ' + fa(Math.round((incOk - expOk) / incOk * 100)) + '٪</small></div></div>' +
+      '<section class="c-panel"><h2>جریان نقدی<small>شش ماه اخیر، میلیون تومان</small></h2>' + flowC() + '</section>' +
+      '<section class="c-panel"><h2>برداشت به تفکیک دسته<small>آبان</small></h2>' + catsC() + '</section>' +
+      '<section class="c-panel"><h2>حساب‌ها<small>سهم از موجودی</small></h2>' + ACCOUNTS.map(function (a) { return '<div class="c-acc"><span>' + a.name + '</span><span class="bar"><i style="width:' + (a.bal / total * 100).toFixed(1) + '%"></i></span><b class="num">' + mil(a.bal) + '</b></div>'; }).join('') + '</section><div style="height:14px"></div>';
+  }
+  function txC() {
+    var l = filtered(), ds = []; l.forEach(function (x) { if (ds.indexOf(x.d) < 0) ds.push(x.d); });
+    var maxNet = Math.max.apply(null, days.map(function (d) { return Math.abs(dayNet(d)); }));
+    var rows = ds.map(function (d) {
+      var net = dayNet(d), w = Math.max(4, Math.abs(net) / maxNet * 60);
+      return '<div class="c-dayrow"><span>' + dayLabel(d) + '</span><span class="net"><i style="width:' + w + 'px;background:' + (net >= 0 ? 'var(--inc)' : 'var(--exp)') + '"></i><span class="num ltr">' + (net >= 0 ? '+' : '−') + money(Math.abs(net)) + '</span></span></div>' +
+        byDay(d, l).map(function (x) {
+          var i = TX.indexOf(x);
+          return '<div class="c-row' + (x.pend ? ' is-pend' : '') + '"><span class="t"><b>' + x.desc + '</b><small><span>' + x.acc + '</span><span class="num">' + fa(x.t) + '</span><span>' + CAT[x.cat] + '</span>' + (x.pend ? '<span class="c-pend">' + (x.type === 'inc' ? 'دریافت‌نشده' : 'پرداخت‌نشده') + '</span>' : '') + '</small></span>' +
+            '<span class="v num ' + x.type + '"><span class="ltr">' + sgn(x) + '</span></span><span class="rb num">' + (x.pend ? '—' : money(running[i])) + '</span></div>';
+        }).join('');
+    }).join('');
+    return '<div class="c-top"><div class="m"><b>تراکنش‌ها</b><small>' + MONTH + '، ' + fa(TX.length) + ' مورد</small></div><button type="button" class="c-btn" aria-label="جستجو">' + I('search') + '</button></div>' +
+      '<div class="c-filters">' + FL.map(function (f) { return '<button type="button" data-f="' + f[0] + '" aria-pressed="' + (state.f === f[0]) + '">' + f[1] + '<em class="num">' + fa(counts[f[0]]) + '</em></button>'; }).join('') + '<button type="button">حساب: همه</button><button type="button">دسته: همه</button></div>' +
+      '<div class="c-strip"><div><span>ورودی</span><b class="num" style="color:var(--inc)">' + mil(incOk) + '</b></div><div><span>خروجی</span><b class="num" style="color:var(--exp)">' + mil(expOk) + '</b></div><div><span>تسویه‌نشده</span><b class="num" style="color:var(--pend)">' + mil(incP + expP) + '</b></div></div>' +
+      '<div class="c-table"><div class="c-thead"><span>شرح</span><span>مبلغ</span><span>مانده پس از آن</span></div>' + rows + '</div><div style="height:14px"></div>';
+  }
+
+  /* ---------- رندر ---------- */
+  var phone = document.getElementById('phone');
+  function render() {
+    var R = { a: [homeA, txA, navA], b: [homeB, txB, navB], c: [homeC, txC, navC] }[state.d];
+    var screen = state.s === 'tx' ? R[1] : R[0];
+    phone.setAttribute('data-d', state.d); phone.setAttribute('data-m', state.m);
+    phone.innerHTML = status + '<div class="scroll" id="scroll">' + screen() + '</div>' + R[2]();
+    [['segD', 'd'], ['segS', 's'], ['segM', 'm']].forEach(function (p) {
+      document.querySelectorAll('#' + p[0] + ' button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === state[p[1]])); });
+    });
+    try { localStorage.setItem('hk-proto', JSON.stringify(state)); } catch (e) {}
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button'); if (!b) return;
+    var seg = b.parentElement && b.parentElement.id;
+    if (seg === 'segD') { state.d = b.dataset.v; state.f = 'all'; }
+    else if (seg === 'segS') state.s = b.dataset.v;
+    else if (seg === 'segM') state.m = b.dataset.v;
+    else if (b.dataset.f) state.f = b.dataset.f;
+    else if (b.dataset.go === 'home' || b.dataset.go === 'tx') { state.s = b.dataset.go; if (b.dataset.setf) state.f = b.dataset.setf; }
+    else return;
+    var sc = document.getElementById('scroll'), keep = b.dataset.f && sc ? sc.scrollTop : 0;
+    render();
+    var sc2 = document.getElementById('scroll'); if (sc2) sc2.scrollTop = keep;
+  });
+  render();
+})();
+</script>
+</body>
+</html>

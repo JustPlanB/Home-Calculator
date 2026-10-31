@@ -140,7 +140,7 @@ const allErrors = [];
     out.plus = { w: bx.width, h: bx.height, align: getComputedStyle(document.querySelector('.hk-add-it')).textAlign };
     return out;
   });
-  ok(r2.border === 'rgb(0, 183, 255)' && r2.label === 'حساب جدید:' && r2.sep && r2.noLine, 'ویرایش ردیف: «حساب جدید:» داخل قاب آبی با خط تفکیک (بدون سطر متن جدا)');
+  ok(r2.border === 'rgb(8, 181, 245)' && r2.label === 'حساب جدید:' && r2.sep && r2.noLine, 'ویرایش ردیف: «حساب جدید:» داخل قاب آبی با خط تفکیک (بدون سطر متن جدا)');
   ok(r2.amt[0] === r2.amt[1], 'ویرایش مبلغ: نشانگر جلوی یکان');
   ok(r2.txt && r2.txt[0] === r2.txt[1], 'ویرایش نوشته: نشانگر بعد از آخرین کلمه');
   ok(r2.plus.h > r2.plus.w && r2.plus.align === 'right', 'باکس «+»: به اندازهٔ نوشته‌ها، مستطیل عمودی، راست‌چین (' + Math.round(r2.plus.w) + '×' + Math.round(r2.plus.h) + ')');

@@ -82,7 +82,7 @@ const ACC = 'ملت مصنوعی';
     const tcs = getComputedStyle(ts), ncs = getComputedStyle(n);
     out.themeSize = tcs.width + 'x' + tcs.height; out.notifSize = ncs.width + 'x' + ncs.height;
     applyTheme('dark'); await w(300);
-    out.darkOn = ts.classList.contains('on') && pos(ts) === 'R' && getComputedStyle(ts).backgroundColor === 'rgb(10, 132, 255)';
+    out.darkOn = ts.classList.contains('on') && pos(ts) === 'R' && getComputedStyle(ts).backgroundColor === 'rgb(8, 181, 245)';
     applyTheme('light'); await w(300);
     out.lightOff = !ts.classList.contains('on') && pos(ts) === 'L';
     applyTheme('dark'); await w(100);
