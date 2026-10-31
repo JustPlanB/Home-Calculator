@@ -11517,6 +11517,8 @@ html[data-theme="light"] {
     #panel-home #homeDock > .home-box > .home-circle-search svg { width: 27px; height: 27px; }
     #panel-home #homeDock .hk-dock-c svg { stroke-width: 2.3; }
     /* فرورفتگی لبهٔ دو باکس دور دایره: یک قرص هم‌رنگ صفحه با سایهٔ ظریف روی کف باکس */
+    /* ۱.۳.۷۰: فاصلهٔ دایرهٔ موجودی تا لبهٔ فرورفتگی = فاصلهٔ عمودی دو باکس */
+    #homeDock { --hk-notch-gap: var(--hk-dock-gap); }
     #homeDock .hk-notch {
       position: absolute; z-index: 0; pointer-events: none; border-radius: 50%;
       width: calc(var(--hk-bal-d) + 2 * var(--hk-notch-gap)); height: calc(var(--hk-bal-d) + 2 * var(--hk-notch-gap));
@@ -11628,9 +11630,15 @@ html[data-theme="light"] {
     .hk-ink-colors button.on { border-color: var(--hk-primary, #08b5f5); }
     .hk-ink-colors button i { display: block; width: 100%; height: 100%; border-radius: 50%; }
     .hk-ink-colors button[data-c="t"] i { background: var(--text); } .hk-ink-colors button[data-c="b"] i { background: #08b5f5; } .hk-ink-colors button[data-c="r"] i { background: var(--hk-expense, #ff6b4a); }
+    /* ۱.۳.۷۰: سبز، نارنجی و زرد نرم‌افزار هم در رنگ‌ها؛ پاک‌کن جای «پاک کردن» */
+    .hk-ink-colors button[data-c="g"] i { background: var(--hk-income, #9ee858); } .hk-ink-colors button[data-c="o"] i { background: var(--hk-personal, #ff9f0a); } .hk-ink-colors button[data-c="y"] i { background: var(--hk-warning, #ffc531); }
+    .hk-ink-tools { gap: 8px; } .hk-ink-colors { gap: 4px; } .hk-ink-colors button { width: 30px; height: 30px; padding: 3px; }
+    .hk-ink-eraser { width: 40px; height: 36px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .hk-ink-eraser svg { width: 21px; height: 21px; fill: none; stroke: var(--text); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-ink-eraser.on { border-color: var(--hk-primary, #08b5f5); background: rgba(8,181,245,0.14); }
+    .hk-ink-eraser.on svg { stroke: var(--hk-primary, #08b5f5); }
     .hk-ink-undo { width: 40px; height: 36px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .hk-ink-undo svg { width: 20px; height: 20px; fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .hk-ink-clear { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,0.12)); background: var(--bg3, #2c2c2e); color: var(--hk-danger, #ff453a); font: inherit; font-weight: 700; cursor: pointer; }
     .sp-ink { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; color: var(--text); }
     .sp-ink svg { width: 100%; height: 100%; max-height: 100%; }
     /* ===== HK-DS-ROLES: قواعد نقش‌ها (دکمه، پنجره، فیلد، نوشته، لمس) — design/system/refine.css ===== */
@@ -26155,7 +26163,7 @@ async function openPdfPrintWindow(){
     }
     /* خط‌ها: [{c:'t'|'b'|'r', w, p:[[x,y],…]}] با مختصات ۰ تا ۱۰۰۰ (افقی) و ۰ تا ۶۲۰ (عمودی) */
     var HK_INK_W = 1000, HK_INK_H = 620;
-    function hkInkColor(c) { return c === 'b' ? '#08b5f5' : c === 'r' ? 'var(--hk-expense, #ff6b4a)' : 'currentColor'; }
+    function hkInkColor(c) { return c === 'b' ? '#08b5f5' : c === 'r' ? 'var(--hk-expense, #ff6b4a)' : c === 'g' ? 'var(--hk-income, #9ee858)' : c === 'o' ? 'var(--hk-personal, #ff9f0a)' : c === 'y' ? 'var(--hk-warning, #ffc531)' : 'currentColor'; }
     function hkInkPath(pts) {
       if (!pts || !pts.length) return '';
       if (pts.length === 1) return 'M' + pts[0][0] + ' ' + pts[0][1] + 'l0.1 0';
@@ -26193,15 +26201,56 @@ async function openPdfPrintWindow(){
         '<div class="todo-title">یادداشت دست‌نویس</div>' +
         '<div class="hk-ink-pad"><canvas></canvas><div class="hk-ink-hint">با انگشت یا قلم بنویس</div></div>' +
         '<div class="hk-ink-tools">' +
-          '<div class="hk-ink-colors"><button type="button" data-c="t" class="on" aria-label="رنگ اصلی"><i></i></button><button type="button" data-c="b" aria-label="آبی"><i></i></button><button type="button" data-c="r" aria-label="قرمز"><i></i></button></div>' +
+          '<div class="hk-ink-colors"><button type="button" data-c="t" class="on" aria-label="رنگ اصلی"><i></i></button><button type="button" data-c="b" aria-label="آبی"><i></i></button><button type="button" data-c="r" aria-label="قرمز"><i></i></button><button type="button" data-c="g" aria-label="سبز"><i></i></button><button type="button" data-c="o" aria-label="نارنجی"><i></i></button><button type="button" data-c="y" aria-label="زرد"><i></i></button></div>' +
           '<button type="button" class="hk-ink-undo" aria-label="برگشت یک قدم"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>' +
-          '<button type="button" class="hk-ink-clear">پاک کردن</button>' +
+          /* ۱.۳.۷۰: پاک‌کن جای دکمهٔ «پاک کردن»: با کشیدن روی صفحه همان‌جا را پاک می‌کند */
+          '<button type="button" class="hk-ink-eraser" aria-label="پاک‌کن" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M7 20h13"/><path d="M4.6 14.6l9.9-9.9a2 2 0 0 1 2.8 0l2.9 2.9a2 2 0 0 1 0 2.8L12 18.6a2 2 0 0 1-1.4.6H8.2a2 2 0 0 1-1.4-.6l-2.2-2.2a2 2 0 0 1 0-2.8z"/><path d="M9.5 9.7l5.6 5.6"/></svg></button>' +
         '</div>' +
         '<div class="todo-actions"><button type="button" class="todo-cancel">انصراف</button><button type="button" class="todo-save">ثبت</button></div></div>';
       document.body.appendChild(ov);
       var pad = ov.querySelector('.hk-ink-pad'), cv = pad.querySelector('canvas'), ctx2 = cv.getContext('2d'), hint = pad.querySelector('.hk-ink-hint');
       var color = 't', drawing = null, scale = 1, dpr = window.devicePixelRatio || 1;
-      var inkCol = function (c) { if (c === 't') return getComputedStyle(pad).color; if (c === 'b') return '#08b5f5'; return getComputedStyle(document.documentElement).getPropertyValue('--hk-expense').trim() || '#ff6b4a'; };
+      var cssVar = function (n, d) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d; };
+      var inkCol = function (c) { if (c === 't') return getComputedStyle(pad).color; if (c === 'b') return '#08b5f5'; if (c === 'g') return cssVar('--hk-income', '#9ee858'); if (c === 'o') return cssVar('--hk-personal', '#ff9f0a'); if (c === 'y') return cssVar('--hk-warning', '#ffc531'); return cssVar('--hk-expense', '#ff6b4a'); };
+      /* پاک‌کن و «برگشت»: پیش از هر کشیدن/پاک کردن، یک نسخه از خط‌ها نگه داشته می‌شود */
+      var erasing = false, erGest = null, erAt = null, hist = [], ER_R = 16;
+      var snap = function () { hist.push(JSON.stringify(strokes)); if (hist.length > 60) hist.shift(); };
+      /* نقطه‌های خط را آن‌قدر پرتراکم می‌کند که پاک‌کن از لای دو نقطهٔ دور رد نشود */
+      var dense = function (pts) {
+        var out = [pts[0]];
+        for (var i = 1; i < pts.length; i++) {
+          var a = pts[i - 1], b = pts[i], d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.floor(d / 5);
+          for (var k = 1; k <= n; k++) { var f = k / (n + 1), np = [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f)]; np.x = 1; out.push(np); }
+          out.push(b);
+        }
+        return out;
+      };
+      /* از نقطه‌های کمکی فقط دو سرِ هر تکه می‌ماند تا حجم داده بزرگ نشود */
+      var trim = function (seg) { return seg.filter(function (p, i) { return !p.x || i === 0 || i === seg.length - 1; }).map(function (p) { return [p[0], p[1]]; }); };
+      /* هر خطی که از دایرهٔ پاک‌کن رد شود، همان تکه‌اش برداشته و بقیه‌اش به چند خط جدا شکسته می‌شود */
+      var eraseAt = function (q) {
+        var next = [], hit = false;
+        strokes.forEach(function (st) {
+          var r = ER_R + (st.w || 6) / 2, r2 = r * r, pts = st.p;
+          var near = pts.some(function (p) { return Math.abs(p[0] - q[0]) <= r + 40 && Math.abs(p[1] - q[1]) <= r + 40; });
+          if (!near) { next.push(st); return; }
+          pts = dense(pts);
+          var cur = [], cut = false;
+          pts.forEach(function (p) {
+            var dx = p[0] - q[0], dy = p[1] - q[1];
+            if (dx * dx + dy * dy <= r2) { cut = true; if (cur.length) { next.push({ c: st.c, w: st.w, p: trim(cur) }); cur = []; } }
+            else cur.push(p);
+          });
+          if (!cut) { next.push(st); return; }
+          hit = true;
+          if (cur.length) next.push({ c: st.c, w: st.w, p: trim(cur) });
+        });
+        if (hit) strokes = next;
+      };
+      var eraseLine = function (a, b) {
+        var d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(d / (ER_R * 0.6)));
+        for (var k = 1; k <= n; k++) eraseAt([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+      };
       var size = function () { var w = pad.clientWidth; cv.style.width = w + 'px'; cv.style.height = (w * HK_INK_H / HK_INK_W) + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(w * HK_INK_H / HK_INK_W * dpr); scale = cv.width / HK_INK_W; redraw(); };
       var drawStroke = function (st) {
         var pts = st.p; if (!pts.length) return;
@@ -26212,25 +26261,41 @@ async function openPdfPrintWindow(){
         if (pts.length > 1) { var l = pts[pts.length - 1]; ctx2.lineTo(l[0] * scale, l[1] * scale); }
         ctx2.stroke();
       };
-      var redraw = function () { ctx2.clearRect(0, 0, cv.width, cv.height); strokes.forEach(drawStroke); if (drawing) drawStroke(drawing); hint.style.display = (strokes.length || drawing) ? 'none' : ''; };
+      var redraw = function () {
+        ctx2.clearRect(0, 0, cv.width, cv.height); strokes.forEach(drawStroke); if (drawing) drawStroke(drawing);
+        if (erAt) { ctx2.beginPath(); ctx2.arc(erAt[0] * scale, erAt[1] * scale, ER_R * scale, 0, Math.PI * 2); ctx2.lineWidth = 1.5 * dpr; ctx2.strokeStyle = getComputedStyle(pad).color; ctx2.globalAlpha = 0.45; ctx2.stroke(); ctx2.globalAlpha = 1; }
+        hint.style.display = (strokes.length || drawing) ? 'none' : '';
+      };
       var pt = function (e) { var r = cv.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * HK_INK_W), Math.round((e.clientY - r.top) / r.height * HK_INK_H)]; };
       cv.addEventListener('pointerdown', function (e) {
         e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (eC) {}
+        if (erasing) { snap(); erGest = pt(e); erAt = erGest; eraseAt(erGest); redraw(); return; }
+        snap();
         /* قلم: ضخامت با فشار؛ انگشت: ضخامت ثابت */
         var w = e.pointerType === 'pen' && e.pressure > 0 ? Math.max(3, Math.min(10, 3 + e.pressure * 7)) : 6;
         drawing = { c: color, w: Math.round(w * 10) / 10, p: [pt(e)] }; redraw();
       });
       cv.addEventListener('pointermove', function (e) {
+        if (erGest) {
+          e.preventDefault();
+          (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(function (ce) { var q = pt(ce); eraseLine(erGest, q); erGest = q; });
+          erAt = erGest; redraw(); return;
+        }
         if (!drawing) return; e.preventDefault();
         var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
         evs.forEach(function (ce) { var q = pt(ce), l = drawing.p[drawing.p.length - 1]; if (Math.abs(q[0] - l[0]) + Math.abs(q[1] - l[1]) >= 3) drawing.p.push(q); });
         redraw();
       });
-      var end = function () { if (!drawing) return; strokes.push(drawing); drawing = null; redraw(); };
+      var end = function () {
+        if (erGest) { erGest = null; erAt = null; if (hist.length && hist[hist.length - 1] === JSON.stringify(strokes)) hist.pop(); redraw(); return; }
+        if (!drawing) return; strokes.push(drawing); drawing = null; redraw();
+      };
       cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
-      ov.querySelectorAll('.hk-ink-colors button').forEach(function (b) { b.onclick = function () { color = b.dataset.c; ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
-      ov.querySelector('.hk-ink-undo').onclick = function () { strokes.pop(); redraw(); };
-      ov.querySelector('.hk-ink-clear').onclick = function () { strokes = []; redraw(); };
+      var erBtn = ov.querySelector('.hk-ink-eraser');
+      var setErase = function (on) { erasing = on; erBtn.classList.toggle('on', on); erBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); pad.classList.toggle('erasing', on); };
+      ov.querySelectorAll('.hk-ink-colors button').forEach(function (b) { b.onclick = function () { color = b.dataset.c; setErase(false); ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+      erBtn.onclick = function () { var on = !erasing; setErase(on); ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', !on && x.dataset.c === color); }); };
+      ov.querySelector('.hk-ink-undo').onclick = function () { if (hist.length) { strokes = JSON.parse(hist.pop()); redraw(); } };
       var close = function () { ov.classList.remove('open'); window.removeEventListener('resize', size); setTimeout(function () { try { ov.remove(); } catch (e) {} }, 200); };
       ov._hkCancel = close;
       ov.querySelector('.todo-cancel').onclick = close;
