@@ -110,7 +110,8 @@ async function page(b, inbox, opts) {
     const ov = document.getElementById('hkAttachOv');
     out.blur = ov ? getComputedStyle(ov).backdropFilter : '';
     hkCloseAttach();
-    out.trackFs = getComputedStyle(document.querySelector('#panel-expense .row-add-track-label')).fontSize;
+    /* ۱.۳.۷۱: دکمهٔ افزودن معمولی/پروژه از منوی مخارج برداشته شد (افزودن فقط از «+» صفحهٔ اصلی) */
+    out.noFab = !document.querySelector('#panel-expense .row-add-fab');
     out.smsTime = [hkSmsTime('بانك ملي\nبرداشت:10-\n0520-10:00', 0), hkSmsTime('بی ساعت', new Date(2026, 0, 1, 7, 5).getTime())];
     out.wrapped = !!(confirmSmsEntry && confirmSmsEntry._hkTime);
     return out;
@@ -124,7 +125,7 @@ async function page(b, inbox, opts) {
   ok(c.hdr.join('|') === 'ردیف|روز|شرح|مبلغ|حساب|فایل', 'ستون «فایل» آخرین ستون (بعد از حساب)');
   ok(c.fileGrey && c.attOpen, 'گیرهٔ خاکستری؛ زدنش پنجرهٔ پیوست را باز می‌کند');
   ok(/blur/.test(c.blur), 'پشت پنجرهٔ پیوست‌ها مات');
-  ok(c.trackFs === '14px', 'نوشتهٔ «پروژه» در دکمهٔ افزودن بزرگ‌تر (۱۴px)');
+  ok(c.noFab, '۱.۳.۷۱: منوی مخارج دکمهٔ افزودن ندارد (افزودن از «+» صفحهٔ اصلی)');
 
   /* ---------- پیوست: × یکسان و جای دکمهٔ پخش ---------- */
   const at = await p2.evaluate(async () => {
