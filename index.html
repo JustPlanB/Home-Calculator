@@ -6568,6 +6568,16 @@ html[data-theme="light"] {
     .hk-add-it.inc { color: #9ee858; } .hk-add-it.exp { color: #ff6b4a; }
     html[data-theme="light"] .hk-add-pop { box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
     html[data-theme="light"] .hk-add-it.inc { color: #17834a; } html[data-theme="light"] .hk-add-it.exp { color: #dc2626; }
+    #sections-income .add-row-wrap:empty, #sections-expense .add-row-wrap:empty { display: none !important; }
+    /* ۱.۳.۷۱: پروژه‌ها بالای «ثبت درآمد/خرج» */
+    .hk-add-pj { padding: 8px 10px 9px; border-bottom: 1px solid var(--border); }
+    .hk-add-pjl { font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); margin-bottom: 6px; text-align: center; }
+    .hk-add-chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+    .hk-add-chip { font-family: inherit; font-size: var(--hk-fs-small, 12px); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 14px; border: none; cursor: pointer;
+      background: var(--bg3, #2c2c2e); color: var(--muted, var(--hk-muted)); max-width: 100%; transition: background 0.18s, color 0.18s, box-shadow 0.18s; }
+    .hk-add-chip > i { width: 8px; height: 8px; border-radius: 50%; background: var(--pj-c); flex: 0 0 auto; }
+    .hk-add-chip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hk-add-chip.on { color: var(--pj-c); background: color-mix(in srgb, var(--pj-c) 20%, transparent); box-shadow: inset 0 0 0 1.5px var(--pj-c); }
     /* ۱.۳.۶۴: مقایسهٔ دو تراکنش در هشدار تکراری */
     #confirmModal.hk-dup-open .modal-box { width: 92vw; max-width: 380px; box-sizing: border-box; }
     .hk-dup-cmp { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; text-align: right; max-height: 58vh; overflow-y: auto; }
@@ -11467,6 +11477,8 @@ html[data-theme="light"] {
     #panel-ledger #sections-ledger .section .section-header .title-display { font-size: var(--hk-fs-control) !important; }
     #panel-ledger #sections-ledger .section .section-header .title-display { transition: opacity 0.3s ease; }
     #panel-ledger #sections-ledger .section:not(.collapsed):not(.hk-shutting) .section-header .title-display { opacity: 0 !important; }
+    /* ۱.۳.۷۱: کادر اسم دو نفر در حالت بسته هم همان اندازهٔ حالت باز (بلوکی و تمام‌عرض) تا موقع باز/بسته شدن نپرد */
+    #panel-ledger #sections-ledger .section.collapsed .section-header .title-display { display: block !important; width: 100% !important; box-sizing: border-box; }
     /* ۱.۳.۶۰: پس‌زمینهٔ جدول قرض مثل جدول درآمد/مخارج */
     #panel-ledger #sections-ledger .section-body table { background: #2c2c2e !important; }
     html[data-theme="light"] #panel-ledger #sections-ledger .section-body table { background: var(--lt-surface) !important; }
@@ -11537,6 +11549,68 @@ html[data-theme="light"] {
     }
     #panel-home #homeDock > .home-circle-big .hbc-label { font-size: var(--hk-fs-small); line-height: 1.2; }
     #panel-home #homeDock > .home-circle-big .hbc-amt { margin: 0 !important; font-size: var(--hbc-fs, 19px); font-weight: 700; line-height: 1.25; white-space: nowrap; flex-wrap: nowrap; }
+    /* ۱.۳.۷۱: روزِ امروز زیر اسم ماه (فقط ماه جاری) */
+    #monthSelectWrap .dark-select-btn.hk-has-today { flex-direction: column !important; align-items: center !important; line-height: 1.2 !important; gap: 1px; }
+    #monthSelectWrap .dark-select-btn .hk-mtoday { display: block; font-size: var(--hk-fs-caption, 11px); font-weight: 600; color: var(--hk-primary, #08b5f5); line-height: 1.2; transform: translateX(14px); white-space: nowrap; }
+    /* ۱.۳.۷۱: شخصی‌سازی تازه */
+    .modal-box.hk-pf { padding: 0 !important; overflow: hidden; display: flex; flex-direction: column; max-height: 86vh; }
+    .hk-pf-h { display: flex; align-items: center; gap: 8px; padding: 14px 14px 8px; flex: 0 0 auto; }
+    .hk-pf-h .hk-pf-t { margin: 0 !important; flex: 1; text-align: right !important; font-size: var(--hk-fs-title); }
+    .hk-pf-x, .hk-pf-back { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg3, #2c2c2e); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: 0 0 auto; }
+    .hk-pf-x svg, .hk-pf-back svg { width: 16px; height: 16px; fill: none; stroke: var(--muted, var(--hk-muted)); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-pf-back svg { stroke: var(--hk-primary, #08b5f5); }
+    .hk-pf-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 14px; flex: 1 1 auto; animation: hkPfIn 0.2s ease; }
+    .hk-pf-body.sub { animation-name: hkPfSub; }
+    @keyframes hkPfIn { from { opacity: 0.4; } to { opacity: 1; } }
+    @keyframes hkPfSub { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+    .hk-pf-gh { font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); font-weight: 600; padding: 12px 10px 6px; }
+    .hk-pf-grp { background: var(--bg3, #2c2c2e); border-radius: 16px; overflow: hidden; }
+    .hk-pf-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 12px; border: none; background: transparent; color: var(--text);
+      font-family: inherit; font-size: var(--hk-fs-body); text-align: right; box-sizing: border-box; cursor: pointer; position: relative; }
+    .hk-pf-row + .hk-pf-row { border-top: 1px solid var(--border, rgba(255,255,255,0.09)); }
+    div.hk-pf-row { cursor: default; }
+    .hk-pf-l { flex: 1 1 auto; min-width: 0; }
+    .hk-pf-ic { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .hk-pf-ic svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-pf-v { color: var(--muted, var(--hk-muted)); font-size: var(--hk-fs-small); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .hk-pf-chev { width: 7px; height: 7px; border: solid var(--muted, var(--hk-muted)); border-width: 0 2px 2px 0; transform: rotate(135deg); opacity: 0.75; flex: 0 0 auto; margin-left: 2px; }
+    .hk-pf-dk { width: 28px; height: 28px; border-radius: 50%; background: var(--bg, #1b1b1b); display: inline-flex; align-items: center; justify-content: center; }
+    .hk-pf-dk svg { width: 15px; height: 15px; fill: none; stroke: var(--hk-primary, #08b5f5); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-pf-sw { width: 46px; height: 28px; border-radius: 14px; border: none; padding: 0; background: rgba(120,120,128,0.42); position: relative; flex: 0 0 auto; cursor: pointer; transition: background 0.2s; }
+    .hk-pf-sw::after { content: ""; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: right 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hk-pf-sw.on { background: var(--hk-primary, #08b5f5); }
+    .hk-pf-sw.on::after { right: 21px; }
+    .hk-pf-seg.hk-re-seg { flex: 0 0 auto; width: auto; }
+    .hk-pf-seg.hk-re-seg .hk-re-segb { white-space: nowrap; padding: 5px 9px; font-size: var(--hk-fs-label); min-height: 0; }
+    .hk-pf-radio.on { color: var(--hk-primary, #08b5f5); font-weight: 700; }
+    .hk-pf-radio.on::after { content: ""; width: 6px; height: 12px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translateY(-2px); margin-left: 6px; }
+    .hk-pf-note { font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); padding: 8px 10px 0; line-height: 1.7; }
+    .hk-pf-hnd { display: flex; align-items: center; justify-content: center; width: 28px; height: 36px; margin: -6px 0; touch-action: none; cursor: grab; flex: 0 0 auto; }
+    .hk-pf-hnd svg { width: 18px; height: 18px; fill: none; stroke: var(--muted, var(--hk-muted)); stroke-width: 2; stroke-linecap: round; }
+    .hk-pf-slides .hk-pf-row.drag { z-index: 2; background: var(--bg2, #1c1c1e); box-shadow: 0 6px 18px rgba(0,0,0,0.35); border-radius: 12px; transition: none; }
+    @media (hover: hover) { button.hk-pf-row:hover { background: rgba(127,127,127,0.08); } }
+    button.hk-pf-row:active { background: rgba(127,127,127,0.14); }
+    html[data-theme="light"] .hk-pf-grp, html[data-theme="light"] .hk-pf-x, html[data-theme="light"] .hk-pf-back { background: var(--hk-surface, #fff); }
+    html[data-theme="light"] .modal-box.hk-pf { background: var(--bg, #f4f5f7) !important; }
+    html[data-theme="light"] .hk-pf-dk { background: var(--bg, #f4f5f7); }
+    /* ۱.۳.۷۱: لانگ‌پرس میان‌بر */
+    @keyframes hkDockJig { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+    #panel-home #homeDock .hk-dock-c.hk-dock-jig { animation: hkDockJig 0.32s ease-in-out infinite; outline: 2px solid var(--hk-primary, #08b5f5); outline-offset: 3px; }
+    .hk-dock-pov { position: fixed; inset: 0; z-index: 100400; background: transparent; }
+    .hk-dock-pop { position: fixed; width: 196px; overflow-y: auto; overscroll-behavior: contain; direction: rtl; padding: 6px; border-radius: 16px;
+      background: var(--bg2, #1c1c1e); border: 1px solid var(--border); box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+      opacity: 0; transform: translateY(8px) scale(0.97); transform-origin: bottom center; transition: opacity 0.16s ease, transform 0.16s ease; }
+    .hk-dock-pov.open .hk-dock-pop { opacity: 1; transform: none; }
+    .hk-dock-pi { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 10px; border: none; border-radius: 11px; background: transparent;
+      color: var(--text); font-family: inherit; font-size: var(--hk-fs-body); font-weight: 600; text-align: right; cursor: pointer; }
+    .hk-dock-pi svg { width: 21px; height: 21px; flex: 0 0 auto; fill: none; stroke: var(--hk-primary, #08b5f5); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .hk-dock-pi.on { background: rgba(8,181,245,0.14); color: var(--hk-primary, #08b5f5); }
+    .hk-dock-pi.on::after { content: ""; width: 6px; height: 11px; margin-right: auto; margin-left: 4px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translateY(-2px); }
+    .hk-dock-pi.off { opacity: 0.38; cursor: default; }
+    .hk-dock-pi small { margin-right: auto; font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); font-weight: 400; }
+    @media (hover: hover) { .hk-dock-pi:not(.off):not(.on):hover { background: rgba(127,127,127,0.12); } }
+    .hk-dock-pi:not(.off):not(.on):active { background: rgba(127,127,127,0.16); }
+    html[data-theme="light"] .hk-dock-pop { box-shadow: 0 10px 28px rgba(0,0,0,0.16); }
     /* انتخاب میان‌بر در شخصی‌سازی */
     .hk-dock-prefs { display: flex; gap: 6px; }
     .hk-dock-go small { color: var(--muted, var(--hk-muted)); font-size: var(--hk-fs-caption); margin-left: 4px; }
@@ -14139,6 +14213,34 @@ button, input, select, textarea { font-family: inherit; }
       const bd = ensureDarkSelectBackdrop();
       bd.style.display = 'block';
     }
+    /* ۱.۳.۷۱: وقتی ماهِ جاری باز است، زیر اسم ماه کوچک و آبی: «یکشنبه ۱۰» */
+    var HK_WD_JS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+    function hkMonthTodayMark() {
+      try {
+        var mw = document.getElementById('monthSelectWrap'), yw = document.getElementById('yearSelectWrap');
+        var btn = mw && mw.querySelector('.dark-select-btn'); if (!btn) return;
+        var t = getTodayPersian(), y = parseInt((yw && yw.dataset.value) || currentYear, 10), m = parseInt(mw.dataset.value, 10);
+        var on = y === t.y && m === t.m, sm = btn.querySelector('.hk-mtoday');
+        var txt = on ? HK_WD_JS[new Date().getDay()] + ' ' + toPersianDigits(String(t.d)) : '';
+        if (!on) { if (sm) sm.remove(); btn.classList.remove('hk-has-today'); return; }
+        if (!sm) { sm = document.createElement('small'); sm.className = 'hk-mtoday'; btn.appendChild(sm); }
+        if (sm.textContent !== txt) sm.textContent = txt;
+        btn.classList.add('hk-has-today');
+      } catch (e) {}
+    }
+    function hkMonthTodayWatch() {
+      var mw = document.getElementById('monthSelectWrap'), yw = document.getElementById('yearSelectWrap');
+      if (!mw || mw._hkTodayW) return; mw._hkTodayW = true;
+      try {
+        var mo = new MutationObserver(function () { hkMonthTodayMark(); });
+        mo.observe(mw, { attributes: true, attributeFilter: ['data-value'], childList: true, subtree: true });
+        if (yw) mo.observe(yw, { attributes: true, attributeFilter: ['data-value'] });
+      } catch (e) {}
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) hkMonthTodayMark(); });
+      setInterval(hkMonthTodayMark, 60000);
+      hkMonthTodayMark();
+    }
+    (function () { var n = 0; var go = function () { if (document.getElementById('monthSelectWrap')) { try { hkMonthTodayWatch(); } catch (e) {} return; } if (++n < 60) setTimeout(go, 250); }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else setTimeout(go, 0); })();
     function createDarkSelect({ options, value, onChange, id, align, listClassName, listMinWidth }) {
       const wrap = document.createElement('div');
       wrap.className = 'dark-select';
@@ -14298,6 +14400,7 @@ button, input, select, textarea { font-family: inherit; }
         const yw = document.getElementById('yearSelectWrap');
         if (mw && mw.setValue) mw.setValue(currentMonth);
         if (yw && yw.setValue) yw.setValue(currentYear);
+        try { hkMonthTodayWatch(); } catch (eTw) {}
         const hm = document.getElementById('monthSelect');
         const hy = document.getElementById('yearSelect');
         if (hm) hm.value = currentMonth;
@@ -26348,7 +26451,7 @@ async function openPdfPrintWindow(){
       var D = null;
       try { D = spCollect(title); } catch (e) { D = null; }
       var pages = [];
-      if (D) SMART_PANEL_PAGES.forEach(function (pg) {
+      if (D) hkSpOrderedPages().forEach(function (pg) {
         var h = null;
         try { h = pg.build(D); } catch (e) { h = null; }
         /* سازنده می‌تواند چند اسلاید بدهد (مثلاً چند فهرست کار) */
@@ -27186,9 +27289,28 @@ async function openPdfPrintWindow(){
       var old = document.getElementById('hkAddPop'); if (old) { old.remove(); return; }
       var ov = document.createElement('div'); ov.id = 'hkAddPop'; ov.className = 'hk-add-ov'; ov.setAttribute('data-hk-back', '1');
       var box = document.createElement('div'); box.className = 'hk-add-pop';
+      /* ۱.۳.۷۱: بالای دکمه‌ها اسم پروژه‌ها (پرکاربردتر اول) با رنگشان؛ یکی را بزنی، ردیف تازه از قبل مال همان پروژه است */
+      var pick = '', pjs = hkAddProjects();
+      if (pjs.length) {
+        var pw = document.createElement('div'); pw.className = 'hk-add-pj';
+        pw.innerHTML = '<div class="hk-add-pjl">برای پروژه؟</div>';
+        var chips = document.createElement('div'); chips.className = 'hk-add-chips';
+        pjs.forEach(function (sb) {
+          var c = document.createElement('button'); c.type = 'button'; c.className = 'hk-add-chip'; c.dataset.id = sb.id;
+          c.style.setProperty('--pj-c', sb.accent);
+          c.innerHTML = '<i></i><span>' + escapeHtml(sb.name) + '</span>';
+          c.onclick = function (e) {
+            e.stopPropagation(); pick = pick === sb.id ? '' : sb.id;
+            chips.querySelectorAll('.hk-add-chip').forEach(function (x) { x.classList.toggle('on', x.dataset.id === pick); x.setAttribute('aria-pressed', x.dataset.id === pick ? 'true' : 'false'); });
+            try { window.appHaptic(10); } catch (eH) {}
+          };
+          chips.appendChild(c);
+        });
+        pw.appendChild(chips); box.appendChild(pw);
+      }
       var mk = function (cls, txt, tab) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-add-it ' + cls; b.textContent = txt;
-        b.onclick = function (e) { e.stopPropagation(); ov.remove(); hkHomeAddRow(tab); };
+        b.onclick = function (e) { e.stopPropagation(); ov.remove(); hkHomeAddRow(tab, pick); };
         return b;
       };
       box.appendChild(mk('inc', 'ثبت درآمد', 'income'));
@@ -27202,14 +27324,29 @@ async function openPdfPrintWindow(){
         var r = btn.getBoundingClientRect(), bw = box.offsetWidth, bh = box.offsetHeight;
         /* ۱.۳.۶۸: درست بالای «+» (هم‌محور با آن)، روی باکس بالایی؛ به دایرهٔ موجودی نمی‌رسد */
         var bc = document.getElementById('homeBalanceCircle'), br = bc ? bc.getBoundingClientRect() : null;
+        /* پهنای باکس طوری که به دایرهٔ موجودی نرسد (اسم پروژه‌ها در چند خط می‌شکنند) */
+        var lift = false;
+        if (br && br.width && pjs.length) { box.style.maxWidth = '230px'; bw = box.offsetWidth; bh = box.offsetHeight; lift = bw > br.left - 14; }
         var left = r.left + r.width / 2 - bw / 2;
-        if (br && br.width && left + bw > br.left - 6) left = br.left - 6 - bw;
+        if (br && br.width && !lift && left + bw > br.left - 6) left = br.left - 6 - bw;
         left = Math.max(8, Math.min(innerWidth - bw - 8, left));
         box.style.left = Math.round(left) + 'px';
-        box.style.top = Math.round(Math.max(8, r.top - bh - 10)) + 'px';
+        /* با پروژه‌ها باکس پهن‌تر است؛ آن‌وقت بالاتر از دایرهٔ موجودی باز می‌شود تا رویش نیفتد */
+        box.style.top = Math.round(Math.max(8, (lift ? Math.min(r.top, br.top) : r.top) - bh - 10)) + 'px';
       } catch (eP) {}
     }
-    function hkHomeAddRow(tab) {
+    var HK_PJ_RECENT = STORAGE_KEY + '_pjRecent';
+    function hkAddProjects() {
+      var list = [];
+      try { list = (loadFinancialSubjects() || []).filter(function (s) { return s && s.id && s.id !== 'personal' && !s.archived; }); } catch (e) {}
+      var rec = []; try { rec = JSON.parse(localStorage.getItem(HK_PJ_RECENT) || '[]') || []; } catch (e2) {}
+      return list.map(function (s, i) {
+        var meta = null; try { meta = getProjectHighlightMeta(s.highlightColor); } catch (e3) {}
+        var k = rec.indexOf(s.id);
+        return { id: s.id, name: s.name || 'پروژه', accent: (meta && meta.accent) || '#d000ff', o: k >= 0 ? k : 1000 + i };
+      }).sort(function (a, b) { return a.o - b.o; });
+    }
+    function hkHomeAddRow(tab, projId) {
       try {
         var title = hkMainTitle();
         var sec = findSectionByTitle(tab, title);
@@ -27217,6 +27354,16 @@ async function openPdfPrintWindow(){
         if (!Array.isArray(sec.rows)) sec.rows = [];
         var t = getTodayPersian();
         var row = Object.assign(emptyRow(tab), { status: 'paid', day: (currentYear === t.y && currentMonth === t.m) ? String(t.d) : '' });
+        if (projId) {
+          var sb = (loadFinancialSubjects() || []).filter(function (s) { return s && s.id === projId; })[0];
+          if (sb) {
+            var fc = defaultFinancialContext();
+            fc.classification = 'third_party'; fc.accountType = 'project'; fc.subjectId = sb.id; fc.subjectName = sb.name || '';
+            fc.ownerName = fc.subjectName; fc.fundingSource = 'subject'; fc.projectAmount = 0; fc.personalAdvanceAmount = 0;
+            row.financialContext = fc;
+            try { var rc = JSON.parse(localStorage.getItem(HK_PJ_RECENT) || '[]') || []; rc = [sb.id].concat(rc.filter(function (x) { return x !== sb.id; })).slice(0, 20); localStorage.setItem(HK_PJ_RECENT, JSON.stringify(rc)); } catch (eR) {}
+          }
+        }
         /* قبل از ردیف‌های خالیِ انتهای جدول */
         var at = sec.rows.length;
         var blank = function (r) { return !r || (!(Number(r.amount) > 0) && !String(r.desc || '').trim() && !String(r.day || '').trim()); };
@@ -29653,7 +29800,8 @@ container.innerHTML = '';
           }
         }
       });
-      box.appendChild(fabWrap);
+      /* ۱.۳.۷۱: افزودن ردیف (معمولی/پروژه) فقط از «+» صفحهٔ اصلی؛ دکمهٔ این منو برداشته شد */
+      if (tab !== 'income' && tab !== 'expense') box.appendChild(fabWrap);
 
       page.appendChild(box);
       container.appendChild(page);
@@ -42665,8 +42813,7 @@ field('حساب بانکی', accSelRec);
           } catch (eP) {}
         }
       });
-      addRowWrap.appendChild(fabWrap);
-
+      /* ۱.۳.۷۱: افزودن ردیف فقط از «+» صفحهٔ اصلی */
       body.appendChild(addRowWrap);
       const hint = document.createElement('div');
       hint.className = 'tap-hint';
@@ -44149,7 +44296,7 @@ function openProjectRowPicker(secId) {
   <li><strong>باکس هوشمند</strong> (سمت چپ کارت) اسلایدهای خودکار دارد: وضعیت ماه، مقایسه با ماه قبل، تعهدات، طلب و بدهی، دسته‌بندی مخارج، نکات و «کارهای من» (با دکمهٔ + آبی).</li>
 </ul></div>
 <div class="help-section"><h4>جدول درآمد و مخارج</h4><ul>
-  <li>دکمهٔ <strong>+</strong> ردیف جدید می‌سازد؛ اگر دایره را تا «پروژه» بکشید، ردیف پروژه ساخته می‌شود.</li>
+  <li>ردیف تازه را با <strong>+</strong> صفحهٔ اصلی (کنار دایرهٔ موجودی) بسازید؛ برای ردیف پروژه، اول اسم پروژه را بزنید و بعد «ثبت درآمد» یا «ثبت خرج».</li>
   <li>برای ویرایش یا حذف، انگشت را روی ردیف <strong>نگه دارید</strong>. وضعیت پرداخت با یک ضربه روی مبلغ انتخاب می‌شود. پرداخت قسط را مثل هر برداشت دیگر ثبت کنید (شرح «پرداخت قسط»).</li>
 </ul></div>
 <div class="help-section"><h4>باکس‌های منوی صفحهٔ اصلی</h4><ul>
@@ -44732,6 +44879,29 @@ function openProjectRowPicker(secId) {
       try{ window.close(); }catch(e){}
     }
 
+    function hkBackTopLayer() {
+      var pts = [[0.5, 0.5], [0.5, 0.3], [0.5, 0.75]], el = null;
+      for (var i = 0; i < pts.length && !el; i++) {
+        var hit = document.elementFromPoint(innerWidth * pts[i][0], innerHeight * pts[i][1]);
+        el = hit && hit.closest ? hit.closest('[data-hk-back]') : null;
+      }
+      if (!el) return false;
+      if (typeof el._hkCancel === 'function') el._hkCancel();
+      else if (typeof el._hkClose === 'function') el._hkClose();
+      else el.remove();
+      return true;
+    }
+    /* ۱.۳.۷۱: بازگشت در صفحهٔ اصلی = رفتن به پس‌زمینه (نرم‌افزار بسته نمی‌شود)؛ قفل مثل خروج، موقع برگشت رمز می‌خواهد */
+    function hkAppToBackground() {
+      try { localStorage.setItem('hk_lock_app_exit', '1'); } catch (e0) {}
+      try { __lockUnlockedThisSession = false; } catch (e1) {}
+      try { _flushPendingSave(); } catch (e2) {}
+      try {
+        var C = window.Capacitor, App = C && C.Plugins && C.Plugins.App;
+        if (App && typeof App.minimizeApp === 'function') { App.minimizeApp(); return; }
+      } catch (e3) {}
+      doAppExit();
+    }
     function onBackGuard(){
       if(_backHandling) return;
       _backHandling=true;
@@ -44747,6 +44917,9 @@ function openProjectRowPicker(secId) {
       try { if (document.querySelector('.pd-desc-popup, .cell-text-popup')) closeCellTextPopups(); } catch (eCt) {}
       try { if (typeof closeSmsCatMore === 'function' && closeSmsCatMore()) return; } catch (eCm) {}
       try { if (document.querySelector('.fancy-select-list.open, .dark-select-list.open')) { closeAllAppMenus(); return; } } catch (eDs) {}
+      /* ۱.۳.۷۱: قانون کلی — هر لایه‌ای که data-hk-back دارد و الان روی همه است (وسط صفحه زیر انگشت)،
+         با بازگشت مثل «انصراف» بسته می‌شود؛ لایه‌های تازه دیگر لازم نیست تک‌تک اینجا نوشته شوند */
+      try { if (hkBackTopLayer()) return; } catch (eTl) {}
       /* جزئیات ماه (روی منوی جستجو) و نمای تمام‌صفحهٔ عکس پیوست */
       try { if (document.getElementById('hkImgView')) { document.getElementById('hkImgView').remove(); return; } if (bsCloseMonthDetail()) return; } catch (eMd) {}
       /* پنجره‌های تکراری‌های قبلی / ترمیم قسط / پیوست‌ها (روی ثبت گروهی و جدول‌ها): فقط همان پنجره بسته شود */
@@ -44834,14 +45007,7 @@ function openProjectRowPicker(secId) {
           return;
         }
       } catch (e) {}
-      const now=Date.now();
-      if(now-_lastBackAt <= BACK_EXIT_WINDOW){
-        _lastBackAt=0;
-        doAppExit();
-        return;
-      }
-      _lastBackAt=now;
-      showToast('برای خروج، یک‌بار دیگر بازگشت را بزنید');
+      hkAppToBackground();
     }
 
     try {
@@ -45986,7 +46152,8 @@ function openProjectRowPicker(secId) {
         b.type = 'button'; b.className = 'home-circle hk-dock-c hk-dock-' + side; b.dataset.k = k;
         b.setAttribute('aria-label', it.label); b.title = it.label;
         b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + it.svg + '</svg>';
-        b.onclick = function (e) { e.stopPropagation(); try { it.go(); } catch (eG) {} };
+        b.onclick = function (e) { e.stopPropagation(); if (b._hkLp) { b._hkLp = false; return; } try { it.go(); } catch (eG) {} };
+        hkDockBindLongPress(b, side);
         return b;
       };
       /* همان ترتیب باکس پایین (چپ‌به‌راست): میان‌بر چپ روبه‌روی «+»، راست روبه‌روی جستجو */
@@ -45998,10 +46165,61 @@ function openProjectRowPicker(secId) {
       top.insertBefore(mk('L'), notch);
       top.insertBefore(mk('R'), notch);
     }
+    /* ۱.۳.۷۱: لانگ‌پرس روی میان‌بر → ویبرهٔ کوتاه، دکمه می‌لرزد و فهرست عمودی گزینه‌ها بالایش باز می‌شود */
+    function hkDockBindLongPress(b, side) {
+      var t = 0, sx = 0, sy = 0;
+      var clear = function () { clearTimeout(t); t = 0; };
+      b.addEventListener('pointerdown', function (e) {
+        if (e.button > 0) return; sx = e.clientX; sy = e.clientY; clear();
+        t = setTimeout(function () { t = 0; b._hkLp = true; hkDockOpenPop(b, side); }, 480);
+      });
+      b.addEventListener('pointermove', function (e) { if (t && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) > 10) clear(); });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, clear); });
+      b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    }
+    function hkDockOpenPop(btn, side) {
+      var old = document.getElementById('hkDockPop'); if (old && old._hkCancel) old._hkCancel();
+      try { window.appHaptic(25); } catch (eH) {}
+      btn.classList.add('hk-dock-jig');
+      var ov = document.createElement('div'); ov.id = 'hkDockPop'; ov.className = 'hk-dock-pov'; ov.setAttribute('data-hk-back', '1');
+      var pop = document.createElement('div'); pop.className = 'hk-dock-pop'; pop.setAttribute('role', 'menu'); ov.appendChild(pop);
+      var cur = hkDockPick(side), other = hkDockPick(side === 'L' ? 'R' : 'L');
+      var close = function () { btn.classList.remove('hk-dock-jig'); ov.remove(); setTimeout(function () { btn._hkLp = false; }, 400); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      Object.keys(HK_DOCK_ITEMS).forEach(function (k) {
+        var it = HK_DOCK_ITEMS[k];
+        var o = document.createElement('button'); o.type = 'button'; o.setAttribute('role', 'menuitem'); o.dataset.k = k;
+        o.className = 'hk-dock-pi' + (k === cur ? ' on' : '') + (k === other ? ' off' : '');
+        o.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + it.svg + '</svg><span>' + it.label + '</span>' +
+          (k === other ? '<small>' + (side === 'L' ? 'سمت راست' : 'سمت چپ') + '</small>' : '');
+        if (k === other) o.disabled = true;
+        o.onclick = function (e) {
+          e.stopPropagation();
+          if (k !== cur) { hkPrefSet(side === 'L' ? 'dockL' : 'dockR', k); try { hkRenderDock(); } catch (eR) {} try { window.appHaptic(10); } catch (eH2) {} }
+          close();
+        };
+        pop.appendChild(o);
+      });
+      document.body.appendChild(ov);
+      try {
+        var r = btn.getBoundingClientRect(), pw = pop.offsetWidth;
+        var top0 = Math.max(10, (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0) + 10);
+        pop.style.maxHeight = Math.max(160, Math.round(r.top - 12 - top0)) + 'px';
+        var ph = pop.offsetHeight;
+        var left = side === 'L' ? r.left - 4 : r.right + 4 - pw;
+        left = Math.max(8, Math.min(innerWidth - pw - 8, left));
+        pop.style.left = Math.round(left) + 'px';
+        pop.style.top = Math.round(Math.max(top0, r.top - 12 - ph)) + 'px';
+        pop.style.setProperty('--hk-dp-arrow', Math.round(r.left + r.width / 2 - left) + 'px');
+        var on = pop.querySelector('.hk-dock-pi.on'); if (on && on.offsetTop + on.offsetHeight > pop.clientHeight) pop.scrollTop = on.offsetTop - 8;
+      } catch (eP) {}
+      requestAnimationFrame(function () { ov.classList.add('open'); });
+    }
     /* انتخاب میان‌بر در شخصی‌سازی: فهرست با آیکن؛ بیرون یا دکمهٔ برگشت = بستن */
     function hkOpenDockPicker(side, after) {
       var old = document.getElementById('hkDockPick'); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = 'hkDockPick'; ov.className = 'modal-overlay open';
+      var ov = document.createElement('div'); ov.id = 'hkDockPick'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:660;display:flex;align-items:center;justify-content:center;';
       var box = document.createElement('div'); box.className = 'modal-box hk-prefs hk-dock-pick'; ov.appendChild(box);
       var close = function () { ov.remove(); if (after) after(); };
@@ -46022,79 +46240,169 @@ function openProjectRowPicker(secId) {
       document.body.appendChild(ov);
     }
     var HK_SP_LABELS = { overview: 'خلاصهٔ ماه', stats: 'آمار', todo: 'کارهای من', ledger: 'قرض', categories: 'دسته‌ها', projects: 'پروژه‌ها', upcoming: 'سررسیدها', jump: 'بیشترین جهش', biggest: 'بزرگ‌ترین خرج', fix: 'تکمیل اطلاعات', insight: 'نکته‌ها' };
+    /* ===== ۱.۳.۷۱: شخصی‌سازی تازه — هم‌سبک منوی ویرایش ردیف: گروه‌ها با عنوان کوچک، ردیف‌های یکدست با «مقدار ›»،
+       کلید روشن/خاموش، و صفحهٔ دوم برای انتخاب‌ها و اسلایدها (فلش برگشت). تنظیم‌ها همان تنظیم‌های قبلی‌اند. ===== */
+    var HK_PF_IC = {
+      font: '<path d="M5 19L10 5l5 14M7 14h6M16 19l2.5-7 2.5 7"/>',
+      start: '<path d="M4 11l8-6 8 6v8.5H4z"/>',
+      sort: '<path d="M7 4v16M4 17l3 3 3-3M14 6h6M14 11h4M14 16h2"/>',
+      dock: '<circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/>',
+      slides: '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M9 12h6"/>',
+      cats: '<path d="M5 7h14M5 12h10M5 17h6"/>',
+      privacy: '<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/>',
+      sms: '<path d="M4.5 4.5h15A1.5 1.5 0 0 1 21 6v9.5a1.5 1.5 0 0 1-1.5 1.5H10l-4.2 3.5V17H4.5A1.5 1.5 0 0 1 3 15.5V6a1.5 1.5 0 0 1 1.5-1.5z"/>',
+      remind: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2H4.4z"/><path d="M10 21a2.1 2.1 0 0 0 4 0"/>',
+      recap: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'
+    };
+    var HK_PF_COL = { font: '#5e5ce6', start: '#30b0c7', sort: '#8e8e93', dock: '#08b5f5', slides: '#34c759', cats: '#ff9f0a', privacy: '#636366', sms: '#ff6b4a', remind: '#e6b12c', recap: '#af52de' };
+    /* ترتیب اسلایدهای باکس هوشمند (اولویت کاربر)؛ اسلایدهای ثابت مثل هشدار و «+» سر جایشان می‌مانند */
+    function hkSpOrderKeys() {
+      var o = hkPrefs().spOrder, all = Object.keys(HK_SP_LABELS);
+      o = Array.isArray(o) ? o.filter(function (k) { return all.indexOf(k) >= 0; }) : [];
+      all.forEach(function (k) { if (o.indexOf(k) < 0) o.push(k); });
+      return o;
+    }
+    function hkSpOrderedPages() {
+      var o = hkPrefs().spOrder;
+      if (!Array.isArray(o) || !o.length) return SMART_PANEL_PAGES;
+      var ord = hkSpOrderKeys(), out = SMART_PANEL_PAGES.slice(), slots = [], movable = [];
+      SMART_PANEL_PAGES.forEach(function (pg, i) { if (HK_SP_LABELS[pg.key]) { slots.push(i); movable.push(pg); } });
+      movable.sort(function (a, b) { return ord.indexOf(a.key) - ord.indexOf(b.key); });
+      slots.forEach(function (si, n) { out[si] = movable[n]; });
+      return out;
+    }
     function openPrefsModal() {
       var old = document.getElementById('hkPrefsModal'); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = 'hkPrefsModal'; ov.className = 'modal-overlay open';
+      var ov = document.createElement('div'); ov.id = 'hkPrefsModal'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:640;display:flex;align-items:center;justify-content:center;';
-      var box = document.createElement('div'); box.className = 'modal-box hk-prefs'; ov.appendChild(box);
+      var box = document.createElement('div'); box.className = 'modal-box hk-prefs hk-pf'; ov.appendChild(box);
+      var stack = [];
       var close = function () { ov.remove(); };
-      ov._hkCancel = close;
+      /* بازگشت: اول از صفحهٔ دوم به صفحهٔ اصلی، بعد بستن */
+      ov._hkCancel = function () { if (stack.length) { stack.pop(); render(); } else close(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-      var seg = function (key, opts, cur, onPick) {
-        var s = document.createElement('div'); s.className = 'hk-re-seg';
+      var chev = '<i class="hk-pf-chev" aria-hidden="true"></i>';
+      var ic = function (k) { return '<span class="hk-pf-ic" style="background:' + HK_PF_COL[k] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + HK_PF_IC[k] + '</svg></span>'; };
+      var grp = function (parent, title) {
+        if (title) { var h = document.createElement('div'); h.className = 'hk-pf-gh'; h.textContent = title; parent.appendChild(h); }
+        var g = document.createElement('div'); g.className = 'hk-pf-grp'; parent.appendChild(g); return g;
+      };
+      var rowEl = function (g, k, label, tag) {
+        var r = document.createElement(tag || 'div'); r.className = 'hk-pf-row'; if (tag === 'button') r.type = 'button';
+        r.innerHTML = (k ? ic(k) : '') + '<span class="hk-pf-l">' + label + '</span>'; g.appendChild(r); return r;
+      };
+      var goRow = function (g, k, label, val, onGo, key) {
+        var r = rowEl(g, k, label, 'button'); if (key) r.dataset.k = key;
+        var v = document.createElement('span'); v.className = 'hk-pf-v'; v.innerHTML = val; r.appendChild(v);
+        r.insertAdjacentHTML('beforeend', chev); r.onclick = onGo; return r;
+      };
+      var sw = function (on, onChange, label) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-pf-sw' + (on ? ' on' : ''); b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', on ? 'true' : 'false');
+        if (label) b.setAttribute('aria-label', label);
+        b.onclick = function (e) { e.stopPropagation(); var v = !b.classList.contains('on'); b.classList.toggle('on', v); b.setAttribute('aria-checked', v ? 'true' : 'false'); onChange(v); };
+        return b;
+      };
+      var swRow = function (g, k, label, on, onChange, key) {
+        var r = rowEl(g, k, label); if (key) r.dataset.k = key; var b = sw(on, onChange, label); r.appendChild(b);
+        r.onclick = function (e) { if (e.target !== b) b.click(); }; return r;
+      };
+      var miniSeg = function (opts, cur, onPick) {
+        var sg = document.createElement('div'); sg.className = 'hk-re-seg hk-pf-seg';
         opts.forEach(function (o) {
-          var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'hk-re-segb hk-re-pjb'; bt.textContent = o[1]; bt.dataset.v = o[0];
-          bt.classList.toggle('on', String(cur) === String(o[0]));
-          bt.onclick = function () { s.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === bt); }); (onPick || function (v) { hkPrefSet(key, v); })(o[0]); };
-          s.appendChild(bt);
+          var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'hk-re-segb hk-re-pjb' + (String(cur) === String(o[0]) ? ' on' : ''); bt.textContent = o[1]; bt.dataset.v = o[0];
+          bt.onclick = function (e) { e.stopPropagation(); sg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === bt); }); onPick(o[0]); };
+          sg.appendChild(bt);
         });
-        return s;
+        return sg;
       };
-      /* ۱.۳.۵۵: ردیف‌های یک‌خطی و فشرده؛ روشن/خاموش = چک‌باکس */
-      var row = function (label, el, hint) {
-        var r = document.createElement('div'); r.className = 'hk-prefs-row hk-prefs-line';
-        r.innerHTML = '<div class="hk-prefs-l">' + label + (hint ? '<small class="hk-prefs-hint">' + hint + '</small>' : '') + '</div>'; r.appendChild(el);
-        box.appendChild(r); return r;
+      var pickPage = function (title, opts, cur, onPick) {
+        return { title: title, build: function (body) {
+          var g = grp(body);
+          opts.forEach(function (o) {
+            var r = rowEl(g, null, o[1], 'button'); r.classList.add('hk-pf-radio'); r.classList.toggle('on', String(cur()) === String(o[0])); r.dataset.v = o[0];
+            r.onclick = function () { onPick(o[0]); stack.pop(); render(); };
+          });
+        } };
       };
-      var chk = function (on, onChange) {
-        var c = document.createElement('input'); c.type = 'checkbox'; c.className = 'hk-prefs-chk'; c.checked = !!on;
-        c.onchange = function () { onChange(c.checked); };
-        return c;
-      };
-      var p = hkPrefs();
-      var draw = function () {
-        p = hkPrefs(); box.innerHTML = '<div class="hk-prefs-t">شخصی‌سازی</div>';
-        row('مرتب‌سازی ردیف‌ها', seg('sort', [['old', 'قدیمی بالا'], ['new', 'جدید بالا']], p.sort || 'old', function (v) {
+      var SORT = [['old', 'قدیمی بالا'], ['new', 'جدید بالا']], START = [['home', 'خانه'], ['expense', 'مخارج'], ['income', 'درآمد']];
+      var lab = function (arr, v) { var f = arr.filter(function (x) { return x[0] === v; })[0]; return f ? f[1] : arr[0][1]; };
+      var pages = {
+        sort: function () { return pickPage('ترتیب ردیف‌ها', SORT, function () { return hkPrefs().sort || 'old'; }, function (v) {
           hkPrefSet('sort', v);
           try { renderAll(); if (typeof _detailContext !== 'undefined' && _detailContext && (_detailContext.kind === 'income' || _detailContext.kind === 'expense')) renderPersonDetailPanel(_detailContext.kind, _detailContext.title); } catch (e) {}
-        }));
-        row('اندازهٔ قلم', seg('font', [['s', 'کوچک'], ['m', 'معمولی'], ['l', 'بزرگ']], p.font || 'm'));
-        row('صفحهٔ اول', seg('startPage', [['home', 'خانه'], ['expense', 'مخارج'], ['income', 'درآمد']], p.startPage || 'home'));
-        /* ۱.۳.۶۸: دو میان‌بر بالای دایرهٔ موجودی */
-        var dk = document.createElement('div'); dk.className = 'hk-dock-prefs';
-        ['L', 'R'].forEach(function (sd) {
-          var it = HK_DOCK_ITEMS[hkDockPick(sd)];
-          var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-prefs-go hk-dock-go'; b.dataset.side = sd;
-          b.innerHTML = '<small>' + (sd === 'L' ? 'چپ' : 'راست') + '</small><span>' + it.label + '</span>' + HK_RE_CHEV;
-          b.onclick = function () { hkOpenDockPicker(sd, draw); };
-          dk.appendChild(b);
-        });
-        row('میان‌برهای خانه', dk);
-        var cb = document.createElement('button'); cb.type = 'button'; cb.className = 'hk-prefs-go'; cb.innerHTML = '<span>' + ((hkCatPri('in') || hkCatPri('out')) ? 'دستی' : 'خودکار') + '</span>' + HK_RE_CHEV;
-        cb.onclick = function () { openCatPriority(draw); };
-        row('اولویت دسته‌بندی‌ها', cb);
-        row('مخفی کردن مبلغ‌ها', chk(p.privacy, function (v) { hkPrefSet('privacy', v); }));
-        row('اعلان پیامک شخصی', chk(p.nPersonal !== false, function (v) { hkPrefSet('nPersonal', v); }));
-        row('اعلان یادآورها', chk(p.nRemind !== false, function (v) { hkPrefSet('nRemind', v); try { scheduleNativeReminders(); } catch (e) {} }));
-        row('«ماهی که گذشت» اول هر ماه', chk(p.nRecap !== false, function (v) { hkPrefSet('nRecap', v); }));
-        var sp = document.createElement('div'); sp.className = 'hk-prefs-chips';
-        var off = p.spOff || [];
-        Object.keys(HK_SP_LABELS).forEach(function (k) {
-          var c = document.createElement('button'); c.type = 'button'; c.className = 'hk-prefs-chip' + (off.indexOf(k) < 0 ? ' on' : ''); c.textContent = HK_SP_LABELS[k];
-          c.onclick = function () { var o2 = hkPrefs().spOff || []; var i = o2.indexOf(k); if (i >= 0) o2.splice(i, 1); else o2.push(k); hkPrefSet('spOff', o2); c.classList.toggle('on', o2.indexOf(k) < 0); };
-          sp.appendChild(c);
-        });
-        var spr = document.createElement('div'); spr.className = 'hk-prefs-row';
-        spr.innerHTML = '<div class="hk-prefs-l">اسلایدهای باکس هوشمند</div>'; spr.appendChild(sp); box.appendChild(spr);
-        var bc = document.createElement('button'); bc.type = 'button'; bc.className = 'modal-btn'; bc.style.cssText = 'width:100%;margin-top:10px;'; bc.textContent = 'بستن'; bc.onclick = close;
-        box.appendChild(bc);
+        }); },
+        start: function () { return pickPage('صفحهٔ اول', START, function () { return hkPrefs().startPage || 'home'; }, function (v) { hkPrefSet('startPage', v); }); },
+        dock: function () { return { title: 'میان‌برهای خانه', build: function (body) {
+          var g = grp(body);
+          ['L', 'R'].forEach(function (sd) {
+            var it = HK_DOCK_ITEMS[hkDockPick(sd)];
+            var r = goRow(g, null, sd === 'L' ? 'میان‌بر چپ' : 'میان‌بر راست', '<span class="hk-pf-dk"><svg viewBox="0 0 24 24" aria-hidden="true">' + it.svg + '</svg></span>' + it.label, function () { hkOpenDockPicker(sd, render); });
+            r.classList.add('hk-dock-go'); r.dataset.side = sd;
+          });
+          var hn = document.createElement('div'); hn.className = 'hk-pf-note'; hn.textContent = 'روی صفحهٔ اصلی هم با نگه داشتن هر میان‌بر می‌توانید عوضش کنید.'; body.appendChild(hn);
+        } }; },
+        slides: function () { return { title: 'اسلایدهای باکس هوشمند', build: function (body) {
+          var hn = document.createElement('div'); hn.className = 'hk-pf-gh'; hn.textContent = 'روشن/خاموش؛ برای جابه‌جایی، دستگیره را نگه دارید و بکشید'; body.appendChild(hn);
+          var g = document.createElement('div'); g.className = 'hk-pf-grp hk-pf-slides'; body.appendChild(g);
+          var off = hkPrefs().spOff || [];
+          hkSpOrderKeys().forEach(function (k) {
+            var r = rowEl(g, null, HK_SP_LABELS[k]); r.dataset.k = k;
+            r.insertAdjacentHTML('afterbegin', '<i class="hk-pf-hnd" aria-label="جابه‌جایی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14"/></svg></i>');
+            var b = sw(off.indexOf(k) < 0, function (v) { var o2 = hkPrefs().spOff || []; var i = o2.indexOf(k); if (v && i >= 0) o2.splice(i, 1); if (!v && i < 0) o2.push(k); hkPrefSet('spOff', o2); }, HK_SP_LABELS[k]);
+            r.appendChild(b);
+            /* کشیدن با دستگیره */
+            var h = r.querySelector('.hk-pf-hnd'), drag = null;
+            h.addEventListener('pointerdown', function (e) { e.preventDefault(); try { h.setPointerCapture(e.pointerId); } catch (e1) {} drag = { y: e.clientY }; r.classList.add('drag'); });
+            h.addEventListener('pointermove', function (e) {
+              if (!drag) return; var dy = e.clientY - drag.y; r.style.transform = 'translateY(' + dy + 'px)';
+              var hgt = r.offsetHeight;
+              if (dy > hgt * 0.6 && r.nextElementSibling) { g.insertBefore(r.nextElementSibling, r); drag.y += hgt; r.style.transform = 'translateY(' + (e.clientY - drag.y) + 'px)'; }
+              else if (dy < -hgt * 0.6 && r.previousElementSibling) { g.insertBefore(r, r.previousElementSibling); drag.y -= hgt; r.style.transform = 'translateY(' + (e.clientY - drag.y) + 'px)'; }
+            });
+            var end = function () { if (!drag) return; drag = null; r.classList.remove('drag'); r.style.transform = ''; hkPrefSet('spOrder', [].map.call(g.children, function (x) { return x.dataset.k; })); };
+            h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+          });
+        } }; }
       };
-      draw();
+      var drawMain = function (body) {
+        var p = hkPrefs();
+        var g1 = grp(body, 'نمایش');
+        var fr = rowEl(g1, 'font', 'اندازهٔ قلم'); fr.dataset.k = 'font';
+        fr.appendChild(miniSeg([['s', 'کوچک'], ['m', 'معمولی'], ['l', 'بزرگ']], p.font || 'm', function (v) { hkPrefSet('font', v); }));
+        goRow(g1, 'start', 'صفحهٔ اول', lab(START, p.startPage || 'home'), function () { stack.push('start'); render(); }, 'start');
+        goRow(g1, 'sort', 'ترتیب ردیف‌ها', lab(SORT, p.sort || 'old'), function () { stack.push('sort'); render(); }, 'sort');
+        var g2 = grp(body, 'صفحهٔ خانه');
+        var dk = ['L', 'R'].map(function (sd) { return '<span class="hk-pf-dk"><svg viewBox="0 0 24 24" aria-hidden="true">' + HK_DOCK_ITEMS[hkDockPick(sd)].svg + '</svg></span>'; }).join('');
+        goRow(g2, 'dock', 'میان‌برها', dk, function () { stack.push('dock'); render(); }, 'dock');
+        var nOn = Object.keys(HK_SP_LABELS).filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
+        goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(Object.keys(HK_SP_LABELS).length)), function () { stack.push('slides'); render(); }, 'slides');
+        var g3 = grp(body, 'دسته‌ها و حریم');
+        goRow(g3, 'cats', 'اولویت دسته‌ها', (hkCatPri('in') || hkCatPri('out')) ? 'دستی' : 'خودکار', function () { openCatPriority(render); }, 'cats');
+        swRow(g3, 'privacy', 'مخفی کردن مبلغ‌ها', !!p.privacy, function (v) { hkPrefSet('privacy', v); }, 'privacy');
+        var g4 = grp(body, 'اعلان‌ها');
+        swRow(g4, 'sms', 'پیامک شخصی', p.nPersonal !== false, function (v) { hkPrefSet('nPersonal', v); }, 'nPersonal');
+        swRow(g4, 'remind', 'یادآورها', p.nRemind !== false, function (v) { hkPrefSet('nRemind', v); try { scheduleNativeReminders(); } catch (e) {} }, 'nRemind');
+        swRow(g4, 'recap', '«ماهی که گذشت» اول هر ماه', p.nRecap !== false, function (v) { hkPrefSet('nRecap', v); }, 'nRecap');
+      };
+      var render = function () {
+        var top = stack.length ? pages[stack[stack.length - 1]]() : null;
+        box.innerHTML = '';
+        var hd = document.createElement('div'); hd.className = 'hk-pf-h';
+        hd.innerHTML = (top ? '<button type="button" class="hk-pf-back" aria-label="برگشت"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>' : '') +
+          '<div class="hk-prefs-t hk-pf-t">' + (top ? top.title : 'شخصی‌سازی') + '</div>' +
+          '<button type="button" class="hk-pf-x" aria-label="بستن"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+        box.appendChild(hd);
+        var body = document.createElement('div'); body.className = 'hk-pf-body' + (top ? ' sub' : ''); box.appendChild(body);
+        hd.querySelector('.hk-pf-x').onclick = close;
+        var bk = hd.querySelector('.hk-pf-back'); if (bk) bk.onclick = function () { stack.pop(); render(); };
+        if (top) top.build(body); else drawMain(body);
+      };
+      render();
       document.body.appendChild(ov);
     }
     function openCatPriority(after) {
       var old = document.getElementById('hkCatPriModal'); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = 'hkCatPriModal'; ov.className = 'modal-overlay open';
+      var ov = document.createElement('div'); ov.id = 'hkCatPriModal'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:660;display:flex;align-items:center;justify-content:center;';
       var box = document.createElement('div'); box.className = 'modal-box hk-prefs'; ov.appendChild(box);
       var close = function () { ov.remove(); if (after) after(); };

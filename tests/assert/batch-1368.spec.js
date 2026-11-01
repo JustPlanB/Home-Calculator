@@ -86,7 +86,9 @@ async function seedRows(page) {
     hit = ''; document.querySelector('#homeDockTop .hk-dock-L').click(); const c = hit;
     window.openSubjectsModal = o1; window.openStatsSheet = o2;
     openPrefsModal(); await w(300);
-    const row = [...document.querySelectorAll('#hkPrefsModal .hk-prefs-l')].some(x => /میان‌برهای خانه/.test(x.textContent));
+    /* ۱.۳.۷۱: شخصی‌سازی تازه — «میان‌برها» صفحهٔ دوم دارد */
+    const row = [...document.querySelectorAll('#hkPrefsModal .hk-pf-l')].some(x => /میان‌برها/.test(x.textContent));
+    document.querySelector('#hkPrefsModal .hk-pf-row[data-k="dock"]').click(); await w(300);
     document.querySelector('#hkPrefsModal .hk-dock-go[data-side="R"]').click(); await w(300);
     const opts = document.querySelectorAll('#hkDockPick .hk-dock-opt').length;
     const noDup = ![...document.querySelectorAll('#hkDockPick .hk-dock-opt-l')].some(x => x.textContent === 'آمار');
