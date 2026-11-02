@@ -188,12 +188,14 @@ async function fresh(b, opts) {
     const t = hkMainTitle(), inc = findSectionByTitle('income', t);
     inc.rows = [Object.assign(emptyRow('income'), { day: '2', desc: 'درآمد ثابت ۱', amount: 1000000, status: 'paid', fromRecurringId: 'r0' })];
     persistCurrent(); touchLocal(); await saveArchive();
-    openRecurringFromMenu(); await w(700);
+    openRecurringFromMenu(); await w(1500);
     const box = document.getElementById('recurringBox'), list = box.querySelector('.rec-list-scroll');
     const btn = document.getElementById('recExportBtn');
     const outside = btn && !box.contains(btn) && btn.getBoundingClientRect().top >= box.getBoundingClientRect().bottom - 1;
     const scrollable = list && list.scrollHeight > list.clientHeight + 10;
-    const b0 = btn.getBoundingClientRect().top; list.scrollTop = 200; await w(100); const fixed = Math.abs(btn.getBoundingClientRect().top - b0) < 1;
+    /* جای دکمه نسبت به خود باکس (مستقل از حرکت برگهٔ منو) */
+    const rel = () => btn.getBoundingClientRect().top - box.getBoundingClientRect().bottom;
+    const b0 = rel(); list.scrollTop = 200; await w(150); const fixed = Math.abs(rel() - b0) < 1;
     btn.click(); await w(300);
     const ov = document.getElementById('hkRecArcEx');
     const items = ov.querySelectorAll('.hk-rax-chk[data-g="i"]').length, months = ov.querySelectorAll('.hk-rax-chk[data-g="k"]').length;
