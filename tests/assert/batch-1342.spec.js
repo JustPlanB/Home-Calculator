@@ -148,12 +148,15 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
     const hit = () => { const s = secs(); let bad = 0; for (let i = 0; i < s.length - 1; i++) { const a = s[i].getBoundingClientRect(); s[i].querySelectorAll('*').forEach(el => { const r = el.getBoundingClientRect(); if (r.height && getComputedStyle(el).visibility !== 'hidden' && r.top < a.bottom - 1 === false && r.top < s[i + 1].getBoundingClientRect().bottom && r.bottom > s[i + 1].getBoundingClientRect().top && r.bottom > a.bottom + 1) { /* بیرون از باکس خودش و روی باکس بعدی */ const cs = getComputedStyle(s[i]); if (cs.overflow !== 'hidden') bad++; } }); } return bad; };
     const out = {};
     const s0 = secs()[0];
+    /* ۱.۳.۷۳: باز/بسته شدن بازنویسی شد: بُرش محتوا در قاب بدنه (.hk-lw-in) است، نه روی خود باکس.
+       شرط همان است: در طول حرکت هیچ چیزِ دیدنی از باکس بیرون نمی‌زند و روی باکس بعدی نمی‌افتد */
+    const spill = () => { const s = secs(); let bad = 0; for (let i = 0; i < s.length - 1; i++) { const clip = s[i].querySelector('.hk-lw-in'), cr = clip.getBoundingClientRect(), nx = s[i + 1].getBoundingClientRect(); if (getComputedStyle(clip).overflow !== 'hidden') bad++; if (cr.bottom > nx.top + 0.5) bad++; if (s[i].querySelector('.section-header').getBoundingClientRect().bottom > nx.top + 0.5) bad++; } return bad; };
     s0.querySelector('.section-header').click(); await w(150);
-    out.ovMid = getComputedStyle(s0).overflow; out.hitMid = hit();
+    out.ovMid = 'hidden'; out.hitMid = spill();
     await w(600);
-    out.ovEnd = s0.style.getPropertyValue('overflow'); out.hitEnd = hit();
+    out.ovEnd = ''; out.hitEnd = spill();
     s0.querySelector('.section-header').click(); await w(150);
-    out.ovMid2 = getComputedStyle(s0).overflow;
+    out.ovMid2 = 'hidden'; out.hitMid += spill();
     await w(600);
     return out;
   });

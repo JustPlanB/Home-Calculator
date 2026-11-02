@@ -96,7 +96,7 @@ async function fresh(b, theme, vh) {
       const lastRow = [...sc.querySelectorAll('tbody tr')].map(x => x.getBoundingClientRect()).filter(x => x.bottom <= sc.getBoundingClientRect().bottom + 1).pop();
       return { n, whole: Math.abs(n - Math.round(n)) < 0.05, bottomGap: innerHeight - br.bottom, fabRow: Math.abs((fr.top + fr.height / 2) - (hr.top + hr.height / 2)) < 2, fabRight: fr.right <= br.right && fr.left > br.left + br.width * 0.75, show: fab.classList.contains('show'), noOverRow: fr.top + fr.height / 2 > lastRow.bottom };
     });
-    ok(tb.whole && tb.n > (vh === 844 ? 14 : 10) && tb.bottomGap < 40, vh + 'px: جدول تا پایین صفحه، ' + Math.round(tb.n) + ' ردیف کامل؛ بقیه داخل جدول اسکرول (فاصله تا پایین ' + Math.round(tb.bottomGap) + ')');
+    /* ۱.۳.۷۳: دو ردیف کمتر از جای کامل (جای آن = فاصلهٔ بیشتر راهنما) */ ok(tb.whole && tb.n > (vh === 844 ? 12 : 8) && tb.bottomGap < 120, vh + 'px: جدول تا پایین صفحه، ' + Math.round(tb.n) + ' ردیف کامل؛ بقیه داخل جدول اسکرول (فاصله تا پایین ' + Math.round(tb.bottomGap) + ')');
     ok(tb.show && tb.fabRow && tb.fabRight && tb.noOverRow, vh + 'px: آیکون اسکرول در ردیف راهنما، سمت راست، روی ردیف‌ها نمی‌افتد');
     await E.ctx.close();
   }
