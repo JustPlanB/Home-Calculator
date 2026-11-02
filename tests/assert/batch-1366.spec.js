@@ -172,11 +172,12 @@ async function fresh(b, theme) {
     hkHomeAddMenu(btn); await new Promise(r => setTimeout(r, 200));
     const pop = document.querySelector('#hkAddPop .hk-add-pop'), r = btn.getBoundingClientRect(), p = pop.getBoundingClientRect(), c = bc.getBoundingClientRect();
     /* ۱.۳.۶۸: صفحهٔ خانهٔ تازه: باکس درست بالای «+» و هم‌محور با آن، بی‌آنکه روی دایرهٔ موجودی بیفتد */
-    const out = { right: Math.abs((p.left + p.width / 2) - (r.left + r.width / 2)) < 2 || p.left <= 8.5, between: p.right <= c.left, top: Math.abs(p.top - Math.max(8, r.top - p.height - 10)) < 1.5, above: p.bottom <= r.top };
+    /* ۱.۳.۷۲: چسبیده به خود «+»: گوشهٔ پایین‌چپ باکس روی گوشهٔ راستِ بالای دایرهٔ «+» */
+    const out = { anchX: Math.abs(p.left - (r.right - 8)) < 1.5, anchY: Math.abs(p.bottom - (r.top + 8)) < 1.5, inScreen: p.right <= innerWidth - 7.5 && p.top >= 7.5 };
     document.getElementById('hkAddPop').remove();
     return out;
   });
-  ok(ap.right && ap.between && ap.top && ap.above, 'باکس «+» درست بالای آن، دور از دایرهٔ موجودی (' + JSON.stringify(ap) + ')');
+  ok(ap.anchX && ap.anchY && ap.inScreen, 'باکس «+» چسبیده به خودش، از گوشهٔ راستِ بالای دایرهٔ «+» باز می‌شود (' + JSON.stringify(ap) + ')');
   await R.ctx.close();
 
   console.log('• متن سفید دکمه‌های آبی');
