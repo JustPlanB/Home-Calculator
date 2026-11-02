@@ -6569,6 +6569,8 @@ html[data-theme="light"] {
     html[data-theme="light"] .hk-add-pop { box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
     html[data-theme="light"] .hk-add-it.inc { color: #17834a; } html[data-theme="light"] .hk-add-it.exp { color: #dc2626; }
     #sections-income .add-row-wrap:empty, #sections-expense .add-row-wrap:empty { display: none !important; }
+    .hk-add-pop.hk-add-anch { border-radius: 14px 14px 14px 4px; transform-origin: bottom left; animation: hkAddIn 0.16s ease-out; }
+    @keyframes hkAddIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
     /* ۱.۳.۷۱: پروژه‌ها بالای «ثبت درآمد/خرج» */
     .hk-add-pj { padding: 8px 10px 9px; border-bottom: 1px solid var(--border); }
     .hk-add-pjl { font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); margin-bottom: 6px; text-align: center; }
@@ -11550,8 +11552,12 @@ html[data-theme="light"] {
     #panel-home #homeDock > .home-circle-big .hbc-label { font-size: var(--hk-fs-small); line-height: 1.2; }
     #panel-home #homeDock > .home-circle-big .hbc-amt { margin: 0 !important; font-size: var(--hbc-fs, 19px); font-weight: 700; line-height: 1.25; white-space: nowrap; flex-wrap: nowrap; }
     /* ۱.۳.۷۱: روزِ امروز زیر اسم ماه (فقط ماه جاری) */
-    #monthSelectWrap .dark-select-btn.hk-has-today { flex-direction: column !important; align-items: center !important; line-height: 1.2 !important; gap: 1px; }
-    #monthSelectWrap .dark-select-btn .hk-mtoday { display: block; font-size: var(--hk-fs-caption, 11px); font-weight: 600; color: var(--hk-primary, #08b5f5); line-height: 1.2; transform: translateX(14px); white-space: nowrap; }
+    #monthSelectWrap .dark-select-btn.hk-has-today { flex-direction: row !important; align-items: center !important; gap: 9px; }
+    #monthSelectWrap .dark-select-btn .hk-mtoday { display: flex; flex-direction: column; align-items: center; line-height: 1.15; color: var(--hk-primary, #08b5f5); white-space: nowrap;
+      padding-left: 9px; border-left: 1px solid rgba(127,127,127,0.38); transform: translateX(14px); }
+    #monthSelectWrap .dark-select-btn .hk-mtoday small { font-size: var(--hk-fs-caption, 11px); font-weight: 600; }
+    #monthSelectWrap .dark-select-btn .hk-mtoday b { font-size: var(--hk-fs-small, 13px); font-weight: 700; }
+    #monthSelectWrap .dark-select-btn.hk-has-today { text-indent: 0; }
     /* ۱.۳.۷۱: شخصی‌سازی تازه */
     .modal-box.hk-pf { padding: 0 !important; overflow: hidden; display: flex; flex-direction: column; max-height: 86vh; }
     .hk-pf-h { display: flex; align-items: center; gap: 8px; padding: 14px 14px 8px; flex: 0 0 auto; }
@@ -11607,6 +11613,11 @@ html[data-theme="light"] {
     .hk-dock-pi.on { background: rgba(8,181,245,0.14); color: var(--hk-primary, #08b5f5); }
     .hk-dock-pi.on::after { content: ""; width: 6px; height: 11px; margin-right: auto; margin-left: 4px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translateY(-2px); }
     .hk-dock-pi.off { opacity: 0.38; cursor: default; }
+    .hk-dock-pi[data-k="trash"] { color: var(--hk-danger, #ff453a); }
+    .hk-dock-pi[data-k="trash"] svg { stroke: var(--hk-danger, #ff453a); }
+    .hk-dock-pop.fade-b { -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+    .hk-dock-pop.fade-t { -webkit-mask-image: linear-gradient(transparent, #000 20%); mask-image: linear-gradient(transparent, #000 20%); }
+    .hk-dock-pop.fade-t.fade-b { -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); }
     .hk-dock-pi small { margin-right: auto; font-size: var(--hk-fs-caption, 11px); color: var(--muted, var(--hk-muted)); font-weight: 400; }
     @media (hover: hover) { .hk-dock-pi:not(.off):not(.on):hover { background: rgba(127,127,127,0.12); } }
     .hk-dock-pi:not(.off):not(.on):active { background: rgba(127,127,127,0.16); }
@@ -14221,10 +14232,13 @@ button, input, select, textarea { font-family: inherit; }
         var btn = mw && mw.querySelector('.dark-select-btn'); if (!btn) return;
         var t = getTodayPersian(), y = parseInt((yw && yw.dataset.value) || currentYear, 10), m = parseInt(mw.dataset.value, 10);
         var on = y === t.y && m === t.m, sm = btn.querySelector('.hk-mtoday');
-        var txt = on ? HK_WD_JS[new Date().getDay()] + ' ' + toPersianDigits(String(t.d)) : '';
+        /* ۱.۳.۷۲: روز هفته بالا و عدد روز پایین، سمت راست اسم ماه با یک خط جداکننده؛ اسم ماه هم‌تراز سال می‌ماند */
+        var wd = on ? HK_WD_JS[new Date().getDay()] : '', dn = on ? toPersianDigits(String(t.d)) : '';
         if (!on) { if (sm) sm.remove(); btn.classList.remove('hk-has-today'); return; }
-        if (!sm) { sm = document.createElement('small'); sm.className = 'hk-mtoday'; btn.appendChild(sm); }
-        if (sm.textContent !== txt) sm.textContent = txt;
+        if (!sm) { sm = document.createElement('span'); sm.className = 'hk-mtoday'; sm.innerHTML = '<small></small><b></b>'; }
+        if (btn.firstChild !== sm) btn.insertBefore(sm, btn.firstChild);
+        if (sm.firstChild.textContent !== wd) sm.firstChild.textContent = wd;
+        if (sm.lastChild.textContent !== dn) sm.lastChild.textContent = dn;
         btn.classList.add('hk-has-today');
       } catch (e) {}
     }
@@ -27325,14 +27339,12 @@ async function openPdfPrintWindow(){
         /* ۱.۳.۶۸: درست بالای «+» (هم‌محور با آن)، روی باکس بالایی؛ به دایرهٔ موجودی نمی‌رسد */
         var bc = document.getElementById('homeBalanceCircle'), br = bc ? bc.getBoundingClientRect() : null;
         /* پهنای باکس طوری که به دایرهٔ موجودی نرسد (اسم پروژه‌ها در چند خط می‌شکنند) */
-        var lift = false;
-        if (br && br.width && pjs.length) { box.style.maxWidth = '230px'; bw = box.offsetWidth; bh = box.offsetHeight; lift = bw > br.left - 14; }
-        var left = r.left + r.width / 2 - bw / 2;
-        if (br && br.width && !lift && left + bw > br.left - 6) left = br.left - 6 - bw;
-        left = Math.max(8, Math.min(innerWidth - bw - 8, left));
+        /* ۱.۳.۷۲: باکس چسبیده به خود «+» باز می‌شود: گوشهٔ پایین‌چپش روی گوشهٔ راستِ بالای دایرهٔ «+» */
+        if (pjs.length) { box.style.maxWidth = '230px'; bw = box.offsetWidth; bh = box.offsetHeight; }
+        box.classList.add('hk-add-anch');
+        var left = Math.max(8, Math.min(innerWidth - bw - 8, r.right - 8));
         box.style.left = Math.round(left) + 'px';
-        /* با پروژه‌ها باکس پهن‌تر است؛ آن‌وقت بالاتر از دایرهٔ موجودی باز می‌شود تا رویش نیفتد */
-        box.style.top = Math.round(Math.max(8, (lift ? Math.min(r.top, br.top) : r.top) - bh - 10)) + 'px';
+        box.style.top = Math.round(Math.max(8, r.top + 8 - bh)) + 'px';
       } catch (eP) {}
     }
     var HK_PJ_RECENT = STORAGE_KEY + '_pjRecent';
@@ -46031,9 +46043,27 @@ function openProjectRowPicker(secId) {
         document.body.appendChild(fab);
         return fab;
       };
+      /* ۱.۳.۷۲: جدول تا پایین صفحه؛ هر چند ردیف کامل که تا آنجا جا شود، بقیه داخل جدول اسکرول می‌شوند (به‌جای ۱۱ ردیف ثابت) */
+      var fit = function (sc) {
+        try {
+          var box = sc.closest('.person-detail-box'); if (!box) return;
+          var tr = sc.querySelector('tbody tr'); var rh = tr ? tr.getBoundingClientRect().height : 36; if (!(rh > 10)) rh = 36;
+          var sb = 0; try { sb = homeSafeBottom(); } catch (e0) {}
+          var hint = box.querySelector('.person-detail-hint'), hh = hint ? hint.offsetHeight : 0;
+          var pb = parseFloat(getComputedStyle(box).paddingBottom) || 0;
+          var avail = (window.innerHeight - sb - 12) - sc.getBoundingClientRect().top - hh - pb - 2;
+          var n = Math.max(6, Math.floor(avail / rh));
+          var key = n + '|' + rh;
+          if (sc._hkFitKey === key) return;
+          sc._hkFitKey = key;
+          sc.style.setProperty('max-height', Math.round(n * rh) + 'px', 'important');
+          box.style.setProperty('max-height', 'none', 'important');
+        } catch (e) {}
+      };
       var update = function () {
         raf = 0;
         var sc = curSc();
+        if (sc) fit(sc);
         if (!sc || sc.scrollHeight - sc.clientHeight < 8 || document.querySelector('.modal-overlay.open, .hk-re-ov, .hk-bulk-ov')) { if (fab) fab.classList.remove('show'); return; }
         ensure();
         var atEnd = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 4;
@@ -46042,9 +46072,11 @@ function openProjectRowPicker(secId) {
         else if ((fab._goal === 'end' && atEnd) || (fab._goal === 'top' && sc.scrollTop <= 2)) fab._lockUntil = 0;
         fab.setAttribute('aria-label', atEnd ? 'رفتن به ابتدا' : 'رفتن به انتها');
         var box = sc.closest('.person-detail-box') || sc, br = box.getBoundingClientRect();
-        var top = Math.min(br.bottom - 57, window.innerHeight - 62);
+        /* ۱.۳.۷۲: داخل خود جدول، هم‌ردیف «برای ویرایش یا حذف…» و سمت راست */
+        var hint = box.querySelector('.person-detail-hint'), hr = hint && hint.getBoundingClientRect();
+        var top = hr && hr.height ? hr.top + hr.height / 2 - 21 : Math.min(br.bottom - 57, window.innerHeight - 62);
         fab.style.top = Math.round(top) + 'px';
-        fab.style.left = Math.round(br.right - 60) + 'px';
+        fab.style.left = Math.round(br.right - 48) + 'px';
         fab.classList.add('show');
       };
       var sched = function () { if (!raf) raf = requestAnimationFrame(update); };
@@ -46205,7 +46237,11 @@ function openProjectRowPicker(secId) {
       try {
         var r = btn.getBoundingClientRect(), pw = pop.offsetWidth;
         var top0 = Math.max(10, (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0) + 10);
-        pop.style.maxHeight = Math.max(160, Math.round(r.top - 12 - top0)) + 'px';
+        /* ۱.۳.۷۲: پنج گزینه دیده می‌شود و بقیه با اسکرول؛ لبه‌ای که ادامه دارد کمی محو است */
+        var it0 = pop.querySelector('.hk-dock-pi'), ih = it0 ? it0.offsetHeight : 42;
+        pop.style.maxHeight = Math.min(Math.max(160, Math.round(r.top - 12 - top0)), Math.round(ih * 5.5 + 12)) + 'px';
+        var fade = function () { var a = pop.scrollTop > 2, z = pop.scrollTop + pop.clientHeight < pop.scrollHeight - 2; pop.classList.toggle('fade-t', a); pop.classList.toggle('fade-b', z); };
+        pop.addEventListener('scroll', fade, { passive: true });
         var ph = pop.offsetHeight;
         var left = side === 'L' ? r.left - 4 : r.right + 4 - pw;
         left = Math.max(8, Math.min(innerWidth - pw - 8, left));
@@ -46213,6 +46249,7 @@ function openProjectRowPicker(secId) {
         pop.style.top = Math.round(Math.max(top0, r.top - 12 - ph)) + 'px';
         pop.style.setProperty('--hk-dp-arrow', Math.round(r.left + r.width / 2 - left) + 'px');
         var on = pop.querySelector('.hk-dock-pi.on'); if (on && on.offsetTop + on.offsetHeight > pop.clientHeight) pop.scrollTop = on.offsetTop - 8;
+        fade();
       } catch (eP) {}
       requestAnimationFrame(function () { ov.classList.add('open'); });
     }

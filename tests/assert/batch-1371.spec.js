@@ -60,7 +60,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
   const td = await A.page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const btn = () => document.querySelector('#monthSelectWrap .dark-select-btn');
-    const now = (btn().querySelector('.hk-mtoday') || {}).textContent || '';
+    const sm0 = btn().querySelector('.hk-mtoday'); const now = sm0 ? sm0.querySelector('small').textContent + ' ' + sm0.querySelector('b').textContent : '';
     const r = btn().getBoundingClientRect(), s = btn().querySelector('.hk-mtoday').getBoundingClientRect();
     const inside = s.top >= r.top && s.bottom <= r.bottom;
     navigateToPeriod(1405, 7); await w(300);
@@ -68,7 +68,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     navigateToPeriod(1404, 8); await w(300);
     const otherYear = !btn().querySelector('.hk-mtoday');
     navigateToPeriod(1405, 8); await w(300);
-    const back = ((btn().querySelector('.hk-mtoday') || {}).textContent || '') === now;
+    const sm1 = btn().querySelector('.hk-mtoday'); const back = !!sm1 && (sm1.querySelector('small').textContent + ' ' + sm1.querySelector('b').textContent) === now;
     return { now, inside, other, otherYear, back };
   });
   ok(td.now === 'یکشنبه ۱۰' && td.inside, 'ماه جاری: زیر «آبان» نوشته شده «یکشنبه ۱۰» و داخل دکمه جا می‌شود (' + td.now + ')');
@@ -84,7 +84,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     hkHomeAddMenu(btn); await w(200);
     const chips = [...document.querySelectorAll('#hkAddPop .hk-add-chip')].map(c => c.textContent);
     const pop = document.querySelector('#hkAddPop .hk-add-pop').getBoundingClientRect(), bc = document.getElementById('homeBalanceCircle').getBoundingClientRect();
-    const clear = pop.right <= bc.left || pop.bottom <= bc.top;
+    const rb = btn.getBoundingClientRect(); const clear = Math.abs(pop.left - (rb.right - 8)) < 1.5 && Math.abs(pop.bottom - (rb.top + 8)) < 1.5; /* ۱.۳.۷۲: چسبیده به «+» */
     document.querySelector('#hkAddPop .hk-add-chip[data-id="pj2"]').click(); await w(100);
     const on = [...document.querySelectorAll('#hkAddPop .hk-add-chip.on')].map(c => c.dataset.id).join();
     document.querySelector('#hkAddPop .hk-add-chip[data-id="pj2"]').click(); await w(100);
@@ -109,7 +109,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     try { closePersonDetail(); } catch (e) {}
     return { chips, clear, on, off, pj, first, none, fab };
   });
-  ok(ad.chips.join('|') === 'ساختمان آسمان|سهراب' && ad.clear, '«+»: اسم پروژه‌ها بالای «ثبت درآمد/خرج»، بی‌آنکه روی دایرهٔ موجودی بیفتد');
+  ok(ad.chips.join('|') === 'ساختمان آسمان|سهراب' && ad.clear, '«+»: اسم پروژه‌ها بالای «ثبت درآمد/خرج»، باکس چسبیده به خود «+»');
   ok(ad.on === 'pj2' && ad.off, 'زدن اسم پروژه پررنگش می‌کند و زدن دوباره برمی‌گرداند');
   ok(ad.pj === 'سهراب', 'ردیف تازه از قبل مال همان پروژه است (' + ad.pj + ')');
   ok(ad.first === 'سهراب', 'پروژهٔ تازه‌استفاده‌شده بار بعد اول می‌آید');
