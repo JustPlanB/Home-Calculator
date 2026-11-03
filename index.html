@@ -12163,6 +12163,9 @@ button, input, select, textarea { font-family: inherit; }
     .hk-bub { cursor: pointer; }
     /* ۱.۳.۸۰: صفحهٔ پشت حباب کمی موج‌دار (فیلتر اعوجاج)؛ برق داخل حباب آرام روی لبه جابه‌جا می‌شود */
     .hk-bub > .wp { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; -webkit-backdrop-filter: url(#hkBubWarp); backdrop-filter: url(#hkBubWarp); clip-path: circle(49.5% at 50% 50%); }
+    /* ۱.۳.۸۱: لایهٔ پشتیبان که همه‌جا کار می‌کند (اگر نمایشگر گوشی فیلتر اعوجاج را نپذیرد): کمی تار و روشن، لبه‌ها کمی تیره مثل شکست نور */
+    .hk-bub > .wf { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; -webkit-backdrop-filter: blur(1.6px) saturate(1.35) brightness(1.08); backdrop-filter: blur(1.6px) saturate(1.35) brightness(1.08); background: radial-gradient(circle closest-side, rgba(255,255,255,0.03) 55%, rgba(0,0,0,0.10) 86%, rgba(0,0,0,0) 100%); }
+    .hk-bub.sm > .wf { -webkit-backdrop-filter: blur(1px) brightness(1.06); backdrop-filter: blur(1px) brightness(1.06); }
     .hk-bub > .sh { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; animation: hkBubSway var(--hk-bub-d, 14s) ease-in-out infinite alternate; }
     @keyframes hkBubSway { 0% { transform: rotate(-14deg); } 50% { transform: rotate(9deg); } 100% { transform: rotate(-4deg); } }
     .hk-bub > .sh::before { content: ""; position: absolute; inset: 7%; border-radius: 50%; border: 3px solid transparent; border-top-color: rgba(255,255,255,0.92);
@@ -24185,7 +24188,7 @@ async function openPdfPrintWindow(){
       /* ۱.۳.۸۰: اعوجاج ملایم صفحهٔ پشت حباب (مثل نگاه از پشت حباب صابون) */
       if (!document.getElementById('hkBubWarpSvg')) {
         var sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.id = 'hkBubWarpSvg'; sv.setAttribute('width', '0'); sv.setAttribute('height', '0'); sv.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-        sv.innerHTML = '<filter id="hkBubWarp" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="7" xChannelSelector="R" yChannelSelector="G"/></filter>';
+        sv.innerHTML = '<filter id="hkBubWarp" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="15" xChannelSelector="R" yChannelSelector="G"/></filter>';
         document.body.appendChild(sv);
       }
       document.body.appendChild(ov);
@@ -24204,7 +24207,7 @@ async function openPdfPrintWindow(){
         var el = document.createElement('div'); el.className = 'hk-bub' + (a ? (a.v < 0 ? ' neg' : '') : ' sm'); el.style.width = size + 'px'; el.style.height = size + 'px';
         el.style.setProperty('--hk-bub-rot', Math.round(Math.random() * 360) + 'deg');
         el.style.setProperty('--hk-bub-d', (10 + Math.random() * 8).toFixed(1) + 's');
-        el.innerHTML = '<i class="wp"></i><i class="ir"></i><i class="sh"></i>' + (a ? '<span class="nm"></span><b class="am"></b>' + (a.cols.length ? '<span class="ib-proj-dots">' + a.cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>' : '') : '');
+        el.innerHTML = '<i class="wf"></i><i class="wp"></i><i class="ir"></i><i class="sh"></i>' + (a ? '<span class="nm"></span><b class="am"></b>' + (a.cols.length ? '<span class="ib-proj-dots">' + a.cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>' : '') : '');
         if (a) { el.querySelector('.nm').textContent = a.label; el.querySelector('.am').textContent = (a.v < 0 ? '−' : '') + formatNum(Math.abs(a.v)); }
         ov.appendChild(el);
         return { el: el, r: size / 2, acc: !!a, x: cx, y: cy, tx: 0, ty: 0, vx: 0, vy: 0, ph: Math.random() * 6.28, born: performance.now() + i * 60 };
@@ -28051,20 +28054,27 @@ async function openPdfPrintWindow(){
         hkRenderMenuProfile();
       };
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); fin(true); } else if (e.key === 'Escape') fin(false); });
-      inp.addEventListener('blur', function () { fin(true); });
+      var t0 = Date.now();
+      /* ۱.۳.۸۱: blur ناخواسته در لحظهٔ باز شدن کیبورد (تغییر اندازهٔ صفحه) ویرایش را نبندد */
+      inp.addEventListener('blur', function () { if (Date.now() - t0 < 900 && inp.isConnected && !done) { setTimeout(function () { if (inp.isConnected && !done) { try { inp.focus(); } catch (eF) {} } }, 30); return; } fin(true); });
       inp.addEventListener('click', function (e) { e.stopPropagation(); });
       /* ۱.۳.۸۰: برگشت (که در اندروید اول کیبورد را می‌بندد) = بستن کیبورد و لغو ویرایش */
       nm._hkCancelEdit = function () { fin(false); try { inp.blur(); } catch (e) {} };
       try {
-        var vv = window.visualViewport, minH = vv ? vv.height : 0, kbSeen = false;
+        /* ۱.۳.۸۱: «کیبورد بسته شد» فقط وقتی که اول واقعاً باز شده (ارتفاع ۱۵۰+ کم شده) و بعد ارتفاع به حالت اولِ قبل از کیبورد برگشته و چند لحظه همان‌جا مانده */
+        var vv = window.visualViewport, H0 = vv ? vv.height : 0, I0 = window.innerHeight, kbSeen = false, stT = 0;
         if (vv) {
+          var curH = function () { return Math.min(vv.height, window.innerHeight); };
           var onVv = function () {
-            if (!inp.isConnected) { vv.removeEventListener('resize', onVv); return; }
-            if (vv.height < minH) minH = vv.height;
-            if (vv.height < window.innerHeight * 0.8 || window.innerHeight - vv.height > 120) kbSeen = true;
-            if (kbSeen && vv.height - minH > 120) { vv.removeEventListener('resize', onVv); nm._hkCancelEdit(); }
+            if (!inp.isConnected || done) { vv.removeEventListener('resize', onVv); window.removeEventListener('resize', onVv); return; }
+            var h = curH();
+            if (h < Math.min(H0, I0) - 150) kbSeen = true;
+            clearTimeout(stT);
+            if (kbSeen && h > Math.min(H0, I0) - 60 && Date.now() - t0 > 800) {
+              stT = setTimeout(function () { if (inp.isConnected && !done && curH() > Math.min(H0, I0) - 60) { vv.removeEventListener('resize', onVv); window.removeEventListener('resize', onVv); nm._hkCancelEdit(); } }, 350);
+            }
           };
-          vv.addEventListener('resize', onVv);
+          vv.addEventListener('resize', onVv); window.addEventListener('resize', onVv);
         }
       } catch (eVv) {}
       setTimeout(function () { inp.focus(); try { inp.setSelectionRange(0, inp.value.length); } catch (e) {} }, 0);
@@ -47872,7 +47882,8 @@ function openProjectRowPicker(secId) {
       var on = seg.querySelector(':scope > .hk-re-segb.on');
       if (!on || !(on.offsetWidth > 0)) { ind.classList.remove('on'); return; }
       if (instant) ind.classList.add('hk-seg-now');
-      var c = getComputedStyle(on).color;
+      /* ۱.۳.۸۱: رنگ نهایی گزینه (بی ترنزیشن) — قبلاً وسط ترنزیشن رنگ قبلی خوانده می‌شد و خط زیر عوض نمی‌شد */
+      var _tr = on.style.transition; on.style.transition = 'none'; var c = getComputedStyle(on).color; void on.offsetWidth; on.style.transition = _tr;
       ind.style.setProperty('--ind-c', c);
       ind.style.setProperty('--ind-bg', hkSegRgba(c, on.classList.contains('hk-re-pjb') ? 0.1 : 0.14));
       ind.style.width = on.offsetWidth + 'px';
