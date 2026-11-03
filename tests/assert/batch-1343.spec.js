@@ -113,7 +113,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     return out;
   });
   /* از ۱.۳.۴۶ نصف‌نصف (batch-1346) */
-  /* ۱.۳.۴۷: بلندتر */ ok(bk.sel === 35 && bk.all === 35, 'حساب‌های ساخته‌شده و فهرست همهٔ بانک‌ها نصف‌نصف (۳۵٪ و ۳۵٪)');
+  /* ۱.۳.۷۷: بانک‌ها فقط دلخواه + سه ردیف؛ بقیهٔ جا مال حساب‌ها */ ok(bk.sel > bk.all && bk.all > 0, 'حساب‌های ساخته‌شده جای بیشتری دارند و فهرست بانک‌ها جمع‌وجور است (' + bk.sel + ' / ' + bk.all + ')');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);
