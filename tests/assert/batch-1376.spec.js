@@ -86,11 +86,11 @@ async function fresh(b, vh) {
       const rh = sc.querySelector('tbody tr').getBoundingClientRect().height, full = Math.floor(((innerHeight - 12) - sc.getBoundingClientRect().top - 28 - 2) / rh);
       const rg = document.createRange(); rg.selectNodeContents(hint); const tr = rg.getClientRects()[0];
       const fr = fab.getBoundingClientRect();
-      return { bottom: innerHeight - box.getBoundingClientRect().bottom, n: Math.round(sc.clientHeight / rh), full, gap: tr.top - sc.getBoundingClientRect().bottom, align: Math.abs((fr.top + fr.height / 2) - (tr.top + tr.height / 2)) < 2, col: getComputedStyle(fab).backgroundColor === getComputedStyle(box).backgroundColor };
+      return { bottom: innerHeight - box.getBoundingClientRect().bottom, n: Math.round(sc.clientHeight / rh), full, gap: tr.top - sc.getBoundingClientRect().bottom, align: Math.abs((fr.top + fr.height / 2) - (tr.top + tr.height / 2)) < 2, col: getComputedStyle(fab).backgroundColor === 'rgba(0, 0, 0, 0)' /* ۱.۳.۷۷: بی دایره */ };
     });
     ok(t.bottom <= 14 && t.n === Math.max(6, t.full - 2), vh + 'px: باکس تا پایین صفحه، تعداد ردیف‌ها همان (' + t.n + ')');
     ok(t.gap < 20, vh + 'px: راهنما نزدیک پایین جدول (' + Math.round(t.gap) + ')');
-    ok(t.align && t.col, vh + 'px: دایرهٔ اسکرول هم‌رنگ زمینهٔ جدول و هم‌تراز نوشتهٔ راهنما');
+    ok(t.align && t.col, vh + 'px: فلش اسکرول بی دایره و هم‌تراز نوشتهٔ راهنما');
     await T.ctx.close();
   }
 

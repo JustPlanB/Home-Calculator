@@ -42,12 +42,13 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const note = ov.querySelector('.hk-inst-note'), ns = getComputedStyle(note);
     const gap = parseFloat(ns.marginTop) >= 10 && parseFloat(ns.marginBottom) >= 10;
     ren.click(); await w(200);
-    const sheet = document.getElementById('textInputModal');
-    const onTop = sheet.classList.contains('open') && (+getComputedStyle(sheet).zIndex) > (+getComputedStyle(ov).zIndex);
-    const r = sheet.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + 20);
+    /* ۱.۳.۷۷: باکس ویرایش نرم‌افزار با ثبت/انصراف، روی همین پنجره */
+    const sheet = document.getElementById('hkInstRen');
+    const onTop = !!sheet && (+getComputedStyle(sheet).zIndex) > (+getComputedStyle(ov).zIndex) && !!sheet.querySelector('.hk-re-ok') && !!sheet.querySelector('.hk-re-no');
+    const r = sheet.querySelector('.hk-re-box').getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + 20);
     const visible = !!(top && sheet.contains(top));
-    closeTextInputModal();
-    const reset = getComputedStyle(sheet).zIndex === '460';
+    sheet.querySelector('.hk-re-no').click(); await w(50);
+    const reset = !document.getElementById('hkInstRen');
     /* هدر چسبان: ردیف‌ها کامل زیر ردیف عنوان */
     const list = ov.querySelector('.hk-inst-list'), h = list.querySelector('.hk-acctx-h');
     const hs = getComputedStyle(h);
@@ -90,7 +91,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   await M.page.evaluate(() => openSideMenu()); await M.page.waitForTimeout(400);
   await M.page.tap('#menuUserAvatar'); await M.page.waitForTimeout(250);
   let chooser = false; M.page.on('filechooser', () => { chooser = true; });
-  await M.page.tap('#hkAvPop .chg'); await M.page.waitForTimeout(500);
+  await M.page.tap('#hkAvView .chg'); await M.page.waitForTimeout(500); /* ۱.۳.۷۷: نمای بزرگ عکس */
   const stillOpen = await M.page.evaluate(() => document.getElementById('menuDropdown').classList.contains('open'));
   ok(chooser && stillOpen, 'لمس «انتخاب عکس»: انتخاب فایل باز می‌شود و منو بسته نمی‌شود');
   const ms = await M.page.evaluate(async () => {
@@ -158,19 +159,19 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     let pg = await show('reminders');
     const rows = pg ? [...pg.querySelectorAll('.sp-rem-r')].map(x => x.textContent.replace(/\s+/g, ' ').trim()) : [];
     const hot = pg && pg.querySelector('.sp-rem-r.hot');
-    const snake = hot && getComputedStyle(hot, '::before').animationName === 'hkSnakeSpin' && hot.querySelector('.hk-inst-dot');
+    const snake = hot && getComputedStyle(hot, '::before').animationName === 'hkSnakeSpin' && !pg.querySelector('.hk-inst-dot') /* ۱.۳.۷۷: بی نقطهٔ قرمز */;
     pg = await show('overview'); pg = await show('reminders');
     const again = !!(pg && pg.querySelector('.sp-rem-r.hot.hk-snake'));
-    let opened = ''; window.openUserReminderFromHome = id => { opened = id; }; window.spGo = fn => fn();
+    let opened = ''; window.hkRemindersFocus = id => { opened = id; }; window.spGo = fn => fn();
     const el = document.querySelector('#homeSmartBox .pc-smart-box'); el._spPages.find(p => p.key === 'reminders').onTap(tt, pg.querySelector('[data-rem="r1"] b'));
     const ip = await show('inst');
     const instSnake = !!(ip && ip.querySelector('.sp-inst-r.bad.hk-snake'));
     return { rows, snake: !!snake, again, opened, instSnake, label: HK_SP_LABELS.reminders };
   }, [sms('21,652,000', '1405/08/06-14:02', '4412', 22, '20,000,000', '1,500,000', '90021')]);
   ok(r.rows.length === 2 && /^اجارهٔ خانه.*فردا/.test(r.rows[0]) && /تمدید بیمه/.test(r.rows[1]), 'اسلاید «یادآورها»: یادآورهای ساخته‌شده به ترتیب (' + r.rows.join(' ‖ ') + ')');
-  ok(r.snake, 'یادآور سررسیده: هشدار با نقطهٔ قرمز و حاشیهٔ قرمز چرخان');
+  ok(r.snake, 'یادآور سررسیده: حاشیهٔ قرمز چرخان (بی نقطهٔ قرمز)');
   ok(r.again, 'با هر بار آمدن اسلاید دوباره می‌چرخد (با یک بار دیدن خاموش نمی‌شود)');
-  ok(r.opened === 'r1' && r.label === 'یادآورها', 'زدن یادآور = همان یادآور؛ در شخصی‌سازی اسلایدها هست');
+  ok(r.opened === 'r1' && r.label === 'یادآورها', 'زدن یادآور = رفتن روی همان یادآور در پنجرهٔ یادآورها؛ در شخصی‌سازی اسلایدها هست');
   ok(r.instSnake, 'کارت قسط معوق در اسلاید هم حاشیهٔ قرمز چرخان دارد');
   await R.ctx.close();
 
