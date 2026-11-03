@@ -75,11 +75,11 @@ async function fresh(b, opts) {
     const full = Math.floor(((innerHeight - 12) - sc.getBoundingClientRect().top - 28 - 2) / rh);
     const fab = document.getElementById('hkScrollFab'), fcs = getComputedStyle(fab), fr = fab.getBoundingClientRect(), hr = hint.getBoundingClientRect();
     const rg = document.createRange(); rg.selectNodeContents(hint); const gap = rg.getClientRects()[0].top - sc.getBoundingClientRect().bottom;
-    return { n: Math.round(n), full, gap, circ: fcs.borderRadius === '50%' && !/rgba\(0, 0, 0, 0\)/.test(fcs.backgroundColor) && fcs.boxShadow !== 'none', size: Math.round(fr.width), mid: Math.abs((fr.top + fr.height / 2) - (hr.top + hr.height / 2)) < 2 };
+    return { n: Math.round(n), full, gap, circ: fcs.borderRadius === '50%' && !/rgba\(0, 0, 0, 0\)/.test(fcs.backgroundColor) && fcs.boxShadow !== 'none', size: Math.round(fr.width), mid: Math.abs((fr.top + fr.height / 2) - (rg.getClientRects()[0].top + rg.getClientRects()[0].height / 2)) < 2 };
   });
   ok(tb.n === tb.full - 2, 'دو ردیف کمتر از جای کامل (' + tb.n + ' از ' + tb.full + ')');
-  ok(tb.gap >= 8, 'فاصلهٔ بیشتر بین جدول و ردیف راهنما (' + Math.round(tb.gap) + 'px)');
-  ok(tb.circ && tb.size === 36 && tb.mid, 'دکمهٔ اسکرول خودکار در دایره با همان سایهٔ دکمه‌های گرد، هم‌ردیف راهنما');
+  /* ۱.۳.۷۶: راهنما چند پیکسل نزدیک‌تر به پایین جدول */ ok(tb.gap >= 4 && tb.gap < 20, 'فاصلهٔ راهنما از پایین جدول (' + Math.round(tb.gap) + 'px)');
+  ok(tb.circ && tb.size === 36 && tb.mid, 'دکمهٔ اسکرول خودکار در دایره، هم‌تراز نوشتهٔ راهنما');
   await C.ctx.close();
 
   console.log('• باکس «+» با چند پروژه');
@@ -90,7 +90,7 @@ async function fresh(b, opts) {
     hkHomeAddMenu(document.querySelector('.home-circle-add')); await w(250);
     const pop = document.querySelector('#hkAddPop .hk-add-pop'), chips = pop.querySelector('.hk-add-chips'), list = [...chips.children];
     const pr = pop.getBoundingClientRect(), cr = chips.getBoundingClientRect();
-    const col = list.every((c, i) => i === 0 || c.getBoundingClientRect().top > list[i - 1].getBoundingClientRect().top + 5);
+    /* ۱.۳.۷۵: دوتایی در هر ردیف */ const col = list.every((c, i) => i % 2 === 0 ? (i === 0 || c.getBoundingClientRect().top > list[i - 1].getBoundingClientRect().top + 5) : Math.abs(c.getBoundingClientRect().top - list[i - 1].getBoundingClientRect().top) < 1.5);
     const firstVis = list[0].getBoundingClientRect().top >= cr.top - 0.5;
     const long = list[3].querySelector('span'), cut = long.scrollWidth > long.clientWidth && getComputedStyle(long).textOverflow === 'ellipsis';
     const scrolls = chips.scrollHeight > chips.clientHeight + 4;
@@ -101,8 +101,8 @@ async function fresh(b, opts) {
     document.getElementById('hkAddPop')._hkCancel();
     return { w: pr.width, col, firstVis, cut, scrolls, narrow };
   });
-  ok(ad.col && ad.firstVis && ad.scrolls, 'پروژه‌ها زیر هم؛ بیشتر از چهار تا اسکرول و اولی از بالا دیده می‌شود');
-  ok(ad.w <= 241, 'عرض باکس حداکثر ۲۴۰ (' + Math.round(ad.w) + ')');
+  ok(ad.col && ad.firstVis, 'پروژه‌ها دوتایی در هر ردیف؛ اولی از بالا دیده می‌شود');
+  ok(ad.w <= 291, 'عرض باکس حداکثر ۲۹۰ (' + Math.round(ad.w) + ')');
   ok(ad.cut && ad.narrow < ad.w, 'اسم خیلی بلند با «…»؛ با اسم کوتاه باکس باریک‌تر است (' + Math.round(ad.narrow) + ')');
   await D.ctx.close();
 
@@ -221,7 +221,7 @@ async function fresh(b, opts) {
     const el = document.querySelector('#homeSmartBox .pc-smart-box'), pg = (el._spPages || []).find(p => p.key === 'overview');
     return { ov: pg ? pg.html.replace(/<[^>]+>/g, ' ') : '' };
   });
-  ok(/پس‌انداز کارت با احتساب پروژه‌ها/.test(sb.ov), 'وضعیت این ماه: «پس‌انداز کارت با احتساب پروژه‌ها»');
+  ok(/پس‌انداز کارت \(با احتساب پروژه‌ها\)/.test(sb.ov), 'وضعیت این ماه: «پس‌انداز کارت (با احتساب پروژه‌ها)»');
   await H.page.evaluate(() => startAppTour(true)); await H.page.waitForTimeout(400);
   for (let i = 0; i < 7; i++) { await H.page.click('#appTour .tour-next'); await H.page.waitForTimeout(520); }
   const tour = [];

@@ -142,7 +142,7 @@ const sms = (amt, dt, to, n, ov, pen, tr) => `بانک مسکن\nواريز قس
     document.getElementById('hkInstOv')._hkCancel();
     /* انتخاب حساب */
     openBankAccountsModal(); await w(300);
-    out.accSec = (document.querySelector('#bankSelectedScroll .hk-acc-sec') || {}).textContent;
+    out.accSec = ((document.querySelector('#bankSelectedScroll .hk-acc-fold b') || {}).textContent) || ''; /* ۱.۳.۷۵: داخل پوشه */
     out.accInst = [...document.querySelectorAll('#bankSelectedScroll .hk-acc-inst')].map(x => x.getAttribute('data-inst'));
     document.getElementById('bankAccountsModal').classList.remove('open');
     return out;
