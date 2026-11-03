@@ -164,7 +164,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const infos = [...document.querySelectorAll('#bankSelectedScroll > div > div')].filter(x => /ملت من/.test(x.textContent));
     infos[0] && infos[0].click(); await w(300);
     const ov = document.getElementById('hkAccTxOv');
-    const out = { sh, ov: !!ov, src: ov && (ov.querySelector('.hk-acctx-src') || {}).textContent, order: ov && [...ov.querySelectorAll('.hk-acctx-r .t')].map(x => x.textContent).join(','),
+    const out = { sh, ov: !!ov, src: ov && (ov.querySelector('.hk-acctx-src') || {}).textContent, order: ov && [...ov.querySelectorAll('.hk-acctx-r:not(.hk-acctx-h) .t')].map(x => x.textContent).join(','),
       fixed: ov && getComputedStyle(ov.querySelector('.hk-acctx-list')).overflowY === 'auto' };
     onBackGuard(); await w(200);
     out.closed = !document.getElementById('hkAccTxOv');

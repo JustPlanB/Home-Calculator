@@ -62,6 +62,28 @@ public class BankSmsReceiver extends BroadcastReceiver {
     }catch(Throwable t){ return false; }
   }
 
+  static boolean isBlocked(Context c,String text){
+    try{
+      JSONArray bl=new JSONArray(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("hk_nblock","[]"));
+      if(bl.length()==0) return false;
+      StringBuilder nb=new StringBuilder();
+      for(char ch:text.toCharArray()){
+        if(ch>='۰'&&ch<='۹') nb.append((char)('0'+(ch-'۰')));
+        else if(ch>='٠'&&ch<='٩') nb.append((char)('0'+(ch-'٠')));
+        else nb.append(ch);
+      }
+      java.util.regex.Matcher m=java.util.regex.Pattern.compile("[0-9][0-9*xX -]{6,}[0-9]").matcher(nb);
+      while(m.find()){
+        String d=m.group().replaceAll("[^0-9*xX]","");
+        java.util.regex.Matcher t=java.util.regex.Pattern.compile("([0-9]{4,})$").matcher(d);
+        if(!t.find()) continue;
+        String tail=t.group(1); tail=tail.substring(tail.length()-4);
+        for(int i=0;i<bl.length();i++){ if(tail.equals(bl.optString(i))) return true; }
+      }
+      return false;
+    }catch(Throwable t){ return false; }
+  }
+
   @Override public void onReceive(Context context, Intent intent) {
     if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
     if (Build.VERSION.SDK_INT >= 23 && context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) return;
@@ -73,6 +95,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
     for(SmsMessage m:msgs) if(m!=null && m.getMessageBody()!=null) body.append(m.getMessageBody());
     String text=body.toString().trim();
     if(!looksLikeBankTransaction(text, sender)) return;
+    /* ۱.۳.۷۴: حساب مسدود (رقم‌های آخر در فهرست کاربر) → نه صف، نه اعلان */
+    if(isBlocked(context,text)) return;
     SharedPreferences sp=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     try{
       JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
@@ -339,7 +363,7 @@ public class BankSmsPlugin extends Plugin {
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]"))
       .putString("hk_nacc4",call.getString("acc4","[]")).putString("hk_nrec",call.getString("rec","[]"))
-      .putString("hk_npersonal",call.getString("personal","1")).apply();
+      .putString("hk_npersonal",call.getString("personal","1")).putString("hk_nblock",call.getString("block","[]")).apply();
     call.resolve();
   }
   /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */

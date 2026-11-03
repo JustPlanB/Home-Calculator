@@ -48,20 +48,18 @@ async function fresh(b, opts) {
   ok(dk.mask === 'none' && !/rgba\(.*, 0\)|transparent/.test(dk.bg), 'باکس فهرست کاملاً مات است (از زیرش چیزی دیده نمی‌شود) (' + dk.bg + ')');
   await A.ctx.close();
 
-  console.log('• عرض ماه/سال و روز و تاریخ');
-  for (const w of [360, 390, 412]) {
+  console.log('• عرض ماه/سال و خط تاریخ (۱.۳.۷۴)');
+  for (const w of [320, 360, 390, 412]) {
     const T = await fresh(b, { w, now: '2026-11-04T09:10:00Z' });
     const m = await T.page.evaluate(async () => {
       window.getTodayPersian = () => ({ y: 1405, m: 2, d: 31 });
-      navigateToPeriod(1405, 2); await new Promise(r => setTimeout(r, 300)); hkMonthTodayMark();
-      const btn = document.querySelector('#monthSelectWrap .dark-select-btn'), sm = btn.querySelector('.hk-mtoday');
-      const br = btn.getBoundingClientRect(), sr = sm.getBoundingClientRect();
-      const s = sm.querySelector('small').getBoundingClientRect(), d = sm.querySelector('b').getBoundingClientRect();
+      hkMonthTodayMark();
+      const ln = document.getElementById('hkTodayLine');
       const mw = document.getElementById('monthSelectWrap').getBoundingClientRect().width, yw = document.getElementById('yearSelectWrap').getBoundingClientRect().width;
-      return { txt: sm.textContent, fits: sr.right <= br.right && sr.left >= br.left && btn.scrollWidth <= btn.clientWidth + 1, gap: d.top - s.bottom, ratio: mw / yw };
+      return { txt: ln.firstChild.textContent, fits: ln.scrollWidth <= ln.clientWidth + 1, ratio: mw / yw };
     });
-    ok(m.txt === 'چهارشنبه۳۱' && m.fits && m.gap >= 1.5, w + 'px: بدترین حالت (اردیبهشت، چهارشنبه، ۳۱) داخل باکس جا می‌شود و دو خط روی هم نمی‌روند (فاصله ' + m.gap.toFixed(1) + ')');
-    ok(m.ratio > 1.4 && m.ratio < 1.6, w + 'px: عرض ماه حدود ۱٫۵ برابر سال (' + m.ratio.toFixed(2) + ')');
+    ok(m.txt === 'امروز چهارشنبه ۳۱ اردیبهشت ۱۴۰۵' && m.fits, w + 'px: بلندترین حالت خط تاریخ جا می‌شود');
+    ok(Math.abs(m.ratio - 1) < 0.02, w + 'px: ماه و سال هم‌عرض (' + m.ratio.toFixed(2) + ')');
     await T.ctx.close();
   }
 

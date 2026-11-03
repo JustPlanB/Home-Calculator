@@ -150,8 +150,8 @@ async function page(b, inbox, opts) {
     hkAddCustomBank('بانک درخت'); hkAddCustomBank(hkCustomBankName('درخت'));
     out.n = hkBankList().filter(x => x === 'بانک درخت').length;
     out.dupMelli = (hkAddCustomBank('بانک ملی'), hkBankList().filter(x => /ملی$/.test(x)).length);
-    const items = [...document.querySelectorAll('#menuDropdown .menu-section-label')].find(x => /تنظیمات/.test(x.textContent));
-    let el = items && items.nextElementSibling; while (el && (el.style.display === 'none' || getComputedStyle(el).display === 'none')) el = el.nextElementSibling;
+    /* ۱.۳.۷۴: هر منوی اصلی یک باکس؛ اولین گزینهٔ دیدنی باکس تنظیمات */
+    let el = document.querySelector('#menuDropdown .hk-mg[data-g="settings"] .hk-mg-box').firstElementChild; while (el && (el.style.display === 'none' || getComputedStyle(el).display === 'none')) el = el.nextElementSibling;
     out.first = el ? el.textContent.trim() : '';
     return out;
   });

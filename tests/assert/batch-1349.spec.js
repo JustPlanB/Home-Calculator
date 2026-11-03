@@ -142,7 +142,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const mn = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     openSideMenu(); await w(200);
-    const first = document.querySelector('.menu-section-label').nextElementSibling.id;
+    const first = document.querySelector('#menuDropdown .hk-mg[data-g="accounts"] .hk-mg-box').firstElementChild.id;
     closeSideMenu(); await w(200);
     /* شِیر: بدون «ردیف تازه»، ۴۰ ردیف + «بیشتر» */
     const t = hkMainTitle(), ex = findSectionByTitle('expense', t);
@@ -168,7 +168,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.closed = !document.getElementById('smsBulkOv');
     return out;
   });
-  ok(mn.first === 'menuSmsLater', '«پیامک‌های ثبت‌نشده» اولین آیتم بخش‌ها');
+  ok(mn.first === 'menuSmsLater', '«پیامک‌های ثبت‌نشده» اولین آیتم «حساب‌ها و پیامک»');
   ok(!mn.newRow && mn.rows === 40 && mn.more && mn.after > 40, 'شِیر: «ردیف تازه» برداشته شد؛ ۴۰ ردیف + «بیشتر» برای قدیمی‌ترها');
   ok(mn.lab === 'حساب جدید:' && /8, 181, 245/.test(mn.onCol), 'ثبت گروهی: «حساب جدید:» و آبی دور پوشهٔ تیک‌خورده همان آبی');
   ok(mn.backToRange && mn.closed, 'ثبت گروهی: «بستن» بعد از آمدن پوشه‌ها به انتخاب بازه برمی‌گردد؛ بار دوم می‌بندد');
