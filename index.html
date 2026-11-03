@@ -12041,6 +12041,32 @@ button, input, select, textarea { font-family: inherit; }
     .hk-add-chips { display: grid !important; grid-template-columns: 1fr 1fr; gap: 4px !important; max-height: calc(4 * 31px + 12px) !important; }
     .hk-add-chips .hk-add-chip { min-width: 0; }
     .hk-add-pop { max-width: min(290px, calc(100vw - 16px)) !important; }
+
+    /* ۱.۳.۷۶: پیشنهاد شرح */
+    .hk-desc-sug { position: fixed; z-index: 100400; background: var(--bg3, #2c2c2e); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.45); padding: 4px; display: flex; flex-direction: column; box-sizing: border-box; direction: rtl; }
+    .hk-desc-sug-it { border: none; background: transparent; color: var(--text); font-family: inherit; font-size: 0.88rem; font-weight: 600; text-align: right; padding: 8px 10px; border-radius: 8px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hk-desc-sug-it + .hk-desc-sug-it { border-top: 1px solid var(--border, rgba(255,255,255,0.07)); border-radius: 0; }
+    .hk-desc-sug-it:active { background: color-mix(in srgb, var(--hk-primary, #08b5f5) 18%, transparent); }
+    html[data-theme="light"] .hk-desc-sug { background: #fff; box-shadow: 0 8px 22px rgba(30,40,60,0.2); }
+
+    /* ۱.۳.۷۶: دسته‌ها: دو ردیف پنج‌تایی با آیکون‌های رنگی */
+    .sms-cat-grid.sms-cat-row.hk-cat-colored { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 4px; }
+    .hk-cat-colored .sms-cat i { color: var(--cc, #08b5f5); background: color-mix(in srgb, var(--cc, #08b5f5) 15%, var(--bg3, #2c2c2e)); border: 1.5px solid transparent; }
+    .hk-cat-colored .sms-cat.on i { border-color: var(--cc, #08b5f5); color: var(--cc, #08b5f5); background: color-mix(in srgb, var(--cc, #08b5f5) 28%, transparent); }
+    .hk-cat-colored .sms-cat.on span { color: var(--cc, #08b5f5); }
+    .hk-cat-colored .sms-cat-more i { color: var(--muted); background: var(--bg3, #2c2c2e); }
+    /* ۱.۳.۷۶: باکس جدول تا پایین صفحه؛ راهنما وسط و نزدیک‌تر به پایین جدول */
+    .person-detail-box.hk-pd-fill { display: flex !important; flex-direction: column; }
+    .person-detail-box.hk-pd-fill > * { flex-shrink: 0; }
+    .person-detail-box.hk-pd-fill .person-detail-hint { flex: 1 0 auto; align-items: flex-start !important; padding-top: 7px !important; text-align: center; }
+    .hk-inst-tag { color: #ff9f0a !important; background: color-mix(in srgb, #ff9f0a 14%, transparent) !important; }
+    /* ۱.۳.۷۶: کادر راهنما با شکل دقیق باکس (فرورفتگی دور دایرهٔ موجودی) */
+    .tour-spot.shaped .tour-pulse { display: none; }
+    .tour-shape { display: none; position: absolute; left: -4px; top: -4px; overflow: visible; pointer-events: none; }
+    .tour-spot.shaped .tour-shape { display: block; }
+    .tour-shape rect, .tour-shape circle { stroke: rgba(158,232,88,0.9); stroke-width: 2.2; }
+    .tour-spot.shaped .tour-shape { animation: tourShapePulse 1.6s ease-out infinite; }
+    @keyframes tourShapePulse { 0% { opacity: 1; } 70% { opacity: 0.35; } 100% { opacity: 1; } }
     /* ===== ۱.۳.۷۴: منوی همبرگری — هر منوی اصلی یک باکس (اسمش بالای باکس، پس‌زمینه کمی روشن‌تر از منو)،
        خط جداکننده بین گزینه‌ها، آیکون رنگی کوچک، پروفایل با عکس و اسم قابل ویرایش، جستجوی ثابت پایین ===== */
     .menu-dropdown { --hk-mg-bg: rgba(255,255,255,0.055); --hk-mg-line: rgba(255,255,255,0.075); }
@@ -25451,8 +25477,17 @@ async function openPdfPrintWindow(){
           if (cr && cr.width) {
             var rad = cr.width / 2 + gap, cx = cr.left + cr.width / 2 - R.left, cy = cr.top + cr.height / 2 - R.top;
             cut.style.cssText = 'display:block;left:' + (cx - rad) + 'px;top:' + (cy - rad) + 'px;width:' + (2 * rad) + 'px;height:' + (2 * rad) + 'px;';
-          } else cut.style.display = 'none';
-        } else cut.style.display = 'none';
+            /* ۱.۳.۷۶: کادر چشمک‌زن دقیقاً شکل باکس، با همان فرورفتگی دور دایره */
+            var w0 = R.width, h0 = R.height, rr = 18, id = 'tsh' + i;
+            var shp = spot.querySelector('.tour-shape'); if (!shp) { shp = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); shp.setAttribute('class', 'tour-shape'); spot.appendChild(shp); }
+            shp.setAttribute('viewBox', '-4 -4 ' + (w0 + 8) + ' ' + (h0 + 8)); shp.setAttribute('width', w0 + 8); shp.setAttribute('height', h0 + 8);
+            shp.innerHTML = '<defs><mask id="' + id + 'm" maskUnits="userSpaceOnUse" x="-10" y="-10" width="' + (w0 + 20) + '" height="' + (h0 + 20) + '"><rect x="-10" y="-10" width="' + (w0 + 20) + '" height="' + (h0 + 20) + '" fill="#fff"/><circle cx="' + cx + '" cy="' + cy + '" r="' + rad + '" fill="#000"/></mask>' +
+              '<clipPath id="' + id + 'c"><rect x="0" y="0" width="' + w0 + '" height="' + h0 + '" rx="' + rr + '"/></clipPath></defs>' +
+              '<rect x="1" y="1" width="' + (w0 - 2) + '" height="' + (h0 - 2) + '" rx="' + rr + '" fill="none" mask="url(#' + id + 'm)"/>' +
+              '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rad + 1) + '" fill="none" clip-path="url(#' + id + 'c)"/>';
+            spot.classList.add('shaped');
+          } else { cut.style.display = 'none'; spot.classList.remove('shaped'); }
+        } else { cut.style.display = 'none'; spot.classList.remove('shaped'); }
         bubble.classList.remove('in');
         void bubble.offsetWidth;
         root.querySelector('.tour-step').textContent = toPersianDigits(i + 1) + ' از ' + toPersianDigits(steps.length);
@@ -28417,6 +28452,68 @@ async function openPdfPrintWindow(){
     }
     var HK_GM = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     function hkGregStr(y, m, d) { if (!y || !m || !d) return ''; var g = hkJ2G(y, m, d); return g[2] + ' ' + HK_GM[g[1] - 1] + ' ' + g[0]; }
+    /* ===== ۱.۳.۷۶: پیشنهاد شرح — از اولین حرف، شرح‌های قبلی همان نوع (درآمد/خرج) به ترتیب بیشترین استفاده.
+       ردیف‌های همهٔ ماه‌ها شمرده می‌شوند؛ زدن پیشنهاد = همان متن در فیلد ===== */
+    var _hkDescFreq = { at: 0, map: null };
+    function hkDescNorm(t) { return String(t || '').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, ' ').replace(/\s+/g, ' ').trim(); }
+    function hkDescFreq() {
+      if (_hkDescFreq.map && Date.now() - _hkDescFreq.at < 15000) return _hkDescFreq.map;
+      var m = { income: {}, expense: {} };
+      var walk = function (pd) {
+        ['income', 'expense'].forEach(function (tab) {
+          ((pd && pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+            (sec.rows || []).forEach(function (r) {
+              if (!r || r.deletedAt) return; var d = hkDescNorm(r.desc); if (d.length < 2 || d.length > 60) return;
+              var o = m[tab][d] || (m[tab][d] = { t: String(r.desc).trim(), n: 0 }); o.n++;
+            });
+          });
+        });
+      };
+      try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k]); }); } catch (e) {}
+      try { walk(periodData); } catch (e2) {}
+      _hkDescFreq = { at: Date.now(), map: m };
+      return m;
+    }
+    function hkDescSuggestList(tab, q, cur) {
+      var nq = hkDescNorm(q); if (!nq) return [];
+      var all = hkDescFreq()[tab === 'income' ? 'income' : 'expense'] || {}, out = [];
+      Object.keys(all).forEach(function (k) {
+        if (k === nq) return;
+        var i = k.indexOf(nq); if (i < 0) return;
+        out.push({ t: all[k].t, n: all[k].n, s: i === 0 ? 0 : (k.indexOf(' ' + nq) >= 0 ? 1 : 2) });
+      });
+      out.sort(function (a, b) { return (a.s - b.s) || (b.n - a.n) || a.t.length - b.t.length; });
+      return out.slice(0, 5).map(function (x) { return x.t; });
+    }
+    function hkDescSuggestClose() { var p = document.getElementById('hkDescSug'); if (p) p.remove(); }
+    function hkAttachDescSuggest(inp, tab, onPick) {
+      if (!inp || inp._hkSug) return; inp._hkSug = true;
+      var show = function () {
+        if (inp.readOnly) { hkDescSuggestClose(); return; }
+        var L = hkDescSuggestList(typeof tab === 'function' ? tab() : tab, inp.value);
+        var pop = document.getElementById('hkDescSug');
+        if (!L.length) { if (pop) pop.remove(); return; }
+        if (!pop) { pop = document.createElement('div'); pop.id = 'hkDescSug'; pop.className = 'hk-desc-sug'; document.body.appendChild(pop);
+          pop.addEventListener('pointerdown', function (e) { e.preventDefault(); }); pop.addEventListener('mousedown', function (e) { e.preventDefault(); }); }
+        pop._for = inp;
+        pop.innerHTML = '';
+        L.forEach(function (t) {
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-desc-sug-it'; b.textContent = t;
+          b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); inp.value = t; try { inp.dispatchEvent(new Event('input', { bubbles: true })); } catch (eI) {} hkDescSuggestClose(); if (onPick) onPick(t); try { inp.focus(); } catch (eF) {} };
+          pop.appendChild(b);
+        });
+        var r = inp.getBoundingClientRect(), vh = window.visualViewport ? window.visualViewport.height : innerHeight;
+        pop.style.left = Math.max(8, r.left) + 'px'; pop.style.width = Math.max(180, Math.min(innerWidth - 16, r.width)) + 'px';
+        pop.style.right = 'auto';
+        var ph = pop.offsetHeight || 40;
+        if (r.bottom + ph + 6 <= vh) { pop.style.top = (r.bottom + 4) + 'px'; pop.style.bottom = 'auto'; }
+        else { pop.style.top = Math.max(4, r.top - ph - 4) + 'px'; pop.style.bottom = 'auto'; }
+        if (parseFloat(pop.style.left) + pop.offsetWidth > innerWidth - 8) pop.style.left = Math.max(8, innerWidth - 8 - pop.offsetWidth) + 'px';
+      };
+      inp.addEventListener('input', show);
+      inp.addEventListener('blur', function () { setTimeout(function () { var p = document.getElementById('hkDescSug'); if (p && p._for === inp) p.remove(); }, 120); });
+    }
+    try { Object.assign(window, { hkDescSuggestList: hkDescSuggestList, hkAttachDescSuggest: hkAttachDescSuggest, hkDescFreq: hkDescFreq }); } catch (eWd) {}
     function hkOpenRowEdit(ctx) {
       var row = ctx.row, tab = ctx.tab, fromPlan = !!row.fromPlanId;
       var old = document.getElementById('hkRowEdit'); if (old) old.remove();
@@ -28485,6 +28582,7 @@ async function openPdfPrintWindow(){
       var dsFit = function () { ds.style.height = 'auto'; ds.style.height = Math.min(110, ds.scrollHeight + 2) + 'px'; };
       ds.addEventListener('input', dsFit); setTimeout(dsFit, 0);
       fDs.appendChild(ds);
+      hkAttachDescSuggest(ds, tab);
       /* مبلغ */
       var fA = field('مبلغ');
       var amt = document.createElement('input'); amt.className = 'hk-re-in hk-re-amt'; amt.inputMode = 'numeric';
@@ -28606,7 +28704,8 @@ async function openPdfPrintWindow(){
         catB.onclick = function (e) {
           e.stopPropagation();
           var opts = [{ v: '', l: 'نامشخص' }].concat(HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }));
-          hkReList(catB, opts, st.cat, function (v) { st.cat = v; catTxt(); });
+          /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
+          hkCatPickSheet(HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }), st.cat, function (v) { st.cat = v; catTxt(); });
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';
@@ -30052,6 +30151,7 @@ container.innerHTML = '';
           if (!desc.readOnly) { desc.classList.add('pd-editing'); hkDescAutosize(desc); }
         };
         desc.addEventListener('input', () => { if (desc.classList.contains('pd-editing')) hkDescAutosize(desc); });
+        hkAttachDescSuggest(desc, tab);
         desc._goNext = false;
         desc.onkeydown = (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -30084,6 +30184,8 @@ container.innerHTML = '';
         };
         tdDesc.appendChild(desc);
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
+        /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
+        if (row.instTag) { const it = document.createElement('div'); it.className = 'preapp-tag hk-inst-tag'; it.textContent = row.instTag; tdDesc.appendChild(it); }
         tr.appendChild(tdDesc);
 
         // مبلغ
@@ -31217,7 +31319,7 @@ container.innerHTML = '';
       c.log.push(e);
       hkInstSave(o);
       clearTimeout(_hkInstRefreshT);
-      _hkInstRefreshT = setTimeout(function () { try { renderHomeCards(); } catch (eR) {} try { hkInstMigrateCheck(); } catch (eM) {} }, 400);
+      _hkInstRefreshT = setTimeout(function () { try { hkInstTagRows(); } catch (eT) {} try { renderHomeCards(); } catch (eR) {} try { hkInstMigrateCheck(); } catch (eM) {} }, 400);
       return { card: c, dup: false, entry: e };
     }
     function hkInstCmp(a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d) || String(a.time || '').localeCompare(String(b.time || '')) || ((a.at || 0) - (b.at || 0)); }
@@ -31303,6 +31405,33 @@ container.innerHTML = '';
       };
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     }
+
+    /* ۱.۳.۷۶: برداشتِ هم‌مبلغ و هم‌روز از کارت‌های کاربر = پرداخت همان قسط → یک برچسب جدا «قسط مسکن ۲۹۷۹ · ۳۶» روی همان ردیف.
+       شرح و دستهٔ کاربر دست نمی‌خورند (دسته در نرم‌افزار به شرح وابسته است). هر پیامک قسط فقط یک ردیف. */
+    function hkInstTagRows() {
+      var changed = 0, cur = periodKey(currentYear, currentMonth);
+      var used = {};
+      var walkAll = function (fn) { try { Object.keys(archive || {}).forEach(function (k) { fn(k === cur ? periodData : archive[k], k); }); } catch (e) {} if (!(archive && archive[cur])) fn(periodData, cur); };
+      walkAll(function (pd) { ((pd && pd.expense && pd.expense.sections) || []).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r && r.instTagK) used[r.instTagK] = 1; }); }); });
+      hkInstCards().forEach(function (c) {
+        hkInstEntries(c).forEach(function (e) {
+          if (used[e.k] || !(e.amount > 0)) return;
+          var k = periodKey(e.y, e.m), pd = k === cur ? periodData : (archive && archive[k]);
+          if (!pd || !pd.expense) return;
+          var hit = null;
+          (pd.expense.sections || []).some(function (sec) { return (sec.rows || []).some(function (r) {
+            if (!r || r.deletedAt || r.instTagK || Number(r.amount) !== Number(e.amount) || (parseInt(toEnglishDigits(String(r.day || '')), 10) || 0) !== e.d) return false;
+            hit = r; return true; }); });
+          if (!hit) return;
+          hit.instTag = hkInstName(c) + ' · ' + toPersianDigits(String(e.count));
+          hit.instTagK = e.k; used[e.k] = 1; changed++;
+        });
+      });
+      if (changed) { try { persistCurrent(); saveArchive(); scheduleSave(); renderAll(); } catch (eS) {} }
+      return changed;
+    }
+    try { window.hkInstTagRows = hkInstTagRows; } catch (eWt) {}
+    setTimeout(function () { try { if (hkInstCards().length) hkInstTagRows(); } catch (e) {} }, 5000);
     /* پیامک‌های قسطی که قبلاً به اشتباه «درآمد» ثبت شده‌اند: همان روز و همان مبلغ در درآمدها. با تأیید، پشتیبان و سطل زباله */
     var HK_INST_MIG_KEY = STORAGE_KEY + '_instMigSeen';
     function hkInstMigrateFind() {
@@ -34909,6 +35038,32 @@ function confirmSmsEntry() {
     setTimeout(function () { try { hkSyncNotifCats(); } catch (e) {} }, 4000);
     document.addEventListener('visibilitychange', function () { if (document.hidden) { try { hkSyncNotifCats(); } catch (e) {} } });
     function closeSmsCatMore() { var o = document.getElementById('smsCatMore'); if (o) { o.remove(); return true; } return false; }
+    /* ۱.۳.۷۶: رنگ هر دسته (آیکون‌های رنگی، یکسان در باکس پیامک و ویرایش ردیف) */
+    var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', housing: '#bf5af2', clothing: '#ff6ba8', health: '#ff453a', care: '#30d5c8', home: '#c78b5a',
+      education: '#7c7cff', fun: '#9ee858', gift: '#ff6ba8', debt: '#8e8e93', tech: '#64d2ff',
+      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#4f9dff', in_bonus: '#e6b12c', in_gift: '#ff6ba8', in_sale: '#ff9f0a', in_profit: '#30d5c8' };
+    function hkCatColor(id) { return HK_CAT_COLORS[id] || '#08b5f5'; }
+    /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
+    function hkCatPickSheet(cats, cur, onPick) {
+      var old = document.getElementById('hkCatPick'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkCatPick'; ov.className = 'modal-overlay open sms-cat-more-ov'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
+      var bx = document.createElement('div'); bx.className = 'modal-box sms-cat-more-box';
+      bx.innerHTML = '<div class="sms-cat-more-t">دسته</div>';
+      var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      [{ id: '', label: 'نامشخص' }].concat(cats).forEach(function (c) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
+        b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
+        b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
+        b.onclick = function () { close(); onPick(c.id); };
+        gg.appendChild(b);
+      });
+      bx.appendChild(gg); ov.appendChild(bx);
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      document.body.appendChild(ov);
+    }
     function hkSmsCatGrid(parsed) {
       var old = document.getElementById('smsCatGrid'); if (old) old.remove();
       window._hkSmsCat = '';
@@ -34925,8 +35080,9 @@ function confirmSmsEntry() {
       try { if (parsed.type !== 'income') { var gc = HKCategorizer.classify(String(desc.value || '') || String(parsed.raw || '')); if (gc && gc.ids && gc.ids[0]) guess = gc.ids[0]; } } catch (eG) {}
       var order = cats.map(function (c, i) { return { c: c, s: (c.id === guess ? 1e6 : 0) + hkCatScore(parsed.type === 'income' ? 'in' : 'out', c.id, use, i) }; })
         .sort(function (a, b) { return b.s - a.s; }).map(function (x) { return x.c; });
-      var top = order.slice(0, 5), rest = order.slice(5);
-      var g = document.createElement('div'); g.id = 'smsCatGrid'; g.className = 'sms-cat-grid sms-cat-row';
+      /* ۱.۳.۷۶: دو ردیف پنج‌تایی (۹ دسته + «بیشتر»)، آیکون‌های رنگی */
+      var top = order.length > 10 ? order.slice(0, 9) : order.slice(0, 10), rest = order.length > 10 ? order.slice(9) : [];
+      var g = document.createElement('div'); g.id = 'smsCatGrid'; g.className = 'sms-cat-grid sms-cat-row hk-cat-colored';
       /* ۱.۳.۵۰: زدن دسته فقط انتخاب است؛ با «ثبت»: شرح نوشته‌شده می‌ماند (دسته = همین)، شرح خالی = اسم دسته */
       var pick = function (c) {
         window._hkSmsCat = window._hkSmsCat === c.id ? '' : c.id;
@@ -34937,6 +35093,7 @@ function confirmSmsEntry() {
       };
       var mk = function (c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat'; b.dataset.cat = c.id;
+        b.style.setProperty('--cc', hkCatColor(c.id));
         b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (HK_CAT_ICONS[c.id] || HK_CAT_TAG) + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
         b.onclick = function () { pick(c); };
         return b;
@@ -34951,7 +35108,7 @@ function confirmSmsEntry() {
           ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
           var bx = document.createElement('div'); bx.className = 'modal-box sms-cat-more-box';
           bx.innerHTML = '<div class="sms-cat-more-t">دستهٔ دیگر</div>';
-          var gg = document.createElement('div'); gg.className = 'sms-cat-grid';
+          var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
           rest.forEach(function (c) { gg.appendChild(mk(c)); });
           bx.appendChild(gg); ov.appendChild(bx);
           ov.addEventListener('click', function (e) { if (e.target === ov) closeSmsCatMore(); });
@@ -47011,6 +47168,11 @@ function openProjectRowPicker(secId) {
           sc._hkFitKey = key;
           sc.style.setProperty('max-height', Math.round(n * rh) + 'px', 'important');
           box.style.setProperty('max-height', 'none', 'important');
+          /* ۱.۳.۷۶: باکس جدول تا پایین صفحه (بی ردیف اضافه)؛ فضای اضافه زیر راهنما */
+          box.classList.add('hk-pd-fill');
+          box.style.minHeight = '';
+          var bt = box.getBoundingClientRect().top, want = (window.innerHeight - sb - 12) - bt;
+          if (want > box.getBoundingClientRect().height) box.style.minHeight = Math.round(want) + 'px';
         } catch (e) {}
       };
       var update = function () {
@@ -47028,7 +47190,11 @@ function openProjectRowPicker(secId) {
         /* ۱.۳.۷۲: داخل خود جدول، هم‌ردیف «برای ویرایش یا حذف…» و سمت راست */
         var hint = box.querySelector('.person-detail-hint'), hr = hint && hint.getBoundingClientRect();
         var fs = fab.offsetWidth || 36;
-        var top = hr && hr.height ? hr.top + hr.height / 2 - fs / 2 : Math.min(br.bottom - 57, window.innerHeight - 62);
+        /* ۱.۳.۷۶: هم‌تراز خودِ نوشتهٔ راهنما؛ رنگ دایره همان زمینهٔ جدول */
+        var hrT = null; try { if (hint && hint.firstChild) { var rg = document.createRange(); rg.selectNodeContents(hint); var rr = rg.getClientRects(); if (rr.length) hrT = rr[0]; } } catch (eRg) {}
+        var hc = hrT ? hrT.top + hrT.height / 2 : (hr && hr.height ? hr.top + hr.height / 2 : 0);
+        var top = hc ? hc - fs / 2 : Math.min(br.bottom - 57, window.innerHeight - 62);
+        try { fab.style.setProperty('background', getComputedStyle(box).backgroundColor, 'important'); } catch (eBg) {}
         fab.style.top = Math.round(top) + 'px';
         fab.style.left = Math.round(br.right - 12 - fs) + 'px';
         fab.classList.add('show');

@@ -80,7 +80,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const raw = 'بانک ملی\nبرداشت:250,000-\nحساب:62002\nمانده:500,000\n0728-10:30'; const e = parseBankSms(raw); e.raw = raw;
     pendingSmsEntry = e; openSmsConfirmModal(e); await w(500);
     const g = document.getElementById('smsCatGrid');
-    const out = { n: g.querySelectorAll('.sms-cat').length, more: !!g.querySelector('.sms-cat-more'), noScroll: g.scrollWidth <= g.clientWidth + 1, oneRow: new Set([...g.children].map(c => Math.round(c.getBoundingClientRect().top))).size === 1 };
+    const out = { n: g.querySelectorAll('.sms-cat').length, more: !!g.querySelector('.sms-cat-more'), noScroll: g.scrollWidth <= g.clientWidth + 1, oneRow: new Set([...g.children].map(c => Math.round(c.getBoundingClientRect().top))).size === 2 /* ۱.۳.۷۶: دو ردیف */ };
     const tt = document.getElementById('smsConfirmTitle'); out.line = getComputedStyle(tt).borderBottomStyle;
     g.querySelector('.sms-cat-more').click(); await w(150);
     out.moreOpen = !!document.getElementById('smsCatMore'); onBackGuard(); await w(300); out.moreClosed = !document.getElementById('smsCatMore') && document.getElementById('smsConfirmModal').classList.contains('open');
@@ -93,7 +93,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.use = JSON.parse(localStorage.getItem(STORAGE_KEY + '_catUse') || '{}').food;
     return out;
   }, title);
-  ok(sm.n === 6 && sm.more && sm.noScroll && sm.oneRow, '۵ دستهٔ هوشمند + «بیشتر…» در یک ردیف، بدون اسکرول');
+  ok(sm.n === 10 && sm.more && sm.noScroll && sm.oneRow, '۹ دستهٔ هوشمند + «بیشتر…» در دو ردیف پنج‌تایی، بدون اسکرول');
   ok(sm.moreOpen && sm.moreClosed, '«بیشتر…» بقیهٔ دسته‌ها را در پنجرهٔ جدا باز می‌کند؛ بازگشت فقط همان را می‌بندد');
   ok(sm.stillOpen, '۱.۳.۵۰: زدن دسته فقط انتخاب است (باکس باز می‌ماند)');
   ok(sm.saved && sm.use === 1, 'با «ثبت» و شرح خالی: شرح = اسم دسته و شمارش دسته برای ترتیب بعدی');
