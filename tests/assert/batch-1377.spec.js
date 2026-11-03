@@ -35,7 +35,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const box = document.querySelector('.person-detail-box'), hint = box.querySelector('.person-detail-hint'), sc = box.querySelector('.person-detail-scroll'), fab = document.getElementById('hkScrollFab');
     const rg = document.createRange(); rg.selectNodeContents(hint); const q = rg.getBoundingClientRect(), br = box.getBoundingClientRect(), fr = fab.getBoundingClientRect();
     const fcs = getComputedStyle(fab);
-    const out = { homeVis, detailHidden, sides: [q.left - br.left, fr.left - q.right], gap: rg.getClientRects()[0].top - sc.getBoundingClientRect().bottom, noCircle: fcs.backgroundColor === 'rgba(0, 0, 0, 0)' && fcs.boxShadow === 'none' };
+    const out = { homeVis, detailHidden, sides: [q.left, innerWidth - q.right] /* ۱.۳.۸۰: وسط خود صفحه (فاصلهٔ دو طرف تا لبه‌های صفحه) */, gap: rg.getClientRects()[0].top - sc.getBoundingClientRect().bottom, noCircle: fcs.backgroundColor === 'rgba(0, 0, 0, 0)' && fcs.boxShadow === 'none' };
     closePersonDetail ? closePersonDetail() : 0; await w(300);
     hkHomeAddMenu(document.querySelector('.home-circle-add')); await w(250);
     const ao = getComputedStyle(document.getElementById('hkAddPop'));
@@ -147,6 +147,8 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const nameToggles = panel.classList.contains('open');
     document.getElementById('menuUserName').click(); await w(400);
     const boxToggles = !panel.classList.contains('open');
+    /* ۱.۳.۸۰: مداد فقط با باکس پروفایل باز */
+    document.getElementById('menuUserName').click(); await w(400);
     document.querySelector('#menuUserNameText .hk-mprof-pen').click(); await w(100);
     const edit = document.querySelector('#menuUserNameText input'), focused = document.activeElement === edit;
     edit.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

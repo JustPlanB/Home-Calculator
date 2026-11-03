@@ -142,14 +142,17 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   const p2 = await H.page.evaluate(() => [...document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)')].map(x => x.style.transform).join(';'));
   await H.page.mouse.up();
   await H.page.waitForTimeout(150);
+  /* ۱.۳.۸۰: با رها کردن روی صفحه می‌مانند؛ «برگشت» همه را آرام محو می‌کند */
+  const stay = await H.page.evaluate(() => !!document.getElementById('hkBubbles') && !document.querySelector('#hkBubbles.out'));
+  await H.page.evaluate(() => onBackGuard()); await H.page.waitForTimeout(150);
   const h2 = await H.page.evaluate(() => ({ fading: !!document.querySelector('#hkBubbles.out'), instant: !!(window._instantBalOpen) || !!document.querySelector('.instant-balance-modal.open, #instantBalanceModal.open') }));
   await H.page.waitForTimeout(1000);
   const gone = await H.page.evaluate(() => !document.getElementById('hkBubbles'));
   ok(h1.n === 3 && h1.names === 'ملت|ملی|سپه', 'به تعداد حساب‌ها حباب پخش می‌شود و اسم هر حساب داخلش (' + h1.names + ')');
   ok(h1.neg === 'سپه' && /^rgb\(2[0-5]\d, 1[0-6]\d, \d{1,2}\)$|^rgb\(2[0-5]\d, [5-9]\d, \d{1,2}\)$/.test(h1.negCol) && /^rgb\(\d{1,3}, (1[3-9]\d|2[0-5]\d), \d{1,3}\)$/.test(h1.posCol), 'منفی نارنجی، مثبت سبز (' + h1.negCol + ' / ' + h1.posCol + ')');
-  ok(h1.shine && h1.pe === 'none', 'حباب‌ها برق می‌زنند و جلوی لمس را نمی‌گیرند');
+  ok(h1.shine && h1.pe === 'auto', 'حباب‌ها برق می‌زنند؛ تا روی صفحه‌اند لمس به صفحهٔ پشت نمی‌رسد');
   ok(p1 !== p2, 'حباب‌ها آرام و نامنظم حرکت می‌کنند');
-  ok(h2.fading && gone && !h2.instant, 'با رها کردن آرام محو می‌شوند و موجودی آنی باز نمی‌شود');
+  ok(stay && h2.fading && gone && !h2.instant, 'با رها کردن روی صفحه می‌مانند؛ «برگشت» آرام محوشان می‌کند؛ موجودی آنی باز نمی‌شود');
   /* بیش از ۱۰ ثانیه: ترکیدن */
   await H.page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
   await H.page.mouse.down();
