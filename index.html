@@ -12079,9 +12079,10 @@ button, input, select, textarea { font-family: inherit; }
     .tour-spot.shaped .tour-shape { animation: tourShapePulse 1.6s ease-out infinite; }
     @keyframes tourShapePulse { 0% { opacity: 1; } 70% { opacity: 0.35; } 100% { opacity: 1; } }
     /* ۱.۳.۷۷: دکمهٔ اسکرول بی دایره (فقط فلش)؛ نوشتهٔ راهنما وسط فضای خالی بین لبهٔ چپ و فلش (دو طرفش هم‌اندازه) */
-    html body #hkScrollFab, html[data-theme="light"] body #hkScrollFab { background: transparent !important; box-shadow: none !important; width: 28px !important; height: 28px !important; }
-    html body #hkScrollFab svg { width: 22px !important; height: 22px !important; }
-    .person-detail-box .person-detail-hint { padding-left: 12px !important; padding-right: 54px !important; }
+    /* ۱.۳.۸۰: فلش کمی بزرگ‌تر؛ نوشتهٔ راهنما دقیقاً روی خط وسط صفحه (فاصلهٔ دو طرفش تا لبه‌های صفحه یکی) */
+    html body #hkScrollFab, html[data-theme="light"] body #hkScrollFab { background: transparent !important; box-shadow: none !important; width: 34px !important; height: 34px !important; }
+    html body #hkScrollFab svg { width: 27px !important; height: 27px !important; }
+    .person-detail-box .person-detail-hint { padding-left: 54px !important; padding-right: 54px !important; }
     /* ۱.۳.۷۷: تاریخ روز فقط در صفحهٔ اصلی (نه در جدول درآمد/مخارج، جستجو و صفحه‌های دیگر) */
     body.detail-open #hkTodayLine, body.feature-open #hkTodayLine, body:has(#featureSheet.open) #hkTodayLine, body:has(.stats-sheet.open) #hkTodayLine { display: none !important; }
     /* ۱.۳.۷۷: پشت باکس «+» و انتخاب میان‌بر (نگه‌داشتن) مات و کمی تیره */
@@ -12105,6 +12106,8 @@ button, input, select, textarea { font-family: inherit; }
     .hk-mprof-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
     .hk-mprof-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hk-mprof-pen { flex: 0 0 auto; border: none; background: transparent; color: var(--muted); width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+    /* ۱.۳.۸۰: مداد ویرایش اسم فقط وقتی باکس پروفایل باز است */
+    .hk-mprof:not(.open) .hk-mprof-pen { display: none !important; }
     .hk-mprof-pen svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .hk-av-view { position: fixed; inset: 0; z-index: 100500; background: rgba(0,0,0,0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; animation: hkDimIn 0.2s ease-out; }
     .hk-av-big { width: min(72vw, 300px); height: min(72vw, 300px); border-radius: 26px; overflow: hidden; background: linear-gradient(135deg, #2f7fb8, #1d4f78); display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); animation: hkAvPop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
@@ -12145,7 +12148,7 @@ button, input, select, textarea { font-family: inherit; }
     .hk-add-ov, .hk-dock-pov { background: rgba(0,0,0,0.16) !important; -webkit-backdrop-filter: blur(1.5px) !important; backdrop-filter: blur(1.5px) !important; }
     html[data-theme="light"] .hk-add-ov, html[data-theme="light"] .hk-dock-pov { background: rgba(20,30,45,0.08) !important; }
     /* ۱.۳.۷۸: حباب‌های موجودی (نگه‌داشتن دایرهٔ موجودی) */
-    .hk-bubbles { position: fixed; inset: 0; z-index: 100450; pointer-events: none; transition: opacity 0.85s ease; }
+    .hk-bubbles { position: fixed; inset: 0; z-index: 100450; pointer-events: auto; touch-action: none; transition: opacity 0.9s ease; -webkit-tap-highlight-color: transparent; }
     .hk-bubbles.out { opacity: 0; }
     .hk-bub { position: absolute; left: 0; top: 0; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; padding: 10px; box-sizing: border-box;
       /* ۱.۳.۷۹: حباب واقعی: وسط شفاف، لبهٔ نازک روشن؛ دور همه یکسان */
@@ -12155,9 +12158,13 @@ button, input, select, textarea { font-family: inherit; }
     .hk-bub > .ir { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
       background: conic-gradient(from var(--hk-bub-rot, 0deg), rgba(255,90,190,0.95), rgba(90,150,255,0.95), rgba(70,235,210,0.85), rgba(255,225,120,0.7), rgba(255,255,255,0.15), rgba(170,100,255,0.95), rgba(255,90,190,0.95));
       -webkit-mask: radial-gradient(circle closest-side, transparent 76%, rgba(0,0,0,0.5) 88%, #000 95%, #000 98.5%, transparent 100%); mask: radial-gradient(circle closest-side, transparent 76%, rgba(0,0,0,0.5) 88%, #000 95%, #000 98.5%, transparent 100%);
-      opacity: 0.62; mix-blend-mode: screen; animation: hkBubIr var(--hk-bub-d, 14s) linear infinite; }
+      opacity: 0.44; mix-blend-mode: screen; animation: hkBubIr var(--hk-bub-d, 14s) linear infinite; }
     @keyframes hkBubIr { to { transform: rotate(360deg); } }
-    .hk-bub > .sh { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+    .hk-bub { cursor: pointer; }
+    /* ۱.۳.۸۰: صفحهٔ پشت حباب کمی موج‌دار (فیلتر اعوجاج)؛ برق داخل حباب آرام روی لبه جابه‌جا می‌شود */
+    .hk-bub > .wp { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; -webkit-backdrop-filter: url(#hkBubWarp); backdrop-filter: url(#hkBubWarp); clip-path: circle(49.5% at 50% 50%); }
+    .hk-bub > .sh { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; animation: hkBubSway var(--hk-bub-d, 14s) ease-in-out infinite alternate; }
+    @keyframes hkBubSway { 0% { transform: rotate(-14deg); } 50% { transform: rotate(9deg); } 100% { transform: rotate(-4deg); } }
     .hk-bub > .sh::before { content: ""; position: absolute; inset: 7%; border-radius: 50%; border: 3px solid transparent; border-top-color: rgba(255,255,255,0.92);
       -webkit-mask: linear-gradient(90deg, transparent 18%, #000 40%, #000 62%, transparent 84%); mask: linear-gradient(90deg, transparent 18%, #000 40%, #000 62%, transparent 84%);
       transform: rotate(-42deg); filter: blur(0.5px); animation: hkBubGlint 4.8s ease-in-out infinite; }
@@ -14644,8 +14651,43 @@ button, input, select, textarea { font-family: inherit; }
         var x = hkTodayLineText();
         if (ln.firstChild.textContent !== x.fa) ln.firstChild.textContent = x.fa;
         if (ln.lastChild.textContent !== x.en) ln.lastChild.textContent = x.en;
+        hkTodayLinePlace();
       } catch (e) {}
     }
+    /* ۱.۳.۸۰: تاریخ روز دقیقاً وسط ارتفاع فاصلهٔ لبهٔ پایین سه باکس بالا و لبهٔ بالای باکس کارت — از روی خود صفحه حساب می‌شود */
+    function hkTodayLinePlace() {
+      try {
+        var ln = document.getElementById('hkTodayLine'), bar = document.querySelector('.top-bar'); if (!ln || !bar || !ln.offsetHeight) return;
+        var card = null;
+        document.querySelectorAll('#panel-home .person-card').forEach(function (c) { if (!card && c.offsetHeight && c.getBoundingClientRect().width) card = c; });
+        if (!card) return;
+        var br = bar.getBoundingClientRect(), bot = 0;
+        ['menuBtn', 'monthSelectWrap', 'yearSelectWrap'].forEach(function (id) { var e = document.getElementById(id); if (e && e.offsetHeight) bot = Math.max(bot, e.getBoundingClientRect().bottom); });
+        if (!bot) bot = br.bottom;
+        var ct = card.getBoundingClientRect().top;
+        if (!(ct > bot)) return;
+        var b = ln.querySelector('b'), lr = ln.getBoundingClientRect(), tr = b ? b.getBoundingClientRect() : lr;
+        var glyphOff = (tr.top + tr.height / 2) - (lr.top + lr.height / 2);
+        var mid = (bot + ct) / 2;
+        var top = mid - br.top - ln.offsetHeight / 2 - glyphOff;
+        ln.style.top = (Math.round(top * 2) / 2) + 'px';
+      } catch (e) {}
+    }
+    (function () {
+      var sch = function () { clearTimeout(sch._t); sch._t = setTimeout(hkTodayLinePlace, 60); };
+      window.addEventListener('resize', sch);
+      var hook = function () {
+        try {
+          if (window.ResizeObserver && !hook._ro) {
+            hook._ro = new ResizeObserver(sch);
+            var bar = document.querySelector('.top-bar'), hc = document.getElementById('homeCards'); if (bar) hook._ro.observe(bar); if (hc) hook._ro.observe(hc);
+          }
+        } catch (e) {}
+        sch();
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(hook, 800); }); else setTimeout(hook, 800);
+      setTimeout(sch, 2500);
+    })();
     function hkMonthTodayWatch() {
       var mw = document.getElementById('monthSelectWrap'), yw = document.getElementById('yearSelectWrap');
       if (!mw || mw._hkTodayW) return; mw._hkTodayW = true;
@@ -21484,7 +21526,7 @@ async function openPdfPrintWindow(){
       const menu = document.getElementById('menuDropdown');
       const bd = document.getElementById('menuBackdrop');
       /* ۱.۳.۴۷: نام کاربر (کارت اصلی) بالای منوی کناری؛ دیگر روی کارت نوشته نمی‌شود */
-      try { hkRenderMenuProfile(); hkMenuSearchClear(); } catch (eUn) {}
+      try { hkRenderMenuProfile(); hkMenuSearchClear(); var _msi2 = document.getElementById('menuSearchInput'); if (_msi2 && document.activeElement === _msi2) _msi2.blur(); } catch (eUn) {}
       if (menu) menu.classList.add('open');
       if (bd) bd.classList.add('open');
       document.body.classList.add('menu-open');
@@ -22029,6 +22071,8 @@ async function openPdfPrintWindow(){
     function openStatsSheet(opts) { setTimeout(function () { HKStats.open(opts && opts.type ? null : opts); }, 40); }
 
     function closeSideMenu() {
+      /* ۱.۳.۸۰: بستن منو جستجویش را همیشه غیرفعال می‌کند (متن پاک، کیبورد بسته، فهرست کامل) */
+      try { var _msi = document.getElementById('menuSearchInput'); if (_msi && document.activeElement === _msi) _msi.blur(); hkMenuSearchClear(); } catch (eMs) {}
       try { if (typeof hkToggleProfile === 'function') hkToggleProfile(false); } catch (eTp) {}
       const menu = document.getElementById('menuDropdown');
       const bd = document.getElementById('menuBackdrop');
@@ -24137,8 +24181,18 @@ async function openPdfPrintWindow(){
       hkBubblesEnd(true);
       var accs = hkBubbleAccounts(); if (!accs.length) return false;
       var W = innerWidth, H = innerHeight, r0 = fromEl.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
-      var ov = document.createElement('div'); ov.id = 'hkBubbles'; ov.className = 'hk-bubbles';
+      var ov = document.createElement('div'); ov.id = 'hkBubbles'; ov.className = 'hk-bubbles'; ov.setAttribute('data-hk-back', '1');
+      /* ۱.۳.۸۰: اعوجاج ملایم صفحهٔ پشت حباب (مثل نگاه از پشت حباب صابون) */
+      if (!document.getElementById('hkBubWarpSvg')) {
+        var sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.id = 'hkBubWarpSvg'; sv.setAttribute('width', '0'); sv.setAttribute('height', '0'); sv.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+        sv.innerHTML = '<filter id="hkBubWarp" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="7" xChannelSelector="R" yChannelSelector="G"/></filter>';
+        document.body.appendChild(sv);
+      }
       document.body.appendChild(ov);
+      /* لمس جای خالی صفحه هیچ کاری نمی‌کند (به صفحهٔ پشت هم نمی‌رسد) */
+      ['click', 'pointerup', 'touchstart', 'touchend'].forEach(function (ev) { ov.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+      ov.addEventListener('pointerdown', function (e) { e.stopPropagation(); var t = e.target && e.target.closest ? e.target.closest('.hk-bub') : null; if (t) hkBubTap(t); });
+      ov._hkCancel = function () { hkBubblesEnd(false); };
       var maxAbs = Math.max.apply(null, accs.map(function (a) { return Math.abs(a.v); }).concat([1]));
       var TOP = 56, BOT = 14, PAD = 8;
       /* ۱.۳.۷۹: ظاهر حباب واقعی (لبهٔ نازک رنگین‌کمانی، هلال‌های براق)؛ دور همه یکسان، پروژه فقط با نقطه‌های داخل؛ چند حباب کوچک خالی بینشان */
@@ -24150,7 +24204,7 @@ async function openPdfPrintWindow(){
         var el = document.createElement('div'); el.className = 'hk-bub' + (a ? (a.v < 0 ? ' neg' : '') : ' sm'); el.style.width = size + 'px'; el.style.height = size + 'px';
         el.style.setProperty('--hk-bub-rot', Math.round(Math.random() * 360) + 'deg');
         el.style.setProperty('--hk-bub-d', (10 + Math.random() * 8).toFixed(1) + 's');
-        el.innerHTML = '<i class="ir"></i><i class="sh"></i>' + (a ? '<span class="nm"></span><b class="am"></b>' + (a.cols.length ? '<span class="ib-proj-dots">' + a.cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>' : '') : '');
+        el.innerHTML = '<i class="wp"></i><i class="ir"></i><i class="sh"></i>' + (a ? '<span class="nm"></span><b class="am"></b>' + (a.cols.length ? '<span class="ib-proj-dots">' + a.cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>' : '') : '');
         if (a) { el.querySelector('.nm').textContent = a.label; el.querySelector('.am').textContent = (a.v < 0 ? '−' : '') + formatNum(Math.abs(a.v)); }
         ov.appendChild(el);
         return { el: el, r: size / 2, acc: !!a, x: cx, y: cy, tx: 0, ty: 0, vx: 0, vy: 0, ph: Math.random() * 6.28, born: performance.now() + i * 60 };
@@ -24171,12 +24225,14 @@ async function openPdfPrintWindow(){
         }
       }
       list.forEach(function (b) { clampT(b); var sp = (b.acc ? 0.16 : 0.22) + Math.random() * 0.16, dir = Math.random() * Math.PI * 2; b.vx = Math.cos(dir) * sp; b.vy = Math.sin(dir) * sp; });
-      var B0 = _hkBub = { ov: ov, list: list, t0: performance.now(), raf: 0, ending: false, popping: false };
+      list.forEach(function (b) { b.el._hkB = b; });
+      var B0 = _hkBub = { ov: ov, list: list, t0: performance.now(), raf: 0, ending: false, popping: false, held: true };
       try { navigator.vibrate && navigator.vibrate(12); } catch (eV) {}
       var step = function (now) {
-        if (_hkBub !== B0) return;
+        if (!B0.ov.isConnected) return;
         var el = now - B0.t0;
-        if (!B0.popping && el > 10000) { B0.popping = now; list.forEach(function (b) { b.vx *= 0.3; b.vy *= 0.3; }); }
+        /* ۱.۳.۸۰: ترکیدن خودکار سر ۱۰ ثانیه فقط وقتی هنوز انگشت روی دایره است */
+        if (!B0.popping && B0.held && !B0.fading && el > 10000) { B0.popping = now; list.forEach(function (b) { b.vx *= 0.3; b.vy *= 0.3; }); }
         var mx = W / 2, my = H * 0.44;
         list.forEach(function (b) {
           var k = Math.min(1, Math.max(0, (now - b.born) / 900)), e = 1 - Math.pow(1 - k, 3);
@@ -24212,7 +24268,7 @@ async function openPdfPrintWindow(){
           b.el.style.transform = 'translate(' + (b.x - b.r) + 'px,' + (b.y - b.r) + 'px) scale(' + (0.3 + 0.7 * e) + ')';
           b.el.style.opacity = String(Math.min(1, e * 1.4));
         });
-        if (B0.popping) {
+        if (B0.popping && !B0.fading) {
           /* برخورد (با سرعت کم) → ترکیدن */
           var hit = false;
           for (var i2 = 0; i2 < list.length && !hit; i2++) for (var j2 = i2 + 1; j2 < list.length; j2++) { var a2 = list[i2], c2 = list[j2]; if (Math.hypot(a2.x - c2.x, a2.y - c2.y) <= (a2.r + c2.r)) { hit = true; break; } }
@@ -24223,26 +24279,53 @@ async function openPdfPrintWindow(){
       B0.raf = requestAnimationFrame(step);
       return true;
     }
+    function hkBubDrops(B, b) {
+      for (var k = 0; k < 8; k++) {
+        var d = document.createElement('i'); d.className = 'hk-bub-drop'; var a = Math.PI * 2 * k / 8 + Math.random() * 0.4;
+        d.style.left = b.x + 'px'; d.style.top = b.y + 'px'; d.style.setProperty('--dx', Math.cos(a) * (b.r + 30) + 'px'); d.style.setProperty('--dy', Math.sin(a) * (b.r + 30) + 'px');
+        B.ov.appendChild(d);
+        (function (dd) { setTimeout(function () { try { dd.remove(); } catch (e) {} }, 700); })(d);
+      }
+    }
+    function hkBubPopOne(B, b) {
+      var ix = B.list.indexOf(b); if (ix < 0) return; B.list.splice(ix, 1);
+      b.el.classList.add('pop'); hkBubDrops(B, b);
+      setTimeout(function () { try { b.el.remove(); } catch (e) {} }, 420);
+    }
+    /* ۱.۳.۸۰: زدن روی حباب موجودی = ترکیدن همان و چند حباب کوچک نزدیکش؛ آخرین حباب موجودی = همهٔ کوچک‌های باقی‌مانده هم */
+    function hkBubTap(el) {
+      var B = _hkBub; if (!B || B.fading || B.ending) return;
+      var b = el._hkB; if (!b || B.list.indexOf(b) < 0 || !b.acc) return;
+      try { navigator.vibrate && navigator.vibrate(18); } catch (eV) {}
+      hkBubPopOne(B, b);
+      var accLeft = B.list.filter(function (x) { return x.acc; }).length;
+      var smalls = B.list.filter(function (x) { return !x.acc; });
+      if (!accLeft) {
+        smalls.forEach(function (x, i) { setTimeout(function () { hkBubPopOne(B, x); }, 60 + i * 70); });
+        B.ending = true;
+        setTimeout(function () { if (_hkBub === B) _hkBub = null; try { B.ov.remove(); } catch (e) {} }, 60 + smalls.length * 70 + 650);
+        return;
+      }
+      smalls.sort(function (p, q) { return Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y); });
+      var n = Math.min(smalls.length, 2 + Math.round(Math.random()));
+      smalls.slice(0, n).forEach(function (x, i) { setTimeout(function () { hkBubPopOne(B, x); }, 90 + i * 90); });
+    }
+    window._hkBubAlive = function () { return !!(_hkBub && !_hkBub.fading && !_hkBub.ending); };
     function hkBubblesPop() {
       var B = _hkBub; if (!B || B.ending) return; B.ending = true; cancelAnimationFrame(B.raf);
       try { navigator.vibrate && navigator.vibrate([20, 40, 30]); } catch (eV) {}
-      B.list.forEach(function (b) {
-        b.el.classList.add('pop');
-        for (var k = 0; k < 8; k++) {
-          var d = document.createElement('i'); d.className = 'hk-bub-drop'; var a = Math.PI * 2 * k / 8 + Math.random() * 0.4;
-          d.style.left = b.x + 'px'; d.style.top = b.y + 'px'; d.style.setProperty('--dx', Math.cos(a) * (b.r + 30) + 'px'); d.style.setProperty('--dy', Math.sin(a) * (b.r + 30) + 'px');
-          B.ov.appendChild(d);
-        }
-      });
+      B.list.forEach(function (b) { b.el.classList.add('pop'); hkBubDrops(B, b); });
       if (window._hkBubPress) window._hkBubPress.done = true;
-      setTimeout(function () { if (_hkBub === B) { B.ov.remove(); _hkBub = null; } }, 700);
+      setTimeout(function () { if (_hkBub === B) _hkBub = null; try { B.ov.remove(); } catch (e) {} }, 700);
     }
+    /* now=true: فوری پاک؛ وگرنه (برگشت): همهٔ حباب‌ها در حال حرکت آرام محو می‌شوند */
     function hkBubblesEnd(now) {
-      var B = _hkBub; if (!B) return; if (B.ending && !now) return;
-      B.ending = true; cancelAnimationFrame(B.raf); _hkBub = null;
-      if (now) { B.ov.remove(); return; }
+      var B = _hkBub; if (!B) return;
+      if (now) { B.ending = true; cancelAnimationFrame(B.raf); _hkBub = null; try { B.ov.remove(); } catch (e) {} return; }
+      if (B.fading || B.ending) return;
+      B.fading = true; B.held = false;
       B.ov.classList.add('out');
-      setTimeout(function () { try { B.ov.remove(); } catch (e) {} }, 900);
+      setTimeout(function () { cancelAnimationFrame(B.raf); if (_hkBub === B) _hkBub = null; try { B.ov.remove(); } catch (e) {} }, 950);
     }
     (function () {
       var bind = function () {
@@ -24254,7 +24337,8 @@ async function openPdfPrintWindow(){
           clearTimeout(tm); tm = setTimeout(function () { if (hkBubblesStart(c)) { active = true; suppress = true; } }, 480);
         });
         c.addEventListener('pointermove', function (e) { if (!active && Math.hypot(e.clientX - sx, e.clientY - sy) > 12) clearTimeout(tm); });
-        var up = function () { clearTimeout(tm); if (active) { active = false; if (!(window._hkBubPress && window._hkBubPress.done)) hkBubblesEnd(false); } };
+        /* ۱.۳.۸۰: رها کردن = حباب‌ها روی صفحه می‌مانند (فقط ترکاندن یا برگشت) */
+        var up = function () { clearTimeout(tm); if (active) { active = false; if (_hkBub) _hkBub.held = false; } };
         c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up); c.addEventListener('pointerleave', function () { if (!active) clearTimeout(tm); });
         window.addEventListener('pointerup', up, true);
         c.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -24263,7 +24347,7 @@ async function openPdfPrintWindow(){
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(bind, 500); }); else setTimeout(bind, 500);
       setTimeout(bind, 2500);
     })();
-    try { Object.assign(window, { hkBubblesStart: hkBubblesStart, hkBubblesEnd: hkBubblesEnd, hkBubblesPop: hkBubblesPop }); } catch (eWb) {}
+    try { Object.assign(window, { hkBubblesStart: hkBubblesStart, hkBubblesEnd: hkBubblesEnd, hkBubblesPop: hkBubblesPop, hkBubTap: hkBubTap }); } catch (eWb) {}
     function closeInstantBalance() {
       _instantBalOpen = false;
       try {
@@ -27822,6 +27906,37 @@ async function openPdfPrintWindow(){
       ov.querySelector('.chg').onclick = function (e) { e.stopPropagation(); close(); hkAvatarPick(); };
       if (src) ov.querySelector('.del').onclick = function (e) { e.stopPropagation(); close(); try { localStorage.removeItem(HK_AVATAR_KEY); } catch (e2) {} hkRenderMenuProfile(); showToast('عکس حذف شد'); };
       document.body.appendChild(ov);
+      if (src) hkZoomable(ov.querySelector('.hk-av-big'), ov.querySelector('.hk-av-big img'));
+    }
+    /* ۱.۳.۸۰: عکس بزرگ پروفایل قابل زوم: دو انگشت یا دو بار زدن؛ در حالت زوم کشیدن جابه‌جا می‌کند */
+    function hkZoomable(box, im) {
+      if (!box || !im) return;
+      box.style.touchAction = 'none'; im.style.transformOrigin = '0 0'; im.style.willChange = 'transform';
+      var z = 1, x = 0, y = 0, pts = {}, last = null, pinch0 = null, lastTap = 0;
+      var W = function () { return box.clientWidth; }, H = function () { return box.clientHeight; };
+      var clamp = function () { x = Math.min(0, Math.max(W() - W() * z, x)); y = Math.min(0, Math.max(H() - H() * z, y)); };
+      var paint = function (anim) { clamp(); im.style.transition = anim ? 'transform 0.25s ease' : 'none'; im.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + z + ')'; };
+      var setZoom = function (nz, cx, cy, anim) { nz = Math.max(1, Math.min(5, nz)); var k = nz / z; x = cx - (cx - x) * k; y = cy - (cy - y) * k; z = nz; paint(anim); };
+      var local = function (e) { var r = box.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+      box.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); try { box.setPointerCapture(e.pointerId); } catch (eC) {}
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY }; last = { x: e.clientX, y: e.clientY }; pinch0 = null;
+        var now = Date.now();
+        if (Object.keys(pts).length === 1 && now - lastTap < 300) { var q = local(e); setZoom(z > 1.05 ? 1 : 2.5, q.x, q.y, true); lastTap = 0; } else lastTap = now;
+      });
+      box.addEventListener('pointermove', function (e) {
+        if (!pts[e.pointerId]) return; pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+        var ids = Object.keys(pts);
+        if (ids.length >= 2) {
+          var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y), r = box.getBoundingClientRect(), cx = (a.x + b.x) / 2 - r.left, cy = (a.y + b.y) / 2 - r.top;
+          if (!pinch0) pinch0 = { d: d, z: z }; else setZoom(pinch0.z * d / pinch0.d, cx, cy, false);
+        } else if (last && z > 1) { x += e.clientX - last.x; y += e.clientY - last.y; paint(false); }
+        last = { x: e.clientX, y: e.clientY };
+      });
+      var up = function (e) { delete pts[e.pointerId]; pinch0 = null; var ids = Object.keys(pts); last = ids.length ? pts[ids[0]] : null; };
+      box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+      box.addEventListener('click', function (e) { e.stopPropagation(); });
+      box._hkZoom = { get: function () { return { z: z, x: x, y: y }; }, set: function (nz, cx, cy) { setZoom(nz, cx == null ? W() / 2 : cx, cy == null ? H() / 2 : cy, false); } };
     }
     /* ۱.۳.۷۸: پنجرهٔ برش عکس پروفایل: عکس زیر یک کادر مربعی؛ کشیدن = جابه‌جایی، دو انگشت یا نوار = بزرگ/کوچک؛ خروجی ۵۱۲×۵۱۲ */
     function hkAvatarCropOpen(file, done) {
@@ -27921,11 +28036,15 @@ async function openPdfPrintWindow(){
     }
     function hkNameEditStart() {
       var nm = document.getElementById('menuUserNameText'); if (!nm || nm.querySelector('input')) return;
+      /* ۱.۳.۸۰: با باکس پروفایل بسته، اسم قابل ویرایش نیست */
+      var pb = document.getElementById('menuUserName'); if (pb && !pb.classList.contains('open')) return;
       var old = ''; try { old = hkMainTitle() || ''; } catch (e) {}
       nm.innerHTML = '<input type="text" maxlength="40"><small>Enter = ذخیره</small>';
       var inp = nm.querySelector('input'); inp.value = old;
+      var done = false;
       var fin = function (save) {
-        if (!inp.isConnected) return;
+        if (done || !inp.isConnected) return;
+        done = true; /* ۱.۳.۸۰: جلوگیری از ذخیرهٔ دوباره با blur هنگام برداشتن فیلد (لغو با برگشت) */
         var v = (inp.value || '').trim();
         nm.innerHTML = '';
         if (save && v && v !== old) { if (hkRenameMainTitle(old, v)) showToast('نام ذخیره شد'); }
@@ -27934,6 +28053,20 @@ async function openPdfPrintWindow(){
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); fin(true); } else if (e.key === 'Escape') fin(false); });
       inp.addEventListener('blur', function () { fin(true); });
       inp.addEventListener('click', function (e) { e.stopPropagation(); });
+      /* ۱.۳.۸۰: برگشت (که در اندروید اول کیبورد را می‌بندد) = بستن کیبورد و لغو ویرایش */
+      nm._hkCancelEdit = function () { fin(false); try { inp.blur(); } catch (e) {} };
+      try {
+        var vv = window.visualViewport, minH = vv ? vv.height : 0, kbSeen = false;
+        if (vv) {
+          var onVv = function () {
+            if (!inp.isConnected) { vv.removeEventListener('resize', onVv); return; }
+            if (vv.height < minH) minH = vv.height;
+            if (vv.height < window.innerHeight * 0.8 || window.innerHeight - vv.height > 120) kbSeen = true;
+            if (kbSeen && vv.height - minH > 120) { vv.removeEventListener('resize', onVv); nm._hkCancelEdit(); }
+          };
+          vv.addEventListener('resize', onVv);
+        }
+      } catch (eVv) {}
       setTimeout(function () { inp.focus(); try { inp.setSelectionRange(0, inp.value.length); } catch (e) {} }, 0);
     }
     function hkMenuNorm(t) { return String(t || '').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[‌‏‎]/g, '').replace(/\s+/g, ' ').trim().toLowerCase(); }
@@ -29117,7 +29250,7 @@ async function openPdfPrintWindow(){
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
-          var opts = [{ v: '', l: 'نامشخص' }].concat(HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }));
+          var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
           hkCatPickSheet(HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }), st.cat, function (v) { st.cat = v; catTxt(); });
         };
@@ -35482,7 +35615,8 @@ function confirmSmsEntry() {
       var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
       var close = function () { ov.remove(); };
       ov._hkCancel = close;
-      [{ id: '', label: 'نامشخص' }].concat(cats).forEach(function (c) {
+      /* ۱.۳.۸۰: «نامشخص» آخرین دسته */
+      cats.concat([{ id: '', label: 'نامشخص' }]).forEach(function (c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
         b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
         b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
@@ -46515,6 +46649,9 @@ function openProjectRowPicker(secId) {
       try { var _up = document.getElementById('updPrompt'); if (_up) { _up.remove(); return; } } catch (eUp) {}
       /* لایه‌های شناور (باکس اطلاعات، پنجرهٔ انتخاب، فهرست‌های کشویی): بازگشت فقط بالاترین لایه را می‌بندد
          و منوی زیرش سر جایش می‌ماند */
+      try { var _nmE = document.getElementById('menuUserNameText'); if (_nmE && _nmE.querySelector('input') && _nmE._hkCancelEdit) { _nmE._hkCancelEdit(); return; } } catch (eNe) {}
+      /* ۱.۳.۸۰: حباب‌های موجودی: برگشت = محو شدن آرام همه در حال حرکت */
+      try { if (document.getElementById('hkBubbles') && window._hkBubAlive && window._hkBubAlive()) { hkBubblesEnd(false); return; } } catch (eBb) {}
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
       /* ۱.۳.۵۴: باکس شناور یک‌خطی (شرح/مبلغ/حساب در همهٔ جدول‌ها): بازگشت آن را می‌بندد و همزمان یک مرحله هم عقب می‌رود */
       try { if (document.querySelector('.pd-desc-popup, .cell-text-popup')) closeCellTextPopups(); } catch (eCt) {}
@@ -47675,6 +47812,7 @@ function openProjectRowPicker(secId) {
         var hrT = null; try { if (hint && hint.firstChild) { var rg = document.createRange(); rg.selectNodeContents(hint); var rr = rg.getClientRects(); if (rr.length) hrT = rr[0]; } } catch (eRg) {}
         var hc = hrT ? hrT.top + hrT.height / 2 : (hr && hr.height ? hr.top + hr.height / 2 : 0);
         var top = hc ? hc - fs / 2 : Math.min(br.bottom - 57, window.innerHeight - 62);
+        top += 7; /* ۱.۳.۸۰: کمی پایین‌تر */
 
         fab.style.top = Math.round(top) + 'px';
         fab.style.left = Math.round(br.right - 14 - fs) + 'px';
@@ -48971,7 +49109,7 @@ function openProjectRowPicker(secId) {
       try { bsRenderMonthSummary(list, 'none'); } catch (eMs) {}
       /* بدون فیلتر و کلمه: فقط جدول ماه‌ها؛ ردیف‌ها منتظر جستجو */
       if (noFilter) {
-        body.innerHTML = '<tr class="sr-wait"><td colspan="5">برای دیدن ردیف‌ها، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
+        body.innerHTML = '<tr class="sr-wait"><td colspan="5">برای دیدن نتایج، فیلتری انتخاب کنید یا کلمه‌ای بنویسید</td></tr>';
         if (foot) foot.innerHTML = '';
         document.getElementById('searchResultTitle').textContent = 'نتیجهٔ جستجو';
         boxR.style.display = '';

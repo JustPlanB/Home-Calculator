@@ -3026,19 +3026,33 @@ final class HkWidgetTxDraw {
     for(int i=1;i<=3;i++) cv.drawLine(c[i], top+3, c[i], top+h-3, ln);
     if(bottom) cv.drawLine(c[4], top+h-0.5f, c[0], top+h-0.5f, ln);
   }
+  /* ۱.۳.۸۰: نوار عنوان و سرستون‌ها با همان رنگ‌های جدول‌های نرم‌افزار؛ عنوان وسط (سبز/نارنجی دست نخورده) */
+  static int titleBg(boolean light){ return light ? 0xFFE3E7EE : 0xFF1B1B1B; }
+  static int headBg(boolean light){ return light ? 0xFFEEF0F4 : 0xFF0A1628; }
+  static int headFg(boolean light){ return light ? 0xFF2C3644 : 0xFFFFFFFF; }
+  static int headLine(boolean light){ return light ? 0xFFC9D1DC : 0xFF3A3A3C; }
   static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){
     fonts(ctx);
-    float th=34*k, hh=28*k; int H=Math.round(th+hh+2*k);
+    float th=40*k, hh=30*k; int H=Math.round(th+hh+1*k);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
-    Paint t=paint(BOLD, 16.5f*k, amt(inc, light), Paint.Align.RIGHT);
-    cv.drawText(inc ? "درآمدها" : "مخارج", c[0]-2*k, base(0, th, 16.5f*k), t);
-    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(light ? 0x0D000000 : 0x14FFFFFF);
-    cv.drawRoundRect(new android.graphics.RectF(c[4], th, c[0], th+hh), 8*k, 8*k, band);
-    grid(cv, c, th, hh, light, false);
+    /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
+    Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(titleBg(light));
+    float rr=22*k;
+    android.graphics.Path tp=new android.graphics.Path();
+    tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
+    cv.drawPath(tp, tb);
+    Paint t=paint(BOLD, 16.5f*k, amt(inc, light), Paint.Align.CENTER);
+    cv.drawText(inc ? "درآمدها" : "مخارج", W/2f, base(0, th, 16.5f*k), t);
+    /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
+    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(headBg(light));
+    cv.drawRect(c[4], th, c[0], th+hh, band);
+    Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(headLine(light)); ln.setStrokeWidth(Math.max(1f, k*0.6f));
+    for(int i=1;i<=3;i++) cv.drawLine(c[i], th, c[i], th+hh, ln);
+    cv.drawLine(c[4], th+hh, c[0], th+hh, ln);
     String[] lb={"تاریخ","شرح","حساب","مبلغ"};
     for(int i=0;i<4;i++){
-      Paint p=paint(BOLD, 12.5f*k, muted(light), Paint.Align.CENTER);
+      Paint p=paint(BOLD, 12.5f*k, headFg(light), Paint.Align.CENTER);
       fitSize(p, lb[i], (c[i]-c[i+1])-8*k);
       cv.drawText(lb[i], (c[i]+c[i+1])/2f, base(th, hh, 12.5f*k), p);
     }
@@ -3917,7 +3931,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/hk_widget_bg">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="8dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingBottom="8dp">
         <ImageView android:id="@+id/hk_wt_head" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:adjustViewBounds="true" android:scaleType="fitXY" android:contentDescription="ردیف‌ها"/>
         <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
@@ -3929,7 +3943,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
         </FrameLayout>
     </LinearLayout>
     <ImageView android:id="@+id/hk_wt_eye" android:layout_width="34dp" android:layout_height="34dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="4dp" android:layout_marginTop="4dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="6dp" android:layout_marginTop="3dp"
         android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
 </FrameLayout>
 `);

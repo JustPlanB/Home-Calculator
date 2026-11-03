@@ -95,6 +95,8 @@ const sms = (amt, dt, to, n, ov, pen, tr) => `بانک مسکن\nواريز قس
     const pop1 = [...document.querySelectorAll('#hkAvPop button')].map(x => x.textContent).join('|');
     document.querySelector('#hkAvPop .del').click(); await w(50);
     const removed = !document.querySelector('#menuUserAvatar img') && !localStorage.getItem(STORAGE_KEY + '_avatar');
+    /* ۱.۳.۸۰: ویرایش اسم فقط با باکس پروفایل باز */
+    hkToggleProfile(true); await w(50);
     hkNameEditStart(); await w(50);
     const inp = document.querySelector('#menuUserNameText input');
     const inline = !!inp && !document.querySelector('.person-edit-sheet');
