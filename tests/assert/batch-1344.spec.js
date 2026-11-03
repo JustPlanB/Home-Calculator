@@ -97,8 +97,8 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     out.s5 = await swipe(-140, 5);  /* بن‌بست سمت دیگر */
     return out;
   });
-  ok(/پس‌انداز/.test(hb.first) && /انتخاب حساب/.test(hb.first) && /ثبت دستی/.test(hb.first) && /پشتیبان/.test(hb.second) && /بازیابی/.test(hb.second) && /خروجی/.test(hb.second),
-    'باکس دوم: اول پس‌انداز، انتخاب حساب، ثبت دستی؛ دوم پشتیبان‌گیری، بازیابی، خروجی');
+  ok(/پس‌انداز/.test(hb.first) && /انتخاب حساب/.test(hb.first) && /ثبت تکی و گروهی/.test(hb.first) && /پشتیبان/.test(hb.second) && /بازیابی/.test(hb.second) && /خروجی/.test(hb.second),
+    'باکس دوم: اول پس‌انداز، انتخاب حساب، ثبت تکی و گروهی پیامک‌ها؛ دوم پشتیبان‌گیری، بازیابی، خروجی');
   ok(hb.clones === 0 && hb.s1 === 1 && hb.s2 === 1 && hb.s3 === 1 && hb.back === 0 && hb.s5 === 0, 'رفت و برگشتی: بعد از اسلاید دوم بن‌بست است و باید برعکس کشید تا برگردد (' + [hb.s1, hb.s2, hb.s3, hb.back, hb.s5].join('→') + ')');
 
   console.log('• ستون ردیف و شرح نتیجهٔ جستجو');
