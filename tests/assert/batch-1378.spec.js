@@ -49,7 +49,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const snakeBack = getComputedStyle(r1, '::before').display !== 'none' && r1.classList.contains('hk-snake');
     const row1 = it.querySelector('.ur-row1'), nm = row1 && row1.querySelector('.ur-title').textContent, chip = row1 && row1.children.length >= 2;
     const meta = it.querySelector('.ur-meta').textContent, note = (it.querySelector('.ur-note') || {}).textContent || '';
-    const icons = it.querySelectorAll('.ur-actions .ur-edit svg, .ur-actions .ur-del svg').length;
+    const icons = (it.querySelector('.ur-actions .ur-edit svg path[d="M12 20h9"]') ? 1 : 0) + (it.querySelector('.ur-actions .ur-del') && it.querySelector('.ur-actions .ur-del').textContent.trim() === '×' ? 1 : 0);
     const h = it.getBoundingClientRect().height;
     return { rows, dots, snake, dur, due, hl, snakeHidden, snakeBack, nm, chip, meta, note, icons, h, compact: it.classList.contains('ur-compact') };
   });
@@ -131,15 +131,15 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   await H.page.mouse.down();
   await H.page.waitForTimeout(1700);
   const h1 = await H.page.evaluate(() => {
-    const bs = [...document.querySelectorAll('#hkBubbles .hk-bub')];
+    const bs = [...document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)')];
     return { n: bs.length, names: bs.map(x => x.querySelector('.nm').textContent).join('|'), neg: bs.filter(x => x.classList.contains('neg')).map(x => x.querySelector('.nm').textContent).join('|'),
       negCol: (() => { const n = bs.find(x => x.classList.contains('neg')); return n ? getComputedStyle(n.querySelector('.am')).color : ''; })(),
       posCol: (() => { const n = bs.find(x => !x.classList.contains('neg')); return n ? getComputedStyle(n.querySelector('.am')).color : ''; })(),
       shine: bs.every(x => x.querySelector('.sh')), pe: getComputedStyle(document.getElementById('hkBubbles')).pointerEvents };
   });
-  const p1 = await H.page.evaluate(() => [...document.querySelectorAll('#hkBubbles .hk-bub')].map(x => x.style.transform).join(';'));
+  const p1 = await H.page.evaluate(() => [...document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)')].map(x => x.style.transform).join(';'));
   await H.page.waitForTimeout(400);
-  const p2 = await H.page.evaluate(() => [...document.querySelectorAll('#hkBubbles .hk-bub')].map(x => x.style.transform).join(';'));
+  const p2 = await H.page.evaluate(() => [...document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)')].map(x => x.style.transform).join(';'));
   await H.page.mouse.up();
   await H.page.waitForTimeout(150);
   const h2 = await H.page.evaluate(() => ({ fading: !!document.querySelector('#hkBubbles.out'), instant: !!(window._instantBalOpen) || !!document.querySelector('.instant-balance-modal.open, #instantBalanceModal.open') }));
@@ -153,7 +153,9 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   /* بیش از ۱۰ ثانیه: ترکیدن */
   await H.page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2);
   await H.page.mouse.down();
-  await H.page.waitForTimeout(11000);
+  /* ۱.۳.۷۹: سر ۱۰ ثانیه آرام به هم می‌رسند؛ ترکیدن تا چند ثانیه بعد */
+  await H.page.waitForTimeout(10000);
+  await H.page.waitForFunction(() => !!document.querySelector('#hkBubbles .hk-bub.pop') || !document.getElementById('hkBubbles'), null, { timeout: 8000 }).catch(() => {});
   const pop = await H.page.evaluate(() => ({ popped: !!document.querySelector('#hkBubbles .hk-bub.pop') || !document.getElementById('hkBubbles'), drops: document.querySelectorAll('#hkBubbles .hk-bub-drop').length, done: !!(window._hkBubPress && window._hkBubPress.done) }));
   await H.page.waitForTimeout(3500);
   const after = await H.page.evaluate(() => !document.getElementById('hkBubbles'));

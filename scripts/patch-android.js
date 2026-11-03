@@ -2925,12 +2925,16 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.RemoteViews;
 
-/** ۱.۳.۷۸: ویجت ردیف‌ها — آخرین ردیف‌های مخارج یا درآمدها (انتخاب هنگام افزودن ویجت)؛ تازه‌ترین بالا، با اسکرول قبلی‌ها */
+/** ۱.۳.۷۸: ویجت ردیف‌ها — آخرین ردیف‌های مخارج یا درآمدها (انتخاب هنگام افزودن ویجت)؛ تازه‌ترین بالا، با اسکرول قبلی‌ها
+    ۱.۳.۷۹: همه‌چیز با فونت وزیرمتن و رنگ‌های نرم‌افزار روی تصویر کشیده می‌شود؛ ردیف عنوان، خط‌کشی، ستون حساب؛ ترتیب ستون‌ها مثل جدول نرم‌افزار */
 public class HkWidgetTxProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
@@ -2952,12 +2956,11 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
       boolean inc=isIncome(ctx, id);
+      float[] sz=HkWidgetTxDraw.dims(ctx, mgr, id);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx);
       v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
-      v.setTextViewText(R.id.hk_wt_title, inc ? "درآمدها" : "مخارج");
-      v.setTextColor(R.id.hk_wt_title, inc ? (d.light ? 0xFF1E8E4A : 0xFF6FD08C) : (d.light ? 0xFFC62D22 : 0xFFFF7A6B));
-      v.setTextColor(R.id.hk_wt_empty, d.light ? 0xFF6E6E76 : 0xFF98989F);
-      v.setTextViewText(R.id.hk_wt_empty, d.locked ? "برنامه قفل است" : "ردیفی نیست");
+      v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, d.light));
+      v.setImageViewBitmap(R.id.hk_wt_empty, HkWidgetTxDraw.empty(ctx, (int)sz[0], sz[1], d.locked ? "برنامه قفل است" : "ردیفی نیست", d.light));
       Intent svc=new Intent(ctx, HkWidgetTxService.class);
       svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
@@ -2972,6 +2975,103 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
     }catch(Exception ignored){}
   }
 }
+
+/** رسم سرستون و ردیف‌های ویجت ردیف‌ها با وزیرمتن */
+final class HkWidgetTxDraw {
+  private static Typeface REG, BOLD;
+  static void fonts(Context c){
+    if(BOLD!=null) return;
+    try{ BOLD=androidx.core.content.res.ResourcesCompat.getFont(c, R.font.hk_vazir_bold); }catch(Exception ignored){}
+    try{ REG=androidx.core.content.res.ResourcesCompat.getFont(c, R.font.hk_vazir_regular); }catch(Exception ignored){}
+    if(BOLD==null) BOLD=Typeface.DEFAULT_BOLD;
+    if(REG==null) REG=Typeface.DEFAULT;
+  }
+  /** [عرض به پیکسل، پیکسل به ازای dp] — سقف اندازه برای سبک ماندن تصویر هر ردیف */
+  static float[] dims(Context c, AppWidgetManager m, int id){
+    float[] sz=HkWidgetDraw.size(c, m, id, 250, 180);
+    float k=sz[2], w=sz[0];
+    float cap=Math.min(k, 2.6f);
+    if(cap<k){ w=w*cap/k; k=cap; }
+    return new float[]{ Math.max(80, Math.round(w)), k };
+  }
+  static int text(boolean light){ return light ? 0xFF1C1C1E : 0xFFF2F2F7; }
+  static int muted(boolean light){ return light ? 0xFF6E6E76 : 0xFF98989F; }
+  static int line(boolean light){ return light ? 0x1F000000 : 0x24FFFFFF; }
+  static int amt(boolean inc, boolean light){ return inc ? (light ? 0xFF17834A : 0xFF9EE858) : (light ? 0xFFD93A1E : 0xFFFF6B4A); }
+  static Paint paint(Typeface tf, float size, int color, Paint.Align al){
+    Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.SUBPIXEL_TEXT_FLAG);
+    p.setTypeface(tf); p.setTextSize(size); p.setColor(color); p.setTextAlign(al);
+    return p;
+  }
+  static String ell(Paint p, String t, float maxW){
+    if(t==null) return "";
+    if(p.measureText(t)<=maxW) return t;
+    String e="…";
+    int n=t.length();
+    while(n>0 && p.measureText(t.substring(0,n)+e)>maxW) n--;
+    return n>0 ? t.substring(0,n)+e : "";
+  }
+  static void fitSize(Paint p, String t, float maxW){
+    float w=p.measureText(t);
+    if(w>maxW && w>0) p.setTextSize(p.getTextSize()*maxW/w);
+  }
+  /* ستون‌ها از راست مثل جدول نرم‌افزار: تاریخ | شرح | حساب | مبلغ — مرزها: [راست، چپِ تاریخ، چپِ شرح، چپِ حساب، چپ] */
+  static float[] cols(float W, float k){
+    float L=10*k, R=W-10*k, w=R-L;
+    return new float[]{ R, R-w*0.19f, L+w*0.47f, L+w*0.25f, L };
+  }
+  static float base(float top, float h, float size){ return top+h/2f+size*0.19f; }
+  static void grid(Canvas cv, float[] c, float top, float h, boolean light, boolean bottom){
+    Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(line(light)); ln.setStrokeWidth(1f);
+    for(int i=1;i<=3;i++) cv.drawLine(c[i], top+3, c[i], top+h-3, ln);
+    if(bottom) cv.drawLine(c[4], top+h-0.5f, c[0], top+h-0.5f, ln);
+  }
+  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){
+    fonts(ctx);
+    float th=34*k, hh=28*k; int H=Math.round(th+hh+2*k);
+    Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
+    float[] c=cols(W, k);
+    Paint t=paint(BOLD, 16.5f*k, amt(inc, light), Paint.Align.RIGHT);
+    cv.drawText(inc ? "درآمدها" : "مخارج", c[0]-2*k, base(0, th, 16.5f*k), t);
+    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(light ? 0x0D000000 : 0x14FFFFFF);
+    cv.drawRoundRect(new android.graphics.RectF(c[4], th, c[0], th+hh), 8*k, 8*k, band);
+    grid(cv, c, th, hh, light, false);
+    String[] lb={"تاریخ","شرح","حساب","مبلغ"};
+    for(int i=0;i<4;i++){
+      Paint p=paint(BOLD, 12.5f*k, muted(light), Paint.Align.CENTER);
+      fitSize(p, lb[i], (c[i]-c[i+1])-8*k);
+      cv.drawText(lb[i], (c[i]+c[i+1])/2f, base(th, hh, 12.5f*k), p);
+    }
+    return bm;
+  }
+  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light){
+    fonts(ctx);
+    float rh=38*k; int H=Math.round(rh);
+    Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
+    float[] c=cols(W, k);
+    grid(cv, c, 0, rh, light, true);
+    Paint pd=paint(REG, 12.5f*k, muted(light), Paint.Align.CENTER);
+    fitSize(pd, date, (c[0]-c[1])-6*k);
+    cv.drawText(date, (c[0]+c[1])/2f, base(0, rh, 12.5f*k), pd);
+    Paint ps=paint(REG, 14.5f*k, text(light), Paint.Align.RIGHT);
+    cv.drawText(ell(ps, desc, (c[1]-c[2])-12*k), c[1]-6*k, base(0, rh, 14.5f*k), ps);
+    Paint pb=paint(REG, 12.5f*k, muted(light), Paint.Align.CENTER);
+    String b2=(bank==null || bank.length()==0) ? "—" : bank;
+    cv.drawText(ell(pb, b2, (c[2]-c[3])-8*k), (c[2]+c[3])/2f, base(0, rh, 12.5f*k), pb);
+    Paint pa=paint(BOLD, 14.5f*k, amt(inc, light), Paint.Align.CENTER);
+    fitSize(pa, amount, (c[3]-c[4])-6*k);
+    cv.drawText(amount, (c[3]+c[4])/2f, base(0, rh, 14.5f*k), pa);
+    return bm;
+  }
+  static Bitmap empty(Context ctx, int W, float k, String msg, boolean light){
+    fonts(ctx);
+    int H=Math.round(60*k);
+    Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
+    Paint p=paint(REG, 14f*k, muted(light), Paint.Align.CENTER);
+    cv.drawText(msg, W/2f, base(0, H, 14f*k), p);
+    return bm;
+  }
+}
 `;
 
 const hkWidgetTxService=`package ${pkg};
@@ -2984,7 +3084,7 @@ import android.widget.RemoteViewsService;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** ردیف‌های ویجت مخارج / درآمدها: تاریخ، شرح، مبلغ */
+/** ردیف‌های ویجت مخارج / درآمدها: تاریخ، شرح، حساب، مبلغ — هر ردیف یک تصویر با وزیرمتن */
 public class HkWidgetTxService extends RemoteViewsService {
   @Override public RemoteViewsFactory onGetViewFactory(Intent intent){
     final int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
@@ -2993,11 +3093,13 @@ public class HkWidgetTxService extends RemoteViewsService {
       JSONArray rows=new JSONArray();
       HkWidgetDraw.Data d;
       boolean inc=false;
+      float[] sz=new float[]{ 600, 2 };
       public void onCreate(){ load(); }
       void load(){
         try{
           d=HkWidgetDraw.load(ctx);
           inc=HkWidgetTxProvider.isIncome(ctx, id);
+          sz=HkWidgetTxDraw.dims(ctx, AppWidgetManager.getInstance(ctx), id);
           String js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(inc ? "tx_inc" : "tx_exp", "[]");
           rows=(d!=null && d.locked) ? new JSONArray() : new JSONArray(js);
         }catch(Exception e){ rows=new JSONArray(); }
@@ -3010,13 +3112,8 @@ public class HkWidgetTxService extends RemoteViewsService {
         try{
           JSONObject o=rows.getJSONObject(pos);
           boolean light=d!=null && d.light, hid=d!=null && d.hidden;
-          v.setTextViewText(R.id.hk_wti_date, o.optString("d",""));
-          v.setTextViewText(R.id.hk_wti_desc, o.optString("t",""));
-          v.setTextViewText(R.id.hk_wti_amt, hid ? "••••" : o.optString("a",""));
-          v.setTextColor(R.id.hk_wti_date, light ? 0xFF6E6E76 : 0xFF98989F);
-          v.setTextColor(R.id.hk_wti_desc, light ? 0xFF1C1C1E : 0xFFF2F2F7);
-          v.setTextColor(R.id.hk_wti_amt, inc ? (light ? 0xFF1E8E4A : 0xFF6FD08C) : (light ? 0xFFC62D22 : 0xFFFF7A6B));
-          v.setOnClickFillInIntent(R.id.hk_wti_root, new Intent());
+          v.setImageViewBitmap(R.id.hk_wti_img, HkWidgetTxDraw.row(ctx, (int)sz[0], sz[1], o.optString("d",""), o.optString("t",""), o.optString("b",""), hid ? "••••" : o.optString("a",""), inc, light));
+          v.setOnClickFillInIntent(R.id.hk_wti_img, new Intent());
         }catch(Exception ignored){}
         return v;
       }
@@ -3815,49 +3912,36 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_small_info.xml'),
 // ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها)
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hk_wt_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingLeft="8dp" android:paddingRight="12dp" android:paddingTop="6dp" android:paddingBottom="8dp"
     android:background="@drawable/hk_widget_bg">
-    <FrameLayout android:id="@+id/hk_wt_head" android:layout_width="match_parent" android:layout_height="34dp">
-        <TextView android:id="@+id/hk_wt_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_gravity="right|center_vertical" android:textSize="15sp" android:textStyle="bold"
-            android:textColor="#FFFF7A6B" android:text="مخارج"/>
-        <ImageView android:id="@+id/hk_wt_eye" android:layout_width="30dp" android:layout_height="30dp"
-            android:layout_gravity="left|center_vertical" android:padding="7dp"
-            android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
-    </FrameLayout>
-    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <ListView android:id="@+id/hk_wt_list" android:layout_width="match_parent" android:layout_height="match_parent"
-            android:divider="#1F888888" android:dividerHeight="1px" android:scrollbars="none"
-            android:listSelector="@android:color/transparent"/>
-        <TextView android:id="@+id/hk_wt_empty" android:layout_width="match_parent" android:layout_height="match_parent"
-            android:gravity="center" android:textSize="13sp" android:textColor="#FF98989F" android:text="ردیفی نیست"/>
-    </FrameLayout>
-</LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="8dp">
+        <ImageView android:id="@+id/hk_wt_head" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:adjustViewBounds="true" android:scaleType="fitXY" android:contentDescription="ردیف‌ها"/>
+        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+            <ListView android:id="@+id/hk_wt_list" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none"
+                android:listSelector="@android:color/transparent"/>
+            <ImageView android:id="@+id/hk_wt_empty" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_gravity="center" android:adjustViewBounds="true" android:scaleType="fitXY" android:contentDescription="ردیفی نیست"/>
+        </FrameLayout>
+    </LinearLayout>
+    <ImageView android:id="@+id/hk_wt_eye" android:layout_width="34dp" android:layout_height="34dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="4dp" android:layout_marginTop="4dp"
+        android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
+</FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_item.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/hk_wti_root"
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_wti_img"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="38dp"
-    android:orientation="horizontal"
-    android:layoutDirection="rtl"
-    android:gravity="center_vertical"
-    android:paddingTop="4dp" android:paddingBottom="4dp">
-    <TextView android:id="@+id/hk_wti_date" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:textSize="12sp" android:singleLine="true" android:textColor="#FF98989F" android:layout_marginLeft="8dp"/>
-    <TextView android:id="@+id/hk_wti_desc" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-        android:textSize="14sp" android:singleLine="true" android:ellipsize="end" android:textDirection="rtl"
-        android:textColor="#FFF2F2F7" android:layout_marginLeft="8dp"/>
-    <TextView android:id="@+id/hk_wti_amt" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:textSize="14sp" android:textStyle="bold" android:singleLine="true" android:textColor="#FFFF7A6B"/>
-</LinearLayout>
+    android:adjustViewBounds="true"
+    android:scaleType="fitXY"
+    android:contentDescription="ردیف"/>
 `);
 fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
