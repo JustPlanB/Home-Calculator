@@ -56,23 +56,19 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
   ok(bk.min === 1 && bk.exit === 0 && bk.noToast, 'صفحهٔ اصلی: یک بازگشت = رفتن به پس‌زمینه (بدون بستن و بدون پیام «یک‌بار دیگر»)');
   ok(bk.lockFlag, 'قفل نرم‌افزار موقع برگشتن مثل خروج رمز می‌خواهد');
 
-  console.log('• روزِ امروز زیر اسم ماه');
+  console.log('• روزِ امروز (۱.۳.۷۴: دیگر داخل باکس ماه نیست؛ خط تاریخ بالای کارت)');
   const td = await A.page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const btn = () => document.querySelector('#monthSelectWrap .dark-select-btn');
-    const sm0 = btn().querySelector('.hk-mtoday'); const now = sm0 ? sm0.querySelector('small').textContent + ' ' + sm0.querySelector('b').textContent : '';
-    const r = btn().getBoundingClientRect(), s = btn().querySelector('.hk-mtoday').getBoundingClientRect();
-    const inside = s.top >= r.top && s.bottom <= r.bottom;
+    const ln = document.getElementById('hkTodayLine');
+    const now = ln ? ln.firstChild.textContent : '';
     navigateToPeriod(1405, 7); await w(300);
-    const other = !btn().querySelector('.hk-mtoday') && btn().textContent === 'مهر';
-    navigateToPeriod(1404, 8); await w(300);
-    const otherYear = !btn().querySelector('.hk-mtoday');
+    const other = !btn().querySelector('.hk-mtoday') && btn().textContent === 'مهر' && document.getElementById('hkTodayLine').firstChild.textContent === now;
     navigateToPeriod(1405, 8); await w(300);
-    const sm1 = btn().querySelector('.hk-mtoday'); const back = !!sm1 && (sm1.querySelector('small').textContent + ' ' + sm1.querySelector('b').textContent) === now;
-    return { now, inside, other, otherYear, back };
+    return { now, other, none: !btn().querySelector('.hk-mtoday') };
   });
-  ok(td.now === 'یکشنبه ۱۰' && td.inside, 'ماه جاری: زیر «آبان» نوشته شده «یکشنبه ۱۰» و داخل دکمه جا می‌شود (' + td.now + ')');
-  ok(td.other && td.otherYear && td.back, 'ماه/سال دیگر: فقط اسم ماه؛ با برگشت به ماه جاری دوباره می‌آید');
+  ok(td.now === 'امروز یکشنبه ۱۰ آبان ۱۴۰۵' && td.none, 'باکس ماه فقط اسم ماه؛ تاریخ کامل امروز در خط بالای کارت (' + td.now + ')');
+  ok(td.other, 'با رفتن به ماه دیگر، خط تاریخ همان امروز می‌ماند');
   await A.ctx.close();
 
   console.log('• «+» با پروژه‌ها');
@@ -176,7 +172,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     ok(pf.heads.join('|') === 'نمایش|صفحهٔ خانه|دسته‌ها و حریم|اعلان‌ها' && pf.noChk && pf.sws === 4 && pf.fit, th + ': گروه‌ها با عنوان، کلید روشن/خاموش به‌جای چک‌باکس، بدون دکمه‌های آبی درهم و دکمهٔ «بستن» (' + pf.heads.join('، ') + ')');
     ok(pf.priv && pf.priv2, th + ': «مخفی کردن مبلغ‌ها» با کلید روشن و خاموش می‌شود');
     ok(pf.sub === 'صفحهٔ اول' && pf.start === 'expense' && pf.mainVal === 'مخارج', th + ': صفحهٔ دوم برای انتخاب و برگشت با مقدار تازه');
-    ok(pf.n === 11 && pf.offJ && pf.x && pf.back, th + ': صفحهٔ اسلایدها: ۱۱ اسلاید با کلید؛ فلش برگشت و ضربدر');
+    ok(pf.n === 12 && pf.offJ && pf.x && pf.back, th + ': صفحهٔ اسلایدها: ۱۲ اسلاید (با کارت‌های قسط) با کلید؛ فلش برگشت و ضربدر');
     /* جابه‌جایی با دستگیره */
     const h = await F.page.locator('#hkPrefsModal .hk-pf-slides .hk-pf-row[data-k="overview"] .hk-pf-hnd').boundingBox();
     await F.page.mouse.move(h.x + h.width / 2, h.y + h.height / 2); await F.page.mouse.down();

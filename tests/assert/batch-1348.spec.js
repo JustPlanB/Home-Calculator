@@ -113,17 +113,17 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   console.log('• پنجرهٔ پروفایل');
   await p.evaluate(() => closeSideMenu());
   await p.tap('#menuBtn'); await p.waitForTimeout(500);
-  await p.tap('#menuUserName'); await p.waitForTimeout(400);
-  /* ۱.۳.۴۹: همان باکس نام در منو به پایین باز می‌شود (بی پنجرهٔ جدا) */
+  /* ۱.۳.۷۴: فلش کنار اسم = خلاصه؛ «تغییر نام» و «ماهی که گذشت» از این کادر برداشته شدند (اسم همان‌جا ویرایش می‌شود) */
+  await p.tap('#menuUserName .hk-mprof-more'); await p.waitForTimeout(400);
   const pf = await p.evaluate(() => {
     const ov = document.getElementById('menuUserPanel');
-    return ov && ov.classList.contains('open') && !document.querySelector('.hk-prof-ov') ? { txt: ov.innerText, btns: ['.hk-prof-rename', '.hk-prof-recap', '.hk-prof-bknow'].every(s => !!ov.querySelector(s)) } : null;
+    return ov && ov.classList.contains('open') && !document.querySelector('.hk-prof-ov') ? { txt: ov.innerText, btns: !!ov.querySelector('.hk-prof-bknow') && !ov.querySelector('.hk-prof-rename') && !ov.querySelector('.hk-prof-recap') } : null;
   });
-  ok(!!pf, 'لمس نام کاربر در منو (لمس واقعی) همان باکس را به پایین باز می‌کند');
-  ok(pf && pf.btns && /موجودی کل/.test(pf.txt) && /حساب‌ها/.test(pf.txt) && /شروع/.test(pf.txt) && /آخرین پشتیبان/.test(pf.txt), 'پروفایل: تغییر نام، خلاصهٔ سریع، ماهی که گذشت، آخرین پشتیبان + پشتیبان‌گیری الان');
-  await p.tap('.hk-prof-rename'); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => !!document.querySelector('.person-edit-sheet')), '«تغییر نام» پنجرهٔ تغییر نام را باز می‌کند');
-  await p.evaluate(() => closePersonEditSheet());
+  ok(!!pf, 'لمس فلش پروفایل در منو (لمس واقعی) همان باکس را به پایین باز می‌کند');
+  ok(pf && pf.btns && /موجودی کل/.test(pf.txt) && /حساب‌ها/.test(pf.txt) && /شروع/.test(pf.txt) && /آخرین پشتیبان/.test(pf.txt), 'پروفایل: خلاصهٔ سریع، آخرین پشتیبان + پشتیبان‌گیری الان (بی «تغییر نام» و «ماهی که گذشت»)');
+  await p.tap('#menuUserNameText'); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !!document.querySelector('#menuUserNameText input') && !document.querySelector('.person-edit-sheet')), 'زدن اسم: همان‌جا قابل ویرایش (بی پنجرهٔ جدا)');
+  await p.evaluate(() => { const i = document.querySelector('#menuUserNameText input'); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   console.log('• PDF و Excel');
   const ex = await p.evaluate(() => {

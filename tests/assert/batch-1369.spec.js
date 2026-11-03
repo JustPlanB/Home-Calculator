@@ -91,7 +91,7 @@ async function seedRows(page) {
   await N.page.evaluate(() => { const el = document.querySelector('#homeSmartBox .pc-smart-box'); const pg = el._spPages.find(p => p.key === 'todoAdd'); pg.onTap(hkMainTitle()); });
   await N.page.waitForTimeout(300);
   const pick = await N.page.evaluate(() => [...document.querySelectorAll('#hkTodoPick .hk-tp-opt')].map(x => x.dataset.k).join(','));
-  ok(pick === 'ink,todo', '«+»: انتخاب بین یادداشت دست‌نویس و فهرست کارها');
+  ok(pick === 'ink,todo,remind', '«+»: انتخاب بین یادداشت دست‌نویس، فهرست کارها و یادآور');
   await N.page.click('#hkTodoPick [data-k="ink"]'); await N.page.waitForTimeout(500);
   const cb = await N.page.locator('#hkInkEd canvas').boundingBox();
   await N.page.mouse.move(cb.x + 30, cb.y + 30); await N.page.mouse.down();
@@ -199,15 +199,12 @@ async function seedRows(page) {
   console.log('• منوی همبرگری');
   const M = await fresh(b, null, { hasTouch: true, isMobile: true });
   const mn = await M.page.evaluate(() => {
-    const kids = [...document.querySelector('#menuDropdown .menu-scroll').children];
-    const labels = kids.filter(x => x.classList.contains('menu-section-label'));
-    const pj = document.getElementById('menuSubjectsBtn');
-    const idx = kids.indexOf(pj), sec2 = kids.indexOf(labels[1]);
-    return { inSections: idx > kids.indexOf(labels[0]) && idx < sec2 };
+    const pj = document.getElementById('menuSubjectsBtn'), g = pj.closest('.hk-mg');
+    return { inSections: !!g && g.dataset.g === 'sections' && g.querySelector('.menu-section-label').textContent.trim() === 'بخش‌ها' };
   });
   ok(mn.inSections, '«پروژه‌ها» در گروه «بخش‌ها»');
   await M.page.evaluate(() => toggleMenu()); await M.page.waitForTimeout(500);
-  const item = M.page.locator('#menuDropdown .menu-item', { hasText: 'یادآور' });
+  const item = M.page.locator('#menuDropdown .menu-item', { hasText: 'آمار' });
   const bg0 = await item.evaluate(e => getComputedStyle(e).backgroundColor);
   await item.tap(); await M.page.waitForTimeout(400);
   try { await M.page.evaluate(() => { document.querySelectorAll('.modal-overlay.open').forEach(o => o._hkCancel ? o._hkCancel() : o.classList.remove('open')); }); } catch (e) {}

@@ -144,7 +144,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const ui = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     toggleMenu(); await w(300);
-    const out = { menuName: (document.getElementById('menuUserName') || {}).textContent || '', recapItem: !!document.getElementById('menuRecapBtn') };
+    const out = { menuName: ((document.querySelector('#menuUserNameText .hk-mprof-t') || {}).textContent) || '', recapItem: !!document.getElementById('menuRecapBtn') };
     out.instHidden = [...document.querySelectorAll('#menuDropdown .menu-item')].filter(b => b.textContent.trim() === 'اقساط').every(b => getComputedStyle(b).display === 'none');
     closeSideMenu(); await w(200);
     openHomeMandeh(); await w(500);

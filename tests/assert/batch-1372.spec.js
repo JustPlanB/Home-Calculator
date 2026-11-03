@@ -23,22 +23,18 @@ async function fresh(b, theme, vh) {
 (async () => {
   const b = await chromium.launch();
 
-  console.log('• روز و تاریخ کنار ماه');
+  console.log('• تاریخ امروز (۱.۳.۷۴: خط بالای کارت به‌جای کنار ماه)');
   for (const th of ['dark', 'light']) {
     const A = await fresh(b, th);
     const m = await A.page.evaluate(() => {
-      const btn = document.querySelector('#monthSelectWrap .dark-select-btn'), sm = btn.querySelector('.hk-mtoday');
-      const yb = document.querySelector('#yearSelectWrap .dark-select-btn');
-      const rng = document.createRange(); const tn = [...btn.childNodes].find(n => n.nodeType === 3); rng.selectNodeContents(tn);
-      const mr = rng.getBoundingClientRect(), sr = sm.getBoundingClientRect(), br = btn.getBoundingClientRect();
-      const yr = document.createRange(); yr.selectNodeContents([...yb.childNodes].find(n => n.nodeType === 3)); const yrr = yr.getBoundingClientRect();
-      const w = sm.querySelector('small').getBoundingClientRect(), d = sm.querySelector('b').getBoundingClientRect();
-      return { wd: sm.querySelector('small').textContent, dn: sm.querySelector('b').textContent, right: sr.left >= mr.right - 1, sep: parseFloat(getComputedStyle(sm).borderLeftWidth) >= 1,
-        stacked: d.top >= w.bottom - 2, inside: sr.top >= br.top && sr.bottom <= br.bottom, align: Math.abs((mr.top + mr.height / 2) - (yrr.top + yrr.height / 2)) < 1.5, month: tn.textContent };
+      const btn = document.querySelector('#monthSelectWrap .dark-select-btn'), ln = document.getElementById('hkTodayLine');
+      const bar = document.querySelector('.top-bar').getBoundingClientRect(), lr = ln.getBoundingClientRect(), card = document.querySelector('#homeCards .person-card:not(.hc-clone)').getBoundingClientRect();
+      const mw = document.getElementById('monthSelectWrap').getBoundingClientRect().width, yw = document.getElementById('yearSelectWrap').getBoundingClientRect().width;
+      return { fa: ln.firstChild.textContent, en: ln.lastChild.textContent, noDay: !btn.querySelector('.hk-mtoday'), between: lr.top >= bar.bottom - 0.5 && lr.bottom <= card.top + 0.5, fits: ln.scrollWidth <= ln.clientWidth + 1, eq: Math.abs(mw - yw) < 1 };
     });
-    ok(m.wd === 'دوشنبه' && m.dn === '۱۱' && m.stacked, th + ': «دوشنبه» بالا و «۱۱» پایین');
-    ok(m.right && m.sep && m.inside, th + ': سمت راست اسم ماه، با خط جداکننده و داخل دکمه');
-    ok(m.month === 'آبان' && m.align, th + ': اسم ماه هم‌تراز سال می‌ماند');
+    ok(m.fa === 'امروز دوشنبه ۱۱ آبان ۱۴۰۵' && m.en === 'Mon, 2 Nov 2026', th + ': «امروز دوشنبه ۱۱ آبان ۱۴۰۵ | Mon, 2 Nov 2026»');
+    ok(m.noDay && m.between && m.fits, th + ': بین نوار ماه/سال و کارت، بی آنکه جا بگیرد؛ داخل باکس ماه روز نیست');
+    ok(m.eq, th + ': ماه و سال هم‌عرض');
     await A.ctx.close();
   }
 
