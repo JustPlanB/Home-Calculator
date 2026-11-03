@@ -102,7 +102,7 @@ const sms = (amt, dt, to, n, ov, pen, tr) => `بانک مسکن\nواريز قس
     return { old, av0, pop0, pop1, img: !!img, dims, removed, inline, now: hkMainTitle(), shown: document.querySelector('#menuUserNameText .hk-mprof-t').textContent, sec: !!findSectionByTitle('expense', 'سارا آزمون') };
   });
   ok(pr.av0 === pr.old.trim()[0] && pr.pop0 === 'انتخاب عکس', 'بی عکس: حرف اول اسم؛ زدن عکس → «انتخاب عکس»');
-  ok(pr.img && pr.dims[0] === 160 && pr.dims[1] === 160 && pr.pop1 === 'تغییر عکس|حذف عکس' && pr.removed, 'عکس مربعی ۱۶۰×۱۶۰ (برش و فشرده)؛ منو «تغییر عکس / حذف عکس»؛ حذف کار می‌کند');
+  ok(pr.img && pr.dims[0] === 320 && pr.dims[1] === 320 && pr.pop1 === 'تغییر عکس|حذف عکس' && pr.removed, 'عکس مربعی ۳۲۰×۳۲۰ (برش و فشرده)؛ منو «تغییر عکس / حذف عکس»؛ حذف کار می‌کند');
   ok(pr.inline && pr.now === 'سارا آزمون' && pr.shown === 'سارا آزمون' && pr.sec, 'زدن اسم: همان‌جا ویرایش؛ Enter نام کاربر را عوض می‌کند (' + pr.now + ')');
   await R.ctx.close();
 

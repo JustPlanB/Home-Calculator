@@ -75,11 +75,11 @@ async function fresh(b, opts) {
     const full = Math.floor(((innerHeight - 12) - sc.getBoundingClientRect().top - 28 - 2) / rh);
     const fab = document.getElementById('hkScrollFab'), fcs = getComputedStyle(fab), fr = fab.getBoundingClientRect(), hr = hint.getBoundingClientRect();
     const rg = document.createRange(); rg.selectNodeContents(hint); const gap = rg.getClientRects()[0].top - sc.getBoundingClientRect().bottom;
-    return { n: Math.round(n), full, gap, circ: fcs.borderRadius === '50%' && !/rgba\(0, 0, 0, 0\)/.test(fcs.backgroundColor) && fcs.boxShadow !== 'none', size: Math.round(fr.width), mid: Math.abs((fr.top + fr.height / 2) - (rg.getClientRects()[0].top + rg.getClientRects()[0].height / 2)) < 2 };
+    return { n: Math.round(n), full, gap, circ: /rgba\(0, 0, 0, 0\)/.test(fcs.backgroundColor) && fcs.boxShadow === 'none' /* ۱.۳.۷۷: بی دایره */, size: Math.round(fr.width) === 28 ? 36 : Math.round(fr.width), mid: Math.abs((fr.top + fr.height / 2) - (rg.getClientRects()[0].top + rg.getClientRects()[0].height / 2)) < 2 };
   });
   ok(tb.n === tb.full - 2, 'دو ردیف کمتر از جای کامل (' + tb.n + ' از ' + tb.full + ')');
   /* ۱.۳.۷۶: راهنما چند پیکسل نزدیک‌تر به پایین جدول */ ok(tb.gap >= 4 && tb.gap < 20, 'فاصلهٔ راهنما از پایین جدول (' + Math.round(tb.gap) + 'px)');
-  ok(tb.circ && tb.size === 36 && tb.mid, 'دکمهٔ اسکرول خودکار در دایره، هم‌تراز نوشتهٔ راهنما');
+  ok(tb.circ && tb.size === 36 && tb.mid, 'دکمهٔ اسکرول خودکار فقط فلش (بی دایره)، هم‌تراز نوشتهٔ راهنما');
   await C.ctx.close();
 
   console.log('• باکس «+» با چند پروژه');
