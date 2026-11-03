@@ -90,7 +90,7 @@ async function fresh(b, opts) {
     hkHomeAddMenu(document.querySelector('.home-circle-add')); await w(250);
     const pop = document.querySelector('#hkAddPop .hk-add-pop'), chips = pop.querySelector('.hk-add-chips'), list = [...chips.children];
     const pr = pop.getBoundingClientRect(), cr = chips.getBoundingClientRect();
-    const col = list.every((c, i) => i === 0 || c.getBoundingClientRect().top > list[i - 1].getBoundingClientRect().top + 5);
+    /* ۱.۳.۷۵: دوتایی در هر ردیف */ const col = list.every((c, i) => i % 2 === 0 ? (i === 0 || c.getBoundingClientRect().top > list[i - 1].getBoundingClientRect().top + 5) : Math.abs(c.getBoundingClientRect().top - list[i - 1].getBoundingClientRect().top) < 1.5);
     const firstVis = list[0].getBoundingClientRect().top >= cr.top - 0.5;
     const long = list[3].querySelector('span'), cut = long.scrollWidth > long.clientWidth && getComputedStyle(long).textOverflow === 'ellipsis';
     const scrolls = chips.scrollHeight > chips.clientHeight + 4;
@@ -101,8 +101,8 @@ async function fresh(b, opts) {
     document.getElementById('hkAddPop')._hkCancel();
     return { w: pr.width, col, firstVis, cut, scrolls, narrow };
   });
-  ok(ad.col && ad.firstVis && ad.scrolls, 'پروژه‌ها زیر هم؛ بیشتر از چهار تا اسکرول و اولی از بالا دیده می‌شود');
-  ok(ad.w <= 241, 'عرض باکس حداکثر ۲۴۰ (' + Math.round(ad.w) + ')');
+  ok(ad.col && ad.firstVis, 'پروژه‌ها دوتایی در هر ردیف؛ اولی از بالا دیده می‌شود');
+  ok(ad.w <= 291, 'عرض باکس حداکثر ۲۹۰ (' + Math.round(ad.w) + ')');
   ok(ad.cut && ad.narrow < ad.w, 'اسم خیلی بلند با «…»؛ با اسم کوتاه باکس باریک‌تر است (' + Math.round(ad.narrow) + ')');
   await D.ctx.close();
 
@@ -221,7 +221,7 @@ async function fresh(b, opts) {
     const el = document.querySelector('#homeSmartBox .pc-smart-box'), pg = (el._spPages || []).find(p => p.key === 'overview');
     return { ov: pg ? pg.html.replace(/<[^>]+>/g, ' ') : '' };
   });
-  ok(/پس‌انداز کارت با احتساب پروژه‌ها/.test(sb.ov), 'وضعیت این ماه: «پس‌انداز کارت با احتساب پروژه‌ها»');
+  ok(/پس‌انداز کارت \(با احتساب پروژه‌ها\)/.test(sb.ov), 'وضعیت این ماه: «پس‌انداز کارت (با احتساب پروژه‌ها)»');
   await H.page.evaluate(() => startAppTour(true)); await H.page.waitForTimeout(400);
   for (let i = 0; i < 7; i++) { await H.page.click('#appTour .tour-next'); await H.page.waitForTimeout(520); }
   const tour = [];

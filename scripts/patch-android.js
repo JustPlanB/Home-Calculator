@@ -62,6 +62,27 @@ public class BankSmsReceiver extends BroadcastReceiver {
     }catch(Throwable t){ return false; }
   }
 
+  /** ۱.۳.۷۵: پیامک شخصی یا پوشهٔ بی‌شماره که با فرستنده مسدود شده */
+  static boolean isBlockedSender(Context c,String sender){
+    try{
+      if(sender==null||sender.length()==0) return false;
+      JSONArray bl=new JSONArray(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("hk_nblocks","[]"));
+      if(bl.length()==0) return false;
+      StringBuilder nb=new StringBuilder();
+      for(char ch:sender.toCharArray()){
+        if(ch>='۰'&&ch<='۹') nb.append((char)('0'+(ch-'۰')));
+        else if(ch>='٠'&&ch<='٩') nb.append((char)('0'+(ch-'٠')));
+        else if(ch==' '||ch=='-'||ch=='('||ch==')') continue;
+        else nb.append(Character.toLowerCase(ch));
+      }
+      String sn=nb.toString();
+      if(sn.startsWith("+98")&&sn.length()==13) sn="0"+sn.substring(3);
+      else if(sn.startsWith("0098")&&sn.length()==14) sn="0"+sn.substring(4);
+      else if(sn.startsWith("98")&&sn.length()==12&&sn.charAt(2)=='9') sn="0"+sn.substring(2);
+      for(int i=0;i<bl.length();i++){ if(sn.equals(bl.optString(i))) return true; }
+      return false;
+    }catch(Throwable t){ return false; }
+  }
   static boolean isBlocked(Context c,String text){
     try{
       JSONArray bl=new JSONArray(c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("hk_nblock","[]"));
@@ -96,7 +117,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     String text=body.toString().trim();
     if(!looksLikeBankTransaction(text, sender)) return;
     /* ۱.۳.۷۴: حساب مسدود (رقم‌های آخر در فهرست کاربر) → نه صف، نه اعلان */
-    if(isBlocked(context,text)) return;
+    if(isBlocked(context,text) || isBlockedSender(context,sender)) return;
     SharedPreferences sp=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     try{
       JSONArray q=new JSONArray(sp.getString(QUEUE,"[]"));
@@ -363,7 +384,7 @@ public class BankSmsPlugin extends Plugin {
     SharedPreferences sp=getContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
     sp.edit().putString("hk_ncats_out",call.getString("out","[]")).putString("hk_ncats_in",call.getString("inc","[]"))
       .putString("hk_nacc4",call.getString("acc4","[]")).putString("hk_nrec",call.getString("rec","[]"))
-      .putString("hk_npersonal",call.getString("personal","1")).putString("hk_nblock",call.getString("block","[]")).apply();
+      .putString("hk_npersonal",call.getString("personal","1")).putString("hk_nblock",call.getString("block","[]")).putString("hk_nblocks",call.getString("blockS","[]")).apply();
     call.resolve();
   }
   /** همهٔ پیامک‌های در صف (بدون حذف) — حذف فقط وقتی کاربر آن را ثبت یا رد کرد */
