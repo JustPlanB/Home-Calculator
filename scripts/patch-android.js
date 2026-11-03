@@ -2747,6 +2747,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
     }catch(Exception ignored){}
     HkWidgetSmallProvider.refreshAll(ctx);
     try{ HkWidgetAccountsProvider.refreshAll(ctx); }catch(Exception ignored){}
+    try{ HkWidgetTxProvider.refreshAll(ctx); }catch(Exception ignored){}
   }
 
   static PendingIntent eyeIntent(Context ctx){
@@ -2917,6 +2918,194 @@ public class HkWidgetListService extends RemoteViewsService {
 }
 `;
 
+const hkWidgetTx=`package ${pkg};
+
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.RemoteViews;
+
+/** ۱.۳.۷۸: ویجت ردیف‌ها — آخرین ردیف‌های مخارج یا درآمدها (انتخاب هنگام افزودن ویجت)؛ تازه‌ترین بالا، با اسکرول قبلی‌ها */
+public class HkWidgetTxProvider extends AppWidgetProvider {
+  @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
+  @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
+  @Override public void onDeleted(Context ctx, int[] ids){
+    try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids) e.remove("tx_type_"+id); e.apply(); }catch(Exception ignored){}
+  }
+  static void refreshAll(Context ctx){
+    try{
+      AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
+      int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetTxProvider.class));
+      for(int id: ids) render(ctx, mgr, id);
+    }catch(Exception ignored){}
+  }
+  static boolean isIncome(Context ctx, int id){
+    try{ return "inc".equals(ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString("tx_type_"+id, "exp")); }catch(Exception e){ return false; }
+  }
+  @SuppressWarnings("deprecation")
+  static void render(Context ctx, AppWidgetManager mgr, int id){
+    try{
+      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      boolean inc=isIncome(ctx, id);
+      RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx);
+      v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      v.setTextViewText(R.id.hk_wt_title, inc ? "درآمدها" : "مخارج");
+      v.setTextColor(R.id.hk_wt_title, inc ? (d.light ? 0xFF1E8E4A : 0xFF6FD08C) : (d.light ? 0xFFC62D22 : 0xFFFF7A6B));
+      v.setTextColor(R.id.hk_wt_empty, d.light ? 0xFF6E6E76 : 0xFF98989F);
+      v.setTextViewText(R.id.hk_wt_empty, d.locked ? "برنامه قفل است" : "ردیفی نیست");
+      Intent svc=new Intent(ctx, HkWidgetTxService.class);
+      svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+      svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
+      v.setRemoteAdapter(R.id.hk_wt_list, svc);
+      v.setEmptyView(R.id.hk_wt_list, R.id.hk_wt_empty);
+      v.setPendingIntentTemplate(R.id.hk_wt_list, HkWidgetProvider.openApp(ctx, true));
+      v.setOnClickPendingIntent(R.id.hk_wt_head, HkWidgetProvider.openApp(ctx, false));
+      v.setOnClickPendingIntent(R.id.hk_wt_root, HkWidgetProvider.openApp(ctx, false));
+      HkWidgetProvider.applyEye(ctx, v, R.id.hk_wt_eye, d);
+      mgr.updateAppWidget(id, v);
+      mgr.notifyAppWidgetViewDataChanged(id, R.id.hk_wt_list);
+    }catch(Exception ignored){}
+  }
+}
+`;
+
+const hkWidgetTxService=`package ${pkg};
+
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.RemoteViews;
+import android.widget.RemoteViewsService;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+/** ردیف‌های ویجت مخارج / درآمدها: تاریخ، شرح، مبلغ */
+public class HkWidgetTxService extends RemoteViewsService {
+  @Override public RemoteViewsFactory onGetViewFactory(Intent intent){
+    final int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+    final Context ctx=getApplicationContext();
+    return new RemoteViewsFactory(){
+      JSONArray rows=new JSONArray();
+      HkWidgetDraw.Data d;
+      boolean inc=false;
+      public void onCreate(){ load(); }
+      void load(){
+        try{
+          d=HkWidgetDraw.load(ctx);
+          inc=HkWidgetTxProvider.isIncome(ctx, id);
+          String js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(inc ? "tx_inc" : "tx_exp", "[]");
+          rows=(d!=null && d.locked) ? new JSONArray() : new JSONArray(js);
+        }catch(Exception e){ rows=new JSONArray(); }
+      }
+      public void onDataSetChanged(){ load(); }
+      public void onDestroy(){}
+      public int getCount(){ return rows==null ? 0 : rows.length(); }
+      public RemoteViews getViewAt(int pos){
+        RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx_item);
+        try{
+          JSONObject o=rows.getJSONObject(pos);
+          boolean light=d!=null && d.light, hid=d!=null && d.hidden;
+          v.setTextViewText(R.id.hk_wti_date, o.optString("d",""));
+          v.setTextViewText(R.id.hk_wti_desc, o.optString("t",""));
+          v.setTextViewText(R.id.hk_wti_amt, hid ? "••••" : o.optString("a",""));
+          v.setTextColor(R.id.hk_wti_date, light ? 0xFF6E6E76 : 0xFF98989F);
+          v.setTextColor(R.id.hk_wti_desc, light ? 0xFF1C1C1E : 0xFFF2F2F7);
+          v.setTextColor(R.id.hk_wti_amt, inc ? (light ? 0xFF1E8E4A : 0xFF6FD08C) : (light ? 0xFFC62D22 : 0xFFFF7A6B));
+          v.setOnClickFillInIntent(R.id.hk_wti_root, new Intent());
+        }catch(Exception ignored){}
+        return v;
+      }
+      public RemoteViews getLoadingView(){ return null; }
+      public int getViewTypeCount(){ return 1; }
+      public long getItemId(int pos){ return pos; }
+      public boolean hasStableIds(){ return false; }
+    };
+  }
+}
+`;
+
+const hkWidgetTxConfig=`package ${pkg};
+
+import android.app.Activity;
+import android.appwidget.AppWidgetManager;
+import android.content.Intent;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+/** ۱.۳.۷۸: هنگام افزودن ویجت ردیف‌ها: انتخاب «مخارج» یا «درآمدها» */
+public class HkWidgetTxConfig extends Activity {
+  int wid=AppWidgetManager.INVALID_APPWIDGET_ID;
+  boolean light=false;
+  float dp=1f;
+  @Override protected void onCreate(Bundle b){
+    super.onCreate(b);
+    setResult(RESULT_CANCELED);
+    Intent it=getIntent();
+    if(it!=null && it.getExtras()!=null) wid=it.getExtras().getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+    if(wid==AppWidgetManager.INVALID_APPWIDGET_ID){ finish(); return; }
+    try{ light=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).getBoolean("light", false); }catch(Exception ignored){}
+    dp=getResources().getDisplayMetrics().density;
+    LinearLayout root=new LinearLayout(this);
+    root.setOrientation(LinearLayout.VERTICAL);
+    root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+    int p=(int)(20*dp);
+    root.setPadding(p, p, p, (int)(14*dp));
+    GradientDrawable bg=new GradientDrawable();
+    bg.setColor(light ? 0xFFFFFFFF : 0xFF1F1F22);
+    bg.setCornerRadius(22*dp);
+    root.setBackground(bg);
+    TextView t=new TextView(this);
+    t.setText("این ویجت کدام ردیف‌ها را نشان دهد؟");
+    t.setTextSize(16);
+    t.setTypeface(Typeface.DEFAULT_BOLD);
+    t.setTextColor(light ? 0xFF1C1C1E : 0xFFF2F2F7);
+    t.setGravity(Gravity.CENTER);
+    t.setPadding(0, 0, 0, (int)(14*dp));
+    root.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    root.addView(btn("مخارج", "exp", light ? 0xFFC62D22 : 0xFFFF7A6B));
+    root.addView(btn("درآمدها", "inc", light ? 0xFF1E8E4A : 0xFF6FD08C));
+    setContentView(root);
+  }
+  View btn(String label, final String type, int color){
+    TextView b=new TextView(this);
+    b.setText(label);
+    b.setTextSize(16);
+    b.setTypeface(Typeface.DEFAULT_BOLD);
+    b.setTextColor(color);
+    b.setGravity(Gravity.CENTER);
+    GradientDrawable g=new GradientDrawable();
+    g.setColor(light ? 0x0F000000 : 0x14FFFFFF);
+    g.setCornerRadius(14*dp);
+    g.setStroke((int)Math.max(1, dp), (color & 0x00FFFFFF) | 0x66000000);
+    b.setBackground(g);
+    b.setClickable(true);
+    b.setOnClickListener(new View.OnClickListener(){ public void onClick(View v){ choose(type); } });
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int)(50*dp));
+    lp.bottomMargin=(int)(10*dp);
+    b.setLayoutParams(lp);
+    return b;
+  }
+  void choose(String type){
+    try{ getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).edit().putString("tx_type_"+wid, type).apply(); }catch(Exception ignored){}
+    try{ HkWidgetTxProvider.render(this, AppWidgetManager.getInstance(this), wid); }catch(Exception ignored){}
+    Intent r=new Intent();
+    r.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid);
+    setResult(RESULT_OK, r);
+    finish();
+  }
+}
+`;
+
 const hkWidgetPlugin=`package ${pkg};
 
 import android.content.Context;
@@ -2940,6 +3129,9 @@ public class HkWidgetPlugin extends Plugin {
       e.putBoolean("light", Boolean.TRUE.equals(call.getBoolean("light",false)));
       e.putString("accounts", call.getString("accounts","[]"));
       e.putString("dayKey", call.getString("dayKey",""));
+      /* ۱.۳.۷۸: ردیف‌های ویجت مخارج / درآمدها */
+      e.putString("tx_exp", call.getString("txExp","[]"));
+      e.putString("tx_inc", call.getString("txInc","[]"));
       /* ۱.۳.۵۶: مبلغ‌های خام برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک */
       try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
       e.apply();
@@ -3227,6 +3419,9 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
 fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
 fs.writeFileSync(path.join(javaDir,'HkWidgetAccountsProvider.java'),hkWidgetAccounts);
 fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
+fs.writeFileSync(path.join(javaDir,'HkWidgetTxProvider.java'),hkWidgetTx);
+fs.writeFileSync(path.join(javaDir,'HkWidgetTxService.java'),hkWidgetTxService);
+fs.writeFileSync(path.join(javaDir,'HkWidgetTxConfig.java'),hkWidgetTxConfig);
 fs.writeFileSync(path.join(javaDir,'HkMediaPlugin.java'),hkMedia);
 
 const gradle=path.join(base,'app/build.gradle');
@@ -3331,6 +3526,22 @@ if(fs.existsSync(manifest)){
     '        </receiver>\n    </application>');
   if(!s.includes('.HkWidgetListService')) s=s.replace('</application>',
     '        <service android:name=".HkWidgetListService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
+  // ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها) + صفحهٔ انتخاب + سرویس فهرست
+  if(!s.includes('.HkWidgetTxProvider')) s=s.replace('</application>',
+    '        <receiver android:name=".HkWidgetTxProvider" android:exported="true" android:label="حساب‌کتاب (ردیف‌ها)">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
+    '            </intent-filter>\n' +
+    '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_tx_info"/>\n' +
+    '        </receiver>\n    </application>');
+  if(!s.includes('.HkWidgetTxConfig')) s=s.replace('</application>',
+    '        <activity android:name=".HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>\n' +
+    '            </intent-filter>\n' +
+    '        </activity>\n    </application>');
+  if(!s.includes('.HkWidgetTxService')) s=s.replace('</application>',
+    '        <service android:name=".HkWidgetTxService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
   // FileProvider for Sharesheet
   if(!s.includes('.fileprovider')){
     const providerTag =
@@ -3599,6 +3810,68 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_small_info.xml'),
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:initialLayout="@layout/hk_widget_small"/>
+`);
+
+// ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها)
+fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_wt_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="8dp" android:paddingRight="12dp" android:paddingTop="6dp" android:paddingBottom="8dp"
+    android:background="@drawable/hk_widget_bg">
+    <FrameLayout android:id="@+id/hk_wt_head" android:layout_width="match_parent" android:layout_height="34dp">
+        <TextView android:id="@+id/hk_wt_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="right|center_vertical" android:textSize="15sp" android:textStyle="bold"
+            android:textColor="#FFFF7A6B" android:text="مخارج"/>
+        <ImageView android:id="@+id/hk_wt_eye" android:layout_width="30dp" android:layout_height="30dp"
+            android:layout_gravity="left|center_vertical" android:padding="7dp"
+            android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
+    </FrameLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <ListView android:id="@+id/hk_wt_list" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:divider="#1F888888" android:dividerHeight="1px" android:scrollbars="none"
+            android:listSelector="@android:color/transparent"/>
+        <TextView android:id="@+id/hk_wt_empty" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:gravity="center" android:textSize="13sp" android:textColor="#FF98989F" android:text="ردیفی نیست"/>
+    </FrameLayout>
+</LinearLayout>
+`);
+fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_item.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_wti_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="38dp"
+    android:orientation="horizontal"
+    android:layoutDirection="rtl"
+    android:gravity="center_vertical"
+    android:paddingTop="4dp" android:paddingBottom="4dp">
+    <TextView android:id="@+id/hk_wti_date" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:textSize="12sp" android:singleLine="true" android:textColor="#FF98989F" android:layout_marginLeft="8dp"/>
+    <TextView android:id="@+id/hk_wti_desc" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+        android:textSize="14sp" android:singleLine="true" android:ellipsize="end" android:textDirection="rtl"
+        android:textColor="#FFF2F2F7" android:layout_marginLeft="8dp"/>
+    <TextView android:id="@+id/hk_wti_amt" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:textSize="14sp" android:textStyle="bold" android:singleLine="true" android:textColor="#FFFF7A6B"/>
+</LinearLayout>
+`);
+fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:configure="ir.hesabketab.app.HkWidgetTxConfig"
+    android:widgetFeatures="reconfigurable"
+    android:initialLayout="@layout/hk_widget_tx"/>
 `);
 
 fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),

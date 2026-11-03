@@ -73,7 +73,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const body = document.querySelector('#bankSelectedScroll .hk-acc-fold-body');
     fold.click(); await w(150);
     const mid = body.getBoundingClientRect().height, anim = body.getAnimations().length > 0;
-    await w(500);
+    await w(900);
     const full = body.getBoundingClientRect().height;
     const bw = document.getElementById('bankBanksScroll'), rows = bw.querySelectorAll('.hk-bank-add-row');
     const vis = [...rows].filter(r => r.getBoundingClientRect().bottom <= bw.getBoundingClientRect().bottom + 1).length;
@@ -108,23 +108,23 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const show = async () => { _smartPanelState[tt] = { key: 'reminders', pausedUntil: Date.now() + 60000, nextAt: Date.now() + 60000 }; renderHomeCards(); await w(500); return document.querySelector('#homeSmartBox .sp-page.sp-k-reminders'); };
     let pg = await show();
     const rows = [...pg.querySelectorAll('.sp-rem-r')];
-    const box = rows.map(x => ({ t: x.querySelector('.sp-rem-t b').textContent, chip: x.querySelector('.sp-rem-chip').textContent, acts: x.querySelectorAll('.sp-rem-a button').length }));
+    const box = rows.map(x => ({ t: x.querySelector('b').textContent, when: x.querySelector('span').textContent, acts: x.querySelectorAll('button').length }));
     const dots = pg.querySelectorAll('.hk-inst-dot').length;
     const hot = pg.querySelector('.sp-rem-r.hot'), dur = parseFloat(getComputedStyle(hot, '::before').animationDuration), col = getComputedStyle(hot.querySelector('b')).color;
     /* ویرایش آنی */
     loadUserReminders(); userReminders[1].title = 'تمدید بیمهٔ ماشین'; userReminders.push({ id: 'r3', title: 'قبض گاز', y: 1405, m: 8, d: 25, repeat: 'monthly', advanceDays: 2 }); saveUserReminders(); await w(400);
     pg = document.querySelector('#homeSmartBox .sp-page.sp-k-reminders');
-    const live = pg ? [...pg.querySelectorAll('.sp-rem-t b')].map(x => x.textContent) : [];
+    const live = pg ? [...pg.querySelectorAll('.sp-rem-r b')].map(x => x.textContent) : [];
     /* زدن = رفتن روی همان یادآور و هایلایت (بی ویرایش) */
     window.spGo = fn => fn();
     const el = document.querySelector('#homeSmartBox .pc-smart-box');
-    el._spPages.find(p => p.key === 'reminders').onTap(tt, pg.querySelector('[data-rem="r2"] .sp-rem-t'));
+    el._spPages.find(p => p.key === 'reminders').onTap(tt, pg.querySelector('[data-rem="r2"] b'));
     await w(1500);
     const hl = !!document.querySelector('#userRemindersList .ur-item.ur-hl[data-ur-id="r2"]'), noEditor = !document.getElementById('urEditor') || getComputedStyle(document.getElementById('urEditor')).display === 'none';
     const dueSnake = !!document.querySelector('#userRemindersList .ur-item.hk-snake[data-ur-id="r1"]');
     return { box, dots, dur, col, live, hl, noEditor, dueSnake };
   });
-  ok(r.box.length === 2 && r.box[0].chip === 'فردا' && r.box.every(x => x.acts === 2), 'هر یادآور یک باکس کوچک: اسم، برچسب روزهای مانده، ویرایش و حذف');
+  ok(r.box.length === 2 && /^فردا، /.test(r.box[0].when) && r.box.every(x => x.acts === 0), 'اسلاید یادآورها همان ردیف ساده: اسم | «فردا، تاریخ» (بی دکمه)');
   ok(r.dots === 0, 'نقطه‌های قرمز برداشته شد');
   ok(r.dur >= 4 && /^rgb\((19\d|2[0-2]\d), (3\d|4\d|5\d|6\d|7\d), (2\d|3\d|4\d|5\d|6\d)\)$/.test(r.col), 'نوار چرخان آرام‌تر (' + r.dur + 's) و رنگ سررسیده قرمز تیره‌تر (' + r.col + ')');
   ok(r.live.join('|') === 'اجارهٔ خانه|قبض گاز|تمدید بیمهٔ ماشین', 'ویرایش یا یادآور تازه همان لحظه در اسلاید (' + r.live.join('، ') + ')');
