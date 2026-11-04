@@ -209,6 +209,13 @@ html[data-theme="light"] {
 
     /* اندروید: WebView به‌صورت نیتیو بالای نوار ناوبری قرار می‌گیرد (Capacitor SystemBars)؛ env فقط اگر محتوا زیر نوار برود مقدار دارد */
     html.cap-android { --nav-safe: env(safe-area-inset-bottom, 0px); }
+    /* نسخهٔ iOS: بخش‌های مخصوص اندروید پنهان (دسترسی پیامک و اعلان، به‌روزرسانی APK، صف پیامک‌های بعداً)؛ گزینهٔ «ثبت پیامک با میان‌برها» فقط در iOS */
+    html.cap-ios { --nav-safe: env(safe-area-inset-bottom, 0px); }
+    html.cap-ios #permRowSms, html.cap-ios #permRowNotif, html.cap-ios .menu-update-btn, html.cap-ios #menuSmsLater { display: none !important; }
+    #menuIosSms { display: none; }
+    html.cap-ios #menuIosSms { display: flex; }
+    .hk-ios-guide ol { margin: 8px 0 0; padding-right: 20px; line-height: 1.9; font-size: var(--hk-fs-body); }
+    .hk-ios-guide p { margin: 6px 0; line-height: 1.8; font-size: var(--hk-fs-body); color: var(--muted, #98989f); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -12930,7 +12937,7 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۷۹: آیکون‌های مشترک نرم‌افزار — هر جای تازه همین شکل‌های قبلی را می‌گیرد (مداد ویرایش؛ × قرمز حذف) */
     var HK_EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
     var HK_DEL_X = '×';
-    try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); } catch (eCp) {}
+    try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); if (_cp === 'ios') document.documentElement.classList.add('cap-ios'); } catch (eCp) {}
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
       var n = 0;
@@ -25154,6 +25161,77 @@ async function openPdfPrintWindow(){
       return out;
     }
     try { window.hkWidgetTxRows = hkWidgetTxRows; } catch (eWt) {}
+    /* ===== نسخهٔ iOS: پیامک‌هایی که اکشن «ثبت پیامک بانکی» برنامهٔ میان‌برها در صف گذاشته، یا لینک hesabketab://sms?text=…
+       با همان مسیر اندروید (enqueueBankSms: رد رمز یک‌بارمصرف، جلوگیری از تکرار، باکس تأیید) ثبت می‌شوند. چیزی از گوشی بیرون نمی‌رود. ===== */
+    function hkIsIos() { try { return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform() === 'ios'); } catch (e) { return false; } }
+    function hkIosSmsIngest(text, src) {
+      try {
+        var t = String(text || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, 2000);
+        if (t.length < 8) return false;
+        return enqueueBankSms(t, { source: src || 'ios' });
+      } catch (e) { return false; }
+    }
+    var _hkIosDraining = false;
+    async function hkIosSmsDrain() {
+      if (!hkIsIos() || _hkIosDraining) return 0;
+      var P = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.HkIosSms; if (!P || typeof P.drain !== 'function') return 0;
+      _hkIosDraining = true;
+      try { var r = await P.drain(); var items = (r && r.items) || []; items.forEach(function (it) { hkIosSmsIngest(it && it.t, 'shortcut'); }); return items.length; }
+      catch (e) { return 0; } finally { _hkIosDraining = false; }
+    }
+    function hkIosSmsGuide() {
+      try { closeSideMenu(); } catch (e0) {}
+      var old = document.getElementById('hkIosGuide'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkIosGuide'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:660;display:flex;align-items:center;justify-content:center;';
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-ios-guide" style="max-height:86vh;overflow-y:auto;padding:16px;">' +
+        '<div class="hk-prefs-t" style="margin-bottom:6px;">ثبت خودکار پیامک بانکی در آیفون</div>' +
+        '<p>آیفون به هیچ برنامه‌ای اجازهٔ خواندن پیامک‌ها را نمی‌دهد. به‌جایش یک بار در برنامهٔ «میان‌برها» (Shortcuts) یک اتوماسیون می‌سازید تا هر پیامک بانکی، متنش را به حساب‌کتاب بدهد. پیامک‌ها فقط روی همین گوشی می‌مانند و با باز شدن حساب‌کتاب ثبت می‌شوند.</p>' +
+        '<ol><li>برنامهٔ «میان‌برها» را باز کنید و به زبانهٔ «اتوماسیون» بروید.</li>' +
+        '<li>«اتوماسیون جدید» ← «پیام» (Message).</li>' +
+        '<li>«پیام حاوی» را بزنید و یک کلمه مثل «بانک» یا «مانده» بنویسید (اگر شمارهٔ بانک در مخاطبان است، می‌توانید «فرستنده» را هم انتخاب کنید).</li>' +
+        '<li>«اجرای فوری» (Run Immediately) را انتخاب کنید و «اطلاع هنگام اجرا» را خاموش کنید.</li>' +
+        '<li>اکشن «ثبت پیامک بانکی» از حساب‌کتاب را اضافه کنید و در «متن پیامک»، «ورودی میان‌بر» ← «محتوا» را بگذارید.</li>' +
+        '<li>ذخیره کنید. از این به بعد پیامک‌های بانکی، با باز کردن حساب‌کتاب برای تأیید ثبت می‌آیند.</li></ol>' +
+        '<p>رمزهای یک‌بارمصرف و پیام‌های تبلیغاتی ثبت نمی‌شوند و هر پیامک فقط یک بار ثبت می‌شود. برای قطع کامل، همان اتوماسیون را در «میان‌برها» پاک کنید.</p>' +
+        '<div class="hk-rax-acts" style="padding:10px 0 0;"><button type="button" class="modal-btn hk-ig-clear">پاک کردن صف</button><button type="button" class="modal-btn hk-ig-close">بستن</button></div></div>';
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.hk-ig-close').onclick = close;
+      ov.querySelector('.hk-ig-clear').onclick = function () { try { var P = Capacitor.Plugins.HkIosSms; if (P) P.clear(); } catch (e) {} showToast('صف پیامک‌های در انتظار پاک شد'); };
+      document.body.appendChild(ov);
+    }
+    (function () {
+      if (!hkIsIos()) return;
+      /* گزینهٔ منو فقط در iOS ساخته می‌شود (منوی اندروید دست نمی‌خورد) */
+      var addMenu = function () {
+        try {
+          if (document.getElementById('menuIosSms')) return;
+          var ref = document.getElementById('menuBlockedBtn'); if (!ref) return;
+          var t = document.createElement('div'); t.innerHTML = '<button class="menu-item" id="menuIosSms" onclick="hkIosSmsGuide()"><i class="hk-mi" style="--c:#64d2ff"><svg viewBox="0 0 24 24"><path d="M4.5 5h15A1.5 1.5 0 0 1 21 6.5v9a1.5 1.5 0 0 1-1.5 1.5H9.5L5 20.5V17h-.5A1.5 1.5 0 0 1 3 15.5v-9A1.5 1.5 0 0 1 4.5 5z"/><path d="M12 8v5M9.5 10.5L12 13l2.5-2.5"/></svg></i>ثبت خودکار پیامک با میان\u200cبرها</button>';
+          ref.parentNode.insertBefore(t.firstChild, ref);
+        } catch (e) {}
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addMenu); else addMenu();
+      var run = function () { setTimeout(hkIosSmsDrain, 1200); };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(run, 1500); }); else setTimeout(run, 1500);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) run(); });
+      try {
+        var App = Capacitor.Plugins.App;
+        if (App && App.addListener) {
+          App.addListener('appStateChange', function (st) { if (st && st.isActive) run(); });
+          App.addListener('appUrlOpen', function (ev) {
+            try {
+              var u = new URL(ev && ev.url || '');
+              if (u.protocol !== 'hesabketab:' || (u.host || u.pathname.replace(/^\/+/, '')) !== 'sms') return;
+              hkIosSmsIngest(u.searchParams.get('text'), 'link');
+            } catch (e) {}
+          });
+        }
+      } catch (e2) {}
+    })();
+    try { Object.assign(window, { hkIosSmsGuide: hkIosSmsGuide, hkIosSmsIngest: hkIosSmsIngest, hkIosSmsDrain: hkIosSmsDrain }); } catch (eIs) {}
     function hkWidgetSeenNids() {
       var out = [];
       try {
@@ -28085,7 +28163,7 @@ async function openPdfPrintWindow(){
       document.querySelectorAll('#menuDropdown .hk-mg').forEach(function (g) {
         var gl = (g.querySelector('.menu-section-label') || {}).textContent || '';
         g.querySelectorAll('.hk-mg-box > .menu-item, .hk-mg-box > .menu-theme-row').forEach(function (el) {
-          if (el.style.display === 'none') return;
+          if (el.style.display === 'none' || getComputedStyle(el).display === 'none') return;
           var lab = el.classList.contains('menu-theme-row') ? el.querySelector('span').textContent : el.childNodes.length ? Array.prototype.filter.call(el.childNodes, function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; }).join('') : el.textContent;
           out.push({ el: el, label: lab.trim(), group: gl.trim() });
         });
