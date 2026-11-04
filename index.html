@@ -20525,6 +20525,7 @@ function askBackupUserCards(selectedParts) {
     }
 
     async function shareExportFile(blob, filename, mimeType){
+      if (typeof hkIsIos === 'function' && hkIsIos()) { try { return await hkIosSaveBlob(blob, filename, mimeType); } catch (eI) { return false; } }
       try{
         if(await nativeSaveBlobToDownloads(blob,filename,mimeType)) return true;
       }catch(e){console.warn('Native Downloads save failed:',e);}
@@ -21360,6 +21361,8 @@ async function exportPdf(){
         try {
           const blob = await renderPdfPagesOffline();
           if (!blob || !blob.size) throw new Error('empty');
+          /* آیفون: ذخیره در Files و پنجرهٔ اشتراک (بدون صفحهٔ چاپ که کل نرم‌افزار را می‌پوشاند) */
+          if (typeof hkIsIos === 'function' && hkIsIos()) { await hkIosSaveBlob(blob, name, 'application/pdf'); return; }
           if (isNative) {
             const b64 = await blobToBase64(blob);
             const saved = await nativeSaveBase64(name, 'application/pdf', b64);
@@ -21374,6 +21377,7 @@ async function exportPdf(){
           console.warn('[PDF-DEBUG] offline failed', oe);
         }
 
+        if (typeof hkIsIos === 'function' && hkIsIos()) { showToast('ساخت PDF ناموفق بود'); return; }
         await openPdfPrintWindow();
         showToast('پیش‌نمایش چاپ — Save as PDF');
       } catch (e) {
@@ -25232,7 +25236,59 @@ async function openPdfPrintWindow(){
         }
       } catch (e2) {}
     })();
-    try { Object.assign(window, { hkIosSmsGuide: hkIosSmsGuide, hkIosSmsIngest: hkIosSmsIngest, hkIosSmsDrain: hkIosSmsDrain }); } catch (eIs) {}
+    /* آیفون: ذخیرهٔ فایل خروجی — یک نسخه همیشه در Files ← On My iPhone ← حساب کتاب، و دکمهٔ اشتراک (پنجرهٔ اشتراک خود iOS، که لمس کاربر لازم دارد) */
+    async function hkIosSaveBlob(blob, name, mime) {
+      var saved = false;
+      try {
+        var FS = Capacitor.Plugins.Filesystem;
+        if (FS && FS.writeFile) {
+          var b64 = await blobToBase64(blob);
+          b64 = String(b64 || '').replace(/^data:[^,]*,/, '');
+          await FS.writeFile({ path: name, data: b64, directory: 'DOCUMENTS', recursive: true });
+          saved = true;
+        }
+      } catch (eW) { console.warn('ios save failed', eW); }
+      var old = document.getElementById('hkIosShare'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkIosShare'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf" style="padding:16px;max-width:340px;">' +
+        '<div class="hk-prefs-t" style="margin-bottom:8px;">فایل آماده است</div>' +
+        '<div style="line-height:1.8;font-size:var(--hk-fs-body);color:var(--muted,#98989f);margin-bottom:12px;"></div>' +
+        '<div class="hk-rax-acts" style="padding:0;"><button type="button" class="modal-btn hk-is-share">اشتراک / ذخیره</button><button type="button" class="modal-btn hk-is-close">بستن</button></div></div>';
+      ov.querySelector('div > div:nth-child(2)').textContent = (saved ? 'یک نسخه در برنامهٔ Files ← On My iPhone ← حساب کتاب ذخیره شد. ' : '') + 'برای فرستادن یا ذخیره در جای دیگر، «اشتراک / ذخیره» را بزنید. (' + name + ')';
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.hk-is-close').onclick = close;
+      ov.querySelector('.hk-is-share').onclick = async function () {
+        try {
+          var file = new File([blob], name, { type: mime || blob.type || 'application/octet-stream' });
+          if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) { await navigator.share({ files: [file], title: name }); close(); return; }
+        } catch (eS) { if (eS && eS.name === 'AbortError') return; }
+        showToast(saved ? 'فایل در Files ← حساب کتاب است' : 'اشتراک ممکن نشد');
+      };
+      document.body.appendChild(ov);
+      return true;
+    }
+    /* آیفون: کشیدن از لبهٔ چپ صفحه به داخل = همان «برگشت» اندروید (یک مرحله عقب) */
+    (function () {
+      if (!hkIsIos()) return;
+      var sx = 0, sy = 0, on = false, fired = false, EDGE = 26;
+      document.addEventListener('touchstart', function (e) {
+        on = false; fired = false;
+        if (!e.touches || e.touches.length !== 1) return;
+        var t = e.touches[0]; if (t.clientX > EDGE) return;
+        sx = t.clientX; sy = t.clientY; on = true;
+      }, { passive: true, capture: true });
+      document.addEventListener('touchmove', function (e) {
+        if (!on || fired || !e.touches || !e.touches[0]) return;
+        var t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dy) > 50 && Math.abs(dy) > Math.abs(dx)) { on = false; return; }
+        if (dx > 60) { fired = true; on = false; try { onBackGuard(); } catch (eB) {} }
+      }, { passive: true, capture: true });
+      document.addEventListener('touchend', function () { on = false; }, { passive: true, capture: true });
+    })();
+    try { Object.assign(window, { hkIosSmsGuide: hkIosSmsGuide, hkIosSmsIngest: hkIosSmsIngest, hkIosSmsDrain: hkIosSmsDrain, hkIosSaveBlob: hkIosSaveBlob }); } catch (eIs) {}
     function hkWidgetSeenNids() {
       var out = [];
       try {
@@ -46723,6 +46779,7 @@ function openProjectRowPicker(secId) {
     }
     /* ۱.۳.۷۱: بازگشت در صفحهٔ اصلی = رفتن به پس‌زمینه (نرم‌افزار بسته نمی‌شود)؛ قفل مثل خروج، موقع برگشت رمز می‌خواهد */
     function hkAppToBackground() {
+      if (typeof hkIsIos === 'function' && hkIsIos()) return; /* آیفون: برنامه‌ها خودشان را نمی‌بندند */
       try { localStorage.setItem('hk_lock_app_exit', '1'); } catch (e0) {}
       try { __lockUnlockedThisSession = false; } catch (e1) {}
       try { _flushPendingSave(); } catch (e2) {}
