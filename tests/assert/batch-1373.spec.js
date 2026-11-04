@@ -221,7 +221,7 @@ async function fresh(b, opts) {
     const el = document.querySelector('#homeSmartBox .pc-smart-box'), pg = (el._spPages || []).find(p => p.key === 'overview');
     return { ov: pg ? pg.html.replace(/<[^>]+>/g, ' ') : '' };
   });
-  ok(/پس‌انداز کارت \(با احتساب پروژه‌ها\)/.test(sb.ov), 'وضعیت این ماه: «پس‌انداز کارت (با احتساب پروژه‌ها)»');
+  ok(/پس‌انداز این ماه/.test(sb.ov), 'وضعیت این ماه (۱.۳.۸۲): «پس‌انداز این ماه»');
   await H.page.evaluate(() => startAppTour(true)); await H.page.waitForTimeout(400);
   for (let i = 0; i < 7; i++) { await H.page.click('#appTour .tour-next'); await H.page.waitForTimeout(520); }
   const tour = [];
