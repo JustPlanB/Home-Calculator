@@ -18,6 +18,9 @@ permissions:
 jobs:
   ios-simulator:
     runs-on: macos-15
+    # نوشتن فقط برای گذاشتن فایل شبیه‌ساز در یک «پیش‌انتشار» جدا (مثل لینک دانلود APK)؛ «آخرین انتشار» اندروید و فید بروزرسانی دست نمی‌خورند
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -59,3 +62,16 @@ jobs:
           name: hesab-ketab-ios-simulator
           path: hesab-ketab-ios-simulator.zip
           retention-days: 14
+
+      - name: Publish to iOS test prerelease (same download servers as the APK)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=ios-simulator-test
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" \
+              --title "iOS simulator test build (not for Android)" \
+              --notes "فایل آزمایشی شبیه‌ساز آیفون (بدون امضا). ربطی به نسخه‌های اندروید ندارد. راهنما: docs/ios/README-fa.md"
+          fi
+          gh release upload "$TAG" hesab-ketab-ios-simulator.zip --clobber
