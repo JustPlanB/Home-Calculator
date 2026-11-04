@@ -210,7 +210,10 @@ html[data-theme="light"] {
     /* اندروید: WebView به‌صورت نیتیو بالای نوار ناوبری قرار می‌گیرد (Capacitor SystemBars)؛ env فقط اگر محتوا زیر نوار برود مقدار دارد */
     html.cap-android { --nav-safe: env(safe-area-inset-bottom, 0px); }
     /* نسخهٔ iOS: بخش‌های مخصوص اندروید پنهان (دسترسی پیامک و اعلان، به‌روزرسانی APK، صف پیامک‌های بعداً)؛ گزینهٔ «ثبت پیامک با میان‌برها» فقط در iOS */
-    html.cap-ios { --nav-safe: env(safe-area-inset-bottom, 0px); }
+    html.cap-ios { --nav-safe: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px); }
+    /* آیفون: نوار بالای نرم‌افزار زیر ساعت و Dynamic Island نرود */
+    html.cap-ios .sticky-chrome { padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important; }
+    html.cap-ios .menu-dropdown, html.cap-ios .feature-sheet { padding-top: env(safe-area-inset-top, 0px) !important; box-sizing: border-box; }
     html.cap-ios #permRowSms, html.cap-ios #permRowNotif, html.cap-ios .menu-update-btn, html.cap-ios #menuSmsLater { display: none !important; }
     #menuIosSms { display: none; }
     html.cap-ios #menuIosSms { display: flex; }
@@ -12937,7 +12940,7 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۷۹: آیکون‌های مشترک نرم‌افزار — هر جای تازه همین شکل‌های قبلی را می‌گیرد (مداد ویرایش؛ × قرمز حذف) */
     var HK_EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
     var HK_DEL_X = '×';
-    try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); if (_cp === 'ios') document.documentElement.classList.add('cap-ios'); } catch (eCp) {}
+    try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); if (_cp === 'ios') { document.documentElement.classList.add('cap-ios'); var _vm = document.querySelector('meta[name="viewport"]'); if (_vm && _vm.content.indexOf('viewport-fit') < 0) _vm.content += ', viewport-fit=cover'; } } catch (eCp) {}
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
       var n = 0;
@@ -38601,7 +38604,11 @@ if (item.type === 'recurring') {
     function openSmsBulkModal() {
       try { closeSmsImportModal(); } catch (e0) {}
       var B = hkBankSmsPlugin();
-      if (!B || typeof B.readInbox !== 'function') { showToast('ثبت گروهی فقط در نسخهٔ اندروید نرم‌افزار کار می‌کند'); return; }
+      if (!B || typeof B.readInbox !== 'function') {
+        /* آیفون اجازهٔ خواندن صندوق پیامک نمی‌دهد: راه جایگزین (میان‌برها یا چسباندن تکی) */
+        if (typeof hkIsIos === 'function' && hkIsIos()) { showToast('در آیفون خواندن صندوق پیامک ممکن نیست؛ از «ثبت تکی» یا میان‌برها استفاده کنید'); try { hkIosSmsGuide(); } catch (eG) {} return; }
+        showToast('ثبت گروهی فقط در نسخهٔ اندروید نرم‌افزار کار می‌کند'); return;
+      }
       var old = document.getElementById('smsBulkOv'); if (old) old.remove();
       var t = getTodayPersian();
       var from = { y: t.y, m: t.m, d: 1 };
