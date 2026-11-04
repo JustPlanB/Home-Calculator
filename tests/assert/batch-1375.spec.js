@@ -192,11 +192,11 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     warn.onTap(tt, holder.querySelector('[data-dup="0"]')); holder.remove();
     await w(1800);
     const fl = [...document.querySelectorAll('.person-detail-box tbody tr.sp-flash')].map(tr => tr.textContent + [...tr.querySelectorAll('input, textarea')].map(x => x.value).join(' '));
-    return { once, status: /پس‌انداز کارت \(با احتساب پروژه‌ها\)/.test(ov), fl };
+    return { once, status: /پس‌انداز این ماه|کسری این ماه/.test(ov), fl };
   });
   ok(d.once, 'هشدار تکراری یک بار نوشته می‌شود');
   ok(d.fl.length === 2 && d.fl.every(x => /سوپرمارکت/.test(x)), 'زدن هشدار: همان دو ردیف در جدول هایلایت می‌شوند (' + d.fl.join(',') + ')');
-  ok(d.status, 'متن وضعیت: «پس‌انداز/کسری کارت (با احتساب پروژه‌ها)»');
+  ok(d.status, 'متن وضعیت (۱.۳.۸۲): «پس‌انداز/کسری این ماه»');
   await D.ctx.close();
 
   ok(allErrors.length === 0, 'هیچ خطای JS ' + allErrors.slice(0, 3).join(' | '));

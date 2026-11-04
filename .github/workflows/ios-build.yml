@@ -1,0 +1,77 @@
+name: Build iOS (simulator, unsigned)
+
+# ساخت آزمایشی نسخهٔ iOS روی مک گیت‌هاب: بدون امضا، فقط برای شبیه‌ساز.
+# خروجی (App.app زیپ‌شده) را می‌شود روی مک در شبیه‌ساز آیفون انداخت. ساخت اندروید دست نمی‌خورد.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ios/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ios-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ios-simulator:
+    runs-on: macos-15
+    # نوشتن فقط برای گذاشتن فایل شبیه‌ساز در یک «پیش‌انتشار» جدا (مثل لینک دانلود APK)؛ «آخرین انتشار» اندروید و فید بروزرسانی دست نمی‌خورند
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build web bundle (same as APK)
+        run: node scripts/build-web.js index.html www/index.html
+
+      - name: Sync iOS project
+        run: npx cap sync ios
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS Simulator (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/dd CODE_SIGNING_ALLOWED=NO build | tail -n 80
+
+      - name: Package App.app
+        run: |
+          cd build/dd/Build/Products/Debug-iphonesimulator
+          ditto -c -k --keepParent App.app "$GITHUB_WORKSPACE/hesab-ketab-ios-simulator.zip"
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hesab-ketab-ios-simulator
+          path: hesab-ketab-ios-simulator.zip
+          retention-days: 14
+
+      - name: Publish to iOS test prerelease (same download servers as the APK)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=ios-simulator-test
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" \
+              --title "iOS simulator test build (not for Android)" \
+              --notes "فایل آزمایشی شبیه‌ساز آیفون (بدون امضا). ربطی به نسخه‌های اندروید ندارد. راهنما: docs/ios/README-fa.md"
+          fi
+          gh release upload "$TAG" hesab-ketab-ios-simulator.zip --clobber
