@@ -689,6 +689,14 @@ import android.widget.TextView;
 import org.json.JSONObject;
 
 public class HkQuickActivity extends Activity {
+  /* ۱.۳.۸۲: فونت نرم‌افزار (وزیر) همه‌جا؛ بولد بماند بولد */
+  private Typeface hkFB, hkFR;
+  @Override public void setContentView(View v){ hkVazir(v); super.setContentView(v); }
+  void hkVazir(View v){
+    try{ if(hkFB==null){ hkFB=androidx.core.content.res.ResourcesCompat.getFont(this, R.font.hk_vazir_bold); hkFR=androidx.core.content.res.ResourcesCompat.getFont(this, R.font.hk_vazir_regular); } }catch(Exception ignored){}
+    if(v instanceof TextView){ TextView tv=(TextView)v; Typeface cur=tv.getTypeface(); Typeface f=(cur!=null && cur.isBold())?hkFB:hkFR; if(f!=null) tv.setTypeface(f); }
+    else if(v instanceof android.view.ViewGroup){ android.view.ViewGroup g=(android.view.ViewGroup)v; for(int i=0;i<g.getChildCount();i++) hkVazir(g.getChildAt(i)); }
+  }
   private int nid;
   private LinearLayout box;
   private int dp(float v){ return (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,v,getResources().getDisplayMetrics()); }
@@ -780,6 +788,7 @@ public class HkQuickActivity extends Activity {
     box.addView(d);
     TextView ok=new TextView(this); ok.setText("ثبت شد"); ok.setTextColor(0xFF30D158); ok.setTextSize(18); ok.setTypeface(Typeface.DEFAULT_BOLD); ok.setGravity(Gravity.CENTER); ok.setPadding(0,dp(6),0,0);
     box.addView(ok);
+    hkVazir(box);
     box.postDelayed(this::finish,1300);
   }
 
@@ -787,6 +796,7 @@ public class HkQuickActivity extends Activity {
     box.removeAllViews();
     TextView t=new TextView(this); t.setText("این تراکنش قبلاً ثبت یا رد شده"); t.setTextColor(0xFFFFFFFF); t.setTextSize(16); t.setGravity(Gravity.CENTER);
     box.addView(t);
+    hkVazir(box);
     box.postDelayed(this::finish,1600);
   }
 }
@@ -2833,9 +2843,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-/** ویجت یک‌خطی: موجودی و خرج امروز پشت‌سرهم در یک فهرست بی‌پایان؛ با کشیدن عمودی (در هر جهت) بینشان جابه‌جا می‌شوی */
+/** ویجت یک‌خطی: موجودی و خرج امروز در یک «پشته» (StackView)؛ هر کشیدن دقیقاً یک صفحه جابه‌جا می‌شود و صفحه‌ها پشت‌سرهم می‌چرخند (۱.۳.۸۲) */
 public class HkWidgetSmallProvider extends AppWidgetProvider {
-  static final int LOOP_COUNT=2000;
+  static final int PAGES=2;
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){
     for(int id: ids) render(ctx, mgr, id);
   }
@@ -2866,7 +2876,6 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
       v.setRemoteAdapter(R.id.hk_ws_list, svc);
       v.setPendingIntentTemplate(R.id.hk_ws_list, HkWidgetProvider.openApp(ctx, true));
-      v.setScrollPosition(R.id.hk_ws_list, LOOP_COUNT/2);
       v.setOnClickPendingIntent(R.id.hk_ws_root, HkWidgetProvider.openApp(ctx, false));
       HkWidgetProvider.applyEye(ctx, v, R.id.hk_ws_eye, d);
       mgr.updateAppWidget(id, v);
@@ -2896,8 +2905,8 @@ public class HkWidgetListService extends RemoteViewsService {
       public void onCreate(){}
       public void onDataSetChanged(){ d=HkWidgetDraw.load(ctx); cache[0]=null; cache[1]=null; }
       public void onDestroy(){}
-      /* اسکرول بی‌پایان: صفحه‌ها پشت‌سرهم تکرار می‌شوند (زوج = موجودی، فرد = خرج امروز) */
-      public int getCount(){ return HkWidgetSmallProvider.LOOP_COUNT; }
+      /* پشته: صفحهٔ ۰ = موجودی، ۱ = خرج امروز؛ چرخش بی‌پایان را خود StackView (loopViews) انجام می‌دهد */
+      public int getCount(){ return HkWidgetSmallProvider.PAGES; }
       public RemoteViews getViewAt(int pos){
         if(d==null) d=HkWidgetDraw.load(ctx);
         float[] sz=HkWidgetDraw.size(ctx, AppWidgetManager.getInstance(ctx), id, 250, 60);
@@ -3155,6 +3164,14 @@ import android.widget.TextView;
 
 /** ۱.۳.۷۸: هنگام افزودن ویجت ردیف‌ها: انتخاب «مخارج» یا «درآمدها» */
 public class HkWidgetTxConfig extends Activity {
+  /* ۱.۳.۸۲: فونت نرم‌افزار (وزیر) همه‌جا؛ بولد بماند بولد */
+  private Typeface hkFB, hkFR;
+  @Override public void setContentView(View v){ hkVazir(v); super.setContentView(v); }
+  void hkVazir(View v){
+    try{ if(hkFB==null){ hkFB=androidx.core.content.res.ResourcesCompat.getFont(this, R.font.hk_vazir_bold); hkFR=androidx.core.content.res.ResourcesCompat.getFont(this, R.font.hk_vazir_regular); } }catch(Exception ignored){}
+    if(v instanceof TextView){ TextView tv=(TextView)v; Typeface cur=tv.getTypeface(); Typeface f=(cur!=null && cur.isBold())?hkFB:hkFR; if(f!=null) tv.setTypeface(f); }
+    else if(v instanceof android.view.ViewGroup){ android.view.ViewGroup g=(android.view.ViewGroup)v; for(int i=0;i<g.getChildCount();i++) hkVazir(g.getChildAt(i)); }
+  }
   int wid=AppWidgetManager.INVALID_APPWIDGET_ID;
   boolean light=false;
   float dp=1f;
@@ -3843,8 +3860,8 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/hk_widget_bg">
-    <ListView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none" android:listSelector="@android:color/transparent" android:overScrollMode="never" android:fadingEdge="none"/>
+    <StackView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:loopViews="true" android:animateLayoutChanges="false"/>
     <ImageView android:id="@+id/hk_ws_eye" android:layout_width="28dp" android:layout_height="28dp"
         android:layout_gravity="top|left" android:layout_marginLeft="2dp" android:layout_marginTop="1dp"
         android:padding="6dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
@@ -3855,8 +3872,8 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
 <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hk_wi_img"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:adjustViewBounds="true"
+    android:layout_height="match_parent"
+    android:adjustViewBounds="false"
     android:scaleType="fitXY"
     android:contentDescription="حساب‌کتاب"/>
 `);

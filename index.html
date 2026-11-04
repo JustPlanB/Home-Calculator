@@ -11244,6 +11244,12 @@ html[data-theme="light"] {
     .sp-projs .sp-tipbox { gap: calc(2px * var(--sp-fs, 1)); }
     .sp-projs .sp-pj-t { font-weight: 700; }
     .sp-pick { position: relative; }
+    .sp-ov-formula { text-align: right; font-size: var(--hk-fs-label, 11px); font-weight: 500; color: var(--muted, var(--hk-muted)); opacity: 0.85; margin-top: 2px; }
+    /* ۱.۳.۸۲: کاشی‌های آیکون‌دار در پنجرهٔ دسته‌های باکس هوشمند */
+    .sp-pick-grid.hk-sp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 4px; padding: 6px 0 4px; margin: 0; }
+    .sp-pick-t { position: relative; }
+    .hk-sp-tiles .sp-pick-t .sp-pick-x { top: -4px; left: auto; right: 50%; margin-right: -27px; }
+    .hk-cat-colored .sp-pick-tadd i { color: #08b5f5; background: none; border: 1.5px dashed rgba(8,181,245,0.6); box-shadow: none; }
     .sp-pick-x { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg3, #2c2c2e); color: rgba(255,255,255,0.75); font-size: var(--hk-fs-label); line-height: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: pointer; }
     html[data-theme="light"] .sp-pick-x { background: #e5e5ea; color: #3a3a3c; }
     /* ۱.۳.۴۸: پنجرهٔ پروفایل */
@@ -11680,6 +11686,15 @@ html[data-theme="light"] {
     .hk-dock-pop.fade-t::before, .hk-dock-pop.fade-b::after { opacity: 1; }
     #panel-home #homeDock .hk-dock-c[data-k="trash"] svg { stroke: var(--hk-danger, #ff453a); }
     #panel-home #homeDock .hk-dock-c[data-k="trash"] .hk-lid { transform-box: fill-box; transform-origin: 50% 100%; animation: trashLidRock 15s ease-in-out infinite; }
+    /* ۱.۳.۸۲: جیب به جیب */
+    .hk-p2p-cat { position: relative; }
+    .hk-p2p-cat .hk-p2p-sub { display: block; font-size: var(--hk-fs-caption, 11px); color: var(--muted, #98989f); font-weight: 400; margin-top: 1px; line-height: 1.3; }
+    .hk-p2p-cat .hk-p2p-info { position: absolute; top: 2px; left: 4px; font-style: normal; font-size: 13px; color: #64d2ff; padding: 2px 4px; line-height: 1; }
+    .hk-p2p-ic { display: inline-flex; width: 26px; height: 26px; color: #64d2ff; }
+    .hk-p2p-ic svg { width: 26px; height: 26px; }
+    tr.hk-p2p-row .pd-amt { opacity: 0.55; }
+    td.hk-p2p-td { position: relative; }
+    td.hk-p2p-td::after { content: "⇄"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #64d2ff; opacity: 0.9; pointer-events: none; }
     /* ۱.۳.۷۹: عرض به اندازهٔ طولانی‌ترین گزینه («ثبت تکی و گروهی پیامک‌ها»)؛ قلم یک درجه کوچک‌تر؛ همه تک‌خطی */
     .hk-dock-pop { width: max-content; max-width: calc(100vw - 16px); }
     .hk-dock-pi { font-size: var(--hk-fs-small); white-space: nowrap; gap: 9px; }
@@ -11971,7 +11986,7 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۷۴: خط تاریخ امروز زیر نوار ماه/سال (در فاصلهٔ خالی بالای کارت؛ جا را جابه‌جا نمی‌کند) */
     .hk-today-line { position: absolute; left: 0; right: 0; top: calc(100% + 3px); height: 18px; line-height: 18px; text-align: center; white-space: nowrap; overflow: hidden;
       font-size: 12.5px; color: var(--hk-primary, #08b5f5); pointer-events: none; direction: rtl; }
-    .hk-today-line b { font-weight: 700; }
+    .hk-today-line b { font-weight: 500; } /* ۱.۳.۸۲: تاریخ شمسی هم مثل میلادی غیر بولد */
     .hk-today-line i { font-style: normal; opacity: 0.45; margin: 0 7px; }
     .hk-today-line span { opacity: 0.75; font-weight: 500; }
 
@@ -12938,6 +12953,8 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۷۹: آیکون‌های مشترک نرم‌افزار — هر جای تازه همین شکل‌های قبلی را می‌گیرد (مداد ویرایش؛ × قرمز حذف) */
     var HK_EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
     var HK_DEL_X = '×';
+    /* ۱.۳.۸۲: دستهٔ «جیب به جیب» — هم در مخارج هم در درآمدها؛ ردیفش در هیچ جمع درآمد/مخارج نمی‌آید ولی موجودی کارت‌ها را تغییر می‌دهد */
+    var HK_P2P_CAT = { id: 'p2p', label: 'جیب به جیب' };
     try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); if (_cp === 'ios') { document.documentElement.classList.add('cap-ios'); var _vm = document.querySelector('meta[name="viewport"]'); if (_vm && _vm.content.indexOf('viewport-fit') < 0) _vm.content += ', viewport-fit=cover'; } } catch (eCp) {}
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
@@ -13021,6 +13038,8 @@ button, input, select, textarea { font-family: inherit; }
       opts = opts || {};
       let paid = 0, unpaid = 0;
       (sec.rows || []).forEach(r => {
+        /* ۱.۳.۸۲: «جیب به جیب» (جابه‌جایی بین کارت‌های خود) در هیچ جمع درآمد/مخارج حساب نمی‌شود؛ فقط موجودی کارت‌ها */
+        if (r && r.p2p && !opts.withP2P) return;
         if (opts.personalIncomeOnly && typeof isPersonalIncomeRow === 'function' && !isPersonalIncomeRow(r)) return;
         /* مخارج پروژه: فقط سهم پیش‌پرداخت شخصی روی موجودی شخصی اثر بگذارد */
         if (opts.personalExpenseOnly && r) {
@@ -13939,7 +13958,7 @@ button, input, select, textarea { font-family: inherit; }
 
     function sectionTotal(sec) {
       let t = 0;
-      sec.rows.forEach(r => { t += Number(r.amount) || 0; });
+      sec.rows.forEach(r => { if (r && r.p2p) return; t += Number(r.amount) || 0; });
       return t;
     }
 
@@ -20362,7 +20381,7 @@ function askBackupUserCards(selectedParts) {
           if (!list.length) return;
           var t = ((sec.title || '').trim()) || '—', st = 0;
           list.forEach(function (r) {
-            var amt = Number(r.amount) || 0; st += amt;
+            var amt = Number(r.amount) || 0; if (!r.p2p) st += amt;
             var stat = r.status === 'paid' ? (inc ? 'دریافت‌شده' : 'پرداخت‌شده') : (inc ? 'دریافت‌نشده' : 'پرداخت‌نشده');
             var cat = ''; if (!inc) { try { var c = HKCategorizer.classify(r.desc, r); cat = c ? c.label : ''; } catch (e) {} }
             var pj = ''; try { var fc = rowFinancialContext(r); if (fc && fc.subjectName && fc.subjectId !== 'personal') pj = fc.subjectName; } catch (eP) {}
@@ -21018,7 +21037,7 @@ function askBackupUserCards(selectedParts) {
           var p = 0, u = 0;
           rows.slice().sort(function (a, b) { return (parseInt(toEnglishDigits(String(a.day || '99')), 10) || 99) - (parseInt(toEnglishDigits(String(b.day || '99')), 10) || 99); }).forEach(function (r, i) {
             var paid = r.status === 'paid', amt = Number(r.amount) || 0;
-            if (paid) p += amt; else u += amt;
+            if (!r.p2p) { if (paid) p += amt; else u += amt; }
             var cat = '';
             if (!isInc) { try { var c = HKCategorizer.classify(r.desc, r); cat = c ? c.label : ''; } catch (e) {} }
             var proj = '';
@@ -22088,6 +22107,8 @@ async function openPdfPrintWindow(){
     function closeSideMenu() {
       /* ۱.۳.۸۰: بستن منو جستجویش را همیشه غیرفعال می‌کند (متن پاک، کیبورد بسته، فهرست کامل) */
       try { var _msi = document.getElementById('menuSearchInput'); if (_msi && document.activeElement === _msi) _msi.blur(); hkMenuSearchClear(); } catch (eMs) {}
+      /* ۱.۳.۸۲: ویرایش نام کاربر با بسته شدن منو لغو می‌شود تا کیبورد روی صفحهٔ اصلی باز نماند */
+      try { var _nm = document.getElementById('menuUserNameText'); if (_nm && _nm.querySelector('input') && typeof _nm._hkCancelEdit === 'function') _nm._hkCancelEdit(); var _ae = document.activeElement; if (_ae && _ae.closest && _ae.closest('#menuDropdown') && _ae.blur) _ae.blur(); } catch (eNe) {}
       try { if (typeof hkToggleProfile === 'function') hkToggleProfile(false); } catch (eTp) {}
       const menu = document.getElementById('menuDropdown');
       const bd = document.getElementById('menuBackdrop');
@@ -25093,7 +25114,7 @@ async function openPdfPrintWindow(){
           var pd = (key === periodKey(currentYear, currentMonth)) ? periodData : (archive && archive[key]);
           (((pd && pd.expense && pd.expense.sections) || [])).forEach(function (sec) {
             (sec.rows || []).forEach(function (r) {
-              if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+              if (!r || r.deletedAt || r.p2p || (r.status || 'paid') !== 'paid') return;
               if (dayNum(r) === t.d) spent += Number(r.amount) || 0;
             });
           });
@@ -25143,7 +25164,7 @@ async function openPdfPrintWindow(){
           var list = [];
           (((pd && pd[kind] && pd[kind].sections) || [])).forEach(function (sec) {
             (sec.rows || []).forEach(function (r, ix) {
-              if (!r || r.deletedAt) return;
+              if (!r || r.deletedAt || r.p2p) return;
               var a = Number(r.amount) || 0;
               if (!(a > 0)) return;
               if (kind === 'expense' && (r.status || 'paid') !== 'paid') return;
@@ -25166,6 +25187,123 @@ async function openPdfPrintWindow(){
       return out;
     }
     try { window.hkWidgetTxRows = hkWidgetTxRows; } catch (eWt) {}
+    /* ===== ۱.۳.۸۲: جیب به جیب =====
+       توضیح بار اول (و با ⓘ هر وقت)؛ علامت زدن ردیف تازهٔ پیامک؛ پیدا کردن جفت برداشت/واریز هم‌مبلغ بین کارت‌های خود */
+    var HK_P2P_INTRO_KEY = STORAGE_KEY + '_p2pIntro', HK_P2P_SINCE_KEY = STORAGE_KEY + '_p2pSince', HK_P2P_AUTO_KEY = STORAGE_KEY + '_p2pAuto';
+    function hkP2PIntro(force) {
+      try { if (!force && localStorage.getItem(HK_P2P_INTRO_KEY) === '1') return; } catch (e) {}
+      var old = document.getElementById('hkP2PIntro'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkP2PIntro'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100700;display:flex;align-items:center;justify-content:center;';
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf" style="padding:16px;max-width:340px;">' +
+        '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب</div>' +
+        '<div style="line-height:1.9;font-size:var(--hk-fs-body);color:var(--muted,#98989f);">این دسته برای پولی است که فقط بین کارت‌های خودتان (یا خانواده) جابه‌جا می‌شود. در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی هر کارت درست می‌ماند. برای پرداخت به دیگران از این دسته استفاده نکنید.</div>' +
+        '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-ok">متوجه شدم</button></div></div>';
+      var close = function () { ov.remove(); try { localStorage.setItem(HK_P2P_INTRO_KEY, '1'); } catch (e) {} };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.hk-p2p-ok').onclick = close;
+      document.body.appendChild(ov);
+    }
+    function hkP2PAllRows(fn) {
+      try {
+        ['income', 'expense'].forEach(function (tab) {
+          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur'); }); });
+        });
+        var py = currentYear, pm = currentMonth - 1; if (pm < 1) { pm = 12; py--; }
+        var pd = archive && archive[periodKey(py, pm)];
+        if (pd) ['income', 'expense'].forEach(function (tab) {
+          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev'); }); });
+        });
+      } catch (e) {}
+    }
+    /* ردیفی که همین الان از باکس پیامک با دستهٔ «جیب به جیب» ثبت شد */
+    function hkP2PMarkRecent(t0, amt) {
+      var hit = null;
+      hkP2PAllRows(function (r, tab, w) {
+        if (w !== 'cur' || r.p2p) return;
+        var c = Number(r.createdAt) || 0, u = Number(r.updatedAt) || 0;
+        if ((c >= t0 - 2000 || u >= t0 - 2000) && (!amt || Number(r.amount) === amt)) { if (!hit || Math.max(c, u) > Math.max(Number(hit.createdAt) || 0, Number(hit.updatedAt) || 0)) hit = r; }
+      });
+      if (hit) { hit.p2p = true; delete hit.p2pNo; try { persistCurrent(); scheduleSave(); renderAll(); } catch (e) {} }
+      return !!hit;
+    }
+    function hkP2PSince() {
+      var v = 0; try { v = Number(localStorage.getItem(HK_P2P_SINCE_KEY)) || 0; if (!v) { v = Date.now(); localStorage.setItem(HK_P2P_SINCE_KEY, String(v)); } } catch (e) { v = Date.now(); }
+      return v;
+    }
+    function hkP2PAutoPairs() { try { return JSON.parse(localStorage.getItem(HK_P2P_AUTO_KEY) || '[]') || []; } catch (e) { return []; } }
+    function hkP2PPairKey(a, b) { return [String(a || '').trim(), String(b || '').trim()].sort().join('|'); }
+    /* جفت: برداشت از یک کارت خودم + واریز هم‌مبلغ به کارت دیگر خودم، تا ۳ روز فاصله (پایا/ساتنا دیرتر می‌نشیند) */
+    function hkP2PFindPairs() {
+      var since = hkP2PSince(), own = {};
+      try { selectedAccountLabels().forEach(function (l) { own[l] = 1; }); } catch (e) {}
+      var inc = [], exp = [];
+      hkP2PAllRows(function (r, tab) {
+        if (r.deletedAt || r.p2p || r.p2pNo || r.p2pAsked) return;
+        if ((r.status || 'paid') !== 'paid' || !(Number(r.amount) > 0)) return;
+        var acc = String(r.account || '').trim(); if (!acc || !own[acc]) return;
+        if (!(Number(r.createdAt) >= since)) return;
+        (tab === 'income' ? inc : exp).push(r);
+      });
+      var out = [], used = new Set();
+      inc.forEach(function (i) {
+        var cands = exp.filter(function (e) { return !used.has(e) && Number(e.amount) === Number(i.amount) && String(e.account).trim() !== String(i.account).trim() && Math.abs((Number(e.createdAt) || 0) - (Number(i.createdAt) || 0)) <= 3 * 86400000; });
+        if (!cands.length) return;
+        cands.sort(function (a, b) { return Math.abs(a.createdAt - i.createdAt) - Math.abs(b.createdAt - i.createdAt); });
+        used.add(cands[0]);
+        out.push({ inc: i, exp: cands[0], alts: cands.length });
+      });
+      return out;
+    }
+    var _hkP2PScanT = 0, _hkP2PBusy = false;
+    function hkP2PScheduleScan() { clearTimeout(_hkP2PScanT); _hkP2PScanT = setTimeout(hkP2PScan, 900); }
+    function hkP2PScan() {
+      if (_hkP2PBusy || document.getElementById('hkP2PAsk')) return;
+      var pairs = hkP2PFindPairs(); if (!pairs.length) return;
+      var auto = hkP2PAutoPairs(), changed = false;
+      pairs = pairs.filter(function (pr) {
+        if (auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { pr.inc.p2p = pr.exp.p2p = true; changed = true; return false; }
+        return true;
+      });
+      if (changed) { try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); showToast('جابه‌جایی بین کارت‌های خودتان «جیب به جیب» شد'); } catch (e) {} finally { _hkP2PBusy = false; } }
+      if (pairs.length) hkP2PAsk(pairs[0]);
+    }
+    function hkP2PAsk(pr) {
+      pr.inc.p2pAsked = pr.exp.p2pAsked = true;
+      var ov = document.createElement('div'); ov.id = 'hkP2PAsk'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100690;display:flex;align-items:center;justify-content:center;';
+      var tm = function (r) { var t = String(r.time || '').trim(); return t ? ' ساعت ' + toPersianDigits(t) : ''; };
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf" style="padding:16px;max-width:350px;">' +
+        '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +
+        '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#64d2ff;">همیشه برای این دو کارت</label>' +
+        '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
+      ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت همین مبلغ از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
+      var done = function (yes) {
+        var alw = ov.querySelector('.hk-p2p-always').checked;
+        ov.remove();
+        if (yes) { pr.inc.p2p = pr.exp.p2p = true; delete pr.inc.p2pNo; delete pr.exp.p2pNo; if (alw) { var a = hkP2PAutoPairs(), k = hkP2PPairKey(pr.inc.account, pr.exp.account); if (a.indexOf(k) < 0) { a.push(k); try { localStorage.setItem(HK_P2P_AUTO_KEY, JSON.stringify(a)); } catch (e) {} } } }
+        else { pr.inc.p2pNo = pr.exp.p2pNo = true; }
+        try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); } catch (e) {} finally { _hkP2PBusy = false; }
+        if (yes) showToast('«جیب به جیب» شد — در جمع‌ها حساب نمی‌شود');
+        setTimeout(hkP2PScan, 400);
+      };
+      ov._hkCancel = function () { ov.remove(); };
+      ov.querySelector('.hk-p2p-yes').onclick = function () { done(true); };
+      ov.querySelector('.hk-p2p-no').onclick = function () { done(false); };
+      document.body.appendChild(ov);
+    }
+    (function () {
+      try { hkP2PSince(); } catch (e) {}
+      if (typeof persistCurrent === 'function' && !persistCurrent._hkP2P) {
+        var _pc = persistCurrent;
+        var w = function () { var r = _pc.apply(this, arguments); if (!_hkP2PBusy) hkP2PScheduleScan(); return r; };
+        w._hkP2P = true;
+        persistCurrent = w; try { window.persistCurrent = w; } catch (e2) {}
+      }
+    })();
+    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan }); } catch (eP2) {}
     /* ===== نسخهٔ iOS: پیامک‌هایی که اکشن «ثبت پیامک بانکی» برنامهٔ میان‌برها در صف گذاشته، یا لینک hesabketab://sms?text=…
        با همان مسیر اندروید (enqueueBankSms: رد رمز یک‌بارمصرف، جلوگیری از تکرار، باکس تأیید) ثبت می‌شوند. چیزی از گوشی بیرون نمی‌رود. ===== */
     function hkIsIos() { try { return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform() === 'ios'); } catch (e) { return false; } }
@@ -26281,6 +26419,7 @@ async function openPdfPrintWindow(){
       }
       /** دسته‌بندی یک شرح؛ یک شرح می‌تواند چند دسته داشته باشد (مثلاً «کیسه زباله و لواشک») */
       function classify(text, row) {
+        if (row && row.p2p) return { id: 'p2p', ids: ['p2p'], label: 'جیب به جیب', source: 'row' };
         if (row && row.fromPlanId) return mk(['debt'], 'plan');
         var n = norm(text);
         if (!n) return null;
@@ -26406,7 +26545,7 @@ async function openPdfPrintWindow(){
       return null;
     }
     function spRows(sec) {
-      return ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && (Number(r.amount) || 0) > 0; });
+      return ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && !r.p2p && (Number(r.amount) || 0) > 0; });
     }
     function spDay(r) { var d = parseInt(toEnglishDigits(String((r && r.day) || '')), 10); return d >= 1 && d <= 31 ? d : 0; }
     /* مبلغ شخصی هر ردیف مخارج — همان قاعدهٔ sectionPaidUnpaidTotal */
@@ -26802,8 +26941,10 @@ async function openPdfPrintWindow(){
       var pct = D.inc > 0 ? Math.abs(rem) / D.inc * 100 : 100;
       var html = spHead('وضعیت این ماه') + '<div class="sp-even">';
       /* درصد بالای لوله (چپ‌چین)، مبلغ زیر لوله (راست‌چین) */
-      html += '<div class="sp-blk">' + spLine(rem >= 0 ? 'پس‌انداز کارت (با احتساب پروژه‌ها)' : 'کسری کارت (با احتساب پروژه‌ها)', spPct(Math.min(999, pct)), sc) + spTube(Math.min(100, pct), sc) +
-        '<div class="sp-v sp-right ' + sc + '">' + spAmt(Math.abs(rem)) + '</div></div>';
+      html += '<div class="sp-blk">' + spLine(rem >= 0 ? 'پس‌انداز این ماه' : 'کسری این ماه', spPct(Math.min(999, pct)), sc) + spTube(Math.min(100, pct), sc) +
+        '<div class="sp-v sp-right ' + sc + '">' + spAmt(Math.abs(rem)) + '</div>' +
+        /* ۱.۳.۸۲: روشن شود این عدد موجودی کارت نیست */
+        '<div class="sp-ov-formula">درآمد این ماه − خرج این ماه</div></div>';
       var incUn = Math.max(0, D.inc - D.incPaid), expUn = Math.max(0, D.expUnpaid);
       var sub = [];
       if (incUn > 0) sub.push('دریافت‌نشده ' + spAmt(incUn));
@@ -28387,9 +28528,10 @@ async function openPdfPrintWindow(){
         btn.textContent = 'تأیید';
         body.innerHTML = '';
         var grid = document.createElement('div');
-        grid.className = 'sp-pick-grid';
+        /* ۱.۳.۸۲: همان کاشی‌های رنگیِ آیکون‌دارِ پنجرهٔ دستهٔ ویرایش ردیف */
+        grid.className = 'sp-pick-grid sms-cat-grid hk-cat-colored hk-sp-tiles';
         var paint = function () {
-          grid.querySelectorAll('.sp-pick[data-id]').forEach(function (b) {
+          grid.querySelectorAll('[data-id]').forEach(function (b) {
             var id = b.getAttribute('data-id');
             b.classList.toggle('on', id ? sel.indexOf(id) >= 0 : !sel.length);
           });
@@ -28397,9 +28539,11 @@ async function openPdfPrintWindow(){
         var addBtn = function (cat) {
           var b = document.createElement('button');
           b.type = 'button';
-          b.className = 'sp-pick';
+          b.className = 'sms-cat sp-pick-t';
           b.setAttribute('data-id', cat.id);
-          b.textContent = cat.label;
+          b.style.setProperty('--cc', cat.id ? hkCatColor(cat.id) : '#8e8e93');
+          b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (cat.id ? (HK_CAT_ICONS[cat.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span></span>';
+          b.querySelector('span').textContent = cat.label;
           /* ۱.۳.۴۸: × کوچک گوشهٔ هر دسته برای حذف (با تأیید) */
           if (cat.id) {
             var x = document.createElement('span');
@@ -28426,9 +28570,9 @@ async function openPdfPrintWindow(){
         /* باکس آخر: «+» برای ساختن دستهٔ دلخواه */
         var plus = document.createElement('button');
         plus.type = 'button';
-        plus.className = 'sp-pick sp-pick-add';
+        plus.className = 'sms-cat sp-pick-t sp-pick-tadd';
         plus.setAttribute('aria-label', 'دستهٔ جدید');
-        plus.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+        plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
         plus.onclick = function () {
           var wrap = document.createElement('div');
           wrap.className = 'sp-pick-new';
@@ -28449,8 +28593,8 @@ async function openPdfPrintWindow(){
             wrap.remove();
             grid.insertBefore(addBtn(cat), plus);
             /* دکمهٔ جدید قبل از «نامشخص» و «+» قرار بگیرد */
-            var unk = grid.querySelector('.sp-pick[data-id=""]');
-            var nb = grid.querySelector('.sp-pick[data-id="' + cat.id + '"]');
+            var unk = grid.querySelector('[data-id=""]');
+            var nb = grid.querySelector('[data-id="' + cat.id + '"]');
             if (unk && nb) grid.insertBefore(nb, unk);
             plus.style.display = '';
             paint();
@@ -29385,19 +29529,19 @@ async function openPdfPrintWindow(){
         setTimeout(function () { try { ni.focus(); } catch (eF) {} }, 80);
       };
       /* ۱.۳.۵۰: دسته (فقط مخارج) نیمهٔ چپ همان ردیف حساب */
-      st.cat = '';
-      if (!isInc && !fromPlan) {
-        try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids[0]) st.cat = c0.ids[0]; } catch (eC0) {}
+      st.cat = row.p2p ? 'p2p' : '';
+      if (!fromPlan) {
+        if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids[0]) st.cat = c0.ids[0]; } catch (eC0) {} }
         st.cat0 = st.cat;
         var fC = field('دسته');
         var catB = document.createElement('button'); catB.type = 'button'; catB.className = 'hk-re-in hk-re-sel';
-        var catTxt = function () { var c = st.cat && HKCategorizer.byId[st.cat]; catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
+        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (st.cat && HKCategorizer.byId[st.cat]); catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
           var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
-          hkCatPickSheet(HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }), st.cat, function (v) { st.cat = v; catTxt(); });
+          hkCatPickSheet((isInc ? [] : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); });
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';
@@ -29524,7 +29668,9 @@ async function openPdfPrintWindow(){
           row.amount = parseAmount(amt.value) || 0;
           row.desc = ds.value || '';
         }
-        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && String(row.desc || '').trim()) HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); } catch (eL) {}
+        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); } catch (eL) {}
+        /* ۱.۳.۸۲: جیب به جیب روی خود ردیف ذخیره می‌شود */
+        if (!fromPlan) { if (st.cat === 'p2p') { row.p2p = true; delete row.p2pNo; } else if (row.p2p) { delete row.p2p; row.p2pNo = true; } }
         row.status = st.status;
         row.account = st.account;
         /* ۱.۳.۴۸: معمولی/پروژه */
@@ -30884,6 +31030,7 @@ container.innerHTML = '';
         const tdAmt = document.createElement('td');
         const amt = document.createElement('input');
         amt.className = 'pd-amt ' + ((row.status || 'paid') === 'paid' ? 'status-paid' : 'status-unpaid') + (isFilledVal(row.amount) ? ' pd-filled' : '');
+        if (row.p2p) { tr.classList.add('hk-p2p-row'); tdAmt.classList.add('hk-p2p-td'); tdAmt.title = 'جیب به جیب — در جمع حساب نشده'; }
         amt.inputMode = 'numeric';
         try { amt.setAttribute('inputmode', 'numeric'); amt.setAttribute('enterkeyhint', 'done'); } catch (eAK) {}
         amt.pattern = '[0-9]*';
@@ -35696,6 +35843,8 @@ function confirmSmsEntry() {
     })();
     /* ===== ۱.۳.۴۷: دسته‌ها زیر «بابت چی بود؟» به‌صورت آیکون (۲ یا ۳ ردیف)؛ انتخاب دسته = یاد گرفتن همین شرح در آن دسته ===== */
     var HK_CAT_ICONS = {
+      /* ۱.۳.۸۲: جیب به جیب — دو جیب و فلش رفت‌وبرگشت */
+      p2p: '<path d="M3.5 6.5h7v7a3.5 3.5 0 0 1-7 0z"/><path d="M13.5 10.5h7v7a3.5 3.5 0 0 1-7 0z"/><path d="M8 3.5h7.5l-2-2M16 20.5H8.5l2 2"/>',
       food: '<path d="M7 3v7a2 2 0 0 0 2 2v9"/><path d="M5 3v5M11 3v5"/><path d="M17 3c-1.7 0-3 2.2-3 5.5S15.3 13 17 13v8"/>',
       transport: '<rect x="3" y="11" width="18" height="6" rx="2"/><path d="M6 11l2-5h8l2 5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>',
       bills: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
@@ -35748,7 +35897,7 @@ function confirmSmsEntry() {
     /* ۱.۳.۷۶: رنگ هر دسته (آیکون‌های رنگی، یکسان در باکس پیامک و ویرایش ردیف) */
     var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', housing: '#bf5af2', clothing: '#ff6ba8', health: '#ff453a', care: '#30d5c8', home: '#c78b5a',
       education: '#7c7cff', fun: '#9ee858', gift: '#ff6ba8', debt: '#8e8e93', tech: '#64d2ff',
-      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#4f9dff', in_bonus: '#e6b12c', in_gift: '#ff6ba8', in_sale: '#ff9f0a', in_profit: '#30d5c8' };
+      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#4f9dff', in_bonus: '#e6b12c', in_gift: '#ff6ba8', in_sale: '#ff9f0a', in_profit: '#30d5c8', p2p: '#64d2ff' };
     function hkCatColor(id) { return HK_CAT_COLORS[id] || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
     function hkCatPickSheet(cats, cur, onPick) {
@@ -35764,8 +35913,10 @@ function confirmSmsEntry() {
       cats.concat([{ id: '', label: 'نامشخص' }]).forEach(function (c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
         b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
-        b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
-        b.onclick = function () { close(); onPick(c.id); };
+        b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>' +
+          (c.id === 'p2p' ? '<small class="hk-p2p-sub">نه خرج، نه درآمد</small><em class="hk-p2p-info" aria-label="توضیح">ⓘ</em>' : '');
+        if (c.id === 'p2p') { b.classList.add('hk-p2p-cat'); var _inf = b.querySelector('.hk-p2p-info'); if (_inf) _inf.onclick = function (e) { e.stopPropagation(); hkP2PIntro(true); }; }
+        b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
         gg.appendChild(b);
       });
       bx.appendChild(gg); ov.appendChild(bx);
@@ -35781,6 +35932,7 @@ function confirmSmsEntry() {
       var cats = [];
       if (parsed.type === 'income') cats = HK_INCOME_CATS.slice();
       else { try { cats = HKCategorizer.categories.filter(function (c) { return c && c.id && (HK_INSTALLMENTS_ON || c.id !== 'debt'); }); } catch (e) { return; } }
+      cats = cats.concat([HK_P2P_CAT]);
       if (!cats.length) return;
       /* ۱.۳.۴۹: فقط ۵ دستهٔ هوشمند در یک ردیف (بی اسکرول) + «بیشتر…»؛ زدن هر دسته = ثبت همان لحظه (یک کلیک).
          ترتیب: دستهٔ حدس‌زده از شرح/متن پیامک، بعد پرکاربردترین‌ها، بعد ترتیب پیش‌فرض */
@@ -35840,6 +35992,16 @@ function confirmSmsEntry() {
         var _c = confirmSmsEntry;
         var wc = function () {
           var cat = window._hkSmsCat, d = document.getElementById('smsConfirmDesc');
+          /* ۱.۳.۸۲: جیب به جیب: ردیف تازه علامت می‌خورد (در جمع‌ها حساب نمی‌شود)؛ دسته‌بندی شرح یاد گرفته نمی‌شود */
+          if (cat === 'p2p') {
+            var _t0 = Date.now(), _amt0 = 0; try { _amt0 = parseAmount(document.getElementById('smsConfirmAmount').value) || 0; } catch (eA0) {}
+            var _res0 = _c.apply(this, arguments);
+            try {
+              var mdl0 = document.getElementById('smsConfirmModal');
+              if (!(mdl0 && mdl0.classList.contains('open'))) { hkP2PMarkRecent(_t0, _amt0); window._hkSmsCat = ''; }
+            } catch (eP0) {}
+            return _res0;
+          }
           var icat = HK_INCOME_CATS.find(function (c) { return c.id === cat; });
           var lab = icat ? icat.label : (cat && HKCategorizer.byId[cat] ? HKCategorizer.byId[cat].label : '');
           if (cat && d && !String(d.value || '').trim()) d.value = lab;
@@ -39828,7 +39990,7 @@ if (item.type === 'recurring') {
       ['income', 'expense'].forEach(function (tab) {
         ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
           (sec.rows || []).forEach(function (r) {
-            var a = Number(r && r.amount) || 0; if (!a || r.deletedAt) return;
+            var a = Number(r && r.amount) || 0; if (!a || r.deletedAt || r.p2p) return;
             var paid = (r.status || 'paid') === 'paid'; D.n++;
             if (tab === 'income') {
               D.inc += a; if (!paid) D.incU += a;
@@ -45872,6 +46034,7 @@ function openProjectRowPicker(secId) {
       (periodData[tab].sections || []).forEach(sec => {
         let paid = 0, unpaid = 0;
         (sec.rows || []).forEach(r => {
+          if (r && r.p2p) return;
           const a = Number(r.amount) || 0;
           if (r.status === 'paid') paid += a; else unpaid += a;
         });
