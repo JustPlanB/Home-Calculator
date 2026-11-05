@@ -2540,9 +2540,12 @@ final class HkWidgetDraw {
 
   private static int muted(Data d){ return d.light?Color.parseColor("#6e6e76"):Color.parseColor("#98989f"); }
   private static int text(Data d){ return d.light?Color.parseColor("#1c1c1e"):Color.WHITE; }
+  /* ۱.۳.۸۳: رنگ‌های ثابت نرم‌افزار (CLAUDE.md): درآمد ‎#9ee858 / روشن ‎#17834a، مخارج ‎#ff6b4a / روشن ‎#dc2626 */
+  static int incC(boolean light){ return light?0xFF17834A:0xFF9EE858; }
+  static int expC(boolean light){ return light?0xFFDC2626:0xFFFF6B4A; }
   private static int balColor(Data d){
     if(d.mask) return text(d);
-    return d.neg?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858"));
+    return d.neg?expC(d.light):incC(d.light);
   }
   private static Paint paint(Typeface tf, float size, int color, Paint.Align al){
     Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.SUBPIXEL_TEXT_FLAG);
@@ -2578,7 +2581,7 @@ final class HkWidgetDraw {
     if(d.locked) L.add(new Line(false,false,REG,0.95f,0.12f,"برای دیدن مبالغ، نرم‌افزار را باز کنید",text(d)));
     else if(d.hidden) L.add(new Line(false,true,BOLD,1.7f,0.12f,"••••••",text(d)));
     else if(d.none) L.add(new Line(false,false,REG,1.05f,0.12f,"هنوز خرجی نداشتی",text(d)));
-    else L.add(new Line(false,true,BOLD,1.7f,0.12f,d.today,Color.parseColor("#ff6b4a")));
+    else L.add(new Line(false,true,BOLD,1.7f,0.12f,d.today,expC(d.light)));
     float units=0, gaps=0;
     for(int i=0;i<L.size();i++){ units+=L.get(i).r*L.get(i).box(); if(i>0) gaps+=L.get(i).gap; }
     float u=ah/(units+gaps), umax=19*k, extra=0;
@@ -2659,7 +2662,7 @@ final class HkWidgetDraw {
       Paint lpn=paint(tot?BOLD:REG,ls,tot?text(d):muted(d),Paint.Align.RIGHT);
       cv.drawText(r[0], W-padX, y+NUM_A*u, lpn);
       String val=d.mask?"••••••":r[1];
-      int col=d.mask?text(d):("1".equals(r[2])?Color.parseColor("#ff6b4a"):(d.light?Color.parseColor("#3f9a5c"):Color.parseColor("#9ee858")));
+      int col=d.mask?text(d):("1".equals(r[2])?expC(d.light):incC(d.light));
       Paint vp=paint(BOLD,fit(BOLD,u*rowR,val,aw*0.52f),col,Paint.Align.LEFT);
       cv.drawText(val, padX, y+NUM_A*u, vp);
       /* نقطه(های) رنگ پروژه درست جلوی عدد موجودی (مثل موجودی آنی نرم‌افزار) */
@@ -2675,7 +2678,7 @@ final class HkWidgetDraw {
     y+=gap*u+extra;
     cv.drawText("خرج امروز", W-padX, y+NUM_A*u, paint(REG,fit(REG,u,"خرج امروز",aw*0.45f),muted(d),Paint.Align.RIGHT));
     String tv=d.mask?"••••••":(d.none?"۰":d.today);
-    cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.mask?text(d):Color.parseColor("#ff6b4a"),Paint.Align.LEFT));
+    cv.drawText(tv, padX, y+NUM_A*u, paint(BOLD,fit(BOLD,u,tv,aw*0.52f),d.mask?text(d):expC(d.light),Paint.Align.LEFT));
     return bm;
   }
 
@@ -2684,7 +2687,16 @@ final class HkWidgetDraw {
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    /* سمت چپ فقط دو نقطهٔ کوچک نشانگر صفحه (اسکرول بی‌پایان با کشیدن عمودی) */
+    /* ۱.۳.۸۳: هر صفحه یک کارت مات کامل (پس‌زمینه و قاب خودش) تا در پشته، کارت پشتی از زیرش دیده نشود */
+    {
+      float rr=Math.min(18*k, H*0.32f), sw=Math.max(1f, k);
+      Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG); bg.setColor(d.light?0xFFFFFFFF:0xFF1B1B1B);
+      android.graphics.RectF rc=new android.graphics.RectF(sw/2, sw/2, W-sw/2, H-sw/2);
+      cv.drawRoundRect(rc, rr, rr, bg);
+      Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(sw); st.setColor(d.light?0x1A000000:0x2EFFFFFF);
+      cv.drawRoundRect(rc, rr, rr, st);
+    }
+    /* سمت چپ دو نقطهٔ کوچک نشانگر صفحه */
     float btnW=16*k;
     float padX=14*k, padY=Math.max(5*k, H*0.1f), ah=H-2*padY, aw=W-2*padX-btnW;
     String label=page==0?"موجودی":"خرج امروز";
@@ -2693,7 +2705,7 @@ final class HkWidgetDraw {
     else if(d.locked){ val="نرم‌افزار را باز کنید"; num=false; vf=REG; vr=1.1f; }
     else if(d.hidden){ val="••••••"; }
     else if(d.none){ val="هنوز خرجی نداشتی"; num=false; vf=REG; vr=1.1f; }
-    else{ val=d.today; vc=Color.parseColor("#ff6b4a"); }
+    else{ val=d.today; vc=expC(d.light); }
     float b1=TXT_A+TXT_D, b2=num?(NUM_A+NUM_D):(TXT_A+TXT_D), gap=0.1f;
     float u=ah/(b1+vr*b2+gap);
     float s=fit(REG,u,label,aw);
@@ -2870,7 +2882,8 @@ public class HkWidgetSmallProvider extends AppWidgetProvider {
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_small);
-      v.setInt(R.id.hk_ws_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      /* ۱.۳.۸۳: پس‌زمینه را خود کارت‌های پشته دارند؛ ریشه شفاف */
+      v.setInt(R.id.hk_ws_root,"setBackgroundColor", 0);
       Intent svc=new Intent(ctx, HkWidgetListService.class);
       svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));
@@ -3006,7 +3019,7 @@ final class HkWidgetTxDraw {
   static int text(boolean light){ return light ? 0xFF1C1C1E : 0xFFF2F2F7; }
   static int muted(boolean light){ return light ? 0xFF6E6E76 : 0xFF98989F; }
   static int line(boolean light){ return light ? 0x1F000000 : 0x24FFFFFF; }
-  static int amt(boolean inc, boolean light){ return inc ? (light ? 0xFF17834A : 0xFF9EE858) : (light ? 0xFFD93A1E : 0xFFFF6B4A); }
+  static int amt(boolean inc, boolean light){ return inc ? HkWidgetDraw.incC(light) : HkWidgetDraw.expC(light); }
   static Paint paint(Typeface tf, float size, int color, Paint.Align al){
     Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.SUBPIXEL_TEXT_FLAG);
     p.setTypeface(tf); p.setTextSize(size); p.setColor(color); p.setTextAlign(al);
@@ -3200,8 +3213,8 @@ public class HkWidgetTxConfig extends Activity {
     t.setGravity(Gravity.CENTER);
     t.setPadding(0, 0, 0, (int)(14*dp));
     root.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-    root.addView(btn("مخارج", "exp", light ? 0xFFC62D22 : 0xFFFF7A6B));
-    root.addView(btn("درآمدها", "inc", light ? 0xFF1E8E4A : 0xFF6FD08C));
+    root.addView(btn("مخارج", "exp", HkWidgetDraw.expC(light)));
+    root.addView(btn("درآمدها", "inc", HkWidgetDraw.incC(light)));
     setContentView(root);
   }
   View btn(String label, final String type, int color){
@@ -3859,7 +3872,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
     android:id="@+id/hk_ws_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/hk_widget_bg">
+    android:background="@android:color/transparent">
     <StackView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
         android:loopViews="true" android:animateLayoutChanges="false"/>
     <ImageView android:id="@+id/hk_ws_eye" android:layout_width="28dp" android:layout_height="28dp"

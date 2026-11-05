@@ -11127,6 +11127,13 @@ html[data-theme="light"] {
     /* ۱.۳.۴۷: باکس ثبت تراکنش */
     #smsConfirmTitle { text-align: center !important; font-weight: 700; padding: 9px 10px; }
     .sms-ro-date { font-weight: 700 !important; color: var(--text) !important; font-size: var(--hk-fs-body) !important; margin-top: 4px !important; }
+    /* ۱.۳.۸۳: ثبت تراکنش: مبلغ بزرگ‌تر، تاریخ و ساعت کمی کوچک‌تر؛ پس‌زمینهٔ «بابت چی بود؟» آرام کم‌نور/پرنور (هم‌ریتم چهار گزینهٔ دور موجودی) */
+    #smsConfirmMeta .sms-ro-amt { font-size: calc(var(--hk-fs-figure) * 1.3) !important; }
+    #smsConfirmMeta .sms-ro-amt small { font-size: var(--hk-fs-label) !important; }
+    #smsConfirmMeta .sms-ro-date { font-size: var(--hk-fs-small) !important; }
+    #smsConfirmDesc { animation: hkDescBreath 5.2s ease-in-out infinite; }
+    @keyframes hkDescBreath { 0%, 100% { background-color: var(--input-bg, #2c2c2e); } 50% { background-color: color-mix(in srgb, #08b5f5 16%, var(--input-bg, #2c2c2e)); } }
+    @media (prefers-reduced-motion: reduce) { #smsConfirmDesc { animation: none; } }
     .sms-newacc { margin: -2px 0 10px; }
     .sms-newacc-msg { color: #ffc531; font-size: var(--hk-fs-small); font-weight: 700; margin-bottom: 6px; }
     html[data-theme="light"] .sms-newacc-msg { color: #a16207; }
@@ -11248,8 +11255,17 @@ html[data-theme="light"] {
     /* ۱.۳.۸۲: کاشی‌های آیکون‌دار در پنجرهٔ دسته‌های باکس هوشمند */
     .sp-pick-grid.hk-sp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 4px; padding: 6px 0 4px; margin: 0; }
     .sp-pick-t { position: relative; }
-    .hk-sp-tiles .sp-pick-t .sp-pick-x { top: -4px; left: auto; right: 50%; margin-right: -27px; }
-    .hk-cat-colored .sp-pick-tadd i { color: #08b5f5; background: none; border: 1.5px dashed rgba(8,181,245,0.6); box-shadow: none; }
+    .hk-sp-tiles .sp-pick-t .sp-pick-x { top: -7px; left: auto; right: 50%; margin-right: -30px; display: none; z-index: 3; }
+    /* ۱.۳.۸۳: حذف دسته = نگه‌داشتن انگشت → لرزش + × قرمز (مثل صفحهٔ اصلی گوشی) */
+    .hk-sp-tiles.hk-jiggle .sp-pick-t .sp-pick-x { display: block; }
+    .hk-sp-tiles.hk-jiggle .sp-pick-t:not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation: hkCatJiggle 0.24s ease-in-out infinite alternate; }
+    .hk-sp-tiles.hk-jiggle .sp-pick-t:nth-child(2n):not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation-delay: -0.12s; animation-duration: 0.27s; }
+    .hk-sp-tiles.hk-jiggle .sp-pick-t[data-id=""], .hk-sp-tiles.hk-jiggle .sp-pick-t[data-id="p2p"], .hk-sp-tiles.hk-jiggle .sp-pick-tadd { opacity: 0.45; }
+    @keyframes hkCatJiggle { from { transform: rotate(-2.6deg); } to { transform: rotate(2.6deg); } }
+    @media (prefers-reduced-motion: reduce) { .hk-sp-tiles.hk-jiggle .sp-pick-t i { animation: none !important; } }
+    /* «دستهٔ جدید» با همان قاب سایه‌دار بقیهٔ آیکون‌ها */
+    .hk-cat-colored .sp-pick-tadd i { color: #08b5f5; }
+    .sp-cat-chip.p2p { border-style: dashed; border-color: #c9d6df; color: #c9d6df; }
     .sp-pick-x { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg3, #2c2c2e); color: rgba(255,255,255,0.75); font-size: var(--hk-fs-label); line-height: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: pointer; }
     html[data-theme="light"] .sp-pick-x { background: #e5e5ea; color: #3a3a3c; }
     /* ۱.۳.۴۸: پنجرهٔ پروفایل */
@@ -11293,6 +11309,8 @@ html[data-theme="light"] {
     .sms-cat-row .sms-cat i { width: 36px; height: 36px; border-radius: 11px; }
     .sms-cat-row .sms-cat svg { width: 18px; height: 18px; }
     .sms-cat-row .sms-cat span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    /* ۱.۳.۸۳: اسم دسته هیچ‌جا «…» نمی‌خورد؛ اگر جا نشد دو خطی */
+    .sms-cat-row .sms-cat span, .sms-cat-grid .sms-cat span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.2; word-break: normal; }
     .sms-cat-more-box { max-width: 360px; width: min(360px, 92vw); padding: 14px; }
     .sms-cat-more-t { font-weight: 700; margin-bottom: 12px; text-align: right; }
     /* ۱.۳.۴۹: عنوان «ثبت برداشت/واریز» و کادر زیرش یک باکس، با یک خط باریک جدا */
@@ -11687,14 +11705,22 @@ html[data-theme="light"] {
     #panel-home #homeDock .hk-dock-c[data-k="trash"] svg { stroke: var(--hk-danger, #ff453a); }
     #panel-home #homeDock .hk-dock-c[data-k="trash"] .hk-lid { transform-box: fill-box; transform-origin: 50% 100%; animation: trashLidRock 15s ease-in-out infinite; }
     /* ۱.۳.۸۲: جیب به جیب */
+    /* ۱.۳.۸۳: جیب به جیب: قاب نقطه‌چین نقره‌ای (با همهٔ دسته‌ها فرق دارد)؛ ⓘ گوشهٔ بالا-چپ آیکون، نیمی بیرون */
     .hk-p2p-cat { position: relative; }
-    .hk-p2p-cat .hk-p2p-sub { display: block; font-size: var(--hk-fs-caption, 11px); color: var(--muted, #98989f); font-weight: 400; margin-top: 1px; line-height: 1.3; }
-    .hk-p2p-cat .hk-p2p-info { position: absolute; top: 2px; left: 4px; font-style: normal; font-size: 13px; color: #64d2ff; padding: 2px 4px; line-height: 1; }
-    .hk-p2p-ic { display: inline-flex; width: 26px; height: 26px; color: #64d2ff; }
+    .hk-p2p-cat i { position: relative; overflow: visible !important; }
+    .hk-cat-colored .sms-cat.hk-p2p-cat i { border: 1.5px dashed color-mix(in srgb, var(--cc, #c9d6df) 70%, transparent); }
+    .hk-cat-colored .sms-cat.hk-p2p-cat.on i { border-style: solid; }
+    .hk-p2p-cat > span { white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; max-width: none !important; font-size: 0.92em; letter-spacing: -0.2px; }
+    .modal-box.hk-pf.hk-p2p-box { padding: 18px 18px 14px !important; }
+    .hk-p2p-box .hk-rax-acts { padding: 14px 0 0 !important; }
+    .hk-p2p-info { position: absolute; top: -7px; left: -7px; width: 17px; height: 17px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+      font-style: normal; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 11px; line-height: 1; color: var(--bg, #1c1c1e); background: #c9d6df; border: 2px solid var(--bg2, #1c1c1e); cursor: pointer; z-index: 2; }
+    html[data-theme="light"] .hk-p2p-info { color: #fff; background: #8a9aa6; border-color: #fff; }
+    .hk-p2p-ic { display: inline-flex; width: 26px; height: 26px; color: #c9d6df; }
     .hk-p2p-ic svg { width: 26px; height: 26px; }
     tr.hk-p2p-row .pd-amt { opacity: 0.55; }
     td.hk-p2p-td { position: relative; }
-    td.hk-p2p-td::after { content: "⇄"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #64d2ff; opacity: 0.9; pointer-events: none; }
+    td.hk-p2p-td::after { content: "⇄"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #c9d6df; opacity: 0.9; pointer-events: none; }
     /* ۱.۳.۷۹: عرض به اندازهٔ طولانی‌ترین گزینه («ثبت تکی و گروهی پیامک‌ها»)؛ قلم یک درجه کوچک‌تر؛ همه تک‌خطی */
     .hk-dock-pop { width: max-content; max-width: calc(100vw - 16px); }
     .hk-dock-pi { font-size: var(--hk-fs-small); white-space: nowrap; gap: 9px; }
@@ -12955,6 +12981,15 @@ button, input, select, textarea { font-family: inherit; }
     var HK_DEL_X = '×';
     /* ۱.۳.۸۲: دستهٔ «جیب به جیب» — هم در مخارج هم در درآمدها؛ ردیفش در هیچ جمع درآمد/مخارج نمی‌آید ولی موجودی کارت‌ها را تغییر می‌دهد */
     var HK_P2P_CAT = { id: 'p2p', label: 'جیب به جیب' };
+    /* ۱.۳.۸۳: کاشی «جیب به جیب» همه‌جا: کلاس + ⓘ گوشه (نیمی داخل، نیمی بیرون کاشی؛ جزو آیکون نیست) */
+    function hkP2PDecorate(b) {
+      if (!b || b.querySelector('.hk-p2p-info')) return b;
+      b.classList.add('hk-p2p-cat');
+      var inf = document.createElement('em'); inf.className = 'hk-p2p-info'; inf.setAttribute('role', 'button'); inf.setAttribute('aria-label', 'توضیح جیب به جیب'); inf.textContent = 'i';
+      inf.addEventListener('click', function (ev) { ev.stopPropagation(); ev.preventDefault(); try { hkP2PIntro(true); } catch (e) {} });
+      (b.querySelector('i') || b).appendChild(inf);
+      return b;
+    }
     try { var _cp = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform(); if (_cp === 'android') document.documentElement.classList.add('cap-android'); if (_cp === 'ios') { document.documentElement.classList.add('cap-ios'); var _vm = document.querySelector('meta[name="viewport"]'); if (_vm && _vm.content.indexOf('viewport-fit') < 0) _vm.content += ', viewport-fit=cover'; } } catch (eCp) {}
     /* —— فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر) —— */
     (function () {
@@ -25195,7 +25230,7 @@ async function openPdfPrintWindow(){
       var old = document.getElementById('hkP2PIntro'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkP2PIntro'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100700;display:flex;align-items:center;justify-content:center;';
-      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf" style="padding:16px;max-width:340px;">' +
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:340px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب</div>' +
         '<div style="line-height:1.9;font-size:var(--hk-fs-body);color:var(--muted,#98989f);">این دسته برای پولی است که فقط بین کارت‌های خودتان (یا خانواده) جابه‌جا می‌شود. در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی هر کارت درست می‌ماند. برای پرداخت به دیگران از این دسته استفاده نکنید.</div>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-ok">متوجه شدم</button></div></div>';
@@ -25274,10 +25309,10 @@ async function openPdfPrintWindow(){
       var ov = document.createElement('div'); ov.id = 'hkP2PAsk'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100690;display:flex;align-items:center;justify-content:center;';
       var tm = function (r) { var t = String(r.time || '').trim(); return t ? ' ساعت ' + toPersianDigits(t) : ''; };
-      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf" style="padding:16px;max-width:350px;">' +
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:350px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +
         '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
-        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#64d2ff;">همیشه برای این دو کارت</label>' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#c9d6df;">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
       ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت همین مبلغ از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
       var done = function (yes) {
@@ -26291,11 +26326,11 @@ async function openPdfPrintWindow(){
         { id: 'food', label: 'خوراکی', kw: ['پیتزا', 'رستوران', 'فست فود', 'فستفود', 'ساندویچ', 'همبرگر', 'برگر', 'کباب', 'جوجه', 'غذا', 'نهار', 'ناهار', 'شام', 'صبحانه', 'کافه', 'قهوه', 'چای', 'شیرینی', 'کیک', 'بستنی', 'میوه', 'سبزی', 'نان', 'نانوایی', 'گوشت', 'مرغ', 'ماهی', 'برنج', 'روغن', 'لبنیات', 'شیر', 'ماست', 'پنیر', 'تخم مرغ', 'سوپرمارکت', 'سوپر مارکت', 'هایپر', 'افق کوروش', 'میوه فروشی', 'قصابی', 'خواربار', 'تنقلات', 'آجیل', 'اسنپ فود', 'اسنپفود', 'دلیوری', 'خوراکی', 'خرید روزانه'] },
         { id: 'transport', label: 'حمل‌ونقل', kw: ['بنزین', 'سوخت', 'گازوئیل', 'cng', 'اسنپ', 'تپسی', 'تاکسی', 'آژانس', 'مترو', 'اتوبوس', 'بلیت', 'بلیط', 'قطار', 'هواپیما', 'پرواز', 'عوارض', 'پارکینگ', 'کارواش', 'تعمیر ماشین', 'تعمیرگاه', 'مکانیک', 'لاستیک', 'روغن موتور', 'بیمه بدنه', 'بیمه ثالث', 'جریمه', 'خودرو', 'ماشین', 'موتور'] },
         { id: 'bills', label: 'قبوض', kw: ['قبض', 'برق', 'آب', 'گاز', 'تلفن', 'اینترنت', 'شارژ', 'بسته اینترنت', 'سیم کارت', 'ایرانسل', 'همراه اول', 'رایتل', 'مخابرات', 'عوارض شهرداری', 'شارژ ساختمان', 'آبونمان'] },
-        { id: 'housing', label: 'مسکن', kw: ['اجاره', 'رهن', 'ودیعه', 'تعمیرات', 'لوله کش', 'برقکار', 'نقاشی ساختمان', 'بنگاه', 'کمیسیون'] },
         { id: 'clothing', label: 'پوشاک', kw: ['کفش', 'لباس', 'پیراهن', 'شلوار', 'مانتو', 'کت', 'کاپشن', 'جوراب', 'کیف', 'پوشاک', 'تیشرت', 'دامن', 'روسری', 'شال', 'کمربند'] },
-        { id: 'health', label: 'سلامت', kw: ['داروخانه', 'دارو', 'دکتر', 'پزشک', 'ویزیت', 'دندانپزشک', 'دندان', 'بیمارستان', 'آزمایش', 'سونوگرافی', 'عینک', 'بیمه تکمیلی', 'فیزیوتراپی', 'درمانگاه', 'کلینیک', 'آمپول'] },
-        { id: 'care', label: 'آرایش و بهداشت', kw: ['آرایشگاه', 'آرایشی', 'بهداشتی', 'شامپو', 'عطر', 'ادکلن', 'کرم', 'اصلاح', 'سالن زیبایی', 'مو'] },
-        { id: 'home', label: 'لوازم خانه', kw: ['یخچال', 'لباسشویی', 'ظرفشویی', 'مبل', 'فرش', 'لوازم خانگی', 'ظروف', 'شوینده', 'دستمال', 'پودر', 'جاروبرقی', 'تلویزیون', 'لامپ'] },
+        /* ۱.۳.۸۳: «سلامت» و «آرایش و بهداشت» یکی شدند */
+        { id: 'health', label: 'سلامت و بهداشت', kw: ['آرایشگاه', 'آرایشی', 'بهداشتی', 'شامپو', 'عطر', 'ادکلن', 'کرم', 'اصلاح', 'سالن زیبایی', 'مو', 'داروخانه', 'دارو', 'دکتر', 'پزشک', 'ویزیت', 'دندانپزشک', 'دندان', 'بیمارستان', 'آزمایش', 'سونوگرافی', 'عینک', 'بیمه تکمیلی', 'فیزیوتراپی', 'درمانگاه', 'کلینیک', 'آمپول'] },
+        /* ۱.۳.۸۳: «مسکن» و «لوازم خانه» یکی شدند (نام «لوازم خانه»، آیکون خانه) */
+        { id: 'home', label: 'لوازم خانه', kw: ['اجاره', 'رهن', 'ودیعه', 'تعمیرات', 'لوله کش', 'برقکار', 'نقاشی ساختمان', 'بنگاه', 'کمیسیون', 'یخچال', 'لباسشویی', 'ظرفشویی', 'مبل', 'فرش', 'لوازم خانگی', 'ظروف', 'شوینده', 'دستمال', 'پودر', 'جاروبرقی', 'تلویزیون', 'لامپ'] },
         { id: 'education', label: 'آموزش', kw: ['شهریه', 'کلاس', 'کتاب', 'دانشگاه', 'مدرسه', 'آموزشگاه', 'دوره', 'لوازم التحریر', 'دفتر', 'کنکور'] },
         { id: 'fun', label: 'تفریح', kw: ['سینما', 'تئاتر', 'کنسرت', 'سفر', 'هتل', 'مسافرت', 'شهربازی', 'باشگاه', 'استخر', 'بازی', 'فیلیمو', 'نماوا', 'اشتراک', 'گردش', 'کافی نت'] },
         { id: 'gift', label: 'هدیه و کمک', kw: ['هدیه', 'کادو', 'عیدی', 'نذر', 'صدقه', 'خیریه', 'کمک به'] },
@@ -26304,6 +26339,9 @@ async function openPdfPrintWindow(){
       ];
       var BY_ID = {};
       CATS.forEach(function (c) { BY_ID[c.id] = c; });
+      /* ۱.۳.۸۳: شناسه‌های ادغام‌شده → دستهٔ تازه (دیکشنری یادگرفته، پنهان‌ها و آمار قبلی) */
+      var ALIAS = { housing: 'home', care: 'health' };
+      function al(id) { return ALIAS[id] || id; }
       var _dict = null;
       var _pending = {};
       function norm(s) {
@@ -26316,7 +26354,7 @@ async function openPdfPrintWindow(){
       }
       /* کلیدواژه‌ها هم نرمال شوند (مثلاً «آب» → «اب») */
       /* بانک گسترش‌یافتهٔ کلیدواژه‌ها (بدون تکرار) */
-      var EXTRA_KW = {"food": ["نانوایی سنگک", "بربری", "لواش", "تافتون", "کره", "خامه", "دوغ", "کشک", "عسل", "مربا", "شکر", "قند", "نمک", "ادویه", "زعفران", "حبوبات", "لوبیا", "عدس", "نخود", "ماکارونی", "رب", "کنسرو", "تن ماهی", "سوسیس", "کالباس", "همبرگر", "چیپس", "پفک", "نوشابه", "آبمیوه", "آب معدنی", "شیرینی فروشی", "قنادی", "کافی شاپ", "فلافل", "کبابی", "حلیم", "آش", "جگرکی", "طباخی", "پیتزا فروشی", "سوشی", "فست فود", "سبزیجات", "صیفی", "گوجه", "سیب زمینی", "پیاز", "خیار", "هندوانه", "پرتقال", "سیب", "موز", "خرما", "گردو", "پسته", "بادام", "تخمه", "کلوچه", "بیسکویت", "شکلات", "کیک", "ژله", "بستنی فروشی", "سوپر", "هایپرمارکت", "فروشگاه رفاه", "شهروند", "هایپر استار", "جانبو", "اکالا", "دیجی فرش", "اسنپ مارکت", "تپسی فود", "بوقلمون", "میگو", "گوشت قرمز", "گوساله", "گوسفند", "مرغ و تخم مرغ", "پنیر پیتزا", "نهار اداره"], "transport": ["کرایه", "تاکسی اینترنتی", "اسنپ باکس", "الوپیک", "پیک", "دوچرخه", "اسکوتر", "بلیط اتوبوس", "بلیط هواپیما", "بلیط قطار", "رجا", "فلای تودی", "علی بابا", "عوارض آزادراه", "طرح ترافیک", "پلاک", "معاینه فنی", "تعویض روغن", "فیلتر", "باتری ماشین", "لنت", "تعمیر موتور", "صافکاری", "نقاشی ماشین", "کارواش", "پمپ بنزین", "جایگاه سوخت", "گاز cng", "کارت سوخت", "مترو کارت", "شارژ کارت مترو", "قطار شهری", "بیمه خودرو", "خلافی"], "bills": ["آب و فاضلاب", "برق منطقه", "گاز شهری", "تلفن ثابت", "موبایل", "شارژ همراه", "بسته اینترنت", "اینترنت خانگی", "وای فای", "adsl", "فیبر نوری", "مبین نت", "شاتل", "های وب", "پارس آنلاین", "آسیاتک", "قبض آب", "قبض گاز", "قبض تلفن", "قبض موبایل", "مالیات", "عوارض نوسازی", "شارژ آپارتمان", "حق شارژ"], "housing": ["اجاره خانه", "اجاره بها", "پیش پرداخت اجاره", "ودیعه مسکن", "تعمیر لوله", "لوله کشی", "کابینت", "کاشی", "سرامیک", "گچ کاری", "بنایی", "نقاش", "کاغذ دیواری", "پرده", "ایزوگام", "آسانسور", "نگهبانی", "سرایداری", "بیمه آتش سوزی", "مصالح", "سیمان", "آجر", "در و پنجره"], "clothing": ["کتونی", "صندل", "دمپایی", "بوت", "پالتو", "سویشرت", "هودی", "بلوز", "تاپ", "ژاکت", "کراوات", "لباس زیر", "جین", "مایو", "چادر", "کیف پول", "ساعت مچی", "عینک آفتابی", "زیورآلات", "طلا", "نقره", "خیاطی", "خشکشویی", "اتوشویی"], "health": ["داروی", "قرص", "شربت", "واکسن", "رادیولوژی", "ام آر آی", "سی تی اسکن", "نوار قلب", "چشم پزشک", "اپتومتری", "لنز", "ارتودنسی", "جراحی", "بستری", "پرستار", "مشاوره", "روانشناس", "روانپزشک", "تغذیه", "مکمل", "ویتامین", "بیمه درمان", "فرانشیز", "آزمایشگاه", "سونو", "دندانساز"], "care": ["آرایشگر", "سلمانی", "پیرایش", "کوتاهی مو", "رنگ مو", "کراتین", "ناخن", "مانیکور", "پدیکور", "اپیلاسیون", "لیزر", "فیشیال", "ماسک", "ضد آفتاب", "لوسیون", "صابون", "خمیر دندان", "مسواک", "دئودورانت", "ژیلت", "تیغ", "نوار بهداشتی", "پوشک"], "home": ["مبلمان", "میز", "صندلی", "تخت", "کمد", "بخاری", "کولر", "پنکه", "اتو", "مایکروویو", "اجاق", "گاز رومیزی", "هود", "سماور", "کتری", "چای ساز", "قهوه ساز", "آبمیوه گیری", "مخلوط کن", "غذاساز", "جارو", "سطل", "ظرف", "قابلمه", "ماهیتابه", "بشقاب", "لیوان", "قاشق", "ملافه", "پتو", "بالشت", "حوله", "مایع ظرفشویی", "سفید کننده", "دستمال کاغذی", "کیسه زباله", "لامپ ال ای دی", "ابزار", "پیچ گوشتی"], "education": ["کتاب درسی", "کتابفروشی", "نوشت افزار", "خودکار", "مداد", "کیف مدرسه", "سرویس مدرسه", "کلاس زبان", "آموزشگاه زبان", "کلاس کنکور", "کلاس خصوصی", "معلم خصوصی", "دوره آنلاین", "کورس", "یودمی", "فرادرس", "مکتب خونه", "آزمون", "ثبت نام", "شهریه دانشگاه", "پایان نامه", "ترجمه", "تایپ"], "fun": ["کافه گردی", "رستوران گردی", "تفریحی", "پارک آبی", "بولینگ", "بیلیارد", "کارتینگ", "پینت بال", "اتاق فرار", "موزه", "بلیت کنسرت", "تئاتر شهر", "فیلم", "نتفلیکس", "اسپاتیفای", "یوتیوب پریمیوم", "بازی کامپیوتری", "پلی استیشن", "ایکس باکس", "گیفت کارت", "اقامتگاه", "ویلا", "کمپ", "تور", "بلیط تور", "کیش", "شمال", "مشهد", "ورزش", "بدنسازی", "یوگا", "شنا", "فوتبال", "سالن ورزشی"], "gift": ["هدیه عروسی", "کادوی تولد", "شیرینی عید", "گل فروشی", "دسته گل", "تاج گل", "کمک مالی", "قرض الحسنه", "زکات", "خمس", "فطریه", "کفاره", "نذری", "هیئت", "مسجد", "موسسه خیریه", "بهزیستی", "محک", "کمیته امداد"], "debt": ["اقساط وام", "قسط وام", "بازپرداخت", "لیزینگ", "کارت اعتباری", "بدهی کارت", "جریمه دیرکرد", "سود وام", "اصل وام", "چک برگشتی", "ضمانت"], "tech": ["تبلت", "آیپد", "آیفون", "سامسونگ", "شیائومی", "لوازم جانبی", "قاب گوشی", "گلس", "پاوربانک", "فلش", "هارد", "مموری", "کیبورد", "ماوس", "مانیتور", "پرینتر", "کارتریج", "مودم", "روتر", "اسپیکر", "ایرپاد", "ساعت هوشمند", "اپلیکیشن", "نرم افزار", "لایسنس", "آنتی ویروس", "vpn", "فیلترشکن", "هاست", "دامنه", "سرور", "اشتراک ابری", "گوگل وان", "آیکلود", "تعمیر موبایل", "تعمیر لپ تاپ"]};
+      var EXTRA_KW = {"food": ["نانوایی سنگک", "بربری", "لواش", "تافتون", "کره", "خامه", "دوغ", "کشک", "عسل", "مربا", "شکر", "قند", "نمک", "ادویه", "زعفران", "حبوبات", "لوبیا", "عدس", "نخود", "ماکارونی", "رب", "کنسرو", "تن ماهی", "سوسیس", "کالباس", "همبرگر", "چیپس", "پفک", "نوشابه", "آبمیوه", "آب معدنی", "شیرینی فروشی", "قنادی", "کافی شاپ", "فلافل", "کبابی", "حلیم", "آش", "جگرکی", "طباخی", "پیتزا فروشی", "سوشی", "فست فود", "سبزیجات", "صیفی", "گوجه", "سیب زمینی", "پیاز", "خیار", "هندوانه", "پرتقال", "سیب", "موز", "خرما", "گردو", "پسته", "بادام", "تخمه", "کلوچه", "بیسکویت", "شکلات", "کیک", "ژله", "بستنی فروشی", "سوپر", "هایپرمارکت", "فروشگاه رفاه", "شهروند", "هایپر استار", "جانبو", "اکالا", "دیجی فرش", "اسنپ مارکت", "تپسی فود", "بوقلمون", "میگو", "گوشت قرمز", "گوساله", "گوسفند", "مرغ و تخم مرغ", "پنیر پیتزا", "نهار اداره"], "transport": ["کرایه", "تاکسی اینترنتی", "اسنپ باکس", "الوپیک", "پیک", "دوچرخه", "اسکوتر", "بلیط اتوبوس", "بلیط هواپیما", "بلیط قطار", "رجا", "فلای تودی", "علی بابا", "عوارض آزادراه", "طرح ترافیک", "پلاک", "معاینه فنی", "تعویض روغن", "فیلتر", "باتری ماشین", "لنت", "تعمیر موتور", "صافکاری", "نقاشی ماشین", "کارواش", "پمپ بنزین", "جایگاه سوخت", "گاز cng", "کارت سوخت", "مترو کارت", "شارژ کارت مترو", "قطار شهری", "بیمه خودرو", "خلافی"], "bills": ["آب و فاضلاب", "برق منطقه", "گاز شهری", "تلفن ثابت", "موبایل", "شارژ همراه", "بسته اینترنت", "اینترنت خانگی", "وای فای", "adsl", "فیبر نوری", "مبین نت", "شاتل", "های وب", "پارس آنلاین", "آسیاتک", "قبض آب", "قبض گاز", "قبض تلفن", "قبض موبایل", "مالیات", "عوارض نوسازی", "شارژ آپارتمان", "حق شارژ"], "clothing": ["کتونی", "صندل", "دمپایی", "بوت", "پالتو", "سویشرت", "هودی", "بلوز", "تاپ", "ژاکت", "کراوات", "لباس زیر", "جین", "مایو", "چادر", "کیف پول", "ساعت مچی", "عینک آفتابی", "زیورآلات", "طلا", "نقره", "خیاطی", "خشکشویی", "اتوشویی"], "health": ["داروی", "قرص", "شربت", "واکسن", "رادیولوژی", "ام آر آی", "سی تی اسکن", "نوار قلب", "چشم پزشک", "اپتومتری", "لنز", "ارتودنسی", "جراحی", "بستری", "پرستار", "مشاوره", "روانشناس", "روانپزشک", "تغذیه", "مکمل", "ویتامین", "بیمه درمان", "فرانشیز", "آزمایشگاه", "سونو", "دندانساز", "آرایشگر", "سلمانی", "پیرایش", "کوتاهی مو", "رنگ مو", "کراتین", "ناخن", "مانیکور", "پدیکور", "اپیلاسیون", "لیزر", "فیشیال", "ماسک", "ضد آفتاب", "لوسیون", "صابون", "خمیر دندان", "مسواک", "دئودورانت", "ژیلت", "تیغ", "نوار بهداشتی", "پوشک"], "home": ["مبلمان", "میز", "صندلی", "تخت", "کمد", "بخاری", "کولر", "پنکه", "اتو", "مایکروویو", "اجاق", "گاز رومیزی", "هود", "سماور", "کتری", "چای ساز", "قهوه ساز", "آبمیوه گیری", "مخلوط کن", "غذاساز", "جارو", "سطل", "ظرف", "قابلمه", "ماهیتابه", "بشقاب", "لیوان", "قاشق", "ملافه", "پتو", "بالشت", "حوله", "مایع ظرفشویی", "سفید کننده", "دستمال کاغذی", "کیسه زباله", "لامپ ال ای دی", "ابزار", "پیچ گوشتی", "اجاره خانه", "اجاره بها", "پیش پرداخت اجاره", "ودیعه مسکن", "تعمیر لوله", "لوله کشی", "کابینت", "کاشی", "سرامیک", "گچ کاری", "بنایی", "نقاش", "کاغذ دیواری", "پرده", "ایزوگام", "آسانسور", "نگهبانی", "سرایداری", "بیمه آتش سوزی", "مصالح", "سیمان", "آجر", "در و پنجره"], "education": ["کتاب درسی", "کتابفروشی", "نوشت افزار", "خودکار", "مداد", "کیف مدرسه", "سرویس مدرسه", "کلاس زبان", "آموزشگاه زبان", "کلاس کنکور", "کلاس خصوصی", "معلم خصوصی", "دوره آنلاین", "کورس", "یودمی", "فرادرس", "مکتب خونه", "آزمون", "ثبت نام", "شهریه دانشگاه", "پایان نامه", "ترجمه", "تایپ"], "fun": ["کافه گردی", "رستوران گردی", "تفریحی", "پارک آبی", "بولینگ", "بیلیارد", "کارتینگ", "پینت بال", "اتاق فرار", "موزه", "بلیت کنسرت", "تئاتر شهر", "فیلم", "نتفلیکس", "اسپاتیفای", "یوتیوب پریمیوم", "بازی کامپیوتری", "پلی استیشن", "ایکس باکس", "گیفت کارت", "اقامتگاه", "ویلا", "کمپ", "تور", "بلیط تور", "کیش", "شمال", "مشهد", "ورزش", "بدنسازی", "یوگا", "شنا", "فوتبال", "سالن ورزشی"], "gift": ["هدیه عروسی", "کادوی تولد", "شیرینی عید", "گل فروشی", "دسته گل", "تاج گل", "کمک مالی", "قرض الحسنه", "زکات", "خمس", "فطریه", "کفاره", "نذری", "هیئت", "مسجد", "موسسه خیریه", "بهزیستی", "محک", "کمیته امداد"], "debt": ["اقساط وام", "قسط وام", "بازپرداخت", "لیزینگ", "کارت اعتباری", "بدهی کارت", "جریمه دیرکرد", "سود وام", "اصل وام", "چک برگشتی", "ضمانت"], "tech": ["تبلت", "آیپد", "آیفون", "سامسونگ", "شیائومی", "لوازم جانبی", "قاب گوشی", "گلس", "پاوربانک", "فلش", "هارد", "مموری", "کیبورد", "ماوس", "مانیتور", "پرینتر", "کارتریج", "مودم", "روتر", "اسپیکر", "ایرپاد", "ساعت هوشمند", "اپلیکیشن", "نرم افزار", "لایسنس", "آنتی ویروس", "vpn", "فیلترشکن", "هاست", "دامنه", "سرور", "اشتراک ابری", "گوگل وان", "آیکلود", "تعمیر موبایل", "تعمیر لپ تاپ"]};
       CATS.forEach(function (c) {
         var add = EXTRA_KW[c.id];
         if (add) add.forEach(function (w) { if (c.kw.indexOf(w) < 0) c.kw.push(w); });
@@ -26385,6 +26423,15 @@ async function openPdfPrintWindow(){
           if (o && typeof o === 'object') {
             _dict.phrases = (o.phrases && typeof o.phrases === 'object') ? o.phrases : {};
             _dict.words = (o.words && typeof o.words === 'object') ? o.words : {};
+            var _mig = false;
+            Object.keys(_dict.phrases).forEach(function (k) {
+              var p = _dict.phrases[k]; if (!p) return;
+              var cs = (Array.isArray(p.cs) && p.cs.length ? p.cs : [p.c]).map(function (x) { var y = al(x); if (y !== x) _mig = true; return y; });
+              cs = cs.filter(function (x, i) { return cs.indexOf(x) === i; });
+              p.cs = cs; p.c = cs[0];
+            });
+            Object.keys(_dict.words).forEach(function (k) { var w = _dict.words[k]; if (w && ALIAS[w.c]) { w.c = al(w.c); _mig = true; } });
+            if (_mig) setTimeout(saveDict, 0);
           }
         } catch (e) {}
         return _dict;
@@ -26413,6 +26460,7 @@ async function openPdfPrintWindow(){
       }
       /* نتیجهٔ یک یا چند دسته: {id (اولی), ids, label, source} */
       function mk(ids, source) {
+        ids = ids.map(al);
         ids = ids.filter(function (x, i) { return BY_ID[x] && ids.indexOf(x) === i; });
         if (!ids.length) return null;
         return { id: ids[0], ids: ids, label: ids.map(function (x) { return BY_ID[x].label; }).join('، '), source: source };
@@ -26442,7 +26490,7 @@ async function openPdfPrintWindow(){
       function learn(text, catIds) {
         var n = norm(text);
         if (!n) return;
-        var ids = (Array.isArray(catIds) ? catIds : [catIds]).filter(function (x) { return x && BY_ID[x]; });
+        var ids = (Array.isArray(catIds) ? catIds : [catIds]).map(al).filter(function (x) { return x && BY_ID[x]; });
         var d = loadDict();
         if (!ids.length) {
           delete d.phrases[n];
@@ -28428,12 +28476,15 @@ async function openPdfPrintWindow(){
       var ov = document.querySelector('.sp-cat-sheet');
       if (!ov) return false;
       try { ov.remove(); } catch (e) {}
+      if (ov._spDirty) { try { renderAll(); } catch (e3) {} }
       try { renderHomeCards(); } catch (e2) {}
       return true;
     }
     function categorySheetBack() {
       var ov = document.querySelector('.sp-cat-sheet');
       if (!ov) return false;
+      /* ۱.۳.۸۳: اول حالت لرزش (حذف دسته) بسته شود */
+      if (ov._spJiggleOff && ov._spJiggleOff()) return true;
       if (ov._spPicking) { ov._spShowList(); return true; }
       return closeCategoryReviewSheet();
     }
@@ -28441,7 +28492,8 @@ async function openPdfPrintWindow(){
       if (document.querySelector('.sp-cat-sheet')) return;
       var sec = findSectionByTitle('expense', title);
       var seen = {}, items = [];
-      spRows(sec).forEach(function (r) {
+      /* ۱.۳.۸۳: ردیف‌های «جیب به جیب» هم در فهرست هستند (با دستهٔ خودشان) */
+      ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && (Number(r.amount) || 0) > 0; }).forEach(function (r) {
         var d = String(r.desc || '').trim();
         var n = HKCategorizer.normalize(d);
         if (!n || seen[n] || r.fromPlanId) return;
@@ -28479,8 +28531,14 @@ async function openPdfPrintWindow(){
         probe.remove();
         return { one: Math.ceil(w1) + 2, sm: Math.ceil(w2) + 2 };
       }
+      var rowsOfDesc = function (d) {
+        var n = HKCategorizer.normalize(d);
+        return ((sec && sec.rows) || []).filter(function (r) { return r && !r.deletedAt && HKCategorizer.normalize(String(r.desc || '').trim()) === n; });
+      };
+      var isP2PDesc = function (d) { return rowsOfDesc(d).some(function (r) { return r.p2p; }); };
       function showList() {
         ov._spPicking = false;
+        if (ov._spJiggleOff) ov._spJiggleOff();
         h.textContent = 'دسته‌بندی مخارج';
         sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ نرم‌افزار دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
@@ -28490,7 +28548,7 @@ async function openPdfPrintWindow(){
         box.style.setProperty('--chip-w-sm', cw.sm + 'px');
         var rows = [];
         items.forEach(function (d) {
-          var c = HKCategorizer.classify(d);
+          var c = isP2PDesc(d) ? { id: 'p2p', ids: ['p2p'], label: 'جیب به جیب', p2p: true } : HKCategorizer.classify(d);
           var row = document.createElement('button');
           row.type = 'button';
           row.className = 'sp-cat-row';
@@ -28501,7 +28559,7 @@ async function openPdfPrintWindow(){
           chips.className = 'sp-cat-chips';
           row.appendChild(lab);
           row.appendChild(chips);
-          row.onclick = function () { showPicker(d, c ? c.ids.slice() : []); };
+          row.onclick = function () { showPicker(d, c && !c.p2p ? c.ids.slice() : []); };
           body.appendChild(row);
           rows.push({ chips: chips, c: c, row: row });
         });
@@ -28509,6 +28567,7 @@ async function openPdfPrintWindow(){
         rows.forEach(function (o) {
           var mk = function (txt, cls) { var e = document.createElement('span'); e.className = 'sp-cat-chip' + (cls ? ' ' + cls : ''); e.textContent = txt; return e; };
           if (!o.c) { o.chips.appendChild(mk('نامشخص', 'none')); return; }
+          if (o.c.p2p) { o.chips.appendChild(mk(o.c.label, 'p2p')); return; }
           if (o.c.ids.length === 1) { o.chips.appendChild(mk(o.c.label)); return; }
           var labels = o.c.ids.map(function (id) { return HKCategorizer.byId[id].label; });
           var avail = Math.max(cw.sm, o.row.clientWidth * 0.62);
@@ -28530,12 +28589,27 @@ async function openPdfPrintWindow(){
         var grid = document.createElement('div');
         /* ۱.۳.۸۲: همان کاشی‌های رنگیِ آیکون‌دارِ پنجرهٔ دستهٔ ویرایش ردیف */
         grid.className = 'sp-pick-grid sms-cat-grid hk-cat-colored hk-sp-tiles';
+        var p2pOn = isP2PDesc(desc);
         var paint = function () {
           grid.querySelectorAll('[data-id]').forEach(function (b) {
             var id = b.getAttribute('data-id');
-            b.classList.toggle('on', id ? sel.indexOf(id) >= 0 : !sel.length);
+            b.classList.toggle('on', id === 'p2p' ? p2pOn : (!p2pOn && (id ? sel.indexOf(id) >= 0 : !sel.length)));
           });
         };
+        /* ۱.۳.۸۳: «جیب به جیب» مال خود ردیف‌هاست (نه دیکشنری شرح): همهٔ ردیف‌های همین شرح در این ماه */
+        var setP2P = function (v) {
+          if (v === p2pOn) return;
+          p2pOn = v;
+          rowsOfDesc(desc).forEach(function (r) { if (v) { r.p2p = true; delete r.p2pNo; } else if (r.p2p) { delete r.p2p; r.p2pNo = true; } });
+          ov._spDirty = true;
+          try { persistCurrent(); scheduleSave(); } catch (e) {}
+          if (v) { try { hkP2PIntro(false); } catch (e2) {} }
+        };
+        /* ۱.۳.۸۳: حذف دسته: با نگه‌داشتن انگشت، کاشی‌ها می‌لرزند و × قرمز می‌آید؛ زدن جای خالی/برگشت/تأیید = پایان */
+        var jiggle = false, lpT = 0, lpFired = false;
+        var jiggleOn = function () { if (jiggle) return; jiggle = true; grid.classList.add('hk-jiggle'); try { appHaptic(15); } catch (e) {} };
+        ov._spJiggleOff = function () { if (!jiggle) return false; jiggle = false; grid.classList.remove('hk-jiggle'); return true; };
+        grid.addEventListener('click', function (e) { if (e.target === grid && jiggle) ov._spJiggleOff(); });
         var addBtn = function (cat) {
           var b = document.createElement('button');
           b.type = 'button';
@@ -28544,10 +28618,11 @@ async function openPdfPrintWindow(){
           b.style.setProperty('--cc', cat.id ? hkCatColor(cat.id) : '#8e8e93');
           b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (cat.id ? (HK_CAT_ICONS[cat.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span></span>';
           b.querySelector('span').textContent = cat.label;
-          /* ۱.۳.۴۸: × کوچک گوشهٔ هر دسته برای حذف (با تأیید) */
-          if (cat.id) {
+          if (cat.id === 'p2p') hkP2PDecorate(b);
+          /* ۱.۳.۸۳: × فقط در حالت لرزش (نگه‌داشتن انگشت) دیده می‌شود */
+          if (cat.id && cat.id !== 'p2p') {
             var x = document.createElement('span');
-            x.className = 'sp-pick-x'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'حذف دسته'); x.textContent = '×';
+            x.className = 'sp-pick-x hk-del-x'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'حذف دسته'); x.textContent = HK_DEL_X;
             x.onclick = function (ev) {
               ev.stopPropagation(); ev.preventDefault();
               askConfirm('دستهٔ «' + cat.label + '» حذف شود؟ شرح‌هایی که در این دسته بودند «نامشخص» می‌شوند.', function () {
@@ -28557,8 +28632,15 @@ async function openPdfPrintWindow(){
               });
             };
             b.appendChild(x);
+            b.addEventListener('pointerdown', function () { lpFired = false; clearTimeout(lpT); lpT = setTimeout(function () { lpFired = true; jiggleOn(); }, 520); });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
+            b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
           }
           b.onclick = function () {
+            if (lpFired) { lpFired = false; return; }
+            if (jiggle) { ov._spJiggleOff(); return; }
+            if (cat.id === 'p2p') { setP2P(!p2pOn); paint(); return; }
+            if (p2pOn) setP2P(false);
             if (!cat.id) sel = [];
             else { var k = sel.indexOf(cat.id); if (k >= 0) sel.splice(k, 1); else sel.push(cat.id); }
             HKCategorizer.learn(desc, sel);
@@ -28566,7 +28648,7 @@ async function openPdfPrintWindow(){
           };
           return b;
         };
-        HKCategorizer.categories.concat([{ id: '', label: 'نامشخص' }]).forEach(function (cat) { grid.appendChild(addBtn(cat)); });
+        HKCategorizer.categories.concat([HK_P2P_CAT, { id: '', label: 'نامشخص' }]).forEach(function (cat) { grid.appendChild(addBtn(cat)); });
         /* باکس آخر: «+» برای ساختن دستهٔ دلخواه */
         var plus = document.createElement('button');
         plus.type = 'button';
@@ -28574,6 +28656,7 @@ async function openPdfPrintWindow(){
         plus.setAttribute('aria-label', 'دستهٔ جدید');
         plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
         plus.onclick = function () {
+          if (ov._spJiggleOff && ov._spJiggleOff()) return;
           var wrap = document.createElement('div');
           wrap.className = 'sp-pick-new';
           var inp = document.createElement('input');
@@ -28593,7 +28676,7 @@ async function openPdfPrintWindow(){
             wrap.remove();
             grid.insertBefore(addBtn(cat), plus);
             /* دکمهٔ جدید قبل از «نامشخص» و «+» قرار بگیرد */
-            var unk = grid.querySelector('[data-id=""]');
+            var unk = grid.querySelector('[data-id="p2p"]') || grid.querySelector('[data-id=""]');
             var nb = grid.querySelector('[data-id="' + cat.id + '"]');
             if (unk && nb) grid.insertBefore(nb, unk);
             plus.style.display = '';
@@ -29530,18 +29613,21 @@ async function openPdfPrintWindow(){
       };
       /* ۱.۳.۵۰: دسته (فقط مخارج) نیمهٔ چپ همان ردیف حساب */
       st.cat = row.p2p ? 'p2p' : '';
+      /* ۱.۳.۸۳: درآمد همان دسته‌های باکس ثبت پیامک را دارد (روی خود ردیف: inCat؛ یا از روی شرحِ هم‌نام) */
+      var hkInCatOf = function (r) { if (r.inCat && HK_INCOME_CATS.some(function (c) { return c.id === r.inCat; })) return r.inCat; var dd = String(r.desc || '').trim(); var m0 = HK_INCOME_CATS.find(function (c) { return c.label === dd; }); return m0 ? m0.id : ''; };
+      if (isInc && !row.p2p) st.cat = hkInCatOf(row);
       if (!fromPlan) {
         if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids[0]) st.cat = c0.ids[0]; } catch (eC0) {} }
         st.cat0 = st.cat;
         var fC = field('دسته');
         var catB = document.createElement('button'); catB.type = 'button'; catB.className = 'hk-re-in hk-re-sel';
-        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (st.cat && HKCategorizer.byId[st.cat]); catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
+        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (/^in_/.test(st.cat) ? HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }) : (st.cat && HKCategorizer.byId[st.cat])); catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
           var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
-          hkCatPickSheet((isInc ? [] : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); });
+          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); });
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';
@@ -29671,6 +29757,10 @@ async function openPdfPrintWindow(){
         try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); } catch (eL) {}
         /* ۱.۳.۸۲: جیب به جیب روی خود ردیف ذخیره می‌شود */
         if (!fromPlan) { if (st.cat === 'p2p') { row.p2p = true; delete row.p2pNo; } else if (row.p2p) { delete row.p2p; row.p2pNo = true; } }
+        if (!fromPlan && isInc) {
+          if (/^in_/.test(st.cat)) { row.inCat = st.cat; if (!String(row.desc || '').trim()) { var _ic = HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }); if (_ic) row.desc = _ic.label; } }
+          else delete row.inCat;
+        }
         row.status = st.status;
         row.account = st.account;
         /* ۱.۳.۴۸: معمولی/پروژه */
@@ -31853,7 +31943,7 @@ container.innerHTML = '';
       return false;
     }
 
-    function detectBankFromSms(text) {
+    function detectBankFromSms(text, nameOnly) {
       const low = normalizeSmsText(text).toLowerCase();
       // اولویت با نام‌های کامل‌تر و شناسه فرستنده رایج پیامک
       const ordered = [
@@ -31910,11 +32000,60 @@ container.innerHTML = '';
           if (low.indexOf(String(a.keys[k]).toLowerCase()) >= 0) return a.name;
         }
       }
+      if (nameOnly) return '';
       const acc = extractAccountFromSms(text);
       if (acc && smsAccountBankMap[acc]) return smsAccountBankMap[acc];
       if (selectedBankAccounts && selectedBankAccounts.length === 1) return accountLabel(selectedBankAccounts[0]);
       return '';
     }
+
+    /* ۱.۳.۸۳: بانک از «فرستنده» — پیامک تراکنش بعضی بانک‌ها (مثل ملت) اسم بانک را در متن ندارد و فقط فرستنده «Bank Mellat» است.
+       ۱) اسم بانک در خود فرستنده  ۲) یادگیری: اگر یک پیامکِ همان فرستنده اسم بانک را داشت (مثل پیامک خوشامد)، بقیه هم همان بانک‌اند.
+       فرستندهٔ شخصی (شمارهٔ موبایل) هرگز یاد گرفته نمی‌شود. همه‌چیز فقط روی همین گوشی. */
+    var HK_SENDER_BANK_KEY = STORAGE_KEY + '_senderBank';
+    var HK_BANK_SENDER_NAMES = [['mellat', 'بانک ملت'], ['melli', 'بانک ملی'], ['bmi', 'بانک ملی'], ['sepah', 'بانک سپه'], ['saderat', 'بانک صادرات'], ['tejarat', 'بانک تجارت'],
+      ['maskan', 'بانک مسکن'], ['keshavarzi', 'بانک کشاورزی'], ['agri', 'بانک کشاورزی'], ['refah', 'بانک رفاه کارگران'], ['pasargad', 'بانک پاسارگاد'], ['parsian', 'بانک پارسیان'],
+      ['saman', 'بانک سامان'], ['ayandeh', 'بانک آینده'], ['shahr', 'بانک شهر'], ['sina', 'بانک سینا'], ['karafarin', 'بانک کارآفرین'], ['eghtesad', 'بانک اقتصاد نوین'], ['enbank', 'بانک اقتصاد نوین'],
+      ['blubank', 'بلوبانک'], ['blu bank', 'بلوبانک'], ['postbank', 'پست بانک'], ['post bank', 'پست بانک'], ['resalat', 'بانک قرض‌الحسنه رسالت'], ['qmb', 'بانک قرض‌الحسنه مهر'],
+      ['daybank', 'بانک دی'], ['tourism', 'بانک گردشگری'], ['izbank', 'بانک ایران‌زمین'], ['iranzamin', 'بانک ایران‌زمین'], ['middleeast', 'بانک خاورمیانه'], ['melal', 'موسسه اعتباری ملل']];
+    function hkSenderKey(a) { return toEnglishDigits(String(a || '')).replace(/[\s\-()+._]/g, '').toLowerCase(); }
+    function hkSenderBankMap() { try { var o = JSON.parse(localStorage.getItem(HK_SENDER_BANK_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+    function hkSenderLearn(addr, bank) {
+      var k = hkSenderKey(addr); if (!k || !bank || hkIsPersonalSender(addr)) return;
+      var m = hkSenderBankMap(); if (m[k] === bank) return;
+      m[k] = bank; try { localStorage.setItem(HK_SENDER_BANK_KEY, JSON.stringify(m)); } catch (e) {}
+    }
+    function hkSenderBank(addr, ctx) {
+      if (!addr || hkIsPersonalSender(addr)) return '';
+      var k = hkSenderKey(addr); if (!k) return '';
+      if (ctx && ctx.sender && ctx.sender[k]) return ctx.sender[k];
+      var m = hkSenderBankMap(); if (m[k]) return m[k];
+      for (var i = 0; i < HK_BANK_SENDER_NAMES.length; i++) if (k.indexOf(HK_BANK_SENDER_NAMES[i][0].replace(/\s/g, '')) >= 0) return HK_BANK_SENDER_NAMES[i][1];
+      try { var fa = detectBankFromSms(String(addr), true); if (fa) return fa; } catch (e) {}
+      return '';
+    }
+    /* یک دور روی صندوق: نقشهٔ فرستنده→بانک و حساب→بانک از پیامک‌هایی که اسم بانک دارند */
+    function hkInboxBankCtx(items) {
+      var ctx = { sender: {}, acc: {} };
+      (items || []).forEach(function (it) {
+        try {
+          var body = String(it.body || ''); if (!body || hkIsPersonalSender(it.address)) return;
+          var b = detectBankFromSms(body, true); if (!b) return;
+          var k = hkSenderKey(it.address); if (k && !ctx.sender[k]) ctx.sender[k] = b;
+          var a4 = hkSmsAcc4(body); if (a4 && !ctx.acc[a4]) ctx.acc[a4] = b;
+        } catch (e) {}
+      });
+      Object.keys(ctx.sender).forEach(function (k) { var m = hkSenderBankMap(); if (m[k] !== ctx.sender[k]) { m[k] = ctx.sender[k]; try { localStorage.setItem(HK_SENDER_BANK_KEY, JSON.stringify(m)); } catch (e) {} } });
+      return ctx;
+    }
+    function hkBankOfSms(body, addr, ctx) {
+      var b = ''; try { b = detectBankFromSms(body, true); } catch (e) {}
+      if (b) return b;
+      b = hkSenderBank(addr, ctx); if (b) return b;
+      try { var a4 = hkSmsAcc4(body); if (a4 && ctx && ctx.acc && ctx.acc[a4]) return ctx.acc[a4]; } catch (e) {}
+      try { return detectBankFromSms(body) || ''; } catch (e) { return ''; }
+    }
+    try { window.hkBankOfSms = hkBankOfSms; window.hkInboxBankCtx = hkInboxBankCtx; window.hkSenderBank = hkSenderBank; } catch (eWb) {}
 
     function detectTxnTypeFromSms(text) {
       const t = normalizeSmsText(text);
@@ -35701,7 +35840,7 @@ function confirmSmsEntry() {
           if (mapped) { out.label = mapped; return out; }
         }
         var bankName = '';
-        try { bankName = detectBankFromSms(raw) || ''; } catch (eB) {}
+        try { bankName = detectBankFromSms(raw, true) || (parsed.sender ? hkSenderBank(parsed.sender) : '') || detectBankFromSms(raw) || ''; } catch (eB) {}
         out.bankName = bankName; out.bankShort = bankName ? (bankShortLabel(bankName) || bankName) : '';
         var same = [];
         if (bankName) {
@@ -35843,34 +35982,36 @@ function confirmSmsEntry() {
     })();
     /* ===== ۱.۳.۴۷: دسته‌ها زیر «بابت چی بود؟» به‌صورت آیکون (۲ یا ۳ ردیف)؛ انتخاب دسته = یاد گرفتن همین شرح در آن دسته ===== */
     var HK_CAT_ICONS = {
-      /* ۱.۳.۸۲: جیب به جیب — دو جیب و فلش رفت‌وبرگشت */
-      p2p: '<path d="M3.5 6.5h7v7a3.5 3.5 0 0 1-7 0z"/><path d="M13.5 10.5h7v7a3.5 3.5 0 0 1-7 0z"/><path d="M8 3.5h7.5l-2-2M16 20.5H8.5l2 2"/>',
-      food: '<path d="M7 3v7a2 2 0 0 0 2 2v9"/><path d="M5 3v5M11 3v5"/><path d="M17 3c-1.7 0-3 2.2-3 5.5S15.3 13 17 13v8"/>',
+      /* ۱.۳.۸۳: جیب به جیب = همان ⇄ رفت‌وبرگشتِ کنار مبلغ در جدول. هیچ دو دسته‌ای (مخارج و درآمد با هم) یک شکل نیستند؛ فقط «هدیه و کمک» در هر دو نوع مشترک است */
+      p2p: '<path d="M4 8h14.5l-3.5-3.5"/><path d="M20 16H5.5L9 19.5"/>',
+      food: '<path d="M6 3v5a2 2 0 0 0 4 0V3M8 3v18"/><ellipse cx="16.5" cy="6.8" rx="2.8" ry="3.8"/><path d="M16.5 10.6V21"/>',
       transport: '<rect x="3" y="11" width="18" height="6" rx="2"/><path d="M6 11l2-5h8l2 5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>',
       bills: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
-      housing: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
       clothing: '<path d="M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9l-2 1-3-3z"/>',
       health: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/><path d="M12 10v5M9.5 12.5h5"/>',
-      care: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
-      home: '<path d="M4 12V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M2 12h20v5H2z"/><path d="M5 17v2M19 17v2"/>',
-      education: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6"/>',
+      home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+      education: '<path d="M12 6.5C10 5 7 4.6 3 5v13c4-.4 7 0 9 1.5 2-1.5 5-1.9 9-1.5V5c-4-.4-7 0-9 1.5z"/><path d="M12 6.5v13"/>',
       fun: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6L3.4 9.3l6-.7z"/>',
       gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13"/><path d="M12 8c-1.5-3.5-5-4-5-2s3 2 5 2c2 0 5 0 5-2s-3.5-1.5-5 2"/>',
       debt: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
-      tech: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'
+      tech: '<rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M10.5 5h3"/><circle cx="12" cy="18.3" r=".9"/>'
     };
     var HK_CAT_TAG = '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/>';
     /* ۱.۳.۴۸: دسته‌های واریز (کوتاه) */
     var HK_INCOME_CATS = [
       { id: 'in_salary', label: 'حقوق' }, { id: 'in_rent', label: 'اجاره' }, { id: 'in_loanback', label: 'تسویه قرض' } /* ۱.۳.۶۸: جای «اضافه‌کار» */,
-      { id: 'in_bonus', label: 'پاداش' }, { id: 'in_gift', label: 'هدیه' }, { id: 'in_sale', label: 'فروش' }, { id: 'in_profit', label: 'سود' }
+      { id: 'in_bonus', label: 'پاداش' }, { id: 'in_gift', label: 'هدیه و کمک' }, { id: 'in_sale', label: 'فروش' }, { id: 'in_profit', label: 'سود' }
     ];
     HK_CAT_ICONS.in_salary = '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>';
-    HK_CAT_ICONS.in_rent = '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><circle cx="12" cy="14" r="2"/>';
-    HK_CAT_ICONS.in_loanback = '<path d="M4 8.5h14.5l-3.4-3.4"/><path d="M20 15.5H5.5l3.4 3.4"/>';
-    HK_CAT_ICONS.in_bonus = '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6L3.4 9.3l6-.7z"/>';
+    /* ۱.۳.۸۳: اجاره = کلید (با «لوازم خانه» یکی نباشد) */
+    HK_CAT_ICONS.in_rent = '<circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M18 12v3.2M15 12v2.2"/>';
+    /* ۱.۳.۸۳: تسویه قرض = سکه روی دست (فلش‌ها مال «جیب به جیب» شد) */
+    HK_CAT_ICONS.in_loanback = '<circle cx="14.5" cy="6" r="3"/><path d="M2 13.5h3.5L9 12h4.2a1.6 1.6 0 0 1 0 3.2H10"/><path d="M5.5 20.5H13l6.6-4.4a1.6 1.6 0 0 0-1.9-2.6l-4.2 2.3"/><path d="M2 20.5h3.5"/>';
+    /* ۱.۳.۸۳: پاداش = مدال گل‌دار با تیک و دو روبان */
+    HK_CAT_ICONS.in_bonus = '<path d="M12 2.3L13.6 3.5L15.6 3.3L16.4 5.1L18.2 5.9L18 7.9L19.2 9.5L18 11.1L18.2 13.1L16.4 13.9L15.6 15.7L13.6 15.5L12 16.7L10.4 15.5L8.4 15.7L7.6 13.9L5.8 13.1L6 11.1L4.8 9.5L6 7.9L5.8 5.9L7.6 5.1L8.4 3.3L10.4 3.5z"/><circle cx="12" cy="9.5" r="3.6"/><path d="M10.4 9.6l1.1 1.1 2.2-2.3"/><path d="M9 15.6l-1.8 5.6 2.3-.9 1.4 2 1-3.9M15 15.6l1.8 5.6-2.3-.9-1.4 2-1-3.9"/>';
     HK_CAT_ICONS.in_gift = HK_CAT_ICONS.gift;
-    HK_CAT_ICONS.in_sale = '<path d="M3 12V4h8l10 10-8 8z"/><path d="M8 8h.01"/>';
+    /* ۱.۳.۸۳: فروش = چرخ خرید با فلش رو به بالا */
+    HK_CAT_ICONS.in_sale = '<path d="M2 4h3l2.3 10.5h11.4L21 6.5H5.9"/><circle cx="9" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/><path d="M13.2 12.6V7.8M11.2 9.8l2-2 2 2"/>';
     HK_CAT_ICONS.in_profit = '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>';
     /* شمار استفادهٔ هر دسته در ثبت پیامک (برای چیدن ۵ دستهٔ اول) */
     function hkCatUseLoad() { try { var o = JSON.parse(localStorage.getItem(STORAGE_KEY + '_catUse') || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
@@ -35895,9 +36036,11 @@ function confirmSmsEntry() {
     document.addEventListener('visibilitychange', function () { if (document.hidden) { try { hkSyncNotifCats(); } catch (e) {} } });
     function closeSmsCatMore() { var o = document.getElementById('smsCatMore'); if (o) { o.remove(); return true; } return false; }
     /* ۱.۳.۷۶: رنگ هر دسته (آیکون‌های رنگی، یکسان در باکس پیامک و ویرایش ردیف) */
-    var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', housing: '#bf5af2', clothing: '#ff6ba8', health: '#ff453a', care: '#30d5c8', home: '#c78b5a',
-      education: '#7c7cff', fun: '#9ee858', gift: '#ff6ba8', debt: '#8e8e93', tech: '#64d2ff',
-      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#4f9dff', in_bonus: '#e6b12c', in_gift: '#ff6ba8', in_sale: '#ff9f0a', in_profit: '#30d5c8', p2p: '#64d2ff' };
+    /* ۱.۳.۸۳: رنگ ثابت و یکتای هر دسته (همه‌جا همین؛ CLAUDE.md). فقط «هدیه و کمک» در مخارج و درآمد مشترک است.
+       جیب به جیب نقره‌ای با قاب نقطه‌چین: معلوم باشد چیز متفاوتی است */
+    var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', home: '#c78b5a', clothing: '#ff6ba8', health: '#ff453a',
+      education: '#7c7cff', fun: '#30d5c8', gift: '#e85dff', debt: '#8e8e93', tech: '#64d2ff',
+      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#c0ca33', in_bonus: '#ffd60a', in_gift: '#e85dff', in_sale: '#ffb38a', in_profit: '#32d74b', p2p: '#c9d6df' };
     function hkCatColor(id) { return HK_CAT_COLORS[id] || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
     function hkCatPickSheet(cats, cur, onPick) {
@@ -35913,9 +36056,8 @@ function confirmSmsEntry() {
       cats.concat([{ id: '', label: 'نامشخص' }]).forEach(function (c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
         b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
-        b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>' +
-          (c.id === 'p2p' ? '<small class="hk-p2p-sub">نه خرج، نه درآمد</small><em class="hk-p2p-info" aria-label="توضیح">ⓘ</em>' : '');
-        if (c.id === 'p2p') { b.classList.add('hk-p2p-cat'); var _inf = b.querySelector('.hk-p2p-info'); if (_inf) _inf.onclick = function (e) { e.stopPropagation(); hkP2PIntro(true); }; }
+        b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (c.id ? (HK_CAT_ICONS[c.id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
+        if (c.id === 'p2p') hkP2PDecorate(b);
         b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
         gg.appendChild(b);
       });
@@ -35955,7 +36097,8 @@ function confirmSmsEntry() {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat'; b.dataset.cat = c.id;
         b.style.setProperty('--cc', hkCatColor(c.id));
         b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (HK_CAT_ICONS[c.id] || HK_CAT_TAG) + '</svg></i><span>' + escapeHtml(c.label) + '</span>';
-        b.onclick = function () { pick(c); };
+        if (c.id === 'p2p') hkP2PDecorate(b);
+        b.onclick = function () { pick(c); if (c.id === 'p2p' && window._hkSmsCat === 'p2p') { try { hkP2PIntro(false); } catch (e) {} } };
         return b;
       };
       top.forEach(function (c) { g.appendChild(mk(c)); });
@@ -36070,6 +36213,8 @@ function confirmSmsEntry() {
         if (!opts.silent) showToast('پیامک بانکی قابل تشخیص نبود');
         return false;
       }
+      /* ۱.۳.۸۳: اسم بانک در متن نبود → از فرستنده؛ اگر بود → فرستنده یاد گرفته شود */
+      if (opts.sender) { try { var _nb = detectBankFromSms(smsText, true); if (_nb) hkSenderLearn(opts.sender, _nb); else { var _sb = hkSenderBank(opts.sender); if (_sb) parsed.bank = _sb; } } catch (eSb) {} }
       parsed.bank = matchSelectedBank(parsed.bank);
       parsed.raw = parsed.raw || String(smsText || '');
       if (opts.nid) parsed.nid = opts.nid;
@@ -39024,7 +39169,7 @@ if (item.type === 'recurring') {
     }
     function hkBulkBuild(items, f, to) {
       if (!_hkBulk) return;
-      var fk = hkJKey(f), tk = hkJKey(to), map = {}, seenBody = {}, skipNotice = 0;
+      var fk = hkJKey(f), tk = hkJKey(to), map = {}, seenBody = {}, skipNotice = 0, bctx = hkInboxBankCtx(items);
       items.forEach(function (it) {
         try {
           var body = String(it.body || ''); if (!body) return;
@@ -39038,7 +39183,7 @@ if (item.type === 'recurring') {
           if (seenBody[bk]) return; seenBody[bk] = 1;
           var j = hkJalaliOfTs(ts || Date.now());
           var acc4 = hkSmsAcc4(body), bank = '';
-          try { bank = detectBankFromSms(body) || ''; } catch (eB) {}
+          try { bank = hkBankOfSms(body, it.address, bctx) || ''; } catch (eB) {}
           if (!bank) bank = 'بانک نامشخص';
           var personal = hkIsPersonalSender(it.address);
           var key = (personal ? 'P|' + toEnglishDigits(String(it.address || '')).replace(/\D/g, '').slice(-10) + '|' : '') + bank + '|' + (acc4 || '');
@@ -39656,12 +39801,12 @@ if (item.type === 'recurring') {
       if (!B || typeof B.readInbox !== 'function' || !bank) return Promise.resolve([]);
       bank = migrateBankName(bank);
       return B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
-        var by = {};
-        ((res && res.items) || []).forEach(function (it) {
+        var by = {}, _its = (res && res.items) || [], bctx = hkInboxBankCtx(_its);
+        _its.forEach(function (it) {
           try {
             var body = String(it.body || ''); if (!body) return;
             if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
-            if ((detectBankFromSms(body) || '') !== bank) return;
+            if ((hkBankOfSms(body, it.address, bctx) || '') !== bank) return;
             var p = parseBankSms(body); if (!p || p.balance == null) return;
             if (hkIsPersonalSender(it.address)) return;
             var ts = Number(it.date) || 0, a4 = hkSmsAcc4(body) || '';
@@ -40156,7 +40301,7 @@ if (item.type === 'recurring') {
     }
     function hkSetupFinish() { try { localStorage.setItem(STORAGE_KEY + '_bankSetupDone', '1'); } catch (e) {} }
     function hkSetupDetect(items) {
-      var map = {}, now = Date.now(), seen = {};
+      var map = {}, now = Date.now(), seen = {}, bctx = hkInboxBankCtx(items);
       (items || []).forEach(function (it) {
         try {
           var body = String(it.body || ''); if (!body) return;
@@ -40167,7 +40312,7 @@ if (item.type === 'recurring') {
           var ts = Number(it.date) || 0, k0 = body + '|' + Math.round(ts / 60000);
           if (seen[k0]) return; seen[k0] = 1;
           var acc4 = hkSmsAcc4(body), bank = '';
-          try { bank = detectBankFromSms(body) || ''; } catch (eB) {}
+          try { bank = hkBankOfSms(body, it.address, bctx) || ''; } catch (eB) {}
           if (!bank) return;
           var key = bank + '|' + (acc4 || '');
           var fo = map[key] || (map[key] = { key: key, bank: bank, acc4: acc4 || '', n: 0, lastTs: 0, bal: null, balTs: 0 });

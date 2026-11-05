@@ -86,7 +86,7 @@ const allErrors = [];
     return { catB: true, sub, info, intro, p2p: !!row.p2p, inc: pt.incomeTotal, intro2 };
   });
   ok(re.catB, 'دسته برای ردیف درآمد هم در ویرایش هست');
-  ok(re.sub === 'نه خرج، نه درآمد' && re.info, 'کاشی «جیب به جیب» با زیرنویس «نه خرج، نه درآمد» و ⓘ');
+  ok(!re.sub && re.info, 'کاشی «جیب به جیب» با ⓘ (۱.۳.۸۳: بدون زیرنویس)');
   ok(re.intro && !re.intro2, 'معرفی کوتاه فقط بار اول');
   ok(re.p2p && re.inc === 0, 'ذخیره: ردیف «جیب به جیب» شد و از جمع درآمد بیرون رفت');
 
@@ -157,7 +157,7 @@ const allErrors = [];
     const xs = g.querySelectorAll('.sp-pick-t .sp-pick-x').length;
     const add = !!g.querySelector('.sp-pick-tadd');
     /* چندانتخابی */
-    const off = tiles.filter(x => x.getAttribute('data-id') && !x.classList.contains('on'));
+    const off = tiles.filter(x => x.getAttribute('data-id') && x.getAttribute('data-id') !== 'p2p' && !x.classList.contains('on'));
     off[0].click(); await w(50); off[1].click(); await w(50);
     const on = g.querySelectorAll('.sms-cat.on').length;
     try { closeCategoryReviewSheet(); } catch (e) {}
@@ -165,7 +165,7 @@ const allErrors = [];
   });
   ok(cs.row && /hk-cat-colored/.test(cs.cls) && cs.svg && cs.cc, 'دسته‌ها کاشی رنگی آیکون‌دار، مثل پنجرهٔ دستهٔ ویرایش ردیف');
   ok(cs.cols === 5, 'چیدمان پنج‌ستونه (' + cs.cols + ')');
-  ok(cs.last === '' && cs.xs === cs.n - 1 && cs.add, '«نامشخص» آخر؛ × حذف روی دسته‌ها و «+» دستهٔ جدید سر جایشان');
+  ok(cs.last === '' && cs.xs === cs.n - 2 && cs.add, '«نامشخص» آخر؛ × حذف روی دسته‌ها (جز جیب به جیب) و «+» دستهٔ جدید سر جایشان');
   ok(cs.on >= 2, 'چند دسته با هم انتخاب می‌شود');
 
   console.log('• تاریخ روز و ویرایش نام');
