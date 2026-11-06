@@ -90,10 +90,83 @@ const U = (h) => `${base}/index.html?today=1405-07-25#${h}`;
   assert.equal(await p.evaluate(() => document.documentElement.dataset.theme), 'light');
   await p.reload(); assert.equal(await p.evaluate(() => document.documentElement.dataset.theme), 'light');
 
-  // ۱۰. همه‌ی مسیرها بدون خطا
+  // ۱۰. محور زمان: زوم با دکمه، Ctrl+چرخ، پینچ دو انگشتی و «همه‌ی پروژه»
+  await p.goto(U('/timeline')); await p.reload(); await p.waitForSelector('.k-tl-box');
+  const lod = () => p.evaluate(() => +document.querySelector('.k-tl__canvas').dataset.lod);
+  const ppd = () => p.evaluate(() => +document.querySelector('.k-tl__canvas').dataset.ppd);
+  await p.waitForTimeout(150);
+  assert.equal(await lod(), 1, 'شروع روی نمای هفته');
+  const p0 = await ppd();
+  await p.locator('[aria-label="نزدیک کردن"]').click(); await p.waitForTimeout(120);
+  assert.ok((await ppd()) > p0, 'دکمه‌ی + زوم می‌کند');
+  for (let i = 0; i < 4; i++) { await p.locator('[aria-label="نزدیک کردن"]').click(); await p.waitForTimeout(100); }
+  assert.equal(await lod(), 3, 'با زوم کافی به سطح جزئیات می‌رسد');
+  assert.ok(await p.locator('.k-tl-chart').count() > 0, 'در سطح ۳ نمودار روزانه هست');
+  assert.ok(await p.locator('.k-tl-box__crew .k-crew').count() > 0, 'نام کارگرها دیده می‌شود');
+  await p.locator('[aria-label="دور کردن"]').click(); await p.waitForTimeout(100);
+  const pz = await ppd();
+  await p.locator('.k-tl__scroll').hover();
+  await p.keyboard.down('Control'); await p.mouse.wheel(0, -300); await p.keyboard.up('Control'); await p.waitForTimeout(150);
+  assert.ok((await ppd()) > pz, 'Ctrl+چرخ زوم می‌کند');
+  await p.locator('.k-tl__fit').click(); await p.waitForTimeout(120);
+  assert.equal(await lod(), 0, '«همه‌ی پروژه» کل بازه را جا می‌دهد');
+  assert.equal(await p.evaluate(() => { const s = document.querySelector('.k-tl__scroll'); return s.scrollWidth <= s.clientWidth + 2; }), true);
+  // پینچ دو انگشتی (رویداد لمسی ساختگی)
+  const pinchFrom = await ppd();
+  await p.evaluate(() => {
+    const el = document.querySelector('.k-tl__scroll'), r = el.getBoundingClientRect(), cy = r.top + 100;
+    const T = (id, x) => new Touch({ identifier: id, target: el, clientX: x, clientY: cy });
+    const fire = (type, a, b) => el.dispatchEvent(new TouchEvent(type, { touches: [T(1, a), T(2, b)], bubbles: true, cancelable: true }));
+    fire('touchstart', r.left + 150, r.left + 200);
+    fire('touchmove', r.left + 120, r.left + 260);
+    fire('touchmove', r.left + 90, r.left + 320);
+  });
+  await p.waitForTimeout(150);
+  assert.ok((await ppd()) > pinchFrom * 2, 'پینچ باز زوم می‌کند');
+
+  // ۱۱. یک ضربه روی کار = جزئیات؛ دوضربه = زوم روی همان کار
+  await p.locator('.k-tl__fit').click(); await p.waitForTimeout(120);
+  const bx = p.locator('.k-tl-box[data-id="w3"]');
+  const pf = await ppd();
+  await bx.dblclick({ position: { x: 20, y: 8 } }); await p.waitForTimeout(500);
+  assert.ok((await ppd()) > pf * 2, 'دوضربه روی کار، نزدیک می‌کند');
+  assert.equal(await p.locator('.k-sheet').count(), 0, 'دوضربه شیت باز نمی‌کند');
+  await p.locator('.k-tl-box[data-id="w3"]').click({ position: { x: 20, y: 8 } });
+  await p.waitForSelector('.k-sheet'); 
+  assert.match(await p.locator('.k-sheet__title').innerText(), /لوله‌کشی طبقه‌ی دوم/);
+
+  // ۱۲. ثبت کارکرد در شیت ← درصد کار عوض می‌شود
+  const prog0 = await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('kargah:v1')); const w = s.plans.find((x) => x.id === 'w3'); return w.log.reduce((a, l) => a + l.done, 0); });
+  await p.locator('.k-sheet .k-pill', { hasText: 'روز' }).click();
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem('kargah:v1')).plans.find((x) => x.id === 'w3').log.some((l) => l.date === '1405-07-25'));
+  const doneCell = p.locator('.k-sheet td.editable[data-key="done"]').first();
+  await doneCell.click(); await doneCell.dblclick(); await p.fill('.k-sheet td.editing input', '۴۰'); await p.keyboard.press('Enter');
+  await p.waitForFunction((a) => JSON.parse(localStorage.getItem('kargah:v1')).plans.find((x) => x.id === 'w3').log.reduce((s, l) => s + l.done, 0) === a + 40, prog0);
+  await p.keyboard.press('Escape');
+
+  // ۱۳. فیلتر عملیات و افزودن کار
+  await p.locator('.k-tl-trade', { hasText: 'قیرگونی' }).click();
+  assert.equal(await p.locator('.k-tl-box[data-id="w6"]').count(), 0, 'با خاموش‌کردن عملیات، جعبه‌هایش می‌روند');
+  await p.locator('.k-tl-trade', { hasText: 'قیرگونی' }).click();
+  assert.equal(await p.locator('.k-tl-box[data-id="w6"]').count(), 1);
+  await p.locator('.k-screenhead .k-op--add').click();
+  await p.fill('.k-sheet input.k-input >> nth=0', 'دیوارچینی طبقه‌ی چهارم');
+  await p.locator('.k-sheet .k-btn--primary').click();
+  await p.waitForSelector('.k-tl-box:has-text("طبقه‌ی چهارم")');
+  assert.equal((await state()).plans.length, 9);
+  // تاریخ نادرست پذیرفته نمی‌شود
+  await p.locator('.k-screenhead .k-op--add').click();
+  await p.fill('.k-sheet input.k-input >> nth=0', 'کار بد');
+  await p.fill('.k-sheet input[aria-label="پایان"]', '۱۴۰۵/۰۱/۰۱');
+  await p.locator('.k-sheet .k-btn--primary').click();
+  await p.waitForSelector('.k-toast'); assert.match(await p.locator('.k-toast').innerText(), /پایان/);
+  assert.equal((await state()).plans.length, 9);
+  await p.keyboard.press('Escape');
+
+  // ۱۴. همه‌ی مسیرها بدون خطا
   for (const r of ['/home', '/daily', '/tomorrow', '/timeline', '/reports', '/orders', '/people', '/warehouse', '/finance', '/docs']) {
     await p.goto(U(r)); await p.reload(); await p.waitForSelector('#page > *');
   }
   assert.deepEqual(errs, [], 'خطای کنسول: ' + errs.join(' | '));
-  await b.close(); console.log('SMOKE OK — ۱۰ سناریو');
+  await b.close(); console.log('SMOKE OK — ۱۴ سناریو');
 })().catch((e) => { console.error('SMOKE FAIL:', e.message); process.exit(1); });

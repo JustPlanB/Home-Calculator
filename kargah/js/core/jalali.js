@@ -95,3 +95,10 @@ export const fmtLongJ = (s) => {
   return `${weekdayNameJ(s)} ${toFa(p.d)} ${MONTHS[p.m - 1]} ${toFa(p.y)}`;
 };
 export const fmtShortJ = (s) => { const p = parseJ(s); return p ? `${toFa(p.d)} ${MONTHS[p.m - 1]}` : '—'; };
+
+/** متنی که کاربر می‌نویسد (۱۴۰۵/۷/۳، با ارقام فارسی یا لاتین) را به «1405-07-03» برمی‌گرداند؛ نامعتبر = null */
+export function parseInputJ(text) {
+  const t = toEn(String(text).trim()).replace(/\//g, '-').replace(/-(\d)(?=-|$)/g, '-0$1');
+  const p = parseJ(t);
+  return p ? makeJ(p.y, p.m, p.d) : null;
+}

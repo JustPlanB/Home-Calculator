@@ -27,7 +27,7 @@ export function home(st) {
         ]),
         statBox('پروژه:', [
           { label: 'پیشرفت کل', value: toFa(overall) + '٪', tone: 'green' },
-          { label: 'عملیات فعال', value: toFa(st.plans.length) },
+          { label: 'کار در حال اجرا', value: toFa(st.plans.filter((p) => p.start <= day && p.end >= day).length) },
         ]))));
 
   const tiles = [

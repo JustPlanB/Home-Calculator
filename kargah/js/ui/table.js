@@ -16,8 +16,8 @@
 import { h, mount } from '../core/dom.js';
 import { chip, checkbox, avatar, progress, deleteOp, addPill } from './controls.js';
 import { confirmDialog, selectSheet, toast } from './overlay.js';
-import { fmtNum, fmtPct, parseNum, toFa, toEn } from '../core/fa.js';
-import { fmtJ, parseJ, makeJ } from '../core/jalali.js';
+import { fmtNum, fmtPct, parseNum, toFa } from '../core/fa.js';
+import { fmtJ, parseInputJ } from '../core/jalali.js';
 
 const EDITABLE_BY_DEFAULT = new Set(['text', 'num', 'money', 'date', 'percent']);
 const isEditable = (c) => (c.editable ?? EDITABLE_BY_DEFAULT.has(c.type)) && c.type !== 'custom';
@@ -183,8 +183,8 @@ function parse(c, text) {
       return Number.isFinite(n) && n >= 0 && n <= 100 ? { ok: true, value: Math.round(n) } : { ok: false, error: 'عددی بین ۰ تا ۱۰۰ وارد کنید' };
     }
     case 'date': {
-      const p = parseJ(toEn(t).replace(/\//g, '-').replace(/-(\d)(?=-|$)/g, '-0$1'));
-      return p ? { ok: true, value: makeJ(p.y, p.m, p.d) } : { ok: false, error: 'تاریخ را به شکل ۱۴۰۵/۰۲/۰۵ وارد کنید' };
+      const d = parseInputJ(t);
+      return d ? { ok: true, value: d } : { ok: false, error: 'تاریخ را به شکل ۱۴۰۵/۰۲/۰۵ وارد کنید' };
     }
     default: return { ok: false, error: 'قابل ویرایش نیست' };
   }

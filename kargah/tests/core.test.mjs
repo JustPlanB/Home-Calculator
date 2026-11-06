@@ -76,3 +76,92 @@ test('داده‌ی نمونه سالم است', () => {
   assert.ok(s.plans.every((p) => ids.has(p.tradeId) && p.start <= p.end));
   assert.ok(s.trades.every((t) => ICONS[t.icon]), 'آیکن هر عملیات باید در icons.js باشد');
 });
+
+/* ───── محور زمان ───── */
+import { lodOf, dayStep, packLanes, timeRange, nextLogDate, clampPpd, MAX_PPD } from '../js/core/timeline.js';
+import { workDone, workProgress } from '../js/core/tasks.js';
+import { migrate } from '../js/core/migrate.js';
+import { parseInputJ } from '../js/core/jalali.js';
+
+test('سطح جزئیات از روی زوم', () => {
+  assert.deepEqual([3, 6.9, 7, 21.9, 22, 55.9, 56, 140].map(lodOf), [0, 0, 1, 1, 2, 2, 3, 3]);
+  assert.equal(clampPpd(999, 2), MAX_PPD);
+  assert.equal(clampPpd(0.1, 2), 2);
+});
+
+test('فاصله‌ی برچسب روزها حداقل ۳۰ پیکسل', () => {
+  for (const ppd of [7, 10, 14, 22, 40, 100]) assert.ok(dayStep(ppd) * ppd >= 30, 'ppd=' + ppd);
+  assert.equal(dayStep(40), 1);
+  assert.equal(dayStep(10), 5);
+});
+
+test('چیدن جعبه‌ها در ردیف: بدون همپوشانی در یک ردیف', () => {
+  const w = (id, start, end) => ({ id, start, end });
+  const { lane, count } = packLanes([w('b', '1405-07-05', '1405-07-20'), w('a', '1405-07-01', '1405-07-10'), w('c', '1405-07-11', '1405-07-15'), w('d', '1405-07-21', '1405-07-25')]);
+  assert.equal(lane.a, 0);
+  assert.equal(lane.b, 1);          // با a همپوشانی دارد
+  assert.equal(lane.c, 0);          // بعد از پایان a
+  assert.equal(lane.d, 0);          // بعد از c
+  assert.equal(count, 2);
+  assert.equal(packLanes([]).count, 0);
+  assert.equal(packLanes([w('x', '1405-07-01', '1405-07-05'), w('y', '1405-07-05', '1405-07-09')]).count, 2, 'روز مشترک یعنی همپوشانی');
+});
+
+test('بازه‌ی نمایش شامل امروز و حاشیه است', () => {
+  const r = timeRange([{ start: '1405-07-10', end: '1405-07-20' }], '1405-07-25', 3);
+  assert.equal(r.first, '1405-07-07');
+  assert.equal(r.last, '1405-07-28');
+  assert.equal(r.days, 22);
+  assert.equal(timeRange([], '1405-07-25', 0).days, 1);
+});
+
+test('تاریخ بعدی ثبت کارکرد', () => {
+  const log = [{ date: '1405-07-25' }, { date: '1405-07-24' }];
+  assert.equal(nextLogDate([], '1405-07-25', '1405-07-20'), '1405-07-25');
+  assert.equal(nextLogDate(log, '1405-07-25', '1405-07-20'), '1405-07-23');
+  assert.equal(nextLogDate([{ date: '1405-07-25' }], '1405-07-25', '1405-07-25'), null);
+});
+
+test('پیشرفت کار از متراژ می‌آید، وگرنه از درصد دستی', () => {
+  const w = { qty: 200, log: [{ done: 50 }, { done: 30 }], progress: 99 };
+  assert.equal(workDone(w), 80);
+  assert.equal(workProgress(w), 40);
+  assert.equal(workProgress({ qty: 10, log: [{ done: 50 }] }), 100, 'سقف ۱۰۰');
+  assert.equal(workProgress({ qty: 0, progress: 33, log: [] }), 33);
+  assert.equal(workProgress({ progress: 12 }), 12);
+});
+
+test('ارتقای داده‌ی نسخه‌ی ۱ به ۲', () => {
+  const v1 = { v: 1, trades: [{ id: 't', name: 'آجرکاری' }], people: [{ id: 'p', tradeId: 't' }, { id: 'q', tradeId: 'x' }],
+    plans: [{ id: 'a', tradeId: 't', start: '1405-07-01', end: '1405-07-10', progress: 40, crew: 3, absent: 1 }] };
+  const v2 = migrate(structuredClone(v1));
+  assert.equal(v2.v, 2);
+  assert.equal(v2.plans[0].title, 'آجرکاری');
+  assert.deepEqual(v2.plans[0].people, ['p']);
+  assert.deepEqual(v2.plans[0].log, []);
+  assert.equal(workProgress(v2.plans[0]), 40, 'درصد قبلی حفظ شود');
+  assert.equal(migrate({ v: 2, plans: [] }).v, 2);
+});
+
+test('خواندن تاریخ ورودی کاربر', () => {
+  assert.equal(parseInputJ('۱۴۰۵/۷/۳'), '1405-07-03');
+  assert.equal(parseInputJ('1405-07-30'), '1405-07-30');
+  assert.equal(parseInputJ('1405/07/31'), null);
+  assert.equal(parseInputJ('abc'), null);
+});
+
+test('کارکردهای داده‌ی نمونه معتبرند', () => {
+  const s = seedState('1405-07-25');
+  for (const p of s.plans) {
+    assert.ok(Array.isArray(p.people) && p.people.every((id) => s.people.some((x) => x.id === id)), p.id + ' کارگر ناشناس');
+    const dates = p.log.map((l) => l.date);
+    assert.equal(new Set(dates).size, dates.length, p.id + ' تاریخ تکراری');
+    for (const l of p.log) {
+      assert.ok(l.date >= p.start && l.date <= p.end && l.date < '1405-07-25', p.id + ' کارکرد خارج از بازه');
+      assert.notEqual(weekdayJ(l.date), 6, 'جمعه کارکرد ندارد');
+      assert.ok(l.done >= 0 && l.absent >= 0);
+    }
+  }
+  assert.equal(workProgress(s.plans.find((p) => p.id === 'w1')), 100, 'کار تمام‌شده صددرصد است');
+  assert.deepEqual(seedState('1405-07-25').plans, s.plans, 'نمونه قطعی است');
+});

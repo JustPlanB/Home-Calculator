@@ -23,12 +23,16 @@ export function groupByTrade(list, trades) {
   return out;
 }
 
-/* پیشرفت کل پروژه: میانگین وزنی پیشرفت هر عملیات بر اساس طول بازه‌اش */
+/* کارِ روی محور زمان: متراژ انجام‌شده از جمع کارکردهای روزانه می‌آید؛ بدون متراژ، همان درصد دستی */
+export const workDone = (w) => (w.log || []).reduce((s, l) => s + (Number(l.done) || 0), 0);
+export const workProgress = (w) => (w.qty > 0 ? Math.min(100, Math.round((workDone(w) / w.qty) * 100)) : (w.progress || 0));
+
+/* پیشرفت کل پروژه: میانگین وزنی پیشرفت هر کار بر اساس طول بازه‌اش */
 export function overallProgress(plans) {
   let w = 0, s = 0;
   for (const p of plans) {
     const len = Math.max(1, diffDaysJ(p.end, p.start) + 1);
-    w += len; s += len * p.progress;
+    w += len; s += len * workProgress(p);
   }
   return w ? Math.round(s / w) : 0;
 }

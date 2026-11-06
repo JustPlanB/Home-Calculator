@@ -1,6 +1,7 @@
 /* ذخیره‌ساز: یک شیء state در localStorage (همان معماری حساب‌کتاب). همه‌ی دسترسی‌ها try/catch دارند. */
 import { seedState } from '../data/seed.js';
 import { todayJ } from './jalali.js';
+import { migrate } from './migrate.js';
 
 const KEY = 'kargah:v1';
 const subs = new Set();
@@ -11,8 +12,9 @@ function write() { try { localStorage.setItem(KEY, JSON.stringify(state)); retur
 
 export function load() {
   const s = read();
-  state = s && s.v === 1 ? s : seedState(todayJ());
-  if (!s) write();
+  const known = s && (s.v === 1 || s.v === 2);
+  state = known ? migrate(s) : seedState(todayJ());
+  if (!known || s.v !== state.v || s.v === 2) write();
   return state;
 }
 export const get = () => state;
@@ -23,6 +25,6 @@ export function resetDemo() { state = seedState(todayJ()); write(); subs.forEach
 export const exportBackup = () => JSON.stringify(state, null, 2);
 export function importBackup(text) {
   const s = JSON.parse(text);
-  if (!s || s.v !== 1 || !Array.isArray(s.tasks) || !Array.isArray(s.trades)) throw new Error('فایل پشتیبان معتبر نیست');
-  state = s; write(); subs.forEach((f) => f(state));
+  if (!s || (s.v !== 1 && s.v !== 2) || !Array.isArray(s.tasks) || !Array.isArray(s.trades) || !Array.isArray(s.plans)) throw new Error('فایل پشتیبان معتبر نیست');
+  state = migrate(s); write(); subs.forEach((f) => f(state));
 }

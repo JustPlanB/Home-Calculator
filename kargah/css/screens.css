@@ -24,21 +24,60 @@
 .k-banner .k-ico { font-size: 22px; }
 .k-banner--green { background: var(--green-bg); color: var(--green-tx); border: 1px solid var(--green-bd); }
 
-/* نقشه‌ی زمانی (گانت) */
-.k-gantt { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card); -webkit-overflow-scrolling: touch; }
-.k-gantt__in { position: relative; }
-.k-gantt__headrow, .k-gantt__row { display: flex; }
-.k-gantt__row { border-top: 1px solid var(--tbl-line); height: 56px; }
-.k-gantt__label {
-  position: sticky; inset-inline-start: 0; z-index: 4; width: var(--label); flex-shrink: 0; background: var(--card);
-  display: flex; align-items: center; gap: 8px; padding: 0 8px; font-weight: 600; font-size: var(--fs-sm); border-inline-end: 1px solid var(--tbl-line);
-}
-.k-gantt__days { display: flex; flex-shrink: 0; background: var(--tbl-head); }
-.k-gantt__day { height: 44px; text-align: center; font-size: var(--fs-xs); color: var(--tbl-head-tx); opacity: .8; padding-top: 20px; position: relative; flex-shrink: 0; }
-.k-gantt__day em { position: absolute; top: 1px; inset-inline-start: 2px; font-style: normal; font-weight: 700; white-space: nowrap; opacity: 1; }
-.k-gantt__day.is-today { opacity: 1; font-weight: 700; color: #fff; background: rgba(10,132,255,.55); }
-.k-gantt__track { position: relative; flex-shrink: 0; background-image: linear-gradient(to left, var(--tbl-line) 1px, transparent 1px); background-size: 30px 100%; }
-.k-gantt__bar { position: absolute; top: 12px; height: 32px; border-radius: 10px; overflow: hidden; color: #111; font-weight: 700; font-size: var(--fs-xs); display: flex; align-items: center; justify-content: center; }
-.k-gantt__bar i { position: absolute; inset-block: 0; inset-inline-start: 0; background: rgba(0,0,0,.28); }
-.k-gantt__bar span { position: relative; }
-.k-gantt__today { position: absolute; top: 0; bottom: 0; width: 2px; margin-inline-start: -1px; background: var(--accent); opacity: .75; pointer-events: none; z-index: 2; }
+/* ═══ محور زمان (نقشه‌ی کارها برای کل زمان) ═══ */
+.k-tl__bar { display: flex; align-items: center; gap: var(--sp-2); }
+.k-tl__fit { min-height: 36px; padding: 4px 12px; font-size: var(--fs-sm); }
+.k-tl__scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card);
+  touch-action: pan-x pan-y; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.k-tl__canvas { position: relative; transition: height .15s var(--ease); }
+.k-tl__head { position: absolute; left: 0; right: 0; top: 0; background: var(--tbl-head); color: var(--tbl-head-tx); z-index: 4; }
+.k-tl__month { position: absolute; top: 3px; padding-inline-start: 5px; font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; }
+.k-tl__tick { position: absolute; bottom: 0; height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: var(--fs-xs); line-height: 1.25; white-space: nowrap; }
+.k-tl__tick small { font-size: 0.6rem; opacity: .7; }
+.k-tl__tick.is-today { background: rgba(10,132,255,.65); font-weight: 700; }
+.k-tl__grid i { position: absolute; display: block; pointer-events: none; }
+.k-tl__vline { width: 1px; background: var(--tbl-line); }
+.k-tl__vline.is-month { background: var(--muted); opacity: .55; }
+.k-tl__fri { background: var(--red-bg); opacity: .45; }
+.k-tl__today { position: absolute; top: 0; bottom: 0; width: 2px; margin-inline-start: -1px; background: var(--red-tx); z-index: 6; pointer-events: none; }
+.k-tl__today span { position: absolute; bottom: 3px; inset-inline-start: 6px; background: var(--red-tx); color: #fff; font-size: 0.6rem; font-weight: 700; padding: 0 7px; border-radius: 6px; white-space: nowrap; }
+.k-tl__none { position: absolute; inset: 70px 0 0 0; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+
+.k-tl-box { position: absolute; border: 2px solid var(--c); border-radius: 10px; overflow: clip; background: var(--card); color: var(--text); cursor: pointer; z-index: 2; }
+.k-tl-box::before { content: ''; position: absolute; inset: 0; background: var(--c); opacity: .16; }
+.k-tl-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.k-tl-box__fill { position: absolute; inset-block: 0; inset-inline-start: 0; background: var(--c); opacity: .42; }
+.k-tl-box__in { position: sticky; inset-inline-start: 4px; z-index: 3; width: fit-content; height: 100%; padding: 3px 4px; display: flex; flex-direction: column; gap: 2px; }
+.k-tl-box__title { display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: var(--fs-xs); white-space: nowrap; min-width: 0; }
+.k-tl-box__title .k-ico { font-size: 15px; }
+.k-tl-box__title span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.k-tl-box__meta { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); white-space: nowrap; }
+.k-tl-box__meta .k-avatar { width: 22px; height: 22px; font-size: 0.55rem; border-width: 1px; }
+.k-tl-box__crew { margin-top: auto; display: flex; gap: 6px; flex-wrap: nowrap; }
+.k-tl__canvas[data-lod="0"] .k-tl-box { border-width: 1.5px; border-radius: 7px; }
+.k-tl__canvas[data-lod="0"] .k-tl-box__title { font-size: 0.62rem; }
+.k-tl__canvas[data-lod="0"] .k-tl-box__in { padding: 1px 3px; }
+
+.k-crew { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-pill); padding: 1px 8px 1px 2px; white-space: nowrap; }
+.k-crew .k-avatar { width: 20px; height: 20px; font-size: 0.55rem; border: none; }
+
+.k-tl-chart { position: absolute; inset-inline: 0; top: 58px; height: 62px; z-index: 1; }
+.k-tl-col { position: absolute; bottom: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; text-align: center; }
+.k-tl-col em { font-style: normal; font-size: 0.62rem; font-weight: 700; line-height: 1.5; }
+.k-tl-col i { display: block; background: var(--c); border-radius: 4px 4px 0 0; }
+.k-tl-col.is-today { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+.k-tl-col--empty { border: 1.5px dashed var(--muted); border-radius: 6px; align-items: center; justify-content: center; color: var(--muted); font-weight: 700; }
+.k-tl-col__abs { position: absolute; top: 0; inset-inline-end: 0; background: var(--red-bg); color: var(--red-tx); border: 1px solid var(--red-bd);
+  font-size: 0.6rem; font-weight: 700; padding: 0 4px; border-radius: 6px; line-height: 1.5; }
+
+.k-tl__trades { display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: var(--sp-2); }
+.k-tl-trade { min-height: 46px; border: 2px solid var(--c); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 700; font-size: var(--fs-sm); background: var(--bg3); color: var(--text); }
+.k-tl-trade .k-ico { color: var(--c); font-size: 18px; }
+.k-tl-trade[aria-pressed="false"] { opacity: .45; border-style: dashed; background: transparent; }
+.k-tl__hint { padding-top: 0; }
+
+.k-sheet .k-tbl-scroll { max-height: 34vh; }
+.k-sheet .k-tbl-title { font-size: var(--fs-lg); padding: 12px 8px 8px; }
