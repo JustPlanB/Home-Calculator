@@ -1,0 +1,264 @@
+/* ═══════════════════════════════════════════════════════════════════
+   کامپوننت‌های مشترک «کارگاه». هر چیزی که در دو صفحه تکرار شود، اینجا تعریف می‌شود.
+   پیشوند همه‌ی کلاس‌ها k- است. شرح هر کامپوننت در CLAUDE.md آمده است.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ───────── آیکن ───────── */
+.k-ico { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 0; }
+.k-ico svg { width: 1em; height: 1em; display: block; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ───────── محیط: هدر ثابت و نوار پایین ───────── */
+.k-chrome {
+  position: fixed; top: max(0px, env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 55;
+  background: var(--bg);
+  padding: 8px var(--content-inline-end) 6px var(--content-inline);
+}
+.k-chrome::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%); opacity: .85;
+}
+.k-topbar { display: flex; align-items: center; gap: var(--sp-2); max-width: 960px; margin: 0 auto; }
+.k-topbar .k-select-btn { flex: 1; min-width: 0; }
+
+.k-bottombar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  padding: 0 var(--content-inline-end) max(14px, var(--nav-safe)) var(--content-inline);
+  pointer-events: none;
+}
+.k-bottombar__in {
+  position: relative; max-width: 960px; margin: 0 auto; height: 64px; pointer-events: auto;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  background: var(--card); border-radius: var(--r-lg); box-shadow: var(--neu-out);
+}
+.k-bottombar__mid {
+  position: absolute; left: 50%; top: -26px; transform: translateX(-50%);
+  width: 92px; height: 92px; border-radius: 50%; background: var(--neu-face); box-shadow: var(--neu-out);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.k-bottombar__mid b { font-size: var(--fs-md); color: var(--accent); }
+.k-bottombar__mid span { font-size: 1.05rem; font-weight: 700; color: var(--green-tx); }
+
+/* ───────── عملگرها (Operators) ───────── */
+.k-op {
+  width: var(--hit); height: var(--hit); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  background: var(--neu-face); box-shadow: var(--neu-in); color: var(--text); font-size: 20px;
+  transition: transform .12s var(--ease), opacity .12s;
+}
+.k-op:active { transform: scale(.94); opacity: .85; }
+.k-op--square { border-radius: var(--r-md); }
+.k-op--add { color: var(--accent); font-size: 26px; }
+.k-op--search { color: var(--accent); }
+.k-op--lg { width: 52px; height: 52px; font-size: 28px; }
+.k-op--sm { width: 32px; height: 32px; font-size: 16px; }
+.k-op--del { background: transparent; box-shadow: none; color: var(--red-tx); }
+.k-op--edit { background: transparent; box-shadow: none; color: var(--muted); border: 1px solid var(--border); border-radius: var(--r-md); }
+.k-op--back { width: auto; padding: 0 16px; border-radius: var(--r-md); font-size: var(--fs-md); font-weight: 600;
+  gap: 8px; background: var(--bg3); box-shadow: none; }
+
+/* دکمه‌ی قرصی با برچسب (افزودن ردیف) */
+.k-pill {
+  height: 46px; padding: 0 16px 0 20px; border-radius: var(--r-pill); display: inline-flex; align-items: center; gap: 12px;
+  background: var(--neu-face); box-shadow: var(--neu-in); font-weight: 600; font-size: var(--fs-md); color: var(--text2);
+}
+.k-pill .k-ico { color: var(--accent); font-size: 22px; }
+
+/* دکمه‌ی متنی */
+.k-btn {
+  min-height: 40px; padding: 8px 18px; border-radius: var(--r-sm); font-weight: 700; font-size: var(--fs-md);
+  background: var(--bg3); color: var(--text); display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.k-btn--primary { background: var(--accent); color: #fff; }
+.k-btn--danger { background: #c0392b; color: #fff; }
+.k-btn--block { width: 100%; }
+
+/* انتخاب‌گر (کشویی) هدر */
+.k-select-btn {
+  height: var(--hit); padding: 0 22px; border-radius: 14px; background: var(--neu-face); box-shadow: var(--neu-in);
+  display: flex; align-items: center; justify-content: center; position: relative; font-weight: 700; font-size: var(--fs-md);
+}
+.k-select-btn .k-ico { position: absolute; left: 12px; color: var(--muted); font-size: 18px; }
+
+/* ───────── کارت ───────── */
+.k-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-4); }
+.k-card--raised { border: none; box-shadow: var(--neu-out); }
+.k-card__head { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.k-card__title { font-weight: 700; font-size: var(--fs-lg); }
+.k-card__sub { font-size: var(--fs-xs); color: var(--muted); }
+
+/* باکس آمار (عدد درشت + برچسب) */
+.k-stat { border: 1px solid var(--border); border-radius: 18px; padding: 12px 14px; background: var(--card); }
+.k-stat__label { font-weight: 700; font-size: var(--fs-md); }
+.k-stat__line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; margin-top: 2px; }
+.k-stat__line small { font-size: var(--fs-sm); font-weight: 600; }
+
+/* ───────── کاشی ابزار (Tile) ───────── */
+.k-tilebox {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: 14px 8px 12px;
+  background: var(--card); border-radius: var(--r-lg); box-shadow: var(--neu-out);
+}
+.k-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; position: relative; font-weight: 600; font-size: var(--fs-sm); }
+.k-tile:active .k-disc { opacity: .8; transform: scale(.96); }
+.k-disc {
+  width: 46px; height: 46px; border-radius: 50%; background: var(--disc-bg); color: var(--disc-fg);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25); transition: transform .12s var(--ease), opacity .12s;
+}
+.k-disc--danger { color: var(--disc-danger); }
+.k-disc--sm { width: 36px; height: 36px; font-size: 19px; }
+.k-tile__badge { position: absolute; top: -4px; inset-inline-end: 4%; font-size: 0.6rem; font-weight: 700;
+  padding: 1px 7px; border-radius: var(--r-pill); background: var(--warn-bg); color: var(--warn-tx); border: 1px solid var(--warn-bd); }
+
+/* ───────── چیپ و وضعیت ───────── */
+.k-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 10px; border-radius: var(--r-pill);
+  font-size: var(--fs-xs); font-weight: 700; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); white-space: nowrap;
+}
+.k-chip--green { background: var(--green-bg); border-color: var(--green-bd); color: var(--green-tx); }
+.k-chip--red   { background: var(--red-bg);   border-color: var(--red-bd);   color: var(--red-tx); }
+.k-chip--warn  { background: var(--warn-bg);  border-color: var(--warn-bd);  color: var(--warn-tx); }
+.k-chip--blue  { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.k-chip .k-ico { font-size: 13px; }
+
+/* ───────── چک‌باکس ───────── */
+.k-check {
+  width: 26px; height: 26px; border-radius: 7px; border: 2px solid var(--muted); display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: transparent; background: transparent; font-size: 18px; transition: all .15s var(--ease);
+}
+.k-check[aria-checked="true"] { border-color: var(--green-tx); color: var(--green-tx); background: var(--green-bg); }
+.k-check[aria-disabled="true"] { opacity: .4; }
+
+/* ───────── آواتار و پیشرفت ───────── */
+.k-avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+  border: 2px solid var(--card);
+}
+.k-avatars { display: inline-flex; }
+.k-avatars .k-avatar + .k-avatar { margin-inline-start: -8px; }
+
+.k-progress { height: 8px; border-radius: var(--r-pill); background: var(--bg3); overflow: hidden; }
+.k-progress > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .3s var(--ease); }
+.k-progress--green > i { background: var(--green-tx); }
+.k-progress--red > i { background: var(--red-tx); }
+
+/* حلقه‌ی پیشرفت (نمودار دایره‌ای) */
+.k-ring { --p: 0; width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: conic-gradient(var(--green-tx) calc(var(--p) * 1%), var(--bg3) 0); position: relative; font-weight: 700; font-size: var(--fs-sm); }
+.k-ring::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--card); }
+.k-ring > span { position: relative; }
+
+/* ───────── تب قطعه‌ای ───────── */
+.k-seg { display: flex; padding: 4px; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); }
+.k-seg button { flex: 1; padding: 9px 4px; border-radius: 12px; font-weight: 600; color: var(--muted); font-size: var(--fs-md); }
+.k-seg button[aria-selected="true"] { background: var(--bg3); color: var(--text); box-shadow: 0 1px 4px var(--shadow); }
+
+/* ───────── فیلد فرم ───────── */
+.k-field { display: block; }
+.k-field + .k-field { margin-top: var(--sp-3); }
+.k-field__label { display: block; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.k-input {
+  width: 100%; min-height: 44px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid var(--border);
+  background: var(--input-bg); color: var(--text); font-size: var(--fs-md); text-align: right;
+}
+textarea.k-input { min-height: 84px; resize: vertical; line-height: 1.7; }
+.k-input::placeholder { color: var(--muted); }
+.k-input--num { text-align: center; direction: ltr; font-variant-numeric: tabular-nums; }
+
+/* ───────── جدول (Table) — تعریف کامل در CLAUDE.md ───────── */
+.k-tbl-wrap { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--card); overflow: hidden; }
+.k-tbl-title { text-align: center; font-weight: 700; font-size: var(--fs-xl); padding: 18px 12px 14px; }
+.k-tbl-scroll { overflow-x: auto; overflow-y: auto; max-height: min(62vh, 560px); -webkit-overflow-scrolling: touch; }
+.k-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); table-layout: auto; }
+.k-tbl thead th {
+  position: sticky; top: 0; z-index: 3; background: var(--tbl-head); color: var(--tbl-head-tx); text-align: center;
+  font-weight: 700; padding: 10px 6px; border: 1px solid var(--tbl-line); white-space: nowrap; font-size: var(--fs-sm);
+}
+.k-tbl tbody td, .k-tbl tfoot td { border: 1px solid var(--tbl-line); padding: 4px 6px; height: var(--row-h); vertical-align: middle; }
+.k-tbl tbody tr:nth-child(even) { background: var(--row-alt); }
+.k-tbl tfoot td { background: var(--bg3); font-weight: 700; text-align: center; }
+.k-tbl .c-idx { width: 40px; text-align: center; color: var(--muted); }
+.k-tbl .c-act { width: 40px; text-align: center; padding: 0; }
+.k-tbl .c-text { text-align: right; min-width: 88px; }
+.k-tbl .k-sub { display: block; font-size: var(--fs-xs); font-weight: 400; color: var(--muted); }
+.k-tbl .c-num, .k-tbl .c-date, .k-tbl .c-percent { text-align: center; font-variant-numeric: tabular-nums; }
+.k-tbl .c-date, .k-tbl .c-percent { white-space: nowrap; }
+.k-tbl .c-money { text-align: center; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.k-tbl .c-money.pos { color: var(--green-tx); }
+.k-tbl .c-money.neg { color: var(--red-tx); }
+.k-tbl .c-select, .k-tbl .c-status, .k-tbl .c-check, .k-tbl .c-person, .k-tbl .c-progress { text-align: center; }
+.k-tbl td.editable { cursor: text; }
+.k-tbl td.editing { padding: 2px; }
+.k-tbl td.editing .k-input { min-height: 40px; border-color: var(--accent); }
+.k-tbl .k-cellbtn {
+  width: 100%; min-height: 36px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--border); background: transparent;
+  color: var(--text2); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap;
+}
+.k-tbl-hint { text-align: center; font-size: var(--fs-xs); color: var(--muted); padding: 10px 12px 4px; }
+.k-tbl-foot { padding: 8px 16px 16px; display: flex; justify-content: flex-start; }
+.k-tbl-empty { padding: 28px 12px; text-align: center; color: var(--muted); }
+
+/* ───────── مودال / شیت / توست ───────── */
+.k-overlay {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center;
+  padding: 16px; animation: k-fade .15s ease-out;
+}
+.k-overlay--sheet { align-items: flex-end; padding: 0; }
+.k-modal { background: var(--card); border-radius: var(--r-md); padding: 22px 20px 16px; max-width: 320px; width: 100%; text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,.35); animation: k-pop .18s var(--ease); }
+.k-modal__msg { font-size: var(--fs-lg); line-height: 1.7; margin-bottom: 18px; }
+.k-modal__actions { display: flex; gap: 10px; }
+.k-modal__actions .k-btn { flex: 1; }
+
+.k-sheet {
+  width: 100%; max-width: 560px; max-height: 86vh; display: flex; flex-direction: column; background: var(--card);
+  border-radius: 22px 22px 0 0; padding: 10px 16px max(16px, var(--nav-safe)); box-shadow: 0 -8px 30px rgba(0,0,0,.35);
+  animation: k-up .22s var(--ease);
+}
+.k-sheet__grip { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.k-sheet__title { font-weight: 700; font-size: var(--fs-lg); text-align: center; margin-bottom: 12px; }
+.k-sheet__body { overflow-y: auto; }
+.k-sheet__actions { display: flex; gap: 10px; margin-top: 16px; }
+.k-sheet__actions .k-btn { flex: 1; }
+
+.k-menuitem { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 6px 4px; text-align: right; font-weight: 600; border-bottom: 1px solid var(--border); }
+.k-menuitem:last-child { border-bottom: none; }
+.k-menuitem .k-ico { font-size: 22px; color: var(--accent); }
+.k-menuitem--danger { color: var(--red-tx); }
+.k-menuitem--danger .k-ico { color: var(--red-tx); }
+.k-menuitem[aria-selected="true"] { color: var(--accent); }
+.k-menuitem[aria-selected="true"]::after { content: '✓'; margin-inline-start: auto; }
+
+.k-toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(110px + var(--nav-safe)); z-index: 300; max-width: 86vw;
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border); padding: 10px 18px; border-radius: var(--r-pill);
+  font-size: var(--fs-md); font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.35); animation: k-up .2s var(--ease);
+}
+
+/* ───────── حالت خالی ───────── */
+.k-empty { text-align: center; padding: 36px 16px; color: var(--muted); }
+.k-empty .k-disc { margin-bottom: 12px; width: 64px; height: 64px; font-size: 32px; }
+.k-empty h3 { color: var(--text); font-size: var(--fs-lg); margin-bottom: 6px; }
+.k-empty p { font-size: var(--fs-sm); line-height: 1.9; max-width: 340px; margin: 0 auto; }
+
+@keyframes k-fade { from { opacity: 0; } }
+@keyframes k-pop { from { opacity: 0; transform: scale(.94); } }
+@keyframes k-up { from { opacity: 0; transform: translateY(24px); } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ───────── چیپ انتخابی (فرم‌ها) ───────── */
+.k-chip--pick { padding: 6px 14px; font-size: var(--fs-sm); min-height: 34px; cursor: pointer; }
+.k-chip--pick[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* چیپ داخل جدول: کوچک‌تر و بی‌آیکن تا جا برای ستون‌ها بماند */
+.k-tbl .k-chip { font-size: 0.68rem; padding: 1px 8px; }
+.k-tbl .k-chip .k-ico { display: none; }
+.k-tbl .c-idx { width: 32px; }
+.k-tbl .c-act { width: 38px; }
+.k-tbl .c-date { font-size: 0.74rem; }
+.k-tbl .c-text { min-width: 76px; }
+.k-tbl tbody td, .k-tbl tfoot td { padding: 4px 5px; }
+.k-tbl thead th { padding: 10px 4px; }
+.k-tbl .c-text { min-width: 68px; }
+.k-tbl .c-money { direction: ltr; unicode-bidi: isolate; }
