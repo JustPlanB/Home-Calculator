@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• اعلان و باکس شناور (کد اندروید)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/"فرستندهٔ شخصی"/.test(patch) && !/"⚠️ پیامک شخصی از "\+sender/.test(patch), 'عنوان اعلان پیامک شخصی کوتاه و بی‌ایموجی (از ۱.۳.۴۶: «فرستندهٔ شخصی»)');
   ok(/R\.layout\.hk_done/.test(patch) && /DecoratedCustomViewStyle/.test(patch) && /hk_done\.xml/.test(patch) && /android:text="ثبت شد"[\s\S]{0,80}android:textSize="18sp"[\s\S]{0,40}android:textStyle="bold"/.test(patch) && /android:textSize="12\.5sp"/.test(patch),
     'پیام بعد از ثبت: «بابت: …» کوچک هم‌اندازهٔ نام نرم‌افزار و «ثبت شد» درشت و بولد');

@@ -18,7 +18,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• اعلان (کد اندروید)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   const post = patch.slice(patch.indexOf('static void postNotification'), patch.indexOf('static void postNotification') + 3000);
   ok(!/setCustomContentView|DecoratedCustomViewStyle/.test(post) && /baseBuilder\(c,title,text\)/.test(post), 'اعلان تراکنش دوباره با چیدمان رسمی اندروید (BigTextStyle)');
   ok(/setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /setHint\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'راهنمای فیلد اعلان و باکس شناور: «بابت چی بود؟ (شرح)»');

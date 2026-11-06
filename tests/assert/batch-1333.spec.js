@@ -38,7 +38,7 @@ async function page(b, inbox, opts) {
 
   /* ---------- اندروید ---------- */
   console.log('• بخش اندرویدی');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/public void pickImage\(PluginCall call\)/.test(patch) && /ACTION_GET_CONTENT/.test(patch) && /ImageDecoder\.decodeBitmap/.test(patch) && /setTargetSize/.test(patch) && /inSampleSize=ss/.test(patch), 'انتخاب از گالری با انتخابگر اندروید: HEIC/عکس خیلی بزرگ با ImageDecoder (کوچک‌شده هنگام خواندن) و BitmapFactory برای نسخه‌های قدیمی');
 
   /* ---------- ثبت گروهی: ردیف معمولیِ قبلی که پرداخت قسط بود + کارت مقصد ---------- */

@@ -139,7 +139,7 @@ const cnt = () => ({ acc: document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)
   ok(t.fab >= 33 && t.svg >= 26 && t.fabDown >= 5, 'فلش اسکرول کمی بزرگ‌تر و کمی پایین‌تر (' + t.svg + 'px، ' + Math.round(t.fabDown) + 'px پایین‌تر)');
   await T.ctx.close();
 
-  const andr = fs.readFileSync(path.join(__dirname, '../../scripts/patch-android.js'), 'utf8');
+  const andr = require('../lib/android-src')();
   const hd = andr.slice(andr.indexOf('static Bitmap header('), andr.indexOf('static Bitmap row('));
   ok(/0xFF0A1628/.test(andr) && /0xFFEEF0F4/.test(andr) && /0xFF1B1B1B/.test(andr) && /0xFFE3E7EE/.test(andr), 'ویجت ردیف‌ها: زمینهٔ عنوان و سرستون‌ها همان رنگ جدول‌های نرم‌افزار');
   ok(/Paint\.Align\.CENTER\);\s*cv\.drawText\(inc \? "درآمدها" : "مخارج", W\/2f/.test(hd) && /amt\(inc, light\), Paint\.Align\.CENTER/.test(hd), 'عنوان «مخارج/درآمدها» وسط با همان سبز و نارنجی');

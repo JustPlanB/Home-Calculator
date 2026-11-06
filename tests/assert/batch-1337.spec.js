@@ -178,7 +178,7 @@ async function page(b, extra) {
   ok(sh.att.join() === 'img:share,img:pdf' && sh.attWin, 'با انتخاب ردیف، هر دو فایل پیوست آن ردیف شدند و پنجرهٔ پیوست‌ها باز شد');
   ok(sh.open2 && sh.noNew, 'گزینهٔ «ردیف تازه در مخارج» در پنجرهٔ اشتراک نیست');
 
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/hk-share-attach/.test(patch) && /android\.intent\.action\.SEND_MULTIPLE/.test(patch) && /mimeType="image\/\*"/.test(patch) && /mimeType="application\/pdf"/.test(patch), 'اندروید: نرم‌افزار در فهرست «اشتراک‌گذاری» عکس و PDF (تکی و چندتایی)');
   ok(/captureShared\(this,getIntent\(\)\)/.test(patch) && /triggerWindowJSEvent\("hkShareAttach"\)/.test(patch) && /PdfRenderer/.test(patch) && /decodeScaled\(getContext\(\),us\.get\(i\),1600\)/.test(patch), 'اندروید: عکس کوچک (۱۶۰۰px، JPEG) و صفحهٔ اول PDF به عکس؛ فایل پشتیبان اشتراکی مثل قبل');
 

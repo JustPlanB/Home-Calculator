@@ -170,7 +170,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   ok(wt.e.length === 1 && wt.e[0].t === 'خرید' && wt.e[0].a === wt.f, 'ویجت ردیف‌ها: مخارج با مبلغ');
   await H.ctx.close();
 
-  const andr = fs.readFileSync(path.join(__dirname, '../../scripts/patch-android.js'), 'utf8');
+  const andr = require('../lib/android-src')();
   ok(/HkWidgetTxConfig/.test(andr) && /APPWIDGET_CONFIGURE/.test(andr) && /"مخارج"/.test(andr) && /"درآمدها"/.test(andr) && /hk_widget_tx_info/.test(andr), 'ویجت ردیف‌ها: هنگام افزودن انتخاب «مخارج / درآمدها»');
 
   ok(allErrors.length === 0, 'هیچ خطای JS ' + allErrors.slice(0, 3).join(' | '));

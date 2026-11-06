@@ -25,7 +25,7 @@ async function page(b, inbox) {
   const errors = [];
 
   console.log('• دروازهٔ پیامک (بخش اندرویدی)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/t\.contains\("قبض"\)/.test(patch) && /if\(hasBalance && \(bankHint \|\| bankName \|\| senderBank\)\) return true;/.test(patch), 'قانون کلی «مانده + مبلغ + نشانهٔ بانک» و کلمه‌های قبض/سود/کارمزد/… در دروازهٔ اندرویدی');
 
   /* شهریور و مهر یک حساب ملی؛ پیامک قبض برق؛ و یک قسط با دیرکرد */

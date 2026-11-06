@@ -121,7 +121,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwA
   ok(vo.n === 9 && /^none\|rgba\(0, 0, 0, 0\)$/.test(vo.color) && vo.fill === 'rgb(47, 155, 255)|rgb(124, 196, 255)', 'هنگام شنیدن (۱.۳.۴۰): فقط ۹ خط آبی در دو رنگ، بدون هیچ دایره‌ای (' + vo.color + ' / ' + vo.fill + ')');
   ok(Math.max(...vo.loud) > Math.max(...vo.quiet) + 10 && vo.round, 'ارتفاع خط‌ها با شدت صدا تغییر می‌کند؛ خط‌ها باریک با سر کاملاً گرد (' + Math.max(...vo.quiet) + '→' + Math.max(...vo.loud) + ')');
   ok(vo.partial === 'خرید سوپر مارکت' && vo.final === 'خرید سوپر مارکت' && vo.unmask === 'سوپر', '«س***» (فیلتر سرویس گفتار) به «سوپر» برمی‌گردد');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/MASK_OFFENSIVE_WORDS",false/.test(patch), 'اندروید ۱۳+: ستاره‌دار کردن کلمه‌ها در سرویس گفتار خاموش');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
