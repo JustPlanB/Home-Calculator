@@ -18,7 +18,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• ثبت از اعلان (پاسخ مستقیم)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
     'اعلان تراکنش دکمهٔ «ثبت» با فیلد «بابت چه بود؟» دارد (PendingIntent قابل‌تغییر برای پاسخ)');
   ok(/class HkQuickReplyReceiver/.test(patch) && /x\.put\("quickDesc",desc\)/.test(patch) && /HkQuickReplyReceiver" android:exported="false"/.test(patch) && /r\.put\("quickDesc"/.test(patch),

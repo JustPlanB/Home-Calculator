@@ -7,7 +7,7 @@ let failed = 0, passed = 0;
 function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } else { failed++; console.log('  ✗ ' + msg); } }
 const WORD = /(?<![؀-ۿ‌])اپ(?![؀-ۿ])/;
 const ALLOW = ['نصب\\s*(?:اپ', "m.replace(/(^|[^\\u0600-\\u06FF])اپ", 'متن پیام‌ها: «اپ» → «نرم‌افزار»'];
-for (const f of ['index.html', 'scripts/patch-android.js', 'version.json']) {
+for (const f of ['index.html', 'scripts/patch-android.js', 'version.json'].concat(fs.readdirSync(path.join(root, 'android-src')).filter(x => x.endsWith('.java')).map(x => 'android-src/' + x))) {
   const lines = fs.readFileSync(path.join(root, f), 'utf8').split('\n');
   const bad = [];
   lines.forEach((l, i) => { if (WORD.test(l) && !ALLOW.some(a => l.includes(a))) bad.push((i + 1) + ': ' + l.trim().slice(0, 80)); });

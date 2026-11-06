@@ -11258,14 +11258,15 @@ html[data-theme="light"] {
     .hk-sp-tiles .sp-pick-t .sp-pick-x { top: -7px; left: auto; right: 50%; margin-right: -30px; display: none; z-index: 3; }
     /* ۱.۳.۸۳: حذف دسته = نگه‌داشتن انگشت → لرزش + × قرمز (مثل صفحهٔ اصلی گوشی) */
     .hk-sp-tiles.hk-jiggle .sp-pick-t .sp-pick-x { display: block; }
-    .hk-sp-tiles.hk-jiggle .sp-pick-t:not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation: hkCatJiggle 0.24s ease-in-out infinite alternate; }
-    .hk-sp-tiles.hk-jiggle .sp-pick-t:nth-child(2n):not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation-delay: -0.12s; animation-duration: 0.27s; }
+    .hk-sp-tiles.hk-jiggle .sp-pick-t:not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation: hkCatJiggle 0.26s linear infinite; }
+    .hk-sp-tiles.hk-jiggle .sp-pick-t:nth-child(2n):not([data-id=""]):not([data-id="p2p"]):not(.sp-pick-tadd) i { animation-delay: -0.09s; animation-duration: 0.24s; }
     .hk-sp-tiles.hk-jiggle .sp-pick-t[data-id=""], .hk-sp-tiles.hk-jiggle .sp-pick-t[data-id="p2p"], .hk-sp-tiles.hk-jiggle .sp-pick-tadd { opacity: 0.45; }
-    @keyframes hkCatJiggle { from { transform: rotate(-2.6deg); } to { transform: rotate(2.6deg); } }
+    /* ۱.۳.۸۴: لرزش تند و ریز مثل صفحهٔ اصلی آیفون (هر کاشی کمی ناهم‌زمان) */
+    @keyframes hkCatJiggle { 0% { transform: rotate(-1.6deg) translateY(0.3px); } 50% { transform: rotate(1.6deg) translateY(-0.3px); } 100% { transform: rotate(-1.6deg) translateY(0.3px); } }
     @media (prefers-reduced-motion: reduce) { .hk-sp-tiles.hk-jiggle .sp-pick-t i { animation: none !important; } }
     /* «دستهٔ جدید» با همان قاب سایه‌دار بقیهٔ آیکون‌ها */
     .hk-cat-colored .sp-pick-tadd i { color: #08b5f5; }
-    .sp-cat-chip.p2p { border-style: dashed; border-color: #c9d6df; color: #c9d6df; }
+    .sp-cat-chip.p2p { border-style: dashed; border-color: #ff453a; color: #ff453a; }
     .sp-pick-x { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg3, #2c2c2e); color: rgba(255,255,255,0.75); font-size: var(--hk-fs-label); line-height: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: pointer; }
     html[data-theme="light"] .sp-pick-x { background: #e5e5ea; color: #3a3a3c; }
     /* ۱.۳.۴۸: پنجرهٔ پروفایل */
@@ -11708,19 +11709,30 @@ html[data-theme="light"] {
     /* ۱.۳.۸۳: جیب به جیب: قاب نقطه‌چین نقره‌ای (با همهٔ دسته‌ها فرق دارد)؛ ⓘ گوشهٔ بالا-چپ آیکون، نیمی بیرون */
     .hk-p2p-cat { position: relative; }
     .hk-p2p-cat i { position: relative; overflow: visible !important; }
-    .hk-cat-colored .sms-cat.hk-p2p-cat i { border: 1.5px dashed color-mix(in srgb, var(--cc, #c9d6df) 70%, transparent); }
+    .hk-cat-colored .sms-cat.hk-p2p-cat i { border: 1.5px dashed color-mix(in srgb, var(--cc, #ff453a) 70%, transparent); }
     .hk-cat-colored .sms-cat.hk-p2p-cat.on i { border-style: solid; }
     .hk-p2p-cat > span { white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; max-width: none !important; font-size: 0.92em; letter-spacing: -0.2px; }
     .modal-box.hk-pf.hk-p2p-box { padding: 18px 18px 14px !important; }
+    /* ۱.۳.۸۴: پیامک‌های نفهمیده */
+    .hk-unread-n { margin-inline-start: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: #ffd60a; color: #1c1c1e; font-size: 0.72rem; line-height: 18px; text-align: center; display: inline-block; }
+    .hk-unr-card { background: var(--bg3, #2c2c2e); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .hk-unr-t { white-space: pre-wrap; font-size: var(--hk-fs-small); line-height: 1.7; color: var(--text); direction: rtl; }
+    .hk-unr-row { display: flex; gap: 8px; align-items: center; }
+    .hk-unr-seg { display: flex; border-radius: 9px; overflow: hidden; border: 1px solid var(--border, #3a3a3c); flex: 0 0 auto; }
+    .hk-unr-seg button { background: none; border: 0; color: var(--muted, #98989f); font-family: inherit; font-weight: 700; padding: 7px 10px; }
+    .hk-unr-seg button.on[data-ty="expense"] { background: color-mix(in srgb, #ff6b4a 22%, transparent); color: #ff6b4a; }
+    .hk-unr-seg button.on[data-ty="income"] { background: color-mix(in srgb, #9ee858 22%, transparent); color: #9ee858; }
+    .hk-unr-amt { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border, #3a3a3c); background: var(--input-bg, #1c1c1e); color: var(--text); font-family: inherit; font-size: 1rem; text-align: center; }
+    .hk-unr-btns { display: flex; gap: 8px; } .hk-unr-btns .modal-btn { flex: 1; margin: 0; }
     .hk-p2p-box .hk-rax-acts { padding: 14px 0 0 !important; }
     .hk-p2p-info { position: absolute; top: -7px; left: -7px; width: 17px; height: 17px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
-      font-style: normal; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 11px; line-height: 1; color: var(--bg, #1c1c1e); background: #c9d6df; border: 2px solid var(--bg2, #1c1c1e); cursor: pointer; z-index: 2; }
-    html[data-theme="light"] .hk-p2p-info { color: #fff; background: #8a9aa6; border-color: #fff; }
-    .hk-p2p-ic { display: inline-flex; width: 26px; height: 26px; color: #c9d6df; }
+      font-style: normal; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 11px; line-height: 1; color: #fff; background: #ff453a; border: 2px solid var(--bg2, #1c1c1e); cursor: pointer; z-index: 2; }
+    html[data-theme="light"] .hk-p2p-info { color: #fff; background: #ff453a; border-color: #fff; }
+    .hk-p2p-ic { display: inline-flex; width: 26px; height: 26px; color: #ff453a; }
     .hk-p2p-ic svg { width: 26px; height: 26px; }
     tr.hk-p2p-row .pd-amt { opacity: 0.55; }
     td.hk-p2p-td { position: relative; }
-    td.hk-p2p-td::after { content: "⇄"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #c9d6df; opacity: 0.9; pointer-events: none; }
+    td.hk-p2p-td::after { content: "⇄"; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #ff453a; opacity: 0.9; pointer-events: none; }
     /* ۱.۳.۷۹: عرض به اندازهٔ طولانی‌ترین گزینه («ثبت تکی و گروهی پیامک‌ها»)؛ قلم یک درجه کوچک‌تر؛ همه تک‌خطی */
     .hk-dock-pop { width: max-content; max-width: calc(100vw - 16px); }
     .hk-dock-pi { font-size: var(--hk-fs-small); white-space: nowrap; gap: 9px; }
@@ -12111,6 +12123,9 @@ button, input, select, textarea { font-family: inherit; }
 
     /* ۱.۳.۷۶: دسته‌ها: دو ردیف پنج‌تایی با آیکون‌های رنگی */
     .sms-cat-grid.sms-cat-row.hk-cat-colored { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 4px; }
+    /* ۱.۳.۸۴: آیکون داخل مربع‌های دسته بزرگ‌تر */
+    .hk-cat-colored .sms-cat svg { width: 27px !important; height: 27px !important; }
+    .hk-cat-colored.sms-cat-row .sms-cat svg, .sms-cat-row.hk-cat-colored .sms-cat svg { width: 24px !important; height: 24px !important; }
     .hk-cat-colored .sms-cat i { color: var(--cc, #08b5f5); background: color-mix(in srgb, var(--cc, #08b5f5) 15%, var(--bg3, #2c2c2e)); border: 1.5px solid transparent; }
     .hk-cat-colored .sms-cat.on i { border-color: var(--cc, #08b5f5); color: var(--cc, #08b5f5); background: color-mix(in srgb, var(--cc, #08b5f5) 28%, transparent); }
     .hk-cat-colored .sms-cat.on span { color: var(--cc, #08b5f5); }
@@ -15033,6 +15048,8 @@ function onPeriodChange() {
 
     /* —— Storage —— */
     function persistCurrent() {
+      /* ۱.۳.۸۴: ردیف‌های تازهٔ مخارج دستهٔ خودشان را روی خود ردیف می‌گیرند */
+      try { if (periodData && periodData.expense && typeof HKCategorizer !== 'undefined') hkCatStampSide(periodData.expense); } catch (eSt) {}
       archive[periodKey(currentYear, currentMonth)] = JSON.parse(JSON.stringify(periodData));
     }
 
@@ -25312,7 +25329,7 @@ async function openPdfPrintWindow(){
       ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:350px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +
         '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
-        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#c9d6df;">همیشه برای این دو کارت</label>' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#ff453a;">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
       ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت همین مبلغ از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
       var done = function (yes) {
@@ -26471,6 +26488,8 @@ async function openPdfPrintWindow(){
         if (row && row.fromPlanId) return mk(['debt'], 'plan');
         var n = norm(text);
         if (!n) return null;
+        /* ۱.۳.۸۴: دستهٔ ذخیره‌شده روی خود ردیف (تا وقتی شرحش همان است) — عوض کردن دستهٔ یک شرح، ماه‌های گذشته را عوض نمی‌کند */
+        if (row && Array.isArray(row.cats) && row.catKey === n) return row.cats.length ? mk(row.cats, 'row') : null;
         var d = loadDict();
         var p = d.phrases[n];
         if (p) {
@@ -26506,6 +26525,7 @@ async function openPdfPrintWindow(){
           delete _pending[n];
         }
         saveDict();
+        try { if (typeof window.hkCatOnLearn === 'function') window.hkCatOnLearn(n, ids); } catch (eOL) {}
       }
       /* آماده برای آینده: فقط شرح‌های ناشناخته به سرویس امن ارسال می‌شوند و نتیجه ذخیره می‌شود */
       var _remoteBusy = false;
@@ -26553,6 +26573,78 @@ async function openPdfPrintWindow(){
       }
       return { classify: classify, learn: learn, addCustom: addCustom, removeCat: removeCat, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); }, exportData: exportData, importData: importData };
     })();
+
+    /* ===== ۱.۳.۸۴: دستهٔ هر ردیف مخارج روی خود ردیف (cats + catKey = شرح نرمال‌شدهٔ همان لحظه) =====
+       ردیف تازه با حدس دیکشنری علامت می‌خورد؛ انتخاب دسته برای یک شرح فقط ردیف‌های همین ماه را عوض می‌کند. */
+    function hkCatStampRow(r, force) {
+      if (!r || r.deletedAt || r.p2p || r.fromPlanId) return false;
+      var n = HKCategorizer.normalize(String(r.desc || '').trim()); if (!n) return false;
+      if (!force && Array.isArray(r.cats) && r.catKey === n) return false;
+      var c = HKCategorizer.classify(r.desc); /* بی ردیف: حدس دیکشنری */
+      if (!c) { if (r.catKey !== n) { delete r.cats; delete r.catKey; } return false; }
+      r.cats = c.ids.slice(); r.catKey = n; return true;
+    }
+    function hkCatStampSide(side) {
+      var ch = 0;
+      ((side && side.sections) || []).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (hkCatStampRow(r)) ch++; }); });
+      return ch;
+    }
+    window.hkCatOnLearn = function (n, ids) {
+      try {
+        var ch = 0;
+        ((periodData && periodData.expense && periodData.expense.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || r.p2p || r.fromPlanId) return;
+            if (HKCategorizer.normalize(String(r.desc || '').trim()) !== n) return;
+            r.cats = (ids || []).slice(); r.catKey = n; ch++;
+          });
+        });
+        if (ch) { try { persistCurrent(); scheduleSave(); } catch (e) {} }
+      } catch (e2) {}
+    };
+
+    /* ===== ۱.۳.۸۴: نسخهٔ ساختار داده + تبدیل‌های مرتب‌شده =====
+       هر تبدیل یک شماره دارد و فقط یک بار، به ترتیب، اجرا می‌شود. پیش از اجرا یک نسخهٔ کامل از داده در IndexedDB نگه داشته می‌شود
+       (hk-store › preMig_<شمارهٔ آخرین تبدیل>) تا اگر تبدیلی خراب کرد، داده برگردانده شود. */
+    var HK_DATA_VER_KEY = STORAGE_KEY + '_dataVer';
+    var HK_MIGRATIONS = [
+      { v: 1, name: 'ادغام دسته‌ها (مسکن→لوازم خانه، آرایش و بهداشت→سلامت و بهداشت)', run: function () {
+        /* دیکشنری در خود HKCategorizer با ALIAS تبدیل می‌شود؛ این‌جا فقط ذخیرهٔ دوباره */
+        try { HKCategorizer.classify('_'); } catch (e) {}
+        return 0;
+      } },
+      { v: 2, name: 'دسته روی خود ردیف‌های مخارج', run: function (arc) {
+        var ch = 0;
+        Object.keys(arc || {}).forEach(function (k) { var pd = arc[k]; if (pd && pd.expense) ch += hkCatStampSide(pd.expense); });
+        return ch;
+      } }
+    ];
+    function hkDataVer() { try { return Number(localStorage.getItem(HK_DATA_VER_KEY)) || 0; } catch (e) { return 0; } }
+    function hkRunMigrations() {
+      var cur = hkDataVer();
+      var todo = HK_MIGRATIONS.filter(function (m) { return m.v > cur; }).sort(function (a, b) { return a.v - b.v; });
+      if (!todo.length) return Promise.resolve(0);
+      try { persistCurrent(); } catch (e0) {}
+      var snap = null;
+      try { snap = JSON.stringify(getBundle()); } catch (eS) {}
+      var last = todo[todo.length - 1].v;
+      var save = (snap && typeof HKStore !== 'undefined')
+        ? HKStore.put('preMig_' + last, { at: Date.now(), from: cur, to: last, v: snap }).then(function () { return HKStore.del('preMig_' + (cur - 1)); }).catch(function () { return false; })
+        : Promise.resolve(false);
+      return save.then(function () {
+        var done = cur;
+        for (var i = 0; i < todo.length; i++) {
+          try { todo[i].run(archive); done = todo[i].v; }
+          catch (eM) { try { console.error('migration', todo[i].v, eM); } catch (eC) {} break; }
+        }
+        try { loadCurrent(); } catch (e1) {}
+        try { saveArchive(); } catch (e2) {}
+        try { localStorage.setItem(HK_DATA_VER_KEY, String(done)); } catch (e3) {}
+        try { renderAll(); } catch (e4) {}
+        return done;
+      });
+    }
+    try { window.hkRunMigrations = hkRunMigrations; window.hkDataVer = hkDataVer; window.HK_MIGRATIONS = HK_MIGRATIONS; } catch (eWm) {}
 
     /* =====================================================================
        پنل هوشمند داخل «باکس هوشمند» کارت کاربر (SmartPanel)
@@ -28548,7 +28640,7 @@ async function openPdfPrintWindow(){
         box.style.setProperty('--chip-w-sm', cw.sm + 'px');
         var rows = [];
         items.forEach(function (d) {
-          var c = isP2PDesc(d) ? { id: 'p2p', ids: ['p2p'], label: 'جیب به جیب', p2p: true } : HKCategorizer.classify(d);
+          var c = isP2PDesc(d) ? { id: 'p2p', ids: ['p2p'], label: 'جیب به جیب', p2p: true } : HKCategorizer.classify(d, rowsOfDesc(d)[0]);
           var row = document.createElement('button');
           row.type = 'button';
           row.className = 'sp-cat-row';
@@ -29754,7 +29846,7 @@ async function openPdfPrintWindow(){
           row.amount = parseAmount(amt.value) || 0;
           row.desc = ds.value || '';
         }
-        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); } catch (eL) {}
+        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) { HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); row.cats = st.cat ? [st.cat] : []; row.catKey = HKCategorizer.normalize(String(row.desc || '').trim()); } } catch (eL) {}
         /* ۱.۳.۸۲: جیب به جیب روی خود ردیف ذخیره می‌شود */
         if (!fromPlan) { if (st.cat === 'p2p') { row.p2p = true; delete row.p2pNo; } else if (row.p2p) { delete row.p2p; row.p2pNo = true; } }
         if (!fromPlan && isInc) {
@@ -36038,9 +36130,10 @@ function confirmSmsEntry() {
     /* ۱.۳.۷۶: رنگ هر دسته (آیکون‌های رنگی، یکسان در باکس پیامک و ویرایش ردیف) */
     /* ۱.۳.۸۳: رنگ ثابت و یکتای هر دسته (همه‌جا همین؛ CLAUDE.md). فقط «هدیه و کمک» در مخارج و درآمد مشترک است.
        جیب به جیب نقره‌ای با قاب نقطه‌چین: معلوم باشد چیز متفاوتی است */
-    var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', home: '#c78b5a', clothing: '#ff6ba8', health: '#ff453a',
+    var HK_CAT_COLORS = { food: '#ff9f0a', transport: '#4f9dff', bills: '#e6b12c', home: '#c78b5a', clothing: '#ff6ba8', health: '#16a34a',
       education: '#7c7cff', fun: '#30d5c8', gift: '#e85dff', debt: '#8e8e93', tech: '#64d2ff',
-      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#c0ca33', in_bonus: '#ffd60a', in_gift: '#e85dff', in_sale: '#ffb38a', in_profit: '#32d74b', p2p: '#c9d6df' };
+      in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#c0ca33', in_bonus: '#ffd60a', in_gift: '#e85dff', in_sale: '#ffb38a', in_profit: '#32d74b', p2p: '#ff453a' };
+    /* ۱.۳.۸۴: سلامت و بهداشت سبز پررنگ، جیب به جیب قرمز (همچنان یکتا) */
     function hkCatColor(id) { return HK_CAT_COLORS[id] || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
     function hkCatPickSheet(cats, cur, onPick) {
@@ -36196,6 +36289,122 @@ function confirmSmsEntry() {
       confirmSmsEntry = w;
       try { window.confirmSmsEntry = w; } catch (eW) {}
     })();
+    /* ===== ۱.۳.۸۴: «پیامک‌های نفهمیده» =====
+       پیامکی که شکل تراکنش دارد ولی مبلغش خوانده نشد، کنار گذاشته نمی‌شود: در فهرستی روی همین گوشی می‌ماند تا کاربر
+       نوع و مبلغ را بگوید؛ نرم‌افزار کلمهٔ کنار عدد را یاد می‌گیرد و پیامک‌های بعدی همان شکل را خودش می‌خواند. */
+    var HK_SMS_UNREAD_KEY = STORAGE_KEY + '_smsUnread', HK_SMS_LEARN_KEY = STORAGE_KEY + '_smsLearn';
+    function hkSmsUnreadLoad() { try { var a = JSON.parse(localStorage.getItem(HK_SMS_UNREAD_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function hkSmsUnreadSave(a) { try { localStorage.setItem(HK_SMS_UNREAD_KEY, JSON.stringify(a.slice(-60))); } catch (e) {} try { hkSmsUnreadMenu(); } catch (e2) {} }
+    function hkSmsLooksTx(text) {
+      var t = normalizeSmsText(text);
+      if (!t || !/[0-9]{3,}/.test(t)) return false;
+      if (!/برداشت|واریز|خرید|انتقال|مبلغ|مانده|موجودی|پرداخت|کسر|بستانکار|بدهکار/.test(t)) return false;
+      try { if (isOtpOrAuthSms(t)) return false; } catch (e) {}
+      var nt = false; try { nt = isNonTransactionSms(t); } catch (e2) {}
+      return nt !== 'failed' && nt !== 'promo' && nt !== 'empty';
+    }
+    function hkSmsUnreadAdd(text, sender) {
+      if (!hkSmsLooksTx(text)) return false;
+      var a = hkSmsUnreadLoad(), raw = String(text || '').trim();
+      if (a.some(function (x) { return x.t === raw; })) return true;
+      a.push({ t: raw, s: String(sender || ''), at: Date.now() });
+      hkSmsUnreadSave(a);
+      return true;
+    }
+    function hkSmsLearnLoad() { try { var a = JSON.parse(localStorage.getItem(HK_SMS_LEARN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function hkReEsc(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    /* شکل یادگرفته: کلمهٔ پیش از مبلغ (مثلاً «مبلغ‌برداشتی») → نوع و واحد */
+    function hkSmsLearnedParse(text) {
+      var t = normalizeSmsText(text), L = hkSmsLearnLoad();
+      for (var i = 0; i < L.length; i++) {
+        var m = t.match(new RegExp(hkReEsc(L[i].w) + '\\s*[:：=]?\\s*[+\\-]?\\s*([0-9][0-9,٬]*)'));
+        if (!m) continue;
+        var v = parseInt(m[1].replace(/[^0-9]/g, ''), 10) || 0; if (!v) continue;
+        var k = Number(L[i].k) || (L[i].r ? 0.1 : 1);
+        if (k >= 1000 && !new RegExp(hkReEsc(L[i].w) + '\\s*[:：=]?\\s*[+\\-]?\\s*[0-9][0-9,٬]*\\s*هزار').test(t)) continue;
+        var amt = Math.round(v * k);
+        var dt = null; try { dt = extractDateFromSms(t); } catch (eD) {}
+        var bal = null; try { bal = extractBalanceFromSms(t); } catch (eB) {}
+        return { type: L[i].type === 'income' ? 'income' : 'expense', amount: amt, amountRial: amt * 10, rawSmsAmount: amt, balance: bal, balanceRial: null,
+          bank: (function () { try { return detectBankFromSms(t) || ''; } catch (e) { return ''; } })(), day: dt && dt.d ? String(dt.d) : '', month: dt && dt.m ? dt.m : null, year: dt && dt.y ? dt.y : null, raw: t, _learned: true };
+      }
+      return null;
+    }
+    /* کاربر مبلغ (تومان) و نوع را گفت → عددِ برابر (تومان یا ریال) در متن پیدا و کلمهٔ پیش از آن یاد گرفته می‌شود */
+    function hkSmsLearnFrom(text, amount, type) {
+      var t = normalizeSmsText(text), re = /([^\s0-9:：=+\-]{2,24})\s*[:：=]?\s*[+\-]?\s*([0-9][0-9,٬]*)(\s*هزار\s*(ریال)?)?/g, m, hit = null;
+      while ((m = re.exec(t))) {
+        var v = parseInt(m[2].replace(/[^0-9]/g, ''), 10) || 0;
+        var k = m[3] ? (m[4] ? 100 : 1000) : (v === amount ? 1 : (v === amount * 10 ? 0.1 : 0));
+        if (k && Math.round(v * k) === amount) { hit = { w: m[1], k: k }; break; }
+      }
+      if (!hit || /مانده|موجودی|حساب|کارت/.test(hit.w)) return false;
+      var L = hkSmsLearnLoad().filter(function (x) { return x.w !== hit.w; });
+      L.push({ w: hit.w, type: type, k: hit.k });
+      try { localStorage.setItem(HK_SMS_LEARN_KEY, JSON.stringify(L.slice(-30))); } catch (e) {}
+      return true;
+    }
+    /* آیتم منو فقط وقتی فهرست خالی نیست (زیر «پیامک‌های ثبت‌نشده») */
+    function hkSmsUnreadMenu() {
+      var n = hkSmsUnreadLoad().length, el = document.getElementById('menuSmsUnread');
+      if (!n) { if (el) el.remove(); return; }
+      if (!el) {
+        var after = document.getElementById('menuSmsLater'); if (!after || !after.parentNode) return;
+        el = document.createElement('button'); el.className = 'menu-item'; el.id = 'menuSmsUnread'; el.type = 'button';
+        el.onclick = function () { try { closeSideMenu(); } catch (e) {} hkOpenSmsUnread(); };
+        after.parentNode.insertBefore(el, after.nextSibling);
+      }
+      el.innerHTML = '<i class="hk-mi" style="--c:#ffd60a"><svg viewBox="0 0 24 24"><path d="M4.5 5h15A1.5 1.5 0 0 1 21 6.5v9a1.5 1.5 0 0 1-1.5 1.5H9.5L5 20.5V17h-.5A1.5 1.5 0 0 1 3 15.5v-9A1.5 1.5 0 0 1 4.5 5z"/><path d="M10 9.2a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6 1v.3M12 13.9v.1"/></svg></i>پیامک‌های نفهمیده <b class="hk-unread-n">' + toPersianDigits(String(n)) + '</b>';
+    }
+    function hkOpenSmsUnread() {
+      var old = document.getElementById('hkSmsUnread'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkSmsUnread'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100600;display:flex;align-items:center;justify-content:center;';
+      var bx = document.createElement('div'); bx.className = 'modal-box hk-prefs hk-pf hk-p2p-box'; bx.style.maxWidth = '380px';
+      ov.appendChild(bx); document.body.appendChild(ov);
+      var close = function () { ov.remove(); }; ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      var paint = function () {
+        var a = hkSmsUnreadLoad();
+        bx.innerHTML = '<div class="hk-prefs-t" style="margin-bottom:6px;">پیامک‌های نفهمیده</div>' +
+          '<div style="font-size:var(--hk-fs-small);color:var(--muted,#98989f);line-height:1.8;margin-bottom:10px;">این پیامک‌ها شبیه تراکنش بودند ولی مبلغشان را نفهمیدم. نوع و مبلغ را بگویید تا ثبت شود؛ همین شکل پیامک دفعهٔ بعد خودش خوانده می‌شود. چیزی از گوشی بیرون نمی‌رود.</div>' +
+          '<div class="hk-unr-list" style="overflow-y:auto;max-height:56vh;display:flex;flex-direction:column;gap:10px;"></div>' +
+          '<div class="hk-rax-acts"><button type="button" class="modal-btn hk-unr-close">بستن</button></div>';
+        bx.querySelector('.hk-unr-close').onclick = close;
+        var list = bx.querySelector('.hk-unr-list');
+        if (!a.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted,#98989f);padding:14px 0;">چیزی نمانده ✓</div>'; return; }
+        a.slice().reverse().forEach(function (it) {
+          var card = document.createElement('div'); card.className = 'hk-unr-card';
+          card.innerHTML = '<div class="hk-unr-t"></div><div class="hk-unr-row"><div class="hk-unr-seg"><button type="button" data-ty="expense" class="on">برداشت</button><button type="button" data-ty="income">واریز</button></div>' +
+            '<input class="hk-unr-amt" inputmode="numeric" placeholder="مبلغ (تومان)" dir="ltr"></div>' +
+            '<div class="hk-unr-btns"><button type="button" class="modal-btn yes hk-unr-ok">ثبت</button><button type="button" class="modal-btn no hk-unr-del">تراکنش نیست</button></div>';
+          card.querySelector('.hk-unr-t').textContent = it.t;
+          var ty = 'expense';
+          card.querySelectorAll('.hk-unr-seg button').forEach(function (b) { b.onclick = function () { ty = b.getAttribute('data-ty'); card.querySelectorAll('.hk-unr-seg button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+          var amtI = card.querySelector('.hk-unr-amt');
+          amtI.addEventListener('input', function () { var v = parseAmount(amtI.value) || 0; amtI.value = v ? formatNum(v) : ''; });
+          var drop = function () { hkSmsUnreadSave(hkSmsUnreadLoad().filter(function (x) { return x.t !== it.t; })); };
+          card.querySelector('.hk-unr-del').onclick = function () { drop(); paint(); };
+          card.querySelector('.hk-unr-ok').onclick = function () {
+            var amt = parseAmount(amtI.value) || 0;
+            if (!amt) { try { amtI.focus(); } catch (e) {} showToast('مبلغ را بنویسید'); return; }
+            try { hkSmsLearnFrom(it.t, amt, ty); } catch (eL) {}
+            var t = normalizeSmsText(it.t), dt = null; try { dt = extractDateFromSms(t); } catch (eD) {}
+            var bal = null; try { bal = extractBalanceFromSms(t); } catch (eB) {}
+            var bank = ''; try { bank = hkBankOfSms(it.t, it.s) || ''; } catch (eBk) {}
+            var parsed = { type: ty, amount: amt, amountRial: amt * 10, rawSmsAmount: amt, balance: bal, balanceRial: null, bank: matchSelectedBank(bank), day: dt && dt.d ? String(dt.d) : '', month: dt && dt.m ? dt.m : null, year: dt && dt.y ? dt.y : null, raw: it.t };
+            if (it.s) parsed.sender = it.s;
+            drop(); close();
+            try { openSmsConfirmModal(parsed); } catch (eO) { showToast('باز کردن باکس ثبت ممکن نشد'); }
+          };
+          list.appendChild(card);
+        });
+      };
+      paint();
+    }
+    try { window.hkOpenSmsUnread = hkOpenSmsUnread; window.hkSmsUnreadAdd = hkSmsUnreadAdd; window.hkSmsLearnedParse = hkSmsLearnedParse; window.hkSmsUnreadLoad = hkSmsUnreadLoad; } catch (eWu) {}
+    try { setTimeout(function () { try { hkSmsUnreadMenu(); } catch (e) {} }, 1200); } catch (eUm) {}
+
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) return false;
@@ -36208,10 +36417,16 @@ function confirmSmsEntry() {
           if (_ir && !_ir.dup && !opts.silent) showToast('پرداخت قسط در «' + hkInstName(_ir.card) + '» ثبت شد');
           return true;
         } }
-      const parsed = parseBankSms(smsText);
+      let parsed = parseBankSms(smsText);
       if (!parsed || !parsed.amount) {
-        if (!opts.silent) showToast('پیامک بانکی قابل تشخیص نبود');
-        return false;
+        /* ۱.۳.۸۴: شکلی که کاربر قبلاً یاد داده؛ وگرنه به «پیامک‌های نفهمیده» می‌رود (بی‌صدا گم نمی‌شود) */
+        var _lp = null; try { _lp = hkSmsLearnedParse(smsText); } catch (eLp) {}
+        if (_lp) parsed = _lp;
+        else {
+          var _kept = false; try { _kept = hkSmsUnreadAdd(smsText, opts.sender); } catch (eUa) {}
+          if (!opts.silent) showToast(_kept ? 'پیامک را نفهمیدم؛ در «پیامک‌های نفهمیده» ماند' : 'پیامک بانکی قابل تشخیص نبود');
+          return false;
+        }
       }
       /* ۱.۳.۸۳: اسم بانک در متن نبود → از فرستنده؛ اگر بود → فرستنده یاد گرفته شود */
       if (opts.sender) { try { var _nb = detectBankFromSms(smsText, true); if (_nb) hkSenderLearn(opts.sender, _nb); else { var _sb = hkSenderBank(opts.sender); if (_sb) parsed.bank = _sb; } } catch (eSb) {} }
@@ -49922,7 +50137,7 @@ function openProjectRowPicker(secId) {
     } catch (e) { console.error('home boot', e); }
     renderAll();
     _hkBoot = false;
-    try { setTimeout(function () { hkMirrorRecover(); }, 600); } catch (eMr) {}
+    try { setTimeout(function () { Promise.resolve(hkMirrorRecover()).catch(function () {}).then(function () { return hkRunMigrations(); }).catch(function () {}); }, 600); } catch (eMr) {}
     /* بعد از بارگذاری کامل داده — فقط یک‌بار عدد نهایی موجودی */
     try {
       _hbcReady = true;

@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• اعلان (کد اندروید)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
   ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"فرستندهٔ شخصی"/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان معرفی می‌شود (از ۱.۳.۴۶ «فرستندهٔ شخصی»)');
   ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد ✔"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),

@@ -13,12 +13,12 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 const allErrors = [];
 (async () => {
   console.log('• کد بومی و دستورات');
-  const pa = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const pa = require('../lib/android-src')();
   ok(/static int incC\(boolean light\)\{ return light\?0xFF17834A:0xFF9EE858; \}/.test(pa) && /static int expC\(boolean light\)\{ return light\?0xFFDC2626:0xFFFF6B4A; \}/.test(pa), 'رنگ درآمد/مخارج ویجت‌ها همان رنگ‌های نرم‌افزار');
   ok(/btn\("مخارج", "exp", HkWidgetDraw\.expC\(light\)\)/.test(pa) && /btn\("درآمدها", "inc", HkWidgetDraw\.incC\(light\)\)/.test(pa) && !/0xFFFF7A6B|0xFF6FD08C|0xFFD93A1E|#3f9a5c/.test(pa), 'پنجرهٔ انتخاب مخارج/درآمدها با سبز و نارنجی نرم‌افزار');
   ok(/هر صفحه یک کارت مات کامل/.test(pa) && /cv\.drawRoundRect\(rc, rr, rr, bg\)/.test(pa) && /setBackgroundColor", 0\)/.test(pa) && /android:id="@\+id\/hk_ws_root"[\s\S]{0,200}android:background="@android:color\/transparent"/.test(pa), 'ویجت پشته‌ای: هر صفحه کارت مات، ریشه شفاف');
   const cl = fs.readFileSync(path.join(__dirname, '..', '..', 'CLAUDE.md'), 'utf8');
-  ok(/## رنگ‌ها/.test(cl) && /#9ee858/.test(cl) && /#ff6b4a/.test(cl) && /جیب به جیب `#c9d6df`/.test(cl), 'قاعدهٔ رنگ‌ها در دستورات پروژه');
+  ok(/## رنگ‌ها/.test(cl) && /#9ee858/.test(cl) && /#ff6b4a/.test(cl) && /جیب به جیب `#ff453a`/.test(cl), 'قاعدهٔ رنگ‌ها در دستورات پروژه');
 
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Tehran' });
@@ -74,7 +74,7 @@ const allErrors = [];
   ok(ct.house && ct.heart, 'لوازم خانه با آیکون خانه، سلامت و بهداشت با آیکون قلب');
   ok(ct.mig1 === 'home' && ct.mig2 === 'health' && ct.kw1 === 'home' && ct.kw2 === 'health', 'شرح‌های یادگرفته و کلیدواژه‌های قبلی به دستهٔ تازه رفتند');
   ok(!ct.dupS.length, 'هیچ دو دسته‌ای (مخارج + درآمد) یک شکل نیستند' + (ct.dupS.length ? ': ' + ct.dupS.join('، ') : ''));
-  ok(!ct.dupC.length && ct.p2pCol === '#c9d6df', 'هیچ دو دسته‌ای هم‌رنگ نیستند؛ جیب به جیب رنگ خودش' + (ct.dupC.length ? ': ' + ct.dupC.join('، ') : ''));
+  ok(!ct.dupC.length && ct.p2pCol === '#ff453a', 'هیچ دو دسته‌ای هم‌رنگ نیستند؛ جیب به جیب رنگ خودش' + (ct.dupC.length ? ': ' + ct.dupC.join('، ') : ''));
   ok(ct.inGift === 'هدیه و کمک' && ct.giftSame, '«هدیه و کمک» در درآمد و مخارج مشترک (اسم، آیکون، رنگ)');
   ok(ct.p2pArrows && ct.loan, 'جیب به جیب = ⇄؛ تسویه قرض آیکون دیگری دارد');
   ok(ct.book && ct.spoon && ct.phone && ct.medal && ct.cart && !ct.bonusStar, 'آموزش کتاب، خوراکی قاشق‌چنگال، دیجیتال موبایل، پاداش مدال، فروش چرخ خرید با فلش');

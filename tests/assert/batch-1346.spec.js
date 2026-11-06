@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• اعلان و باکس شناور (کد اندروید)');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   /* ۱.۳.۴۷: اعلان دوباره رسمی اندروید (batch-1347) */
   ok(/hk_sms_small\.xml/.test(patch), 'فایل چیدمان قدیمی هنوز ساخته می‌شود (بی‌اثر)');
   /* ۱.۳.۶۴: عنوان پیامک بانکی به رنگ عملیات (واریز/برداشت جدید)؛ نامعلوم همان «تراکنش بانکی جدید» */

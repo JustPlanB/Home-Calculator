@@ -21,7 +21,7 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
   await p.goto(INDEX); await p.waitForTimeout(1500);
 
   console.log('• ساعت پیامک چندبخشی');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/body\.append\(m\.getMessageBody\(\)\);/.test(patch) && !/getMessageBody\(\)\)\.append\("\\\\n"\)/.test(patch), 'گیرندهٔ اندروید تکه‌های پیامک را بدون «\\n» وصل می‌کند');
   const tm = await p.evaluate((SMS) => {
     const broken = SMS.slice(0, 67) + '\n' + SMS.slice(67);   /* همان که نسخه‌های قبل ذخیره می‌کردند */

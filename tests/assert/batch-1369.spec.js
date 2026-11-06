@@ -213,7 +213,7 @@ async function seedRows(page) {
   await M.ctx.close();
 
   console.log('• ویجت گوشی');
-  const pa = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const pa = require('../lib/android-src')();
   ok(/ACTION_EYE/.test(pa) && /hk_w_eye/.test(pa) && /hk_ws_eye/.test(pa) && /hk_ic_eye_off/.test(pa), 'دکمهٔ چشم روی هر سه ویجت (بزرگ، حساب‌ها، یک‌خطی)');
   ok(/putBoolean\("hidden", !sp\.getBoolean\("hidden",false\)\)/.test(pa) && /d\.mask\?"••••••"/.test(pa), 'زدن چشم مبالغ همهٔ ویجت‌ها را همان لحظه پنهان/نمایان می‌کند (ذخیره‌شده)');
 

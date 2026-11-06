@@ -31,7 +31,7 @@ async function page(b, inbox, extra) {
 
   /* ---------- بخش اندرویدی ---------- */
   console.log('• بخش اندرویدی');
-  const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const patch = require('../lib/android-src')();
   ok(/MODIFY_AUDIO_SETTINGS/.test(patch) && /registerPlugin\(HkMediaPlugin\.class\)/.test(patch) && /ACTION_IMAGE_CAPTURE/.test(patch) && /cache-path name="capture" path="capture\/"/.test(patch), 'دوربین مستقیم (HkMedia + مسیر capture) و مجوز ضبط صدا داخل صفحه (MODIFY_AUDIO_SETTINGS)');
   ok(/hk-open-backup/.test(patch) && /android\.intent\.action\.VIEW/.test(patch) && /captureOpened/.test(patch) && /takeOpenedFile/.test(patch), 'باز کردن فایل پشتیبان با زدن رویش (VIEW/SEND) و تحویل به نرم‌افزار');
   ok(/isInternal\(call\)/.test(patch) && /getFilesDir\(\),"backups"/.test(patch) && /hesab-\(auto\|safety\|latest\)/.test(patch), 'پشتیبان خودکار در حافظهٔ داخلی؛ «آخرین پشتیبان» در Downloads');

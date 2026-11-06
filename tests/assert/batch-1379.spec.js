@@ -164,7 +164,7 @@ const sms = (amt, dt, to, n, tr) => `بانک مسکن\nواريز قسط به �
   ok(wt[0] && wt[0].b === 'ملی' && wt[1].b === 'ملت', 'ویجت ردیف‌ها: اسم حساب هر ردیف هم فرستاده می‌شود');
   await H.ctx.close();
 
-  const andr = fs.readFileSync(path.join(__dirname, '../../scripts/patch-android.js'), 'utf8');
+  const andr = require('../lib/android-src')();
   ok(/final class HkWidgetTxDraw/.test(andr) && /R\.font\.hk_vazir_regular/.test(andr.slice(andr.indexOf('final class HkWidgetTxDraw'))), 'ویجت ردیف‌ها با فونت وزیرمتن نرم‌افزار کشیده می‌شود');
   ok(/String\[\] lb=\{"تاریخ","شرح","حساب","مبلغ"\}/.test(andr), 'ردیف عنوان با ترتیب ستون‌های نرم‌افزار: تاریخ | شرح | حساب | مبلغ');
   ok(/static void grid\(/.test(andr) && /14\.5f\*k/.test(andr), 'خط‌کشی ستون‌ها و ردیف‌ها؛ قلم بزرگ‌تر');

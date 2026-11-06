@@ -11,7 +11,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 const allErrors = [];
 (async () => {
   console.log('• کد بومی اندروید');
-  const pa = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
+  const pa = require('../lib/android-src')();
   ok(/<StackView android:id="@\+id\/hk_ws_list"[^>]*android:loopViews="true"/.test(pa), 'ویجت یک‌خطی: StackView با چرخش بی‌پایان');
   ok(!/LOOP_COUNT/.test(pa) && !/setScrollPosition\(R\.id\.hk_ws_list/.test(pa) && /return HkWidgetSmallProvider\.PAGES;/.test(pa), 'فهرست بی‌پایان و پرش اسکرول حذف شد؛ دو صفحه');
   const cfg = pa.slice(pa.indexOf('public class HkWidgetTxConfig'), pa.indexOf('public class HkWidgetTxConfig') + 4000);
