@@ -12406,6 +12406,9 @@ button, input, select, textarea { font-family: inherit; }
     #smsConfirmMeta .sms-ro-sum { padding: 0 0 8px !important; margin-bottom: 0 !important; }
     #smsConfirmMeta .sms-ro-amt { line-height: 1.25; }
     #smsConfirmMeta .sms-ro-bank { margin-top: 0 !important; }
+    /* ۱.۳.۸۷: «این حساب را قبلاً ساخته‌اید؟» زیر باکس حساب جدید */
+    #smsConfirmMeta .sms-pick-existing { display: block; width: 100%; background: none; border: 0; padding: 4px 2px 0; margin: 0; color: var(--hk-primary, #08b5f5); font-family: inherit; font-size: var(--hk-fs-small); text-align: right; cursor: pointer; }
+    .sp-dup-no.sp-dup-all { font-weight: 700; margin-top: 8px; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -26941,6 +26944,10 @@ async function openPdfPrintWindow(){
         return tab + ':' + (r.id || ('i' + i + '_' + spDay(r) + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc)));
       }
       /* ۱.۳.۸۶: کلید پایدار (بدون شمارهٔ ردیف) تا «تکراری نیست» با افزودن/حذف ردیف دیگر از بین نرود */
+      /* ۱.۳.۸۷: کلید بی‌شرح: «تکراری نیست» با هر شرحی (و با ویرایش شرح) ماندگار است */
+      function rowKeyN(tab, r) {
+        return tab + ':' + (r.id || ('n' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
+      }
       function rowKeyS(tab, r) {
         return tab + ':' + (r.id || ('s' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
       }
@@ -26981,8 +26988,8 @@ async function openPdfPrintWindow(){
               if (!na || na !== nb) continue;
               var hit = sameDay || dd <= 2;
               if (!hit) continue;
-              var id = 'dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b);
-              if (dis[id] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
+              var id = 'dup:' + rowKeyN(tab, a) + '|' + rowKeyN(tab, b);
+              if (dis[id] || dis['dup:' + rowKeyN(tab, b) + '|' + rowKeyN(tab, a)] || dis['dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b)] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
               var label = (isGeneric(a) && !isGeneric(b) ? b.desc : a.desc) || (tab === 'income' ? 'درآمد' : 'هزینه');
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
@@ -27201,7 +27208,7 @@ async function openPdfPrintWindow(){
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
         /* ۱.۳.۸۷: هر مورد «تکراری نیست» خودش را دارد */
         return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div><div class="sp-dup-no" data-act="dismiss" data-dup-id="' + spEsc(a.id) + '">تکراری نیست</div>';
-      }));
+      })) + (dups.length > 1 ? '<div class="sp-dup-no sp-dup-all" data-act="dismiss" data-dup-id="__all__">هیچ‌کدام تکراری نیست</div>' : '');
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
@@ -27919,8 +27926,9 @@ async function openPdfPrintWindow(){
     ];
     function spDismissDupPrompt(title, id) {
       /* ۱.۳.۸۶: ماندگار (کلید پایدار)؛ ۱.۳.۸۷: فقط همان مورد (اگر شناسه داده شد) */
-      var all0 = HKAlerts.duplicates(title), one = id && all0.filter(function (x) { return x.id === id; });
-      var ds = (one && one.length) ? one : all0.slice(0, 2);
+      var all0 = HKAlerts.duplicates(title), one = id && id !== '__all__' && all0.filter(function (x) { return x.id === id; });
+      /* «هیچ‌کدام تکراری نیست»: همهٔ هشدارهای تکرار این کارت برداشته می‌شوند و اسلاید از بین می‌رود */
+      var ds = (one && one.length) ? one : (id === '__all__' ? all0 : all0.slice(0, 2));
       if (!ds.length) return;
       askConfirm(ds.length > 1 ? 'اگر این تراکنش‌ها واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟' : 'اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
         ds.forEach(function (d) { HKAlerts.dismiss(d.id); });
@@ -36130,6 +36138,8 @@ function confirmSmsEntry() {
         var bankName = '';
         /* ۱.۳.۸۵: امتیازدهی (متن، فرستنده، رقم‌های وصل‌شده، …) */
         try { bankName = hkBankOfSms(raw, parsed.sender || '') || detectBankFromSms(raw) || ''; } catch (eB) {}
+        /* ۱.۳.۸۷: اگر تشخیص، نامِ یک حساب ساخته‌شده بود («ملت ۶۱۶۳»)، بانکِ همان حساب («بانک ملت») ملاک است تا نام پیشنهادی حساب تازه درست باشد */
+        try { var _ah = (selectedBankAccounts || []).filter(function (a) { return accountLabel(a) === bankName; })[0]; if (_ah && accountBank(_ah)) bankName = accountBank(_ah); } catch (eAh) {}
         out.bankName = bankName; out.bankShort = bankName ? (bankShortLabel(bankName) || bankName) : '';
         var same = [];
         if (bankName) {
@@ -36185,8 +36195,14 @@ function confirmSmsEntry() {
               if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
             }
           } catch (eBk) {}
-          if (sel && route.need && route.newAcc) {
+          var _pe0 = document.getElementById('smsPickExisting'); if (_pe0) _pe0.remove();
+          /* ۱.۳.۸۷: بار اول از این کارت/حساب: همان باکس «حساب جدید» (اسم را بنویسید، حساب ساخته می‌شود)؛
+             اگر همین حساب را قبلاً ساخته‌اید، با یک ضربه انتخاب از فهرست */
+          if (sel && route.need && (route.newAcc || route.acc4)) {
             hkSmsBuildNewAcc(sel, route);
+            try { var _lb2 = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (_lb2) _lb2.style.display = 'none'; } catch (eL2) {}
+            var _hasAcc = false; try { _hasAcc = selectedAccountLabels().length > 0; } catch (eHa) {}
+            if (_hasAcc) hkSmsPickExistingLink(sel, route);
           } else if (sel && route.need) {
             hkSmsAccNeedNote(sel, route);
           }
@@ -36218,6 +36234,19 @@ function confirmSmsEntry() {
             nw._route = route;
             aw.insertAdjacentElement('afterend', nw);
           }
+      }
+      function hkSmsPickExistingLink(sel, route) {
+        var nw = document.getElementById('smsNewAccWrap'); if (!nw) return;
+        var lk = document.createElement('button'); lk.type = 'button'; lk.id = 'smsPickExisting'; lk.className = 'sms-pick-existing';
+        lk.textContent = 'این حساب را قبلاً ساخته‌اید؟ انتخاب از حساب‌ها';
+        lk.onclick = function () {
+          try { nw.remove(); lk.remove(); } catch (eR) {}
+          var aw = (sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+          aw.style.display = '';
+          var lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (lb) lb.style.display = '';
+          hkSmsAccNeedNote(sel, route);
+        };
+        nw.insertAdjacentElement('afterend', lk);
       }
       function hkSmsAccNeedNote(sel, route) {
           if (true) {

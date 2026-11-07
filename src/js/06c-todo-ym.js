@@ -407,8 +407,9 @@
     ];
     function spDismissDupPrompt(title, id) {
       /* ۱.۳.۸۶: ماندگار (کلید پایدار)؛ ۱.۳.۸۷: فقط همان مورد (اگر شناسه داده شد) */
-      var all0 = HKAlerts.duplicates(title), one = id && all0.filter(function (x) { return x.id === id; });
-      var ds = (one && one.length) ? one : all0.slice(0, 2);
+      var all0 = HKAlerts.duplicates(title), one = id && id !== '__all__' && all0.filter(function (x) { return x.id === id; });
+      /* «هیچ‌کدام تکراری نیست»: همهٔ هشدارهای تکرار این کارت برداشته می‌شوند و اسلاید از بین می‌رود */
+      var ds = (one && one.length) ? one : (id === '__all__' ? all0 : all0.slice(0, 2));
       if (!ds.length) return;
       askConfirm(ds.length > 1 ? 'اگر این تراکنش‌ها واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟' : 'اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
         ds.forEach(function (d) { HKAlerts.dismiss(d.id); });

@@ -171,15 +171,27 @@ const allErrors = [];
     o.rowAcct = getComputedStyle(document.querySelector('#smsConfirmMeta .sms-pro-block')).display === 'flex';
     try { closeSmsConfirmModal('reject'); } catch (e) {} await w(400);
     enqueueBankSms('کارت1111\nبرداشت45,000\nمانده1,000,000\n05/08/12-10:07', 'Bank Mellat'); await w(1200);
+    const ni = document.getElementById('smsNewAccName');
+    o.newBox = !!ni && ni.value === 'ملت ۱۱۱۱' && !!document.getElementById('smsPickExisting');
+    document.getElementById('smsConfirmDesc').value = 'نانوایی';
+    confirmSmsEntry(); await w(900);
+    o.created = selectedAccountLabels().indexOf('ملت ۱۱۱۱') >= 0 && smsAccountBankMap['L4:1111'] === 'ملت ۱۱۱۱';
+    enqueueBankSms('کارت1111\nبرداشت20,000\nمانده980,000\n05/08/12-11:00', 'Bank Mellat'); await w(1200);
+    o.second = ((document.getElementById('smsBankShow') || {}).textContent || '') === 'ملت ۱۱۱۱' && !document.getElementById('smsNewAccName');
+    try { closeSmsConfirmModal('reject'); } catch (e) {} await w(400);
+    enqueueBankSms('کارت2222\nبرداشت10,000\nمانده500,000\n05/08/12-11:30', 'Bank Mellat'); await w(1200);
+    document.getElementById('smsPickExisting').click(); await w(100);
     const sel2 = document.getElementById('smsConfirmBank'), wr2 = sel2.parentNode.classList.contains('fancy-select-wrap') ? sel2.parentNode : sel2;
-    o.unkSel = getComputedStyle(wr2).display !== 'none' && !document.getElementById('smsBankShow');
+    o.pickExisting = getComputedStyle(wr2).display !== 'none' && !document.getElementById('smsNewAccName');
     try { closeSmsConfirmModal('reject'); } catch (e) {}
     return o;
   });
   ok(ex2.wrap && ex2.lines >= 2, 'توضیح جیب به جیب چندخطی (' + ex2.lines + ' خط)');
   ok(ex2.missing && ex2.noMenu, 'بانک واردنشده: قاب زرد؛ ضربه منوی بانک باز نمی‌کند (فقط لانگ‌پرس ← ویرایش)');
   ok(ex2.bankShow === 'ملت ۶۱۶۳' && ex2.selHidden && ex2.rowAcct, 'باکس پیامک: نام بانک فقط نمایش (بی منو)؛ «حساب» در یک ردیف');
-  ok(ex2.unkSel, 'حساب ناشناخته: همان انتخاب/افزودن حساب (بدون حساب ثبت نمی‌شود)');
+ok(ex2.newBox && ex2.created, 'بار اول از یک کارت: باکس «حساب جدید» با نام پیشنهادی؛ با «ثبت» حساب ساخته و وصل شد');
+  ok(ex2.second, 'پیامک بعدی همان کارت: فقط نام حساب');
+  ok(ex2.pickExisting, '«این حساب را قبلاً ساخته‌اید؟»: انتخاب از حساب‌ها');
 
   console.log('• ماهی که گذشت و هشدار تکراری');
   const rc = await page.evaluate(async () => {
@@ -202,6 +214,13 @@ const allErrors = [];
     spDismissDupPrompt(t, D[1].id); window.askConfirm = origAsk;
     o.left = HKAlerts.duplicates(t).map(x => x.id);
     o.keptFirst = o.left.length === 1 && o.left[0] === D[0].id;
+    /* شرح عوض شود: «تکراری نیست» باید بماند */
+    ex.rows[2].desc = 'قسط وام ماشین'; ex.rows[3].desc = 'قسط وام ماشین'; persistCurrent();
+    o.stillGone = HKAlerts.duplicates(t).length === 1;
+    o.allBtn = /data-dup-id="__all__"/.test(html);
+    window.askConfirm = (m, y) => y(); spDismissDupPrompt(t, '__all__'); window.askConfirm = origAsk;
+    renderAll(); await w(300);
+    o.noneLeft = HKAlerts.duplicates(t).length === 0 && !document.querySelector('.sp-tip[data-dup]');
     ex.rows = [Object.assign(emptyRow('expense'), { day: '3', desc: 'نان', amount: 250000, status: 'paid' })]; persistCurrent(); renderAll();
     openMonthRecap(currentYear, currentMonth); await w(500);
     const b = document.querySelector('.hk-rc-row b');
@@ -211,7 +230,8 @@ const allErrors = [];
     return o;
   });
   ok(rc.n === 2 && rc.texts[0] !== rc.texts[1] && /ملت/.test(rc.texts[0]) && /۱۰ /.test(rc.texts[0]), 'هشدار تکراری با مبلغ، بانک و روز؛ دو قسط کارت‌های جدا تکراری نیست (' + rc.texts.join(' | ') + ')');
-  ok(rc.btns === 2 && rc.keptFirst, 'هر مورد «تکراری نیست» خودش را دارد و فقط همان برداشته می‌شود');
+  ok(rc.stillGone && rc.allBtn && rc.noneLeft, '«تکراری نیست» با هر شرحی (حتی بعد از تغییر شرح) ماندگار؛ «هیچ‌کدام تکراری نیست» اسلاید را برمی‌دارد');
+  ok(rc.btns >= 2 && rc.keptFirst, 'هر مورد «تکراری نیست» خودش را دارد و فقط همان برداشته می‌شود');
   ok(rc.dir === 'rtl' && rc.firstIsAmt, '«ماهی که گذشت»: «تومان» بعد از مبلغ');
 
   ok(allErrors.length === 0, 'بدون خطای صفحه' + (allErrors.length ? ': ' + allErrors.slice(0, 3).join(' | ') : ''));

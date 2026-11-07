@@ -356,6 +356,8 @@
         var bankName = '';
         /* ۱.۳.۸۵: امتیازدهی (متن، فرستنده، رقم‌های وصل‌شده، …) */
         try { bankName = hkBankOfSms(raw, parsed.sender || '') || detectBankFromSms(raw) || ''; } catch (eB) {}
+        /* ۱.۳.۸۷: اگر تشخیص، نامِ یک حساب ساخته‌شده بود («ملت ۶۱۶۳»)، بانکِ همان حساب («بانک ملت») ملاک است تا نام پیشنهادی حساب تازه درست باشد */
+        try { var _ah = (selectedBankAccounts || []).filter(function (a) { return accountLabel(a) === bankName; })[0]; if (_ah && accountBank(_ah)) bankName = accountBank(_ah); } catch (eAh) {}
         out.bankName = bankName; out.bankShort = bankName ? (bankShortLabel(bankName) || bankName) : '';
         var same = [];
         if (bankName) {
@@ -411,8 +413,14 @@
               if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
             }
           } catch (eBk) {}
-          if (sel && route.need && route.newAcc) {
+          var _pe0 = document.getElementById('smsPickExisting'); if (_pe0) _pe0.remove();
+          /* ۱.۳.۸۷: بار اول از این کارت/حساب: همان باکس «حساب جدید» (اسم را بنویسید، حساب ساخته می‌شود)؛
+             اگر همین حساب را قبلاً ساخته‌اید، با یک ضربه انتخاب از فهرست */
+          if (sel && route.need && (route.newAcc || route.acc4)) {
             hkSmsBuildNewAcc(sel, route);
+            try { var _lb2 = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (_lb2) _lb2.style.display = 'none'; } catch (eL2) {}
+            var _hasAcc = false; try { _hasAcc = selectedAccountLabels().length > 0; } catch (eHa) {}
+            if (_hasAcc) hkSmsPickExistingLink(sel, route);
           } else if (sel && route.need) {
             hkSmsAccNeedNote(sel, route);
           }
@@ -444,6 +452,19 @@
             nw._route = route;
             aw.insertAdjacentElement('afterend', nw);
           }
+      }
+      function hkSmsPickExistingLink(sel, route) {
+        var nw = document.getElementById('smsNewAccWrap'); if (!nw) return;
+        var lk = document.createElement('button'); lk.type = 'button'; lk.id = 'smsPickExisting'; lk.className = 'sms-pick-existing';
+        lk.textContent = 'این حساب را قبلاً ساخته‌اید؟ انتخاب از حساب‌ها';
+        lk.onclick = function () {
+          try { nw.remove(); lk.remove(); } catch (eR) {}
+          var aw = (sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+          aw.style.display = '';
+          var lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (lb) lb.style.display = '';
+          hkSmsAccNeedNote(sel, route);
+        };
+        nw.insertAdjacentElement('afterend', lk);
       }
       function hkSmsAccNeedNote(sel, route) {
           if (true) {

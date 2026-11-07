@@ -505,6 +505,10 @@
         return tab + ':' + (r.id || ('i' + i + '_' + spDay(r) + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc)));
       }
       /* ۱.۳.۸۶: کلید پایدار (بدون شمارهٔ ردیف) تا «تکراری نیست» با افزودن/حذف ردیف دیگر از بین نرود */
+      /* ۱.۳.۸۷: کلید بی‌شرح: «تکراری نیست» با هر شرحی (و با ویرایش شرح) ماندگار است */
+      function rowKeyN(tab, r) {
+        return tab + ':' + (r.id || ('n' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
+      }
       function rowKeyS(tab, r) {
         return tab + ':' + (r.id || ('s' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
       }
@@ -545,8 +549,8 @@
               if (!na || na !== nb) continue;
               var hit = sameDay || dd <= 2;
               if (!hit) continue;
-              var id = 'dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b);
-              if (dis[id] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
+              var id = 'dup:' + rowKeyN(tab, a) + '|' + rowKeyN(tab, b);
+              if (dis[id] || dis['dup:' + rowKeyN(tab, b) + '|' + rowKeyN(tab, a)] || dis['dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b)] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
               var label = (isGeneric(a) && !isGeneric(b) ? b.desc : a.desc) || (tab === 'income' ? 'درآمد' : 'هزینه');
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
@@ -765,7 +769,7 @@
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
         /* ۱.۳.۸۷: هر مورد «تکراری نیست» خودش را دارد */
         return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div><div class="sp-dup-no" data-act="dismiss" data-dup-id="' + spEsc(a.id) + '">تکراری نیست</div>';
-      }));
+      })) + (dups.length > 1 ? '<div class="sp-dup-no sp-dup-all" data-act="dismiss" data-dup-id="__all__">هیچ‌کدام تکراری نیست</div>' : '');
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
