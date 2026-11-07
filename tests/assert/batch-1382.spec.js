@@ -58,10 +58,10 @@ const allErrors = [];
     const w = ms => new Promise(r => setTimeout(r, ms));
     openPersonDetail(hkMainTitle(), 'expense'); await w(600);
     const tr = document.querySelector('tr.hk-p2p-row');
-    const td = tr && tr.querySelector('td.hk-p2p-td');
-    return { tr: !!tr, after: td ? getComputedStyle(td, '::after').content : '' };
+    const ic = tr && tr.querySelector('td.hk-p2p-num .hk-p2p-rowic');
+    return { tr: !!tr, after: ic ? 'icon' : '' };
   }).catch(() => ({ tr: false, after: '' }));
-  ok(tb.tr && /⇄/.test(tb.after), 'ردیف «جیب به جیب» در جدول کم‌رنگ با ⇄');
+  ok(tb.tr && tb.after === 'icon', 'ردیف «جیب به جیب» در جدول کم‌رنگ با آیکون در ستون ردیف (۱.۳.۸۵)');
 
   console.log('• ویرایش ردیف و معرفی');
   const re = await page.evaluate(async () => {
