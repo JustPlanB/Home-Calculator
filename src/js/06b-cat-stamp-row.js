@@ -234,11 +234,14 @@
         var custom = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
         var d = loadDict();
         var img = {}, ico = {}, col = {}; try { img = hkCatImgMap(); ico = hkCatUserMap('Icon'); col = hkCatUserMap('Color'); } catch (eI) {}
-        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col };
+        var inCustom = []; try { inCustom = hkInCustomLoad(); } catch (eIn) {}
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom };
       }
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
+        /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر */
+        try { if (Array.isArray(o.inCustom)) { hkInCustomSync(o.inCustom.filter(function (c) { return c && /^in_u_/.test(c.id) && c.label; })); hkInCustomSave(); } } catch (eIn) {}
         /* ۱.۳.۸۵: عکس دسته‌های ساخت کاربر */
         try { if (o.img && typeof o.img === 'object') Object.keys(o.img).forEach(function (k) { if (/^data:image\//.test(String(o.img[k]))) hkCatImgSet(k, o.img[k]); }); } catch (eIm) {}
         try { if (o.icon && typeof o.icon === 'object') Object.keys(o.icon).forEach(function (k) { if (HK_ICON_BANK[o.icon[k]]) hkCatUserSet('Icon', k, o.icon[k]); }); if (o.color && typeof o.color === 'object') Object.keys(o.color).forEach(function (k) { if (/^#[0-9a-f]{6}$/i.test(o.color[k])) hkCatUserSet('Color', k, o.color[k]); }); } catch (eIc) {}

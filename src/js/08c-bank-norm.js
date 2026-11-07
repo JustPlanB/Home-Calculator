@@ -408,6 +408,22 @@
       var st = (last.overdue > 0 || last.penalty > 0) ? 'bad' : (pre > 0 ? 'pre' : 'ok');
       return { st: st, last: last, lastPay: lastPay || L[0], count: last.count, pre: pre, overdue: last.overdue || 0, penalty: last.penalty || 0, n: L.length };
     }
+    /* ۱.۳.۸۷: معوقِ دیده‌شده: با باز کردن تاریخچهٔ همان کارت (از اسلاید یا منوی حساب‌ها) دایرهٔ قرمز و نوار چرخان برداشته می‌شود
+       و فقط برچسب قرمز «معوق» می‌ماند؛ پیامک تازه‌ای که باز معوق دارد دوباره هشدار می‌دهد */
+    var HK_INST_SEEN_KEY = STORAGE_KEY + '_instSeen';
+    function hkInstSeenKey(s) { var e = s && s.last; return e ? [e.y, e.m, e.d, e.time || '', e.count, s.overdue, s.penalty].join('_') : ''; }
+    function hkInstAlert(c, s) {
+      s = s || hkInstStatus(c);
+      if (!s || s.st !== 'bad') return false;
+      try { var m = JSON.parse(localStorage.getItem(HK_INST_SEEN_KEY) || '{}') || {}; return m[c.id] !== hkInstSeenKey(s); } catch (e) { return true; }
+    }
+    function hkInstMarkSeen(c) {
+      try {
+        var s = hkInstStatus(c); var m = JSON.parse(localStorage.getItem(HK_INST_SEEN_KEY) || '{}') || {};
+        if (s && s.st === 'bad') m[c.id] = hkInstSeenKey(s); else delete m[c.id];
+        localStorage.setItem(HK_INST_SEEN_KEY, JSON.stringify(m));
+      } catch (e) {}
+    }
     function hkInstCards() {
       var o = hkInstLoad();
       return Object.keys(o.cards).map(function (k) { return o.cards[k]; }).filter(function (c) { return c && c.log && c.log.length; })
@@ -433,8 +449,8 @@
       var cards = hkInstCards(); if (!cards.length) return null;
       var bad = false;
       var rows = cards.map(function (c) {
-        var s = hkInstStatus(c); if (s && s.st === 'bad') bad = true;
-        return '<div class="sp-inst-r' + (s && s.st === 'bad' ? ' bad hk-snake' : '') + '" data-inst="' + escapeHtml(c.id) + '"><b>' + spEsc(hkInstName(c)) + (s && s.st === 'bad' ? ' <i class="hk-inst-dot"></i>' : '') + '</b><span>' + hkInstStatusHtml(s, false) + '</span></div>';
+        var s = hkInstStatus(c), al = hkInstAlert(c, s); if (al) bad = true;
+        return '<div class="sp-inst-r' + (s && s.st === 'bad' ? ' bad' : '') + (al ? ' hk-snake' : '') + '" data-inst="' + escapeHtml(c.id) + '"><b>' + spEsc(hkInstName(c)) + (al ? ' <i class="hk-inst-dot"></i>' : '') + '</b><span>' + hkInstStatusHtml(s, false) + '</span></div>';
       }).join('');
       return spHead('کارت‌های قسط' + (bad ? ' <i class="hk-inst-dot"></i>' : ''), bad ? 'sp-inst-h bad' : 'sp-inst-h') + '<div class="sp-inst">' + rows + '</div>';
     }
@@ -446,6 +462,13 @@
     function hkOpenInstHistory(id) {
       var o = hkInstLoad(), c = o.cards[id]; if (!c) return;
       var old = document.getElementById('hkInstOv'); if (old) old.remove();
+      /* ۱.۳.۸۷: دیده شد → دایره و نوار چرخان برداشته شوند (اسلاید و منوی حساب‌ها) */
+      var _wasAlert = hkInstAlert(c);
+      hkInstMarkSeen(c);
+      if (_wasAlert) {
+        try { document.querySelectorAll('[data-inst="' + id + '"]').forEach(function (el) { el.classList.remove('hk-snake'); el.querySelectorAll('.hk-inst-dot').forEach(function (d) { d.remove(); }); }); } catch (eS) {}
+        setTimeout(function () { try { renderHomeCards(); } catch (eR) {} }, 0);
+      }
       var L = hkInstEntries(c).reverse(), s = hkInstStatus(c);
       var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
       var g = function (e) { try { return hkGregStr(e.y, e.m, e.d); } catch (eG) { return ''; } };

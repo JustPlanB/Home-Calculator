@@ -398,7 +398,7 @@
           e.stopPropagation();
           var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
-          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); });
+          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); }, isInc ? 'in' : 'out');
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';

@@ -467,7 +467,7 @@
       try {
         var _ic = hkInstCards();
         if (_ic.length) {
-          var _bad = _ic.some(function (c) { var s1 = hkInstStatus(c); return s1 && s1.st === 'bad'; });
+          var _bad = _ic.some(function (c) { return hkInstAlert(c); });
           var _fd = document.createElement('div'); _fd.className = 'hk-acc-fold' + (window._hkInstFoldOpen ? ' open' : '');
           _fd.innerHTML = '<span class="ic"><svg viewBox="0 0 24 24"><path d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h4l2 2.2h7.6a1.7 1.7 0 0 1 1.7 1.7v8.9a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/></svg></span>' +
             '<b>کارت‌های قسط</b><span class="n">' + toPersianDigits(String(_ic.length)) + '</span>' + (_bad ? '<i class="hk-inst-dot"></i>' : '') +
@@ -493,7 +493,7 @@
           _ic.forEach(function (c) {
             var s0 = hkInstStatus(c), r0 = document.createElement('div');
             r0.className = 'hk-acc-inst' + (s0 && s0.st === 'bad' ? ' bad' : ''); r0.setAttribute('data-inst', c.id);
-            r0.innerHTML = '<div class="nm"><b>' + escapeHtml(hkInstName(c)) + (s0 && s0.st === 'bad' ? ' <i class="hk-inst-dot"></i>' : '') + '</b><div class="hk-acc-hint">' + escapeHtml(c.bank || '') + (c.bank ? '<i>|</i>' : '') + '<span dir="ltr">' + toPersianDigits(c.id) + '</span></div></div><div class="st">' + hkInstStatusHtml(s0, true) + '</div>';
+            r0.innerHTML = '<div class="nm"><b>' + escapeHtml(hkInstName(c)) + (hkInstAlert(c, s0) ? ' <i class="hk-inst-dot"></i>' : '') + '</b><div class="hk-acc-hint">' + escapeHtml(c.bank || '') + (c.bank ? '<i>|</i>' : '') + '<span dir="ltr">' + toPersianDigits(c.id) + '</span></div></div><div class="st">' + hkInstStatusHtml(s0, true) + '</div>';
             r0.onclick = function (e) { e.stopPropagation(); hkOpenInstHistory(c.id); };
             _fb.appendChild(r0);
           });

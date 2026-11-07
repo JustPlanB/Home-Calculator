@@ -234,6 +234,61 @@ ok(ex2.newBox && ex2.created, 'بار اول از یک کارت: باکس «حس
   ok(rc.btns >= 2 && rc.keptFirst, 'هر مورد «تکراری نیست» خودش را دارد و فقط همان برداشته می‌شود');
   ok(rc.dir === 'rtl' && rc.firstIsAmt, '«ماهی که گذشت»: «تومان» بعد از مبلغ');
 
+  console.log('• معوق دیده‌شده، آیکون اولویت دسته‌ها، دستهٔ تازه در ویرایش ردیف');
+  const z = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const o = {};
+    /* کارت قسط با معوق */
+    const st = hkInstLoad(); st.cards['2979'] = { id: '2979', bank: 'بانک مسکن', name: 'وام مسکن', seq: 1, at: Date.now(), log: [{ y: 1405, m: 8, d: 6, time: '09:05', amount: 1850000, count: 36, overdue: 1850000, penalty: 0, at: Date.now() }] };
+    hkInstSave(st);
+    const c = hkInstLoad().cards['2979'];
+    o.alert0 = hkInstAlert(c);
+    const h0 = spPageInst();
+    o.ring0 = /hk-snake/.test(h0) && /hk-inst-dot/.test(h0);
+    hkOpenInstHistory('2979'); await w(200);
+    const ov = document.getElementById('hkInstOv'); if (ov) ov.remove();
+    const h1 = spPageInst();
+    o.ring1 = /hk-snake|hk-inst-dot/.test(h1);
+    o.label1 = /hk-inst-bad/.test(h1) && /معوق/.test(h1);
+    /* پیامک تازه با معوق بیشتر: دوباره هشدار */
+    const st2 = hkInstLoad(); st2.cards['2979'].log.push({ y: 1405, m: 9, d: 6, time: '09:00', amount: 0, count: 36, overdue: 3700000, penalty: 50000, at: Date.now() + 1 }); hkInstSave(st2);
+    o.alert2 = hkInstAlert(hkInstLoad().cards['2979']);
+    /* اولویت دسته‌ها: آیکون */
+    openCatPriority(); await w(200);
+    const pm = document.getElementById('hkCatPriModal');
+    o.priIcons = pm ? pm.querySelectorAll('.hk-pri-row .hk-pri-ci svg, .hk-pri-row .hk-pri-ci img').length : -1;
+    o.priRows = pm ? pm.querySelectorAll('.hk-pri-row').length : -1;
+    if (pm) pm.remove();
+    /* ویرایش ردیف درآمد: دستهٔ تازه */
+    const t = hkMainTitle(), inc = periodData.income.sections.find(q => q.title === t);
+    inc.rows = [Object.assign(emptyRow('income'), { day: '2', desc: 'کار آزاد', amount: 4000000, status: 'paid' })]; persistCurrent();
+    hkOpenRowEdit({ row: inc.rows[0], tab: 'income', title: t, sec: inc, num: 1, onSaved: function () {} }); await w(400);
+    [...document.querySelectorAll('#hkRowEdit .hk-re-sel')].find(x => /دسته/.test(x.textContent)).click(); await w(250);
+    const add = document.querySelector('#hkCatPick .hk-cp-add');
+    o.addTile = !!add;
+    add.click(); await w(80);
+    const inp = document.querySelector('#hkCatPick .sp-pick-new input');
+    inp.value = 'حقوق'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    o.dupMsg = /دسته‌ای با این اسم/.test(document.querySelector('#hkCatPick .sp-pick-err').textContent);
+    inp.value = 'تدریس خصوصی'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await w(200);
+    o.styleOpen = !!document.getElementById('hkCatStyle') && !document.getElementById('hkCatPick');
+    document.querySelector('#hkCatStyle .hk-cst-ok').click(); await w(150);
+    o.catBtn = [...document.querySelectorAll('#hkRowEdit .hk-re-sel')].find(x => /دسته/.test(x.textContent)).textContent;
+    const nc = HK_INCOME_CATS.find(x => x.label === 'تدریس خصوصی');
+    o.stored = !!nc && /^in_u_/.test(nc.id) && hkInCustomLoad().some(x => x.id === nc.id);
+    o.inBackup = (HKCategorizer.exportData().inCustom || []).some(x => x.label === 'تدریس خصوصی');
+    o.hasColor = nc && hkCatColor(nc.id) !== '#08b5f5';
+    document.querySelector('#hkRowEdit .hk-re-no').click(); await w(200);
+    return o;
+  });
+  ok(z.alert0 && z.ring0, 'کارت قسط معوق: دایرهٔ قرمز و نوار چرخان');
+  ok(!z.ring1 && z.label1, 'بعد از باز کردن کارت: دایره و نوار چرخان رفت، برچسب قرمز «معوق» ماند');
+  ok(z.alert2, 'پیامک تازه با معوق: دوباره هشدار');
+  ok(z.priRows > 0 && z.priIcons === z.priRows, 'اولویت دسته‌ها: آیکون هر دسته (' + z.priIcons + '/' + z.priRows + ')');
+  ok(z.addTile && z.dupMsg && z.styleOpen, 'ویرایش ردیف درآمد: «دستهٔ جدید» در انتخاب دسته؛ اسم تکراری پذیرفته نمی‌شود؛ بعد آیکون و رنگ');
+  ok(/تدریس خصوصی/.test(z.catBtn) && z.stored && z.inBackup && z.hasColor, 'دستهٔ تازه روی همان ردیف نشست، ذخیره و در پشتیبان است (' + z.catBtn + ')');
+
   ok(allErrors.length === 0, 'بدون خطای صفحه' + (allErrors.length ? ': ' + allErrors.slice(0, 3).join(' | ') : ''));
   await b.close();
   console.log('\n' + passed + ' passed, ' + failed + ' failed');

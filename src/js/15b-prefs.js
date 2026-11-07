@@ -392,7 +392,8 @@
         var renum = function () { [].forEach.call(ul.children, function (r, i) { r.classList.toggle('top', i < 4); r.querySelector('b').textContent = toPersianDigits(String(i + 1)); }); };
         L.forEach(function (c) {
           var r = document.createElement('div'); r.className = 'hk-pri-row'; r.dataset.id = c.id;
-          r.innerHTML = '<b></b><span>' + escapeHtml(c.label) + '</span><i class="hk-pri-h" aria-label="جابه‌جایی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg></i>';
+          /* ۱.۳.۸۷: آیکون و رنگ هر دسته کنار نامش */
+          r.innerHTML = '<b></b><i class="hk-pri-ci" style="--cc:' + hkCatColor(c.id) + '">' + hkCatIco(c.id) + '</i><span>' + escapeHtml(c.label) + '</span><i class="hk-pri-h" aria-label="جابه‌جایی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg></i>';
           var h = r.querySelector('.hk-pri-h'), drag = null;
           h.addEventListener('pointerdown', function (e) {
             if (auto) return;

@@ -657,11 +657,27 @@
       prev();
     }
     try { window.hkCatIco = hkCatIco; window.hkCatImgSet = hkCatImgSet; window.hkCatPickImage = hkCatPickImage; window.hkCatStyleSheet = hkCatStyleSheet; window.HK_ICON_BANK = HK_ICON_BANK; } catch (eCi) {}
+    try { window.hkAddIncomeCat = hkAddIncomeCat; window.hkInCustomLoad = hkInCustomLoad; } catch (eIc) {}
     /* ۱.۳.۴۸: دسته‌های واریز (کوتاه) */
     var HK_INCOME_CATS = [
       { id: 'in_salary', label: 'حقوق' }, { id: 'in_rent', label: 'اجاره' }, { id: 'in_loanback', label: 'تسویه قرض' } /* ۱.۳.۶۸: جای «اضافه‌کار» */,
       { id: 'in_bonus', label: 'پاداش' }, { id: 'in_gift', label: 'هدیه و کمک' }, { id: 'in_sale', label: 'فروش' }, { id: 'in_profit', label: 'سود' }
     ];
+    /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر (شناسه با «in_u_» تا مثل بقیهٔ دسته‌های درآمد روی ردیف بنشیند) */
+    var HK_IN_CUSTOM_KEY = STORAGE_KEY + '_inCustom';
+    function hkInCustomLoad() { try { var a = JSON.parse(localStorage.getItem(HK_IN_CUSTOM_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (x) { return x && /^in_u_/.test(x.id) && x.label; }) : []; } catch (e) { return []; } }
+    function hkInCustomSync(list) {
+      (list || hkInCustomLoad()).forEach(function (c) { if (!HK_INCOME_CATS.some(function (x) { return x.id === c.id; })) HK_INCOME_CATS.push({ id: c.id, label: c.label, custom: true }); });
+    }
+    function hkInCustomSave() { try { localStorage.setItem(HK_IN_CUSTOM_KEY, JSON.stringify(HK_INCOME_CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; }))); } catch (e) {} }
+    function hkAddIncomeCat(label) {
+      label = String(label || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      if (!label || HKCategorizer.labelTaken(label)) return null;
+      var c = { id: 'in_u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label: label, custom: true };
+      HK_INCOME_CATS.push(c); hkInCustomSave();
+      return c;
+    }
+    hkInCustomSync();
     HK_CAT_ICONS.in_salary = '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>';
     /* ۱.۳.۸۳: اجاره = کلید (با «لوازم خانه» یکی نباشد) */
     HK_CAT_ICONS.in_rent = '<circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M18 12v3.2M15 12v2.2"/>';
@@ -706,7 +722,7 @@
     var HK_INST_DOLLAR_SVG = '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.5-2 3.5-4.5 3.5-4.5-1.3-4.5-3"/>';
     function hkCatColor(id) { return HK_CAT_COLORS[id] || (id && hkCatUserMap('Color')[id]) || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
-    function hkCatPickSheet(cats, cur, onPick) {
+    function hkCatPickSheet(cats, cur, onPick, kind) {
       var old = document.getElementById('hkCatPick'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkCatPick'; ov.className = 'modal-overlay open sms-cat-more-ov'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
@@ -724,6 +740,33 @@
         b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
         gg.appendChild(b);
       });
+      /* ۱.۳.۸۷: «دستهٔ جدید» همین‌جا (مخارج یا درآمد): اسم ← آیکون/گالری و رنگ ← انتخاب روی همین ردیف */
+      if (kind === 'in' || kind === 'out') {
+        var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'sms-cat sp-pick-tadd hk-cp-add'; plus.style.setProperty('--cc', '#08b5f5');
+        plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
+        plus.onclick = function () {
+          if (bx.querySelector('.sp-pick-new')) return;
+          var wrap = document.createElement('div'); wrap.className = 'sp-pick-new';
+          var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'sp-pick-input'; inp.placeholder = 'نام دستهٔ جدید'; inp.maxLength = 24; inp.setAttribute('enterkeyhint', 'done');
+          var okb = document.createElement('button'); okb.type = 'button'; okb.className = 'sp-pick on'; okb.textContent = 'افزودن';
+          var msg = document.createElement('div'); msg.className = 'sp-pick-err';
+          var save = function () {
+            if (HKCategorizer.labelTaken(inp.value)) { msg.textContent = 'دسته‌ای با این اسم هست'; return; }
+            var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+            if (!cat) { try { inp.focus(); } catch (e) {} return; }
+            close();
+            hkCatStyleSheet(cat, function () { onPick(cat.id); });
+          };
+          okb.onclick = save;
+          inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+          inp.addEventListener('input', function () { msg.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+          wrap.appendChild(inp); wrap.appendChild(okb); wrap.appendChild(msg);
+          plus.style.display = 'none';
+          bx.appendChild(wrap);
+          setTimeout(function () { try { inp.focus(); } catch (e) {} }, 30);
+        };
+        gg.appendChild(plus);
+      }
       bx.appendChild(gg); ov.appendChild(bx);
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       document.body.appendChild(ov);
