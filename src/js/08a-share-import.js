@@ -611,7 +611,8 @@ container.innerHTML = '';
         dayInp.setAttribute('enterkeyhint', 'next');
         dayInp.setAttribute('inputmode', 'numeric');
         dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
-        dayInp.readOnly = isFilledVal(row.day);
+        /* ۱.۳.۸۶: خانه‌های جدول با ضربه تایپ نمی‌شوند؛ ویرایش فقط با لانگ‌پرس → ویرایش */
+        dayInp.readOnly = true; dayInp.tabIndex = -1;
         if (isFilledVal(row.day)) dayInp.classList.add('pd-filled');
         /* ردیف «اختلاف موجودی» (تطبیق با پیامک): پس‌زمینهٔ زرد؛ ۱.۳.۶۲: روز عادی و ویرایش زردی را برنمی‌دارد (فقط «ردیف معمولی» در لانگ‌پرس) */
         if (row.reconGap) tr.classList.add('recon-gap');
@@ -622,11 +623,7 @@ container.innerHTML = '';
         };
         dayInp.onclick = () => {
           if (preApp) { lockedMsg(dayInp); return; }
-          if (!isFilledVal(row.day)) {
-            dayInp.readOnly = false;
-            try { dayInp.focus({ preventScroll: true }); } catch (e) { try { dayInp.focus(); } catch (e2) {} }
-            return;
-          }
+          if (!isFilledVal(row.day)) { try { dayInp.blur(); } catch (eB) {} return; }
           /* روز پر: فقط ساعت تراکنش در باکس شناور (روز خودش در خانه هست) */
           if (dayInp.readOnly && !row.reconGap) { try { showCellTextPopup(dayInp, row.time ? 'ساعت ' + toPersianDigits(row.time) : 'ساعت ثبت نشده'); } catch (eP) {} }
         };
@@ -643,7 +640,7 @@ container.innerHTML = '';
             }
           } catch (eTm) {}
           dayInp.value = row.day ? toPersianDigits(String(row.day)) : '';
-          dayInp.readOnly = isFilledVal(row.day);
+          dayInp.readOnly = true;
           markFilled(dayInp, isFilledVal(row.day));
           try {
             sec.rows.sort((a, b) => {
@@ -678,21 +675,13 @@ container.innerHTML = '';
         desc.rows = 1;
         desc.value = row.desc || '';
         desc.setAttribute('enterkeyhint', 'next');
-        desc.readOnly = isFilledVal(row.desc) || fromPlan;
+        desc.readOnly = true; desc.tabIndex = -1;
         if (fromPlan) {
           desc.title = 'از اقساط — قابل ویرایش نیست';
           desc.style.opacity = '0.85';
         }
         desc.onclick = (e) => {
-          if (!isFilledVal(row.desc)) {
-            if (fromPlan) {
-              showToast('برای ویرایش، از بخش اقساط اقدام کنید');
-              return;
-            }
-            desc.readOnly = false;
-            try { desc.focus(); } catch (err) {}
-            return;
-          }
+          if (!isFilledVal(row.desc)) { try { desc.blur(); } catch (eB) {} return; }
           // پر (حتی اقساط): باکس یک‌خطی با کل متن
           try { showCellTextPopup(desc, row.desc || ''); } catch (eP) {}
         };
@@ -717,7 +706,7 @@ container.innerHTML = '';
           row.desc = desc.value || '';
           desc.classList.remove('pd-editing', 'pd-expanded');
           desc.style.height = '';
-          desc.readOnly = isFilledVal(row.desc);
+          desc.readOnly = true;
           markFilled(desc, isFilledVal(row.desc));
           scheduleSave();
           if (desc._goNext) {
@@ -735,7 +724,7 @@ container.innerHTML = '';
         tdDesc.appendChild(desc);
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
         /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
-        if (row.instTag) { const it = document.createElement('div'); it.className = 'preapp-tag hk-inst-tag'; it.textContent = row.instTag; tdDesc.appendChild(it); }
+        /* ۱.۳.۸۶: برچسب زرد قسط زیر شرح برداشته شد؛ به‌جایش آیکون دلار نقره‌ای در ستون ردیف (پایین‌تر) */
         tr.appendChild(tdDesc);
 
         // مبلغ
@@ -744,11 +733,23 @@ container.innerHTML = '';
         amt.className = 'pd-amt ' + ((row.status || 'paid') === 'paid' ? 'status-paid' : 'status-unpaid') + (isFilledVal(row.amount) ? ' pd-filled' : '');
         /* ۱.۳.۸۵: جیب به جیب: به‌جای عدد ردیف، همان آیکون دستهٔ «جیب به جیب» (مثل تیک تسویه در قرض) */
         if (row.p2p) { tr.classList.add('hk-p2p-row'); tdN.classList.add('hk-p2p-num'); tdN.title = 'جیب به جیب — در جمع حساب نشده'; numSpan.innerHTML = '<svg class="hk-p2p-rowic" viewBox="0 0 24 24" aria-label="جیب به جیب">' + HK_CAT_ICONS.p2p + '</svg>'; }
+        /* ۱.۳.۸۶: ردیف پرداخت قسط: آیکون دلار نقره‌ای به‌جای عدد ردیف */
+        else if (row.instTag) { tr.classList.add('hk-inst-row'); tdN.classList.add('hk-inst-num'); numSpan.innerHTML = '<svg class="hk-inst-rowic" viewBox="0 0 24 24" aria-label="پرداخت قسط">' + HK_INST_DOLLAR_SVG + '</svg>'; }
+        /* ۱.۳.۸۶: ضربه روی آیکون ستون ردیف = باکس شناور «نام: توضیح» */
+        if (row.p2p || row.instTag) {
+          tdN.onclick = function (e) {
+            try { e.stopPropagation(); } catch (eSp) {}
+            const msg = row.p2p
+              ? 'جیب به جیب: پولی که بین کارت‌های خودتان جابه‌جا شده؛ در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی کارت‌ها با آن درست می‌ماند.'
+              : 'پرداخت قسط: ' + row.instTag + ' — در مخارج حساب می‌شود و در کارت قسط هم ثبت شده است.';
+            try { showCellTextPopup(numSpan, msg); } catch (eP) {}
+          };
+        }
         amt.inputMode = 'numeric';
         try { amt.setAttribute('inputmode', 'numeric'); amt.setAttribute('enterkeyhint', 'done'); } catch (eAK) {}
         amt.pattern = '[0-9]*';
         amt.value = row.amount ? formatNum(row.amount) : '';
-        amt.readOnly = isFilledVal(row.amount) || fromPlan;
+        amt.readOnly = true; amt.tabIndex = -1;
         if (fromPlan) {
           amt.title = 'مبلغ اقساط قابل ویرایش نیست';
         }
@@ -761,7 +762,7 @@ container.innerHTML = '';
           const green = theme === 'light' ? '#17834a' : '#9ee858';
           const red = theme === 'light' ? '#dc2626' : '#ff6b4a';
           /* ۱.۳.۴۸: پرداخت‌نشده و دریافت‌نشده زرد کمی تیره (جدا از نارنجیِ مخارج) */
-          const deep = theme === 'light' ? '#a87a00' : '#e6b12c';
+          const deep = theme === 'light' ? '#a87a00' : '#ffec0a';
           const col = tab === 'income' ? (paid ? green : deep) : (paid ? red : deep);
           amt.classList.toggle('pd-unpaid-deep', !paid);
           amt.classList.toggle('status-paid', paid);
@@ -874,11 +875,7 @@ container.innerHTML = '';
         amt.onclick = (e) => {
           if (preApp) { lockedMsg(amt); return; }
           if (fromPlan) return;
-          if (!isFilledVal(row.amount)) {
-            amt.readOnly = false;
-            try { amt.focus(); } catch (err) {}
-            return;
-          }
+          if (!isFilledVal(row.amount)) { try { amt.blur(); } catch (eB) {} return; }
           if (document.activeElement === amt && !amt.readOnly) return;
           /* ۱.۳.۴۷: یک ضربه = مبلغ کامل در یک خط داخل باکس شناور؛ تغییر وضعیت فقط از منوی ویرایش ردیف */
           try { if (amt.readOnly) { amt.blur(); amt.scrollLeft = 0; } } catch (eBl) {}
@@ -910,7 +907,7 @@ container.innerHTML = '';
           row.amount = n;
           if (n && !row.status) row.status = 'paid';
           amt.value = n ? formatNum(n) : '';
-          amt.readOnly = !!n;
+          amt.readOnly = true;
           markFilled(amt, !!n);
           applyAmtColor();
           scheduleSave();
@@ -1005,6 +1002,7 @@ container.innerHTML = '';
             tr.dataset.projectId = fcRow.subjectId;
           }
         } catch (eHlPd) {}
+        tr._hkRow = row;
         tbody.appendChild(tr);
       });
 

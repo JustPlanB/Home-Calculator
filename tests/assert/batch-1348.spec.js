@@ -38,7 +38,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     ease: /4\s*\*\s*t\s*\*\s*t\s*\*\s*t/.test(hkSlowScrollTo.toString()),
     bulk: (() => { const el = document.querySelector('.hk-bulk-open-btn'); return el ? getComputedStyle(el).backgroundColor : ''; })()
   }));
-  ok(c.v === '#e6b12c', 'رنگ پرداخت/دریافت‌نشده: زرد کمی تیره (#e6b12c)');
+  ok(c.v === '#ffec0a', 'رنگ پرداخت/دریافت‌نشده: زرد (#ffec0a، ۱.۳.۸۶)');
   ok(c.ease, 'اسکرول خودکار با منحنی ease-in-out');
   ok(!c.bulk || c.bulk === 'rgb(230, 177, 44)', 'پس‌زمینهٔ دکمهٔ «ثبت گروهی» زرد');
 

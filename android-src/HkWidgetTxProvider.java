@@ -31,6 +31,10 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
   static boolean isIncome(Context ctx, int id){
     try{ return "inc".equals(ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString("tx_type_"+id, "exp")); }catch(Exception e){ return false; }
   }
+  /* ۱.۳.۸۶: گزینهٔ «همه» */
+  static boolean isAll(Context ctx, int id){
+    try{ return "all".equals(ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString("tx_type_"+id, "exp")); }catch(Exception e){ return false; }
+  }
   @SuppressWarnings("deprecation")
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
@@ -39,7 +43,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
       float[] sz=HkWidgetTxDraw.dims(ctx, mgr, id);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx);
       v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
-      v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, d.light));
+      v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, isAll(ctx, id), d.light));
       v.setImageViewBitmap(R.id.hk_wt_empty, HkWidgetTxDraw.empty(ctx, (int)sz[0], sz[1], d.locked ? "برنامه قفل است" : "ردیفی نیست", d.light));
       Intent svc=new Intent(ctx, HkWidgetTxService.class);
       svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
@@ -111,7 +115,10 @@ final class HkWidgetTxDraw {
   static int headBg(boolean light){ return light ? 0xFFEEF0F4 : 0xFF0A1628; }
   static int headFg(boolean light){ return light ? 0xFF2C3644 : 0xFFFFFFFF; }
   static int headLine(boolean light){ return light ? 0xFFC9D1DC : 0xFF3A3A3C; }
-  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){
+  /* آبی نرم‌افزار برای عنوان و دکمهٔ «همه» */
+  static final int ALL_C=0xFF08B5F5;
+  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){ return header(ctx, W, k, inc, false, light); }
+  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light){
     fonts(ctx);
     float th=40*k, hh=30*k; int H=Math.round(th+hh+1*k);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
@@ -122,8 +129,8 @@ final class HkWidgetTxDraw {
     android.graphics.Path tp=new android.graphics.Path();
     tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
     cv.drawPath(tp, tb);
-    Paint t=paint(BOLD, 16.5f*k, amt(inc, light), Paint.Align.CENTER);
-    cv.drawText(inc ? "درآمدها" : "مخارج", W/2f, base(0, th, 16.5f*k), t);
+    Paint t=paint(BOLD, 16.5f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
+    cv.drawText(all ? "همه" : (inc ? "درآمدها" : "مخارج"), W/2f, base(0, th, 16.5f*k), t);
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
     Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(headBg(light));
     cv.drawRect(c[4], th, c[0], th+hh, band);

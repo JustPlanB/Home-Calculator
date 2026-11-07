@@ -60,22 +60,25 @@ const allErrors = [];
     openCategoryReviewSheet(t); await w(200); document.querySelector('.sp-cat-sheet .sp-cat-row').click(); await w(250);
     const g = document.querySelector('.sp-cat-sheet .sp-pick-grid');
     const tile = g.querySelector('[data-id="' + c.id + '"]'), food = g.querySelector('[data-id="food"]');
-    const o = { edCustom: !!tile.querySelector('.sp-pick-ed'), edBuiltin: !!food.querySelector('.sp-pick-ed'), edVis0: getComputedStyle(tile.querySelector('.sp-pick-ed')).display };
+    /* ۱.۳.۸۶: مداد ویرایش کلاً برداشته شد؛ لانگ‌پرس فقط × حذف */
+    const o = { noPencil: !document.querySelector('.sp-pick-ed') };
     tile.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await w(650); tile.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); tile.click(); await w(80);
-    const ir = tile.querySelector('i').getBoundingClientRect(), xr = tile.querySelector('.sp-pick-x').getBoundingClientRect(), er = tile.querySelector('.sp-pick-ed').getBoundingClientRect();
-    o.edVis = getComputedStyle(tile.querySelector('.sp-pick-ed')).display; o.xLeft = xr.left < ir.left + ir.width / 2; o.edRight = er.right > ir.left + ir.width / 2;
-    o.edIcon = /M12 20h9/.test(tile.querySelector('.sp-pick-ed').innerHTML);
+    const ir = tile.querySelector('i').getBoundingClientRect(), xr = tile.querySelector('.sp-pick-x').getBoundingClientRect();
+    o.xLeft = xr.left < ir.left + ir.width / 2; o.noPencil2 = !document.querySelector('.sp-pick-ed');
     /* انتخاب عکس (شبیه‌سازی گالری): عکس بزرگ ۸۰۰×۵۰۰ → مربع ۱۲۸ */
     const cv = document.createElement('canvas'); cv.width = 800; cv.height = 500; const x = cv.getContext('2d'); x.fillStyle = '#2a9d8f'; x.fillRect(0, 0, 800, 500);
     const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
     const file = new File([blob], 'garden.png', { type: 'image/png' });
     const origClick = HTMLInputElement.prototype.click;
     HTMLInputElement.prototype.click = function () { if (this.type === 'file') { const dt = new DataTransfer(); dt.items.add(file); this.files = dt.files; this.dispatchEvent(new Event('change')); } else origClick.call(this); };
-    tile.querySelector('.sp-pick-ed').click(); await w(800);
+    /* عکس از گالری در پنجرهٔ آیکون/رنگ (همان که هنگام ساخت دسته باز می‌شود) */
+    hkCatStyleSheet(c, function () {}); await w(100);
+    document.querySelector('#hkCatStyle .hk-cst-gal').click(); await w(800);
     HTMLInputElement.prototype.click = origClick;
-    const img = tile.querySelector('i img.hk-cat-img');
-    o.img = !!img; o.stored = (hkCatImgMap()[c.id] || '').slice(0, 15);
-    if (img) { const im2 = new Image(); im2.src = img.src; await new Promise(r => { im2.onload = r; im2.onerror = r; }); o.size = im2.naturalWidth + 'x' + im2.naturalHeight; o.bytes = img.src.length; }
+    document.querySelector('#hkCatStyle .hk-cst-ok').click(); await w(100);
+    const src = hkCatImgMap()[c.id] || '';
+    o.img = /hk-cat-img/.test(hkCatIco(c.id)); o.stored = src.slice(0, 15);
+    if (src) { const im2 = new Image(); im2.src = src; await new Promise(r => { im2.onload = r; im2.onerror = r; }); o.size = im2.naturalWidth + 'x' + im2.naturalHeight; o.bytes = src.length; }
     o.inBackup = !!(HKCategorizer.exportData().img || {})[c.id];
     categorySheetBack(); categorySheetBack(); closeCategoryReviewSheet(); await w(100);
     /* همه‌جا همان عکس: پنجرهٔ دستهٔ ویرایش ردیف */
@@ -86,8 +89,7 @@ const allErrors = [];
     HKCategorizer.removeCat(c.id); o.cleaned = !hkCatImgMap()[c.id];
     return o;
   });
-  ok(im.edCustom && !im.edBuiltin && im.edVis0 === 'none', 'مداد فقط روی دسته‌های ساخت کاربر، و فقط در حالت لرزش');
-  ok(im.edVis === 'flex' && im.xLeft && im.edRight && im.edIcon, 'نگه‌داشتن: × حذف سمت چپ، مداد ویرایش (همان آیکون همیشگی) لبهٔ راست');
+  ok(im.noPencil && im.noPencil2 && im.xLeft, 'نگه‌داشتن: فقط × حذف سمت چپ؛ مداد ویرایش نیست');
   ok(im.img && /^data:image\//.test(im.stored) && im.size === '128x128' && im.bytes < 40000, 'عکس گالری مربع ۱۲۸ پیکسلی شد (اندازهٔ آیکون) و جای آیکون نشست (' + im.size + '، ' + im.bytes + ' بایت)');
   ok(im.inBackup && im.inSheet, 'عکس دسته در پشتیبان هست و در پنجرهٔ دستهٔ ویرایش ردیف هم دیده می‌شود');
   ok(im.cleaned, 'حذف دسته عکسش را هم پاک می‌کند');

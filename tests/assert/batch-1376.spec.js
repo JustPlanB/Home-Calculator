@@ -105,12 +105,12 @@ async function fresh(b, vh) {
     await w(900);
     const rows = findSectionByTitle('expense', t).rows;
     openPersonDetail(t, 'expense'); await w(900);
-    const tags = [...document.querySelectorAll('.person-detail-box .hk-inst-tag')].map(x => x.textContent);
+    const tags = [...document.querySelectorAll('.person-detail-box td.pd-num-cell .hk-inst-rowic')].map(x => x.getAttribute('aria-label')); /* ۱.۳.۸۶: به‌جای برچسب زیر شرح، آیکون دلار در ستون ردیف */
     const again = hkInstTagRows();
     return { tag: rows[0].instTag, desc: rows[0].desc, other: !rows[1].instTag, tags, again };
   });
   ok(ti.tag === 'قسط مسکن ۲۹۷۹ · ۳۶' && ti.desc === 'انتقال به مسکن' && ti.other, 'برداشت هم‌روز و هم‌مبلغ: برچسب جدای «قسط مسکن ۲۹۷۹ · ۳۶»؛ شرح کاربر دست نخورد');
-  ok(ti.tags.length === 1 && ti.again === 0, 'برچسب زیر شرح در جدول؛ دوباره زده نمی‌شود');
+  ok(ti.tags.length === 1 && ti.again === 0, 'ردیف قسط در جدول با آیکون دلار (۱.۳.۸۶)؛ دوباره زده نمی‌شود');
   await I.ctx.close();
 
   console.log('• راهنما: شکل دقیق باکس');

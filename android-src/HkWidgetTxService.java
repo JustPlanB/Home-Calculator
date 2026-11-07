@@ -16,15 +16,16 @@ public class HkWidgetTxService extends RemoteViewsService {
     return new RemoteViewsFactory(){
       JSONArray rows=new JSONArray();
       HkWidgetDraw.Data d;
-      boolean inc=false;
+      boolean inc=false, all=false;
       float[] sz=new float[]{ 600, 2 };
       public void onCreate(){ load(); }
       void load(){
         try{
           d=HkWidgetDraw.load(ctx);
           inc=HkWidgetTxProvider.isIncome(ctx, id);
+          all=HkWidgetTxProvider.isAll(ctx, id);
           sz=HkWidgetTxDraw.dims(ctx, AppWidgetManager.getInstance(ctx), id);
-          String js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(inc ? "tx_inc" : "tx_exp", "[]");
+          String js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(all ? "tx_all" : (inc ? "tx_inc" : "tx_exp"), "[]");
           rows=(d!=null && d.locked) ? new JSONArray() : new JSONArray(js);
         }catch(Exception e){ rows=new JSONArray(); }
       }
@@ -36,7 +37,7 @@ public class HkWidgetTxService extends RemoteViewsService {
         try{
           JSONObject o=rows.getJSONObject(pos);
           boolean light=d!=null && d.light, hid=d!=null && d.hidden;
-          v.setImageViewBitmap(R.id.hk_wti_img, HkWidgetTxDraw.row(ctx, (int)sz[0], sz[1], o.optString("d",""), o.optString("t",""), o.optString("b",""), hid ? "••••" : o.optString("a",""), inc, light));
+          v.setImageViewBitmap(R.id.hk_wti_img, HkWidgetTxDraw.row(ctx, (int)sz[0], sz[1], o.optString("d",""), o.optString("t",""), o.optString("b",""), hid ? "••••" : o.optString("a",""), all ? "i".equals(o.optString("x","e")) : inc, light));
           v.setOnClickFillInIntent(R.id.hk_wti_img, new Intent());
         }catch(Exception ignored){}
         return v;

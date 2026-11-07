@@ -214,7 +214,7 @@ async function seedRows(page) {
 
   console.log('• ویجت گوشی');
   const pa = require('../lib/android-src')();
-  ok(/ACTION_EYE/.test(pa) && /hk_w_eye/.test(pa) && /hk_ws_eye/.test(pa) && /hk_ic_eye_off/.test(pa), 'دکمهٔ چشم روی هر سه ویجت (بزرگ، حساب‌ها، یک‌خطی)');
+  ok(/ACTION_EYE/.test(pa) && /hk_w_eye/.test(pa) && /hk_wt_eye/.test(pa) && /hk_ic_eye_off/.test(pa), 'دکمهٔ چشم روی ویجت‌ها (بزرگ، حساب‌ها، ردیف‌ها)');
   ok(/putBoolean\("hidden", !sp\.getBoolean\("hidden",false\)\)/.test(pa) && /d\.mask\?"••••••"/.test(pa), 'زدن چشم مبالغ همهٔ ویجت‌ها را همان لحظه پنهان/نمایان می‌کند (ذخیره‌شده)');
 
   ok(allErrors.length === 0, 'هیچ خطای JS ' + (allErrors[0] || ''));

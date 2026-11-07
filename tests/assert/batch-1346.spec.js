@@ -231,7 +231,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   ok(rec.x === 1 && rec.labels === 'وصل خودکار', 'پوشهٔ آرشیو: کنار هر ردیف ×؛ پایین فقط «وصل خودکار» (' + rec.labels + ')');
   ok(/خرداد ۱۴۰۵/.test(rec.firstVisible || '') && rec.titleSticky && rec.cancelCenter === 'center', 'وصل دستی: اولین ماه دیده‌شده ماه شروع قرارداد (خرداد ۱۴۰۵)، عنوان ثابت، «انصراف» وسط‌چین (' + rec.firstVisible + ')');
   ok(rec.cancelOptCenter === 'center' && rec.unlinked, '× ردیف آرشیو → «بلی» فقط اتصال را برمی‌دارد؛ «خیر» وسط‌چین');
-  /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(230, 177, 44)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
+  /* ۱.۳.۴۷ */ ok(rec.unpaidCol === 'rgb(255, 236, 10)', '«این ماه: دریافت نشده» همان گلبهی مبالغ دریافت‌نشده');
 
   console.log('• کارت و رنگ‌ها');
   const card = await p.evaluate(async () => {

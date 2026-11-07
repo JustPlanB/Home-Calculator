@@ -142,7 +142,7 @@ const cnt = () => ({ acc: document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)
   const andr = require('../lib/android-src')();
   const hd = andr.slice(andr.indexOf('static Bitmap header('), andr.indexOf('static Bitmap row('));
   ok(/0xFF0A1628/.test(andr) && /0xFFEEF0F4/.test(andr) && /0xFF1B1B1B/.test(andr) && /0xFFE3E7EE/.test(andr), 'ویجت ردیف‌ها: زمینهٔ عنوان و سرستون‌ها همان رنگ جدول‌های نرم‌افزار');
-  ok(/Paint\.Align\.CENTER\);\s*cv\.drawText\(inc \? "درآمدها" : "مخارج", W\/2f/.test(hd) && /amt\(inc, light\), Paint\.Align\.CENTER/.test(hd), 'عنوان «مخارج/درآمدها» وسط با همان سبز و نارنجی');
+  ok(/Paint\.Align\.CENTER\);\s*cv\.drawText\(all \? "همه" : \(inc \? "درآمدها" : "مخارج"\), W\/2f/.test(hd) && /all \? ALL_C : amt\(inc, light\), Paint\.Align\.CENTER/.test(hd), 'عنوان «مخارج/درآمدها» وسط با همان سبز و نارنجی');
 
   ok(allErrors.length === 0, 'هیچ خطای JS ' + allErrors.slice(0, 3).join(' | '));
   await b.close();

@@ -12,8 +12,7 @@ const allErrors = [];
 (async () => {
   console.log('• کد بومی اندروید');
   const pa = require('../lib/android-src')();
-  ok(/<StackView android:id="@\+id\/hk_ws_list"[^>]*android:loopViews="true"/.test(pa), 'ویجت یک‌خطی: StackView با چرخش بی‌پایان');
-  ok(!/LOOP_COUNT/.test(pa) && !/setScrollPosition\(R\.id\.hk_ws_list/.test(pa) && /return HkWidgetSmallProvider\.PAGES;/.test(pa), 'فهرست بی‌پایان و پرش اسکرول حذف شد؛ دو صفحه');
+  ok(!/HkWidgetSmallProvider|hk_widget_small/.test(pa), '۱.۳.۸۶: ویجت پشته‌ای (یک‌خطی) حذف شد');
   const cfg = pa.slice(pa.indexOf('public class HkWidgetTxConfig'), pa.indexOf('public class HkWidgetTxConfig') + 4000);
   ok(/R\.font\.hk_vazir_bold/.test(cfg) && /hkVazir\(v\); super\.setContentView\(v\)/.test(cfg), 'پنجرهٔ تنظیم ویجت تراکنش‌ها با فونت وزیر');
   const qa = pa.slice(pa.indexOf('public class HkQuickActivity'), pa.indexOf('public class HkQuickActivity') + 9000);

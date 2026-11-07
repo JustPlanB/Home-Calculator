@@ -40,7 +40,6 @@ public class HkWidgetProvider extends AppWidgetProvider {
       int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetProvider.class));
       for(int id: ids) render(ctx, mgr, id);
     }catch(Exception ignored){}
-    HkWidgetSmallProvider.refreshAll(ctx);
     try{ HkWidgetAccountsProvider.refreshAll(ctx); }catch(Exception ignored){}
     try{ HkWidgetTxProvider.refreshAll(ctx); }catch(Exception ignored){}
   }
