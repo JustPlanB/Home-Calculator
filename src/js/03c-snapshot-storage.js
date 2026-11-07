@@ -234,6 +234,10 @@
       if (data.savings && typeof data.savings === 'object') {
         try { restoreSavings(data.savings, mode); } catch (eSv) { bkRestoreFail('savings', eSv); }
       }
+      /* ۱.۳.۸۷: بازیابی دنگ */
+      if (data.dong && typeof data.dong === 'object') {
+        try { hkDongRestore(data.dong, mode); } catch (eDg) { bkRestoreFail('dong', eDg); }
+      }
 
       /* بازیابی دسته‌بندی مخارج */
       if (data.categoryData && typeof data.categoryData === 'object') {

@@ -328,6 +328,10 @@
         if (want('savings')) {
           try { payload.savings = loadSavings(); } catch (eSv) {}
         }
+        /* ۱.۳.۸۷: دنگ (جدا از حساب‌کتاب) */
+        if (want('dong')) {
+          try { var _dg = hkDongExport(); if (_dg) payload.dong = _dg; } catch (eDg) { bkWarn(payload, 'dong', eDg); }
+        }
         if (want('subjects')) {
           try {
             payload.financialSubjects = (typeof loadFinancialSubjects === 'function') ? loadFinancialSubjects() : [];
