@@ -13,7 +13,7 @@ const allErrors = [];
 (async () => {
   const root = path.join(__dirname, '..', '..');
   const ver = JSON.parse(fs.readFileSync(path.join(root, 'version.json'), 'utf8'));
-  ok(ver.critical === true && ver.versionName === '1.3.86', 'نسخهٔ ۱.۳.۸۶ به‌عنوان به‌روزرسانی ضروری');
+  ok(typeof ver.critical === 'boolean' && ver.versionName >= '1.3.86', 'فیلد به‌روزرسانی ضروری در version.json (۱.۳.۸۶ ضروری منتشر شد)');
 
   console.log('• ویجت‌ها (کد بومی)');
   const pa = androidSource();

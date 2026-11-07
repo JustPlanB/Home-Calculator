@@ -9160,7 +9160,7 @@ html[data-theme="light"] {
       font-family: inherit; font-weight: 700; font-size: var(--hk-fs-body); text-align: center; cursor: pointer; }
     /* ۱.۳.۴۵: لانگ‌پرس ردیف (مات + دو نیمه) و باکس ویرایش ردیف */
     .person-detail-table td, .person-detail-table input, .person-detail-table textarea, .person-detail-table button { -webkit-touch-callout: none; }
-    .person-detail-table input[readonly], .person-detail-table textarea[readonly] { -webkit-user-select: none; user-select: none; }
+    .person-detail-table input[readonly], .person-detail-table textarea[readonly] { -webkit-user-select: none; user-select: none; caret-color: transparent; }
     .hk-row-act { position: fixed; z-index: 100050; display: flex; direction: rtl; border-radius: 10px; overflow: hidden;
       background: rgba(18,18,20,0.38); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 6px 18px rgba(0,0,0,0.35); }
     .hk-row-act-btn { flex: 1 1 0; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
@@ -31329,6 +31329,8 @@ container.innerHTML = '';
           }
         };
         tdDesc.appendChild(desc);
+        /* ۱.۳.۸۷: خانه‌های جدول فوکوس نمی‌گیرند تا با ضربه نشانگر متن (کرسر) چشمک نزند؛ باکس شناور همچنان باز می‌شود */
+        [dayInp, desc].forEach(function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('focus', function () { try { el.blur(); } catch (eB) {} }); });
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
         /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
         /* ۱.۳.۸۶: برچسب زرد قسط زیر شرح برداشته شد؛ به‌جایش آیکون دلار نقره‌ای در ستون ردیف (پایین‌تر) */
@@ -31376,7 +31378,7 @@ container.innerHTML = '';
           amt.classList.toggle('status-unpaid', !paid);
           amt.style.setProperty('color', col, 'important');
           amt.style.setProperty('-webkit-text-fill-color', col, 'important');
-          amt.style.setProperty('caret-color', col, 'important');
+          amt.style.setProperty('caret-color', amt.readOnly ? 'transparent' : col, 'important'); /* ۱.۳.۸۷: خانهٔ فقط‌خواندنی بی نشانگر */
         }
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
@@ -31489,7 +31491,8 @@ container.innerHTML = '';
           if (document.querySelector('.pd-amt-popup')) { closeCellTextPopups(); return; }
           try { const pp = showCellTextPopup(tdAmt, formatNum(row.amount) + ' تومان'); if (pp) { pp.classList.add('pd-amt-popup'); const rr = pp.getBoundingClientRect(), vw = window.innerWidth; let lf = rr.left; if (lf + rr.width > vw - 8) lf = vw - rr.width - 8; if (lf < 8) lf = 8; pp.style.left = Math.round(lf) + 'px'; } } catch (eOpen) {}
         };
-        amt.onfocus = () => {};
+        amt.onfocus = () => { try { amt.blur(); } catch (eB) {} };
+        amt.addEventListener('mousedown', function (e) { e.preventDefault(); });
         amt.oninput = () => {
           if (fromPlan) return;
           const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');

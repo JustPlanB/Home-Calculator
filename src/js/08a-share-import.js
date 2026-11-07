@@ -722,6 +722,8 @@ container.innerHTML = '';
           }
         };
         tdDesc.appendChild(desc);
+        /* ۱.۳.۸۷: خانه‌های جدول فوکوس نمی‌گیرند تا با ضربه نشانگر متن (کرسر) چشمک نزند؛ باکس شناور همچنان باز می‌شود */
+        [dayInp, desc].forEach(function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('focus', function () { try { el.blur(); } catch (eB) {} }); });
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
         /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
         /* ۱.۳.۸۶: برچسب زرد قسط زیر شرح برداشته شد؛ به‌جایش آیکون دلار نقره‌ای در ستون ردیف (پایین‌تر) */
@@ -769,7 +771,7 @@ container.innerHTML = '';
           amt.classList.toggle('status-unpaid', !paid);
           amt.style.setProperty('color', col, 'important');
           amt.style.setProperty('-webkit-text-fill-color', col, 'important');
-          amt.style.setProperty('caret-color', col, 'important');
+          amt.style.setProperty('caret-color', amt.readOnly ? 'transparent' : col, 'important'); /* ۱.۳.۸۷: خانهٔ فقط‌خواندنی بی نشانگر */
         }
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
@@ -882,7 +884,8 @@ container.innerHTML = '';
           if (document.querySelector('.pd-amt-popup')) { closeCellTextPopups(); return; }
           try { const pp = showCellTextPopup(tdAmt, formatNum(row.amount) + ' تومان'); if (pp) { pp.classList.add('pd-amt-popup'); const rr = pp.getBoundingClientRect(), vw = window.innerWidth; let lf = rr.left; if (lf + rr.width > vw - 8) lf = vw - rr.width - 8; if (lf < 8) lf = 8; pp.style.left = Math.round(lf) + 'px'; } } catch (eOpen) {}
         };
-        amt.onfocus = () => {};
+        amt.onfocus = () => { try { amt.blur(); } catch (eB) {} };
+        amt.addEventListener('mousedown', function (e) { e.preventDefault(); });
         amt.oninput = () => {
           if (fromPlan) return;
           const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');

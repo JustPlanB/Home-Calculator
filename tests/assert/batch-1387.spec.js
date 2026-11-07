@@ -129,6 +129,22 @@ const allErrors = [];
   });
   ok(bk.exp && bk.exp.groups.length === 1 && bk.restored && bk.noDup, 'دنگ در پشتیبان می‌رود و بازیابی می‌شود (بدون تکرار)');
 
+  console.log('• جدول: ضربه بدون نشانگر متن');
+  await page.evaluate(async () => {
+    const t = hkMainTitle(), ex = periodData.expense.sections.find(q => q.title === t);
+    ex.rows = [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان سنگک', amount: 30000, status: 'paid' })];
+    persistCurrent(); renderAll(); openPersonDetail(t, 'expense'); await new Promise(r => setTimeout(r, 500));
+  });
+  const res = [];
+  for (const sel of ['textarea.pd-desc', 'td:nth-child(2) input', 'input.pd-amt']) {
+    await page.locator('.person-detail-box tbody tr').first().locator(sel).click();
+    await page.waitForTimeout(150);
+    res.push(await page.evaluate(s => { const el = document.querySelector('.person-detail-box tbody tr ' + s); return { focused: document.activeElement === el, caret: getComputedStyle(el).caretColor, pop: !!document.querySelector('.cell-text-popup') }; }, sel));
+    await page.evaluate(() => { try { closeCellTextPopups(); } catch (e) {} });
+  }
+  ok(res.every(r => !r.focused && r.caret === 'rgba(0, 0, 0, 0)'), 'ضربه روی شرح/روز/مبلغ: خانه فوکوس نمی‌گیرد و نشانگر متن دیده نمی‌شود');
+  ok(res[0].pop && res[2].pop, 'باکس شناور شرح و مبلغ همچنان باز می‌شود');
+
   ok(allErrors.length === 0, 'بدون خطای صفحه' + (allErrors.length ? ': ' + allErrors.slice(0, 3).join(' | ') : ''));
   await b.close();
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
