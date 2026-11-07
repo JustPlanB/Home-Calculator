@@ -530,6 +530,8 @@
             for (var j = i + 1; j < rows.length; j++) {
               var a = rows[i], b = rows[j];
               if (a.fromPlanId && b.fromPlanId) continue;
+              /* ۱.۳.۸۷: دو قسطِ کارت‌های قسط مختلف (برچسب جدا) تکراری نیستند */
+              if (a.instTag && b.instTag && a.instTag !== b.instTag) continue;
               var A = Number(a.amount) || 0, B = Number(b.amount) || 0;
               if (A < 1000 || Math.abs(A - B) > Math.max(A, B) * 0.01) continue;
               var accA = (a.account || '').trim(), accB = (b.account || '').trim();
@@ -549,8 +551,9 @@
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
                 title: 'احتمال ثبت تکراری',
-                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
-                          : ('تراکنش «' + label + '» با همین مبلغ ' + (sameDay ? 'در همان روز' : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
+                /* ۱.۳.۸۷: مبلغ، بانک و روز در متن تا موردها از هم جدا شناخته شوند */
+                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + (da ? ' در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : '') + ' احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
+                          : ('«' + label + '» ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + ' ' + (sameDay ? (da ? 'در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : 'در همان روز') : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
                 toast: 'احتمال ثبت تکراری: «' + label + '»'
               });
             }
@@ -760,8 +763,9 @@
       /* ۱.۳.۷۵: «احتمال ثبت تکراری» فقط یک بار (عنوان)، زیرش توضیح هر مورد؛ زدن = دو ردیف در جدول هایلایت می‌شوند */
       /* ۱.۳.۸۶: هر مورد شناسهٔ خودش را دارد تا زدنش دقیقاً ردیف‌های همان مورد را هایلایت کند */
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
-        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div>';
-      })) + '<div class="sp-dup-no" data-act="dismiss">تکراری نیست</div>';
+        /* ۱.۳.۸۷: هر مورد «تکراری نیست» خودش را دارد */
+        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div><div class="sp-dup-no" data-act="dismiss" data-dup-id="' + spEsc(a.id) + '">تکراری نیست</div>';
+      }));
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */

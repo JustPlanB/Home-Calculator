@@ -398,6 +398,19 @@
           var old = document.getElementById('smsAccNewNote'); if (old) old.remove();
           var oldN = document.getElementById('smsNewAccWrap'); if (oldN) oldN.remove();
           try { var aw0 = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel; if (aw0) aw0.style.display = ''; } catch (eAw) {}
+          /* ۱.۳.۸۷: بانک شناخته‌شده فقط نمایش داده می‌شود (بی منوی تغییر)؛ ناشناخته: همان انتخاب/افزودن حساب */
+          try {
+            var _aw = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+            var _lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl');
+            var _bs = document.getElementById('smsBankShow'); if (_bs) _bs.remove();
+            var _known = !!(sel && route.label && !route.need && sel.value === route.label);
+            if (_aw) _aw.style.display = _known ? 'none' : '';
+            if (_lb) _lb.style.display = _known ? 'none' : '';
+            if (_known) {
+              var _sum = document.querySelector('#smsConfirmMeta .sms-ro-sum');
+              if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
+            }
+          } catch (eBk) {}
           if (sel && route.need && route.newAcc) {
             hkSmsBuildNewAcc(sel, route);
           } else if (sel && route.need) {

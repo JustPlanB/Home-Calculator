@@ -145,6 +145,75 @@ const allErrors = [];
   ok(res.every(r => !r.focused && r.caret === 'rgba(0, 0, 0, 0)'), 'ضربه روی شرح/روز/مبلغ: خانه فوکوس نمی‌گیرد و نشانگر متن دیده نمی‌شود');
   ok(res[0].pop && res[2].pop, 'باکس شناور شرح و مبلغ همچنان باز می‌شود');
 
+  console.log('• توضیح چندخطی، بانک جدول، باکس پیامک');
+  const ex2 = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const t = hkMainTitle(), ex = periodData.expense.sections.find(q => q.title === t);
+    ex.rows = [Object.assign(emptyRow('expense'), { day: '3', desc: 'انتقال', amount: 500000, status: 'paid', p2p: true, account: 'ملت' }),
+               Object.assign(emptyRow('expense'), { day: '4', desc: 'نان', amount: 30000, status: 'paid' })];
+    persistCurrent(); closePersonDetail(); await w(200); openPersonDetail(t, 'expense'); await w(500);
+    const trs = document.querySelectorAll('.person-detail-box tbody tr');
+    trs[0].querySelector('td.pd-num-cell').click(); await w(150);
+    const pp = document.querySelector('.cell-text-popup');
+    const o = { wrap: pp && getComputedStyle(pp).whiteSpace === 'normal', lines: pp ? Math.round(pp.getBoundingClientRect().height / parseFloat(getComputedStyle(pp).lineHeight)) : 0 };
+    try { closeCellTextPopups(); } catch (e) {}
+    const acc = trs[1].querySelector('.pd-acc-btn');
+    o.missing = acc.classList.contains('acc-missing') && acc.textContent.trim() === '—';
+    acc.click(); await w(250);
+    o.noMenu = !document.querySelector('.dark-select-list.open');
+    closePersonDetail(); await w(200);
+    selectedBankAccounts.push({ id: 'a1', bank: 'بانک ملت', label: 'ملت ۶۱۶۳', openingBalance: 5000000, createdAt: { y: 1405, m: 1 } });
+    normalizeSelectedBanks(); saveBankAccountsSelection(); smsAccountBankMap['L4:6292'] = 'ملت ۶۱۶۳'; saveSmsAccountBankMap();
+    enqueueBankSms('کارت6292\nبرداشت300,000\nمانده6,684,526\n05/08/12-10:02', 'Bank Mellat'); await w(1200);
+    const sel = document.getElementById('smsConfirmBank'), wr = sel.parentNode.classList.contains('fancy-select-wrap') ? sel.parentNode : sel;
+    o.bankShow = (document.getElementById('smsBankShow') || {}).textContent || '';
+    o.selHidden = getComputedStyle(wr).display === 'none' && sel.value === 'ملت ۶۱۶۳';
+    o.rowAcct = getComputedStyle(document.querySelector('#smsConfirmMeta .sms-pro-block')).display === 'flex';
+    try { closeSmsConfirmModal('reject'); } catch (e) {} await w(400);
+    enqueueBankSms('کارت1111\nبرداشت45,000\nمانده1,000,000\n05/08/12-10:07', 'Bank Mellat'); await w(1200);
+    const sel2 = document.getElementById('smsConfirmBank'), wr2 = sel2.parentNode.classList.contains('fancy-select-wrap') ? sel2.parentNode : sel2;
+    o.unkSel = getComputedStyle(wr2).display !== 'none' && !document.getElementById('smsBankShow');
+    try { closeSmsConfirmModal('reject'); } catch (e) {}
+    return o;
+  });
+  ok(ex2.wrap && ex2.lines >= 2, 'توضیح جیب به جیب چندخطی (' + ex2.lines + ' خط)');
+  ok(ex2.missing && ex2.noMenu, 'بانک واردنشده: قاب زرد؛ ضربه منوی بانک باز نمی‌کند (فقط لانگ‌پرس ← ویرایش)');
+  ok(ex2.bankShow === 'ملت ۶۱۶۳' && ex2.selHidden && ex2.rowAcct, 'باکس پیامک: نام بانک فقط نمایش (بی منو)؛ «حساب» در یک ردیف');
+  ok(ex2.unkSel, 'حساب ناشناخته: همان انتخاب/افزودن حساب (بدون حساب ثبت نمی‌شود)');
+
+  console.log('• ماهی که گذشت و هشدار تکراری');
+  const rc = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const o = {};
+    const t = hkMainTitle(), ex = periodData.expense.sections.find(q => q.title === t);
+    ex.rows = [
+      Object.assign(emptyRow('expense'), { day: '10', desc: 'قسط', amount: 1850000, status: 'paid', account: 'ملت', time: '09:05' }),
+      Object.assign(emptyRow('expense'), { day: '10', desc: 'قسط', amount: 1850000, status: 'paid', account: 'ملت', time: '09:06' }),
+      Object.assign(emptyRow('expense'), { day: '12', desc: 'قسط', amount: 2400000, status: 'paid', account: 'ملی', time: '10:00' }),
+      Object.assign(emptyRow('expense'), { day: '12', desc: 'قسط', amount: 2400000, status: 'paid', account: 'ملی', time: '10:01' }),
+      Object.assign(emptyRow('expense'), { day: '14', desc: 'قسط', amount: 900000, status: 'paid', account: 'ملت', instTag: 'وام الف · ۳' }),
+      Object.assign(emptyRow('expense'), { day: '14', desc: 'قسط', amount: 900000, status: 'paid', account: 'ملت', instTag: 'وام ب · ۷' })];
+    persistCurrent(); renderAll(); await w(500);
+    const D = HKAlerts.duplicates(t);
+    o.n = D.length; o.texts = D.map(x => x.text);
+    const html = spPageWarn({ alerts: HKAlerts.forCard(t) });
+    o.btns = (html.match(/data-act="dismiss" data-dup-id=/g) || []).length;
+    const origAsk = window.askConfirm; window.askConfirm = (m, y) => y();
+    spDismissDupPrompt(t, D[1].id); window.askConfirm = origAsk;
+    o.left = HKAlerts.duplicates(t).map(x => x.id);
+    o.keptFirst = o.left.length === 1 && o.left[0] === D[0].id;
+    ex.rows = [Object.assign(emptyRow('expense'), { day: '3', desc: 'نان', amount: 250000, status: 'paid' })]; persistCurrent(); renderAll();
+    openMonthRecap(currentYear, currentMonth); await w(500);
+    const b = document.querySelector('.hk-rc-row b');
+    o.dir = b ? getComputedStyle(b).direction : 'none:' + !!document.querySelector('.hk-rc-box');
+    o.firstIsAmt = b ? /^[۰-۹0-9]/.test(b.textContent.trim()) && /تومان$/.test(b.textContent.trim()) : false;
+    try { document.querySelector('.hk-rc-x').click(); } catch (e) {}
+    return o;
+  });
+  ok(rc.n === 2 && rc.texts[0] !== rc.texts[1] && /ملت/.test(rc.texts[0]) && /۱۰ /.test(rc.texts[0]), 'هشدار تکراری با مبلغ، بانک و روز؛ دو قسط کارت‌های جدا تکراری نیست (' + rc.texts.join(' | ') + ')');
+  ok(rc.btns === 2 && rc.keptFirst, 'هر مورد «تکراری نیست» خودش را دارد و فقط همان برداشته می‌شود');
+  ok(rc.dir === 'rtl' && rc.firstIsAmt, '«ماهی که گذشت»: «تومان» بعد از مبلغ');
+
   ok(allErrors.length === 0, 'بدون خطای صفحه' + (allErrors.length ? ': ' + allErrors.slice(0, 3).join(' | ') : ''));
   await b.close();
   console.log('\n' + passed + ' passed, ' + failed + ' failed');

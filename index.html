@@ -4004,6 +4004,8 @@ html[data-theme="light"] {
       text-align: right;
       pointer-events: auto;
     }
+    /* ۱.۳.۸۷: باکس توضیح چندخطی (جیب به جیب، تسویه، قسط) */
+    .cell-text-popup.cell-text-popup-wrap { white-space: normal !important; width: min(280px, calc(100vw - 32px)) !important; line-height: 1.8; text-align: right; overflow-wrap: anywhere; }
     /* فاصله پویا بین باکس اسامی و فیلتر روز در مانده */
     #panel-balance .balance-fixed-header .filter-bar {
       display: flex;
@@ -11168,12 +11170,12 @@ html[data-theme="light"] {
       box-shadow: inset 2px 2px 8px rgba(0,0,0,0.35), inset -2px -2px 8px rgba(255,255,255,0.03); }
     .hk-rc-k { text-align: center; font-weight: 700; font-size: var(--hk-fs-title); margin-bottom: 4px; }
     .hk-rc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: var(--hk-fs-control); padding: 8px 2px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
-    .hk-rc-row b { font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+    .hk-rc-row b { font-weight: 700; direction: rtl; unicode-bidi: isolate; } /* ۱.۳.۸۷: «تومان» بعد از مبلغ، مثل بقیهٔ نرم‌افزار */
     .hk-rc-row b small, .hk-rc-big small { font-size: var(--hk-fs-caption); opacity: 0.75; font-weight: 700; }
     /* ۱.۳.۸۶: رنگ‌های ثابت نرم‌افزار (درآمد/مخارج؛ کسری = مخارج) */
     .hk-rc-row.inc b, .hk-rc-box b.inc { color: var(--hk-income, #9ee858); } .hk-rc-row.exp b { color: var(--hk-expense, #ff6b4a); } .hk-rc-row.neg b, .hk-rc-box b.neg { color: var(--hk-expense, #ff6b4a); } .hk-rc-box b.unp { color: var(--unpaid-c); }
     .hk-rc-note, .hk-rc-sub, .hk-rc-end { text-align: center; color: var(--muted, var(--hk-muted)); font-size: var(--hk-fs-body); line-height: 1.8; }
-    .hk-rc-big { text-align: center; font-size: 1.7rem; font-weight: 700; color: var(--hk-expense, #ff6b4a); direction: ltr; }
+    .hk-rc-big { text-align: center; font-size: 1.7rem; font-weight: 700; color: var(--hk-expense, #ff6b4a); direction: rtl; }
     .hk-rc-bar { display: flex; flex-direction: column; gap: 5px; }
     .hk-rc-bl { display: flex; justify-content: space-between; font-size: var(--hk-fs-body); font-weight: 700; }
     .hk-rc-tube { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.07); overflow: hidden; }
@@ -12395,6 +12397,15 @@ button, input, select, textarea { font-family: inherit; }
     html[data-theme="light"] .hk-dg-row { background: rgba(0,0,0,0.04); }
     html[data-theme="light"] .hk-dg-in { background: #fff; border-color: rgba(0,0,0,0.14); }
     html[data-theme="light"] .hk-dg-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+    /* ۱.۳.۸۷: باکس ثبت پیامک جمع‌وجور: نام بانک زیر تاریخ (فقط نمایش)، «حساب: شخصی | پروژه» در یک ردیف */
+    #smsConfirmMeta .sms-ro-bank { color: var(--muted); font-size: var(--hk-fs-small); margin-top: 2px; text-align: center; font-weight: 600; }
+    #smsConfirmMeta .sms-pro-block { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; border: 0 !important; background: none !important; box-shadow: none !important; padding: 2px 0 0 !important; margin: 8px 0 0 !important; }
+    #smsConfirmMeta .sms-pro-block > .family-label:first-child { margin: 0 !important; flex: 0 0 auto; }
+    #smsConfirmMeta .sms-pro-block > .sms-seg { flex: 1 1 0; min-width: 0; }
+    #smsConfirmMeta .sms-pro-block > #smsProjectPickWrap { flex: 1 0 100%; margin-top: 2px !important; }
+    #smsConfirmMeta .sms-ro-sum { padding: 0 0 8px !important; margin-bottom: 0 !important; }
+    #smsConfirmMeta .sms-ro-amt { line-height: 1.25; }
+    #smsConfirmMeta .sms-ro-bank { margin-top: 0 !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -26955,6 +26966,8 @@ async function openPdfPrintWindow(){
             for (var j = i + 1; j < rows.length; j++) {
               var a = rows[i], b = rows[j];
               if (a.fromPlanId && b.fromPlanId) continue;
+              /* ۱.۳.۸۷: دو قسطِ کارت‌های قسط مختلف (برچسب جدا) تکراری نیستند */
+              if (a.instTag && b.instTag && a.instTag !== b.instTag) continue;
               var A = Number(a.amount) || 0, B = Number(b.amount) || 0;
               if (A < 1000 || Math.abs(A - B) > Math.max(A, B) * 0.01) continue;
               var accA = (a.account || '').trim(), accB = (b.account || '').trim();
@@ -26974,8 +26987,9 @@ async function openPdfPrintWindow(){
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
                 title: 'احتمال ثبت تکراری',
-                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
-                          : ('تراکنش «' + label + '» با همین مبلغ ' + (sameDay ? 'در همان روز' : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
+                /* ۱.۳.۸۷: مبلغ، بانک و روز در متن تا موردها از هم جدا شناخته شوند */
+                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + (da ? ' در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : '') + ' احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
+                          : ('«' + label + '» ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + ' ' + (sameDay ? (da ? 'در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : 'در همان روز') : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
                 toast: 'احتمال ثبت تکراری: «' + label + '»'
               });
             }
@@ -27185,8 +27199,9 @@ async function openPdfPrintWindow(){
       /* ۱.۳.۷۵: «احتمال ثبت تکراری» فقط یک بار (عنوان)، زیرش توضیح هر مورد؛ زدن = دو ردیف در جدول هایلایت می‌شوند */
       /* ۱.۳.۸۶: هر مورد شناسهٔ خودش را دارد تا زدنش دقیقاً ردیف‌های همان مورد را هایلایت کند */
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
-        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div>';
-      })) + '<div class="sp-dup-no" data-act="dismiss">تکراری نیست</div>';
+        /* ۱.۳.۸۷: هر مورد «تکراری نیست» خودش را دارد */
+        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div><div class="sp-dup-no" data-act="dismiss" data-dup-id="' + spEsc(a.id) + '">تکراری نیست</div>';
+      }));
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */
@@ -27867,7 +27882,8 @@ async function openPdfPrintWindow(){
     try { window.spPageReminders = spPageReminders; window.hkRemindersFocus = hkRemindersFocus; } catch (eWr) {}
     var SMART_PANEL_PAGES = [
       { key: 'warn', build: spPageWarn, onTap: function (title, tgt) {
-        if (tgt && tgt.closest && tgt.closest('[data-act="dismiss"]')) { spDismissDupPrompt(title); return; }
+        var dmb = tgt && tgt.closest && tgt.closest('[data-act="dismiss"]');
+        if (dmb) { spDismissDupPrompt(title, dmb.getAttribute('data-dup-id')); return; }
         var el = tgt && tgt.closest && tgt.closest('[data-dup]');
         if (!el && tgt && tgt.closest) { var it0 = tgt.closest('.sp-item'); if (it0) el = it0.querySelector('[data-dup]'); }
         var all = HKAlerts.duplicates(title), did = el ? el.getAttribute('data-dup-id') : '';
@@ -27901,9 +27917,10 @@ async function openPdfPrintWindow(){
       { key: 'insight', build: spPageInsight, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCats' }); }); } },
       { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoChooser(title); } }
     ];
-    function spDismissDupPrompt(title) {
-      /* ۱.۳.۸۶: همهٔ موردهای نمایش‌داده‌شده برداشته می‌شوند و ماندگار است (کلید پایدار) */
-      var ds = HKAlerts.duplicates(title).slice(0, 2);
+    function spDismissDupPrompt(title, id) {
+      /* ۱.۳.۸۶: ماندگار (کلید پایدار)؛ ۱.۳.۸۷: فقط همان مورد (اگر شناسه داده شد) */
+      var all0 = HKAlerts.duplicates(title), one = id && all0.filter(function (x) { return x.id === id; });
+      var ds = (one && one.length) ? one : all0.slice(0, 2);
       if (!ds.length) return;
       askConfirm(ds.length > 1 ? 'اگر این تراکنش‌ها واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟' : 'اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
         ds.forEach(function (d) { HKAlerts.dismiss(d.id); });
@@ -31330,7 +31347,7 @@ container.innerHTML = '';
         };
         tdDesc.appendChild(desc);
         /* ۱.۳.۸۷: خانه‌های جدول فوکوس نمی‌گیرند تا با ضربه نشانگر متن (کرسر) چشمک نزند؛ باکس شناور همچنان باز می‌شود */
-        [dayInp, desc].forEach(function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('focus', function () { try { el.blur(); } catch (eB) {} }); });
+        [dayInp, desc].forEach(function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('focus', function () { if (el.readOnly) { try { el.blur(); } catch (eB) {} } }); });
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
         /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
         /* ۱.۳.۸۶: برچسب زرد قسط زیر شرح برداشته شد؛ به‌جایش آیکون دلار نقره‌ای در ستون ردیف (پایین‌تر) */
@@ -31351,7 +31368,7 @@ container.innerHTML = '';
             const msg = row.p2p
               ? 'جیب به جیب: پولی که بین کارت‌های خودتان جابه‌جا شده؛ در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی کارت‌ها با آن درست می‌ماند.'
               : 'پرداخت قسط: ' + row.instTag + ' — در مخارج حساب می‌شود و در کارت قسط هم ثبت شده است.';
-            try { showCellTextPopup(numSpan, msg); } catch (eP) {}
+            try { showCellTextPopup(numSpan, msg, { wrap: true }); } catch (eP) {}
           };
         }
         amt.inputMode = 'numeric';
@@ -31491,7 +31508,7 @@ container.innerHTML = '';
           if (document.querySelector('.pd-amt-popup')) { closeCellTextPopups(); return; }
           try { const pp = showCellTextPopup(tdAmt, formatNum(row.amount) + ' تومان'); if (pp) { pp.classList.add('pd-amt-popup'); const rr = pp.getBoundingClientRect(), vw = window.innerWidth; let lf = rr.left; if (lf + rr.width > vw - 8) lf = vw - rr.width - 8; if (lf < 8) lf = 8; pp.style.left = Math.round(lf) + 'px'; } } catch (eOpen) {}
         };
-        amt.onfocus = () => { try { amt.blur(); } catch (eB) {} };
+        amt.onfocus = () => { if (amt.readOnly) { try { amt.blur(); } catch (eB) {} } };
         amt.addEventListener('mousedown', function (e) { e.preventDefault(); });
         amt.oninput = () => {
           if (fromPlan) return;
@@ -31540,14 +31557,14 @@ container.innerHTML = '';
         const accBtn = document.createElement('button');
         accBtn.type = 'button';
         accBtn.className = 'pd-acc-btn' + (isFilledVal(row.account) ? ' pd-filled' : '') + ((Number(row.amount) || 0) > 0 && !(row.account || '').trim() ? ' acc-missing' : '');
-        accBtn.textContent = row.account ? shortBankDisplay(row.account) : 'انتخاب';
+        accBtn.textContent = row.account ? shortBankDisplay(row.account) : '—';
         if (preApp) { accBtn.textContent = '—'; accBtn.classList.add('pd-acc-locked'); }
         accBtn.onclick = (e) => {
           e.stopPropagation();
           if (preApp) { lockedMsg(accBtn); return; }
           /* ۱.۳.۴۵: بانکِ ثبت‌شده فقط از باکس ویرایش عوض می‌شود؛ ردیف تازهٔ بی‌بانک همان منوی انتخاب */
           if ((row.account || '').trim()) { try { showCellTextPopup(accBtn, row.account); } catch (eP) {} return; }
-          openPersonDetailAccountMenu(accBtn, row, () => { try { sortAndRebuild(); } catch (err) {} });
+          /* ۱.۳.۸۷: بانک واردنشده: فقط قاب زرد؛ انتخاب بانک فقط از لانگ‌پرس ← ویرایش */
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);
@@ -34685,7 +34702,7 @@ function getProjectBalance(subjectId) {
           '<input id="smsConfirmAmount" type="text" inputmode="numeric" value="' + (parsed.amount ? formatNum(parsed.amount) : '') + '" ' +
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '</div>' +
-          '<label class="family-label">بانک:</label>' +
+          '<label class="family-label sms-bank-lbl">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
           '<label class="family-label sms-ro-hide">تاریخ (روز / ماه / سال):</label>' +
           '<div class="sms-date-row sms-ro-hide" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;">' +
@@ -36155,6 +36172,19 @@ function confirmSmsEntry() {
           var old = document.getElementById('smsAccNewNote'); if (old) old.remove();
           var oldN = document.getElementById('smsNewAccWrap'); if (oldN) oldN.remove();
           try { var aw0 = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel; if (aw0) aw0.style.display = ''; } catch (eAw) {}
+          /* ۱.۳.۸۷: بانک شناخته‌شده فقط نمایش داده می‌شود (بی منوی تغییر)؛ ناشناخته: همان انتخاب/افزودن حساب */
+          try {
+            var _aw = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+            var _lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl');
+            var _bs = document.getElementById('smsBankShow'); if (_bs) _bs.remove();
+            var _known = !!(sel && route.label && !route.need && sel.value === route.label);
+            if (_aw) _aw.style.display = _known ? 'none' : '';
+            if (_lb) _lb.style.display = _known ? 'none' : '';
+            if (_known) {
+              var _sum = document.querySelector('#smsConfirmMeta .sms-ro-sum');
+              if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
+            }
+          } catch (eBk) {}
           if (sel && route.need && route.newAcc) {
             hkSmsBuildNewAcc(sel, route);
           } else if (sel && route.need) {
@@ -47382,12 +47412,13 @@ function openProjectRowPicker(secId) {
       } catch (e) {}
     }
 
-        function showCellTextPopup(anchorEl, text) {
+        function showCellTextPopup(anchorEl, text, opt) {
       closeCellTextPopups();
       const t = (text == null ? '' : String(text)).trim();
       if (!t || !anchorEl) return null;
       const pop = document.createElement('div');
-      pop.className = 'cell-text-popup pd-desc-popup';
+      /* ۱.۳.۸۷: توضیح‌ها (جیب به جیب، تسویه، قسط) چندخطی */
+      pop.className = 'cell-text-popup pd-desc-popup' + (opt && opt.wrap ? ' cell-text-popup-wrap' : '');
       pop.textContent = t;
       document.body.appendChild(pop);
       try {
@@ -48321,7 +48352,7 @@ function openProjectRowPicker(secId) {
       /* ۱.۳.۵۶: تسویه‌شده: تیک سبز در سلول ردیف (ردیف می‌ماند، در جمع‌ها نیست) */
       if (r.settled) { tdNum.innerHTML = '<svg class="hk-led-tick" viewBox="0 0 24 24" aria-label="تسویه شد"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; tr.classList.add('hk-led-settled');
         /* ۱.۳.۸۶: ضربه روی تیک = باکس شناور با توضیح */
-        tdNum.onclick = function (e) { try { e.stopPropagation(); } catch (eSp) {} try { showCellTextPopup(tdNum.firstChild, 'تسویه شد: این ردیف تسویه شده؛ در جدول می‌ماند ولی در جمع‌ها و مانده حساب نمی‌شود.'); } catch (eP) {} };
+        tdNum.onclick = function (e) { try { e.stopPropagation(); } catch (eSp) {} try { showCellTextPopup(tdNum.firstChild, 'تسویه شد: این ردیف تسویه شده؛ در جدول می‌ماند ولی در جمع‌ها و مانده حساب نمی‌شود.', { wrap: true }); } catch (eP) {} };
       }
 
       /* ۱.۳.۵۶: سلول «تاریخ» (روز + ماه، و سال اگر سال دیگری است)؛ زدن روی آن = باکس کوچک انتخاب تاریخ */

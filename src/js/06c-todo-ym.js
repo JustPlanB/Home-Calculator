@@ -370,7 +370,8 @@
     try { window.spPageReminders = spPageReminders; window.hkRemindersFocus = hkRemindersFocus; } catch (eWr) {}
     var SMART_PANEL_PAGES = [
       { key: 'warn', build: spPageWarn, onTap: function (title, tgt) {
-        if (tgt && tgt.closest && tgt.closest('[data-act="dismiss"]')) { spDismissDupPrompt(title); return; }
+        var dmb = tgt && tgt.closest && tgt.closest('[data-act="dismiss"]');
+        if (dmb) { spDismissDupPrompt(title, dmb.getAttribute('data-dup-id')); return; }
         var el = tgt && tgt.closest && tgt.closest('[data-dup]');
         if (!el && tgt && tgt.closest) { var it0 = tgt.closest('.sp-item'); if (it0) el = it0.querySelector('[data-dup]'); }
         var all = HKAlerts.duplicates(title), did = el ? el.getAttribute('data-dup-id') : '';
@@ -404,9 +405,10 @@
       { key: 'insight', build: spPageInsight, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCats' }); }); } },
       { key: 'todoAdd', build: spPageTodoAdd, onTap: function (title) { openTodoChooser(title); } }
     ];
-    function spDismissDupPrompt(title) {
-      /* ۱.۳.۸۶: همهٔ موردهای نمایش‌داده‌شده برداشته می‌شوند و ماندگار است (کلید پایدار) */
-      var ds = HKAlerts.duplicates(title).slice(0, 2);
+    function spDismissDupPrompt(title, id) {
+      /* ۱.۳.۸۶: ماندگار (کلید پایدار)؛ ۱.۳.۸۷: فقط همان مورد (اگر شناسه داده شد) */
+      var all0 = HKAlerts.duplicates(title), one = id && all0.filter(function (x) { return x.id === id; });
+      var ds = (one && one.length) ? one : all0.slice(0, 2);
       if (!ds.length) return;
       askConfirm(ds.length > 1 ? 'اگر این تراکنش‌ها واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟' : 'اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
         ds.forEach(function (d) { HKAlerts.dismiss(d.id); });

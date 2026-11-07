@@ -519,7 +519,7 @@
       /* ۱.۳.۵۶: تسویه‌شده: تیک سبز در سلول ردیف (ردیف می‌ماند، در جمع‌ها نیست) */
       if (r.settled) { tdNum.innerHTML = '<svg class="hk-led-tick" viewBox="0 0 24 24" aria-label="تسویه شد"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; tr.classList.add('hk-led-settled');
         /* ۱.۳.۸۶: ضربه روی تیک = باکس شناور با توضیح */
-        tdNum.onclick = function (e) { try { e.stopPropagation(); } catch (eSp) {} try { showCellTextPopup(tdNum.firstChild, 'تسویه شد: این ردیف تسویه شده؛ در جدول می‌ماند ولی در جمع‌ها و مانده حساب نمی‌شود.'); } catch (eP) {} };
+        tdNum.onclick = function (e) { try { e.stopPropagation(); } catch (eSp) {} try { showCellTextPopup(tdNum.firstChild, 'تسویه شد: این ردیف تسویه شده؛ در جدول می‌ماند ولی در جمع‌ها و مانده حساب نمی‌شود.', { wrap: true }); } catch (eP) {} };
       }
 
       /* ۱.۳.۵۶: سلول «تاریخ» (روز + ماه، و سال اگر سال دیگری است)؛ زدن روی آن = باکس کوچک انتخاب تاریخ */
