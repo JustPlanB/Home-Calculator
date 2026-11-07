@@ -517,8 +517,46 @@
     function hkCatImgMap() { try { var o = JSON.parse(localStorage.getItem(HK_CAT_IMG_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
     function hkCatImgSet(id, url) { var m = hkCatImgMap(); if (url) m[id] = url; else delete m[id]; try { hkStorageSet(HK_CAT_IMG_KEY, JSON.stringify(m)); } catch (e) {} }
     /** آیکون یک دسته (عکس کاربر، یا شکل خطی، یا «؟» برای نامشخص) */
+    /* ۱.۳.۸۶: بانک آیکون برای دسته‌های ساخت کاربر (همان سبک خطی)؛ هر آیکون و هر رنگ فقط برای یک دسته */
+    var HK_ICON_BANK = {
+      plant: '<path d="M12 21v-8"/><path d="M12 13c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 15c0-3-2.5-5.5-6-5.5 0 3 2.5 5.5 6 5.5z"/><path d="M8 21h8"/>',
+      paw: '<circle cx="7" cy="10" r="1.8"/><circle cx="10.5" cy="6.5" r="1.8"/><circle cx="13.5" cy="6.5" r="1.8"/><circle cx="17" cy="10" r="1.8"/><path d="M12 12c-3 0-5 3.5-5 5.5S9 20 12 19c3 1 5 .5 5-1.5S15 12 12 12z"/>',
+      bottle: '<path d="M10 3h4v3h-4z"/><path d="M9 6h6l1 3v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9z"/><path d="M9 12h6M9 15h6"/>',
+      dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+      coffee: '<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3c-1 1 1 2 0 3M12 3c-1 1 1 2 0 3"/>',
+      luggage: '<rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4h6v3M9 11v5M15 11v5"/>',
+      plane: '<path d="M21 15l-8-4V5a1.5 1.5 0 0 0-3 0v6l-8 4v2l8-2v4l-2 1.5V21l3.5-1 3.5 1v-1.5L13 19v-4l8 2z"/>',
+      bicycle: '<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l2.5 7H6M14 6h2"/>',
+      motorcycle: '<circle cx="5.5" cy="16" r="3"/><circle cx="18.5" cy="16" r="3"/><path d="M5.5 16h6l3-5h-4M14.5 11l4 5M15 7h3l1 4"/>',
+      music: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+      film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/>',
+      game: '<rect x="2.5" y="8" width="19" height="10" rx="5"/><path d="M7 11v4M5 13h4"/><circle cx="15.5" cy="12" r="1"/><circle cx="18" cy="14.5" r="1"/>',
+      camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+      laptop: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+      wrench: '<path d="M15 4a5 5 0 0 0-4.6 6.9L4 17.3V20h2.7l6.4-6.4A5 5 0 0 0 20 9l-3 3-3-3 3-3a5 5 0 0 0-2-2z"/>',
+      brush: '<path d="M18 3l3 3-9 9-3-3z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 3-1 3s5 0 6-1 3-3 3-4"/>',
+      scissors: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>',
+      washer: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6h.01M10 6h.01"/>',
+      flower: '<circle cx="12" cy="8" r="2"/><path d="M12 6c0-3 3-3 3 0M12 6c0-3-3-3-3 0M14 8c3 0 3 3 0 3M10 8c-3 0-3 3 0 3M12 10v11M12 17c-2-3-5-2-5-2s1 3 5 2"/>',
+      cake: '<path d="M4 21h16M5 21v-7h14v7M5 16c2 1.5 4 1.5 7 0s5-1.5 7 0"/><path d="M12 14v-3M12 8a1 1 0 0 1 0-2c0 1 1 1 0 2z"/>',
+      shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+      doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+      parking: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/>',
+      battery: '<rect x="3" y="8" width="16" height="9" rx="2"/><path d="M21 11v3M7 11v3M11 11v3"/>',
+      wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      glasses: '<circle cx="6.5" cy="14" r="3.5"/><circle cx="17.5" cy="14" r="3.5"/><path d="M10 14h4M3 14l1.5-6M21 14l-1.5-6"/>',
+      pill: '<rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-35 12 12.5)"/><path d="M9.5 8.3l5 7"/>',
+      charity: '<path d="M12 10.5s-3.5-2.2-3.5-4.6A2 2 0 0 1 12 4.7a2 2 0 0 1 3.5 1.2c0 2.4-3.5 4.6-3.5 4.6z"/><path d="M2 14h3l3.5 2H13a1.5 1.5 0 0 1 0 3H9M5 19.5h8.5l6.5-4a1.5 1.5 0 0 0-1.8-2.4L14 15.5"/>',
+      umbrella: '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6.5a2 2 0 0 1-4 0"/>',
+      fuel: '<path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M4 21h12M7 8h6"/><path d="M15 10h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3"/>'
+    };
+    var HK_USER_CAT_COLORS = ['#5ac8fa', '#a2845e', '#ff8a80', '#b388ff', '#80cbc4', '#ffd180', '#f48fb1', '#aed581', '#4dd0e1', '#9575cd', '#ff7043', '#90a4ae', '#dce775', '#ce93d8', '#26a69a', '#ffab40'];
+    function hkCatUserMap(kind) { try { var o = JSON.parse(localStorage.getItem(STORAGE_KEY + '_cat' + kind) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+    function hkCatUserSet(kind, id, v) { var m = hkCatUserMap(kind); if (v) m[id] = v; else delete m[id]; try { hkStorageSet(STORAGE_KEY + '_cat' + kind, JSON.stringify(m)); } catch (e) {} }
     function hkCatIco(id) {
       if (id) { var u = hkCatImgMap()[id]; if (u && /^data:image\//.test(u)) return '<img class="hk-cat-img" alt="" src="' + u + '">'; }
+      if (id && !HK_CAT_ICONS[id]) { var ik = hkCatUserMap('Icon')[id]; if (ik && HK_ICON_BANK[ik]) return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_ICON_BANK[ik] + '</svg>'; }
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (id ? (HK_CAT_ICONS[id] || HK_CAT_TAG) : '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1M12 16v.1"/>') + '</svg>';
     }
     /** انتخاب عکس از گالری → مربع ۱۲۸ پیکسلی (برش وسط) */
@@ -545,7 +583,46 @@
       };
       document.body.appendChild(inp); inp.click();
     }
-    try { window.hkCatIco = hkCatIco; window.hkCatImgSet = hkCatImgSet; window.hkCatPickImage = hkCatPickImage; } catch (eCi) {}
+    /** ۱.۳.۸۶: هنگام ساختن دسته: انتخاب آیکون (بانک یا گالری) و رنگ؛ بستن بی‌انتخاب = اولین آیکون و رنگِ آزاد */
+    function hkCatStyleSheet(cat, done) {
+      var usedI = {}, usedC = {}, im = hkCatUserMap('Icon'), cm = hkCatUserMap('Color');
+      Object.keys(im).forEach(function (k) { if (k !== cat.id) usedI[im[k]] = 1; });
+      Object.keys(cm).forEach(function (k) { if (k !== cat.id) usedC[String(cm[k]).toLowerCase()] = 1; });
+      Object.keys(HK_CAT_COLORS).forEach(function (k) { usedC[String(HK_CAT_COLORS[k]).toLowerCase()] = 1; });
+      var icons = Object.keys(HK_ICON_BANK).filter(function (k) { return !usedI[k]; });
+      var cols = HK_USER_CAT_COLORS.filter(function (c) { return !usedC[c.toLowerCase()]; });
+      var st = { icon: icons[0] || '', img: '', color: cols[0] || '#08b5f5' };
+      var old = document.getElementById('hkCatStyle'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkCatStyle'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:100660;display:flex;align-items:center;justify-content:center;';
+      var bx = document.createElement('div'); bx.className = 'modal-box hk-prefs hk-pf hk-p2p-box hk-cst-box'; ov.appendChild(bx);
+      var finish = function () {
+        hkCatUserSet('Color', cat.id, st.color);
+        if (st.img) { hkCatImgSet(cat.id, st.img); hkCatUserSet('Icon', cat.id, ''); } else { hkCatImgSet(cat.id, ''); hkCatUserSet('Icon', cat.id, st.icon); }
+        ov.remove(); if (done) done();
+      };
+      ov._hkCancel = finish;
+      var prev = function () {
+        var pv = bx.querySelector('.hk-cst-prev'); if (!pv) return;
+        pv.style.setProperty('--cc', st.color);
+        pv.querySelector('i').innerHTML = st.img ? '<img class="hk-cat-img" alt="" src="' + st.img + '">' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (HK_ICON_BANK[st.icon] || HK_CAT_TAG) + '</svg>';
+        bx.querySelectorAll('.hk-cst-ic').forEach(function (b) { b.classList.toggle('on', !st.img && b.dataset.k === st.icon); b.style.setProperty('--cc', st.color); });
+        bx.querySelectorAll('.hk-cst-col').forEach(function (b) { b.classList.toggle('on', b.dataset.c === st.color); });
+      };
+      bx.innerHTML = '<div class="hk-prefs-t" style="margin-bottom:10px;">آیکون و رنگ «' + escapeHtml(cat.label) + '»</div>' +
+        '<div class="sms-cat-grid hk-cat-colored" style="grid-template-columns:1fr;justify-items:center;margin:0 0 8px;"><div class="sms-cat on hk-cst-prev"><i></i><span>' + escapeHtml(cat.label) + '</span></div></div>' +
+        '<div class="hk-cst-cols"></div><div class="hk-cst-grid hk-cat-colored"></div>' +
+        '<div class="hk-rax-acts"><button type="button" class="modal-btn hk-cst-gal">عکس از گالری</button><button type="button" class="modal-btn yes hk-cst-ok">تأیید</button></div>';
+      var cw = bx.querySelector('.hk-cst-cols');
+      cols.forEach(function (c) { var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-cst-col'; b.dataset.c = c; b.style.background = c; b.setAttribute('aria-label', 'رنگ'); b.onclick = function () { st.color = c; prev(); }; cw.appendChild(b); });
+      var gw = bx.querySelector('.hk-cst-grid');
+      icons.forEach(function (k) { var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat hk-cst-ic'; b.dataset.k = k; b.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_ICON_BANK[k] + '</svg></i>'; b.onclick = function () { st.icon = k; st.img = ''; prev(); }; gw.appendChild(b); });
+      bx.querySelector('.hk-cst-gal').onclick = function () { hkCatPickImage('__tmp', function (url) { hkCatImgSet('__tmp', ''); st.img = url; prev(); }); };
+      bx.querySelector('.hk-cst-ok').onclick = finish;
+      document.body.appendChild(ov);
+      prev();
+    }
+    try { window.hkCatIco = hkCatIco; window.hkCatImgSet = hkCatImgSet; window.hkCatPickImage = hkCatPickImage; window.hkCatStyleSheet = hkCatStyleSheet; window.HK_ICON_BANK = HK_ICON_BANK; } catch (eCi) {}
     /* ۱.۳.۴۸: دسته‌های واریز (کوتاه) */
     var HK_INCOME_CATS = [
       { id: 'in_salary', label: 'حقوق' }, { id: 'in_rent', label: 'اجاره' }, { id: 'in_loanback', label: 'تسویه قرض' } /* ۱.۳.۶۸: جای «اضافه‌کار» */,
@@ -591,7 +668,9 @@
       education: '#7c7cff', fun: '#30d5c8', gift: '#e85dff', debt: '#8e8e93', tech: '#64d2ff',
       in_salary: '#9ee858', in_rent: '#bf5af2', in_loanback: '#c0ca33', in_bonus: '#ffd60a', in_gift: '#e85dff', in_sale: '#ffb38a', in_profit: '#32d74b', p2p: '#ff453a' };
     /* ۱.۳.۸۴: سلامت و بهداشت سبز پررنگ، جیب به جیب قرمز (همچنان یکتا) */
-    function hkCatColor(id) { return HK_CAT_COLORS[id] || '#08b5f5'; }
+    /* ۱.۳.۸۶: آیکون دلار نقره‌ای ردیف پرداخت قسط (ستون ردیف) */
+    var HK_INST_DOLLAR_SVG = '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.5-2 3.5-4.5 3.5-4.5-1.3-4.5-3"/>';
+    function hkCatColor(id) { return HK_CAT_COLORS[id] || (id && hkCatUserMap('Color')[id]) || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
     function hkCatPickSheet(cats, cur, onPick) {
       var old = document.getElementById('hkCatPick'); if (old) old.remove();

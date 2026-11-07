@@ -24,6 +24,8 @@ public class HkWidgetPlugin extends Plugin {
       /* ۱.۳.۷۸: ردیف‌های ویجت مخارج / درآمدها */
       e.putString("tx_exp", call.getString("txExp","[]"));
       e.putString("tx_inc", call.getString("txInc","[]"));
+      /* ۱.۳.۸۶: گزینهٔ «همه» (درآمد و مخارج با هم) */
+      e.putString("tx_all", call.getString("txAll","[]"));
       /* ۱.۳.۵۶: مبلغ‌های خام برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک */
       try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
       e.apply();

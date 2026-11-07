@@ -72,7 +72,7 @@
         var c = BY_ID[id]; if (!c) return false;
         dropFromList(id);
         try {
-          if (c.custom) { try { hkCatImgSet(id, ''); } catch (eDi) {} }
+          if (c.custom) { try { hkCatImgSet(id, ''); hkCatUserSet('Icon', id, ''); hkCatUserSet('Color', id, ''); } catch (eDi) {} }
           if (c.custom) hkStorageSet(CUSTOM_KEY, JSON.stringify(CATS.filter(function (x) { return x.custom; }).map(function (x) { return { id: x.id, label: x.label }; })));
           else {
             var hid = []; try { hid = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]') || []; } catch (e0) {}
@@ -91,12 +91,19 @@
         try { _bcache = {}; } catch (eB) {}
         return true;
       }
+      /* ۱.۳.۸۶: اسم تکراری؟ (مخارج، درآمد، جیب به جیب، نامشخص؛ بی‌حساسیت به ی/ک، نیم‌فاصله و فاصله) */
+      function labelTaken(label) {
+        var n = norm(String(label || '').replace(/\s+/g, ' ').trim()); if (!n) return false;
+        var names = CATS.map(function (c) { return c.label; }).concat(['جیب به جیب', 'نامشخص']);
+        try { HK_INCOME_CATS.forEach(function (c) { names.push(c.label); }); } catch (e) {}
+        return names.some(function (x) { return norm(x).replace(/\s/g, '') === n.replace(/\s/g, ''); });
+      }
       function addCustom(label) {
         label = String(label || '').replace(/\s+/g, ' ').trim().slice(0, 24);
         if (!label) return null;
         var n = norm(label);
         for (var i = 0; i < CATS.length; i++) if (norm(CATS[i].label) === n) return CATS[i];
-        var cat = registerCustom({ id: 'u_' + Date.now().toString(36), label: label });
+        var cat = registerCustom({ id: 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label: label });
         try {
           var list = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
           hkStorageSet(CUSTOM_KEY, JSON.stringify(list));
@@ -226,14 +233,15 @@
       function exportData() {
         var custom = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
         var d = loadDict();
-        var img = {}; try { img = hkCatImgMap(); } catch (eI) {}
-        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img };
+        var img = {}, ico = {}, col = {}; try { img = hkCatImgMap(); ico = hkCatUserMap('Icon'); col = hkCatUserMap('Color'); } catch (eI) {}
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col };
       }
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
         /* ۱.۳.۸۵: عکس دسته‌های ساخت کاربر */
         try { if (o.img && typeof o.img === 'object') Object.keys(o.img).forEach(function (k) { if (/^data:image\//.test(String(o.img[k]))) hkCatImgSet(k, o.img[k]); }); } catch (eIm) {}
+        try { if (o.icon && typeof o.icon === 'object') Object.keys(o.icon).forEach(function (k) { if (HK_ICON_BANK[o.icon[k]]) hkCatUserSet('Icon', k, o.icon[k]); }); if (o.color && typeof o.color === 'object') Object.keys(o.color).forEach(function (k) { if (/^#[0-9a-f]{6}$/i.test(o.color[k])) hkCatUserSet('Color', k, o.color[k]); }); } catch (eIc) {}
         hkStorageSet(CUSTOM_KEY, JSON.stringify(CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; })));
         var src = (o.dict && typeof o.dict === 'object') ? o.dict : {};
         var d = loadDict();
@@ -246,7 +254,7 @@
         saveDict();
         _bcache = {};
       }
-      return { classify: classify, learn: learn, addCustom: addCustom, removeCat: removeCat, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); }, exportData: exportData, importData: importData };
+      return { classify: classify, learn: learn, addCustom: addCustom, labelTaken: labelTaken, removeCat: removeCat, categories: CATS, byId: BY_ID, normalize: norm, resolveUnknownRemote: resolveUnknownRemote, pendingUnknown: function () { return Object.keys(_pending); }, exportData: exportData, importData: importData };
     })();
 
     /* ===== ۱.۳.۸۴: دستهٔ هر ردیف مخارج روی خود ردیف (cats + catKey = شرح نرمال‌شدهٔ همان لحظه) =====
@@ -496,6 +504,10 @@
       function rowKey(tab, r, i) {
         return tab + ':' + (r.id || ('i' + i + '_' + spDay(r) + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc)));
       }
+      /* ۱.۳.۸۶: کلید پایدار (بدون شمارهٔ ردیف) تا «تکراری نیست» با افزودن/حذف ردیف دیگر از بین نرود */
+      function rowKeyS(tab, r) {
+        return tab + ':' + (r.id || ('s' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
+      }
       function tokens(n) { return n.split(' ').filter(function (w) { return w.length >= 2; }); }
       function similarDesc(a, b) {
         var na = HKCategorizer.normalize(a), nb = HKCategorizer.normalize(b);
@@ -531,8 +543,8 @@
               if (!na || na !== nb) continue;
               var hit = sameDay || dd <= 2;
               if (!hit) continue;
-              var id = 'dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j);
-              if (dis[id]) continue;
+              var id = 'dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b);
+              if (dis[id] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
               var label = (isGeneric(a) && !isGeneric(b) ? b.desc : a.desc) || (tab === 'income' ? 'درآمد' : 'هزینه');
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
@@ -746,8 +758,9 @@
       var dups = D.alerts.filter(function (a) { return a.type === 'dup'; });
       if (!dups.length) return null;
       /* ۱.۳.۷۵: «احتمال ثبت تکراری» فقط یک بار (عنوان)، زیرش توضیح هر مورد؛ زدن = دو ردیف در جدول هایلایت می‌شوند */
+      /* ۱.۳.۸۶: هر مورد شناسهٔ خودش را دارد تا زدنش دقیقاً ردیف‌های همان مورد را هایلایت کند */
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
-        return '<div class="sp-tip" data-dup="' + i + '">' + spEsc(a.text) + '</div>';
+        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div>';
       })) + '<div class="sp-dup-no" data-act="dismiss">تکراری نیست</div>';
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
@@ -857,9 +870,11 @@
           var sec = findSectionByTitle(tab, title), all = document.querySelectorAll('.person-detail-box tbody tr, #sections-' + tab + ' tbody tr');
           var trs = [];
           rows.forEach(function (r) {
-            var idx = (sec.rows || []).indexOf(r); if (idx < 0) return;
             var box = document.querySelector('.person-detail-box tbody') ? document.querySelectorAll('.person-detail-box tbody tr') : document.querySelectorAll('#sections-' + tab + ' tbody tr');
-            var tr = box[idx]; if (tr) trs.push(tr);
+            /* ۱.۳.۸۶: ردیف با خود شیء ردیف پیدا می‌شود (نه شماره) تا دقیقاً همان ردیف هایلایت شود */
+            var tr = Array.prototype.filter.call(box, function (x) { return x._hkRow === r; })[0];
+            if (!tr) { var idx = (sec.rows || []).indexOf(r); if (idx < 0) return; tr = box[idx]; }
+            if (tr && trs.indexOf(tr) < 0) trs.push(tr);
           });
           if (!trs.length) return;
           var dur = 0; try { dur = hkSlowScrollTo(trs[0], 900); } catch (eS) {}

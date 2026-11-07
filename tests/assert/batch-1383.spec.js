@@ -16,7 +16,7 @@ const allErrors = [];
   const pa = require('../lib/android-src')();
   ok(/static int incC\(boolean light\)\{ return light\?0xFF17834A:0xFF9EE858; \}/.test(pa) && /static int expC\(boolean light\)\{ return light\?0xFFDC2626:0xFFFF6B4A; \}/.test(pa), 'رنگ درآمد/مخارج ویجت‌ها همان رنگ‌های نرم‌افزار');
   ok(/btn\("مخارج", "exp", HkWidgetDraw\.expC\(light\)\)/.test(pa) && /btn\("درآمدها", "inc", HkWidgetDraw\.incC\(light\)\)/.test(pa) && !/0xFFFF7A6B|0xFF6FD08C|0xFFD93A1E|#3f9a5c/.test(pa), 'پنجرهٔ انتخاب مخارج/درآمدها با سبز و نارنجی نرم‌افزار');
-  ok(/هر صفحه یک کارت مات کامل/.test(pa) && /cv\.drawRoundRect\(rc, rr, rr, bg\)/.test(pa) && /setBackgroundColor", 0\)/.test(pa) && /android:id="@\+id\/hk_ws_root"[\s\S]{0,200}android:background="@android:color\/transparent"/.test(pa), 'ویجت پشته‌ای: هر صفحه کارت مات، ریشه شفاف');
+  ok(!/HkWidgetListService/.test(pa), '۱.۳.۸۶: ویجت پشته‌ای و سرویس فهرستش حذف شد');
   const cl = fs.readFileSync(path.join(__dirname, '..', '..', 'CLAUDE.md'), 'utf8');
   ok(/## رنگ‌ها/.test(cl) && /#9ee858/.test(cl) && /#ff6b4a/.test(cl) && /جیب به جیب `#ff453a`/.test(cl), 'قاعدهٔ رنگ‌ها در دستورات پروژه');
 

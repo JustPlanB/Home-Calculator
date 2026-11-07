@@ -1346,7 +1346,7 @@
         '<div class="rec-arch-sum">' +
           '<div>جمع دریافتی<br><b class="rec-green">' + formatNum(sum) + '</b></div>' +
           '<div>دریافت‌شده<br><b class="rec-green">' + toPersianDigits(String(paid.length)) + '</b></div>' +
-          '<div>دریافت نشده<br><b style="color:var(--unpaid-c, #e6b12c);">' + toPersianDigits(String(unpaid.length)) + '</b></div>' +
+          '<div>دریافت نشده<br><b style="color:var(--unpaid-c, #ffec0a);">' + toPersianDigits(String(unpaid.length)) + '</b></div>' +
         '</div></div>';
       var body = '<div style="overflow:auto;flex:1;padding:4px 10px 8px;">';
       if (folderView) {

@@ -277,6 +277,11 @@
       var amtEnd = function () { setTimeout(function () { try { var n = amt.value.length; amt.setSelectionRange(n, n); } catch (e) {} }, 0); };
       amt.addEventListener('focus', amtEnd); amt.addEventListener('click', amtEnd);
       fA.appendChild(amt);
+      /* ۱.۳.۸۶: دکمهٔ Enter صفحه‌کلید «تمام» است و صفحه‌کلید را می‌بندد */
+      [ds, amt].forEach(function (el) {
+        try { el.setAttribute('enterkeyhint', 'done'); } catch (eEk) {}
+        el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); try { el.blur(); } catch (eBl) {} } });
+      });
       if (fromPlan) { var nA = document.createElement('div'); nA.className = 'hk-re-note'; nA.textContent = 'مبلغ و شرح قسط از بخش اقساط عوض می‌شود'; fA.appendChild(nA); }
       /* وضعیت پرداخت */
       var fS = field('وضعیت');

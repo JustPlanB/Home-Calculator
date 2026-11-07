@@ -11,7 +11,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** ۱.۳.۷۸: هنگام افزودن ویجت ردیف‌ها: انتخاب «مخارج» یا «درآمدها» */
+/** ۱.۳.۷۸: هنگام افزودن ویجت ردیف‌ها: انتخاب «مخارج» یا «درآمدها» (۱.۳.۸۶: یا «همه») */
 public class HkWidgetTxConfig extends Activity {
   /* ۱.۳.۸۲: فونت نرم‌افزار (وزیر) همه‌جا؛ بولد بماند بولد */
   private Typeface hkFB, hkFR;
@@ -51,6 +51,8 @@ public class HkWidgetTxConfig extends Activity {
     root.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     root.addView(btn("مخارج", "exp", HkWidgetDraw.expC(light)));
     root.addView(btn("درآمدها", "inc", HkWidgetDraw.incC(light)));
+    /* ۱.۳.۸۶: «همه»: درآمد و مخارج با هم به ترتیب تاریخ (آبی نرم‌افزار) */
+    root.addView(btn("همه", "all", HkWidgetTxDraw.ALL_C));
     setContentView(root);
   }
   View btn(String label, final String type, int color){

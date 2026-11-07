@@ -443,16 +443,6 @@
               });
             };
             b.appendChild(x);
-            /* ۱.۳.۸۵: دستهٔ ساخت کاربر: مداد ویرایش لبهٔ راست (در حالت لرزش) → عکس از گالری */
-            if (cat.custom) {
-              var pe = document.createElement('span');
-              pe.className = 'sp-pick-ed'; pe.setAttribute('role', 'button'); pe.setAttribute('aria-label', 'عکس دسته'); pe.innerHTML = HK_EDIT_SVG;
-              pe.onclick = function (ev) {
-                ev.stopPropagation(); ev.preventDefault();
-                hkCatPickImage(cat.id, function () { var ic = b.querySelector('i'); if (ic) ic.innerHTML = hkCatIco(cat.id); });
-              };
-              b.appendChild(pe);
-            }
             b.addEventListener('pointerdown', function () { lpFired = false; clearTimeout(lpT); lpT = setTimeout(function () { lpFired = true; jiggleOn(); }, 520); });
             ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
             b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -469,7 +459,8 @@
           };
           return b;
         };
-        HKCategorizer.categories.concat([HK_P2P_CAT, { id: '', label: 'نامشخص' }]).forEach(function (cat) { grid.appendChild(addBtn(cat)); });
+        /* ۱.۳.۸۶: «اقساط و وام» مثل باکس پیامک و ویرایش ردیف (بخش اقساط خاموش است) */
+        HKCategorizer.categories.filter(function (c) { return c && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).concat([HK_P2P_CAT, { id: '', label: 'نامشخص' }]).forEach(function (cat) { grid.appendChild(addBtn(cat)); });
         /* باکس آخر: «+» برای ساختن دستهٔ دلخواه */
         var plus = document.createElement('button');
         plus.type = 'button';
@@ -489,9 +480,14 @@
           ok.type = 'button';
           ok.className = 'sp-pick on';
           ok.textContent = 'افزودن';
+          var msg = document.createElement('div'); msg.className = 'sp-pick-err';
           var save = function () {
+            /* ۱.۳.۸۶: اسم تکراری (بین همهٔ دسته‌ها: مخارج، درآمد، جیب به جیب، نامشخص) ساخته نمی‌شود */
+            if (HKCategorizer.labelTaken(inp.value)) { msg.textContent = 'دسته‌ای با این اسم هست'; try { inp.focus(); } catch (e) {} return; }
             var cat = HKCategorizer.addCustom(inp.value);
             if (!cat) { try { inp.focus(); } catch (e) {} return; }
+            /* آیکون (بانک یا گالری) و رنگ همان لحظه */
+            hkCatStyleSheet(cat, function () { var t2 = grid.querySelector('[data-id="' + cat.id + '"]'); if (t2) { t2.style.setProperty('--cc', hkCatColor(cat.id)); var ic = t2.querySelector('i'); if (ic) ic.innerHTML = hkCatIco(cat.id); } });
             if (sel.indexOf(cat.id) < 0) sel.push(cat.id);
             HKCategorizer.learn(desc, sel);
             wrap.remove();
@@ -505,8 +501,11 @@
           };
           ok.onclick = save;
           inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+          inp.addEventListener('input', function () { msg.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+          inp.setAttribute('enterkeyhint', 'done');
           wrap.appendChild(inp);
           wrap.appendChild(ok);
+          wrap.appendChild(msg);
           plus.style.display = 'none';
           grid.parentNode.appendChild(wrap);
           setTimeout(function () { try { inp.focus(); } catch (e) {} }, 30);

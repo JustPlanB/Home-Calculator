@@ -800,6 +800,12 @@
     document.addEventListener('dblclick', function (e) {
       var t = e.target;
       if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      /* ۱.۳.۸۶: خانه‌ای که همین حالا در حال تایپ است: دوبار ضربه = انتخاب کل متن/مبلغ (برای کپی یا کات) */
+      if (!t.readOnly && !t.disabled && document.activeElement === t && (t.value || '').length) {
+        var selAll = function () { try { t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (eSa) { try { t.select(); } catch (eS2) {} } };
+        selAll(); setTimeout(selAll, 0); setTimeout(selAll, 120);
+        return;
+      }
       setTimeout(function () { caretToEnd(t); }, 0);
       setTimeout(function () { caretToEnd(t); }, 120);
     }, true);

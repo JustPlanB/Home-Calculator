@@ -942,6 +942,8 @@
             /* ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها)؛ با قفل برنامه ردیفی فرستاده نمی‌شود */
             txExp: JSON.stringify(locked ? [] : hkWidgetTxRows('expense')),
             txInc: JSON.stringify(locked ? [] : hkWidgetTxRows('income')),
+            /* ۱.۳.۸۶: گزینهٔ «همه»: درآمد و مخارج با هم به ترتیب تاریخ */
+            txAll: JSON.stringify(locked ? [] : hkWidgetTxRows('all')),
             light: document.documentElement.getAttribute('data-theme') === 'light'
           });
         } catch (e) {}
@@ -957,24 +959,29 @@
           var key = periodKey(y, m);
           var pd = (key === periodKey(currentYear, currentMonth)) ? periodData : (archive && archive[key]);
           var list = [];
-          (((pd && pd[kind] && pd[kind].sections) || [])).forEach(function (sec) {
+          (kind === 'all' ? ['expense', 'income'] : [kind]).forEach(function (kd) {
+          (((pd && pd[kd] && pd[kd].sections) || [])).forEach(function (sec) {
             (sec.rows || []).forEach(function (r, ix) {
               if (!r || r.deletedAt || r.p2p) return;
               var a = Number(r.amount) || 0;
               if (!(a > 0)) return;
-              if (kind === 'expense' && (r.status || 'paid') !== 'paid') return;
-              list.push({ r: r, d: dayNum(r), k: Number(r.ts || r.createdAt || 0) || 0, i: ix });
+              if (kd === 'expense' && (r.status || 'paid') !== 'paid') return;
+              list.push({ r: r, d: dayNum(r), k: Number(r.ts || r.createdAt || 0) || 0, i: ix, kd: kd });
             });
+          });
           });
           list.sort(function (p, q) { return (q.d - p.d) || (q.k - p.k) || (q.i - p.i); });
           for (var j = 0; j < list.length && out.length < max; j++) {
-            var r = list[j].r, a2 = Number(r.amount) || 0;
-            out.push({
+            var r = list[j].r, a2 = Number(r.amount) || 0, kd2 = list[j].kd;
+            var o = {
               d: list[j].d ? (toPersianDigits(String(list[j].d)) + ' ' + MONTHS[m - 1]) : MONTHS[m - 1],
-              t: String(r.desc || '').trim() || (kind === 'income' ? 'درآمد' : 'خرج'),
+              t: String(r.desc || '').trim() || (kd2 === 'income' ? 'درآمد' : 'خرج'),
               b: String(r.account || '').trim(),
               a: formatNum(a2)
-            });
+            };
+            /* «همه»: نوع ردیف (رنگ سبز/قرمز در ویجت) و علامت + / − کنار مبلغ */
+            if (kind === 'all') { o.x = kd2 === 'income' ? 'i' : 'e'; o.a = (kd2 === 'income' ? '+' : '−') + o.a; }
+            out.push(o);
           }
           m--; if (m < 1) { m = 12; y--; }
         }

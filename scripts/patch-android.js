@@ -49,10 +49,6 @@ const hkWidget=readJava('HkWidgetProvider.java');
 
 const hkWidgetAccounts=readJava('HkWidgetAccountsProvider.java');
 
-const hkWidgetSmall=readJava('HkWidgetSmallProvider.java');
-
-const hkWidgetList=readJava('HkWidgetListService.java');
-
 const hkWidgetTx=readJava('HkWidgetTxProvider.java');
 
 const hkWidgetTxService=readJava('HkWidgetTxService.java');
@@ -82,9 +78,7 @@ fs.writeFileSync(path.join(javaDir,'HkUpdaterPlugin.java'),hkUpdater);
 fs.writeFileSync(path.join(javaDir,'HkWidgetProvider.java'),hkWidget);
 fs.writeFileSync(path.join(javaDir,'HkWidgetPlugin.java'),hkWidgetPlugin);
 fs.writeFileSync(path.join(javaDir,'HkWidgetDraw.java'),hkWidgetDraw);
-fs.writeFileSync(path.join(javaDir,'HkWidgetSmallProvider.java'),hkWidgetSmall);
 fs.writeFileSync(path.join(javaDir,'HkWidgetAccountsProvider.java'),hkWidgetAccounts);
-fs.writeFileSync(path.join(javaDir,'HkWidgetListService.java'),hkWidgetList);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxProvider.java'),hkWidgetTx);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxService.java'),hkWidgetTxService);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxConfig.java'),hkWidgetTxConfig);
@@ -174,14 +168,6 @@ if(fs.existsSync(manifest)){
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_info"/>\n' +
     '        </receiver>\n    </application>');
-  // ویجت یک‌خطی (با اسکرول عمودی) و سرویس فهرست آن
-  if(!s.includes('.HkWidgetSmallProvider')) s=s.replace('</application>',
-    '        <receiver android:name=".HkWidgetSmallProvider" android:exported="true" android:label="حساب‌کتاب (یک‌خطی)">\n' +
-    '            <intent-filter>\n' +
-    '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
-    '            </intent-filter>\n' +
-    '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_small_info"/>\n' +
-    '        </receiver>\n    </application>');
   // ویجت حساب‌ها (موجودی هر کارت + خرج امروز)
   if(!s.includes('.HkWidgetAccountsProvider')) s=s.replace('</application>',
     '        <receiver android:name=".HkWidgetAccountsProvider" android:exported="true" android:label="حساب‌کتاب (حساب‌ها)">\n' +
@@ -190,8 +176,6 @@ if(fs.existsSync(manifest)){
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_accounts_info"/>\n' +
     '        </receiver>\n    </application>');
-  if(!s.includes('.HkWidgetListService')) s=s.replace('</application>',
-    '        <service android:name=".HkWidgetListService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false"/>\n    </application>');
   // ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها) + صفحهٔ انتخاب + سرویس فهرست
   if(!s.includes('.HkWidgetTxProvider')) s=s.replace('</application>',
     '        <receiver android:name=".HkWidgetTxProvider" android:exported="true" android:label="حساب‌کتاب (ردیف‌ها)">\n' +
@@ -391,30 +375,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget.xml'),
         android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
 </FrameLayout>
 `);
-fs.writeFileSync(path.join(resDir,'layout','hk_widget_small.xml'),
-`<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/hk_ws_root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/transparent">
-    <StackView android:id="@+id/hk_ws_list" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:loopViews="true" android:animateLayoutChanges="false"/>
-    <ImageView android:id="@+id/hk_ws_eye" android:layout_width="28dp" android:layout_height="28dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="2dp" android:layout_marginTop="1dp"
-        android:padding="6dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
-</FrameLayout>
-`);
-fs.writeFileSync(path.join(resDir,'layout','hk_widget_item.xml'),
-`<?xml version="1.0" encoding="utf-8"?>
-<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/hk_wi_img"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:adjustViewBounds="false"
-    android:scaleType="fitXY"
-    android:contentDescription="حساب‌کتاب"/>
-`);
+// ۱.۳.۸۶: ویجت پشته‌ای (یک‌خطی) حذف شد
 // ۱.۳.۶۹: آیکن چشم ویجت (باز / بسته)
 fs.writeFileSync(path.join(resDir,'drawable','hk_ic_eye.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
@@ -464,18 +425,6 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:initialLayout="@layout/hk_widget"/>
-`);
-fs.writeFileSync(path.join(xmlDir,'hk_widget_small_info.xml'),
-`<?xml version="1.0" encoding="utf-8"?>
-<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
-    android:minHeight="40dp"
-    android:targetCellWidth="3"
-    android:targetCellHeight="1"
-    android:updatePeriodMillis="0"
-    android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen"
-    android:initialLayout="@layout/hk_widget_small"/>
 `);
 
 // ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها)

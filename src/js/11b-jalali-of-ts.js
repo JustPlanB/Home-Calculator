@@ -1230,7 +1230,10 @@
       var cl = Object.keys(D.cats).map(function (k) { return { l: k, a: D.cats[k] }; }).filter(function (x) { return x.l !== 'نامشخص'; }).sort(function (a, b) { return b.a - a.a; }).slice(0, 4);
       if (cl.length && D.exp > 0) slides.push('<div class="hk-rc-k">بیشترین خرج در دسته‌ها</div>' + cl.map(function (x) {
         var pc = Math.round(x.a / D.exp * 100);
-        return '<div class="hk-rc-bar"><div class="hk-rc-bl"><span>' + escapeHtml(x.l) + '</span><b>' + toPersianDigits(String(pc)) + '٪</b></div><div class="hk-rc-tube"><i style="width:' + Math.max(4, pc) + '%"></i></div></div>';
+        /* ۱.۳.۸۶: رنگ و آیکون ثابت خود هر دسته */
+        var cid = ''; try { var cc0 = HKCategorizer.categories.find(function (c) { return c.label === x.l; }); cid = cc0 ? cc0.id : ''; } catch (eCi) {}
+        var ccol = cid ? hkCatColor(cid) : '#8e8e93';
+        return '<div class="hk-rc-bar" style="--cc:' + ccol + '"><div class="hk-rc-bl"><span><i class="hk-rc-ci">' + hkCatIco(cid) + '</i>' + escapeHtml(x.l) + '</span><b>' + toPersianDigits(String(pc)) + '٪</b></div><div class="hk-rc-tube"><i style="width:' + Math.max(4, pc) + '%"></i></div></div>';
       }).join(''));
       if (P && (P.exp > 0 || P.inc > 0)) {
         var ch = function (a, b, good) { if (!b) return '—'; var d = Math.round((a - b) / b * 100); var up = d > 0; return '<b class="' + ((up === good) ? 'inc' : 'neg') + '">' + (d === 0 ? 'بدون تغییر' : toPersianDigits(String(Math.abs(d))) + '٪ ' + (up ? 'بیشتر' : 'کمتر')) + '</b>'; };
