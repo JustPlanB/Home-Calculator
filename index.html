@@ -12469,6 +12469,28 @@ button, input, select, textarea { font-family: inherit; }
     .hk-dg-wb { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(8,181,245,0.55); background: rgba(8,181,245,0.12); color: #08b5f5; font-family: inherit; font-size: 1.05rem; font-weight: 700; line-height: 1; padding: 0; cursor: pointer; }
     .hk-dg-wl { color: var(--muted); font-size: var(--hk-fs-caption); }
     .hk-dg-wv { flex: 0 0 auto; min-width: 72px; text-align: left; font-size: var(--hk-fs-small); }
+    /* ۱.۳.۹۲: سهم نامساوی به شکل جدول (نام | تعداد (نفر) | مبلغ) با سرستون تیرهٔ جدول‌های نرم‌افزار؛ «−» و «+» بی قاب ولی با جای لمس ۴۰ پیکسل */
+    .hk-dg-wt { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; overflow: hidden; margin-top: 6px; font-size: var(--hk-fs-small); }
+    .hk-dg-wt th { background: #0A1628; color: #fff; font-weight: 700; padding: 8px 4px; border-left: 1px solid rgba(255,255,255,0.12); }
+    .hk-dg-wt td { padding: 2px 4px; border-top: 1px solid rgba(255,255,255,0.10); border-left: 1px solid rgba(255,255,255,0.10); text-align: center; height: 44px; }
+    .hk-dg-wt th:last-child, .hk-dg-wt td:last-child { border-left: 0; }
+    .hk-dg-wt tr.hk-dg-shr { display: table-row; margin: 0; gap: 0; }
+    .hk-dg-wt tr.hk-dg-shr span.hk-dg-wbox { display: inline-flex; flex: none; overflow: visible; white-space: nowrap; font-size: inherit; }
+    .hk-dg-wt tr.hk-dg-shr .hk-dg-wn { margin: 0 !important; }
+    .hk-dg-wt .hk-dg-wt-n { width: 30%; text-align: right; padding-right: 10px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
+    .hk-dg-wt th.hk-dg-wt-n { text-align: center; padding-right: 4px; }
+    .hk-dg-wt .hk-dg-wt-a { width: 30%; }
+    .hk-dg-wt .hk-dg-wv, .hk-dg-wt .hk-dg-shta { min-width: 0; font-weight: 800; font-size: var(--hk-fs-small); }
+    .hk-dg-wt tr.hk-dg-sht td { background: rgba(255,255,255,0.05); font-weight: 800; height: 38px; }
+    .hk-dg-wt .hk-dg-wbox { gap: 0; }
+    .hk-dg-wt .hk-dg-wn { flex: 0 0 34px; width: 34px; padding: 5px 2px; }
+    .hk-dg-wt .hk-dg-wb { width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #08b5f5; font-size: 1.3rem; -webkit-tap-highlight-color: rgba(8,181,245,0.18); }
+    .hk-dg-wt .hk-dg-wb:active { background: rgba(8,181,245,0.14); }
+    html[data-theme="light"] .hk-dg-wt { border-color: rgba(0,0,0,0.14); }
+    html[data-theme="light"] .hk-dg-wt th { background: #EEF0F4; color: #2C3644; border-left-color: rgba(0,0,0,0.10); }
+    html[data-theme="light"] .hk-dg-wt td { border-top-color: rgba(0,0,0,0.08); border-left-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .hk-dg-wt tr.hk-dg-sht td { background: rgba(0,0,0,0.04); }
+    .sp-dong-g { color: #08b5f5; }
     .hk-dg-paid { border-color: color-mix(in srgb, var(--hk-expense) 60%, transparent) !important; background: color-mix(in srgb, var(--hk-expense) 12%, transparent) !important; color: var(--hk-expense) !important; min-width: 82px; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
     .hk-dg-paid.on { border-color: color-mix(in srgb, var(--hk-income) 60%, transparent) !important; background: color-mix(in srgb, var(--hk-income) 12%, transparent) !important; color: var(--hk-income) !important; }
     .hk-dg-pay.paid .hk-dg-pa { color: var(--hk-income); }
@@ -28015,6 +28037,8 @@ async function openPdfPrintWindow(){
       { key: 'overview', build: spPageOverview, onTap: function (title) { spGo(function () { openPersonDetail(title, 'expense'); }); } },
       /* ۱.۳.۷۴: کارت‌های قسط (وضعیت کامل؛ زدن ردیف = تاریخچهٔ همان کارت) */
       { key: 'inst', build: spPageInst, onTap: spTapInst },
+      /* ۱.۳.۹۲: بدهی‌های تسویه‌نشدهٔ دُنگ (زدن خط = همان گروه) */
+      { key: 'dong', build: function (D) { return typeof spPageDong === 'function' ? spPageDong(D) : null; }, onTap: function (title, tgt) { if (typeof spTapDong === 'function') spTapDong(title, tgt); } },
       /* ۱.۳.۷۵: یادآورها */
       { key: 'reminders', build: spPageReminders, onTap: spTapReminders },
       { key: 'stats', build: spPageStats, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCmp' }); }); } },
@@ -50824,7 +50848,9 @@ function openProjectRowPicker(secId) {
       });
       return o;
     }
-    function hkDongSave(d) { try { localStorage.setItem(HK_DONG_KEY, JSON.stringify(d)); } catch (e) { try { showToast('ذخیرهٔ دُنگ ممکن نشد', 'warn'); } catch (e2) {} } }
+    function hkDongSave(d) { try { localStorage.setItem(HK_DONG_KEY, JSON.stringify(d)); } catch (e) { try { showToast('ذخیرهٔ دُنگ ممکن نشد', 'warn'); } catch (e2) {} }
+      /* ۱.۳.۹۲: اسلاید دُنگ باکس هوشمند به‌روز شود */
+      clearTimeout(hkDongSave._t); hkDongSave._t = setTimeout(function () { try { renderHomeCards(); } catch (eR) {} }, 300); }
     function hkDongId(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
     /* تقسیم مساوی به تومان درست؛ باقی‌ماندهٔ تقسیم به نفرات اول */
     function hkDongSplitEq(amount, ids) {
@@ -51060,7 +51086,7 @@ function openProjectRowPicker(secId) {
 
     /* ---------- نما ---------- */
     var _hkDongView = { gid: '' };
-    function openDongModal() {
+    function openDongModal(gid) {
       try { closeSideMenu(); } catch (e) {}
       var old = document.getElementById('hkDong'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkDong'; ov.className = 'modal-overlay open hk-dong'; ov.setAttribute('data-hk-back', '1');
@@ -51070,9 +51096,31 @@ function openProjectRowPicker(secId) {
       ov._hkCancel = function () { if (_hkDongView.gid) { _hkDongView.gid = ''; hkDongRender(); } else ov.remove(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) ov._hkCancel(); });
       document.body.appendChild(ov);
-      _hkDongView.gid = '';
+      _hkDongView.gid = (typeof gid === 'string' && gid) ? gid : ''; /* ۱.۳.۹۲: از اسلاید باکس هوشمند مستقیم همان گروه */
       hkDongRender();
     }
+    /* ۱.۳.۹۲: اسلاید باکس هوشمند: بدهی‌های تسویه‌نشدهٔ همهٔ گروه‌های دُنگ؛ اگر چیزی نمانده، اسلاید نشان داده نمی‌شود.
+       زدن روی هر خط = همان گروه باز می‌شود */
+    function hkDongOpenDebts() {
+      var out = [];
+      try { hkDongLoad().groups.forEach(function (g) { hkDongPlan(g).forEach(function (t) { if (!t.paid && t.amount > 0) out.push({ g: g, t: t }); }); }); } catch (e) {}
+      return out;
+    }
+    function spPageDong() {
+      var L = hkDongOpenDebts(); if (!L.length) return null;
+      var tot = L.reduce(function (s, x) { return s + (Number(x.t.amount) || 0); }, 0);
+      var items = ['<div class="sp-row"><span class="sp-l neg">تسویه‌نشده</span><span class="sp-v neg">' + spAmt(tot) + '</span></div>'];
+      L.forEach(function (x) {
+        items.push('<div class="sp-tip sp-dong-r" data-dong="' + escapeHtml(x.g.id) + '"><b class="sp-dong-g">' + spEsc(x.g.name || 'دُنگ') + '</b> · «' + spEsc(hkDongName(x.g, x.t.from)) + '» به «' + spEsc(hkDongName(x.g, x.t.to)) + '» <b class="neg">' + spAmt(x.t.amount) + '</b></div>');
+      });
+      return spHead('دُنگ — بدهی‌های تسویه‌نشده') + '<div class="sp-scroll sp-free">' + spItems(items) + '</div>';
+    }
+    function spTapDong(title, tgt) {
+      var r = tgt && tgt.closest && tgt.closest('[data-dong]'), gid = r ? r.getAttribute('data-dong') : '';
+      if (!gid) { var L = hkDongOpenDebts(); gid = L.length ? L[0].g.id : ''; }
+      openDongModal(gid);
+    }
+    try { window.spPageDong = spPageDong; window.spTapDong = spTapDong; } catch (eWd) {}
     function closeDongModal() { var ov = document.getElementById('hkDong'); if (ov) ov.remove(); }
     function hkDongRender() {
       var ov = document.getElementById('hkDong'); if (!ov) return;
@@ -51264,26 +51312,33 @@ function openProjectRowPicker(secId) {
           }
           return;
         }
-        /* ۱.۳.۸۸: نامساوی: تعداد نفرِ هر عضو (پیش‌فرض ۱)، سهم هر کدام همان‌جا */
+        /* ۱.۳.۸۸: نامساوی: تعداد نفرِ هر عضو (پیش‌فرض ۱)، سهم هر کدام همان‌جا
+           ۱.۳.۹۲: به شکل جدول: نام | تعداد (نفر) با «−» و «+» دو طرف (بی قاب، با جای لمس کافی) | مبلغ؛ ردیف آخر جمع */
+        var tb = document.createElement('table'); tb.className = 'hk-dg-wt';
+        tb.innerHTML = '<thead><tr><th class="hk-dg-wt-n">نام</th><th>تعداد (نفر)</th><th class="hk-dg-wt-a">مبلغ</th></tr></thead>';
+        var tbody = document.createElement('tbody'); tb.appendChild(tbody);
         ids.forEach(function (id) {
-          var r = document.createElement('div'); r.className = 'hk-dg-shr';
-          r.innerHTML = '<span>' + escapeHtml(hkDongName(g, id)) + '</span>';
-          /* ۱.۳.۸۹: «+» راست و «−» چپ خانهٔ تعداد؛ کمترین ۱ (همه ۱ = مثل مساوی) */
+          var r = document.createElement('tr'); r.className = 'hk-dg-shr';
+          var tdN = document.createElement('td'); tdN.className = 'hk-dg-wt-n'; tdN.textContent = hkDongName(g, id);
+          /* ۱.۳.۸۹: کمترین ۱ (همه ۱ = مثل مساوی) */
           var i = document.createElement('input'); i.type = 'text'; i.className = 'hk-dg-in hk-dg-wn'; i.inputMode = 'numeric'; i.setAttribute('inputmode', 'numeric'); i.setAttribute('enterkeyhint', 'done');
           var cur = function () { return Math.max(1, st.w[id] == null ? 1 : st.w[id]); };
           var setW = function (n) { st.w[id] = Math.max(1, Math.min(99, n)); i.value = toPersianDigits(String(st.w[id])); drawWv(); };
           i.value = toPersianDigits(String(cur()));
-          var lb = document.createElement('small'); lb.className = 'hk-dg-wl'; lb.textContent = 'نفر';
-          var sv = document.createElement('b'); sv.className = 'hk-dg-wv';
           var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'hk-dg-wb hk-dg-wplus'; plus.textContent = '+'; plus.setAttribute('aria-label', 'یک نفر بیشتر');
           var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'hk-dg-wb hk-dg-wminus'; minus.textContent = '−'; minus.setAttribute('aria-label', 'یک نفر کمتر');
           plus.onclick = function () { setW(cur() + 1); }; minus.onclick = function () { setW(cur() - 1); };
           i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); if (isNaN(n)) { i.value = ''; return; } st.w[id] = Math.max(1, Math.min(n, 99)); i.value = toPersianDigits(String(st.w[id])); drawWv(); });
           i.addEventListener('blur', function () { if (!i.value) setW(cur()); });
           i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { i.blur(); } catch (eB) {} } });
-          var wb = document.createElement('span'); wb.className = 'hk-dg-wbox'; wb.appendChild(plus); wb.appendChild(i); wb.appendChild(minus);
-          r.appendChild(wb); r.appendChild(lb); r.appendChild(sv); shW.appendChild(r);
+          var tdW = document.createElement('td'); var wb = document.createElement('span'); wb.className = 'hk-dg-wbox'; wb.appendChild(plus); wb.appendChild(i); wb.appendChild(minus); tdW.appendChild(wb);
+          var tdA = document.createElement('td'); tdA.className = 'hk-dg-wt-a'; var sv = document.createElement('b'); sv.className = 'hk-dg-wv'; tdA.appendChild(sv);
+          r.appendChild(tdN); r.appendChild(tdW); r.appendChild(tdA); tbody.appendChild(r);
         });
+        var tr = document.createElement('tr'); tr.className = 'hk-dg-sht';
+        tr.innerHTML = '<td class="hk-dg-wt-n">جمع</td><td class="hk-dg-shtn"></td><td class="hk-dg-wt-a"><b class="hk-dg-shta"></b></td>';
+        tbody.appendChild(tr);
+        shW.appendChild(tb);
         drawWv();
       };
       var wOf = function (ids) { var o = {}; ids.forEach(function (id) { o[id] = Math.max(1, st.w[id] == null ? 1 : st.w[id]); }); return o; };
@@ -51291,6 +51346,10 @@ function openProjectRowPicker(secId) {
         var ids = g.members.map(function (m) { return m.id; }).filter(function (id) { return st.part.indexOf(id) >= 0; });
         var a0 = amount(), sp = a0 ? hkDongSplitW(a0, ids, wOf(ids)) : {};
         shW.querySelectorAll('.hk-dg-shr').forEach(function (r, k) { var b = r.querySelector('.hk-dg-wv'); if (b) b.textContent = a0 ? hkDongAmt(sp[ids[k]] || 0) : ''; });
+        var wo = wOf(ids), tn = ids.reduce(function (t, id) { return t + wo[id]; }, 0);
+        var n0 = shW.querySelector('.hk-dg-shtn'), a1 = shW.querySelector('.hk-dg-shta');
+        if (n0) n0.textContent = toPersianDigits(String(tn)) + ' نفر';
+        if (a1) a1.textContent = a0 ? hkDongAmt(a0) : '';
       };
       var drawChips = function () {
         payW.innerHTML = ''; partW.innerHTML = '';

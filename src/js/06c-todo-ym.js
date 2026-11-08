@@ -383,6 +383,8 @@
       { key: 'overview', build: spPageOverview, onTap: function (title) { spGo(function () { openPersonDetail(title, 'expense'); }); } },
       /* ۱.۳.۷۴: کارت‌های قسط (وضعیت کامل؛ زدن ردیف = تاریخچهٔ همان کارت) */
       { key: 'inst', build: spPageInst, onTap: spTapInst },
+      /* ۱.۳.۹۲: بدهی‌های تسویه‌نشدهٔ دُنگ (زدن خط = همان گروه) */
+      { key: 'dong', build: function (D) { return typeof spPageDong === 'function' ? spPageDong(D) : null; }, onTap: function (title, tgt) { if (typeof spTapDong === 'function') spTapDong(title, tgt); } },
       /* ۱.۳.۷۵: یادآورها */
       { key: 'reminders', build: spPageReminders, onTap: spTapReminders },
       { key: 'stats', build: spPageStats, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCmp' }); }); } },

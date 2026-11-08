@@ -21,6 +21,10 @@ public class HkWidgetTxConfig extends Activity {
     if(v instanceof TextView){ TextView tv=(TextView)v; Typeface cur=tv.getTypeface(); Typeface f=(cur!=null && cur.isBold())?hkFB:hkFR; if(f!=null) tv.setTypeface(f); }
     else if(v instanceof android.view.ViewGroup){ android.view.ViewGroup g=(android.view.ViewGroup)v; for(int i=0;i<g.getChildCount();i++) hkVazir(g.getChildAt(i)); }
   }
+  /* ۱.۳.۹۲: باز شدن دوباره از روی نام نوع ردیف‌ها در بالای ویجت (نه هنگام افزودن) */
+  static final String EXTRA_REPICK="hk_repick";
+  boolean repick=false;
+  String cur="exp";
   int wid=AppWidgetManager.INVALID_APPWIDGET_ID;
   boolean light=false;
   float dp=1f;
@@ -30,6 +34,8 @@ public class HkWidgetTxConfig extends Activity {
     Intent it=getIntent();
     if(it!=null && it.getExtras()!=null) wid=it.getExtras().getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
     if(wid==AppWidgetManager.INVALID_APPWIDGET_ID){ finish(); return; }
+    repick=it.getBooleanExtra(EXTRA_REPICK, false);
+    try{ cur=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).getString("tx_type_"+wid, "exp"); }catch(Exception ignored){}
     try{ light=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).getBoolean("light", false); }catch(Exception ignored){}
     dp=getResources().getDisplayMetrics().density;
     LinearLayout root=new LinearLayout(this);
@@ -49,6 +55,7 @@ public class HkWidgetTxConfig extends Activity {
     t.setGravity(Gravity.CENTER);
     t.setPadding(0, 0, 0, (int)(14*dp));
     root.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    if(repick) t.setText("نمایش کدام ردیف‌ها؟");
     root.addView(btn("مخارج", "exp", HkWidgetDraw.expC(light)));
     root.addView(btn("درآمدها", "inc", HkWidgetDraw.incC(light)));
     /* ۱.۳.۸۶: «همه»: درآمد و مخارج با هم به ترتیب تاریخ (آبی نرم‌افزار) */
@@ -65,7 +72,10 @@ public class HkWidgetTxConfig extends Activity {
     GradientDrawable g=new GradientDrawable();
     g.setColor(light ? 0x0F000000 : 0x14FFFFFF);
     g.setCornerRadius(14*dp);
-    g.setStroke((int)Math.max(1, dp), (color & 0x00FFFFFF) | 0x66000000);
+    /* ۱.۳.۹۲: گزینهٔ فعلی با قاب پررنگ‌تر و تیک مشخص است */
+    boolean on=repick && type.equals(cur);
+    if(on){ b.setText("✓  "+label); g.setColor((color & 0x00FFFFFF) | 0x26000000); }
+    g.setStroke((int)Math.max(1, on ? 2*dp : dp), (color & 0x00FFFFFF) | (on ? 0xCC000000 : 0x66000000));
     b.setBackground(g);
     b.setClickable(true);
     b.setOnClickListener(new View.OnClickListener(){ public void onClick(View v){ choose(type); } });
