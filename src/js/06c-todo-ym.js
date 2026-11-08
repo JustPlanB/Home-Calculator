@@ -385,6 +385,8 @@
       { key: 'inst', build: spPageInst, onTap: spTapInst },
       /* ۱.۳.۹۲: بدهی‌های تسویه‌نشدهٔ دُنگ (زدن خط = همان گروه) */
       { key: 'dong', build: function (D) { return typeof spPageDong === 'function' ? spPageDong(D) : null; }, onTap: function (title, tgt) { if (typeof spTapDong === 'function') spTapDong(title, tgt); } },
+      /* ۱.۳.۹۳: پس‌انداز (ارز و طلا): اگر کاربر چیزی ثبت کرده (حتی پیش از این نسخه)؛ زدن = صفحهٔ پس‌انداز */
+      { key: 'savings', build: function (D) { return typeof spPageSavings === 'function' ? spPageSavings(D) : null; }, onTap: function () { spGo(function () { openSavingsModal(); }); } },
       /* ۱.۳.۷۵: یادآورها */
       { key: 'reminders', build: spPageReminders, onTap: spTapReminders },
       { key: 'stats', build: spPageStats, onTap: function (title) { spGo(function () { openStatsSheet({ mode: 'daily', card: title, focus: 'stCmp' }); }); } },
@@ -446,6 +448,13 @@
       var sig = (D.alerts.filter(function (a) { return a.type === 'dup'; }).map(function (a) { return a.id; })).join(',');
       if (sig && sig !== st.warnSig) { st.key = 'warn'; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
       st.warnSig = sig;
+      /* ۱.۳.۹۳: بدهی تازهٔ دُنگ: یک بار مستقیم روی اسلاید دُنگ برو (در باز شدن نرم‌افزار نه؛ فقط وقتی همین حالا اضافه شد) */
+      var dsig = ''; try { dsig = typeof hkDongOpenDebts === 'function' ? hkDongOpenDebts().map(function (x) { return x.g.id + ':' + x.t.from + '>' + x.t.to + '=' + Math.round(x.t.amount); }).join(',') : ''; } catch (eDs) {}
+      if (st.dongSig != null && dsig && dsig !== st.dongSig && pages.some(function (p) { return p.key === 'dong'; })) {
+        var prevN = st.dongSig ? st.dongSig.split(',').length : 0, curA = dsig.split(','), prevA = st.dongSig ? st.dongSig.split(',') : [];
+        if (curA.some(function (k) { return prevA.indexOf(k) < 0; }) || curA.length > prevN) { st.key = 'dong'; st.nextAt = Date.now() + SMART_PANEL_INTERVAL; }
+      }
+      if (typeof hkDongOpenDebts === 'function') st.dongSig = dsig;
       /* ۱.۳.۶۸: اگر پیش‌تر فقط اسلاید «+» بود و حالا اسلاید واقعی آمده، از اسلاید اول شروع کن (مگر کاربر خودش ورق زده باشد) */
       if (st.key === 'todoAdd' && pages.length > 1 && !(Date.now() < (st.pausedUntil || 0))) st.key = pages[0].key;
       var idx = 0;

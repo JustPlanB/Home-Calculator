@@ -172,7 +172,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     ok(pf.heads.join('|') === 'نمایش|صفحهٔ خانه|دسته‌ها و حریم|اعلان‌ها' && pf.noChk && pf.sws === 4 && pf.fit, th + ': گروه‌ها با عنوان، کلید روشن/خاموش به‌جای چک‌باکس، بدون دکمه‌های آبی درهم و دکمهٔ «بستن» (' + pf.heads.join('، ') + ')');
     ok(pf.priv && pf.priv2, th + ': «مخفی کردن مبلغ‌ها» با کلید روشن و خاموش می‌شود');
     ok(pf.sub === 'صفحهٔ اول' && pf.start === 'expense' && pf.mainVal === 'مخارج', th + ': صفحهٔ دوم برای انتخاب و برگشت با مقدار تازه');
-    ok(pf.n === 13 && pf.offJ && pf.x && pf.back, th + ': صفحهٔ اسلایدها: ۱۳ اسلاید (با کارت‌های قسط و یادآورها) با کلید؛ فلش برگشت و ضربدر');
+    ok(pf.n === 15 && pf.offJ && pf.x && pf.back, th + ': صفحهٔ اسلایدها: ۱۵ اسلاید (با کارت‌های قسط، یادآورها، دُنگ و پس‌انداز) با کلید؛ فلش برگشت و ضربدر');
     /* جابه‌جایی با دستگیره */
     const h = await F.page.locator('#hkPrefsModal .hk-pf-slides .hk-pf-row[data-k="overview"] .hk-pf-hnd').boundingBox();
     await F.page.mouse.move(h.x + h.width / 2, h.y + h.height / 2); await F.page.mouse.down();

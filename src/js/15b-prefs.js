@@ -199,7 +199,7 @@
       box.appendChild(list);
       document.body.appendChild(ov);
     }
-    var HK_SP_LABELS = { overview: 'خلاصهٔ ماه', inst: 'کارت‌های قسط', reminders: 'یادآورها', stats: 'آمار', todo: 'کارهای من', ledger: 'قرض', categories: 'دسته‌ها', projects: 'پروژه‌ها', upcoming: 'سررسیدها', jump: 'بیشترین جهش', biggest: 'بزرگ‌ترین خرج', fix: 'تکمیل اطلاعات', insight: 'نکته‌ها' };
+    var HK_SP_LABELS = { overview: 'خلاصهٔ ماه', inst: 'کارت‌های قسط', dong: 'دُنگ', savings: 'پس‌انداز', reminders: 'یادآورها', stats: 'آمار', todo: 'کارهای من', ledger: 'قرض', categories: 'دسته‌ها', projects: 'پروژه‌ها', upcoming: 'سررسیدها', jump: 'بیشترین جهش', biggest: 'بزرگ‌ترین خرج', fix: 'تکمیل اطلاعات', insight: 'نکته‌ها' };
     /* ===== ۱.۳.۷۱: شخصی‌سازی تازه — هم‌سبک منوی ویرایش ردیف: گروه‌ها با عنوان کوچک، ردیف‌های یکدست با «مقدار ›»،
        کلید روشن/خاموش، و صفحهٔ دوم برای انتخاب‌ها و اسلایدها (فلش برگشت). تنظیم‌ها همان تنظیم‌های قبلی‌اند. ===== */
     var HK_PF_IC = {

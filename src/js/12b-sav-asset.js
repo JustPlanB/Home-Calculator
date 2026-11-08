@@ -140,6 +140,21 @@
         list.appendChild(box);
       });
     }
+    /* ۱.۳.۹۳: اسلاید باکس هوشمند: هر نوع پس‌انداز (ارز، طلا، …) با مقدار و ارزش روز؛ جمع ارزش روز اگر قیمت وارد شده */
+    function spPageSavings() {
+      var G = []; try { G = _savGroups(); } catch (e) { G = []; }
+      if (!G.length) return null;
+      var tv = 0, any = false;
+      G.forEach(function (g) { if (g.price) { tv += g.value; any = true; } });
+      var items = [];
+      if (any) items.push('<div class="sp-row"><span class="sp-l pos">ارزش روز</span><span class="sp-v pos">' + spAmt(Math.round(tv)) + '</span></div>');
+      G.forEach(function (g) {
+        items.push('<div class="sp-tip"><b style="color:#08b5f5">' + spEsc(g.name) + '</b> · ' + toPersianDigits(_savFmtQty(g.qty)) + ' ' + spEsc(g.unit) +
+          (g.price ? ' · <b class="pos">' + spAmt(Math.round(g.value)) + '</b>' : ' · <span style="color:var(--muted)">قیمت روز وارد نشده</span>') + '</div>');
+      });
+      return spHead('پس‌انداز (ارز و طلا)') + '<div class="sp-scroll sp-free">' + spItems(items) + '</div>';
+    }
+    try { window.spPageSavings = spPageSavings; } catch (eSp) {}
     function openSavingsModal() {
       try { closeSideMenu(); } catch (e) {}
       loadSavings();
