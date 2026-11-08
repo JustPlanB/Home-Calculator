@@ -8,6 +8,10 @@ const root = __dirname;
 const out = path.join(root, 'out');
 fs.mkdirSync(out, { recursive: true });
 const only = process.argv.slice(2);
+/* ۱.۳.۸۸: اجرای تکه‌ای (HK_SHARD=2/4): فایل‌ها به‌نوبت بین تکه‌ها پخش می‌شوند تا در CI هم‌زمان اجرا شوند */
+const SHARD = (function () { const m = /^(\d+)\/(\d+)$/.exec(process.env.HK_SHARD || ''); return m ? { i: +m[1], n: +m[2] } : null; })();
+let _k = 0;
+const inShard = () => { const k = _k++; return !SHARD || (k % SHARD.n) === (SHARD.i - 1); };
 
 function run(file) {
   const r = spawnSync(process.execPath, [file], { cwd: out, encoding: 'utf8', timeout: 180000, env: process.env });
@@ -25,12 +29,14 @@ const regFiles = fs.readdirSync(path.join(root, 'regression')).filter(f => f.end
 
 for (const f of assertFiles) {
   if (only.length && !only.some(o => f.includes(o))) continue;
+  if (!inShard()) continue;
   const r = run(path.join(root, 'assert', f));
   process.stdout.write(r.log);
   results.push({ kind: 'assert', name: f, ok: r.code === 0, why: r.code === 0 ? '' : 'exit ' + r.code + (r.signal ? ' ' + r.signal : '') });
 }
 for (const f of regFiles) {
   if (only.length && !only.some(o => f.includes(o))) continue;
+  if (!inShard()) continue;
   const t0 = Date.now();
   const r = run(path.join(root, 'regression', f));
   const jsErr = JS_ERR.test(r.log);
@@ -42,5 +48,5 @@ for (const f of regFiles) {
 const bad = results.filter(r => !r.ok);
 console.log('\n' + results.length + ' files: ' + (results.length - bad.length) + ' passed, ' + bad.length + ' failed');
 bad.forEach(r => console.log('  ✗ [' + r.kind + '] ' + r.name + ': ' + r.why));
-fs.writeFileSync(path.join(out, 'summary.json'), JSON.stringify(results, null, 1));
+fs.writeFileSync(path.join(out, SHARD ? 'summary-' + SHARD.i + '.json' : 'summary.json'), JSON.stringify(results, null, 1));
 process.exit(bad.length ? 1 : 0);

@@ -809,6 +809,35 @@
       setTimeout(function () { caretToEnd(t); }, 0);
       setTimeout(function () { caretToEnd(t); }, 120);
     }, true);
+    /* ۱.۳.۸۸: در خانه‌ای که در حال ویرایش است، دوبار ضربه یا نگه‌داشتن انگشت روی هر جای متن/عدد = انتخاب کل نوشته یا مبلغ
+       (روی گوشی، رویداد dblclick مرورگر معمولاً فقط یک کلمه را انتخاب می‌کند؛ این‌جا خودمان تشخیص می‌دهیم) */
+    (function () {
+      var last = { el: null, t: 0 }, lp = null;
+      var editable = function (t) {
+        if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || t.readOnly || t.disabled) return false;
+        var ty = t.tagName === 'TEXTAREA' ? 'textarea' : String(t.type || 'text').toLowerCase();
+        return ['text', 'search', 'tel', 'url', 'email', 'textarea'].indexOf(ty) >= 0;
+      };
+      var selAll = function (t) {
+        var f = function () { try { if (document.activeElement !== t) t.focus({ preventScroll: true }); t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (e) { try { t.select(); } catch (e2) {} } };
+        f(); setTimeout(f, 0); setTimeout(f, 140); setTimeout(f, 380);
+      };
+      try { window.hkSelectAllField = selAll; } catch (eW) {}
+      document.addEventListener('touchstart', function (e) {
+        var t = e.target; if (!editable(t) || !(t.value || '').length || document.activeElement !== t) { last = { el: null, t: 0 }; return; }
+        var now = Date.now();
+        if (last.el === t && now - last.t < 350) { last = { el: null, t: 0 }; selAll(t); return; }
+        last = { el: t, t: now };
+        var p = e.touches && e.touches[0]; if (!p) return;
+        if (lp) clearTimeout(lp.tm);
+        lp = { x: p.clientX, y: p.clientY, tm: setTimeout(function () { lp = null; if (document.activeElement === t) selAll(t); }, 450) };
+      }, { capture: true, passive: true });
+      document.addEventListener('touchmove', function (e) {
+        if (!lp) return; var p = e.touches && e.touches[0]; if (!p) return;
+        if (Math.abs(p.clientX - lp.x) > 10 || Math.abs(p.clientY - lp.y) > 10) { clearTimeout(lp.tm); lp = null; }
+      }, { capture: true, passive: true });
+      document.addEventListener('touchend', function () { if (lp) { clearTimeout(lp.tm); lp = null; } }, { capture: true, passive: true });
+    })();
     function lockField(el, shouldLock) {
       if (!el) return;
       if (shouldLock) {

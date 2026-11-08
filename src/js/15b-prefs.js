@@ -373,11 +373,16 @@
         return cats.map(function (c, i) { return { c: c, s: hkCatScore(k, c.id, use, i) }; }).sort(function (a, b) { return b.s - a.s; }).map(function (x) { return x.c; });
       };
       var save = function (ids) { var o = hkPrefs().catOrder || {}; o[kind] = ids; hkPrefSet('catOrder', o); };
+      /* ۱.۳.۸۸: تب‌ها یک بار ساخته می‌شوند تا خط زیر با افکت لغزشی جابه‌جا شود؛ واریزی سبز، برداشت نارنجی */
+      var tabs = document.createElement('div'); tabs.className = 'hk-re-seg hk-pri-tabs';
+      [['in', 'واریزی'], ['out', 'برداشت']].forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-re-segb hk-re-pjb' + (kind === o[0] ? ' on' : ''); b.dataset.k = o[0]; b.textContent = o[1];
+        b.onclick = function () { if (kind === o[0]) return; kind = o[0]; tabs.querySelectorAll('.hk-re-segb').forEach(function (x) { x.classList.toggle('on', x === b); }); draw(); };
+        tabs.appendChild(b);
+      });
       var draw = function () {
         var pri = hkCatPri(kind), L = listOf(kind);
         box.innerHTML = '<div class="hk-prefs-t">اولویت دسته‌بندی‌ها</div>';
-        var tabs = document.createElement('div'); tabs.className = 'hk-re-seg';
-        [['in', 'واریزی'], ['out', 'برداشت']].forEach(function (o) { var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-re-segb hk-re-pjb' + (kind === o[0] ? ' on' : ''); b.textContent = o[1]; b.onclick = function () { kind = o[0]; draw(); }; tabs.appendChild(b); });
         box.appendChild(tabs);
         /* ۱.۳.۸۵: یک کلید «خودکار» (بر اساس استفاده)؛ خاموش = ترتیب دستی با کشیدن */
         var auto = !pri;
@@ -809,8 +814,20 @@
       const wrap = document.getElementById('balanceAccountFilterWrap');
       if (!wrap) return;
       wrap.innerHTML = '';
+      const live = selectedAccountLabels();
+      /* ۱.۳.۸۸: حساب/کارت پاک‌شده‌ای که ردیف‌هایش مانده هم در فیلتر هست */
+      const gone = [];
+      try {
+        const seen = {}; live.forEach(n => { seen[n] = 1; });
+        const scan = pd => ['expense', 'income'].forEach(tab => (((pd && pd[tab] && pd[tab].sections) || [])).forEach(sec => (sec.rows || []).forEach(r => {
+          const a = r && !r.deletedAt && String(r.account || '').trim();
+          if (a && !seen[a]) { seen[a] = 1; gone.push(a); }
+        })));
+        scan(periodData); Object.keys(archive || {}).forEach(k => scan(archive[k]));
+      } catch (eG) {}
       const opts = [{ value: '', label: 'همهٔ حساب‌ها' }].concat(
-        selectedAccountLabels().map(n => ({ value: n, label: n }))
+        live.map(n => ({ value: n, label: n })),
+        gone.sort().map(n => ({ value: n, label: n + ' (پاک‌شده)' }))
       );
       const sel = createDarkSelect({
         options: opts,

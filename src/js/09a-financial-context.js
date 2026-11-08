@@ -860,7 +860,7 @@
           block.className = 'sms-pro-block';
           block.style.display = 'block';
           block.innerHTML =
-            '<label class="family-label">حساب</label>' +
+            '<label class="family-label">نوع فعالیت</label>' + /* ۱.۳.۸۸: بالای دکمه‌ها، مثل برچسب «پروژه» */
             '<div class="sms-seg sms-acct-seg" id="smsAccountTypeSeg" role="group" aria-label="نوع حساب">' +
             '<button type="button" data-acct="personal" class="active">شخصی</button>' +
             '<button type="button" data-acct="project">پروژه</button>' +

@@ -1112,11 +1112,48 @@ button, input, select, textarea { font-family: inherit; }
     .hk-pri-row .hk-pri-ci img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; }
     /* ۱.۳.۸۷: نشانگر بارگذاری (خواندن پیامک‌ها در ثبت گروهی) */
     .hk-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 140px; padding: 18px 8px; text-align: center; }
-    .hk-loading-t { font-size: var(--hk-fs-title); font-weight: 700; color: var(--text); background: linear-gradient(90deg, var(--text) 0%, var(--text) 40%, #08b5f5 50%, var(--text) 60%, var(--text) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: hkLoadShine 1.8s linear infinite; }
-    .hk-loading-dots { display: flex; gap: 9px; direction: rtl; }
-    .hk-loading-dots i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #08b5f5; box-sizing: border-box; background: transparent; animation: hkLoadDot 1.5s ease-in-out infinite; }
-    .hk-loading-dots i:nth-child(2) { animation-delay: 0.25s; }
-    .hk-loading-dots i:nth-child(3) { animation-delay: 0.5s; }
-    @keyframes hkLoadDot { 0%, 15% { background: transparent; transform: scale(0.85); } 35%, 65% { background: #08b5f5; transform: scale(1.1); } 85%, 100% { background: transparent; transform: scale(0.85); } }
-    @keyframes hkLoadShine { 0% { background-position: 100% 0; } 100% { background-position: -150% 0; } }
-    @media (prefers-reduced-motion: reduce) { .hk-loading-t, .hk-loading-dots i { animation: none; } .hk-loading-dots i { background: #08b5f5; } }
+    /* ۱.۳.۸۸: نوشته ثابت طوسی (بی موج)، کمی بزرگ‌تر از متن عادی؛ دایره‌های کوچک‌تر که از راست یکی‌یکی پر می‌شوند و بعد از سومی از اول */
+    .hk-loading-t { font-size: var(--hk-fs-body); font-weight: 600; color: var(--muted, #98989f); }
+    .hk-loading-dots { display: flex; gap: 7px; direction: rtl; }
+    .hk-loading-dots i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #8e8e93; box-sizing: border-box; background: transparent; animation: hkLoadDot 1.8s steps(1, end) infinite; }
+    .hk-loading-dots i:nth-child(2) { animation-name: hkLoadDot2; }
+    .hk-loading-dots i:nth-child(3) { animation-name: hkLoadDot3; }
+    @keyframes hkLoadDot { 0% { background: transparent; } 25%, 100% { background: #8e8e93; } }
+    @keyframes hkLoadDot2 { 0%, 25% { background: transparent; } 50%, 100% { background: #8e8e93; } }
+    @keyframes hkLoadDot3 { 0%, 50% { background: transparent; } 75%, 100% { background: #8e8e93; } }
+    @media (prefers-reduced-motion: reduce) { .hk-loading-dots i { animation: none; background: #8e8e93; } }
+    /* ۱.۳.۸۸: تب‌های «اولویت دسته‌ها»: واریزی سبز، برداشت نارنجی (متن و خط زیر) */
+    .hk-pri-tabs .hk-re-segb[data-k="in"].on { color: var(--hk-income, #9ee858) !important; }
+    .hk-pri-tabs .hk-re-segb[data-k="out"].on { color: var(--hk-expense, #ff6b4a) !important; }
+    /* ۱.۳.۸۸: «نوع فعالیت» بالای دکمه‌ها؛ «شخصی | پروژه» تمام‌عرض */
+    #smsConfirmMeta .sms-pro-block { flex-direction: column !important; align-items: stretch !important; gap: 0 !important; }
+    #smsConfirmMeta .sms-pro-block > .family-label:first-child { margin: 0 0 6px !important; }
+    #smsConfirmMeta .sms-pro-block > .sms-seg { flex: none !important; width: 100%; }
+    /* ۱.۳.۸۸: جای دسته‌ها همیشه سه ردیف (ارتفاع باکس واریز و برداشت یکی)؛ نام یک‌خطی و کامل */
+    #smsCatGrid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; grid-auto-rows: 64px; row-gap: 6px !important; height: calc(3 * 64px + 2 * 6px); min-height: 0; align-content: start; overflow: visible; }
+    #smsCatGrid .sms-cat > span, #smsCatMore .sms-cat > span { white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important; max-width: 100%; display: block; text-align: center; }
+    /* ۱.۳.۸۸: «بابت چی بود؟» آرام کم‌نور و پرنور می‌شود */
+    #smsConfirmDesc { animation: hkDescGlow 3.6s ease-in-out infinite !important; }
+    @keyframes hkDescGlow { 0%, 100% { box-shadow: inset 0 0 0 999px rgba(8,181,245,0); } 50% { box-shadow: inset 0 0 0 999px rgba(8,181,245,0.16); } }
+    @media (prefers-reduced-motion: reduce) { #smsConfirmDesc { animation: none !important; } }
+    #smsConfirmMeta .sms-ro-bank::before { content: attr(data-pre); }
+    /* ۱.۳.۸۸: ثبت تکی/گروهی: باکس بالای صفحه تا با آمدن صفحه‌کلید جابه‌جا نشود */
+    #smsImportModal.hk-kb-top.open { align-items: flex-start !important; padding-top: max(56px, 8vh) !important; }
+    /* ۱.۳.۸۸: نام فیلترهای جستجو (روز، حساب، نوع، ماه، دسته) آبی نرم‌افزار */
+    .bsr-grid .bsr-cell:not(.bsr-desc):not(.bs-arange-row):not(.bs-amt-row) > .balance-acc-label { color: #08b5f5 !important; -webkit-text-fill-color: #08b5f5 !important; }
+    /* ۱.۳.۸۸: دُنگ — نفرات ذخیره‌شده (بیضی آبی با × بالا)، ردیف افزودن، تعداد نفر، دکمهٔ پرداخت نشده/شد */
+    .hk-dg-saved { display: flex; flex-wrap: wrap; gap: 10px 8px; margin: 10px 0 2px; padding-top: 6px; }
+    .hk-dg-pp { position: relative; display: inline-flex; }
+    .hk-dg-ppb { border: 1px solid rgba(8,181,245,0.55); background: rgba(8,181,245,0.14); color: #08b5f5; border-radius: 999px; padding: 5px 13px; font-family: inherit; font-size: var(--hk-fs-small); font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .hk-dg-ppx { position: absolute; top: -9px; left: -6px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 50%; background: var(--card, #1c1c1e); cursor: pointer; font-size: 1rem !important; }
+    .hk-dg-addm { display: flex !important; gap: 8px; align-items: stretch; margin-top: 8px; }
+    .hk-dg-addm .hk-dg-in { flex: 1 1 auto; min-width: 0; margin: 0 !important; }
+    .hk-dg-addb { flex: 0 0 auto; margin: 0 !important; padding: 0 16px; border-radius: 11px; border: 1px solid rgba(8,181,245,0.6); background: rgba(8,181,245,0.14); color: #08b5f5; font-family: inherit; font-size: var(--hk-fs-small); font-weight: 700; white-space: nowrap; cursor: pointer; width: auto !important; min-width: 0 !important; }
+    .hk-dg-shr { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .hk-dg-shr > span { flex: 1 1 auto; min-width: 0; }
+    .hk-dg-shr .hk-dg-wn { flex: 0 0 52px; width: 52px; margin: 0 !important; padding: 6px 4px; text-align: center; }
+    .hk-dg-wl { color: var(--muted); font-size: var(--hk-fs-caption); }
+    .hk-dg-wv { flex: 0 0 auto; min-width: 72px; text-align: left; font-size: var(--hk-fs-small); }
+    .hk-dg-paid { border-color: color-mix(in srgb, var(--hk-expense) 60%, transparent) !important; background: color-mix(in srgb, var(--hk-expense) 12%, transparent) !important; color: var(--hk-expense) !important; min-width: 82px; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+    .hk-dg-paid.on { border-color: color-mix(in srgb, var(--hk-income) 60%, transparent) !important; background: color-mix(in srgb, var(--hk-income) 12%, transparent) !important; color: var(--hk-income) !important; }
+    .hk-dg-pay.paid .hk-dg-pa { color: var(--hk-income); }

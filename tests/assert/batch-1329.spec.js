@@ -54,7 +54,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     return out;
   });
   /* ۱.۳.۳۷: هر باکس = برچسب ثابت راست (اسم فیلتر) | خط تفکیک | منوی کشویی با پیش‌فرض «همهٔ …» (طوسی) */
-  /* ۱.۳.۴۷: منوی «بخش» برداشته شد */ ok(f.def.length === 5 && f.labelsShown.length === 5 && f.labelsShown.join('،') === 'نوع،ماه،روز،حساب،دسته', 'برچسب ثابت هر فیلتر داخل باکس دیده می‌شود (' + f.labelsShown.join('، ') + ')');
+  /* ۱.۳.۴۷: منوی «بخش» برداشته شد */ ok(f.def.length === 5 && f.labelsShown.length === 5 && f.labelsShown.join('،') === 'نوع،حساب،روز،ماه،دسته', 'برچسب ثابت هر فیلتر داخل باکس دیده می‌شود (' + f.labelsShown.join('، ') + ')');
   ok(f.def.filter(x => x.def).length >= 5 && f.def.every(x => x.fs !== '0px' && x.align === 'right'), 'منوی کشویی در حالت پیش‌فرض گزینهٔ «همهٔ …» را نشان می‌دهد');
   ok(f.listOpts[0].t === 'همهٔ انواع' && f.listOpts[0].sel && f.listOpts.every(o => o.c === 'rgb(255, 255, 255)'), 'با باز شدن: «همهٔ انواع» انتخاب‌شده و بالا، گزینه‌ها سفید (' + f.listOpts.map(o => o.t).join('، ') + ')');
   ok(!f.afterPick.def && f.afterPick.txt === 'برداشت' && f.resetDef, 'گزینهٔ غیرپیش‌فرض در باکس دیده می‌شود («برداشت») و با پاک کردن جستجو دوباره پیش‌فرض');

@@ -275,7 +275,7 @@
         { key: 'userReminders', label: 'یادآورها' },
         { key: 'savings', label: 'پس‌انداز (ارز و طلا)' },
         { key: 'categories', label: 'دسته‌بندی مخارج' },
-        { key: 'dong', label: 'دنگ' }
+        { key: 'dong', label: 'دُنگ' }
       ];
       var ov = document.createElement('div');
       ov.id = 'backupPickOverlay';

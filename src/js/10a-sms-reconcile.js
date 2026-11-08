@@ -410,7 +410,7 @@
             if (_lb) _lb.style.display = _known ? 'none' : '';
             if (_known) {
               var _sum = document.querySelector('#smsConfirmMeta .sms-ro-sum');
-              if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
+              if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _bd.setAttribute('data-pre', 'حساب: '); _sum.appendChild(_bd); }
             }
           } catch (eBk) {}
           var _pe0 = document.getElementById('smsPickExisting'); if (_pe0) _pe0.remove();
@@ -789,7 +789,8 @@
       var order = cats.map(function (c, i) { return { c: c, s: (c.id === guess ? 1e6 : 0) + hkCatScore(parsed.type === 'income' ? 'in' : 'out', c.id, use, i) }; })
         .sort(function (a, b) { return b.s - a.s; }).map(function (x) { return x.c; });
       /* ۱.۳.۷۶: دو ردیف پنج‌تایی (۹ دسته + «بیشتر»)، آیکون‌های رنگی */
-      var top = order.length > 10 ? order.slice(0, 9) : order.slice(0, 10), rest = order.length > 10 ? order.slice(9) : [];
+      /* ۱.۳.۸۸: سه ردیف پنج‌تایی (۱۵ خانه)؛ بیشتر از ۱۵ دسته ← خانهٔ پانزدهم «بیشتر…» */
+      var top = order.length > 15 ? order.slice(0, 14) : order.slice(0, 15), rest = order.length > 15 ? order.slice(14) : [];
       var g = document.createElement('div'); g.id = 'smsCatGrid'; g.className = 'sms-cat-grid sms-cat-row hk-cat-colored';
       /* ۱.۳.۵۰: زدن دسته فقط انتخاب است؛ با «ثبت»: شرح نوشته‌شده می‌ماند (دسته = همین)، شرح خالی = اسم دسته */
       var pick = function (c) {
@@ -828,6 +829,15 @@
       var sug = document.getElementById('smsPlanSuggest');
       var anc = sug || desc._micWrap || desc;
       if (anc.parentNode) anc.parentNode.insertBefore(g, anc.nextSibling);
+      /* ۱.۳.۸۸: نام دسته یک‌خطی و کامل (بی «…»): اگر جا نشد، فقط همان نام کمی ریزتر می‌شود */
+      requestAnimationFrame(function () { try { hkFitCatLabels(g); } catch (eF) {} });
+    }
+    function hkFitCatLabels(root) {
+      (root || document).querySelectorAll('.sms-cat > span').forEach(function (sp) {
+        sp.style.fontSize = '';
+        var fs = parseFloat(getComputedStyle(sp).fontSize) || 11, min = 7.5, guard = 0;
+        while (sp.scrollWidth > sp.clientWidth + 0.5 && fs > min && guard++ < 20) { fs -= 0.5; sp.style.fontSize = fs + 'px'; }
+      });
     }
     (function () {
       if (typeof openSmsConfirmModal === 'function' && !openSmsConfirmModal._hkCat) {

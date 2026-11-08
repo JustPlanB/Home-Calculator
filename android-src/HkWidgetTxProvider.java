@@ -129,8 +129,20 @@ final class HkWidgetTxDraw {
     android.graphics.Path tp=new android.graphics.Path();
     tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
     cv.drawPath(tp, tb);
-    Paint t=paint(BOLD, 16.5f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
-    cv.drawText(all ? "همه" : (inc ? "درآمدها" : "مخارج"), W/2f, base(0, th, 16.5f*k), t);
+    /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
+    String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
+    Paint t=paint(BOLD, 15f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
+    fitSize(t, ttl, W*0.26f);
+    cv.drawText(ttl, W/2f, base(0, th, 15f*k), t);
+    Paint an=paint(BOLD, 14f*k, text(light), Paint.Align.RIGHT);
+    fitSize(an, "حساب‌کتاب", W*0.3f);
+    cv.drawText("حساب‌کتاب", W-12*k, base(0, th, 14f*k), an);
+    String[] td=HkWidgetDraw.todayFa();
+    if(td!=null){
+      Paint dp=paint(REG, 12.5f*k, muted(light), Paint.Align.LEFT);
+      fitSize(dp, td[0], W*0.3f-34*k);
+      cv.drawText(td[0], 40*k, base(0, th, 12.5f*k), dp);
+    }
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
     Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(headBg(light));
     cv.drawRect(c[4], th, c[0], th+hh, band);
@@ -145,7 +157,10 @@ final class HkWidgetTxDraw {
     }
     return bm;
   }
-  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light){
+  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light){ return row(ctx, W, k, date, desc, bank, amount, inc, light, false); }
+  /* ۱.۳.۸۸: پرداخت‌نشده/دریافت‌نشده به زرد نرم‌افزار (#ffec0a، تم روشن #a87a00) */
+  static int unpaidC(boolean light){ return light ? 0xFFA87A00 : 0xFFFFEC0A; }
+  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light, boolean unpaid){
     fonts(ctx);
     float rh=38*k; int H=Math.round(rh);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
@@ -159,7 +174,7 @@ final class HkWidgetTxDraw {
     Paint pb=paint(REG, 12.5f*k, muted(light), Paint.Align.CENTER);
     String b2=(bank==null || bank.length()==0) ? "—" : bank;
     cv.drawText(ell(pb, b2, (c[2]-c[3])-8*k), (c[2]+c[3])/2f, base(0, rh, 12.5f*k), pb);
-    Paint pa=paint(BOLD, 14.5f*k, amt(inc, light), Paint.Align.CENTER);
+    Paint pa=paint(BOLD, 14.5f*k, unpaid ? unpaidC(light) : amt(inc, light), Paint.Align.CENTER);
     fitSize(pa, amount, (c[3]-c[4])-6*k);
     cv.drawText(amount, (c[3]+c[4])/2f, base(0, rh, 14.5f*k), pa);
     return bm;

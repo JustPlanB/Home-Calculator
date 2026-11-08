@@ -51,6 +51,7 @@ async function fresh(b, vh) {
   const C = await fresh(b);
   const c = await C.page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
+    ['باغچه','ورزش باشگاه','حیوان خانگی','کافه','سفر','تعمیرات'].forEach(n => HKCategorizer.addCustom(n)); /* ۱.۳.۸۸: بیش از ۱۵ دسته تا «بیشتر…» دیده شود */ 
     openSmsConfirmModal({ type: 'expense', amount: 120000, bank: '', day: '12', month: 8, year: 1405, raw: 'بانک ملت\nبرداشت:1,200,000\nمانده:5,000,000' }); await w(500);
     const g = document.getElementById('smsCatGrid'), tiles = [...g.querySelectorAll('.sms-cat')];
     const tops = [...new Set(tiles.map(x => Math.round(x.getBoundingClientRect().top)))];
@@ -69,7 +70,7 @@ async function fresh(b, vh) {
     const chosen = catB.textContent;
     return { n: tiles.length, rows: tops.length, cols, colors: colors.size, same, chosen };
   });
-  ok(c.n === 10 && c.rows === 2 && c.cols === 5, 'باکس پیامک: دو ردیف پنج‌تایی (۹ دسته + «بیشتر»)');
+  ok(c.n === 15 && c.rows === 3 && c.cols === 5, 'باکس پیامک: سه ردیف پنج‌تایی (۱۴ دسته + «بیشتر»، ۱.۳.۸۸)');
   ok(c.colors >= 7, 'هر دسته رنگ خودش را دارد (' + c.colors + ' رنگ)');
   ok(c.same && /خوراکی/.test(c.chosen), 'ویرایش ردیف: همان شبکهٔ رنگی ۵ستونی؛ انتخاب کار می‌کند');
   await C.ctx.close();
