@@ -899,7 +899,15 @@
               try { sel._fancyRender(); } catch (eR) {}
             }
           }
+          /* ۱.۳.۸۹: باز و بسته شدن نرم فیلد پروژه (همان حرکت آهستهٔ رمز پشتیبان / پوشهٔ کارت‌های قسط) */
           function setProjectVisible(on) {
+            if (!projWrap) return;
+            var wasOpen = projWrap.style.display !== 'none' && !projWrap.hasAttribute('hidden');
+            if (!!on === wasOpen || typeof hkSlideBox !== 'function' || !projWrap.isConnected) { setProjectVisibleNow(on); return; }
+            projWrap._hkSlideMs = 780; projWrap._hkSlideEaseClose = 'cubic-bezier(0.2, 0.55, 0.3, 1)';
+            hkSlideBox(projWrap, !!on, function (o) { setProjectVisibleNow(o); });
+          }
+          function setProjectVisibleNow(on) {
             if (!projWrap) return;
             if (on) {
               projWrap.classList.add('sms-proj-visible');

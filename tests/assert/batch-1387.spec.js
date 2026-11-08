@@ -304,6 +304,49 @@ ok(ex2.newBox && ex2.created, 'بار اول از یک کارت: باکس «حس
   ok(z.addTile && z.dupMsg && z.styleOpen, 'ویرایش ردیف درآمد: «دستهٔ جدید» در انتخاب دسته؛ اسم تکراری پذیرفته نمی‌شود؛ بعد آیکون و رنگ');
   ok(/تدریس خصوصی/.test(z.catBtn) && z.stored && z.inBackup && z.hasColor, 'دستهٔ تازه روی همان ردیف نشست، ذخیره و در پشتیبان است (' + z.catBtn + ')');
 
+  console.log('• ۱.۳.۸۹: اشتراک (متن/عکس/PDF)، +/− نفر، میان‌بر، بی بازگشت/انصراف');
+  const v = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const o = {};
+    hkDongSave({ groups: [{ id: 'g9', name: 'سفر', members: [{ id: 'a', name: 'سپهر' }, { id: 'b', name: 'سارا' }], expenses: [{ id: 'e1', desc: 'ویلا', amount: 400000, payer: 'b', shares: { a: 300000, b: 100000 }, mode: 'w', weights: { a: 3, b: 1 } }], settles: [] }] });
+    openDongModal(); await w(150); document.querySelector('#hkDong .hk-dg-card').click(); await w(150);
+    o.noBack = !document.querySelector('#hkDong .hk-dg-back') && document.querySelectorAll('#hkDong .hk-dg-acts2 .modal-btn').length === 2;
+    const sb = document.querySelector('#hkDong .hk-dg-share'); sb.click(); await w(100);
+    const m = document.getElementById('hkDongShareMenu');
+    o.menu = m ? [...m.querySelectorAll('.hk-dg-shmb')].map(x => x.textContent).join('|') : '';
+    const mr = m.getBoundingClientRect(), br = sb.getBoundingClientRect();
+    o.menuPos = mr.bottom <= br.top + 1 && Math.abs(mr.right - br.right) < 2 && mr.height > mr.width;
+    m.remove();
+    const g = hkDongLoad().groups[0];
+    const png = await hkDongReportBlob(g, 'png'), pdf = await hkDongReportBlob(g, 'pdf');
+    o.png = png && png.type === 'image/png' && png.size > 5000;
+    o.pdf = pdf && pdf.size > 5000 && new TextDecoder().decode(new Uint8Array(await pdf.slice(0, 5).arrayBuffer())) === '%PDF-';
+    const rep = hkDongReportHtml(g);
+    o.rep = /<th[^>]*>شرح<\/th>/.test(rep) && /class="st exp"/.test(rep) && /class="T"/.test(rep) && /پرداخت نشده/.test(rep);
+    /* متن: اشتراک بومی (اگر هست) */
+    let sent = null; window.Capacitor = window.Capacitor || {}; Capacitor.Plugins = Capacitor.Plugins || {}; Capacitor.Plugins.NativeFileExport = Object.assign(Capacitor.Plugins.NativeFileExport || {}, { shareText: (x) => { sent = x; return Promise.resolve({ ok: true }); } });
+    await hkDongShare(g, 'text'); o.textShared = !!sent && /دُنگ «سفر»/.test(sent.text);
+    /* ویرایش خرج: +/−، کمترین ۱، بی انصراف */
+    document.querySelector('#hkDong .hk-dg-e').click(); await w(150);
+    const e = document.getElementById('hkDongEd');
+    o.noCancel = !e.querySelector('.hk-dg-no');
+    const r0 = e.querySelectorAll('.hk-dg-shr')[0], wn = r0.querySelector('.hk-dg-wn'), pl = r0.querySelector('.hk-dg-wplus'), mi = r0.querySelector('.hk-dg-wminus');
+    o.plusRight = pl.getBoundingClientRect().left > wn.getBoundingClientRect().left && mi.getBoundingClientRect().left < wn.getBoundingClientRect().left;
+    pl.click(); await w(30); o.after1 = wn.value;
+    mi.click(); mi.click(); mi.click(); mi.click(); await w(30); o.min = wn.value;
+    o.wv = [...e.querySelectorAll('.hk-dg-wv')].map(x => x.textContent).join('|');
+    e.remove(); document.getElementById('hkDong').remove();
+    /* میان‌برهای صفحهٔ اصلی */
+    o.dock = !!(window.HK_DOCK_ITEMS ? HK_DOCK_ITEMS.dong : (typeof HK_DOCK_ITEMS !== 'undefined' && HK_DOCK_ITEMS.dong));
+    return o;
+  });
+  ok(v.noBack, 'صفحهٔ گروه: «بازگشت» برداشته شد و دو دکمهٔ دیگر عرض را گرفتند');
+  ok(v.menu === 'متن|عکس|PDF' && v.menuPos, 'اشتراک‌گذاری: باکس عمودی بالا و سمت راست دکمه با متن، عکس و PDF');
+  ok(v.png && v.pdf && v.rep, 'عکس و PDF گزارش با جدول‌های خروجی (سرصفحه، ردیف عنوان، سرستون، جمع)');
+  ok(v.textShared, 'متن با پنجرهٔ اشتراک خود گوشی');
+  ok(v.noCancel && v.plusRight && v.after1 === '۴' && v.min === '۱' && v.wv === '۲۰۰,۰۰۰|۲۰۰,۰۰۰', 'نامساوی: «+» راست و «−» چپ، کمترین ۱ (همه ۱ = مساوی)؛ بی «انصراف» (' + v.wv + ')');
+  ok(v.dock, '«دُنگ» در میان‌برهای صفحهٔ اصلی');
+
   ok(allErrors.length === 0, 'بدون خطای صفحه' + (allErrors.length ? ': ' + allErrors.slice(0, 3).join(' | ') : ''));
   await b.close();
   console.log('\n' + passed + ' passed, ' + failed + ' failed');

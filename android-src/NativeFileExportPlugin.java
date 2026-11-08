@@ -332,6 +332,22 @@ public class NativeFileExportPlugin extends Plugin {
     catch(Exception e){ call.reject("open_failed",e); }
   }
 
+  /** ۱.۳.۸۹: اشتراک متن ساده با پنجرهٔ اشتراک خود گوشی (دُنگ) */
+  @com.getcapacitor.PluginMethod public void shareText(PluginCall call){
+    try{
+      String text=call.getString("text","");
+      String title=call.getString("title","اشتراک‌گذاری");
+      Intent send=new Intent(Intent.ACTION_SEND);
+      send.setType("text/plain");
+      send.putExtra(Intent.EXTRA_TEXT, text);
+      send.putExtra(Intent.EXTRA_SUBJECT, title);
+      Intent chooser=Intent.createChooser(send, title);
+      chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getActivity().startActivity(chooser);
+      call.resolve(new JSObject().put("ok", true));
+    }catch(Exception e){ call.reject("share_failed",e); }
+  }
+
   @com.getcapacitor.PluginMethod public void shareBase64File(PluginCall call){
     try{
       String filename=call.getString("filename","share.bin");
