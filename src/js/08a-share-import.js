@@ -722,6 +722,8 @@ container.innerHTML = '';
           }
         };
         tdDesc.appendChild(desc);
+        /* ۱.۳.۸۷: خانه‌های جدول فوکوس نمی‌گیرند تا با ضربه نشانگر متن (کرسر) چشمک نزند؛ باکس شناور همچنان باز می‌شود */
+        [dayInp, desc].forEach(function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('focus', function () { if (el.readOnly) { try { el.blur(); } catch (eB) {} } }); });
         if (preApp) { const tg = document.createElement('div'); tg.className = 'preapp-tag'; tg.innerHTML = HK_LOCK_SVG + '<span>پرداخت قبلی</span>'; tdDesc.appendChild(tg); }
         /* ۱.۳.۷۶: برچسب جدای قسط (شرح کاربر دست نمی‌خورد) */
         /* ۱.۳.۸۶: برچسب زرد قسط زیر شرح برداشته شد؛ به‌جایش آیکون دلار نقره‌ای در ستون ردیف (پایین‌تر) */
@@ -742,7 +744,7 @@ container.innerHTML = '';
             const msg = row.p2p
               ? 'جیب به جیب: پولی که بین کارت‌های خودتان جابه‌جا شده؛ در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی کارت‌ها با آن درست می‌ماند.'
               : 'پرداخت قسط: ' + row.instTag + ' — در مخارج حساب می‌شود و در کارت قسط هم ثبت شده است.';
-            try { showCellTextPopup(numSpan, msg); } catch (eP) {}
+            try { showCellTextPopup(numSpan, msg, { wrap: true }); } catch (eP) {}
           };
         }
         amt.inputMode = 'numeric';
@@ -769,7 +771,7 @@ container.innerHTML = '';
           amt.classList.toggle('status-unpaid', !paid);
           amt.style.setProperty('color', col, 'important');
           amt.style.setProperty('-webkit-text-fill-color', col, 'important');
-          amt.style.setProperty('caret-color', col, 'important');
+          amt.style.setProperty('caret-color', amt.readOnly ? 'transparent' : col, 'important'); /* ۱.۳.۸۷: خانهٔ فقط‌خواندنی بی نشانگر */
         }
         applyAmtColor();
         amt.setAttribute('enterkeyhint', 'next');
@@ -882,7 +884,8 @@ container.innerHTML = '';
           if (document.querySelector('.pd-amt-popup')) { closeCellTextPopups(); return; }
           try { const pp = showCellTextPopup(tdAmt, formatNum(row.amount) + ' تومان'); if (pp) { pp.classList.add('pd-amt-popup'); const rr = pp.getBoundingClientRect(), vw = window.innerWidth; let lf = rr.left; if (lf + rr.width > vw - 8) lf = vw - rr.width - 8; if (lf < 8) lf = 8; pp.style.left = Math.round(lf) + 'px'; } } catch (eOpen) {}
         };
-        amt.onfocus = () => {};
+        amt.onfocus = () => { if (amt.readOnly) { try { amt.blur(); } catch (eB) {} } };
+        amt.addEventListener('mousedown', function (e) { e.preventDefault(); });
         amt.oninput = () => {
           if (fromPlan) return;
           const digits = toEnglishDigits(amt.value).replace(/[^0-9]/g, '');
@@ -930,14 +933,14 @@ container.innerHTML = '';
         const accBtn = document.createElement('button');
         accBtn.type = 'button';
         accBtn.className = 'pd-acc-btn' + (isFilledVal(row.account) ? ' pd-filled' : '') + ((Number(row.amount) || 0) > 0 && !(row.account || '').trim() ? ' acc-missing' : '');
-        accBtn.textContent = row.account ? shortBankDisplay(row.account) : 'انتخاب';
+        accBtn.textContent = row.account ? shortBankDisplay(row.account) : '—';
         if (preApp) { accBtn.textContent = '—'; accBtn.classList.add('pd-acc-locked'); }
         accBtn.onclick = (e) => {
           e.stopPropagation();
           if (preApp) { lockedMsg(accBtn); return; }
           /* ۱.۳.۴۵: بانکِ ثبت‌شده فقط از باکس ویرایش عوض می‌شود؛ ردیف تازهٔ بی‌بانک همان منوی انتخاب */
           if ((row.account || '').trim()) { try { showCellTextPopup(accBtn, row.account); } catch (eP) {} return; }
-          openPersonDetailAccountMenu(accBtn, row, () => { try { sortAndRebuild(); } catch (err) {} });
+          /* ۱.۳.۸۷: بانک واردنشده: فقط قاب زرد؛ انتخاب بانک فقط از لانگ‌پرس ← ویرایش */
         };
         tdAcc.appendChild(accBtn);
         tr.appendChild(tdAcc);

@@ -49,33 +49,15 @@ const ACC = 'ملت';
   const tb = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     openPersonDetail('سارا', 'expense'); await w(500);
+    /* ۱.۳.۸۶+: تایپ مستقیم در جدول برداشته شد (ویرایش فقط از لانگ‌پرس ← ویرایش)؛ زدن خانهٔ خالی فوکوس نمی‌گیرد */
     const tr = [...document.querySelectorAll('.person-detail-table tbody tr')].find(t => { const d = t.querySelector('input'); return d && !d.value; });
     const day = tr.querySelector('input'), desc = tr.querySelector('textarea.pd-desc');
     const h0 = Math.round(desc.getBoundingClientRect().height);
-    day.click(); day.focus(); day.value = '۹';
-    day.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true })); await w(120);
-    const out = { h0, focusedDesc: document.activeElement === desc };
-    out.hFocus = Math.round(desc.getBoundingClientRect().height);
-    desc.value = 'شیر'; desc.dispatchEvent(new Event('input', { bubbles: true })); await w(50);
-    out.hShort = Math.round(desc.getBoundingClientRect().height);
-    desc.value = 'خرید شیر و ماست و پنیر و کره و نان سنگک و تخم‌مرغ از فروشگاه سر کوچه برای صبحانهٔ هفته'; desc.dispatchEvent(new Event('input', { bubbles: true })); await w(50);
-    out.hLong = Math.round(desc.getBoundingClientRect().height);
-    /* «بعدی» روی شرح ← مبلغ ← «بعدی» ← منوی بانک */
-    desc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true })); await w(120);
-    out.hAfter = Math.round(desc.getBoundingClientRect().height);
-    const amt = tr.querySelector('.pd-amt');
-    out.focusedAmt = document.activeElement === amt;
-    amt.value = '۸۵,۰۰۰';
-    amt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true })); await w(100);
-    /* بسته شدن صفحه‌کلید: جابه‌جایی و تغییر ارتفاع صفحه */
-    window.dispatchEvent(new Event('scroll')); document.dispatchEvent(new Event('scroll'));
-    window.dispatchEvent(new Event('resize')); await w(300);
-    window.dispatchEvent(new Event('scroll')); await w(300);
-    const menu = document.querySelector('.dark-select-list.open');
-    out.menuOpen = !!menu && getComputedStyle(menu).display !== 'none';
-    const opt = menu && [...menu.querySelectorAll('.dark-select-option')].find(o => o.textContent.trim() === 'ملت');
-    if (opt) opt.click(); await w(200);
-    out.picked = (periodData.expense.sections[0].rows.find(r => /شیر/.test(r.desc || '')) || {}).account;
+    day.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); day.click(); day.focus(); await w(80);
+    const out = { h0, noType: document.activeElement !== day && day.readOnly };
+    const sec0 = periodData.expense.sections[0];
+    sec0.rows.push(Object.assign(emptyRow('expense'), { day: '9', desc: 'خرید شیر و ماست و پنیر و کره و نان سنگک و تخم‌مرغ از فروشگاه سر کوچه برای صبحانهٔ هفته', amount: 85000, status: 'paid', account: 'ملت' }));
+    persistCurrent(); closePersonDetail(); await w(200); openPersonDetail('سارا', 'expense'); await w(500);
     /* یک بار زدن روی شرح پرشده: کل متن یک‌خطی در باکس نمایش */
     const tr2 = [...document.querySelectorAll('.person-detail-table tbody tr')].find(t => /شیر/.test((t.querySelector('textarea.pd-desc') || {}).value || ''));
     const d2 = tr2.querySelector('textarea.pd-desc');
@@ -87,10 +69,7 @@ const ACC = 'ملت';
     closePersonDetail(); await w(200);
     return out;
   });
-  ok(tb.focusedDesc && tb.hFocus === tb.h0 && tb.hShort === tb.h0, 'شرح بعد از «بعدی»: همان باکس یک‌خطی (' + tb.h0 + 'px)');
-  ok(tb.hLong > tb.h0, 'متن بلند که در یک خط جا نشد: باکس به اندازهٔ لازم بلند شد (' + tb.hLong + 'px)');
-  ok(tb.focusedAmt && tb.hAfter === tb.h0, 'با رفتن به مبلغ، شرح دوباره یک‌خطی شد');
-  ok(tb.menuOpen && tb.picked === 'ملت', '«بعدی» روی مبلغ: منوی انتخاب بانک باز ماند (با بسته شدن صفحه‌کلید بسته نشد) و انتخاب کار کرد');
+  ok(tb.noType, 'زدن خانهٔ خالی جدول: تایپ مستقیم باز نمی‌شود (ویرایش فقط از لانگ‌پرس)');
   ok(tb.popup && tb.h2 === tb.h0, 'یک بار زدن روی شرح پرشده: کل متن یک‌خطی در باکس نمایش، خانه یک‌خطی ماند');
 
   console.log('• باز/بسته شدن نرم');

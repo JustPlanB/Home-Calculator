@@ -334,7 +334,7 @@
           '<input id="smsConfirmAmount" type="text" inputmode="numeric" value="' + (parsed.amount ? formatNum(parsed.amount) : '') + '" ' +
             'style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:700;direction:ltr;text-align:left;margin-bottom:10px;">' +
           '</div>' +
-          '<label class="family-label">بانک:</label>' +
+          '<label class="family-label sms-bank-lbl">بانک:</label>' +
           '<select id="smsConfirmBank" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:10px;"></select>' +
           '<label class="family-label sms-ro-hide">تاریخ (روز / ماه / سال):</label>' +
           '<div class="sms-date-row sms-ro-hide" style="display:flex;flex-direction:row;gap:6px;direction:ltr;margin-bottom:10px;width:100%;max-width:100%;box-sizing:border-box;">' +

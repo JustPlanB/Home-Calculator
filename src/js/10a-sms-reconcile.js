@@ -356,6 +356,8 @@
         var bankName = '';
         /* ۱.۳.۸۵: امتیازدهی (متن، فرستنده، رقم‌های وصل‌شده، …) */
         try { bankName = hkBankOfSms(raw, parsed.sender || '') || detectBankFromSms(raw) || ''; } catch (eB) {}
+        /* ۱.۳.۸۷: اگر تشخیص، نامِ یک حساب ساخته‌شده بود («ملت ۶۱۶۳»)، بانکِ همان حساب («بانک ملت») ملاک است تا نام پیشنهادی حساب تازه درست باشد */
+        try { var _ah = (selectedBankAccounts || []).filter(function (a) { return accountLabel(a) === bankName; })[0]; if (_ah && accountBank(_ah)) bankName = accountBank(_ah); } catch (eAh) {}
         out.bankName = bankName; out.bankShort = bankName ? (bankShortLabel(bankName) || bankName) : '';
         var same = [];
         if (bankName) {
@@ -398,8 +400,27 @@
           var old = document.getElementById('smsAccNewNote'); if (old) old.remove();
           var oldN = document.getElementById('smsNewAccWrap'); if (oldN) oldN.remove();
           try { var aw0 = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel; if (aw0) aw0.style.display = ''; } catch (eAw) {}
-          if (sel && route.need && route.newAcc) {
+          /* ۱.۳.۸۷: بانک شناخته‌شده فقط نمایش داده می‌شود (بی منوی تغییر)؛ ناشناخته: همان انتخاب/افزودن حساب */
+          try {
+            var _aw = (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+            var _lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl');
+            var _bs = document.getElementById('smsBankShow'); if (_bs) _bs.remove();
+            var _known = !!(sel && route.label && !route.need && sel.value === route.label);
+            if (_aw) _aw.style.display = _known ? 'none' : '';
+            if (_lb) _lb.style.display = _known ? 'none' : '';
+            if (_known) {
+              var _sum = document.querySelector('#smsConfirmMeta .sms-ro-sum');
+              if (_sum) { var _bd = document.createElement('div'); _bd.id = 'smsBankShow'; _bd.className = 'sms-ro-line sms-ro-bank'; _bd.textContent = route.label; _sum.appendChild(_bd); }
+            }
+          } catch (eBk) {}
+          var _pe0 = document.getElementById('smsPickExisting'); if (_pe0) _pe0.remove();
+          /* ۱.۳.۸۷: بار اول از این کارت/حساب: همان باکس «حساب جدید» (اسم را بنویسید، حساب ساخته می‌شود)؛
+             اگر همین حساب را قبلاً ساخته‌اید، با یک ضربه انتخاب از فهرست */
+          if (sel && route.need && (route.newAcc || route.acc4)) {
             hkSmsBuildNewAcc(sel, route);
+            try { var _lb2 = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (_lb2) _lb2.style.display = 'none'; } catch (eL2) {}
+            var _hasAcc = false; try { _hasAcc = selectedAccountLabels().length > 0; } catch (eHa) {}
+            if (_hasAcc) hkSmsPickExistingLink(sel, route);
           } else if (sel && route.need) {
             hkSmsAccNeedNote(sel, route);
           }
@@ -431,6 +452,19 @@
             nw._route = route;
             aw.insertAdjacentElement('afterend', nw);
           }
+      }
+      function hkSmsPickExistingLink(sel, route) {
+        var nw = document.getElementById('smsNewAccWrap'); if (!nw) return;
+        var lk = document.createElement('button'); lk.type = 'button'; lk.id = 'smsPickExisting'; lk.className = 'sms-pick-existing';
+        lk.textContent = 'این حساب را قبلاً ساخته‌اید؟ انتخاب از حساب‌ها';
+        lk.onclick = function () {
+          try { nw.remove(); lk.remove(); } catch (eR) {}
+          var aw = (sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) ? sel.parentNode : sel;
+          aw.style.display = '';
+          var lb = document.querySelector('#smsConfirmMeta .sms-bank-lbl'); if (lb) lb.style.display = '';
+          hkSmsAccNeedNote(sel, route);
+        };
+        nw.insertAdjacentElement('afterend', lk);
       }
       function hkSmsAccNeedNote(sel, route) {
           if (true) {
@@ -623,11 +657,27 @@
       prev();
     }
     try { window.hkCatIco = hkCatIco; window.hkCatImgSet = hkCatImgSet; window.hkCatPickImage = hkCatPickImage; window.hkCatStyleSheet = hkCatStyleSheet; window.HK_ICON_BANK = HK_ICON_BANK; } catch (eCi) {}
+    try { window.hkAddIncomeCat = hkAddIncomeCat; window.hkInCustomLoad = hkInCustomLoad; } catch (eIc) {}
     /* ۱.۳.۴۸: دسته‌های واریز (کوتاه) */
     var HK_INCOME_CATS = [
       { id: 'in_salary', label: 'حقوق' }, { id: 'in_rent', label: 'اجاره' }, { id: 'in_loanback', label: 'تسویه قرض' } /* ۱.۳.۶۸: جای «اضافه‌کار» */,
       { id: 'in_bonus', label: 'پاداش' }, { id: 'in_gift', label: 'هدیه و کمک' }, { id: 'in_sale', label: 'فروش' }, { id: 'in_profit', label: 'سود' }
     ];
+    /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر (شناسه با «in_u_» تا مثل بقیهٔ دسته‌های درآمد روی ردیف بنشیند) */
+    var HK_IN_CUSTOM_KEY = STORAGE_KEY + '_inCustom';
+    function hkInCustomLoad() { try { var a = JSON.parse(localStorage.getItem(HK_IN_CUSTOM_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (x) { return x && /^in_u_/.test(x.id) && x.label; }) : []; } catch (e) { return []; } }
+    function hkInCustomSync(list) {
+      (list || hkInCustomLoad()).forEach(function (c) { if (!HK_INCOME_CATS.some(function (x) { return x.id === c.id; })) HK_INCOME_CATS.push({ id: c.id, label: c.label, custom: true }); });
+    }
+    function hkInCustomSave() { try { localStorage.setItem(HK_IN_CUSTOM_KEY, JSON.stringify(HK_INCOME_CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; }))); } catch (e) {} }
+    function hkAddIncomeCat(label) {
+      label = String(label || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      if (!label || HKCategorizer.labelTaken(label)) return null;
+      var c = { id: 'in_u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label: label, custom: true };
+      HK_INCOME_CATS.push(c); hkInCustomSave();
+      return c;
+    }
+    hkInCustomSync();
     HK_CAT_ICONS.in_salary = '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>';
     /* ۱.۳.۸۳: اجاره = کلید (با «لوازم خانه» یکی نباشد) */
     HK_CAT_ICONS.in_rent = '<circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M18 12v3.2M15 12v2.2"/>';
@@ -672,7 +722,7 @@
     var HK_INST_DOLLAR_SVG = '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.5-2 3.5-4.5 3.5-4.5-1.3-4.5-3"/>';
     function hkCatColor(id) { return HK_CAT_COLORS[id] || (id && hkCatUserMap('Color')[id]) || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
-    function hkCatPickSheet(cats, cur, onPick) {
+    function hkCatPickSheet(cats, cur, onPick, kind) {
       var old = document.getElementById('hkCatPick'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkCatPick'; ov.className = 'modal-overlay open sms-cat-more-ov'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
@@ -690,6 +740,33 @@
         b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
         gg.appendChild(b);
       });
+      /* ۱.۳.۸۷: «دستهٔ جدید» همین‌جا (مخارج یا درآمد): اسم ← آیکون/گالری و رنگ ← انتخاب روی همین ردیف */
+      if (kind === 'in' || kind === 'out') {
+        var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'sms-cat sp-pick-tadd hk-cp-add'; plus.style.setProperty('--cc', '#08b5f5');
+        plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
+        plus.onclick = function () {
+          if (bx.querySelector('.sp-pick-new')) return;
+          var wrap = document.createElement('div'); wrap.className = 'sp-pick-new';
+          var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'sp-pick-input'; inp.placeholder = 'نام دستهٔ جدید'; inp.maxLength = 24; inp.setAttribute('enterkeyhint', 'done');
+          var okb = document.createElement('button'); okb.type = 'button'; okb.className = 'sp-pick on'; okb.textContent = 'افزودن';
+          var msg = document.createElement('div'); msg.className = 'sp-pick-err';
+          var save = function () {
+            if (HKCategorizer.labelTaken(inp.value)) { msg.textContent = 'دسته‌ای با این اسم هست'; return; }
+            var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+            if (!cat) { try { inp.focus(); } catch (e) {} return; }
+            close();
+            hkCatStyleSheet(cat, function () { onPick(cat.id); });
+          };
+          okb.onclick = save;
+          inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+          inp.addEventListener('input', function () { msg.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+          wrap.appendChild(inp); wrap.appendChild(okb); wrap.appendChild(msg);
+          plus.style.display = 'none';
+          bx.appendChild(wrap);
+          setTimeout(function () { try { inp.focus(); } catch (e) {} }, 30);
+        };
+        gg.appendChild(plus);
+      }
       bx.appendChild(gg); ov.appendChild(bx);
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       document.body.appendChild(ov);

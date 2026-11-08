@@ -234,11 +234,14 @@
         var custom = CATS.filter(function (c) { return c.custom; }).map(function (c) { return { id: c.id, label: c.label }; });
         var d = loadDict();
         var img = {}, ico = {}, col = {}; try { img = hkCatImgMap(); ico = hkCatUserMap('Icon'); col = hkCatUserMap('Color'); } catch (eI) {}
-        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col };
+        var inCustom = []; try { inCustom = hkInCustomLoad(); } catch (eIn) {}
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom };
       }
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
+        /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر */
+        try { if (Array.isArray(o.inCustom)) { hkInCustomSync(o.inCustom.filter(function (c) { return c && /^in_u_/.test(c.id) && c.label; })); hkInCustomSave(); } } catch (eIn) {}
         /* ۱.۳.۸۵: عکس دسته‌های ساخت کاربر */
         try { if (o.img && typeof o.img === 'object') Object.keys(o.img).forEach(function (k) { if (/^data:image\//.test(String(o.img[k]))) hkCatImgSet(k, o.img[k]); }); } catch (eIm) {}
         try { if (o.icon && typeof o.icon === 'object') Object.keys(o.icon).forEach(function (k) { if (HK_ICON_BANK[o.icon[k]]) hkCatUserSet('Icon', k, o.icon[k]); }); if (o.color && typeof o.color === 'object') Object.keys(o.color).forEach(function (k) { if (/^#[0-9a-f]{6}$/i.test(o.color[k])) hkCatUserSet('Color', k, o.color[k]); }); } catch (eIc) {}
@@ -505,6 +508,10 @@
         return tab + ':' + (r.id || ('i' + i + '_' + spDay(r) + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc)));
       }
       /* ۱.۳.۸۶: کلید پایدار (بدون شمارهٔ ردیف) تا «تکراری نیست» با افزودن/حذف ردیف دیگر از بین نرود */
+      /* ۱.۳.۸۷: کلید بی‌شرح: «تکراری نیست» با هر شرحی (و با ویرایش شرح) ماندگار است */
+      function rowKeyN(tab, r) {
+        return tab + ':' + (r.id || ('n' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
+      }
       function rowKeyS(tab, r) {
         return tab + ':' + (r.id || ('s' + spDay(r) + '_' + (r.time || '') + '_' + (Number(r.amount) || 0) + '_' + HKCategorizer.normalize(r.desc) + '_' + (r.account || '').trim() + '_' + (r.viaSms ? 1 : 0)));
       }
@@ -530,6 +537,8 @@
             for (var j = i + 1; j < rows.length; j++) {
               var a = rows[i], b = rows[j];
               if (a.fromPlanId && b.fromPlanId) continue;
+              /* ۱.۳.۸۷: دو قسطِ کارت‌های قسط مختلف (برچسب جدا) تکراری نیستند */
+              if (a.instTag && b.instTag && a.instTag !== b.instTag) continue;
               var A = Number(a.amount) || 0, B = Number(b.amount) || 0;
               if (A < 1000 || Math.abs(A - B) > Math.max(A, B) * 0.01) continue;
               var accA = (a.account || '').trim(), accB = (b.account || '').trim();
@@ -543,14 +552,15 @@
               if (!na || na !== nb) continue;
               var hit = sameDay || dd <= 2;
               if (!hit) continue;
-              var id = 'dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b);
-              if (dis[id] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
+              var id = 'dup:' + rowKeyN(tab, a) + '|' + rowKeyN(tab, b);
+              if (dis[id] || dis['dup:' + rowKeyN(tab, b) + '|' + rowKeyN(tab, a)] || dis['dup:' + rowKeyS(tab, a) + '|' + rowKeyS(tab, b)] || dis['dup:' + rowKey(tab, a, i) + '|' + rowKey(tab, b, j)]) continue;
               var label = (isGeneric(a) && !isGeneric(b) ? b.desc : a.desc) || (tab === 'income' ? 'درآمد' : 'هزینه');
               out.push({
                 id: id, type: 'dup', p: 100, tab: tab, ra: a, rb: b,
                 title: 'احتمال ثبت تکراری',
-                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
-                          : ('تراکنش «' + label + '» با همین مبلغ ' + (sameDay ? 'در همان روز' : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
+                /* ۱.۳.۸۷: مبلغ، بانک و روز در متن تا موردها از هم جدا شناخته شوند */
+                text: sms ? ('تراکنش پیامکی ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + (da ? ' در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : '') + ' احتمالاً قبلاً دستی با شرح «' + label + '» ثبت شده.')
+                          : ('«' + label + '» ' + spAmt(A) + ' تومان' + ((accA || accB) ? ' (' + (accA || accB) + ')' : '') + ' ' + (sameDay ? (da ? 'در ' + spFa(da) + ' ' + MONTHS[currentMonth - 1] : 'در همان روز') : 'در فاصلهٔ کوتاه') + ' دو بار ثبت شده.'),
                 toast: 'احتمال ثبت تکراری: «' + label + '»'
               });
             }
@@ -760,8 +770,9 @@
       /* ۱.۳.۷۵: «احتمال ثبت تکراری» فقط یک بار (عنوان)، زیرش توضیح هر مورد؛ زدن = دو ردیف در جدول هایلایت می‌شوند */
       /* ۱.۳.۸۶: هر مورد شناسهٔ خودش را دارد تا زدنش دقیقاً ردیف‌های همان مورد را هایلایت کند */
       return spHead('احتمال ثبت تکراری', 'neg') + spItems(dups.slice(0, 2).map(function (a, i) {
-        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div>';
-      })) + '<div class="sp-dup-no" data-act="dismiss">تکراری نیست</div>';
+        /* ۱.۳.۸۷: هر مورد «تکراری نیست» خودش را دارد */
+        return '<div class="sp-tip" data-dup="' + i + '" data-dup-id="' + spEsc(a.id) + '">' + spEsc(a.text) + '</div><div class="sp-dup-no" data-act="dismiss" data-dup-id="' + spEsc(a.id) + '">تکراری نیست</div>';
+      })) + (dups.length > 1 ? '<div class="sp-dup-no sp-dup-all" data-act="dismiss" data-dup-id="__all__">هیچ‌کدام تکراری نیست</div>' : '');
     }
     /* ۱) وضعیت این ماه: پس‌انداز و مانده، هر کدام با لولهٔ پرشونده؛ سبز = مثبت، قرمز = منفی.
        پس‌انداز = (درآمد کل − خرج کل) ÷ درآمد کل · مانده = دریافت‌شده − پرداخت‌شده (پول واقعیِ مانده) */

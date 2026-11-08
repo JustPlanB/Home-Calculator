@@ -496,12 +496,13 @@
       } catch (e) {}
     }
 
-        function showCellTextPopup(anchorEl, text) {
+        function showCellTextPopup(anchorEl, text, opt) {
       closeCellTextPopups();
       const t = (text == null ? '' : String(text)).trim();
       if (!t || !anchorEl) return null;
       const pop = document.createElement('div');
-      pop.className = 'cell-text-popup pd-desc-popup';
+      /* ۱.۳.۸۷: توضیح‌ها (جیب به جیب، تسویه، قسط) چندخطی */
+      pop.className = 'cell-text-popup pd-desc-popup' + (opt && opt.wrap ? ' cell-text-popup-wrap' : '');
       pop.textContent = t;
       document.body.appendChild(pop);
       try {

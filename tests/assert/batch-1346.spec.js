@@ -74,7 +74,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
       typeHidden: !vis('#smsConfirmType') && !vis('#smsConfirmAmount') && !vis('#smsConfirmDay'),
       secHidden: !vis('#smsConfirmSectionInner') && !vis('#smsConfirmSectionSel'),
       seg: !!document.getElementById('smsExpenseSeg'), plan: !!document.getElementById('smsPlanPickBlock'),
-      bank: (function () { const bk = document.getElementById('smsConfirmBank'); const wr = bk && (bk.closest('.fancy-select-wrap') || bk); return !!(wr && wr.offsetParent !== null); })(),
+      bank: (function () { const bk = document.getElementById('smsConfirmBank'); const wr = bk && (bk.closest('.fancy-select-wrap') || bk); return !!(wr && wr.offsetParent !== null) || !!document.getElementById('smsBankShow'); /* ۱.۳.۸۷: بانک شناخته‌شده فقط نمایش */ })(),
       acct: vis('#smsAccountTypeSeg')
     };
     closeSmsConfirmModal('reject'); await w(200);
