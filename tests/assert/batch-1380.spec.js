@@ -142,7 +142,7 @@ const cnt = () => ({ acc: document.querySelectorAll('#hkBubbles .hk-bub:not(.sm)
   const andr = require('../lib/android-src')();
   const hd = andr.slice(andr.indexOf('static Bitmap header('), andr.indexOf('static Bitmap row('));
   ok(/0xFF0A1628/.test(andr) && /0xFFEEF0F4/.test(andr) && /0xFF1B1B1B/.test(andr) && /0xFFE3E7EE/.test(andr), 'ویجت ردیف‌ها: زمینهٔ عنوان و سرستون‌ها همان رنگ جدول‌های نرم‌افزار');
-  ok(/String ttl=all \? "همه" : \(inc \? "درآمدها" : "مخارج"\)/.test(hd) && /cv\.drawText\(ttl, W\/2f/.test(hd) && /all \? ALL_C : amt\(inc, light\), Paint\.Align\.CENTER/.test(hd), 'عنوان «مخارج/درآمدها» وسط با همان سبز و نارنجی');
+  ok(/String ttl=all \? "همه" : \(inc \? "درآمدها" : "مخارج"\)/.test(hd) && /float tx=W\/2f-5\*k;[\s\S]*?cv\.drawText\(ttl, tx,/.test(hd) /* ۱.۳.۹۲: کمی کنار، جای فلش منو */ && /all \? ALL_C : amt\(inc, light\), Paint\.Align\.CENTER/.test(hd), 'عنوان «مخارج/درآمدها» وسط با همان سبز و نارنجی');
 
   ok(allErrors.length === 0, 'هیچ خطای JS ' + allErrors.slice(0, 3).join(' | '));
   await b.close();
