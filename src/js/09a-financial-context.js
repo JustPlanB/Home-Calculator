@@ -866,10 +866,10 @@
             '<button type="button" data-acct="project">پروژه</button>' +
             '</div>' +
             '<input type="hidden" id="smsAccountTypeSel" value="personal" />' +
-            '<div id="smsProjectPickWrap" style="display:none;margin-top:8px;">' +
+            '<div id="smsProjectPickWrap" style="display:none;margin-top:8px;"><div class="sms-proj-in">' + /* ۱.۳.۹۰: لایهٔ داخلی برای باز/بسته شدن نرم (مثل رمزنگاری در منوی پشتیبان) */
             '<label class="family-label">پروژه</label>' +
             '<select id="smsSubjectSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;"></select>' +
-            '</div>';
+            '</div></div>';
           meta.appendChild(block);
 
           var acctSel = document.getElementById('smsAccountTypeSel');
@@ -899,20 +899,18 @@
               try { sel._fancyRender(); } catch (eR) {}
             }
           }
-          /* ۱.۳.۸۹: باز و بسته شدن نرم فیلد پروژه (همان حرکت آهستهٔ رمز پشتیبان / پوشهٔ کارت‌های قسط) */
-          function setProjectVisible(on) {
-            if (!projWrap) return;
-            var wasOpen = projWrap.style.display !== 'none' && !projWrap.hasAttribute('hidden');
-            if (!!on === wasOpen || typeof hkSlideBox !== 'function' || !projWrap.isConnected) { setProjectVisibleNow(on); return; }
-            projWrap._hkSlideMs = 780; projWrap._hkSlideEaseClose = 'cubic-bezier(0.2, 0.55, 0.3, 1)';
-            hkSlideBox(projWrap, !!on, function (o) { setProjectVisibleNow(o); });
-          }
+          /* ۱.۳.۹۰: باز و بسته شدن نرم فیلد پروژه، دقیقاً مثل ردیف رمزنگاری با کلید «پشتیبان خودکار روزانه»
+             (ارتفاع ۰ ↔ کامل با transition در CSS)؛ «بابت چی بود؟» زیرش هم با همان نرمی جابه‌جا می‌شود */
+          function setProjectVisible(on) { setProjectVisibleNow(on); }
+          if (projWrap) projWrap.addEventListener('transitionend', function (e) {
+            if (e.target === projWrap && e.propertyName === 'grid-template-rows') projWrap.classList.toggle('sms-proj-done', projWrap.classList.contains('sms-proj-visible'));
+          });
           function setProjectVisibleNow(on) {
             if (!projWrap) return;
             if (on) {
               projWrap.classList.add('sms-proj-visible');
-              projWrap.style.display = 'block';
-              projWrap.removeAttribute('hidden');
+              projWrap.style.display = '';
+              projWrap.removeAttribute('hidden'); projWrap.removeAttribute('aria-hidden');
               fillProjectOptions();
               /* فقط وقتی پروژه انتخاب شد منوی کشویی ساخته شود */
               if (sel && typeof enhanceSelectFont === 'function' && !sel._fancyRender) {
@@ -922,14 +920,10 @@
                 sel.parentNode.style.display = '';
               }
               /* ۱.۳.۵۰: فیلد پروژه حتماً دیده شود (حتی با پیوست): باکس تا خودِ فیلد اسکرول می‌شود */
-              setTimeout(function () { try { projWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (eV) {} }, 80);
+              setTimeout(function () { try { projWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (eV) {} }, 480);
             } else {
-              projWrap.classList.remove('sms-proj-visible');
-              projWrap.style.display = 'none';
-              projWrap.setAttribute('hidden', 'hidden');
-              if (sel && sel.parentNode && sel.parentNode.classList && sel.parentNode.classList.contains('fancy-select-wrap')) {
-                sel.parentNode.style.display = 'none';
-              }
+              projWrap.classList.remove('sms-proj-visible', 'sms-proj-done');
+              projWrap.setAttribute('aria-hidden', 'true'); /* نمایش با CSS؛ پنهان کردن فوری نه، تا نرم جمع شود */
               /* بستن لیست باز احتمالی */
               try {
                 document.querySelectorAll('.fancy-select-list.open').forEach(function(l) {

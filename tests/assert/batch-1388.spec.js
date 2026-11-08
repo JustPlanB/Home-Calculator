@@ -31,8 +31,9 @@ const allErrors = [];
     const cs = getComputedStyle(t);
     o.tAnim = cs.animationName; o.tColor = cs.color; o.tSize = parseFloat(cs.fontSize);
     o.dots = dots.length; o.dotW = dots[0].getBoundingClientRect().width;
-    o.dotAnims = [...dots].map(x => getComputedStyle(x).animationName).join(',');
-    o.dotBorder = getComputedStyle(dots[0]).borderTopColor; o.dotDur = getComputedStyle(dots[0]).animationDuration;
+    o.dotAnims = [...dots].map(x => getComputedStyle(x, '::after').animationName).join(',');
+    o.dotBorder = getComputedStyle(dots[0]).borderTopColor; o.dotDur = getComputedStyle(dots[0], '::after').animationDuration;
+    o.dotFill = getComputedStyle(dots[0], '::after').backgroundColor;
     d.remove();
     openCatPriority(); await w(250);
     const m = document.getElementById('hkCatPriModal');
@@ -48,7 +49,7 @@ const allErrors = [];
     return o;
   });
   ok(a.tAnim === 'none' && /152, 152, 159|142, 142, 147/.test(a.tColor) && a.tSize <= 17, 'نوشتهٔ «در حال خواندن پیامک‌ها» ثابت، طوسی و کوچک‌تر (' + a.tColor + '، ' + a.tSize + 'px)');
-  ok(a.dots === 3 && a.dotW <= 8 && a.dotAnims === 'hkLoadDot,hkLoadDot2,hkLoadDot3' && a.dotBorder === 'rgb(8, 181, 245)' && a.dotDur === '1s', 'سه دایرهٔ کوچک آبی که تند یکی‌یکی پر می‌شوند و از اول (۱.۳.۸۹)');
+  ok(a.dots === 3 && a.dotW <= 8 && a.dotAnims === 'hkLoadDot,hkLoadDot2,hkLoadDot3' && a.dotBorder === 'rgb(8, 181, 245)' && a.dotFill === 'rgb(8, 181, 245)' && a.dotDur === '0.6s', 'سه دایرهٔ کوچک آبی که تند (۰٫۶ ثانیه) یکی‌یکی پر می‌شوند؛ پر شدن با opacity تا گیر نکند (۱.۳.۹۰)');
   ok(a.inColor === 'rgb(158, 232, 88)' && a.outColor === 'rgb(255, 107, 74)', 'تب واریزی سبز، برداشت نارنجی');
   ok(a.sameTabs && a.indMoved && a.indTrans !== '0s', 'جابه‌جایی بین تب‌ها با افکت لغزشی (همان تب‌ها، خط زیر حرکت می‌کند)');
 
@@ -82,12 +83,21 @@ const allErrors = [];
     try { saveFinancialSubjects([{ id: 'p1', name: 'ساختمان' }]); } catch (eS) {}
     enqueueBankSms('کارت6292\nبرداشت100,000\nمانده6,384,526', 'Bank Mellat'); await w(1300);
     document.querySelector('#smsAccountTypeSeg [data-acct="project"]').click(); await w(60);
-    const pw = document.getElementById('smsProjectPickWrap');
-    o.projAnim = pw.getAnimations().length > 0; await w(900);
-    o.projOpen = getComputedStyle(pw).display !== 'none';
-    document.querySelector('#smsAccountTypeSeg [data-acct="personal"]').click(); await w(60);
-    o.projAnim2 = pw.getAnimations().length > 0; await w(900);
-    o.projClosed = getComputedStyle(pw).display === 'none';
+    const pw = document.getElementById('smsProjectPickWrap'), dsc = document.getElementById('smsConfirmDesc');
+    /* ۱.۳.۹۰: همان حرکت ردیف رمزنگاری در منوی پشتیبان (grid-template-rows با transition)؛ «بابت چی بود؟» هم نرم پایین می‌رود */
+    const cs0 = getComputedStyle(pw);
+    o.projTrans = /grid-template-rows/.test(cs0.transitionProperty) && cs0.transitionDuration.split(',')[0].trim() === '0.45s';
+    const d0 = dsc.getBoundingClientRect().top; await w(200);
+    const d1 = dsc.getBoundingClientRect().top; await w(500);
+    const d2 = dsc.getBoundingClientRect().top;
+    o.projMid = d1 > d0 + 1 && d1 < d2 - 1;
+    o.projOpen = pw.getBoundingClientRect().height > 30 && getComputedStyle(pw).opacity === '1' && pw.classList.contains('sms-proj-done');
+    document.querySelector('#smsAccountTypeSeg [data-acct="personal"]').click(); await w(200);
+    const d3 = dsc.getBoundingClientRect().top; await w(500);
+    const d4 = dsc.getBoundingClientRect().top;
+    o.projMid2 = d3 < d2 - 1 && d3 > d4 + 1;
+    o.projClosed = pw.getBoundingClientRect().height < 1 && getComputedStyle(pw).opacity === '0';
+    o.projAnim = o.projTrans && o.projMid; o.projAnim2 = o.projMid2;
     closeSmsConfirmModal('reject'); await w(400);
     return o;
   });
@@ -96,7 +106,7 @@ const allErrors = [];
   ok(s.inc.h < s.exp.h && s.inc.rows === 2 && s.exp.rows === 3 && s.many.rows === 3, '۱.۳.۸۹: ارتفاع باکس به اندازهٔ تعداد دسته‌ها (واریز ' + s.inc.h + '، برداشت ' + s.exp.h + ')، حداکثر سه ردیف');
   ok(!s.exp.more && s.many.n === 15 && s.many.more, 'تا ۱۵ دسته در سه ردیف پنج‌تایی؛ بیشتر از آن خانهٔ پانزدهم «بیشتر…»');
   ok(s.exp.twoLine && s.many.twoLine, 'نام دسته‌ها با فونت عادی، کامل (بی «…»)، حداکثر دوخطی');
-  ok(s.projAnim && s.projOpen && s.projAnim2 && s.projClosed, 'تب «پروژه»: فیلد زیرش نرم باز و بسته می‌شود');
+  ok(s.projAnim && s.projOpen && s.projAnim2 && s.projClosed, 'تب «پروژه»: فیلد زیرش مثل ردیف رمزنگاری پشتیبان نرم باز و بسته می‌شود و «بابت چی بود؟» هم نرم جابه‌جا می‌شود (' + JSON.stringify([s.projTrans, s.projMid, s.projOpen, s.projMid2, s.projClosed]) + ')');
   ok(s.exp.glow === 'none', '«بابت چی بود؟» ثابت (۱.۳.۸۹)');
 
   console.log('• انتخاب کل متن و ثبت تکی');
@@ -117,6 +127,13 @@ const allErrors = [];
     o.free = ds.selectionStart === 2 && ds.selectionEnd === 4; /* بعد از آن، جابه‌جا کردن دستگیره‌ها آزاد است */
     tc = touch(ds); end(ds, tc); await w(80); tc = touch(ds); ds.setSelectionRange(0, 4); await w(80); end(ds, tc); await w(120);
     o.dbl = ds.selectionStart === 0 && ds.selectionEnd === ds.value.length;
+    /* ۱.۳.۹۰: نگه‌داشتن روی خانه‌ای که هنوز فوکوس ندارد: همان لمس فوکوس می‌دهد و انتخاب گوشی نباید جمع شود */
+    ds.blur(); await w(80);
+    tc = touch(ds); ds.focus(); await w(30); ds.setSelectionRange(5, 8); await w(400); end(ds, tc); await w(300);
+    o.cold = document.activeElement === ds && ds.selectionStart === 0 && ds.selectionEnd === ds.value.length;
+    /* ۱.۳.۹۰: هایلایت انتخاب داخل خانهٔ ویرایش واقعاً رنگ دارد (قبلاً از والد، شفاف به ارث می‌رسید) */
+    o.selBg = getComputedStyle(ds, '::selection').backgroundColor;
+    o.selBgDiv = getComputedStyle(document.querySelector('#hkRowEdit'), '::selection').backgroundColor;
     document.querySelector('#hkRowEdit .hk-re-no').click(); await w(200);
     openSmsImportModal();
     o.focusNow = document.activeElement === document.getElementById('smsImportText');
@@ -126,6 +143,8 @@ const allErrors = [];
   });
   ok(sel.long && sel.free, 'در حال ویرایش: انتخاب گوشی (نگه‌داشتن) تا کل شرح گسترش می‌یابد (با هایلایت و دستگیرهٔ خود گوشی)؛ بعد آزاد');
   ok(sel.dbl, 'در حال ویرایش: دوبار ضربه هم کل شرح را انتخاب می‌کند');
+  ok(sel.cold, 'نگه‌داشتن روی خانه‌ای که همین لمس فعالش می‌کند: انتخاب جمع نمی‌شود و تا کل متن گسترش می‌یابد');
+  ok(/8, 181, 245, 0\.3/.test(sel.selBg) && sel.selBgDiv === 'rgba(0, 0, 0, 0)', 'هایلایت آبی انتخاب داخل خانهٔ ویرایش دیده می‌شود (' + sel.selBg + ')؛ بیرون از خانه‌ها شفاف می‌ماند');
   ok(sel.focusNow && sel.top, 'ثبت تکی/گروهی: صفحه‌کلید همان لحظه با باکس (باکس بالای صفحه، بی پرش)');
 
   console.log('• ویجت و جستجو');

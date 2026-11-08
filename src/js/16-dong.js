@@ -168,22 +168,25 @@
       h += '<div class="pb sec"><div class="st acc">وضعیت هر نفر</div><table><thead><tr><th>نام</th><th style="width:22%">پرداختی</th><th style="width:22%">سهم</th><th style="width:26%">مانده</th></tr></thead><tbody>';
       g.members.forEach(function (m) {
         var v = Math.round(bal[m.id] || 0);
-        h += '<tr><td>' + esc(m.name) + '</td><td class="n">' + amt(paid[m.id]) + '</td><td class="n">' + amt(share[m.id]) + '</td><td class="c" style="color:' + (v > 0 ? '#17834a' : v < 0 ? '#dc2626' : '#555') + ';font-weight:700">' + (v > 0 ? 'طلبکار ' + amt(v) : v < 0 ? 'بدهکار ' + amt(-v) : 'تسویه') + '</td></tr>';
+        h += '<tr><td>' + esc(m.name) + '</td><td class="n">' + amt(paid[m.id]) + '</td><td class="n">' + amt(share[m.id]) + '</td><td class="c hk-dgr-' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero') + '">' + (v > 0 ? 'طلبکار ' + amt(v) : v < 0 ? 'بدهکار ' + amt(-v) : 'تسویه') + '</td></tr>';
       });
       h += '</tbody></table></div>';
       h += '<div class="pb sec"><div class="st led">برای تسویه</div><table><thead><tr><th>از</th><th>به</th><th style="width:24%">مبلغ</th><th style="width:22%">وضعیت</th></tr></thead><tbody>';
       plan.forEach(function (t) {
-        h += '<tr><td>' + esc(hkDongName(g, t.from)) + '</td><td>' + esc(hkDongName(g, t.to)) + '</td><td class="n">' + amt(t.amount) + '</td><td class="c" style="color:' + (t.paid ? '#17834a' : '#dc2626') + ';font-weight:700">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</td></tr>';
+        h += '<tr><td>' + esc(hkDongName(g, t.from)) + '</td><td>' + esc(hkDongName(g, t.to)) + '</td><td class="n">' + amt(t.amount) + '</td><td class="c hk-dgr-' + (t.paid ? 'pos' : 'neg') + '">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</td></tr>';
       });
       if (!plan.length) h += '<tr class="dim"><td colspan="4" class="c">همه تسویه‌اند</td></tr>';
       h += '</tbody></table></div></div>';
       return h;
     }
+    /* ۱.۳.۹۰: رنگ‌های گزارش دُنگ همان رنگ‌های ثابت نرم‌افزار: سبز درآمد #9ee858، نارنجی مخارج #ff6b4a، آبی #08b5f5 */
+    var HK_DONG_REP_CSS = '.hk-dg-rep .st.exp{border-right-color:#ff6b4a;}.hk-dg-rep .st.acc{border-right-color:#08b5f5;}.hk-dg-rep .st.led{border-right-color:#9ee858;}.hk-dg-rep .pb.sec{border-top-color:#08b5f5;}' +
+      '.hk-dg-rep td.hk-dgr-pos{background:#9ee858;color:#111;font-weight:700;}.hk-dg-rep td.hk-dgr-neg{background:#ff6b4a;color:#111;font-weight:700;}.hk-dg-rep td.hk-dgr-zero{color:#555;font-weight:700;}';
     /* ساخت تصویر گزارش (همان روش خروجی PDF: SVG ← بوم) */
     function hkDongReportCanvas(g) {
       var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
       return ready.then(function () {
-        var css = pdfStyleCss(), html = hkDongReportHtml(g), SCALE = 2;
+        var css = pdfStyleCss() + HK_DONG_REP_CSS, html = hkDongReportHtml(g), SCALE = 2;
         var probe = document.createElement('div'); probe.className = 'pdf-root'; probe.setAttribute('dir', 'rtl');
         probe.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PDF_W + 'px;visibility:hidden;';
         probe.innerHTML = '<style>' + css + '</style>' + html; document.body.appendChild(probe);
