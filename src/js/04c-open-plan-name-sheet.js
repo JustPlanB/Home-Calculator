@@ -776,7 +776,9 @@
       if (typeof el.value !== 'string' || el.readOnly) return;
       try {
         var n = el.value.length;
-        if (el.selectionStart !== n || el.selectionEnd !== n) el.setSelectionRange(n, n);
+        /* ۱.۳.۹۰: فقط نشانگرِ تنها جابه‌جا می‌شود؛ انتخابی که کاربر با نگه‌داشتن انگشت ساخته جمع نمی‌شود (هایلایت و دستگیره‌ها می‌مانند) */
+        if (el.selectionStart !== el.selectionEnd) { el._caretEndUntil = 0; return; }
+        if (el.selectionStart !== n) el.setSelectionRange(n, n);
       } catch (e) {}
     });
     /* هر فیلدی که با دوبار ضربه/کلیک قفلش باز می‌شود (حتی بدون رویداد dblclick مرورگر) */
@@ -825,7 +827,8 @@
       try { window.hkSelectAllField = selAll; } catch (eW) {}
       document.addEventListener('touchstart', function (e) {
         var t = e.target;
-        if (editable(t) && document.activeElement === t && (t.value || '').length) { arm = { el: t, until: Date.now() + 1600 }; t._caretEndUntil = 0; /* بردن خودکار نشانگر به آخر، انتخاب کاربر را به هم نزند */ }
+        /* ۱.۳.۹۰: حتی وقتی همین لمس خانه را فعال می‌کند (نگه‌داشتن روی خانه‌ای که هنوز فوکوس ندارد) */
+        if (editable(t) && (t.value || '').length) { arm = { el: t, until: Date.now() + 1600 }; if (document.activeElement === t) t._caretEndUntil = 0; /* بردن خودکار نشانگر به آخر، انتخاب کاربر را به هم نزند */ }
         else arm = null;
       }, { capture: true, passive: true });
       /* انتخابی که خود گوشی ساخت (نگه‌داشتن یا دوبار ضربه) → کل متن؛ فقط یک بار در هر لمس، تا جابه‌جا کردن دستگیره‌ها آزاد بماند */
