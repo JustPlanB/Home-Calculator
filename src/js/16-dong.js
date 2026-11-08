@@ -119,14 +119,132 @@
       L.push('', 'حساب‌کتاب');
       return L.join('\n');
     }
-    function hkDongShare(g) {
-      var text = hkDongShareText(g);
+    /* ۱.۳.۸۸+: اشتراک‌گذاری: متن، عکس یا PDF؛ بعد پنجرهٔ اشتراک خود گوشی */
+    function hkDongShareText2(text, title) {
+      var P = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.NativeFileExport;
+      if (P && typeof P.shareText === 'function') return Promise.resolve(P.shareText({ text: text, title: title })).catch(function () { return hkDongShareTextWeb(text, title); });
+      return hkDongShareTextWeb(text, title);
+    }
+    function hkDongShareTextWeb(text, title) {
       var copy = function () {
         try { navigator.clipboard.writeText(text).then(function () { showToast('متن دُنگ کپی شد'); }).catch(function () { showToast('اشتراک‌گذاری ممکن نشد', 'warn'); }); }
         catch (e) { showToast('اشتراک‌گذاری ممکن نشد', 'warn'); }
       };
-      try { if (navigator.share) { navigator.share({ title: 'دُنگ ' + g.name, text: text }).catch(function (e) { if (!e || e.name !== 'AbortError') copy(); }); return; } } catch (eS) {}
-      copy();
+      try { if (navigator.share) return navigator.share({ title: title, text: text }).catch(function (e) { if (!e || e.name !== 'AbortError') copy(); }); } catch (eS) {}
+      copy(); return Promise.resolve();
+    }
+    function hkDongShareBlob(blob, filename, mime, title) {
+      var P = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.NativeFileExport;
+      var native = window.Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform();
+      if (native && P && typeof P.shareBase64File === 'function') {
+        return blobToBase64(blob).then(function (b64) { return P.shareBase64File({ filename: filename, mimeType: mime, data: b64, title: title, saveToDownloads: false }); });
+      }
+      try {
+        if (navigator.canShare && typeof File !== 'undefined') {
+          var f = new File([blob], filename, { type: mime });
+          if (navigator.canShare({ files: [f] })) return navigator.share({ files: [f], title: title }).catch(function () {});
+        }
+      } catch (e) {}
+      try { downloadBlob(blob, filename); } catch (eD) {}
+      return Promise.resolve();
+    }
+    /* گزارش با همان جدول‌های خروجی PDF نرم‌افزار (سرصفحه، ردیف عنوان، سرستون تیره، ردیف جمع) */
+    function hkDongReportHtml(g) {
+      var esc = escapeHtml, amt = function (n) { return hkDongAmt(n); };
+      var bal = hkDongBalances(g), plan = hkDongPlan(g), paid = {}, share = {};
+      g.members.forEach(function (m) { paid[m.id] = 0; share[m.id] = 0; });
+      g.expenses.forEach(function (e) { paid[e.payer] = (paid[e.payer] || 0) + (Number(e.amount) || 0); Object.keys(e.shares || {}).forEach(function (id) { share[id] = (share[id] || 0) + (Number(e.shares[id]) || 0); }); });
+      var td = hkDongToday(), total = hkDongTotal(g), openAmt = plan.reduce(function (t, x) { return t + (x.paid ? 0 : x.amount); }, 0);
+      var h = '<div class="pdf-page hk-dg-rep" style="height:auto;min-height:0;padding-bottom:26px">';
+      h += '<div class="hd"><h1>دُنگ «' + esc(g.name) + '»</h1><div class="sub">' + toPersianDigits(String(td.d)) + ' ' + MONTHS[td.m - 1] + ' ' + toPersianDigits(String(td.y)) + '<br>حساب‌کتاب</div></div>';
+      h += '<div class="pb"><div class="kpis"><div class="kpi"><div class="l">خرج کل</div><div class="v">' + amt(total) + '</div></div><div class="kpi"><div class="l">اعضا</div><div class="v" style="direction:rtl">' + toPersianDigits(String(g.members.length)) + ' نفر</div></div><div class="kpi"><div class="l">تسویه‌نشده</div><div class="v">' + amt(openAmt) + '</div></div></div></div>';
+      h += '<div class="pb sec"><div class="st exp">خرج‌ها</div><table><thead><tr><th style="width:6%">#</th><th>شرح</th><th style="width:20%">پرداخت‌کننده</th><th style="width:14%">بین</th><th style="width:20%">مبلغ</th></tr></thead><tbody>';
+      g.expenses.forEach(function (e, i) {
+        var n = Object.keys(e.shares || {}).length;
+        h += '<tr><td class="c">' + toPersianDigits(String(i + 1)) + '</td><td>' + esc(e.desc || 'خرج') + (hkDongDate(e) ? ' <small style="color:#666">· ' + hkDongDate(e) + '</small>' : '') + '</td><td class="c">' + esc(hkDongName(g, e.payer)) + '</td><td class="c">' + toPersianDigits(String(n)) + ' نفر</td><td class="n">' + amt(e.amount) + '</td></tr>';
+      });
+      if (!g.expenses.length) h += '<tr class="dim"><td colspan="5" class="c">خرجی ثبت نشده</td></tr>';
+      h += '<tr class="T"><td colspan="4">جمع</td><td class="n">' + amt(total) + '</td></tr></tbody></table></div>';
+      h += '<div class="pb sec"><div class="st acc">وضعیت هر نفر</div><table><thead><tr><th>نام</th><th style="width:22%">پرداختی</th><th style="width:22%">سهم</th><th style="width:26%">مانده</th></tr></thead><tbody>';
+      g.members.forEach(function (m) {
+        var v = Math.round(bal[m.id] || 0);
+        h += '<tr><td>' + esc(m.name) + '</td><td class="n">' + amt(paid[m.id]) + '</td><td class="n">' + amt(share[m.id]) + '</td><td class="c" style="color:' + (v > 0 ? '#17834a' : v < 0 ? '#dc2626' : '#555') + ';font-weight:700">' + (v > 0 ? 'طلبکار ' + amt(v) : v < 0 ? 'بدهکار ' + amt(-v) : 'تسویه') + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+      h += '<div class="pb sec"><div class="st led">برای تسویه</div><table><thead><tr><th>از</th><th>به</th><th style="width:24%">مبلغ</th><th style="width:22%">وضعیت</th></tr></thead><tbody>';
+      plan.forEach(function (t) {
+        h += '<tr><td>' + esc(hkDongName(g, t.from)) + '</td><td>' + esc(hkDongName(g, t.to)) + '</td><td class="n">' + amt(t.amount) + '</td><td class="c" style="color:' + (t.paid ? '#17834a' : '#dc2626') + ';font-weight:700">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</td></tr>';
+      });
+      if (!plan.length) h += '<tr class="dim"><td colspan="4" class="c">همه تسویه‌اند</td></tr>';
+      h += '</tbody></table></div></div>';
+      return h;
+    }
+    /* ساخت تصویر گزارش (همان روش خروجی PDF: SVG ← بوم) */
+    function hkDongReportCanvas(g) {
+      var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      return ready.then(function () {
+        var css = pdfStyleCss(), html = hkDongReportHtml(g), SCALE = 2;
+        var probe = document.createElement('div'); probe.className = 'pdf-root'; probe.setAttribute('dir', 'rtl');
+        probe.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PDF_W + 'px;visibility:hidden;';
+        probe.innerHTML = '<style>' + css + '</style>' + html; document.body.appendChild(probe);
+        var H = Math.ceil(probe.querySelector('.hk-dg-rep').getBoundingClientRect().height) + 4; probe.remove();
+        var holder = document.createElement('div'); holder.className = 'pdf-root'; holder.setAttribute('dir', 'rtl'); holder.innerHTML = html;
+        var st = document.createElement('style'); st.textContent = css; holder.insertBefore(st, holder.firstChild);
+        var xhtml = new XMLSerializer().serializeToString(holder);
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + PDF_W + '" height="' + H + '"><foreignObject width="100%" height="100%">' + xhtml + '</foreignObject></svg>';
+        return new Promise(function (res, rej) {
+          var img = new Image();
+          img.onload = function () {
+            var c = document.createElement('canvas'); c.width = PDF_W * SCALE; c.height = H * SCALE;
+            var x = c.getContext('2d', { alpha: false }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+            x.setTransform(SCALE, 0, 0, SCALE, 0, 0); x.drawImage(img, 0, 0);
+            /* فضای سفید اضافهٔ پایین برداشته می‌شود (۲۶ پیکسل حاشیه می‌ماند) */
+            try {
+              var d = x.getImageData(0, 0, c.width, c.height).data, last = 0;
+              for (var yy = c.height - 1; yy >= 0 && !last; yy--) { var o = yy * c.width * 4; for (var xx = 0; xx < c.width; xx += 3) { var q = o + xx * 4; if (d[q] < 245 || d[q + 1] < 245 || d[q + 2] < 245) { last = yy; break; } } }
+              var nh = Math.min(c.height, last + 26 * SCALE);
+              if (last && nh < c.height - 4) { var c2 = document.createElement('canvas'); c2.width = c.width; c2.height = nh; var x2 = c2.getContext('2d', { alpha: false }); x2.drawImage(c, 0, 0); c = c2; H = nh / SCALE; }
+            } catch (eCrop) {}
+            res({ canvas: c, w: PDF_W, h: H });
+          };
+          img.onerror = function () { rej(new Error('svg')); };
+          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        });
+      });
+    }
+    function hkDongReportBlob(g, kind) {
+      return hkDongReportCanvas(g).then(function (r) {
+        if (kind === 'png') return new Promise(function (res) { r.canvas.toBlob(function (b) { res(b); }, 'image/png'); });
+        var bin = atob(r.canvas.toDataURL('image/jpeg', 0.92).split(',')[1]), jpg = new Uint8Array(bin.length);
+        for (var k = 0; k < bin.length; k++) jpg[k] = bin.charCodeAt(k);
+        var pw = 595.28, ph = Math.max(200, pw * r.h / r.w);
+        return buildSimpleImagePdf([{ jpg: jpg, w: r.canvas.width, h: r.canvas.height }], pw, ph);
+      });
+    }
+    function hkDongShare(g, kind) {
+      var title = 'دُنگ ' + g.name, base = 'dong-' + String(g.name || 'group').replace(/[\\/:*?"<>|\s]+/g, '-');
+      if (!kind || kind === 'text') return hkDongShareText2(hkDongShareText(g), title);
+      showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
+      return hkDongReportBlob(g, kind).then(function (blob) {
+        if (!blob || !blob.size) throw new Error('empty');
+        return hkDongShareBlob(blob, base + (kind === 'pdf' ? '.pdf' : '.png'), kind === 'pdf' ? 'application/pdf' : 'image/png', title);
+      }).catch(function () { showToast('ساخت فایل ممکن نشد', 'warn'); });
+    }
+    /* باکس عمودی کوچک بالا و سمت راستِ دکمهٔ اشتراک‌گذاری */
+    function hkDongShareMenu(btn, g) {
+      var old = document.getElementById('hkDongShareMenu'); if (old) { old.remove(); return; }
+      var m = document.createElement('div'); m.id = 'hkDongShareMenu'; m.className = 'hk-dg-shm';
+      [['text', 'متن'], ['png', 'عکس'], ['pdf', 'PDF']].forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-dg-shmb'; b.dataset.k = o[0]; b.textContent = o[1];
+        b.onclick = function (e) { e.stopPropagation(); m.remove(); hkDongShare(g, o[0]); };
+        m.appendChild(b);
+      });
+      document.body.appendChild(m);
+      var r = btn.getBoundingClientRect(), mr = m.getBoundingClientRect();
+      m.style.left = Math.max(8, Math.round(r.right - mr.width)) + 'px';
+      m.style.top = Math.max(8, Math.round(r.top - mr.height - 6)) + 'px';
+      var close = function (e) { if (!m.contains(e.target) && e.target !== btn) { m.remove(); document.removeEventListener('pointerdown', close, true); } };
+      setTimeout(function () { document.addEventListener('pointerdown', close, true); }, 0);
     }
 
     /* ---------- نما ---------- */
@@ -187,7 +305,7 @@
         h += '<button type="button" class="hk-dg-row hk-dg-e" data-e="' + escapeHtml(e.id) + '"><span class="hk-dg-ed"><b>' + escapeHtml(e.desc || 'خرج') + '</b><small>' + escapeHtml(hkDongName(g, e.payer)) + ' پرداخت کرد · بین ' + toPersianDigits(String(n)) + ' نفر' + (e.mode && e.mode !== 'eq' ? ' (نامساوی)' : '') + (hkDongDate(e) ? ' · ' + hkDongDate(e) : '') + '</small></span><span class="hk-dg-pa">' + hkDongAmt(e.amount) + '</span></button>';
       });
       h += '</div><div class="hk-rax-acts hk-dg-acts"><button type="button" class="modal-btn yes hk-dg-add">خرج تازه</button><button type="button" class="modal-btn hk-dg-share">اشتراک‌گذاری</button></div>' +
-        '<div class="hk-rax-acts hk-dg-acts2"><button type="button" class="modal-btn hk-dg-edit">اعضا و نام</button><button type="button" class="modal-btn hk-dg-del">حذف گروه</button><button type="button" class="modal-btn no hk-dg-back">بازگشت</button></div>';
+        '<div class="hk-rax-acts hk-dg-acts2"><button type="button" class="modal-btn hk-dg-edit">اعضا و نام</button><button type="button" class="modal-btn hk-dg-del">حذف گروه</button></div>'; /* ۱.۳.۸۹: «بازگشت» برداشته شد (برگشت گوشی یا بیرون باکس) */
       bx.innerHTML = h;
       bx.querySelectorAll('.hk-dg-paid').forEach(function (b) {
         b.onclick = function () {
@@ -203,7 +321,7 @@
         if (g.members.length < 2) { showToast('اول دست‌کم دو نفر به گروه اضافه کنید'); hkDongGroupEditor(g.id); return; }
         hkDongExpenseEditor(g.id, null);
       };
-      bx.querySelector('.hk-dg-share').onclick = function () { hkDongShare(g); };
+      bx.querySelector('.hk-dg-share').onclick = function (e) { e.stopPropagation(); hkDongShareMenu(bx.querySelector('.hk-dg-share'), g); };
       bx.querySelector('.hk-dg-edit').onclick = function () { hkDongGroupEditor(g.id); };
       bx.querySelector('.hk-dg-del').onclick = function () {
         askConfirm('گروه «' + g.name + '» با همهٔ خرج‌هایش حذف شود؟', function () {
@@ -211,8 +329,7 @@
           hkDongSave(D2); _hkDongView.gid = ''; hkDongRender();
         });
       };
-      bx.querySelector('.hk-dg-back').onclick = function () { _hkDongView.gid = ''; hkDongRender(); };
-    }
+          }
     /* پنجرهٔ کوچک روی دنگ (ساخت/ویرایش گروه، خرج) */
     function hkDongSheet(title) {
       var old = document.getElementById('hkDongEd'); if (old) old.remove();
@@ -320,7 +437,8 @@
       var shW = document.createElement('div'); shW.className = 'hk-dg-shares';
       var err = document.createElement('div'); err.className = 'sp-pick-err';
       var acts = document.createElement('div'); acts.className = 'hk-rax-acts hk-dg-acts';
-      acts.innerHTML = '<button type="button" class="modal-btn yes hk-dg-ok">ثبت</button>' + (e0 ? '<button type="button" class="modal-btn hk-dg-edel">حذف</button>' : '') + '<button type="button" class="modal-btn no hk-dg-no">انصراف</button>';
+      /* ۱.۳.۸۹: «انصراف» برداشته شد (برگشت گوشی یا بیرون باکس) */
+      acts.innerHTML = '<button type="button" class="modal-btn yes hk-dg-ok">ثبت</button>' + (e0 ? '<button type="button" class="modal-btn hk-dg-edel">حذف</button>' : '');
       [ds, am, h1, payW, h2, partW, seg, shW, err, acts].forEach(function (el) { bx.appendChild(el); });
       var amount = function () { return parseAmount(am.value) || 0; };
       var drawShares = function () {
@@ -339,17 +457,25 @@
         ids.forEach(function (id) {
           var r = document.createElement('div'); r.className = 'hk-dg-shr';
           r.innerHTML = '<span>' + escapeHtml(hkDongName(g, id)) + '</span>';
+          /* ۱.۳.۸۹: «+» راست و «−» چپ خانهٔ تعداد؛ کمترین ۱ (همه ۱ = مثل مساوی) */
           var i = document.createElement('input'); i.type = 'text'; i.className = 'hk-dg-in hk-dg-wn'; i.inputMode = 'numeric'; i.setAttribute('inputmode', 'numeric'); i.setAttribute('enterkeyhint', 'done');
-          i.value = toPersianDigits(String(st.w[id] == null ? 1 : st.w[id]));
+          var cur = function () { return Math.max(1, st.w[id] == null ? 1 : st.w[id]); };
+          var setW = function (n) { st.w[id] = Math.max(1, Math.min(99, n)); i.value = toPersianDigits(String(st.w[id])); drawWv(); };
+          i.value = toPersianDigits(String(cur()));
           var lb = document.createElement('small'); lb.className = 'hk-dg-wl'; lb.textContent = 'نفر';
           var sv = document.createElement('b'); sv.className = 'hk-dg-wv';
-          i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); st.w[id] = isNaN(n) ? 0 : Math.min(n, 99); i.value = isNaN(n) ? '' : toPersianDigits(String(st.w[id])); drawWv(); });
+          var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'hk-dg-wb hk-dg-wplus'; plus.textContent = '+'; plus.setAttribute('aria-label', 'یک نفر بیشتر');
+          var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'hk-dg-wb hk-dg-wminus'; minus.textContent = '−'; minus.setAttribute('aria-label', 'یک نفر کمتر');
+          plus.onclick = function () { setW(cur() + 1); }; minus.onclick = function () { setW(cur() - 1); };
+          i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); if (isNaN(n)) { i.value = ''; return; } st.w[id] = Math.max(1, Math.min(n, 99)); i.value = toPersianDigits(String(st.w[id])); drawWv(); });
+          i.addEventListener('blur', function () { if (!i.value) setW(cur()); });
           i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { i.blur(); } catch (eB) {} } });
-          r.appendChild(i); r.appendChild(lb); r.appendChild(sv); shW.appendChild(r);
+          var wb = document.createElement('span'); wb.className = 'hk-dg-wbox'; wb.appendChild(plus); wb.appendChild(i); wb.appendChild(minus);
+          r.appendChild(wb); r.appendChild(lb); r.appendChild(sv); shW.appendChild(r);
         });
         drawWv();
       };
-      var wOf = function (ids) { var o = {}; ids.forEach(function (id) { o[id] = st.w[id] == null ? 1 : st.w[id]; }); return o; };
+      var wOf = function (ids) { var o = {}; ids.forEach(function (id) { o[id] = Math.max(1, st.w[id] == null ? 1 : st.w[id]); }); return o; };
       var drawWv = function () {
         var ids = g.members.map(function (m) { return m.id; }).filter(function (id) { return st.part.indexOf(id) >= 0; });
         var a0 = amount(), sp = a0 ? hkDongSplitW(a0, ids, wOf(ids)) : {};
@@ -370,7 +496,7 @@
       seg.querySelectorAll('button').forEach(function (b) { b.onclick = function () { st.mode = b.dataset.v; drawChips(); drawShares(); }; });
       am.addEventListener('input', function () { if (st.mode === 'eq') drawShares(); else drawWv(); });
       drawChips(); drawShares();
-      acts.querySelector('.hk-dg-no').onclick = function () { sh.ov.remove(); };
+      /* انصراف: برگشت گوشی یا بیرون باکس */
       if (e0) acts.querySelector('.hk-dg-edel').onclick = function () {
         askConfirm('خرج «' + (e0.desc || 'خرج') + '» حذف شود؟', function () {
           var D2 = hkDongLoad(), g2 = D2.groups.filter(function (x) { return x.id === gid; })[0]; if (!g2) return;

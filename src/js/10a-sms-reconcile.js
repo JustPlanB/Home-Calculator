@@ -830,7 +830,7 @@
       var anc = sug || desc._micWrap || desc;
       if (anc.parentNode) anc.parentNode.insertBefore(g, anc.nextSibling);
       /* ۱.۳.۸۸: نام دسته یک‌خطی و کامل (بی «…»): اگر جا نشد، فقط همان نام کمی ریزتر می‌شود */
-      requestAnimationFrame(function () { try { hkFitCatLabels(g); } catch (eF) {} });
+      /* ۱.۳.۸۹: نام دسته با فونت عادی، در صورت نیاز دوخطی (بدون ریز شدن) */
     }
     function hkFitCatLabels(root) {
       (root || document).querySelectorAll('.sms-cat > span').forEach(function (sp) {

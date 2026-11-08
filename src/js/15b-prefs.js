@@ -80,6 +80,8 @@
       projects: { label: 'پروژه‌ها', go: function () { openSubjectsModal(); }, svg: '<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.4l1.8 2h8.8A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/>' },
       recurring: { label: 'درآمد ثابت', go: function () { openRecurringFromMenu(); }, svg: '<path d="M19 9.5a7.5 7.5 0 0 0-13-3"/><path d="M5.6 3v3.6h3.6"/><path d="M5 14.5a7.5 7.5 0 0 0 13 3"/><path d="M18.4 21v-3.6h-3.6"/><circle cx="12" cy="12" r="2.8"/>' },
       ledger: { label: 'قرض', go: function () { switchTabFromMenu('ledger'); }, svg: '<path d="M4 8.5h14.5l-3.4-3.4"/><path d="M20 15.5H5.5l3.4 3.4"/>' },
+      /* ۱.۳.۸۹: دُنگ (همان آیکون منو) */
+      dong: { label: 'دُنگ', go: function () { openDongModal(); }, svg: '<circle cx="12" cy="12" r="8"/><path d="M12 4v8l6.9 4M12 12l-6.9 4"/>' },
       savings: { label: 'پس‌انداز', go: function () { openSavingsModal(); }, svg: '<ellipse cx="12" cy="6.5" rx="7" ry="2.6"/><path d="M5 6.5v5.2c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6.5"/><path d="M5 11.8V17c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-5.2"/>' },
       reminders: { label: 'یادآور', go: function () { openUserRemindersModal(); }, svg: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2H4.4z"/><path d="M10 21a2.1 2.1 0 0 0 4 0"/>' },
       stats: { label: 'آمار', go: function () { openStatsSheet(); }, svg: '<path d="M5 20v-7M10 20V6M15 20v-9.5M20 20V4"/>' },

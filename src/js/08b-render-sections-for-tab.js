@@ -156,8 +156,31 @@
       }
       try { ta && ta.focus({ preventScroll: true }); } catch (e) { try { ta && ta.focus(); } catch (e2) {} }
       setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
+      /* ۱.۳.۸۹: با آمدن صفحه‌کلید، جای متن کوتاه‌تر می‌شود تا همهٔ دکمه‌ها (و «ثبت گروهی») بالای صفحه‌کلید دیده شوند */
+      hkSmsImportFit(true);
+    }
+    function hkSmsImportFit(on) {
+      const vv = window.visualViewport, m = document.getElementById('smsImportModal'), ta = document.getElementById('smsImportText');
+      if (!m || !ta) return;
+      const fit = () => {
+        try {
+          if (!m.classList.contains('open')) return;
+          const box = m.querySelector('.modal-box'); if (!box) return;
+          ta.style.height = '';
+          const viewBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+          const over = box.getBoundingClientRect().bottom - (viewBottom - 8);
+          if (over > 0) ta.style.height = Math.max(56, ta.getBoundingClientRect().height - over) + 'px';
+        } catch (e) {}
+      };
+      if (m._hkFit) { if (vv) { vv.removeEventListener('resize', m._hkFit); vv.removeEventListener('scroll', m._hkFit); } window.removeEventListener('resize', m._hkFit); m._hkFit = null; }
+      if (!on) { ta.style.height = ''; return; }
+      m._hkFit = fit;
+      if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
+      window.addEventListener('resize', fit);
+      [0, 150, 350, 700].forEach(t => setTimeout(fit, t));
     }
     function closeSmsImportModal() {
+      try { hkSmsImportFit(false); } catch (eF) {}
       const m = document.getElementById('smsImportModal');
       if (m) {
         m.classList.remove('open');

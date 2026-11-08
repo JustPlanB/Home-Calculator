@@ -127,7 +127,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
     return { n: items.length, on: (pop.querySelector('.hk-dock-pi.on') || {}).dataset.k, off: (pop.querySelector('.hk-dock-pi.off') || {}).dataset.k,
       above: pr.bottom <= br.top, jig: btn.classList.contains('hk-dock-jig') && getComputedStyle(btn).animationName === 'hkDockJig', go: window.__go };
   });
-  ok(dk.n === 12 && dk.on === 'projects' && dk.off === 'recurring', 'فهرست عمودی همهٔ گزینه‌ها؛ فعلی تیک دارد و میان‌بر سمت دیگر کم‌رنگ است');
+  ok(dk.n === 13 && dk.on === 'projects' && dk.off === 'recurring', 'فهرست عمودی همهٔ گزینه‌ها؛ فعلی تیک دارد و میان‌بر سمت دیگر کم‌رنگ است');
   ok(dk.above && dk.jig && dk.go === '', 'فهرست بالای دکمه باز شد، دکمه می‌لرزد و میان‌بر اجرا نشد');
   ok(vib >= 1, 'ویبرهٔ کوتاه موقع باز شدن');
   await D.page.click('#hkDockPop .hk-dock-pi[data-k="ledger"]'); await D.page.waitForTimeout(300);
