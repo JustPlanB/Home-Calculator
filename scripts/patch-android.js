@@ -185,7 +185,7 @@ if(fs.existsSync(manifest)){
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_tx_info"/>\n' +
     '        </receiver>\n    </application>');
   if(!s.includes('.HkWidgetTxConfig')) s=s.replace('</application>',
-    '        <activity android:name=".HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
+    '        <activity android:name=".HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>\n' +
     '            </intent-filter>\n' +
@@ -449,6 +449,9 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
     <ImageView android:id="@+id/hk_wt_eye" android:layout_width="34dp" android:layout_height="34dp"
         android:layout_gravity="top|left" android:layout_marginLeft="6dp" android:layout_marginTop="3dp"
         android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
+    <!-- ۱.۳.۹۲: روی نام نوع ردیف‌ها (وسط نوار عنوان): منوی واریز / برداشت / همه -->
+    <FrameLayout android:id="@+id/hk_wt_pick" android:layout_width="130dp" android:layout_height="40dp"
+        android:layout_gravity="top|center_horizontal" android:contentDescription="انتخاب نوع ردیف‌ها"/>
 </FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_item.xml'),

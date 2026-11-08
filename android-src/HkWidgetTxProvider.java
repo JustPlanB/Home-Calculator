@@ -35,6 +35,17 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
   static boolean isAll(Context ctx, int id){
     try{ return "all".equals(ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString("tx_type_"+id, "exp")); }catch(Exception e){ return false; }
   }
+  /* ۱.۳.۹۲: زدن روی نام نوع ردیف‌ها (بالای ویجت) همان پنجرهٔ انتخاب «واریز / برداشت / همه» را باز می‌کند */
+  static android.app.PendingIntent pickIntent(Context ctx, int id){
+    Intent it=new Intent(ctx, HkWidgetTxConfig.class);
+    it.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+    it.putExtra(HkWidgetTxConfig.EXTRA_REPICK, true);
+    it.setData(Uri.parse("hkwt://pick/"+id));
+    it.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_NO_HISTORY); /* در تسک جدا (taskAffinity خالی)؛ به نرم‌افزار باز دست نمی‌زند */
+    int fl=android.app.PendingIntent.FLAG_UPDATE_CURRENT;
+    if(android.os.Build.VERSION.SDK_INT>=23) fl|=android.app.PendingIntent.FLAG_IMMUTABLE;
+    return android.app.PendingIntent.getActivity(ctx, 9100+id, it, fl);
+  }
   @SuppressWarnings("deprecation")
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
@@ -53,6 +64,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
       v.setEmptyView(R.id.hk_wt_list, R.id.hk_wt_empty);
       v.setPendingIntentTemplate(R.id.hk_wt_list, HkWidgetProvider.openApp(ctx, true));
       v.setOnClickPendingIntent(R.id.hk_wt_head, HkWidgetProvider.openApp(ctx, false));
+      v.setOnClickPendingIntent(R.id.hk_wt_pick, pickIntent(ctx, id)); /* ۱.۳.۹۲: نام نوع ردیف‌ها = منو */
       v.setOnClickPendingIntent(R.id.hk_wt_root, HkWidgetProvider.openApp(ctx, false));
       HkWidgetProvider.applyEye(ctx, v, R.id.hk_wt_eye, d);
       mgr.updateAppWidget(id, v);
@@ -134,7 +146,14 @@ final class HkWidgetTxDraw {
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
     Paint t=paint(BOLD, 15f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
     fitSize(t, ttl, W*0.26f);
-    cv.drawText(ttl, W/2f, base(0, th, 15f*k), t);
+    float tx=W/2f-5*k;
+    cv.drawText(ttl, tx, base(0, th, 15f*k), t);
+    /* ۱.۳.۹۲: فلش کوچک کنار نام: یعنی با زدن، منوی انتخاب باز می‌شود */
+    float cw=5*k, cx=tx-t.measureText(ttl)/2f-8*k, cy=th/2f+1*k;
+    android.graphics.Path ch=new android.graphics.Path();
+    ch.moveTo(cx-cw, cy-cw*0.55f); ch.lineTo(cx+cw, cy-cw*0.55f); ch.lineTo(cx, cy+cw*0.6f); ch.close();
+    Paint chp=new Paint(Paint.ANTI_ALIAS_FLAG); chp.setColor(t.getColor());
+    cv.drawPath(ch, chp);
     Paint an=paint(BOLD, 14f*k, text(light), Paint.Align.RIGHT);
     fitSize(an, "حساب‌کتاب", W*0.3f);
     cv.drawText("حساب‌کتاب", W-12*k, base(0, th, 14f*k), an);

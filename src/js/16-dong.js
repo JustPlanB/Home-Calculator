@@ -16,7 +16,9 @@
       });
       return o;
     }
-    function hkDongSave(d) { try { localStorage.setItem(HK_DONG_KEY, JSON.stringify(d)); } catch (e) { try { showToast('ذخیرهٔ دُنگ ممکن نشد', 'warn'); } catch (e2) {} } }
+    function hkDongSave(d) { try { localStorage.setItem(HK_DONG_KEY, JSON.stringify(d)); } catch (e) { try { showToast('ذخیرهٔ دُنگ ممکن نشد', 'warn'); } catch (e2) {} }
+      /* ۱.۳.۹۲: اسلاید دُنگ باکس هوشمند به‌روز شود */
+      clearTimeout(hkDongSave._t); hkDongSave._t = setTimeout(function () { try { renderHomeCards(); } catch (eR) {} }, 300); }
     function hkDongId(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
     /* تقسیم مساوی به تومان درست؛ باقی‌ماندهٔ تقسیم به نفرات اول */
     function hkDongSplitEq(amount, ids) {
@@ -252,7 +254,7 @@
 
     /* ---------- نما ---------- */
     var _hkDongView = { gid: '' };
-    function openDongModal() {
+    function openDongModal(gid) {
       try { closeSideMenu(); } catch (e) {}
       var old = document.getElementById('hkDong'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkDong'; ov.className = 'modal-overlay open hk-dong'; ov.setAttribute('data-hk-back', '1');
@@ -262,9 +264,31 @@
       ov._hkCancel = function () { if (_hkDongView.gid) { _hkDongView.gid = ''; hkDongRender(); } else ov.remove(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) ov._hkCancel(); });
       document.body.appendChild(ov);
-      _hkDongView.gid = '';
+      _hkDongView.gid = (typeof gid === 'string' && gid) ? gid : ''; /* ۱.۳.۹۲: از اسلاید باکس هوشمند مستقیم همان گروه */
       hkDongRender();
     }
+    /* ۱.۳.۹۲: اسلاید باکس هوشمند: بدهی‌های تسویه‌نشدهٔ همهٔ گروه‌های دُنگ؛ اگر چیزی نمانده، اسلاید نشان داده نمی‌شود.
+       زدن روی هر خط = همان گروه باز می‌شود */
+    function hkDongOpenDebts() {
+      var out = [];
+      try { hkDongLoad().groups.forEach(function (g) { hkDongPlan(g).forEach(function (t) { if (!t.paid && t.amount > 0) out.push({ g: g, t: t }); }); }); } catch (e) {}
+      return out;
+    }
+    function spPageDong() {
+      var L = hkDongOpenDebts(); if (!L.length) return null;
+      var tot = L.reduce(function (s, x) { return s + (Number(x.t.amount) || 0); }, 0);
+      var items = ['<div class="sp-row"><span class="sp-l neg">تسویه‌نشده</span><span class="sp-v neg">' + spAmt(tot) + '</span></div>'];
+      L.forEach(function (x) {
+        items.push('<div class="sp-tip sp-dong-r" data-dong="' + escapeHtml(x.g.id) + '"><b class="sp-dong-g">' + spEsc(x.g.name || 'دُنگ') + '</b> · «' + spEsc(hkDongName(x.g, x.t.from)) + '» به «' + spEsc(hkDongName(x.g, x.t.to)) + '» <b class="neg">' + spAmt(x.t.amount) + '</b></div>');
+      });
+      return spHead('دُنگ — بدهی‌های تسویه‌نشده') + '<div class="sp-scroll sp-free">' + spItems(items) + '</div>';
+    }
+    function spTapDong(title, tgt) {
+      var r = tgt && tgt.closest && tgt.closest('[data-dong]'), gid = r ? r.getAttribute('data-dong') : '';
+      if (!gid) { var L = hkDongOpenDebts(); gid = L.length ? L[0].g.id : ''; }
+      openDongModal(gid);
+    }
+    try { window.spPageDong = spPageDong; window.spTapDong = spTapDong; } catch (eWd) {}
     function closeDongModal() { var ov = document.getElementById('hkDong'); if (ov) ov.remove(); }
     function hkDongRender() {
       var ov = document.getElementById('hkDong'); if (!ov) return;
@@ -456,26 +480,33 @@
           }
           return;
         }
-        /* ۱.۳.۸۸: نامساوی: تعداد نفرِ هر عضو (پیش‌فرض ۱)، سهم هر کدام همان‌جا */
+        /* ۱.۳.۸۸: نامساوی: تعداد نفرِ هر عضو (پیش‌فرض ۱)، سهم هر کدام همان‌جا
+           ۱.۳.۹۲: به شکل جدول: نام | تعداد (نفر) با «−» و «+» دو طرف (بی قاب، با جای لمس کافی) | مبلغ؛ ردیف آخر جمع */
+        var tb = document.createElement('table'); tb.className = 'hk-dg-wt';
+        tb.innerHTML = '<thead><tr><th class="hk-dg-wt-n">نام</th><th>تعداد (نفر)</th><th class="hk-dg-wt-a">مبلغ</th></tr></thead>';
+        var tbody = document.createElement('tbody'); tb.appendChild(tbody);
         ids.forEach(function (id) {
-          var r = document.createElement('div'); r.className = 'hk-dg-shr';
-          r.innerHTML = '<span>' + escapeHtml(hkDongName(g, id)) + '</span>';
-          /* ۱.۳.۸۹: «+» راست و «−» چپ خانهٔ تعداد؛ کمترین ۱ (همه ۱ = مثل مساوی) */
+          var r = document.createElement('tr'); r.className = 'hk-dg-shr';
+          var tdN = document.createElement('td'); tdN.className = 'hk-dg-wt-n'; tdN.textContent = hkDongName(g, id);
+          /* ۱.۳.۸۹: کمترین ۱ (همه ۱ = مثل مساوی) */
           var i = document.createElement('input'); i.type = 'text'; i.className = 'hk-dg-in hk-dg-wn'; i.inputMode = 'numeric'; i.setAttribute('inputmode', 'numeric'); i.setAttribute('enterkeyhint', 'done');
           var cur = function () { return Math.max(1, st.w[id] == null ? 1 : st.w[id]); };
           var setW = function (n) { st.w[id] = Math.max(1, Math.min(99, n)); i.value = toPersianDigits(String(st.w[id])); drawWv(); };
           i.value = toPersianDigits(String(cur()));
-          var lb = document.createElement('small'); lb.className = 'hk-dg-wl'; lb.textContent = 'نفر';
-          var sv = document.createElement('b'); sv.className = 'hk-dg-wv';
           var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'hk-dg-wb hk-dg-wplus'; plus.textContent = '+'; plus.setAttribute('aria-label', 'یک نفر بیشتر');
           var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'hk-dg-wb hk-dg-wminus'; minus.textContent = '−'; minus.setAttribute('aria-label', 'یک نفر کمتر');
           plus.onclick = function () { setW(cur() + 1); }; minus.onclick = function () { setW(cur() - 1); };
           i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); if (isNaN(n)) { i.value = ''; return; } st.w[id] = Math.max(1, Math.min(n, 99)); i.value = toPersianDigits(String(st.w[id])); drawWv(); });
           i.addEventListener('blur', function () { if (!i.value) setW(cur()); });
           i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { i.blur(); } catch (eB) {} } });
-          var wb = document.createElement('span'); wb.className = 'hk-dg-wbox'; wb.appendChild(plus); wb.appendChild(i); wb.appendChild(minus);
-          r.appendChild(wb); r.appendChild(lb); r.appendChild(sv); shW.appendChild(r);
+          var tdW = document.createElement('td'); var wb = document.createElement('span'); wb.className = 'hk-dg-wbox'; wb.appendChild(plus); wb.appendChild(i); wb.appendChild(minus); tdW.appendChild(wb);
+          var tdA = document.createElement('td'); tdA.className = 'hk-dg-wt-a'; var sv = document.createElement('b'); sv.className = 'hk-dg-wv'; tdA.appendChild(sv);
+          r.appendChild(tdN); r.appendChild(tdW); r.appendChild(tdA); tbody.appendChild(r);
         });
+        var tr = document.createElement('tr'); tr.className = 'hk-dg-sht';
+        tr.innerHTML = '<td class="hk-dg-wt-n">جمع</td><td class="hk-dg-shtn"></td><td class="hk-dg-wt-a"><b class="hk-dg-shta"></b></td>';
+        tbody.appendChild(tr);
+        shW.appendChild(tb);
         drawWv();
       };
       var wOf = function (ids) { var o = {}; ids.forEach(function (id) { o[id] = Math.max(1, st.w[id] == null ? 1 : st.w[id]); }); return o; };
@@ -483,6 +514,10 @@
         var ids = g.members.map(function (m) { return m.id; }).filter(function (id) { return st.part.indexOf(id) >= 0; });
         var a0 = amount(), sp = a0 ? hkDongSplitW(a0, ids, wOf(ids)) : {};
         shW.querySelectorAll('.hk-dg-shr').forEach(function (r, k) { var b = r.querySelector('.hk-dg-wv'); if (b) b.textContent = a0 ? hkDongAmt(sp[ids[k]] || 0) : ''; });
+        var wo = wOf(ids), tn = ids.reduce(function (t, id) { return t + wo[id]; }, 0);
+        var n0 = shW.querySelector('.hk-dg-shtn'), a1 = shW.querySelector('.hk-dg-shta');
+        if (n0) n0.textContent = toPersianDigits(String(tn)) + ' نفر';
+        if (a1) a1.textContent = a0 ? hkDongAmt(a0) : '';
       };
       var drawChips = function () {
         payW.innerHTML = ''; partW.innerHTML = '';
