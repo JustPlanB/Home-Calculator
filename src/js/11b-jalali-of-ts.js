@@ -208,6 +208,11 @@
       box._hkFlip = fin;
       anims[0].onfinish = fin;
     }
+    /* ۱.۳.۸۷: نشانگر بارگذاری وسط باکس: نوشتهٔ درشت‌تر و سه نقطه که یکی‌یکی پر می‌شوند، با موج روی نوشته */
+    function hkLoadingHtml(text) {
+      return '<div class="hk-loading" role="status" aria-live="polite"><div class="hk-loading-t">' + escapeHtml(text) + '</div><div class="hk-loading-dots"><i></i><i></i><i></i></div></div>';
+    }
+    try { window.hkLoadingHtml = hkLoadingHtml; } catch (eLh) {}
     function hkBulkRead() {
       var B = hkBankSmsPlugin(); if (!B || !_hkBulk) return;
       var _ov = document.getElementById('smsBulkOv');
@@ -215,7 +220,7 @@
       if (!f || !to) { showToast('بازهٔ تاریخ را انتخاب کنید'); return; }
       if (hkJKey(f) > hkJKey(to)) { showToast('تاریخ شروع بعد از تاریخ پایان است'); return; }
       var list = document.getElementById('hkBulkList');
-      if (list) list.innerHTML = '<div class="hk-bulk-hint">در حال خواندن پیامک‌ها…</div>';
+      if (list) list.innerHTML = hkLoadingHtml('در حال خواندن پیامک‌ها');
       /* همهٔ پیامک‌های بانکی خوانده می‌شود (برای «آخرین مانده» هر حساب)، بعد بازه جدا می‌شود */
       B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
         var items = (res && res.items) || [];

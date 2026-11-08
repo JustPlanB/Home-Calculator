@@ -147,7 +147,7 @@
       okB.onclick = function () {
         if (!canRead) { renderList([]); return; }
         okB.disabled = true;
-        list.innerHTML = '<div class="hk-bulk-hint">در حال خواندن پیامک‌ها…</div>';
+        list.innerHTML = hkLoadingHtml('در حال خواندن پیامک‌ها');
         B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
           okB.disabled = false;
           renderList(hkSetupDetect((res && res.items) || []));
