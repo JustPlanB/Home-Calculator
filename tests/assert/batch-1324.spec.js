@@ -209,27 +209,18 @@ const ACC = 'ملت مصنوعی';
   ok(sm.rejected, '«رد» پیامک را از فهرست برداشت');
   ok(sm.second, 'پیامک بعدی هم در بازگشت به نرم‌افزار نشان داده شد');
 
-  console.log('• جدول: رفتن به خانهٔ بعد بدون بسته شدن صفحه‌کلید');
+  /* ۱.۳.۸۶+: تایپ مستقیم در جدول برداشته شد (ویرایش فقط از لانگ‌پرس ← ویرایش)؛ پس صفحه‌کلید با ضربه روی جدول باز نمی‌شود */
+  console.log('• جدول: ضربه روی خانهٔ خالی صفحه‌کلید باز نمی‌کند');
   const kb = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     openPersonDetail('سارا', 'expense'); await w(500);
-    const gaps = []; const seq = [];
-    const onOut = e => { if (!e.relatedTarget) gaps.push((e.target.className || e.target.tagName) + ''); };
-    const onIn = e => seq.push((e.target.className || '').split(' ')[0]);
-    document.addEventListener('focusout', onOut, true); document.addEventListener('focusin', onIn, true);
     const tr = [...document.querySelectorAll('.person-detail-table tbody tr')].find(t => { const d = t.querySelector('input'); return d && !d.value; });
-    const day = tr.querySelector('input');
-    day.click(); day.focus(); day.value = '۹';
-    day.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true })); await w(120);
-    const a1 = document.activeElement && document.activeElement.className;
-    document.activeElement.value = 'شیر';
-    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true })); await w(120);
-    const a2 = document.activeElement && document.activeElement.className;
-    document.removeEventListener('focusout', onOut, true); document.removeEventListener('focusin', onIn, true);
-    return { gaps, seq, a1, a2 };
+    const cells = [tr.querySelector('input'), tr.querySelector('textarea.pd-desc'), tr.querySelector('.pd-amt')];
+    const res = [];
+    for (const c of cells) { c.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); c.click(); await w(60); res.push(document.activeElement === c || !c.readOnly); }
+    return { focused: res.filter(Boolean).length };
   });
-  ok(/pd-desc/.test(kb.a1) && /pd-amt/.test(kb.a2), 'روز ← «بعدی» ← شرح ← «بعدی» ← مبلغ (' + kb.seq.join(' → ') + ')');
-  ok(kb.gaps.length === 0, 'هیچ لحظه‌ای بدون خانهٔ فعال نماند (صفحه‌کلید بسته و باز نمی‌شود)' + (kb.gaps.length ? ': ' + kb.gaps.join(', ') : ''));
+  ok(kb.focused === 0, 'روز، شرح و مبلغ خالی با ضربه فوکوس نمی‌گیرند (صفحه‌کلید باز نمی‌شود)');
 
   await b.close();
   ok(errors.length === 0, 'هیچ خطای JS در صفحه' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
