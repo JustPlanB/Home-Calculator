@@ -965,7 +965,7 @@
               if (!r || r.deletedAt || r.p2p) return;
               var a = Number(r.amount) || 0;
               if (!(a > 0)) return;
-              if (kd === 'expense' && (r.status || 'paid') !== 'paid') return;
+              /* ۱.۳.۸۸: پرداخت‌نشده/دریافت‌نشده هم می‌آید (زرد در ویجت) */
               list.push({ r: r, d: dayNum(r), k: Number(r.ts || r.createdAt || 0) || 0, i: ix, kd: kd });
             });
           });
@@ -980,7 +980,11 @@
               a: formatNum(a2)
             };
             /* «همه»: نوع ردیف (رنگ سبز/قرمز در ویجت) و علامت + / − کنار مبلغ */
-            if (kind === 'all') { o.x = kd2 === 'income' ? 'i' : 'e'; o.a = (kd2 === 'income' ? '+' : '−') + o.a; }
+            var _unp = (r.status || 'paid') !== 'paid';
+            if (_unp) o.u = 1;
+            if (kind === 'all') o.x = kd2 === 'income' ? 'i' : 'e';
+            /* «همه» و ردیف‌های پرداخت/دریافت‌نشده: + واریز، − برداشت */
+            if (kind === 'all' || _unp) o.a = (kd2 === 'income' ? '+' : '−') + o.a;
             out.push(o);
           }
           m--; if (m < 1) { m = 12; y--; }

@@ -37,7 +37,7 @@ public class HkWidgetTxService extends RemoteViewsService {
         try{
           JSONObject o=rows.getJSONObject(pos);
           boolean light=d!=null && d.light, hid=d!=null && d.hidden;
-          v.setImageViewBitmap(R.id.hk_wti_img, HkWidgetTxDraw.row(ctx, (int)sz[0], sz[1], o.optString("d",""), o.optString("t",""), o.optString("b",""), hid ? "••••" : o.optString("a",""), all ? "i".equals(o.optString("x","e")) : inc, light));
+          v.setImageViewBitmap(R.id.hk_wti_img, HkWidgetTxDraw.row(ctx, (int)sz[0], sz[1], o.optString("d",""), o.optString("t",""), o.optString("b",""), hid ? "••••" : o.optString("a",""), all ? "i".equals(o.optString("x","e")) : inc, light, o.optInt("u",0)==1));
           v.setOnClickFillInIntent(R.id.hk_wti_img, new Intent());
         }catch(Exception ignored){}
         return v;

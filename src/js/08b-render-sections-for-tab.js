@@ -150,13 +150,12 @@
       if (m) {
         m.style.top = '0';
         m.style.height = '';
+        /* ۱.۳.۸۸: باکس از اول بالای صفحه (جای صفحه‌کلید آزاد) و فوکوس همان لحظهٔ ضربه، تا باکس و صفحه‌کلید با هم بیایند و باکس نپرد */
+        m.classList.add('hk-kb-top');
         m.classList.add('open');
       }
-      setTimeout(() => {
-        try { ta && ta.focus({ preventScroll: true }); } catch (e) {
-          try { ta && ta.focus(); } catch (e2) {}
-        }
-      }, 80);
+      try { ta && ta.focus({ preventScroll: true }); } catch (e) { try { ta && ta.focus(); } catch (e2) {} }
+      setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
     }
     function closeSmsImportModal() {
       const m = document.getElementById('smsImportModal');
