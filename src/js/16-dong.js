@@ -238,16 +238,23 @@
     /* باکس عمودی کوچک بالا و سمت راستِ دکمهٔ اشتراک‌گذاری */
     function hkDongShareMenu(btn, g) {
       var old = document.getElementById('hkDongShareMenu'); if (old) { old.remove(); return; }
-      var m = document.createElement('div'); m.id = 'hkDongShareMenu'; m.className = 'hk-dg-shm';
+      /* ۱.۳.۹۳: ظاهر همان پنجرهٔ «پیوست» در ثبت تراکنش: هر گزینه آیکون + نام، با خط جداکننده */
+      var m = document.createElement('div'); m.id = 'hkDongShareMenu'; m.className = 'hk-attpop hk-dg-shpop';
+      var ICO = {
+        text: '<svg class="hk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 12h6M10 15.5h6M10 19h4"/></svg>',
+        png: HK_ICON_GAL,
+        pdf: '<svg class="hk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 17v-4h1.3a1.2 1.2 0 0 1 0 2.4H9.5M13.5 13v4M13.5 13h1.8M13.5 15h1.4"/></svg>'
+      };
       [['text', 'متن'], ['png', 'عکس'], ['pdf', 'PDF']].forEach(function (o) {
-        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-dg-shmb'; b.dataset.k = o[0]; b.textContent = o[1];
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-dg-shmb'; b.dataset.k = o[0]; b.innerHTML = ICO[o[0]] + '<span>' + o[1] + '</span>';
         b.onclick = function (e) { e.stopPropagation(); m.remove(); hkDongShare(g, o[0]); };
         m.appendChild(b);
       });
       document.body.appendChild(m);
-      var r = btn.getBoundingClientRect(), mr = m.getBoundingClientRect();
+      var r = btn.getBoundingClientRect(), mr = { width: m.offsetWidth, height: m.offsetHeight }; /* اندازهٔ واقعی (بی اثر حرکت باز شدن) */
       m.style.left = Math.max(8, Math.round(r.right - mr.width)) + 'px';
       m.style.top = Math.max(8, Math.round(r.top - mr.height - 6)) + 'px';
+      requestAnimationFrame(function () { m.classList.add('in'); });
       var close = function (e) { if (!m.contains(e.target) && e.target !== btn) { m.remove(); document.removeEventListener('pointerdown', close, true); } };
       setTimeout(function () { document.addEventListener('pointerdown', close, true); }, 0);
     }
@@ -312,7 +319,10 @@
     }
     function hkDongRenderGroup(bx, D, g) {
       var bal = hkDongBalances(g), tr = hkDongPlan(g);
-      var h = '<div class="hk-dg-t">' + escapeHtml(g.name) + '</div>';
+      /* ۱.۳.۹۳: «اعضا و نام» و «حذف گروه» برداشته شد؛ به‌جایشان مداد ویرایش و × حذف در گوشه‌های بالای باکس گروه */
+      var h = '<div class="hk-dg-top"><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
+        '<div class="hk-dg-t">' + escapeHtml(g.name) + '</div>' +
+        '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></div>';
       h += '<div class="hk-dg-sum"><span>خرج کل</span><b>' + hkDongAmt(hkDongTotal(g)) + ' <small>تومان</small></b></div>';
       h += '<div class="hk-dg-h">وضعیت هر نفر</div><div class="hk-dg-bal">';
       g.members.forEach(function (m) {
@@ -326,13 +336,13 @@
         h += '<div class="hk-dg-row hk-dg-pay' + (t.paid ? ' paid' : '') + '"><span><b>' + escapeHtml(hkDongName(g, t.from)) + '</b> ← به <b>' + escapeHtml(hkDongName(g, t.to)) + '</b></span><span class="hk-dg-pa">' + hkDongAmt(t.amount) + '</span><button type="button" class="hk-dg-paid' + (t.paid ? ' on' : '') + '" data-i="' + i + '">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</button></div>';
       });
       h += '</div><div class="hk-dg-h">خرج‌ها</div><div class="hk-dg-exp">';
-      if (!g.expenses.length) h += '<div class="hk-dg-empty">با «خرج تازه» اولین خرج را ثبت کنید.</div>';
+      if (!g.expenses.length) h += '<div class="hk-dg-empty">با «خرج جدید» اولین خرج را ثبت کنید.</div>';
       g.expenses.slice().reverse().forEach(function (e) {
         var n = Object.keys(e.shares || {}).length;
         h += '<button type="button" class="hk-dg-row hk-dg-e" data-e="' + escapeHtml(e.id) + '"><span class="hk-dg-ed"><b>' + escapeHtml(e.desc || 'خرج') + '</b><small>' + escapeHtml(hkDongName(g, e.payer)) + ' پرداخت کرد · بین ' + toPersianDigits(String(n)) + ' نفر' + (e.mode && e.mode !== 'eq' ? ' (نامساوی)' : '') + (hkDongDate(e) ? ' · ' + hkDongDate(e) : '') + '</small></span><span class="hk-dg-pa">' + hkDongAmt(e.amount) + '</span></button>';
       });
-      h += '</div><div class="hk-rax-acts hk-dg-acts"><button type="button" class="modal-btn yes hk-dg-add">خرج تازه</button><button type="button" class="modal-btn hk-dg-share">اشتراک‌گذاری</button></div>' +
-        '<div class="hk-rax-acts hk-dg-acts2"><button type="button" class="modal-btn hk-dg-edit">اعضا و نام</button><button type="button" class="modal-btn hk-dg-del">حذف گروه</button></div>'; /* ۱.۳.۸۹: «بازگشت» برداشته شد (برگشت گوشی یا بیرون باکس) */
+      /* ۱.۳.۹۳: «خرج جدید»؛ کنار «اشتراک‌گذاری» آیکون سه نقطهٔ به‌هم‌وصل */
+      h += '</div><div class="hk-rax-acts hk-dg-acts"><button type="button" class="modal-btn yes hk-dg-add">خرج جدید</button><button type="button" class="modal-btn hk-dg-share"><svg class="hk-dg-shico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></svg>اشتراک‌گذاری</button></div>'; /* ۱.۳.۸۹: «بازگشت» برداشته شد (برگشت گوشی یا بیرون باکس) */
       bx.innerHTML = h;
       bx.querySelectorAll('.hk-dg-paid').forEach(function (b) {
         b.onclick = function () {
@@ -451,7 +461,7 @@
         mode: e0 && e0.mode && e0.mode !== 'eq' ? 'uneq' : 'eq',
         w: e0 && e0.weights ? Object.assign({}, e0.weights) : {}
       };
-      var sh = hkDongSheet(e0 ? 'ویرایش خرج' : 'خرج تازه'), bx = sh.bx;
+      var sh = hkDongSheet(e0 ? 'ویرایش خرج' : 'خرج جدید'), bx = sh.bx;
       var ds = document.createElement('input'); hkDongTextInput(ds, 'شرح (مثلاً شام)'); ds.value = e0 ? (e0.desc || '') : ''; ds.maxLength = 40;
       var am = document.createElement('input'); am.type = 'text'; am.className = 'hk-dg-in hk-dg-amt'; am.placeholder = 'مبلغ (تومان)'; hkDongMoneyInput(am);
       am.value = e0 ? formatNum(e0.amount) : '';
@@ -572,3 +582,5 @@
       hkDongSave(cur);
     }
     try { Object.assign(window, { openDongModal: openDongModal, closeDongModal: closeDongModal, hkDongTransfers: hkDongTransfers, hkDongBalances: hkDongBalances, hkDongSplitEq: hkDongSplitEq, hkDongShareText: hkDongShareText, hkDongLoad: hkDongLoad, hkDongSave: hkDongSave, hkDongExport: hkDongExport, hkDongRestore: hkDongRestore }); } catch (eDg) {}
+    /* ۱.۳.۹۳: باکس هوشمند پیش از بارگذاری این بخش ساخته می‌شود؛ یک بار دوباره ساخته شود تا اسلاید دُنگ (و پس‌انداز) از همان باز شدن نرم‌افزار باشد */
+    setTimeout(function () { try { renderHomeCards(); } catch (eRh) {} }, 0);
