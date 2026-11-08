@@ -708,6 +708,36 @@
       });
     }
     function hkSlideBox(el, open, setOpen, gap) { hkSlideParts(el, function () { return [el]; }, open, setOpen, gap); }
+    /* ۱.۳.۹۱: جابه‌جایی بین تب‌ها در هر باکس: اگر اندازهٔ باکس (ارتفاع یا پهنا) با تب تازه عوض شود، با همان حرکت نرم فیلد پروژه
+       در ثبت تراکنش (۰٫۴۵ ثانیه) از اندازهٔ قبلی به اندازهٔ تازه می‌رود. تب‌های اصلی صفحه (درآمد، مخارج، …) شامل نیستند. */
+    var HK_TAB_SEG = '.hk-re-seg, .sms-seg, .date-seg, .rec-due-seg, .fam-seg, .st-seg, .hk-unr-seg, [role="tablist"]';
+    var HK_TAB_BOX = '.modal-box, .backup-pick-panel, [role="dialog"]';
+    function hkTabSizeAnim(box, r0) {
+      if (!box || !box.isConnected || !r0) return;
+      var r1 = box.getBoundingClientRect();
+      var dh = Math.abs(r1.height - r0.height) > 1.5, dw = Math.abs(r1.width - r0.width) > 1.5;
+      if (!dh && !dw) return;
+      if (box._hkTabAnim) { try { box._hkTabAnim.cancel(); } catch (eC) {} }
+      var a = {}, b = {};
+      if (dh) { a.height = r0.height + 'px'; b.height = r1.height + 'px'; }
+      if (dw) { a.width = r0.width + 'px'; b.width = r1.width + 'px'; }
+      var ov = box.style.overflow; box.style.overflow = 'hidden';
+      var an; try { an = box.animate([a, b], { duration: 450, easing: 'ease' }); } catch (eA) { box.style.overflow = ov; return; }
+      box._hkTabAnim = an;
+      var done = function () { if (box._hkTabAnim === an) { box._hkTabAnim = null; box.style.overflow = ov; } };
+      an.onfinish = done; an.oncancel = done;
+    }
+    document.addEventListener('click', function (e) {
+      var t = e.target, bt = t && t.closest ? t.closest('button, [role="tab"]') : null; if (!bt) return;
+      var seg = bt.closest(HK_TAB_SEG); if (!seg) return;
+      /* اولویت دسته‌ها اندازهٔ ثابت دارد؛ شخصی/پروژهٔ ثبت تراکنش حرکت خودش را دارد */
+      if (seg.matches('.hk-pri-tabs, .sms-acct-seg')) return;
+      var box = seg.closest(HK_TAB_BOX); if (!box) return;
+      var r0 = box.getBoundingClientRect();
+      /* بعد از اجرای کار خود تب (همگام) و پیش از نقاشی بعدی صفحه */
+      requestAnimationFrame(function () { hkTabSizeAnim(box, r0); });
+    }, true);
+    try { window.hkTabSizeAnim = hkTabSizeAnim; } catch (eWt) {}
     /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
     function hkDescAutosize(el) {
       try {
@@ -804,45 +834,18 @@
     document.addEventListener('dblclick', function (e) {
       var t = e.target;
       if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-      /* ۱.۳.۸۶: خانه‌ای که همین حالا در حال تایپ است: دوبار ضربه = انتخاب کل متن/مبلغ (برای کپی یا کات) */
-      if (!t.readOnly && !t.disabled && document.activeElement === t && (t.value || '').length) {
-        var selAll = function () { try { t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (eSa) { try { t.select(); } catch (eS2) {} } };
-        selAll(); setTimeout(selAll, 0); setTimeout(selAll, 120);
-        return;
-      }
+      /* ۱.۳.۹۱: دوبار ضربه روی خانه‌ای که همین حالا در حال تایپ است: انتخاب کاملاً دست خود اندروید (کلمه، دستگیره‌ها، منوی کپی)؛
+         نرم‌افزار نه کل متن را انتخاب می‌کند و نه نشانگر را جابه‌جا */
+      if (!t.readOnly && !t.disabled && document.activeElement === t) { t._caretEndUntil = 0; return; }
       setTimeout(function () { caretToEnd(t); }, 0);
       setTimeout(function () { caretToEnd(t); }, 120);
     }, true);
-    /* ۱.۳.۸۹: در خانه‌ای که در حال ویرایش است، نگه‌داشتن انگشت یا دوبار ضربه = انتخاب کل نوشته/مبلغ.
-       خود اندروید انتخاب را شروع می‌کند (هایلایت آبی، دو دستگیره و منوی کپی/کات/…)؛ ما فقط همان انتخاب را تا کل متن گسترش می‌دهیم،
-       چون انتخابی که فقط با کد ساخته شود روی گوشی هایلایت و دستگیره نشان نمی‌دهد. */
-    (function () {
-      var arm = null;
-      var editable = function (t) {
-        if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || t.readOnly || t.disabled) return false;
-        var ty = t.tagName === 'TEXTAREA' ? 'textarea' : String(t.type || 'text').toLowerCase();
-        return ['text', 'search', 'tel', 'url', 'email', 'textarea'].indexOf(ty) >= 0;
-      };
-      var selAll = function (t) { try { t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (e) { try { t.select(); } catch (e2) {} } };
-      try { window.hkSelectAllField = selAll; } catch (eW) {}
-      document.addEventListener('touchstart', function (e) {
-        var t = e.target;
-        /* ۱.۳.۹۰: حتی وقتی همین لمس خانه را فعال می‌کند (نگه‌داشتن روی خانه‌ای که هنوز فوکوس ندارد) */
-        if (editable(t) && (t.value || '').length) { arm = { el: t, until: Date.now() + 1600 }; if (document.activeElement === t) t._caretEndUntil = 0; /* بردن خودکار نشانگر به آخر، انتخاب کاربر را به هم نزند */ }
-        else arm = null;
-      }, { capture: true, passive: true });
-      /* انتخابی که خود گوشی ساخت (نگه‌داشتن یا دوبار ضربه) → کل متن؛ فقط یک بار در هر لمس، تا جابه‌جا کردن دستگیره‌ها آزاد بماند */
-      document.addEventListener('selectionchange', function () {
-        if (!arm) return;
-        var t = arm.el;
-        if (Date.now() > arm.until || document.activeElement !== t) { arm = null; return; }
-        var a = t.selectionStart, b = t.selectionEnd, n = (t.value || '').length;
-        if (a === b) return;
-        arm = null;
-        if (a === 0 && b === n) return;
-        selAll(t);
-      }, true); /* رویداد روی خود خانه است و بالا نمی‌آید؛ capture لازم است */
-    })();
+    /* ۱.۳.۹۱: نگه‌داشتن انگشت / دوبار ضربه در خانهٔ در حال ویرایش: نرم‌افزار دخالتی نمی‌کند و انتخاب را خود اندروید می‌سازد.
+       فقط بردن خودکار نشانگر به آخر متن برای همان لمس خاموش می‌شود تا انتخاب گوشی جمع نشود. */
+    document.addEventListener('touchstart', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && document.activeElement === t) t._caretEndUntil = 0;
+    }, { capture: true, passive: true });
     function lockField(el, shouldLock) {
       if (!el) return;
       if (shouldLock) {

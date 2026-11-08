@@ -461,6 +461,24 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_item.xml'),
     android:scaleType="fitXY"
     android:contentDescription="ردیف"/>
 `);
+/* ۱.۳.۹۱: ردیف «در حال بارگذاری» ته فهرست ویجت (مثل پایین آمدن پست‌ها): دایرهٔ چرخان کوچک آبی نرم‌افزار */
+fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_more.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hk_wtm_root"
+    android:layout_width="match_parent"
+    android:layout_height="40dp">
+    <ProgressBar
+        android:id="@+id/hk_wtm_spin"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:indeterminateTint="#FF08B5F5"
+        android:contentDescription="در حال بارگذاری"/>
+</FrameLayout>
+`);
 fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"

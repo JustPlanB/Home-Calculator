@@ -427,6 +427,14 @@
       };
       draw();
       document.body.appendChild(ov);
+      /* ۱.۳.۹۱: اندازهٔ باکس بین «واریزی» و «برداشت» عوض نمی‌شود (اندازهٔ تب بلندتر، تا سقف ارتفاع باکس)؛ فهرست داخل خود باکس اسکرول می‌شود */
+      try {
+        var k0 = kind, hs = [];
+        ['in', 'out'].forEach(function (k) { kind = k; draw(); box.style.height = ''; hs.push(box.getBoundingClientRect().height); });
+        kind = k0; draw();
+        box.style.height = Math.ceil(Math.max.apply(null, hs)) + 'px'; box.style.overflowY = 'auto';
+        tabs.addEventListener('click', function () { box.scrollTop = 0; });
+      } catch (eFix) {}
     }
     try { window.openPrefsModal = openPrefsModal; } catch (eWp) {}
     (function () {

@@ -119,8 +119,9 @@ const allErrors = [];
     o.reDone = ds.getAttribute('enterkeyhint') === 'done' && am.getAttribute('enterkeyhint') === 'done';
     ds.focus(); await w(50);
     o.focusSel = getComputedStyle(ds).userSelect;
-    ds.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await w(200);
-    o.selAll = ds.selectionStart === 0 && ds.selectionEnd === ds.value.length && ds.value.length > 0;
+    /* ۱.۳.۹۱: دوبار ضربه دست خود اندروید است؛ نرم‌افزار انتخاب را عوض نمی‌کند */
+    ds.setSelectionRange(1, 3); ds.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await w(200);
+    o.selAll = ds.selectionStart === 1 && ds.selectionEnd === 3;
     ds.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); await w(50);
     o.enterBlur = document.activeElement !== ds && ds.value === 'نان';
     document.querySelector('#hkRowEdit .hk-re-no').click(); await w(200);
@@ -132,7 +133,7 @@ const allErrors = [];
   ok(/^پرداخت قسط: قسط ۳ از ۱۲/.test(tb.instPop) && /مخارج حساب می‌شود/.test(tb.instPop), 'ضربه روی دلار: «پرداخت قسط: …» با توضیح');
   ok(/^جیب به جیب:/.test(tb.p2pPop) && /حساب نمی‌شود/.test(tb.p2pPop), 'ضربه روی آیکون جیب به جیب: توضیح اینکه در جمع حساب نمی‌شود');
   ok(tb.bodySel === 'none' && tb.roSel === 'none', 'متن و مبلغ جدول قابل انتخاب نیست');
-  ok(tb.reDone && tb.focusSel === 'text' && tb.selAll && tb.enterBlur, 'ویرایش ردیف: «تمام» روی صفحه‌کلید، انتخاب فقط هنگام تایپ، دوبار ضربه = انتخاب همه');
+  ok(tb.reDone && tb.focusSel === 'text' && tb.selAll && tb.enterBlur, 'ویرایش ردیف: «تمام» روی صفحه‌کلید، انتخاب فقط هنگام تایپ، دوبار ضربه دست اندروید (۱.۳.۹۱)');
 
   console.log('• هشدار تکراری');
   const dp = await page.evaluate(async () => {
