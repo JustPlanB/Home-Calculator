@@ -12425,16 +12425,17 @@ button, input, select, textarea { font-family: inherit; }
     .hk-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 140px; padding: 18px 8px; text-align: center; }
     /* ۱.۳.۸۸: نوشته ثابت طوسی (بی موج)، کمی بزرگ‌تر از متن عادی؛ دایره‌های کوچک‌تر که از راست یکی‌یکی پر می‌شوند و بعد از سومی از اول */
     .hk-loading-t { font-size: var(--hk-fs-body); font-weight: 600; color: var(--muted, #98989f); }
-    .hk-loading-dots { display: flex; gap: 7px; direction: rtl; }
-    /* ۱.۳.۹۰: پر شدن با opacity روی لایهٔ جدا (روی کارت گرافیک اجرا می‌شود)، تا وقتی خواندن پیامک‌ها کار سنگین است هم نقطه‌ها گیر نکنند؛ چرخه ۰٫۶ ثانیه */
-    .hk-loading-dots i { position: relative; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #08b5f5; box-sizing: border-box; background: transparent; }
-    .hk-loading-dots i::after { content: ''; position: absolute; inset: -1.5px; border-radius: 50%; background: #08b5f5; opacity: 0; will-change: opacity; animation: hkLoadDot 0.6s steps(1, end) infinite; }
-    .hk-loading-dots i:nth-child(2)::after { animation-name: hkLoadDot2; }
-    .hk-loading-dots i:nth-child(3)::after { animation-name: hkLoadDot3; }
-    @keyframes hkLoadDot { 0% { opacity: 0; } 25%, 100% { opacity: 1; } }
-    @keyframes hkLoadDot2 { 0%, 25% { opacity: 0; } 50%, 100% { opacity: 1; } }
-    @keyframes hkLoadDot3 { 0%, 50% { opacity: 0; } 75%, 100% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .hk-loading-dots i::after { animation: none; opacity: 1; } }
+    /* ۱.۳.۹۱: مثل ویدیوی کاربر: سه نقطهٔ آبی در یک ردیف، دور هم می‌چرخند (مثلث چرخان) و دوباره ردیف می‌شوند؛ پشت سر هم تکرار.
+       فقط transform (روی کارت گرافیک)، تا هنگام خواندن پیامک‌ها گیر نکند. چرخش ۱۸۰ درجه ردیف را روی خودش می‌برد، پس حلقه بی‌پرش است. */
+    .hk-loading-dots { position: relative; width: 30px; height: 30px; direction: ltr; will-change: transform; animation: hkLoadSpin 0.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+    .hk-loading-dots i { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #08b5f5; will-change: transform; animation: hkLoadD1 0.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+    .hk-loading-dots i:nth-child(2) { animation-name: hkLoadD2; }
+    .hk-loading-dots i:nth-child(3) { animation-name: hkLoadD3; }
+    @keyframes hkLoadSpin { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+    @keyframes hkLoadD1 { 0%, 100% { transform: translate(-10px, 0); } 50% { transform: translate(-6px, 4px); } }
+    @keyframes hkLoadD2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0, -7px); } }
+    @keyframes hkLoadD3 { 0%, 100% { transform: translate(10px, 0); } 50% { transform: translate(6px, 4px); } }
+    @media (prefers-reduced-motion: reduce) { .hk-loading-dots, .hk-loading-dots i { animation-duration: 1.2s; } }
     /* ۱.۳.۸۸: تب‌های «اولویت دسته‌ها»: واریزی سبز، برداشت نارنجی (متن و خط زیر) */
     .hk-pri-tabs .hk-re-segb[data-k="in"].on { color: var(--hk-income, #9ee858) !important; }
     .hk-pri-tabs .hk-re-segb[data-k="out"].on { color: var(--hk-expense, #ff6b4a) !important; }
@@ -23128,6 +23129,36 @@ async function openPdfPrintWindow(){
       });
     }
     function hkSlideBox(el, open, setOpen, gap) { hkSlideParts(el, function () { return [el]; }, open, setOpen, gap); }
+    /* ۱.۳.۹۱: جابه‌جایی بین تب‌ها در هر باکس: اگر اندازهٔ باکس (ارتفاع یا پهنا) با تب تازه عوض شود، با همان حرکت نرم فیلد پروژه
+       در ثبت تراکنش (۰٫۴۵ ثانیه) از اندازهٔ قبلی به اندازهٔ تازه می‌رود. تب‌های اصلی صفحه (درآمد، مخارج، …) شامل نیستند. */
+    var HK_TAB_SEG = '.hk-re-seg, .sms-seg, .date-seg, .rec-due-seg, .fam-seg, .st-seg, .hk-unr-seg, [role="tablist"]';
+    var HK_TAB_BOX = '.modal-box, .backup-pick-panel, [role="dialog"]';
+    function hkTabSizeAnim(box, r0) {
+      if (!box || !box.isConnected || !r0) return;
+      var r1 = box.getBoundingClientRect();
+      var dh = Math.abs(r1.height - r0.height) > 1.5, dw = Math.abs(r1.width - r0.width) > 1.5;
+      if (!dh && !dw) return;
+      if (box._hkTabAnim) { try { box._hkTabAnim.cancel(); } catch (eC) {} }
+      var a = {}, b = {};
+      if (dh) { a.height = r0.height + 'px'; b.height = r1.height + 'px'; }
+      if (dw) { a.width = r0.width + 'px'; b.width = r1.width + 'px'; }
+      var ov = box.style.overflow; box.style.overflow = 'hidden';
+      var an; try { an = box.animate([a, b], { duration: 450, easing: 'ease' }); } catch (eA) { box.style.overflow = ov; return; }
+      box._hkTabAnim = an;
+      var done = function () { if (box._hkTabAnim === an) { box._hkTabAnim = null; box.style.overflow = ov; } };
+      an.onfinish = done; an.oncancel = done;
+    }
+    document.addEventListener('click', function (e) {
+      var t = e.target, bt = t && t.closest ? t.closest('button, [role="tab"]') : null; if (!bt) return;
+      var seg = bt.closest(HK_TAB_SEG); if (!seg) return;
+      /* اولویت دسته‌ها اندازهٔ ثابت دارد؛ شخصی/پروژهٔ ثبت تراکنش حرکت خودش را دارد */
+      if (seg.matches('.hk-pri-tabs, .sms-acct-seg')) return;
+      var box = seg.closest(HK_TAB_BOX); if (!box) return;
+      var r0 = box.getBoundingClientRect();
+      /* بعد از اجرای کار خود تب (همگام) و پیش از نقاشی بعدی صفحه */
+      requestAnimationFrame(function () { hkTabSizeAnim(box, r0); });
+    }, true);
+    try { window.hkTabSizeAnim = hkTabSizeAnim; } catch (eWt) {}
     /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
     function hkDescAutosize(el) {
       try {
@@ -23224,45 +23255,18 @@ async function openPdfPrintWindow(){
     document.addEventListener('dblclick', function (e) {
       var t = e.target;
       if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-      /* ۱.۳.۸۶: خانه‌ای که همین حالا در حال تایپ است: دوبار ضربه = انتخاب کل متن/مبلغ (برای کپی یا کات) */
-      if (!t.readOnly && !t.disabled && document.activeElement === t && (t.value || '').length) {
-        var selAll = function () { try { t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (eSa) { try { t.select(); } catch (eS2) {} } };
-        selAll(); setTimeout(selAll, 0); setTimeout(selAll, 120);
-        return;
-      }
+      /* ۱.۳.۹۱: دوبار ضربه روی خانه‌ای که همین حالا در حال تایپ است: انتخاب کاملاً دست خود اندروید (کلمه، دستگیره‌ها، منوی کپی)؛
+         نرم‌افزار نه کل متن را انتخاب می‌کند و نه نشانگر را جابه‌جا */
+      if (!t.readOnly && !t.disabled && document.activeElement === t) { t._caretEndUntil = 0; return; }
       setTimeout(function () { caretToEnd(t); }, 0);
       setTimeout(function () { caretToEnd(t); }, 120);
     }, true);
-    /* ۱.۳.۸۹: در خانه‌ای که در حال ویرایش است، نگه‌داشتن انگشت یا دوبار ضربه = انتخاب کل نوشته/مبلغ.
-       خود اندروید انتخاب را شروع می‌کند (هایلایت آبی، دو دستگیره و منوی کپی/کات/…)؛ ما فقط همان انتخاب را تا کل متن گسترش می‌دهیم،
-       چون انتخابی که فقط با کد ساخته شود روی گوشی هایلایت و دستگیره نشان نمی‌دهد. */
-    (function () {
-      var arm = null;
-      var editable = function (t) {
-        if (!t || !(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || t.readOnly || t.disabled) return false;
-        var ty = t.tagName === 'TEXTAREA' ? 'textarea' : String(t.type || 'text').toLowerCase();
-        return ['text', 'search', 'tel', 'url', 'email', 'textarea'].indexOf(ty) >= 0;
-      };
-      var selAll = function (t) { try { t._caretEndUntil = 0; t.setSelectionRange(0, (t.value || '').length); } catch (e) { try { t.select(); } catch (e2) {} } };
-      try { window.hkSelectAllField = selAll; } catch (eW) {}
-      document.addEventListener('touchstart', function (e) {
-        var t = e.target;
-        /* ۱.۳.۹۰: حتی وقتی همین لمس خانه را فعال می‌کند (نگه‌داشتن روی خانه‌ای که هنوز فوکوس ندارد) */
-        if (editable(t) && (t.value || '').length) { arm = { el: t, until: Date.now() + 1600 }; if (document.activeElement === t) t._caretEndUntil = 0; /* بردن خودکار نشانگر به آخر، انتخاب کاربر را به هم نزند */ }
-        else arm = null;
-      }, { capture: true, passive: true });
-      /* انتخابی که خود گوشی ساخت (نگه‌داشتن یا دوبار ضربه) → کل متن؛ فقط یک بار در هر لمس، تا جابه‌جا کردن دستگیره‌ها آزاد بماند */
-      document.addEventListener('selectionchange', function () {
-        if (!arm) return;
-        var t = arm.el;
-        if (Date.now() > arm.until || document.activeElement !== t) { arm = null; return; }
-        var a = t.selectionStart, b = t.selectionEnd, n = (t.value || '').length;
-        if (a === b) return;
-        arm = null;
-        if (a === 0 && b === n) return;
-        selAll(t);
-      }, true); /* رویداد روی خود خانه است و بالا نمی‌آید؛ capture لازم است */
-    })();
+    /* ۱.۳.۹۱: نگه‌داشتن انگشت / دوبار ضربه در خانهٔ در حال ویرایش: نرم‌افزار دخالتی نمی‌کند و انتخاب را خود اندروید می‌سازد.
+       فقط بردن خودکار نشانگر به آخر متن برای همان لمس خاموش می‌شود تا انتخاب گوشی جمع نشود. */
+    document.addEventListener('touchstart', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && document.activeElement === t) t._caretEndUntil = 0;
+    }, { capture: true, passive: true });
     function lockField(el, shouldLock) {
       if (!el) return;
       if (shouldLock) {
@@ -25413,7 +25417,7 @@ async function openPdfPrintWindow(){
     }
     /* ۱.۳.۷۸: آخرین ردیف‌های مخارج یا درآمدها برای ویجت ردیف‌ها — تازه‌ترین بالا؛ از ماه جاری به ماه‌های قبل */
     function hkWidgetTxRows(kind, max) {
-      max = max || 60;
+      max = max || 300; /* ۱.۳.۹۱: ویجت این‌ها را ۲۰ تا ۲۰ تا با اسکرول نشان می‌دهد */
       var out = [];
       try {
         var t = getTodayPersian(), y = t.y, m = t.m;
@@ -33123,6 +33127,17 @@ container.innerHTML = '';
       if (!text) { showToast('متن پیامک را وارد کنید'); return; }
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(text)) {
         showToast('این پیامک رمز/شناسه تأیید است و تراکنش نیست');
+        return;
+      }
+      /* ۱.۳.۹۱: پیامک واریز قسط تراکنش حساب‌ها نیست و به تاریخچهٔ کارت قسط می‌رود؛ قبلاً بی‌صدا ثبت می‌شد و «نامعتبر» نشان داده می‌شد */
+      var _inst = null; try { _inst = hkParseInstallSms(text); } catch (eIp) {}
+      if (_inst) {
+        var _res = null; try { _res = hkInstIngest(_inst, text); } catch (eIg) {}
+        var _c = _res && _res.card, _nm = ''; try { _nm = _c ? hkInstName(_c) : ''; } catch (eNm) {}
+        showToast(_res && _res.dup ? 'این پیامک قسط قبلاً در «' + (_nm || 'کارت قسط') + '» ثبت شده است'
+          : (_nm || 'قسط') + ' — ' + formatNum(_inst.amount || 0) + ' تومان در کارت قسط ثبت شد');
+        closeSmsImportModal();
+        if (_c) setTimeout(function () { try { hkOpenInstHistory(_c.id); } catch (eOh) {} }, 350);
         return;
       }
       const parsed = parseBankSms(text);
@@ -49501,6 +49516,14 @@ function openProjectRowPicker(secId) {
       };
       draw();
       document.body.appendChild(ov);
+      /* ۱.۳.۹۱: اندازهٔ باکس بین «واریزی» و «برداشت» عوض نمی‌شود (اندازهٔ تب بلندتر، تا سقف ارتفاع باکس)؛ فهرست داخل خود باکس اسکرول می‌شود */
+      try {
+        var k0 = kind, hs = [];
+        ['in', 'out'].forEach(function (k) { kind = k; draw(); box.style.height = ''; hs.push(box.getBoundingClientRect().height); });
+        kind = k0; draw();
+        box.style.height = Math.ceil(Math.max.apply(null, hs)) + 'px'; box.style.overflowY = 'auto';
+        tabs.addEventListener('click', function () { box.scrollTop = 0; });
+      } catch (eFix) {}
     }
     try { window.openPrefsModal = openPrefsModal; } catch (eWp) {}
     (function () {

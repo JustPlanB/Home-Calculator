@@ -19,7 +19,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
   @Override public void onDeleted(Context ctx, int[] ids){
-    try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids) e.remove("tx_type_"+id); e.apply(); }catch(Exception ignored){}
+    try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids){ e.remove("tx_type_"+id); e.remove(HkWidgetTxService.shownKey(id)); } e.apply(); }catch(Exception ignored){}
   }
   static void refreshAll(Context ctx){
     try{
@@ -45,6 +45,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
       v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, isAll(ctx, id), d.light));
       v.setImageViewBitmap(R.id.hk_wt_empty, HkWidgetTxDraw.empty(ctx, (int)sz[0], sz[1], d.locked ? "برنامه قفل است" : "ردیفی نیست", d.light));
+      HkWidgetTxService.resetShown(ctx, id); /* ۱.۳.۹۱: با هر تازه شدن، دوباره ۲۰ ردیف اول */
       Intent svc=new Intent(ctx, HkWidgetTxService.class);
       svc.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
       svc.setData(Uri.parse(svc.toUri(Intent.URI_INTENT_SCHEME)));

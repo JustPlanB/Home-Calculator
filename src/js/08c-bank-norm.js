@@ -793,6 +793,17 @@
         showToast('این پیامک رمز/شناسه تأیید است و تراکنش نیست');
         return;
       }
+      /* ۱.۳.۹۱: پیامک واریز قسط تراکنش حساب‌ها نیست و به تاریخچهٔ کارت قسط می‌رود؛ قبلاً بی‌صدا ثبت می‌شد و «نامعتبر» نشان داده می‌شد */
+      var _inst = null; try { _inst = hkParseInstallSms(text); } catch (eIp) {}
+      if (_inst) {
+        var _res = null; try { _res = hkInstIngest(_inst, text); } catch (eIg) {}
+        var _c = _res && _res.card, _nm = ''; try { _nm = _c ? hkInstName(_c) : ''; } catch (eNm) {}
+        showToast(_res && _res.dup ? 'این پیامک قسط قبلاً در «' + (_nm || 'کارت قسط') + '» ثبت شده است'
+          : (_nm || 'قسط') + ' — ' + formatNum(_inst.amount || 0) + ' تومان در کارت قسط ثبت شد');
+        closeSmsImportModal();
+        if (_c) setTimeout(function () { try { hkOpenInstHistory(_c.id); } catch (eOh) {} }, 350);
+        return;
+      }
       const parsed = parseBankSms(text);
       if (!parsed) { showToast('متن نامعتبر است'); return; }
       parsed.bank = matchSelectedBank(parsed.bank);

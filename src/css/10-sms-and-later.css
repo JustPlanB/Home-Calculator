@@ -1120,16 +1120,17 @@ button, input, select, textarea { font-family: inherit; }
     .hk-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 140px; padding: 18px 8px; text-align: center; }
     /* ۱.۳.۸۸: نوشته ثابت طوسی (بی موج)، کمی بزرگ‌تر از متن عادی؛ دایره‌های کوچک‌تر که از راست یکی‌یکی پر می‌شوند و بعد از سومی از اول */
     .hk-loading-t { font-size: var(--hk-fs-body); font-weight: 600; color: var(--muted, #98989f); }
-    .hk-loading-dots { display: flex; gap: 7px; direction: rtl; }
-    /* ۱.۳.۹۰: پر شدن با opacity روی لایهٔ جدا (روی کارت گرافیک اجرا می‌شود)، تا وقتی خواندن پیامک‌ها کار سنگین است هم نقطه‌ها گیر نکنند؛ چرخه ۰٫۶ ثانیه */
-    .hk-loading-dots i { position: relative; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #08b5f5; box-sizing: border-box; background: transparent; }
-    .hk-loading-dots i::after { content: ''; position: absolute; inset: -1.5px; border-radius: 50%; background: #08b5f5; opacity: 0; will-change: opacity; animation: hkLoadDot 0.6s steps(1, end) infinite; }
-    .hk-loading-dots i:nth-child(2)::after { animation-name: hkLoadDot2; }
-    .hk-loading-dots i:nth-child(3)::after { animation-name: hkLoadDot3; }
-    @keyframes hkLoadDot { 0% { opacity: 0; } 25%, 100% { opacity: 1; } }
-    @keyframes hkLoadDot2 { 0%, 25% { opacity: 0; } 50%, 100% { opacity: 1; } }
-    @keyframes hkLoadDot3 { 0%, 50% { opacity: 0; } 75%, 100% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .hk-loading-dots i::after { animation: none; opacity: 1; } }
+    /* ۱.۳.۹۱: مثل ویدیوی کاربر: سه نقطهٔ آبی در یک ردیف، دور هم می‌چرخند (مثلث چرخان) و دوباره ردیف می‌شوند؛ پشت سر هم تکرار.
+       فقط transform (روی کارت گرافیک)، تا هنگام خواندن پیامک‌ها گیر نکند. چرخش ۱۸۰ درجه ردیف را روی خودش می‌برد، پس حلقه بی‌پرش است. */
+    .hk-loading-dots { position: relative; width: 30px; height: 30px; direction: ltr; will-change: transform; animation: hkLoadSpin 0.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+    .hk-loading-dots i { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #08b5f5; will-change: transform; animation: hkLoadD1 0.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+    .hk-loading-dots i:nth-child(2) { animation-name: hkLoadD2; }
+    .hk-loading-dots i:nth-child(3) { animation-name: hkLoadD3; }
+    @keyframes hkLoadSpin { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+    @keyframes hkLoadD1 { 0%, 100% { transform: translate(-10px, 0); } 50% { transform: translate(-6px, 4px); } }
+    @keyframes hkLoadD2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0, -7px); } }
+    @keyframes hkLoadD3 { 0%, 100% { transform: translate(10px, 0); } 50% { transform: translate(6px, 4px); } }
+    @media (prefers-reduced-motion: reduce) { .hk-loading-dots, .hk-loading-dots i { animation-duration: 1.2s; } }
     /* ۱.۳.۸۸: تب‌های «اولویت دسته‌ها»: واریزی سبز، برداشت نارنجی (متن و خط زیر) */
     .hk-pri-tabs .hk-re-segb[data-k="in"].on { color: var(--hk-income, #9ee858) !important; }
     .hk-pri-tabs .hk-re-segb[data-k="out"].on { color: var(--hk-expense, #ff6b4a) !important; }

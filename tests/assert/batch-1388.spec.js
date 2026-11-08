@@ -31,9 +31,8 @@ const allErrors = [];
     const cs = getComputedStyle(t);
     o.tAnim = cs.animationName; o.tColor = cs.color; o.tSize = parseFloat(cs.fontSize);
     o.dots = dots.length; o.dotW = dots[0].getBoundingClientRect().width;
-    o.dotAnims = [...dots].map(x => getComputedStyle(x, '::after').animationName).join(',');
-    o.dotBorder = getComputedStyle(dots[0]).borderTopColor; o.dotDur = getComputedStyle(dots[0], '::after').animationDuration;
-    o.dotFill = getComputedStyle(dots[0], '::after').backgroundColor;
+    o.dotAnims = [...dots].map(x => getComputedStyle(x).animationName).join(',');
+    o.dotFill = getComputedStyle(dots[0]).backgroundColor; o.dotDur = getComputedStyle(d.querySelector('.hk-loading-dots')).animationDuration;
     d.remove();
     openCatPriority(); await w(250);
     const m = document.getElementById('hkCatPriModal');
@@ -49,7 +48,7 @@ const allErrors = [];
     return o;
   });
   ok(a.tAnim === 'none' && /152, 152, 159|142, 142, 147/.test(a.tColor) && a.tSize <= 17, 'نوشتهٔ «در حال خواندن پیامک‌ها» ثابت، طوسی و کوچک‌تر (' + a.tColor + '، ' + a.tSize + 'px)');
-  ok(a.dots === 3 && a.dotW <= 8 && a.dotAnims === 'hkLoadDot,hkLoadDot2,hkLoadDot3' && a.dotBorder === 'rgb(8, 181, 245)' && a.dotFill === 'rgb(8, 181, 245)' && a.dotDur === '0.6s', 'سه دایرهٔ کوچک آبی که تند (۰٫۶ ثانیه) یکی‌یکی پر می‌شوند؛ پر شدن با opacity تا گیر نکند (۱.۳.۹۰)');
+  ok(a.dots === 3 && a.dotW <= 8 && a.dotAnims === 'hkLoadD1,hkLoadD2,hkLoadD3' && a.dotFill === 'rgb(8, 181, 245)' && a.dotDur === '0.6s', 'سه دایرهٔ کوچک آبی، تند (۰٫۶ ثانیه) و پشت سر هم (۱.۳.۹۱: چرخان مثل ویدیو)');
   ok(a.inColor === 'rgb(158, 232, 88)' && a.outColor === 'rgb(255, 107, 74)', 'تب واریزی سبز، برداشت نارنجی');
   ok(a.sameTabs && a.indMoved && a.indTrans !== '0s', 'جابه‌جایی بین تب‌ها با افکت لغزشی (همان تب‌ها، خط زیر حرکت می‌کند)');
 
@@ -122,15 +121,15 @@ const allErrors = [];
     const end = (el, tc) => el.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [tc] }));
     /* ۱.۳.۸۹: انتخاب را خود گوشی شروع می‌کند (این‌جا شبیه‌سازی: لمس + انتخاب یک کلمه)؛ نرم‌افزار آن را تا کل متن گسترش می‌دهد */
     let tc = touch(ds); ds.setSelectionRange(5, 8); await w(80); end(ds, tc); await w(120);
-    o.long = ds.selectionStart === 0 && ds.selectionEnd === ds.value.length;
+    o.long = ds.selectionStart === 5 && ds.selectionEnd === 8; /* ۱.۳.۹۱: انتخاب خود گوشی دست نمی‌خورد */
     ds.setSelectionRange(2, 4); await w(80);
     o.free = ds.selectionStart === 2 && ds.selectionEnd === 4; /* بعد از آن، جابه‌جا کردن دستگیره‌ها آزاد است */
     tc = touch(ds); end(ds, tc); await w(80); tc = touch(ds); ds.setSelectionRange(0, 4); await w(80); end(ds, tc); await w(120);
-    o.dbl = ds.selectionStart === 0 && ds.selectionEnd === ds.value.length;
+    o.dbl = ds.selectionStart === 0 && ds.selectionEnd === 4;
     /* ۱.۳.۹۰: نگه‌داشتن روی خانه‌ای که هنوز فوکوس ندارد: همان لمس فوکوس می‌دهد و انتخاب گوشی نباید جمع شود */
     ds.blur(); await w(80);
     tc = touch(ds); ds.focus(); await w(30); ds.setSelectionRange(5, 8); await w(400); end(ds, tc); await w(300);
-    o.cold = document.activeElement === ds && ds.selectionStart === 0 && ds.selectionEnd === ds.value.length;
+    o.cold = document.activeElement === ds && ds.selectionStart === 5 && ds.selectionEnd === 8;
     /* ۱.۳.۹۰: هایلایت انتخاب داخل خانهٔ ویرایش واقعاً رنگ دارد (قبلاً از والد، شفاف به ارث می‌رسید) */
     o.selBg = getComputedStyle(ds, '::selection').backgroundColor;
     o.selBgDiv = getComputedStyle(document.querySelector('#hkRowEdit'), '::selection').backgroundColor;
@@ -141,9 +140,9 @@ const allErrors = [];
     closeSmsImportModal();
     return o;
   });
-  ok(sel.long && sel.free, 'در حال ویرایش: انتخاب گوشی (نگه‌داشتن) تا کل شرح گسترش می‌یابد (با هایلایت و دستگیرهٔ خود گوشی)؛ بعد آزاد');
-  ok(sel.dbl, 'در حال ویرایش: دوبار ضربه هم کل شرح را انتخاب می‌کند');
-  ok(sel.cold, 'نگه‌داشتن روی خانه‌ای که همین لمس فعالش می‌کند: انتخاب جمع نمی‌شود و تا کل متن گسترش می‌یابد');
+  ok(sel.long && sel.free, 'در حال ویرایش: انتخاب گوشی (نگه‌داشتن) همان‌طور که اندروید ساخته می‌ماند (۱.۳.۹۱)؛ بعد آزاد');
+  ok(sel.dbl, 'در حال ویرایش: دوبار ضربه هم دست اندروید است (۱.۳.۹۱)');
+  ok(sel.cold, 'نگه‌داشتن روی خانه‌ای که همین لمس فعالش می‌کند: انتخاب گوشی جمع نمی‌شود');
   ok(/8, 181, 245, 0\.3/.test(sel.selBg) && sel.selBgDiv === 'rgba(0, 0, 0, 0)', 'هایلایت آبی انتخاب داخل خانهٔ ویرایش دیده می‌شود (' + sel.selBg + ')؛ بیرون از خانه‌ها شفاف می‌ماند');
   ok(sel.focusNow && sel.top, 'ثبت تکی/گروهی: صفحه‌کلید همان لحظه با باکس (باکس بالای صفحه، بی پرش)');
 
