@@ -91,14 +91,24 @@ public class HkWidgetTxConfig extends Activity {
       android.graphics.Bitmap bm=android.graphics.Bitmap.createBitmap(sz, sz, android.graphics.Bitmap.Config.ARGB_8888);
       android.graphics.Canvas cv=new android.graphics.Canvas(bm);
       android.graphics.Paint p=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-      p.setStyle(android.graphics.Paint.Style.STROKE); p.setStrokeWidth(2.4f*k); p.setStrokeCap(android.graphics.Paint.Cap.ROUND); p.setStrokeJoin(android.graphics.Paint.Join.ROUND); p.setColor(color);
+      p.setStyle(android.graphics.Paint.Style.STROKE); p.setStrokeWidth(3.2f*k); /* ۱.۳.۹۶: بولد، هم‌ضخامت حروف بولد */ p.setStrokeCap(android.graphics.Paint.Cap.ROUND); p.setStrokeJoin(android.graphics.Paint.Join.ROUND); p.setColor(color);
       android.graphics.Path ph=new android.graphics.Path(); ph.moveTo(5*k, 12.5f*k); ph.lineTo(9.5f*k, 17*k); ph.lineTo(19*k, 7.5f*k);
       cv.drawPath(ph, p);
       android.graphics.drawable.BitmapDrawable d=new android.graphics.drawable.BitmapDrawable(getResources(), bm); d.setBounds(0, 0, sz, sz);
       android.text.SpannableString ss=new android.text.SpannableString("\uFFFC  "+label);
-      ss.setSpan(new android.text.style.ImageSpan(d, android.text.style.DynamicDrawableSpan.ALIGN_BOTTOM), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      ss.setSpan(new CenterSpan(d), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE); /* ۱.۳.۹۶: دقیقاً هم‌تراز وسط نوشته */
       return ss;
     }catch(Throwable t){ return label; }
+  }
+  /* ۱.۳.۹۶: تصویر تیک وسطِ ارتفاع حروف همان سطر (نه روی خط پایین) */
+  static class CenterSpan extends android.text.style.ImageSpan {
+    CenterSpan(android.graphics.drawable.Drawable d){ super(d); }
+    @Override public void draw(android.graphics.Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, android.graphics.Paint paint){
+      android.graphics.drawable.Drawable d=getDrawable();
+      android.graphics.Paint.FontMetricsInt fm=paint.getFontMetricsInt();
+      int transY=(y+fm.descent+y+fm.ascent)/2-d.getBounds().bottom/2;
+      canvas.save(); canvas.translate(x, transY); d.draw(canvas); canvas.restore();
+    }
   }
   void choose(String type){
     try{ getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).edit().putString("tx_type_"+wid, type).apply(); }catch(Exception ignored){}

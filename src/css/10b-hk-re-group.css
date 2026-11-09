@@ -713,11 +713,6 @@ button, input, select, textarea { font-family: inherit; }
     #hkCatsSheet .hk-cats-new { flex: 0 0 auto; }
     #hkCatsSheet .hk-rax-acts { flex: 0 0 auto; margin-top: 10px; }
     #hkCatsSheet .hk-cats-h { padding: 0 0 6px; } #hkCatsSheet .hk-cats-box { padding-top: 14px !important; }
-    /* ۱.۳.۹۵: لانگ‌پرس روی اسلاید ثابت: کلید روشن/خاموش (لایهٔ خاکستری به‌جای قرمزِ سطل) */
-    .sp-trash-ov.sp-tog-ov { background: rgba(142,142,147,0.16); }
-    .sp-tog-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--card, #1c1c1e); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
-    .sp-tog-l { font-size: var(--hk-fs-body); font-weight: 700; color: var(--text); }
-    .sp-tog-sw { pointer-events: none; }
     /* ۱.۳.۹۵: هایلایت خاکستری گزینه‌ای که از جستجوی منو پیدا شد (ظاهر و محو شدن آرام، مثل ردیف «بزرگ‌ترین خرج») */
     .hk-sub-flash { animation: hkSubFlash 3.6s ease-in-out; }
     @keyframes hkSubFlash { 0% { background-color: rgba(142,142,147,0); } 18% { background-color: rgba(142,142,147,0.42); } 70% { background-color: rgba(142,142,147,0.42); } 100% { background-color: rgba(142,142,147,0); } }
@@ -733,3 +728,24 @@ button, input, select, textarea { font-family: inherit; }
     input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; flex: 0 0 auto; margin: 0; border: 1.6px solid rgba(142,142,147,0.75); border-radius: 5px; background-color: transparent; background-position: center; background-repeat: no-repeat; background-size: 86%; cursor: pointer; vertical-align: middle; transition: background-color 0.15s, border-color 0.15s; }
     input[type="checkbox"]:checked { background-color: #08b5f5; border-color: #08b5f5; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
     input[type="checkbox"]:disabled { opacity: 0.4; }
+    /* ۱.۳.۹۶: «دستهٔ جدید» از باکس ثبت: از اول بالای صفحه تا با صفحه‌کلید نپرد */
+    .hk-re-ov.hk-ncp-ov { align-items: flex-start !important; padding-top: 56px !important; overflow: hidden !important; }
+    /* ۱.۳.۹۶: فهرست روشن/خاموش اسلایدها روی خود باکس هوشمند (لانگ‌پرس) */
+    .sp-tog-ov2 { position: fixed; inset: 0; z-index: 100300; background: rgba(0,0,0,0.38); animation: spTogIn 0.18s ease; }
+    .sp-tog-ov2.out { opacity: 0; transition: opacity 0.18s ease; }
+    @keyframes spTogIn { from { opacity: 0; } to { opacity: 1; } }
+    .sp-tog-panel { position: fixed; box-sizing: border-box; display: flex; flex-direction: column; background: var(--card, #1c1c1e); border: 1px solid rgba(255,255,255,0.10); border-radius: 22px; box-shadow: 0 14px 34px rgba(0,0,0,0.5); overflow: hidden; direction: rtl; }
+    .sp-tog-h { flex: 0 0 auto; padding: 12px 16px 8px; font-weight: 700; font-size: var(--hk-fs-body); color: var(--text); }
+    .sp-tog-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 8px; }
+    .sp-tog-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 12px; cursor: pointer; }
+    .sp-tog-row.cur { background: rgba(142,142,147,0.22); }
+    .sp-tog-row .sp-tog-l { font-size: var(--hk-fs-body); color: var(--text); }
+    html[data-theme="light"] .sp-tog-panel { background: var(--lt-surface, #fff); border-color: rgba(0,0,0,0.08); }
+    /* ۱.۳.۹۶: قرض — قاب گرد روی جعبهٔ ثابتِ جدول (نه روی جدولی که داخلش اسکرول می‌خورد)؛ سر و ته قاب همیشه پیداست.
+       عنوان رابطه و سرستون‌ها بالای جعبه ثابت‌اند و فقط ردیف‌ها اسکرول می‌خورند */
+    html body #panel-ledger #sections-ledger .section-body.hk-led-scroll { margin: 0 10px !important; padding: 0 !important; border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 12px !important; overflow-x: hidden !important; overflow-y: auto !important; background: var(--bg3, #2c2c2e); box-sizing: border-box; }
+    html body #panel-ledger #sections-ledger .section-body.hk-led-scroll > table { border: 0 !important; border-radius: 0 !important; overflow: visible !important; width: 100%; }
+    html[data-theme="light"] body #panel-ledger #sections-ledger .section-body.hk-led-scroll { border-color: rgba(0,0,0,0.10) !important; }
+    /* ۱.۳.۹۶: دکمهٔ ردیف تازه پررنگ و برجسته (هم‌شکل + بالای صفحه)، با فاصلهٔ کافی زیر قاب */
+    html body #panel-ledger .ledger-add-row.ledger-row-fab { width: 46px !important; height: 46px !important; min-width: 46px !important; margin: 14px 12px 14px !important; background: var(--card, #1c1c1e) !important; box-shadow: 4px 4px 10px rgba(0,0,0,0.55), -3px -3px 8px rgba(255,255,255,0.06) !important; }
+    html body #panel-ledger .ledger-add-row.ledger-row-fab svg { width: 24px !important; height: 24px !important; animation: none !important; opacity: 1 !important; stroke-width: 3 !important; }

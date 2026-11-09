@@ -11,7 +11,7 @@
         var da = dayNum(a.r), db = dayNum(b.r);
         if (!da && !db) return a.i - b.i; if (!da) return 1; if (!db) return -1;
         if (da !== db) return (da - db) * dir;
-        return (hkTimeCmp(a.r, b.r) * dir) || a.i - b.i;
+        return hkTimeCmpDir(a.r, b.r, dir) || a.i - b.i;
       }).map(function (x) { return x.r; });
     }
     /* اولویت دسته‌ها: دستی (ترتیب کاربر) یا خودکار (تعداد استفاده) */
@@ -728,14 +728,10 @@
         } catch (eFit) {}
         const h = thead.offsetHeight + rh * nRows;
         if (h > 40) { body.style.setProperty('max-height', h + 'px', 'important'); body.style.setProperty('--hk-led-h', h + 'px'); }
-        /* کمتر از ۹ ردیف: قاب جدول تا پایینِ همان ارتفاع ثابت ادامه دارد (جای خالیِ زیر ردیف‌ها داخل جدول، نه بیرونش) */
-        const table = tbody.parentNode; let ft = table.querySelector('tfoot.hk-led-fill');
-        let used = thead.offsetHeight + 2; for (let q = 0; q < trs.length; q++) used += trs[q].offsetHeight;
-        const fill = Math.floor(h - used);
-        if (fill > 4) {
-          if (!ft) { ft = document.createElement('tfoot'); ft.className = 'hk-led-fill'; ft.innerHTML = '<tr><td colspan="4" style="padding:0 !important;border:none !important;background:transparent !important;"></td></tr>'; table.appendChild(ft); }
-          ft.firstChild.firstChild.style.height = fill + 'px';
-        } else if (ft) ft.remove();
+        /* ۱.۳.۹۶: قاب گرد روی خود جعبهٔ ثابت است (CSS)، نه روی جدولِ اسکرول‌خور؛ پرکنندهٔ زیر ردیف‌ها دیگر لازم نیست */
+        const ft0 = tbody.parentNode.querySelector('tfoot.hk-led-fill'); if (ft0) ft0.remove();
+        /* جای خالی زیر ردیف‌ها همرنگ خود جدول */
+        try { body.style.setProperty('background-color', getComputedStyle(tbody.parentNode).backgroundColor, 'important'); } catch (eBg) {}
       } catch (eH) {}
     }
     /* ۱.۳.۶۸: صف ساخت پیشاپیش ردیف‌های روابط بسته (یکی در هر نوبت بیکاری) */

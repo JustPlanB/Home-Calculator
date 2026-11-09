@@ -160,13 +160,13 @@ async function fresh(b) {
     const el = document.querySelector('#homeSmartBox .pc-smart-box');
     const k = el._spPages[el._spIdx].key; o.key = k;
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 100, clientY: 400, pointerId: 1 })); await w(600);
-    const sw = el.querySelector('.sp-tog-ov .hk-switch.on'); o.sw = !!sw;
-    if (sw) {
-      const r = el.querySelector('.sp-tog-card').getBoundingClientRect(), sh = document.querySelector('.sp-trash-shield');
-      sh.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.left + 10, clientY: r.top + 10 }));
-      sh.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: r.left + 10, clientY: r.top + 10 })); await w(800);
+    /* ۱.۳.۹۶: به‌جای یک کلید، فهرست روشن/خاموش همهٔ اسلایدها (batch-1396) */
+    const row = document.querySelector('.sp-tog-ov2 .sp-tog-row.cur'); o.sw = !!(row && row.querySelector('.hk-switch.on'));
+    if (row) {
+      row.click(); await w(300);
       o.off = (hkPrefs().spOff || []).indexOf(k) >= 0;
       const o2 = hkPrefs().spOff.filter(x => x !== k); hkPrefSet('spOff', o2);
+      document.querySelectorAll('.sp-tog-ov2').forEach(x => x.remove());
     }
     return o;
   });

@@ -934,6 +934,8 @@
             items.forEach(function (it) {
               if (!it || !it.text) return;
               var nid = it.nid || 0;
+              /* ۱.۳.۹۶: شرح از «ثبت سریع» آمده و اعلان هنوز ۳۰ ثانیه منتظر انتخاب دسته است → این نوبت دست نمی‌خورد تا دسته هم برسد */
+              if (it.quick && it.quickDesc && !it.quickCat && !it.quickOpen && it.quickAt && Date.now() - it.quickAt < 30000) { setTimeout(function () { try { pollPendingSms(); } catch (eV) {} }, Math.max(500, 31000 - (Date.now() - it.quickAt))); return; }
               /* ۱.۳.۴۳: «ثبت» از خود اعلان برای پیامکی که همین الان در نرم‌افزار باز/در صف است */
               if (it.quick && nid && live[nid] && !done[nid]) { try { hkQuickApplyLive(nid, it.quickDesc || '', it.quickCat || '', !!it.quickOpen); } catch (eQ) {} return; }
               if (nid && (done[nid] || live[nid])) return;

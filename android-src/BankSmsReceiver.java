@@ -228,6 +228,61 @@ public class BankSmsReceiver extends BroadcastReceiver {
     return d.length()==10 && d.charAt(0)=='9' && "012349".indexOf(d.charAt(1))>=0;
   }
 
+  /* ۱.۳.۹۶: دکمه‌های دستهٔ اعلان در یک تابع تا بعد از نوشتن شرح هم (اعلان «دسته را بزنید») همان دکمه‌ها بیایند */
+  static void addCatButtons(Context c,NotificationCompat.Builder b,int nid,String text,boolean inc,boolean clean){
+    try{
+      SharedPreferences sp=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+      JSONArray cats=new JSONArray(sp.getString(inc?"hk_ncats_in":"hk_ncats_out","[]"));
+      if(cats.length()>0){
+        RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_tx);
+        rv.setTextViewText(R.id.hk_tx_text,text);
+        int[] ids={R.id.hk_c0,R.id.hk_c1,R.id.hk_c2,R.id.hk_c3};
+        /* ۱.۳.۵۳: دکمهٔ پنجم «بیشتر…» → باکس ثبت در نرم‌افزار با فهرست کامل دسته‌ها */
+        try{
+          rv.setTextViewText(R.id.hk_c4,"بیشتر…");
+          Intent mi=new Intent(c,HkCatActivity.class); mi.setAction("ir.hesabketab.app.MORE_"+nid);
+          mi.putExtra("nid",nid); mi.putExtra("cat","__more__"); mi.putExtra("label","");
+          mi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          rv.setOnClickPendingIntent(R.id.hk_c4,PendingIntent.getActivity(c,nid*8+6,mi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+        }catch(Throwable ignored){}
+        for(int k=0;k<ids.length;k++){
+          JSONObject ct=k<cats.length()?cats.optJSONObject(k):null;
+          if(ct==null){ rv.setViewVisibility(ids[k],android.view.View.GONE); continue; }
+          rv.setTextViewText(ids[k],ct.optString("l"));
+          PendingIntent cpi;
+          if(clean){
+            Intent ci=new Intent(c,HkQuickReplyReceiver.class); ci.setAction(ACTION_CAT+"_"+nid+"_"+k);
+            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
+            cpi=PendingIntent.getBroadcast(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+          }else{
+            Intent ci=new Intent(c,HkCatActivity.class); ci.setAction("ir.hesabketab.app.CAT_"+nid+"_"+k);
+            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
+            ci.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            cpi=PendingIntent.getActivity(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+          }
+          rv.setOnClickPendingIntent(ids[k],cpi);
+        }
+        b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomBigContentView(rv);
+      }
+    }catch(Throwable ignored){}
+  }
+  /* ۱.۳.۹۶: بعد از «ثبت سریع» با شرح: همان اعلان با «بابت: …» و دکمه‌های دسته؛ زدن دسته شرح را نگه می‌دارد (فقط دسته اضافه می‌شود).
+     اگر دسته‌ای زده نشود، شرح ذخیره شده و تراکنش بی‌دسته (یا با حدس از شرح) ثبت می‌شود */
+  static void postCatAfterDesc(Context c,int nid,String desc){
+    try{
+      JSONObject it=HkQuickReplyReceiver.findItem(c,nid); if(it==null) return;
+      String text=it.optString("text","");
+      int sg=txSign(text);
+      boolean inc=sg!=0?sg>0:(text.contains("واریز")||text.contains("+"));
+      String t1=desc.isEmpty()?"بدون شرح":"بابت: "+desc;
+      NotificationCompat.Builder b=baseBuilder(c,t1,"دسته را بزنید (اختیاری)");
+      b.setOnlyAlertOnce(true).setPriority(NotificationCompat.PRIORITY_LOW);
+      if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(30000);
+      addCatButtons(c,b,nid,t1+"\nدسته را بزنید (اختیاری)",inc,true);
+      ((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).notify(nid,b.build());
+    }catch(Throwable ignored){}
+  }
+
   static NotificationCompat.Builder baseBuilder(Context c,String title,String text){
     Intent i=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
     NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(text.replace('\n',' ')).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
@@ -289,42 +344,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
       b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"باکس",bpi).build());
     }catch(Throwable ignored){}
     /* ۱.۳.۵۰: اعلان اختصاصی: متن پیامک + چهار دستهٔ پرکاربرد؛ زدن دسته = ثبت با همان دسته (شرح = اسم دسته) */
-    try{
-      SharedPreferences sp=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-      boolean inc=sg!=0?sg>0:(text.contains("واریز")||text.contains("+"));
-      JSONArray cats=new JSONArray(sp.getString(inc?"hk_ncats_in":"hk_ncats_out","[]"));
-      if(cats.length()>0){
-        RemoteViews rv=new RemoteViews(c.getPackageName(),R.layout.hk_tx);
-        rv.setTextViewText(R.id.hk_tx_text,text);
-        int[] ids={R.id.hk_c0,R.id.hk_c1,R.id.hk_c2,R.id.hk_c3};
-        /* ۱.۳.۵۳: دکمهٔ پنجم «بیشتر…» → باکس ثبت در نرم‌افزار با فهرست کامل دسته‌ها */
-        try{
-          rv.setTextViewText(R.id.hk_c4,"بیشتر…");
-          Intent mi=new Intent(c,HkCatActivity.class); mi.setAction("ir.hesabketab.app.MORE_"+nid);
-          mi.putExtra("nid",nid); mi.putExtra("cat","__more__"); mi.putExtra("label","");
-          mi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          rv.setOnClickPendingIntent(R.id.hk_c4,PendingIntent.getActivity(c,nid*8+6,mi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
-        }catch(Throwable ignored){}
-        for(int k=0;k<ids.length;k++){
-          JSONObject ct=k<cats.length()?cats.optJSONObject(k):null;
-          if(ct==null){ rv.setViewVisibility(ids[k],android.view.View.GONE); continue; }
-          rv.setTextViewText(ids[k],ct.optString("l"));
-          PendingIntent cpi;
-          if(clean){
-            Intent ci=new Intent(c,HkQuickReplyReceiver.class); ci.setAction(ACTION_CAT+"_"+nid+"_"+k);
-            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
-            cpi=PendingIntent.getBroadcast(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-          }else{
-            Intent ci=new Intent(c,HkCatActivity.class); ci.setAction("ir.hesabketab.app.CAT_"+nid+"_"+k);
-            ci.putExtra("nid",nid); ci.putExtra("cat",ct.optString("k")); ci.putExtra("label",ct.optString("l"));
-            ci.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            cpi=PendingIntent.getActivity(c,nid*8+k+1,ci,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-          }
-          rv.setOnClickPendingIntent(ids[k],cpi);
-        }
-        b.setStyle(new NotificationCompat.DecoratedCustomViewStyle()).setCustomBigContentView(rv);
-      }
-    }catch(Throwable ignored){}
+    addCatButtons(c,b,nid,text,sg!=0?sg>0:(text.contains("واریز")||text.contains("+")),clean);
     try{ nm.notify(nid,b.build()); }
     catch(Throwable t){ try{ nm.notify(nid,baseBuilder(c,title,text).build()); }catch(Throwable ignored){} }
   }
