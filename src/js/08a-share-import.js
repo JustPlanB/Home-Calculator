@@ -463,7 +463,7 @@
           if (!da) return 1;
           if (!db) return -1;
           /* ۱.۳.۵۵: جهت مرتب‌سازی از «شخصی‌سازی» (تاریخ جدید = بالا) */
-          return ((da - db) || hkTimeCmp(a, b)) * hkSortDir();
+          return (da - db) * hkSortDir() || hkTimeCmpDir(a, b, hkSortDir());
         });
       } catch (e) {}
 
@@ -578,7 +578,7 @@ container.innerHTML = '';
             if (!da && !db) return 0;
             if (!da) return 1;
             if (!db) return -1;
-            return (da - db || hkTimeCmp(a, b)) * hkSortDir();
+            return (da - db) * hkSortDir() || hkTimeCmpDir(a, b, hkSortDir());
           });
         } catch (e) {}
         rebuild();
@@ -648,7 +648,7 @@ container.innerHTML = '';
               if (!da && !db) return 0;
               if (!da) return 1;
               if (!db) return -1;
-              return (da - db || hkTimeCmp(a, b)) * hkSortDir();
+              return (da - db) * hkSortDir() || hkTimeCmpDir(a, b, hkSortDir());
             });
           } catch (e) {}
           scheduleSave();

@@ -211,12 +211,18 @@
       return rows.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
         var da = hkRowYmd(a.r), db = hkRowYmd(b.r);
         if (da !== db) return (da - db) * dir;
-        return (hkTimeCmp(a.r, b.r) * dir) || a.i - b.i;
+        return hkTimeCmpDir(a.r, b.r, dir) || a.i - b.i;
       }).map(function (x) { return x.r; });
     }
     function hkTimeCmp(a, b) {
       var ta = (a && a.time) || '', tb = (b && b.time) || '';
       if (ta && tb) return ta < tb ? -1 : ta > tb ? 1 : 0;
+      return ta ? -1 : tb ? 1 : 0;
+    }
+    /* ۱.۳.۹۶: ساعت در یک روز با جهت «شخصی‌سازی» (جدید بالا = ساعت دیرتر بالاتر)؛ ردیف‌های بی‌ساعت همیشه آخرِ همان روز */
+    function hkTimeCmpDir(a, b, dir) {
+      var ta = (a && a.time) || '', tb = (b && b.time) || '';
+      if (ta && tb) return (ta < tb ? -1 : ta > tb ? 1 : 0) * (dir || 1);
       return ta ? -1 : tb ? 1 : 0;
     }
     /* ۱.۳.۴۲: پیامک‌های چندبخشیِ قدیمی (تا ۱.۳.۴۱) که گیرندهٔ اندروید تکه‌هایشان را با «\n» وصل می‌کرد: پیامک فارسی
@@ -245,7 +251,8 @@
         var d = parseInt(rows[i] && rows[i].day, 10) || 0, j = i + 1;
         while (d && j < rows.length && (parseInt(rows[j] && rows[j].day, 10) || 0) === d) j++;
         var run = rows.slice(i, j).map(function (x, k) { return { x: x, k: k }; });
-        if (run.length > 1) run.sort(function (A, B) { return hkTimeCmp(A.x, B.x) || A.k - B.k; });
+        var _dir = 1; try { _dir = hkSortDir(); } catch (eD) {}
+        if (run.length > 1) run.sort(function (A, B) { return hkTimeCmpDir(A.x, B.x, _dir) || A.k - B.k; });
         run.forEach(function (o) { out.push(o.x); });
         i = j;
       }

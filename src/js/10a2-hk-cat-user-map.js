@@ -226,6 +226,33 @@
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       document.body.appendChild(ov);
     }
+    /* ۱.۳.۹۶: «دستهٔ جدید» از هر جا: نام (با بررسی تکراری) ← آیکون و رنگ ← done(cat). باکس از اول بالای صفحه (بی‌پرش با صفحه‌کلید) */
+    function hkNewCatPrompt(kind, done) {
+      var old = document.getElementById('hkNewCatP'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkNewCatP'; ov.className = 'hk-re-ov hk-ncp-ov'; ov.setAttribute('data-hk-back', '1');
+      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">دستهٔ جدید ' + (kind === 'in' ? 'واریزی' : 'برداشت') + '</div>' +
+        '<div class="hk-re-f"><input class="hk-re-in hk-ncp-in" maxlength="24" enterkeyhint="done" placeholder="نام دسته"></div><div class="sp-pick-err hk-ncp-err"></div>' +
+        '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ادامه</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
+      var inp = ov.querySelector('.hk-ncp-in'), err = ov.querySelector('.hk-ncp-err');
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.hk-re-no').onclick = close;
+      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+      var save = function () {
+        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; return; }
+        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; return; }
+        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+        if (!cat) return;
+        close();
+        hkCatStyleSheet(cat, function () { if (done) done(cat); });
+      };
+      ov.querySelector('.hk-re-ok').addEventListener('mousedown', function (e) { e.preventDefault(); });
+      ov.querySelector('.hk-re-ok').onclick = save;
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      document.body.appendChild(ov);
+      try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
+    }
     function hkSmsCatGrid(parsed) {
       var old = document.getElementById('smsCatGrid'); if (old) old.remove();
       window._hkSmsCat = '';
@@ -245,7 +272,8 @@
         .sort(function (a, b) { return b.s - a.s; }).map(function (x) { return x.c; });
       /* ۱.۳.۷۶: دو ردیف پنج‌تایی (۹ دسته + «بیشتر»)، آیکون‌های رنگی */
       /* ۱.۳.۸۸: سه ردیف پنج‌تایی (۱۵ خانه)؛ بیشتر از ۱۵ دسته ← خانهٔ پانزدهم «بیشتر…» */
-      var top = order.length > 15 ? order.slice(0, 14) : order.slice(0, 15), rest = order.length > 15 ? order.slice(14) : [];
+      /* ۱.۳.۹۶: خانهٔ آخر همیشه «دستهٔ جدید»؛ اگر جا نشد، یکی مانده به آخر «بیشتر…» */
+      var top = order.length > 14 ? order.slice(0, 13) : order.slice(0, 14), rest = order.length > 14 ? order.slice(13) : [];
       var g = document.createElement('div'); g.id = 'smsCatGrid'; g.className = 'sms-cat-grid sms-cat-row hk-cat-colored';
       /* ۱.۳.۵۰: زدن دسته فقط انتخاب است؛ با «ثبت»: شرح نوشته‌شده می‌ماند (دسته = همین)، شرح خالی = اسم دسته */
       var pick = function (c) {
@@ -281,6 +309,16 @@
         };
         g.appendChild(more);
       }
+      var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'sms-cat sp-pick-tadd hk-cp-add'; plus.style.setProperty('--cc', '#08b5f5');
+      plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
+      plus.onclick = function () {
+        hkNewCatPrompt(parsed.type === 'income' ? 'in' : 'out', function (cat) {
+          hkSmsCatGrid(parsed);
+          var t = document.querySelector('#smsCatGrid .sms-cat[data-cat="' + cat.id + '"]');
+          if (t) t.click(); else { window._hkSmsCat = cat.id; }
+        });
+      };
+      g.appendChild(plus);
       var sug = document.getElementById('smsPlanSuggest');
       var anc = sug || desc._micWrap || desc;
       if (anc.parentNode) anc.parentNode.insertBefore(g, anc.nextSibling);

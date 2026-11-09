@@ -699,40 +699,42 @@
       };
       el.appendChild(ov);
     }
-    /* ۱.۳.۹۵: اسلایدهای ثابت (حذف‌نشدنی) با لانگ‌پرس: کلید بیضی روشن/خاموش همان سبک نرم‌افزار؛ لمس کلید = خاموش شدن اسلاید،
-       لمس جای دیگر = لغو (همان لایهٔ محافظ سطل زبالهٔ «کارهای من») */
+    /* ۱.۳.۹۶: لانگ‌پرس روی اسلایدِ ثابت: باکس کوچک «اسلایدها» روی همان باکس هوشمند، با کلید روشن/خاموش همهٔ اسلایدها
+       (همان صفحهٔ شخصی‌سازی)؛ اسلایدِ فعلی هایلایت است؛ هر تغییر همان لحظه روی باکس اعمال می‌شود؛ لمس بیرون = بستن */
     function spShowSlideToggle(el, page) {
-      var old = el.querySelector('.sp-trash-ov'); if (old) { if (old._hkClose) old._hkClose(); else old.remove(); }
-      document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); });
-      var key = page.key, lab = (typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[key]) || '';
-      var ov = document.createElement('div'); ov.className = 'sp-trash-ov sp-tog-ov';
-      ov.innerHTML = '<div class="sp-tog-card"><span class="sp-tog-l"></span><button type="button" class="hk-switch on sp-tog-sw" role="switch" aria-checked="true" aria-label="روشن/خاموش اسلاید"><i></i></button></div>';
-      ov.querySelector('.sp-tog-l').textContent = lab;
-      var shield = document.createElement('div'); shield.className = 'sp-trash-shield';
-      var armed = false, downOnBtn = false;
-      var btnHit = function (x, y) { var b = ov.querySelector('.sp-tog-card'); if (!b) return false; var r = b.getBoundingClientRect(); return x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6; };
-      var close = function () { try { ov.remove(); } catch (e0) {} setTimeout(function () { try { shield.remove(); } catch (e1) {} }, 400); };
-      ov._hkClose = close;
-      var swallow = function (e) { e.stopPropagation(); if (e.cancelable) e.preventDefault(); };
-      shield.addEventListener('pointerdown', function (e) { swallow(e); armed = true; downOnBtn = btnHit(e.clientX, e.clientY); });
-      shield.addEventListener('pointermove', swallow);
-      ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'contextmenu'].forEach(function (n) { shield.addEventListener(n, swallow); });
-      shield.addEventListener('pointerup', function (e) {
-        swallow(e);
-        if (!armed) return;
-        if (downOnBtn && btnHit(e.clientX, e.clientY)) {
-          var sw = ov.querySelector('.sp-tog-sw'); sw.classList.remove('on'); sw.setAttribute('aria-checked', 'false');
-          try { window.appHaptic(15); } catch (eH) {}
-          setTimeout(function () {
-            close();
-            try { var o2 = hkPrefs().spOff || []; if (o2.indexOf(key) < 0) o2.push(key); hkPrefSet('spOff', o2); } catch (eP) {}
-            try { renderHomeCards(); } catch (eR) {}
-            showToast('اسلاید «' + lab + '» خاموش شد؛ از شخصی‌سازی دوباره روشن می‌شود');
-          }, 320);
-        } else close();
+      document.querySelectorAll('.sp-tog-ov2').forEach(function (x) { x.remove(); });
+      var key = page.key;
+      var ov = document.createElement('div'); ov.className = 'sp-tog-ov2'; ov.setAttribute('data-hk-back', '1');
+      var r = el.getBoundingClientRect();
+      var pn = document.createElement('div'); pn.className = 'sp-tog-panel';
+      var h = Math.max(r.height, Math.min(window.innerHeight - 40, 360));
+      var top = Math.max(12, Math.min(r.top, window.innerHeight - h - 12));
+      pn.style.cssText = 'top:' + Math.round(top) + 'px;left:' + Math.round(r.left) + 'px;width:' + Math.round(r.width) + 'px;height:' + Math.round(h) + 'px;';
+      pn.innerHTML = '<div class="sp-tog-h">اسلایدهای باکس هوشمند</div><div class="sp-tog-list"></div>';
+      var list = pn.querySelector('.sp-tog-list');
+      var keys = []; try { keys = hkSpOrderKeys(); } catch (eK) { keys = Object.keys(HK_SP_LABELS); }
+      var cur = null;
+      keys.forEach(function (k) {
+        var off = (hkPrefs().spOff || []).indexOf(k) >= 0;
+        var row = document.createElement('div'); row.className = 'sp-tog-row' + (k === key ? ' cur' : ''); row.dataset.k = k;
+        row.innerHTML = '<span class="sp-tog-l"></span><button type="button" class="hk-switch' + (off ? '' : ' on') + '" role="switch" aria-checked="' + (!off) + '"><i></i></button>';
+        row.querySelector('.sp-tog-l').textContent = HK_SP_LABELS[k];
+        var sw = row.querySelector('.hk-switch');
+        row.onclick = function (e) {
+          e.stopPropagation();
+          var v = !sw.classList.contains('on'); sw.classList.toggle('on', v); sw.setAttribute('aria-checked', String(v));
+          try { var o2 = (hkPrefs().spOff || []).slice(), ix = o2.indexOf(k); if (v && ix >= 0) o2.splice(ix, 1); if (!v && ix < 0) o2.push(k); hkPrefSet('spOff', o2); } catch (eP) {}
+          try { appHaptic(10); } catch (eH) {}
+        };
+        list.appendChild(row);
+        if (k === key) cur = row;
       });
-      document.body.appendChild(shield);
-      el.appendChild(ov);
+      var close = function () { ov.classList.add('out'); setTimeout(function () { ov.remove(); }, 180); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.appendChild(pn);
+      document.body.appendChild(ov);
+      if (cur) { try { list.scrollTop = Math.max(0, cur.offsetTop - list.clientHeight / 2 + cur.offsetHeight / 2); } catch (eS) {} }
     }
     function bindSmartPanelGestures(el) {
       if (el._spBound) return;
@@ -748,7 +750,7 @@
         /* لانگ‌پرس روی اسلاید ساختهٔ کاربر (کارهای من) → سطل زبالهٔ قرمز روی همان اسلاید */
         clearTimeout(el._spLp);
         var _pg0 = (el._spPages || [])[el._spIdx];
-        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[_pg0.key];
+        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && !_isTodo && typeof HK_SP_LABELS !== 'undefined'; /* ۱.۳.۹۶: هر اسلایدِ غیرِ «کارهای من» (حتی + و هشدار) = فهرست اسلایدها، تا اگر همه خاموش شدند هم راه روشن کردن بماند */
         if (_isTodo || _isTog) {
           el._spLpArmed = true;
           el._spLp = setTimeout(function () {

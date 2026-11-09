@@ -31,6 +31,9 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       int cn=in.getIntExtra("nid",0); if(cn==0) return;
       String lab=in.getStringExtra("label"); if(lab==null) lab="";
       String cat=in.getStringExtra("cat"); if(cat==null) cat="";
+      /* ۱.۳.۹۶: اگر پیش‌تر در «ثبت سریع» شرح نوشته شده، همان شرح می‌ماند و فقط دسته اضافه می‌شود */
+      String prev=""; try{ JSONObject it0=findItem(c,cn); if(it0!=null) prev=it0.optString("quickDesc","").trim(); }catch(Exception ignored){}
+      if(!prev.isEmpty()) lab=prev;
       boolean ok=saveDesc(c,cn,lab);
       if(ok){ try{ SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE); JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]")); for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null&&x.optInt("nid",0)==cn){ x.put("quickCat",cat); break; } } sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit(); }catch(Exception ignored){} }
       notifyDone(c,cn,lab,ok);
@@ -42,6 +45,8 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
     String desc=cs==null?"":cs.toString().trim(); if(desc.length()>200) desc=desc.substring(0,200);
     int nid=in.getIntExtra("nid",0); if(nid==0) return;
     boolean found=saveDesc(c,nid,desc);
+    /* ۱.۳.۹۶: بعد از نوشتن شرح، اعلان با «بابت: …» و دکمه‌های دسته (دسته اختیاری؛ زدنش شرح را پاک نمی‌کند) */
+    if(found && !desc.isEmpty()){ BankSmsReceiver.postCatAfterDesc(c,nid,desc); return; }
     notifyDone(c,nid,desc,found);
   }
   /** شرح را کنار همان پیامک در صف می‌گذارد (نرم‌افزار ردیف را می‌سازد) */

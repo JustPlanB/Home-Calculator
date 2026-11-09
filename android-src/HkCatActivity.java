@@ -20,6 +20,8 @@ public class HkCatActivity extends Activity {
       String desc=in.getStringExtra("label");
       Bundle res=RemoteInput.getResultsFromIntent(in);
       if(res!=null){ CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC); desc=cs==null?"":cs.toString().trim(); }
+      /* ۱.۳.۹۶: دکمهٔ دسته/«بیشتر…» بعد از نوشتن شرح: شرح نوشته‌شده می‌ماند */
+      else if(nid!=0){ try{ JSONObject it0=HkQuickReplyReceiver.findItem(this,nid); String prev=it0==null?"":it0.optString("quickDesc","").trim(); if(!prev.isEmpty()) desc=prev; }catch(Exception ignored){} }
       if(desc==null) desc=""; if(desc.length()>200) desc=desc.substring(0,200);
       if(nid!=0){
         SharedPreferences sp=getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE);
