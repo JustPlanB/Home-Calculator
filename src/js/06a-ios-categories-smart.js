@@ -440,6 +440,9 @@
       if (!panel || !stack || !bar || !chrome) return;
       if (!panel.classList.contains('active')) return;
       var vh = window.innerHeight || document.documentElement.clientHeight;
+      /* ۱.۳.۹۴: پنجره‌ای باز است (اسکرول صفحه قفل) و صفحه فقط کوتاه شده (آمدن صفحه‌کلید): صفحهٔ پشت پنجره دوباره چیده نمی‌شود تا نپرد */
+      if (document.body.style.position === 'fixed' && layoutHomeStack._vh && vh < layoutHomeStack._vh) return;
+      layoutHomeStack._vh = vh;
       var cr = chrome.getBoundingClientRect(), tb = bar.getBoundingClientRect();
       if (!(tb.height > 0)) return;
       var b1 = document.getElementById('homeBox1');

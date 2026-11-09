@@ -308,21 +308,33 @@
       if (!D.groups.length) h += '<div class="hk-dg-empty">هنوز گروهی نساخته‌اید.</div>';
       D.groups.forEach(function (g) {
         var tr = hkDongPlan(g), open = tr.reduce(function (t, x) { return t + (x.paid ? 0 : x.amount); }, 0);
-        h += '<button type="button" class="hk-dg-card" data-g="' + escapeHtml(g.id) + '"><b>' + escapeHtml(g.name) + '</b><span class="hk-dg-sub">' + toPersianDigits(String(g.members.length)) + ' نفر · خرج کل ' + hkDongAmt(hkDongTotal(g)) + '</span>' +
-          '<span class="hk-dg-st ' + (open ? 'open' : 'done') + '">' + (open ? 'تسویه‌نشده: ' + hkDongAmt(open) : (g.expenses.length ? 'تسویه است' : 'بدون خرج')) + '</span></button>';
+        /* ۱.۳.۹۴: مداد ویرایش و × حذف روی همین کارت فهرست گروه‌ها، کنار هم سمت چپ (مثل باکس بستهٔ رابطه در منوی قرض) */
+        h += '<div role="button" tabindex="0" class="hk-dg-card" data-g="' + escapeHtml(g.id) + '"><b>' + escapeHtml(g.name) + '</b><span class="hk-dg-sub">' + toPersianDigits(String(g.members.length)) + ' نفر · خرج کل ' + hkDongAmt(hkDongTotal(g)) + '</span>' +
+          '<span class="hk-dg-st ' + (open ? 'open' : 'done') + '">' + (open ? 'تسویه‌نشده: ' + hkDongAmt(open) : (g.expenses.length ? 'تسویه است' : 'بدون خرج')) + '</span>' +
+          '<span class="hk-dg-cacts"><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
+          '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></span></div>';
       });
       h += '</div><div class="hk-rax-acts hk-dg-acts"><button type="button" class="modal-btn yes hk-dg-new">گروه تازه</button><button type="button" class="modal-btn no hk-dg-close">بستن</button></div>';
       bx.innerHTML = h;
-      bx.querySelectorAll('.hk-dg-card').forEach(function (c) { c.onclick = function () { _hkDongView.gid = c.getAttribute('data-g'); hkDongRender(); }; });
+      bx.querySelectorAll('.hk-dg-card').forEach(function (c) {
+        var gid = c.getAttribute('data-g'), g = D.groups.filter(function (x) { return x.id === gid; })[0];
+        c.onclick = function () { _hkDongView.gid = gid; hkDongRender(); };
+        c.querySelector('.hk-dg-edit').onclick = function (e) { e.stopPropagation(); hkDongGroupEditor(gid); };
+        c.querySelector('.hk-dg-del').onclick = function (e) {
+          e.stopPropagation();
+          askConfirm('گروه «' + (g ? g.name : '') + '» با همهٔ خرج‌هایش حذف شود؟', function () {
+            var D2 = hkDongLoad(); D2.groups = D2.groups.filter(function (x) { return x.id !== gid; });
+            hkDongSave(D2); _hkDongView.gid = ''; hkDongRender();
+          });
+        };
+      });
       bx.querySelector('.hk-dg-new').onclick = function () { hkDongGroupEditor(null); };
       bx.querySelector('.hk-dg-close').onclick = closeDongModal;
     }
     function hkDongRenderGroup(bx, D, g) {
       var bal = hkDongBalances(g), tr = hkDongPlan(g);
-      /* ۱.۳.۹۳: «اعضا و نام» و «حذف گروه» برداشته شد؛ به‌جایشان مداد ویرایش و × حذف در گوشه‌های بالای باکس گروه */
-      var h = '<div class="hk-dg-top"><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
-        '<div class="hk-dg-t">' + escapeHtml(g.name) + '</div>' +
-        '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></div>';
+      /* ۱.۳.۹۴: ویرایش و حذف گروه از کارت فهرست گروه‌ها (داخل باکس گروه فقط نام) */
+      var h = '<div class="hk-dg-t">' + escapeHtml(g.name) + '</div>';
       h += '<div class="hk-dg-sum"><span>خرج کل</span><b>' + hkDongAmt(hkDongTotal(g)) + ' <small>تومان</small></b></div>';
       h += '<div class="hk-dg-h">وضعیت هر نفر</div><div class="hk-dg-bal">';
       g.members.forEach(function (m) {
@@ -359,13 +371,6 @@
         hkDongExpenseEditor(g.id, null);
       };
       bx.querySelector('.hk-dg-share').onclick = function (e) { e.stopPropagation(); hkDongShareMenu(bx.querySelector('.hk-dg-share'), g); };
-      bx.querySelector('.hk-dg-edit').onclick = function () { hkDongGroupEditor(g.id); };
-      bx.querySelector('.hk-dg-del').onclick = function () {
-        askConfirm('گروه «' + g.name + '» با همهٔ خرج‌هایش حذف شود؟', function () {
-          var D2 = hkDongLoad(); D2.groups = D2.groups.filter(function (x) { return x.id !== g.id; });
-          hkDongSave(D2); _hkDongView.gid = ''; hkDongRender();
-        });
-      };
           }
     /* پنجرهٔ کوچک روی دنگ (ساخت/ویرایش گروه، خرج) */
     function hkDongSheet(title) {
@@ -449,7 +454,7 @@
         var D2 = hkDongLoad(), g2 = gid && D2.groups.filter(function (x) { return x.id === gid; })[0];
         if (g2) { g2.name = name; g2.members = st.members; }
         else { g2 = { id: hkDongId('g'), name: name, members: st.members, expenses: [], settles: [], at: Date.now() }; D2.groups.push(g2); }
-        hkDongSave(D2); sh.ov.remove(); _hkDongView.gid = g2.id; hkDongRender();
+        hkDongSave(D2); sh.ov.remove(); _hkDongView.gid = g0 ? _hkDongView.gid : g2.id; hkDongRender(); /* ۱.۳.۹۴: ویرایش از فهرست = در همان فهرست بماند */
       };
     }
     function hkDongExpenseEditor(gid, eid) {

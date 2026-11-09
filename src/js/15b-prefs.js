@@ -203,6 +203,7 @@
     /* ===== ۱.۳.۷۱: شخصی‌سازی تازه — هم‌سبک منوی ویرایش ردیف: گروه‌ها با عنوان کوچک، ردیف‌های یکدست با «مقدار ›»،
        کلید روشن/خاموش، و صفحهٔ دوم برای انتخاب‌ها و اسلایدها (فلش برگشت). تنظیم‌ها همان تنظیم‌های قبلی‌اند. ===== */
     var HK_PF_IC = {
+      newcat: '<path d="M12 5v14M5 12h14"/>', /* ۱.۳.۹۴: دستهٔ جدید (همان + آیکون دستهٔ جدید) */
       font: '<path d="M5 19L10 5l5 14M7 14h6M16 19l2.5-7 2.5 7"/>',
       start: '<path d="M4 11l8-6 8 6v8.5H4z"/>',
       sort: '<path d="M7 4v16M4 17l3 3 3-3M14 6h6M14 11h4M14 16h2"/>',
@@ -214,7 +215,7 @@
       remind: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2H4.4z"/><path d="M10 21a2.1 2.1 0 0 0 4 0"/>',
       recap: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'
     };
-    var HK_PF_COL = { font: '#5e5ce6', start: '#30b0c7', sort: '#8e8e93', dock: '#08b5f5', slides: '#34c759', cats: '#ff9f0a', privacy: '#636366', sms: '#ff6b4a', remind: '#e6b12c', recap: '#af52de' };
+    var HK_PF_COL = { newcat: '#08b5f5', font: '#5e5ce6', start: '#30b0c7', sort: '#8e8e93', dock: '#08b5f5', slides: '#34c759', cats: '#ff9f0a', privacy: '#636366', sms: '#ff6b4a', remind: '#e6b12c', recap: '#af52de' };
     /* ترتیب اسلایدهای باکس هوشمند (اولویت کاربر)؛ اسلایدهای ثابت مثل هشدار و «+» سر جایشان می‌مانند */
     function hkSpOrderKeys() {
       var o = hkPrefs().spOrder, all = Object.keys(HK_SP_LABELS);
@@ -336,13 +337,15 @@
         goRow(g2, 'dock', 'میان‌برها', dk, function () { stack.push('dock'); render(); }, 'dock');
         var nOn = Object.keys(HK_SP_LABELS).filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
         goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(Object.keys(HK_SP_LABELS).length)), function () { stack.push('slides'); render(); }, 'slides');
-        var g3 = grp(body, 'دسته‌ها و حریم');
+        /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ بالای همه «دستهٔ جدید» (همان کار آیکون دستهٔ جدید)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت */
+        var g3 = grp(body, 'دسته‌ها');
+        goRow(g3, 'newcat', 'دستهٔ جدید', '', function () { hkNewCatSheet(render); }, 'newcat');
         goRow(g3, 'cats', 'اولویت دسته‌ها', (hkCatPri('in') || hkCatPri('out')) ? 'دستی' : 'خودکار', function () { openCatPriority(render); }, 'cats');
-        swRow(g3, 'privacy', 'مخفی کردن مبلغ‌ها', !!p.privacy, function (v) { hkPrefSet('privacy', v); }, 'privacy');
         var g4 = grp(body, 'اعلان‌ها');
         swRow(g4, 'sms', 'پیامک شخصی', p.nPersonal !== false, function (v) { hkPrefSet('nPersonal', v); }, 'nPersonal');
         swRow(g4, 'remind', 'یادآورها', p.nRemind !== false, function (v) { hkPrefSet('nRemind', v); try { scheduleNativeReminders(); } catch (e) {} }, 'nRemind');
         swRow(g4, 'recap', '«ماهی که گذشت» اول هر ماه', p.nRecap !== false, function (v) { hkPrefSet('nRecap', v); }, 'nRecap');
+        swRow(g4, 'privacy', 'مخفی کردن مبالغ', !!p.privacy, function (v) { hkPrefSet('privacy', v); }, 'privacy');
       };
       var render = function () {
         var top = stack.length ? pages[stack[stack.length - 1]]() : null;
@@ -359,6 +362,38 @@
       };
       render();
       document.body.appendChild(ov);
+    }
+    /* ۱.۳.۹۴: «دستهٔ جدید» از منوی شخصی‌سازی: نوع (مخارج/درآمد) ← نام ← آیکون و رنگ (همان روند آیکون دستهٔ جدید) */
+    function hkNewCatSheet(after) {
+      var old = document.getElementById('hkNewCat'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkNewCat'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
+      var kind = 'out';
+      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">دستهٔ جدید</div>' +
+        '<div class="hk-re-f"><div class="hk-re-l">نوع</div><div class="hk-re-seg hk-nc-seg"><button type="button" class="hk-re-segb is-paid is-exp" data-v="out">مخارج</button><button type="button" class="hk-re-segb is-paid is-inc" data-v="in">درآمد</button></div></div>' +
+        '<div class="hk-re-f"><div class="hk-re-l">نام</div><input class="hk-re-in hk-nc-name" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"></div>' +
+        '<div class="sp-pick-err hk-nc-err"></div>' +
+        '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ادامه</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
+      var q = function (x) { return ov.querySelector(x); }, inp = q('.hk-nc-name'), err = q('.hk-nc-err');
+      var sync = function () { ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === kind); }); };
+      ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.onclick = function () { kind = b.dataset.v; sync(); }; });
+      sync();
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      q('.hk-re-no').onclick = close;
+      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+      var save = function () {
+        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; try { inp.focus(); } catch (e) {} return; }
+        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; try { inp.focus(); } catch (e) {} return; }
+        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+        if (!cat) { try { inp.focus(); } catch (e) {} return; }
+        close();
+        hkCatStyleSheet(cat, function () { showToast('دستهٔ «' + cat.label + '» ساخته شد'); if (after) after(); });
+      };
+      q('.hk-re-ok').onclick = save;
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      document.body.appendChild(ov);
+      setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
     }
     function openCatPriority(after) {
       var old = document.getElementById('hkCatPriModal'); if (old) old.remove();
@@ -444,12 +479,13 @@
       /* صفحهٔ اول */
       setTimeout(function () { try { var sp = hkPrefs().startPage; if ((sp === 'expense' || sp === 'income') && !document.querySelector('.modal-overlay.open, #tourOverlay.open') && !document.body.classList.contains('detail-open')) openPersonDetail(hkMainTitle(), sp); } catch (e) {} }, 900);
     })();
-    function hkOpenLedgerEdit(sec, idx) {
+    function hkOpenLedgerEdit(sec, idx, opts) {
       var r = sec.rows[idx]; if (!r) return;
+      var fresh = !!(opts && opts.fresh);
       var old = document.getElementById('hkLedEdit'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkLedEdit'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
       var st = r.settled ? 'settled' : (r.status === 'debt' ? 'debt' : 'credit');
-      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">ویرایش ردیف ' + toPersianDigits(String(idx + 1)) + '</div>' +
+      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">' + (fresh ? 'ردیف جدید' : 'ویرایش ردیف ' + toPersianDigits(String(idx + 1))) + '</div>' +
         '<div class="hk-re-f"><div class="hk-re-l">تاریخ</div><button type="button" class="hk-re-in hk-re-sel hk-led-day"></button></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">شرح</div><textarea class="hk-re-in hk-led-desc" rows="1"></textarea></div>' +
         '<div class="hk-re-f"><div class="hk-re-l">مبلغ</div><input class="hk-re-in hk-led-amt" inputmode="numeric" dir="ltr"></div>' +
@@ -469,11 +505,18 @@
       var sync = function () { ov.querySelectorAll('.hk-led-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st); }); };
       ov.querySelectorAll('.hk-led-seg button').forEach(function (b) { b.onclick = function () { st = b.dataset.v; sync(); }; });
       sync();
-      var close = function () { ov.remove(); };
+      var done = false;
+      var close = function () {
+        ov.remove();
+        /* ۱.۳.۹۴: ردیف تازه‌ای که پر نشد، برداشته می‌شود */
+        if (fresh && !r.amount && !String(r.desc || '').trim()) { try { _ledFresh.delete(r); renderLedgerTab(); } catch (eF) {} }
+      };
       ov._hkCancel = close;
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       q('.hk-re-no').onclick = close;
       q('.hk-re-ok').onclick = function () {
+        done = true;
+        if (fresh && !parseAmount(q('.hk-led-amt').value) && !String(q('.hk-led-desc').value || '').trim()) { close(); return; }
         updateLedgerRowField(sec.id, idx, 'desc', q('.hk-led-desc').value);
         updateLedgerRowField(sec.id, idx, 'amount', parseAmount(q('.hk-led-amt').value) || 0);
         /* ۱.۳.۵۷: «تسویه» = ردیف می‌ماند و از جمع‌ها بیرون می‌رود؛ بستانکار/بدهکارِ قبلی نگه داشته می‌شود */
@@ -596,10 +639,26 @@
       }, 50);
     }
 
-    /* بیش از ۱۰ ردیف: ارتفاع = سرستون‌ها + ۱۰ ردیف اول (فقط وقتی باز است اندازه‌گیری می‌شود) */
+    /* ۱.۳.۹۴: جدول ثابت مثل درآمد/مخارج: ارتفاع همیشه = سرستون‌ها + ۹ ردیف؛ بیشتر از ۹ ردیف فقط ردیف‌ها داخل جدول اسکرول می‌شوند
+       (دکمهٔ ردیف تازه زیر جدول سر جایش می‌ماند و پایین نمی‌رود) */
+    const HK_LED_ROWS = 9;
     function hkLedCap(body, thead, tbody) {
       if (!body || !body.classList.contains('hk-led-scroll')) return;
-      try { const trs = tbody.querySelectorAll('tr'); let h = thead.offsetHeight; for (let q = 0; q < 10 && q < trs.length; q++) h += trs[q].offsetHeight; if (h > 40) body.style.setProperty('max-height', h + 'px', 'important'); } catch (eH) {}
+      try {
+        const trs = tbody.querySelectorAll('tr');
+        let rh = 0; for (let q = 0; q < trs.length && !rh; q++) rh = trs[q].offsetHeight;
+        if (!(rh > 10)) { const any = document.querySelector('#sections-ledger tbody tr'); rh = (any && any.offsetHeight > 10) ? any.offsetHeight : 37; }
+        const h = thead.offsetHeight + rh * HK_LED_ROWS;
+        if (h > 40) { body.style.setProperty('max-height', h + 'px', 'important'); body.style.setProperty('--hk-led-h', h + 'px'); }
+        /* کمتر از ۹ ردیف: قاب جدول تا پایینِ همان ارتفاع ثابت ادامه دارد (جای خالیِ زیر ردیف‌ها داخل جدول، نه بیرونش) */
+        const table = tbody.parentNode; let ft = table.querySelector('tfoot.hk-led-fill');
+        let used = thead.offsetHeight + 2; for (let q = 0; q < trs.length; q++) used += trs[q].offsetHeight;
+        const fill = Math.floor(h - used);
+        if (fill > 4) {
+          if (!ft) { ft = document.createElement('tfoot'); ft.className = 'hk-led-fill'; ft.innerHTML = '<tr><td colspan="4" style="padding:0 !important;border:none !important;background:transparent !important;"></td></tr>'; table.appendChild(ft); }
+          ft.firstChild.firstChild.style.height = fill + 'px';
+        } else if (ft) ft.remove();
+      } catch (eH) {}
     }
     /* ۱.۳.۶۸: صف ساخت پیشاپیش ردیف‌های روابط بسته (یکی در هر نوبت بیکاری) */
     const hkLedPrebuildQ = [];
@@ -719,6 +778,9 @@
             buildRows();
             if (body.classList.contains('hk-led-scroll') && !body.style.getPropertyValue('max-height')) hkLedCap(body, thead, tbody);
           }
+          /* ۱.۳.۹۴: در طول حرکت بستن، ارتفاع ثابت جدول می‌ماند تا قاب یکباره کوچک نشود */
+          if (target.collapsed) { div.classList.add('hk-led-closing'); clearTimeout(div._hkCloseT); div._hkCloseT = setTimeout(function () { div.classList.remove('hk-led-closing'); }, 420); }
+          else div.classList.remove('hk-led-closing');
           div.classList.toggle('collapsed', !!target.collapsed);
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
           /* ۱.۳.۶۶: باز/بسته بودن فقط حالت نمایش است (منو همیشه بسته باز می‌شود) — هیچ ذخیره‌ای پشت این ضربه نیست */
@@ -757,11 +819,9 @@
         else hkLedPrebuildQ.push({ div, buildRows, body, thead, tbody });
         table.appendChild(tbody);
         body.appendChild(table);
-        /* بیش از ۱۰ ردیف: جدول ثابت و از ردیف ۱۱ داخل خودش اسکرول */
-        if (vsec.rows.length > 10) {
-          body.classList.add('hk-led-scroll');
-          if (!sec.collapsed) requestAnimationFrame(() => hkLedCap(body, thead, tbody));
-        }
+        /* ۱.۳.۹۴: جدول همیشه ثابت (۹ ردیف)؛ بیشتر از آن داخل خودش اسکرول */
+        body.classList.add('hk-led-scroll');
+        if (!sec.collapsed) requestAnimationFrame(() => hkLedCap(body, thead, tbody));
         // ＋ خارج از ناحیه اسکرول — پایین جدول ثابت
         div.classList.add('shaped-card', 'frame-step-sm');
         div.classList.remove('frame-with-step');
@@ -776,10 +836,15 @@
           const bodyEl = div.querySelector('.section-body');
           const prevScroll = bodyEl ? bodyEl.scrollTop : 0;
           addLedgerRow(thisSecId, 1);
+          /* ۱.۳.۹۴: ردیف تازه با همان باکس «ویرایش» پر می‌شود (خانه‌های جدول دیگر مستقیم تایپ نمی‌شوند)؛ انصراف = ردیف خالی برداشته می‌شود */
           requestAnimationFrame(() => {
             try {
-              const b2 = div.querySelector('.section-body');
-              if (b2) b2.scrollTop = prevScroll;
+              const view = _ledViewMap[thisSecId] || [];
+              let fi = -1; for (let q = view.length - 1; q >= 0; q--) { if (_ledFresh.has(view[q].row) && !view[q].row.amount && !String(view[q].row.desc || '').trim()) { fi = q; break; } }
+              const sNow = (ensureLedger().sections || []).find(x => x.id === thisSecId);
+              const b2 = document.querySelector('#sections-ledger .section[data-sec-id="' + thisSecId + '"] .section-body');
+              if (b2) b2.scrollTop = fi >= 0 ? b2.scrollHeight : prevScroll;
+              if (fi >= 0 && sNow) hkOpenLedgerEdit(Object.assign({}, sNow, { rows: view.map(x => x.row) }), fi, { fresh: true });
             } catch (err) {}
           });
         };

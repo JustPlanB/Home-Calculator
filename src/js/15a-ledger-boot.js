@@ -506,6 +506,12 @@
       });
     }
 
+    /* ۱.۳.۹۴: خانهٔ فقط‌خواندنی جدول قرض (ظاهر همان قفل/خالی قبلی، بی ویرایش با دوبار ضربه) */
+    function hkLedReadOnly(el, has) {
+      el.readOnly = true; el.tabIndex = -1;
+      if (has) { try { lockField(el, true); } catch (e) { el.classList.add('locked'); } }
+      else { el.classList.remove('locked', 'unlocked'); el.classList.add('is-empty'); el.dataset.locked = '0'; }
+    }
     function buildLedgerRowEl(sec, idx) {
       const r = sec.rows[idx];
       const tr = document.createElement('tr');
@@ -568,7 +574,8 @@
         }
       };
       tdDesc.appendChild(descInp);
-      setupLockable(descInp, !!(r.desc && String(r.desc).trim()), !canEditRow(r), OWNERSHIP_LOCK_MSG);
+      /* ۱.۳.۹۴: مثل جدول درآمد/مخارج: خانه‌ها با ضربه یا دوبار ضربه تایپ نمی‌شوند؛ ویرایش فقط با لانگ‌پرس ← ویرایش */
+      hkLedReadOnly(descInp, !!(r.desc && String(r.desc).trim()));
       /* ۱.۳.۴۹: شرح پر و قفل: تک‌خطی با «…»؛ لمس → متن کامل در باکس شناور یک‌خطی (مثل بقیهٔ جدول‌ها) */
       /* ۱.۳.۵۱: روی گوشی click گاهی نمی‌رسد (قفلِ سلول لمس را می‌گیرد) → تشخیص ضربهٔ کوتاه با pointer */
       var _dTap = null, _dShown = 0;
@@ -612,7 +619,7 @@
         }
       };
       tdAmt.appendChild(amtInp);
-      setupLockable(amtInp, !!(r.amount), !canEditRow(r), OWNERSHIP_LOCK_MSG);
+      hkLedReadOnly(amtInp, !!(r.amount));
 
       const isCredit = r.status === 'credit';
       function applyLedgerAmountColor(v) {
@@ -814,6 +821,8 @@
         if (isLedEditing()) return;
         /* ۱.۳.۵۷: وضعیت فقط از «ویرایش»؛ زدن روی مبلغ پر کاری نمی‌کند */
         if (r.amount) return;
+        /* ۱.۳.۹۴: مبلغ خالی هم با ضربه/دوبار ضربه تایپ نمی‌شود (فقط لانگ‌پرس ← ویرایش) */
+        if (true) return;
 
         const now = Date.now();
         const last = tdAmt._lastTapTs || 0;
