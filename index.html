@@ -12480,6 +12480,7 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۸۸: ثبت تکی/گروهی: باکس بالای صفحه تا با آمدن صفحه‌کلید جابه‌جا نشود */
     #sections-ledger .section:not(.collapsed) .section-body.hk-led-scroll, #sections-ledger .section.hk-led-closing .section-body.hk-led-scroll { min-height: var(--hk-led-h, 0px) !important; } /* ۱.۳.۹۴: جدول قرض ثابت (۹ ردیف) */
     #smsImportModal.hk-kb-top.open { align-items: flex-start !important; padding-top: 56px !important; } /* ۱.۳.۹۴: ثابت (نه vh) تا با آمدن صفحه‌کلید باکس نپرد؛ جای نهایی همان قبلی */
+    #smsImportModal.hk-kb-top.open { overflow: hidden !important; } /* ۱.۳.۹۵: پنجره با آمدن صفحه‌کلید اسکرول نمی‌خورد */
     /* ۱.۳.۸۸: نام فیلترهای جستجو (روز، حساب، نوع، ماه، دسته) آبی نرم‌افزار */
     .bsr-grid .bsr-cell:not(.bsr-desc):not(.bs-arange-row):not(.bs-amt-row) > .balance-acc-label { color: #08b5f5 !important; -webkit-text-fill-color: #08b5f5 !important; }
     /* ۱.۳.۸۸: دُنگ — نفرات ذخیره‌شده (بیضی آبی با × بالا)، ردیف افزودن، تعداد نفر، دکمهٔ پرداخت نشده/شد */
@@ -12513,7 +12514,9 @@ button, input, select, textarea { font-family: inherit; }
     .hk-dg-wt .hk-dg-wbox { gap: 0; }
     .hk-dg-wt .hk-dg-wn { flex: 0 0 34px; width: 34px; padding: 5px 2px; }
     .hk-dg-wt .hk-dg-wb { width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #08b5f5; font-size: 1.3rem; -webkit-tap-highlight-color: rgba(8,181,245,0.18); }
-    .hk-dg-wt .hk-dg-wb:active { background: rgba(8,181,245,0.14); }
+    .hk-dg-wt .hk-dg-wb:active { background: transparent; opacity: 0.6; } /* ۱.۳.۹۵: پشت «+/−» آبی نمی‌شود */
+    .hk-dg-wt .hk-dg-wb { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+    .hk-dg-wt .hk-dg-wn { flex: 0 0 34px; width: 34px !important; height: 34px !important; min-height: 0 !important; line-height: 34px; box-sizing: border-box !important; padding: 0 !important; border-radius: 8px; } /* ۱.۳.۹۵: مربعی */
     html[data-theme="light"] .hk-dg-wt { border-color: rgba(0,0,0,0.14); }
     html[data-theme="light"] .hk-dg-wt th { background: #EEF0F4; color: #2C3644; border-left-color: rgba(0,0,0,0.10); }
     html[data-theme="light"] .hk-dg-wt td { border-top-color: rgba(0,0,0,0.08); border-left-color: rgba(0,0,0,0.08); }
@@ -12528,6 +12531,36 @@ button, input, select, textarea { font-family: inherit; }
     .hk-dg-shmb:active { background: rgba(8,181,245,0.18); }
     html[data-theme="light"] .hk-dg-shm { background: #fff; border-color: rgba(0,0,0,0.1); }
     html[data-theme="light"] .hk-dg-shmb { background: rgba(0,0,0,0.04); }
+    /* ۱.۳.۹۵: «دسته‌ها» در شخصی‌سازی: باکس از اول بالای صفحه با ارتفاع ثابت (جای آزاد بالای صفحه‌کلید)، کاشی‌ها داخل خودش اسکرول */
+    #hkCatsSheet.hk-cats-ov { align-items: flex-start !important; justify-content: center !important; padding-top: 56px !important; overflow: hidden !important; }
+    #hkCatsSheet .hk-cats-box { display: flex; flex-direction: column; max-width: 380px; box-sizing: border-box; overflow: hidden; }
+    #hkCatsSheet .hk-cats-tabs { flex: 0 0 auto; margin-top: 6px; }
+    #hkCatsSheet .hk-cats-sc { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 4px -4px 0; padding: 0 4px; }
+    #hkCatsSheet .sp-pick-grid { transition: opacity 0.14s ease, transform 0.14s ease; }
+    #hkCatsSheet .sp-pick-grid.hk-cats-fade { opacity: 0; transform: translateY(4px); }
+    #hkCatsSheet .hk-cats-new { flex: 0 0 auto; }
+    #hkCatsSheet .hk-rax-acts { flex: 0 0 auto; margin-top: 10px; }
+    #hkCatsSheet .hk-cats-h { padding: 0 0 6px; } #hkCatsSheet .hk-cats-box { padding-top: 14px !important; }
+    /* ۱.۳.۹۵: لانگ‌پرس روی اسلاید ثابت: کلید روشن/خاموش (لایهٔ خاکستری به‌جای قرمزِ سطل) */
+    .sp-trash-ov.sp-tog-ov { background: rgba(142,142,147,0.16); }
+    .sp-tog-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--card, #1c1c1e); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+    .sp-tog-l { font-size: var(--hk-fs-body); font-weight: 700; color: var(--text); }
+    .sp-tog-sw { pointer-events: none; }
+    /* ۱.۳.۹۵: هایلایت خاکستری گزینه‌ای که از جستجوی منو پیدا شد (ظاهر و محو شدن آرام، مثل ردیف «بزرگ‌ترین خرج») */
+    .hk-sub-flash { animation: hkSubFlash 3.6s ease-in-out; }
+    @keyframes hkSubFlash { 0% { background-color: rgba(142,142,147,0); } 18% { background-color: rgba(142,142,147,0.42); } 70% { background-color: rgba(142,142,147,0.42); } 100% { background-color: rgba(142,142,147,0); } }
+    /* ۱.۳.۹۵: مداد و × گروه در گوشهٔ بالا-چپ کارت (کمی فاصله از لبه)؛ باکس خرج‌ها خاکستری‌تر و روشن‌تر */
+    .hk-dg-cacts { top: 6px !important; left: 6px !important; transform: none !important; }
+    .hk-dg-exp .hk-dg-row.hk-dg-e { background: rgba(255,255,255,0.075) !important; border: 1px solid rgba(255,255,255,0.09) !important; }
+    html[data-theme="light"] .hk-dg-exp .hk-dg-row.hk-dg-e { background: rgba(60,60,67,0.07) !important; border-color: rgba(60,60,67,0.10) !important; }
+    .hk-tick { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; } /* ۱.۳.۹۵: تیک یکسان */
+    /* ۱.۳.۹۵: همهٔ تیک‌ها یک شکل (همان تیک داخل نرم‌افزار): تیک‌های CSS و چک‌باکس‌ها */
+    .hk-pf-radio.on::after, .hk-dock-pi.on::after { width: 18px !important; height: 18px !important; border: 0 !important; transform: none !important; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    .todo-row.done .todo-check::after { left: 50% !important; top: 50% !important; width: 14px !important; height: 14px !important; margin: -7px 0 0 -7px; border: 0 !important; transform: none !important; background: #1c1c1e; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    .family-bar .sync-status.ok::before { content: "" !important; display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; flex: 0 0 auto; margin: 0; border: 1.6px solid rgba(142,142,147,0.75); border-radius: 5px; background-color: transparent; background-position: center; background-repeat: no-repeat; background-size: 86%; cursor: pointer; vertical-align: middle; transition: background-color 0.15s, border-color 0.15s; }
+    input[type="checkbox"]:checked { background-color: #08b5f5; border-color: #08b5f5; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+    input[type="checkbox"]:disabled { opacity: 0.4; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -13201,6 +13234,8 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۷۹: آیکون‌های مشترک نرم‌افزار — هر جای تازه همین شکل‌های قبلی را می‌گیرد (مداد ویرایش؛ × قرمز حذف) */
     var HK_EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
     var HK_DEL_X = '×';
+    /* ۱.۳.۹۵: تیک یکسان همه‌جا (همان تیک ردیف تسویه‌شدهٔ قرض)، نه حرف ✓ */
+    var HK_TICK_SVG = '<svg class="hk-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     /* ۱.۳.۸۲: دستهٔ «جیب به جیب» — هم در مخارج هم در درآمدها؛ ردیفش در هیچ جمع درآمد/مخارج نمی‌آید ولی موجودی کارت‌ها را تغییر می‌دهد */
     var HK_P2P_CAT = { id: 'p2p', label: 'جیب به جیب' };
     /* ۱.۳.۸۳: کاشی «جیب به جیب» همه‌جا: کلاس + ⓘ گوشه (نیمی داخل، نیمی بیرون کاشی؛ جزو آیکون نیست) */
@@ -18426,7 +18461,7 @@ function onPeriodChange() {
         { key: 'subjects', label: 'پروژه‌ها' },
         { key: 'userReminders', label: 'یادآورها' },
         { key: 'savings', label: 'پس‌انداز (ارز و طلا)' },
-        { key: 'categories', label: 'دسته‌بندی مخارج' },
+        { key: 'categories', label: 'دسته‌بندی برداشت' },
         { key: 'dong', label: 'دُنگ' }
       ];
       var ov = document.createElement('div');
@@ -21409,7 +21444,7 @@ function askBackupUserCards(selectedParts) {
           lh += '<tr class="g"><td colspan="' + LC + '">' + E(g.title) + '</td></tr>';
           g.rows.forEach(function (x, i) {
             lh += '<tr' + (x.r.settled ? ' class="dim"' : '') + '><td class="c">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd(x.r, x.y, x.m) + '<td class="c tm">' + hkExpTime(x.r) + '</td><td>' + E(x.r.desc || '') + '</td>' +
-              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(x.amt) + '</td><td class="c">' + (x.r.settled ? '✓ تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || '')) + '</tr>';
+              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(x.amt) + '</td><td class="c">' + (x.r.settled ? '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || '')) + '</tr>';
           });
           lh += '<tr class="t"><td colspan="6">' + E(g.netTxt) + '</td><td class="n">' + pdfMoney(Math.abs(g.net)) + '</td><td></td>' + byTd('') + '</tr>';
         });
@@ -22270,7 +22305,7 @@ async function openPdfPrintWindow(){
         html += card(showInc && showExp ? 'درآمد و مخارج — ' + titles[st.mode] : (showInc ? 'درآمد' : 'مخارج') + ' — ' + titles[st.mode], 'برای جزئیات روی ستون بزنید', (showInc && showExp ? legend : '') + '<div class="st-chart" id="stBar"></div>');
         var cmp = comparePrev();
         if (cmp) html += card('مقایسه با ' + cmp.prevLabel, periodLabel() + ' در برابر ' + cmp.prevLabel, '<div id="stCmp"></div>');
-        if (showExp) html += card('دسته‌بندی مخارج', periodLabel(), '<div id="stCats"></div>');
+        if (showExp) html += card('دسته‌بندی برداشت', periodLabel(), '<div id="stCats"></div>');
         if (showExp && st.mode !== 'yearly') html += card('خرج بر اساس روز هفته', 'کدام روزها بیشتر خرج می‌کنید', '<div id="stWeek"></div>');
         if (showExp) html += card('وضعیت پرداخت مخارج', '', '<div id="stPay"></div>');
         if (!st.card && cs.length > 1) html += card('مقایسهٔ کارت‌ها', showExp ? 'خرج هر کارت' : 'درآمد هر کارت', '<div id="stCards"></div>');
@@ -26837,12 +26872,15 @@ async function openPdfPrintWindow(){
         var d = loadDict();
         var img = {}, ico = {}, col = {}; try { img = hkCatImgMap(); ico = hkCatUserMap('Icon'); col = hkCatUserMap('Color'); } catch (eI) {}
         var inCustom = []; try { inCustom = hkInCustomLoad(); } catch (eIn) {}
-        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom };
+        var inHidden = []; try { inHidden = hkInHiddenLoad(); } catch (eIh) {}
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom, inHidden: inHidden };
       }
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
         /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر */
+        /* ۱.۳.۹۵: دسته‌های پیش‌فرض واریزیِ حذف‌شده */
+        try { if (Array.isArray(o.inHidden)) { var ih = o.inHidden.filter(function (x) { return /^in_[a-z]+$/.test(String(x)); }); hkStorageSet(HK_IN_HIDDEN_KEY, JSON.stringify(ih)); for (var q = HK_INCOME_CATS.length - 1; q >= 0; q--) if (ih.indexOf(HK_INCOME_CATS[q].id) >= 0 && !HK_INCOME_CATS[q].custom) HK_INCOME_CATS.splice(q, 1); } } catch (eIh2) {}
         try { if (Array.isArray(o.inCustom)) { hkInCustomSync(o.inCustom.filter(function (c) { return c && /^in_u_/.test(c.id) && c.label; })); hkInCustomSave(); } } catch (eIn) {}
         /* ۱.۳.۸۵: عکس دسته‌های ساخت کاربر */
         try { if (o.img && typeof o.img === 'object') Object.keys(o.img).forEach(function (k) { if (/^data:image\//.test(String(o.img[k]))) hkCatImgSet(k, o.img[k]); }); } catch (eIm) {}
@@ -27562,7 +27600,7 @@ async function openPdfPrintWindow(){
         html += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(c.label) + '</span><span class="sp-v">' + spPct(c.pct) + '</span></div>' +
           '<div class="sp-bar thin"><i data-w="' + c.pct + '"></i></div></div>';
       });
-      return spHead('دسته‌بندی مخارج') + '<div class="sp-scroll' + (D.cats.items.length > 4 ? ' sp-more' : '') + '">' + html + '</div>';
+      return spHead('دسته‌بندی برداشت') + '<div class="sp-scroll' + (D.cats.items.length > 4 ? ' sp-more' : '') + '">' + html + '</div>';
     }
     /* ۵) پروژه‌ها — از گزارش پروژه */
     function spPageProjects(D) {
@@ -28384,6 +28422,41 @@ async function openPdfPrintWindow(){
       };
       el.appendChild(ov);
     }
+    /* ۱.۳.۹۵: اسلایدهای ثابت (حذف‌نشدنی) با لانگ‌پرس: کلید بیضی روشن/خاموش همان سبک نرم‌افزار؛ لمس کلید = خاموش شدن اسلاید،
+       لمس جای دیگر = لغو (همان لایهٔ محافظ سطل زبالهٔ «کارهای من») */
+    function spShowSlideToggle(el, page) {
+      var old = el.querySelector('.sp-trash-ov'); if (old) { if (old._hkClose) old._hkClose(); else old.remove(); }
+      document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); });
+      var key = page.key, lab = (typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[key]) || '';
+      var ov = document.createElement('div'); ov.className = 'sp-trash-ov sp-tog-ov';
+      ov.innerHTML = '<div class="sp-tog-card"><span class="sp-tog-l"></span><button type="button" class="hk-switch on sp-tog-sw" role="switch" aria-checked="true" aria-label="روشن/خاموش اسلاید"><i></i></button></div>';
+      ov.querySelector('.sp-tog-l').textContent = lab;
+      var shield = document.createElement('div'); shield.className = 'sp-trash-shield';
+      var armed = false, downOnBtn = false;
+      var btnHit = function (x, y) { var b = ov.querySelector('.sp-tog-card'); if (!b) return false; var r = b.getBoundingClientRect(); return x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6; };
+      var close = function () { try { ov.remove(); } catch (e0) {} setTimeout(function () { try { shield.remove(); } catch (e1) {} }, 400); };
+      ov._hkClose = close;
+      var swallow = function (e) { e.stopPropagation(); if (e.cancelable) e.preventDefault(); };
+      shield.addEventListener('pointerdown', function (e) { swallow(e); armed = true; downOnBtn = btnHit(e.clientX, e.clientY); });
+      shield.addEventListener('pointermove', swallow);
+      ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'contextmenu'].forEach(function (n) { shield.addEventListener(n, swallow); });
+      shield.addEventListener('pointerup', function (e) {
+        swallow(e);
+        if (!armed) return;
+        if (downOnBtn && btnHit(e.clientX, e.clientY)) {
+          var sw = ov.querySelector('.sp-tog-sw'); sw.classList.remove('on'); sw.setAttribute('aria-checked', 'false');
+          try { window.appHaptic(15); } catch (eH) {}
+          setTimeout(function () {
+            close();
+            try { var o2 = hkPrefs().spOff || []; if (o2.indexOf(key) < 0) o2.push(key); hkPrefSet('spOff', o2); } catch (eP) {}
+            try { renderHomeCards(); } catch (eR) {}
+            showToast('اسلاید «' + lab + '» خاموش شد؛ از شخصی‌سازی دوباره روشن می‌شود');
+          }, 320);
+        } else close();
+      });
+      document.body.appendChild(shield);
+      el.appendChild(ov);
+    }
     function bindSmartPanelGestures(el) {
       if (el._spBound) return;
       el._spBound = true;
@@ -28398,7 +28471,8 @@ async function openPdfPrintWindow(){
         /* لانگ‌پرس روی اسلاید ساختهٔ کاربر (کارهای من) → سطل زبالهٔ قرمز روی همان اسلاید */
         clearTimeout(el._spLp);
         var _pg0 = (el._spPages || [])[el._spIdx];
-        if (_pg0 && /^todo-/.test(String(_pg0.key || ''))) {
+        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[_pg0.key];
+        if (_isTodo || _isTog) {
           el._spLpArmed = true;
           el._spLp = setTimeout(function () {
             /* لانگ‌پرس لمسی ممکن است pointercancel بدهد؛ ملاک فقط «حرکت نکرده و رها نشده» است */
@@ -28406,7 +28480,7 @@ async function openPdfPrintWindow(){
             el._spLpArmed = false;
             down = false; moved = true;
             try { window.appHaptic(30); } catch (eH) {}
-            spShowTodoTrash(el, _pg0);
+            if (_isTodo) spShowTodoTrash(el, _pg0); else spShowSlideToggle(el, _pg0);
           }, 480);
         }
       });
@@ -28833,6 +28907,50 @@ async function openPdfPrintWindow(){
       });
       return out;
     }
+    /* ۱.۳.۹۵: جستجو در گزینه‌های داخل منوها هم (شخصی‌سازی، اسلایدها، پشتیبان‌گیری، امنیت، گروه‌های دُنگ، روابط قرض).
+       زدن نتیجه: همان منو باز می‌شود و گزینه با اسکرول آرام وسط می‌آید و هایلایت خاکستری می‌گیرد (مثل اسلاید «بزرگ‌ترین خرج») */
+    function hkMenuFlash(el) {
+      if (!el) return;
+      var dur = 0; try { dur = hkSlowScrollTo(el, 700); } catch (e) {}
+      setTimeout(function () { el.classList.remove('hk-sub-flash'); void el.offsetWidth; el.classList.add('hk-sub-flash'); setTimeout(function () { el.classList.remove('hk-sub-flash'); }, 3600); }, (dur || 0) + 80);
+    }
+    function hkMenuWait(find, done, t0) {
+      t0 = t0 || Date.now();
+      var el = null; try { el = find(); } catch (e) {}
+      if (el && el.getBoundingClientRect().height > 0) { done(el); return; }
+      if (Date.now() - t0 < 2500) setTimeout(function () { hkMenuWait(find, done, t0); }, 80);
+    }
+    function hkMenuSubItems() {
+      var out = [], q = function (s) { return function () { return document.querySelector(s); }; };
+      var go = function (open, find) { return function () { try { closeSideMenu(); } catch (e) {} setTimeout(function () { try { open(); } catch (e1) {} hkMenuWait(find, hkMenuFlash); }, 60); }; };
+      var P = 'شخصی‌سازی';
+      [['font', 'اندازهٔ قلم'], ['start', 'صفحهٔ اول'], ['sort', 'ترتیب ردیف‌ها'], ['dock', 'میان‌برها'], ['slides', 'اسلایدهای باکس هوشمند'], ['newcat', 'دسته‌ها'], ['cats', 'اولویت دسته‌ها'], ['nPersonal', 'پیامک شخصی'], ['nRemind', 'یادآورها'], ['nRecap', '«ماهی که گذشت» اول هر ماه'], ['privacy', 'مخفی کردن مبالغ']].forEach(function (x) {
+        out.push({ label: x[1], path: P, main: P, go: go(openPrefsModal, q('#hkPrefsModal .hk-pf-row[data-k="' + x[0] + '"]')) });
+      });
+      try {
+        Object.keys(HK_SP_LABELS).forEach(function (k) {
+          out.push({ label: 'اسلاید ' + HK_SP_LABELS[k], path: P + ' ‹ اسلایدهای باکس هوشمند', main: P, go: go(function () { openPrefsModal(); var r = document.querySelector('#hkPrefsModal .hk-pf-row[data-k="slides"]'); if (r) r.click(); }, q('#hkPrefsModal .hk-pf-slides .hk-pf-row[data-k="' + k + '"]')) });
+        });
+      } catch (eS) {}
+      out.push({ label: 'پشتیبان خودکار روزانه', path: 'پشتیبان‌گیری', main: 'پشتیبان‌گیری', go: go(askBackupParts, q('#backupPickOverlay .bk-auto-row')) });
+      out.push({ label: 'رمز فایل پشتیبان', path: 'پشتیبان‌گیری', main: 'پشتیبان‌گیری', go: go(askBackupParts, function () { return [].filter.call(document.querySelectorAll('#backupPickOverlay .bk-sw-row'), function (r) { return /رمز فایل پشتیبان/.test(r.textContent); })[0]; }) });
+      var secBtn = function (re) { return function () { return [].filter.call(document.querySelectorAll('#securityModal button'), function (b) { return re.test(b.textContent) && b.offsetParent; })[0]; }; };
+      [['قفل برنامه (رمز)', /قفل برنامه/], ['تغییر رمز', /تغییر رمز/], ['اثرانگشت', /اثرانگشت/]].forEach(function (x) {
+        out.push({ label: x[0], path: 'امنیت و قفل برنامه', main: 'امنیت و قفل برنامه', go: go(openSecurityModal, secBtn(x[1])) });
+      });
+      try {
+        hkDongLoad().groups.forEach(function (g) {
+          out.push({ label: g.name, path: 'دُنگ', main: 'دُنگ', go: go(function () { openDongModal(); }, q('#hkDong .hk-dg-card[data-g="' + g.id + '"]')) });
+        });
+      } catch (eD) {}
+      try {
+        (ensureLedger().sections || []).forEach(function (sec) {
+          var t = ledgerSectionTitle(sec); if (!t || !String(t).trim()) return;
+          out.push({ label: t, path: 'قرض', main: 'قرض', go: go(function () { switchTabFromMenu('ledger'); }, q('#sections-ledger .section[data-sec-id="' + sec.id + '"] > .section-header')) });
+        });
+      } catch (eL) {}
+      return out;
+    }
     function hkMenuSearch(q) {
       var sc = document.querySelector('#menuDropdown .menu-scroll'), res = document.getElementById('menuSearchRes'), box = document.querySelector('#menuDropdown .hk-msearch');
       if (!sc || !res) return;
@@ -28853,6 +28971,22 @@ async function openPdfPrintWindow(){
         b.appendChild(sp);
         var pth = document.createElement('span'); pth.className = 'hk-sr-path'; pth.textContent = it.group; b.appendChild(pth);
         b.onclick = function (e) { e.stopPropagation(); it.el.click(); if (it.el.classList.contains('menu-theme-row')) hkMenuSearch(document.getElementById('menuSearchInput').value); };
+        bx.appendChild(b);
+      });
+      /* ۱.۳.۹۵: نتیجه‌های داخل منوها (با مسیر «منو ‹ زیرمنو») */
+      var all = hkMenuSearchItems(), seen = {};
+      hits.forEach(function (it) { seen[hkMenuNorm(it.label)] = 1; });
+      var subs = hkMenuSubItems().filter(function (it) { return hkMenuNorm(it.label).indexOf(nq) >= 0 && !seen[hkMenuNorm(it.label) + '|' + it.path]; });
+      if (subs.length && !bx) { res.innerHTML = '<div class="menu-section-label"></div><div class="hk-mg-box"></div>'; res.firstChild.textContent = 'نتیجه برای «' + String(q).trim() + '»'; bx = res.querySelector('.hk-mg-box'); }
+      subs.forEach(function (it) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'menu-item hk-sr-item hk-sr-sub';
+        var par = all.filter(function (m) { return m.label === it.main; })[0], ic = par && par.el.querySelector('.hk-mi'); if (ic) b.appendChild(ic.cloneNode(true));
+        var sp = document.createElement('span'), L = it.label, k = hkMenuNorm(L).indexOf(nq);
+        if (k >= 0 && hkMenuNorm(L) === L.replace(/\s+/g, ' ').trim().toLowerCase()) { sp.appendChild(document.createTextNode(L.slice(0, k))); var mk = document.createElement('mark'); mk.textContent = L.slice(k, k + nq.length); sp.appendChild(mk); sp.appendChild(document.createTextNode(L.slice(k + nq.length))); }
+        else sp.textContent = L;
+        b.appendChild(sp);
+        var pth = document.createElement('span'); pth.className = 'hk-sr-path'; pth.textContent = it.path; b.appendChild(pth);
+        b.onclick = function (e) { e.stopPropagation(); hkMenuSearchClear(); it.go(); };
         bx.appendChild(b);
       });
     }
@@ -28956,7 +29090,7 @@ async function openPdfPrintWindow(){
       function showList() {
         ov._spPicking = false;
         if (ov._spJiggleOff) ov._spJiggleOff();
-        h.textContent = 'دسته‌بندی مخارج';
+        h.textContent = 'دسته‌بندی برداشت';
         sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ نرم‌افزار دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
         body.innerHTML = '';
@@ -32122,12 +32256,32 @@ container.innerHTML = '';
       { keys: ['ملل'], name: 'موسسه اعتباری ملل' }
     ];
 
+    /* ۱.۳.۹۵: ارتفاع صفحه‌کلید گوشی یادگرفته می‌شود تا پنجره‌هایی که صفحه‌کلید می‌خواهند از همان لحظهٔ اول
+       طوری چیده شوند که انگار صفحه‌کلید باز است (با آمدن صفحه‌کلید هیچ چیز جلوی چشم نپرد) */
+    var HK_KB_KEY = STORAGE_KEY + '_kbH';
+    var _hkFullH = 0;
+    function hkViewH() { var vv = window.visualViewport; return Math.round(vv ? vv.height : window.innerHeight); }
+    function hkTypingNow() { var a = document.activeElement; return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable) && !a.readOnly); }
+    function hkKbTrack() {
+      var h = hkViewH();
+      if (!_hkFullH || (!hkTypingNow() && h > _hkFullH - 100) || h > _hkFullH) _hkFullH = Math.max(h, hkTypingNow() ? 0 : h);
+      if (hkTypingNow() && _hkFullH - h > 140) { try { localStorage.setItem(HK_KB_KEY, String(_hkFullH - h)); } catch (e) {} }
+    }
+    try { _hkFullH = hkViewH(); (window.visualViewport || window).addEventListener('resize', hkKbTrack); window.addEventListener('orientationchange', function () { _hkFullH = 0; setTimeout(hkKbTrack, 400); }); } catch (eKb) {}
+    /* پایین جای آزاد بالای صفحه‌کلید (اگر هنوز نیامده: ارتفاع یادگرفته یا حدود ۴۲٪ صفحه) */
+    function hkKbFreeBottom() {
+      var vv = window.visualViewport, h = hkViewH(), full = Math.max(_hkFullH, h);
+      if (full - h > 140) return (vv ? vv.offsetTop : 0) + h;
+      var kb = parseInt(localStorage.getItem(HK_KB_KEY) || '0', 10);
+      if (!(kb > 140 && kb < full * 0.7)) kb = Math.round(full * 0.42);
+      return (vv ? vv.offsetTop : 0) + full - kb;
+    }
     function openSmsImportModal() {
       // قفل اسکرول قبل از بستن منو تا پرش پشت مودال رخ ندهد
       lockBodyScroll();
       closeSideMenu();
       const ta = document.getElementById('smsImportText');
-      if (ta) ta.value = '';
+      if (ta) { ta.value = ''; ta.style.height = ''; }
       const m = document.getElementById('smsImportModal');
       if (m) {
         m.style.top = '0';
@@ -32135,6 +32289,12 @@ container.innerHTML = '';
         /* ۱.۳.۸۸: باکس از اول بالای صفحه (جای صفحه‌کلید آزاد) و فوکوس همان لحظهٔ ضربه، تا باکس و صفحه‌کلید با هم بیایند و باکس نپرد */
         m.classList.add('hk-kb-top');
         m.classList.add('open');
+        m.scrollTop = 0;
+        /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز) */
+        try {
+          const box = m.querySelector('.modal-box'), over = box.getBoundingClientRect().bottom - (hkKbFreeBottom() - 8);
+          if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
+        } catch (eSz) {}
       }
       try { ta && ta.focus({ preventScroll: true }); } catch (e) { try { ta && ta.focus(); } catch (e2) {} }
       setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
@@ -32144,11 +32304,12 @@ container.innerHTML = '';
     function hkSmsImportFit(on) {
       const vv = window.visualViewport, m = document.getElementById('smsImportModal'), ta = document.getElementById('smsImportText');
       if (!m || !ta) return;
+      /* ۱.۳.۹۵: فقط کوچک‌تر می‌شود (اگر صفحه‌کلید واقعی بلندتر از حدس بود)، هرگز بزرگ‌تر و دوباره کوچک؛ پنجره هم اسکرول نمی‌خورد */
       const fit = () => {
         try {
           if (!m.classList.contains('open')) return;
+          m.scrollTop = 0;
           const box = m.querySelector('.modal-box'); if (!box) return;
-          ta.style.height = '';
           const viewBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
           const over = box.getBoundingClientRect().bottom - (viewBottom - 8);
           if (over > 0) ta.style.height = Math.max(56, ta.getBoundingClientRect().height - over) + 'px';
@@ -32159,7 +32320,7 @@ container.innerHTML = '';
       m._hkFit = fit;
       if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
       window.addEventListener('resize', fit);
-      [0, 150, 350, 700].forEach(t => setTimeout(fit, t));
+      [150, 350, 700].forEach(t => setTimeout(fit, t));
     }
     function closeSmsImportModal() {
       try { hkSmsImportFit(false); } catch (eF) {}
@@ -36981,6 +37142,10 @@ function confirmSmsEntry() {
       return c;
     }
     hkInCustomSync();
+    /* ۱.۳.۹۵: دستهٔ پیش‌فرض واریزی که کاربر حذف کرده پنهان می‌ماند (مثل برداشت) */
+    var HK_IN_HIDDEN_KEY = STORAGE_KEY + '_inHidden';
+    function hkInHiddenLoad() { try { var a = JSON.parse(localStorage.getItem(HK_IN_HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    (function () { var h = hkInHiddenLoad(); for (var i = HK_INCOME_CATS.length - 1; i >= 0; i--) if (h.indexOf(HK_INCOME_CATS[i].id) >= 0 && !HK_INCOME_CATS[i].custom) HK_INCOME_CATS.splice(i, 1); })();
     HK_CAT_ICONS.in_salary = '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>';
     /* ۱.۳.۸۳: اجاره = کلید (با «لوازم خانه» یکی نباشد) */
     HK_CAT_ICONS.in_rent = '<circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M18 12v3.2M15 12v2.2"/>';
@@ -37298,7 +37463,7 @@ function confirmSmsEntry() {
           '<div class="hk-rax-acts"><button type="button" class="modal-btn hk-unr-close">بستن</button></div>';
         bx.querySelector('.hk-unr-close').onclick = close;
         var list = bx.querySelector('.hk-unr-list');
-        if (!a.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted,#98989f);padding:14px 0;">چیزی نمانده ✓</div>'; return; }
+        if (!a.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted,#98989f);padding:14px 0;">چیزی نمانده ' + HK_TICK_SVG + '</div>'; return; }
         a.slice().reverse().forEach(function (it) {
           var card = document.createElement('div'); card.className = 'hk-unr-card';
           card.innerHTML = '<div class="hk-unr-t"></div><div class="hk-unr-row"><div class="hk-unr-seg"><button type="button" data-ty="expense" class="on">برداشت</button><button type="button" data-ty="income">واریز</button></div>' +
@@ -37546,7 +37711,7 @@ function confirmSmsEntry() {
                 var stt = ev && ev.state;
                 var bb = _voice.el && _voice.el.querySelector('.vo-offline');
                 if (stt === 'progress') { if (bb) bb.textContent = 'در حال دانلود… ' + toPersianDigits(String(ev.progress || 0)) + '٪'; }
-                else if (stt === 'done') { _voiceStatus('بستهٔ گفتار فارسی نصب شد ✓ حالا «دوباره» را بزنید؛ از این به بعد بدون اینترنت هم کار می‌کند.'); if (bb) bb.remove(); }
+                else if (stt === 'done') { _voiceStatus('بستهٔ گفتار فارسی نصب شد؛ حالا «دوباره» را بزنید؛ از این به بعد بدون اینترنت هم کار می‌کند.'); if (bb) bb.remove(); }
                 else if (stt === 'scheduled') { _voiceStatus('دانلود در صف گوشی قرار گرفت (معمولاً وقتی به وای‌فای وصل باشید انجام می‌شود). بعد از اتمام، دوباره امتحان کنید.'); if (bb) bb.remove(); }
                 else if (stt === 'error') { _voiceStatus('دانلود بسته کامل نشد' + (ev.code != null ? ' (کد ' + toPersianDigits(String(ev.code)) + ')' : '') + '. اینترنت را بررسی و دوباره امتحان کنید.'); if (bb) { bb.disabled = false; bb.textContent = 'تلاش دوباره برای دانلود'; } }
               });
@@ -37554,7 +37719,7 @@ function confirmSmsEntry() {
           } catch (eL) {}
           P.downloadOffline({ lang: 'fa-IR' }).then(function (r) {
             var stt = r && r.status;
-            if (stt === 'installed') { _voiceStatus('بستهٔ گفتار فارسی از قبل روی گوشی نصب است ✓ «دوباره» را بزنید.'); b.remove(); }
+            if (stt === 'installed') { _voiceStatus('بستهٔ گفتار فارسی از قبل روی گوشی نصب است؛ «دوباره» را بزنید.'); b.remove(); }
             else if (stt === 'pending') { _voiceStatus('دانلود بستهٔ فارسی قبلاً شروع شده و در جریان است؛ کمی بعد دوباره امتحان کنید.'); b.remove(); }
             else if (stt === 'downloading') { _voiceStatus('دانلود بستهٔ فارسی شروع شد. تا پایان دانلود اینترنت را روشن نگه دارید' + (r.progressEvents ? '.' : '؛ بعد از چند دقیقه دوباره میکروفون را بزنید.')); b.textContent = 'در حال دانلود…'; }
             else {
@@ -40889,7 +41054,7 @@ if (item.type === 'recurring') {
       (s.unknownOpen || []).forEach(function (lb) { L.push('موجودی «' + lb + '» از پیامک‌ها معلوم نشد (پیامکِ تازه‌ای با مانده نیست)' + (s.newAccs.indexOf(lb) >= 0 ? '؛ از ویرایش حساب، موجودی را وارد کنید' : '؛ موجودی حساب دست نخورد')); });
       (s.notes || []).forEach(function (x) { L.push(x); });
       var chk = s.checks.map(function (c) {
-        return '<div class="hk-bulk-sline ' + (c.ok ? 'ok' : 'bad') + '">' + escapeHtml(c.acc) + ': ' + (c.ok ? 'موجودی با پیامک بانک یکی است ✓' : formatNum(Math.abs(c.diff)) + ' تومان ' + (c.diff > 0 ? 'بیشتر' : 'کمتر') + ' از ماندهٔ آخرین پیامک بانک') + '</div>';
+        return '<div class="hk-bulk-sline ' + (c.ok ? 'ok' : 'bad') + '">' + escapeHtml(c.acc) + ': ' + (c.ok ? 'موجودی با پیامک بانک یکی است ' + HK_TICK_SVG : formatNum(Math.abs(c.diff)) + ' تومان ' + (c.diff > 0 ? 'بیشتر' : 'کمتر') + ' از ماندهٔ آخرین پیامک بانک') + '</div>';
       }).join('');
       try { var _ov = document.getElementById('smsBulkOv'); if (_ov) _ov.classList.add('hk-bulk-center'); } catch (eC) {}
       box.innerHTML = '<div class="hk-bulk-title">ثبت گروهی انجام شد</div>' +
@@ -40988,7 +41153,7 @@ if (item.type === 'recurring') {
           var t = getTodayPersian();
           if (currentYear !== t.y || currentMonth !== t.m) { try { navigateToPeriod(t.y, t.m); } catch (eN) {} }
           var cur = Number((globalAccountBalances() || {})[lb]) || 0, d = c.balance - cur;
-          if (Math.abs(d) <= 1) { showToast('موجودی «' + lb + '» با آخرین پیامک یکی است ✓'); return; }
+          if (Math.abs(d) <= 1) { showToast('موجودی «' + lb + '» با آخرین پیامک یکی است'); return; }
           hkAsk3('موجودی «' + lb + '» در نرم‌افزار ' + formatNum(cur) + ' است و طبق آخرین پیامک (' + hkJStr(c.j) + ') ' + formatNum(c.balance) + '. موجودی همگام شود؟ (اگر پیامک ثبت‌نشده‌ای مانده، اول آن را ثبت کنید)',
             [{ v: 'yes', t: 'همگام کن', cls: 'primary' }, { v: 'no', t: 'انصراف' }], function (ans) {
               if (ans !== 'yes') return;
@@ -41531,9 +41696,10 @@ if (item.type === 'recurring') {
       };
       var renderList = function (found) {
         list.innerHTML = '';
-        /* شروع: از امروز (پیش‌فرض) یا از اول همین ماه (با تراکنش‌ها، در ثبت گروهی) */
+        /* شروع: از اول همین ماه (پیش‌فرض، با تراکنش‌ها در ثبت گروهی) یا از امروز */
         var seg = document.createElement('div'); seg.className = 'hk-re-seg hk-setup-seg';
-        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="today">از امروز</button><button type="button" class="hk-re-segb" data-m="month">از اول همین ماه</button>';
+        /* ۱.۳.۹۵: «از اول همین ماه» سمت راست و پیش‌فرض؛ «از امروز» سمت چپ */
+        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="month">از اول همین ماه</button><button type="button" class="hk-re-segb" data-m="today">از امروز</button>';
         var note = document.createElement('div'); note.className = 'hk-bulk-hint hk-setup-note';
         var setMode = function (m) {
           mode = m;
@@ -41551,7 +41717,7 @@ if (item.type === 'recurring') {
         addB.onclick = function () { var c = addCard(null); list.insertBefore(c.card, addB); c.sync(); setTimeout(function () { try { c.name.input.focus(); } catch (e) {} }, 60); };
         list.appendChild(addB);
         if (!found.length) addB.onclick();
-        setMode('today');
+        setMode(canRead && found.length ? 'month' : 'today');
         okB.onclick = confirm;
       };
       var confirm = function () {
@@ -49410,6 +49576,9 @@ function openProjectRowPicker(secId) {
       /* ۱.۳.۷۲: جدول تا پایین صفحه؛ هر چند ردیف کامل که تا آنجا جا شود، بقیه داخل جدول اسکرول می‌شوند (به‌جای ۱۱ ردیف ثابت) */
       var fit = function (sc) {
         try {
+          /* ۱.۳.۹۵: پنجره‌ای باز است و صفحه فقط کوتاه شده (صفحه‌کلید): جدول پشت پنجره دوباره اندازه نمی‌گیرد */
+          if (document.body.style.position === 'fixed' && sc._hkVH && window.innerHeight < sc._hkVH) return;
+          sc._hkVH = window.innerHeight;
           var box = sc.closest('.person-detail-box'); if (!box) return;
           var tr = sc.querySelector('tbody tr'); var rh = tr ? tr.getBoundingClientRect().height : 36; if (!(rh > 10)) rh = 36;
           var sb = 0; try { sb = homeSafeBottom(); } catch (e0) {}
@@ -49666,7 +49835,7 @@ function openProjectRowPicker(secId) {
     /* ===== ۱.۳.۷۱: شخصی‌سازی تازه — هم‌سبک منوی ویرایش ردیف: گروه‌ها با عنوان کوچک، ردیف‌های یکدست با «مقدار ›»،
        کلید روشن/خاموش، و صفحهٔ دوم برای انتخاب‌ها و اسلایدها (فلش برگشت). تنظیم‌ها همان تنظیم‌های قبلی‌اند. ===== */
     var HK_PF_IC = {
-      newcat: '<path d="M12 5v14M5 12h14"/>', /* ۱.۳.۹۴: دستهٔ جدید (همان + آیکون دستهٔ جدید) */
+      newcat: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><path d="M16.75 13.5v6.5M13.5 16.75H20"/>', /* ۱.۳.۹۵: دسته‌ها */
       font: '<path d="M5 19L10 5l5 14M7 14h6M16 19l2.5-7 2.5 7"/>',
       start: '<path d="M4 11l8-6 8 6v8.5H4z"/>',
       sort: '<path d="M7 4v16M4 17l3 3 3-3M14 6h6M14 11h4M14 16h2"/>',
@@ -49800,9 +49969,9 @@ function openProjectRowPicker(secId) {
         goRow(g2, 'dock', 'میان‌برها', dk, function () { stack.push('dock'); render(); }, 'dock');
         var nOn = Object.keys(HK_SP_LABELS).filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
         goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(Object.keys(HK_SP_LABELS).length)), function () { stack.push('slides'); render(); }, 'slides');
-        /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ بالای همه «دستهٔ جدید» (همان کار آیکون دستهٔ جدید)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت */
+        /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت؛ ۱.۳.۹۵: گزینهٔ اول «دسته‌ها» (همهٔ دسته‌ها، ساختن و حذف) */
         var g3 = grp(body, 'دسته‌ها');
-        goRow(g3, 'newcat', 'دستهٔ جدید', '', function () { hkNewCatSheet(render); }, 'newcat');
+        goRow(g3, 'newcat', 'دسته‌ها', toPersianDigits(String(hkCatsOf('in').length + hkCatsOf('out').length)), function () { hkCatsSheet(render); }, 'newcat');
         goRow(g3, 'cats', 'اولویت دسته‌ها', (hkCatPri('in') || hkCatPri('out')) ? 'دستی' : 'خودکار', function () { openCatPriority(render); }, 'cats');
         var g4 = grp(body, 'اعلان‌ها');
         swRow(g4, 'sms', 'پیامک شخصی', p.nPersonal !== false, function (v) { hkPrefSet('nPersonal', v); }, 'nPersonal');
@@ -49826,37 +49995,103 @@ function openProjectRowPicker(secId) {
       render();
       document.body.appendChild(ov);
     }
-    /* ۱.۳.۹۴: «دستهٔ جدید» از منوی شخصی‌سازی: نوع (مخارج/درآمد) ← نام ← آیکون و رنگ (همان روند آیکون دستهٔ جدید) */
-    function hkNewCatSheet(after) {
-      var old = document.getElementById('hkNewCat'); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = 'hkNewCat'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
-      var kind = 'out';
-      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">دستهٔ جدید</div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">نوع</div><div class="hk-re-seg hk-nc-seg"><button type="button" class="hk-re-segb is-paid is-exp" data-v="out">مخارج</button><button type="button" class="hk-re-segb is-paid is-inc" data-v="in">درآمد</button></div></div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">نام</div><input class="hk-re-in hk-nc-name" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"></div>' +
-        '<div class="sp-pick-err hk-nc-err"></div>' +
-        '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ادامه</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
-      var q = function (x) { return ov.querySelector(x); }, inp = q('.hk-nc-name'), err = q('.hk-nc-err');
-      var sync = function () { ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === kind); }); };
-      ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.onclick = function () { kind = b.dataset.v; sync(); }; });
-      sync();
-      var close = function () { ov.remove(); };
-      ov._hkCancel = close;
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-      q('.hk-re-no').onclick = close;
-      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
-      var save = function () {
-        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; try { inp.focus(); } catch (e) {} return; }
-        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; try { inp.focus(); } catch (e) {} return; }
-        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
-        if (!cat) { try { inp.focus(); } catch (e) {} return; }
-        close();
-        hkCatStyleSheet(cat, function () { showToast('دستهٔ «' + cat.label + '» ساخته شد'); if (after) after(); });
+    /* ۱.۳.۹۵: «دسته‌ها» از منوی شخصی‌سازی: همهٔ دسته‌ها در دو تب «واریزی» (راست) و «برداشت»؛ آخرین کاشی «دستهٔ جدید».
+       نگه‌داشتن انگشت = لرزش و × حذف (مثل انتخاب دسته در اسلاید دسته‌ها). باکس از اول بالای صفحه و هم‌اندازهٔ جای آزاد بالای صفحه‌کلید،
+       پس با باز شدن صفحه‌کلید یا عوض کردن تب هیچ چیز نمی‌پرد؛ عوض کردن تب صفحه‌کلید را نمی‌بندد. */
+    function hkInRemoveCat(id) {
+      var c = HK_INCOME_CATS.filter(function (x) { return x.id === id; })[0]; if (!c) return;
+      for (var i = HK_INCOME_CATS.length - 1; i >= 0; i--) if (HK_INCOME_CATS[i].id === id) HK_INCOME_CATS.splice(i, 1);
+      if (c.custom) { hkInCustomSave(); try { hkCatImgSet(id, ''); hkCatUserSet('Icon', id, ''); hkCatUserSet('Color', id, ''); } catch (e) {} }
+      else { var h = hkInHiddenLoad(); if (h.indexOf(id) < 0) h.push(id); try { hkStorageSet(HK_IN_HIDDEN_KEY, JSON.stringify(h)); } catch (e2) {} }
+    }
+    function hkCatsOf(kind) {
+      return kind === 'in' ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); });
+    }
+    function hkCatsSheet(after) {
+      var old = document.getElementById('hkCatsSheet'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkCatsSheet'; ov.className = 'modal-overlay open hk-cats-ov'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:660;display:flex;';
+      var box = document.createElement('div'); box.className = 'modal-box hk-prefs hk-cats-box'; ov.appendChild(box);
+      var kind = 'in', jiggle = false;
+      var close = function () { ov.remove(); if (after) after(); };
+      ov._hkCancel = function () { if (jiggle) { jigOff(); return; } close(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov) { if (jiggle) jigOff(); else close(); } });
+      box.innerHTML = '<div class="hk-pf-h hk-cats-h"><div class="hk-prefs-t hk-pf-t">دسته‌ها</div><button type="button" class="hk-pf-x" aria-label="بستن"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+      box.querySelector('.hk-pf-x').onclick = close;
+      var tabs = document.createElement('div'); tabs.className = 'hk-re-seg hk-pri-tabs hk-cats-tabs';
+      [['in', 'واریزی'], ['out', 'برداشت']].forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-re-segb hk-re-pjb' + (kind === o[0] ? ' on' : ''); b.dataset.k = o[0]; b.textContent = o[1];
+        /* فوکوس (و صفحه‌کلید) سر جایش می‌ماند */
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.onclick = function () { if (kind === o[0]) return; kind = o[0]; tabs.querySelectorAll('.hk-re-segb').forEach(function (x) { x.classList.toggle('on', x === b); }); jigOff(); swap(); };
+        tabs.appendChild(b);
+      });
+      box.appendChild(tabs);
+      var hint = document.createElement('div'); hint.className = 'hk-prefs-hint'; hint.textContent = 'برای حذف، دسته را نگه دارید';
+      box.appendChild(hint);
+      var sc = document.createElement('div'); sc.className = 'hk-cats-sc'; box.appendChild(sc);
+      var grid = document.createElement('div'); grid.className = 'sp-pick-grid sms-cat-grid hk-cat-colored hk-sp-tiles'; sc.appendChild(grid);
+      var nw = document.createElement('div'); nw.className = 'sp-pick-new hk-cats-new'; nw.style.display = 'none';
+      nw.innerHTML = '<input type="text" class="sp-pick-input" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"><button type="button" class="sp-pick on">افزودن</button><div class="sp-pick-err"></div>';
+      box.appendChild(nw);
+      var inp = nw.querySelector('input'), err = nw.querySelector('.sp-pick-err');
+      var jigOn = function () { if (jiggle) return; jiggle = true; grid.classList.add('hk-jiggle'); try { appHaptic(15); } catch (e) {} };
+      function jigOff() { if (!jiggle) return false; jiggle = false; grid.classList.remove('hk-jiggle'); return true; }
+      grid.addEventListener('click', function (e) { if (e.target === grid) jigOff(); });
+      var draw = function () {
+        grid.innerHTML = '';
+        hkCatsOf(kind).forEach(function (cat) {
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat sp-pick-t'; b.setAttribute('data-id', cat.id);
+          b.style.setProperty('--cc', hkCatColor(cat.id));
+          b.innerHTML = '<i>' + hkCatIco(cat.id) + '</i><span></span>'; b.querySelector('span').textContent = cat.label;
+          var x = document.createElement('span'); x.className = 'sp-pick-x hk-del-x'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'حذف دسته'); x.textContent = HK_DEL_X;
+          x.onclick = function (ev) {
+            ev.stopPropagation(); ev.preventDefault();
+            askConfirm('دستهٔ «' + cat.label + '» حذف شود؟' + (kind === 'out' ? ' شرح‌هایی که در این دسته بودند «نامشخص» می‌شوند.' : ''), function () {
+              if (kind === 'in') hkInRemoveCat(cat.id); else HKCategorizer.removeCat(cat.id);
+              b.remove();
+            });
+          };
+          b.appendChild(x);
+          var lpT = 0;
+          b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(jigOn, 520); });
+          ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
+          b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+          b.onclick = function () { if (jiggle) jigOff(); };
+          grid.appendChild(b);
+        });
+        var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'sms-cat sp-pick-t sp-pick-tadd'; plus.style.setProperty('--cc', '#08b5f5');
+        plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
+        plus.addEventListener('mousedown', function (e) { if (nw.style.display !== 'none') e.preventDefault(); });
+        plus.onclick = function () {
+          if (jigOff()) return;
+          nw.style.display = ''; err.textContent = '';
+          try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
+        };
+        grid.appendChild(plus);
       };
-      q('.hk-re-ok').onclick = save;
+      /* عوض شدن نرم کاشی‌ها با تب (کم‌رنگ ← تازه ← پررنگ)؛ اندازهٔ باکس ثابت */
+      var swapT = 0;
+      var swap = function () {
+        clearTimeout(swapT); grid.classList.add('hk-cats-fade');
+        swapT = setTimeout(function () { draw(); sc.scrollTop = 0; requestAnimationFrame(function () { grid.classList.remove('hk-cats-fade'); }); }, 140);
+      };
+      var save = function () {
+        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; return; }
+        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; return; }
+        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+        if (!cat) return;
+        inp.value = ''; try { inp.blur(); } catch (e) {} nw.style.display = 'none';
+        hkCatStyleSheet(cat, function () { draw(); var t = grid.querySelector('[data-id="' + cat.id + '"]'); if (t) { try { t.scrollIntoView({ block: 'nearest' }); } catch (e3) {} } showToast('دستهٔ «' + cat.label + '» ساخته شد'); });
+      };
+      nw.querySelector('.sp-pick').addEventListener('mousedown', function (e) { e.preventDefault(); });
+      nw.querySelector('.sp-pick').onclick = save;
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+      draw();
       document.body.appendChild(ov);
-      setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
+      /* ارتفاع ثابت = جای آزاد بالای صفحه‌کلید (حتی وقتی هنوز باز نشده) */
+      try { box.style.height = Math.max(320, Math.round(hkKbFreeBottom() - 56 - 10)) + 'px'; } catch (eH) {}
     }
     function openCatPriority(after) {
       var old = document.getElementById('hkCatPriModal'); if (old) old.remove();
@@ -50111,7 +50346,19 @@ function openProjectRowPicker(secId) {
         const trs = tbody.querySelectorAll('tr');
         let rh = 0; for (let q = 0; q < trs.length && !rh; q++) rh = trs[q].offsetHeight;
         if (!(rh > 10)) { const any = document.querySelector('#sections-ledger tbody tr'); rh = (any && any.offsetHeight > 10) ? any.offsetHeight : 37; }
-        const h = thead.offsetHeight + rh * HK_LED_ROWS;
+        /* ۱.۳.۹۵: تعداد ردیف‌ها طوری که کل قاب جدول (با سربرگ رابطه و دکمهٔ ردیف تازه) در صفحه جا شود؛ حداکثر ۹، حداقل ۳ */
+        let nRows = HK_LED_ROWS;
+        try {
+          const card = body.closest('.section');
+          let sc = card ? card.parentElement : null;
+          while (sc && sc !== document.body) { const cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY)) break; sc = sc.parentElement; }
+          const top = (sc && sc !== document.body) ? sc.getBoundingClientRect().top : 0;
+          let sb = 0; try { sb = homeSafeBottom(); } catch (eSb) {}
+          const hd = card && card.querySelector('.section-header'), add = card && card.querySelector('.ledger-add-row');
+          const avail = window.innerHeight - sb - top - (hd ? hd.offsetHeight : 56) - (add ? add.offsetHeight + 28 : 64) - 28 - thead.offsetHeight;
+          if (top >= 0 && avail > 0) nRows = Math.max(3, Math.min(HK_LED_ROWS, Math.floor(avail / rh)));
+        } catch (eFit) {}
+        const h = thead.offsetHeight + rh * nRows;
         if (h > 40) { body.style.setProperty('max-height', h + 'px', 'important'); body.style.setProperty('--hk-led-h', h + 'px'); }
         /* کمتر از ۹ ردیف: قاب جدول تا پایینِ همان ارتفاع ثابت ادامه دارد (جای خالیِ زیر ردیف‌ها داخل جدول، نه بیرونش) */
         const table = tbody.parentNode; let ft = table.querySelector('tfoot.hk-led-fill');
@@ -50245,6 +50492,8 @@ function openProjectRowPicker(secId) {
           if (target.collapsed) { div.classList.add('hk-led-closing'); clearTimeout(div._hkCloseT); div._hkCloseT = setTimeout(function () { div.classList.remove('hk-led-closing'); }, 420); }
           else div.classList.remove('hk-led-closing');
           div.classList.toggle('collapsed', !!target.collapsed);
+          /* ۱.۳.۹۵: بعد از باز شدن، اگر قاب جدول کامل در صفحه نیست، آرام همان‌قدر اسکرول می‌شود که کامل دیده شود */
+          if (!target.collapsed) setTimeout(function () { try { const r = div.getBoundingClientRect(); if (r.bottom > window.innerHeight - 8 || r.top < 0) div.scrollIntoView({ block: r.height < window.innerHeight ? 'nearest' : 'start', behavior: 'smooth' }); } catch (eSv) {} }, 400);
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
           /* ۱.۳.۶۶: باز/بسته بودن فقط حالت نمایش است (منو همیشه بسته باز می‌شود) — هیچ ذخیره‌ای پشت این ضربه نیست */
         };
@@ -51757,7 +52006,19 @@ function openProjectRowPicker(secId) {
           i.value = toPersianDigits(String(cur()));
           var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'hk-dg-wb hk-dg-wplus'; plus.textContent = '+'; plus.setAttribute('aria-label', 'یک نفر بیشتر');
           var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'hk-dg-wb hk-dg-wminus'; minus.textContent = '−'; minus.setAttribute('aria-label', 'یک نفر کمتر');
-          plus.onclick = function () { setW(cur() + 1); }; minus.onclick = function () { setW(cur() - 1); };
+          /* ۱.۳.۹۵: یک ضربه = یکی؛ نگه‌داشتن = بعد از کمی مکث، خودکار و با سرعت آرام زیاد/کم می‌شود */
+          [[plus, 1], [minus, -1]].forEach(function (pb) {
+            var btn = pb[0], d = pb[1], t1 = 0, t2 = 0, fromPtr = false;
+            var stop = function () { clearTimeout(t1); clearInterval(t2); t1 = t2 = 0; };
+            btn.addEventListener('pointerdown', function (e) {
+              if (e.button != null && e.button !== 0) return;
+              e.preventDefault(); fromPtr = true; stop(); setW(cur() + d);
+              t1 = setTimeout(function () { t2 = setInterval(function () { var b0 = cur(); setW(b0 + d); if (cur() === b0) stop(); }, 190); }, 420);
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { btn.addEventListener(ev, stop); });
+            btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+            btn.onclick = function () { if (fromPtr) { fromPtr = false; return; } setW(cur() + d); };
+          });
           i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); if (isNaN(n)) { i.value = ''; return; } st.w[id] = Math.max(1, Math.min(n, 99)); i.value = toPersianDigits(String(st.w[id])); drawWv(); });
           i.addEventListener('blur', function () { if (!i.value) setW(cur()); });
           i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { i.blur(); } catch (eB) {} } });

@@ -129,6 +129,10 @@
       return c;
     }
     hkInCustomSync();
+    /* ۱.۳.۹۵: دستهٔ پیش‌فرض واریزی که کاربر حذف کرده پنهان می‌ماند (مثل برداشت) */
+    var HK_IN_HIDDEN_KEY = STORAGE_KEY + '_inHidden';
+    function hkInHiddenLoad() { try { var a = JSON.parse(localStorage.getItem(HK_IN_HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    (function () { var h = hkInHiddenLoad(); for (var i = HK_INCOME_CATS.length - 1; i >= 0; i--) if (h.indexOf(HK_INCOME_CATS[i].id) >= 0 && !HK_INCOME_CATS[i].custom) HK_INCOME_CATS.splice(i, 1); })();
     HK_CAT_ICONS.in_salary = '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>';
     /* ۱.۳.۸۳: اجاره = کلید (با «لوازم خانه» یکی نباشد) */
     HK_CAT_ICONS.in_rent = '<circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M18 12v3.2M15 12v2.2"/>';
@@ -446,7 +450,7 @@
           '<div class="hk-rax-acts"><button type="button" class="modal-btn hk-unr-close">بستن</button></div>';
         bx.querySelector('.hk-unr-close').onclick = close;
         var list = bx.querySelector('.hk-unr-list');
-        if (!a.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted,#98989f);padding:14px 0;">چیزی نمانده ✓</div>'; return; }
+        if (!a.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted,#98989f);padding:14px 0;">چیزی نمانده ' + HK_TICK_SVG + '</div>'; return; }
         a.slice().reverse().forEach(function (it) {
           var card = document.createElement('div'); card.className = 'hk-unr-card';
           card.innerHTML = '<div class="hk-unr-t"></div><div class="hk-unr-row"><div class="hk-unr-seg"><button type="button" data-ty="expense" class="on">برداشت</button><button type="button" data-ty="income">واریز</button></div>' +

@@ -140,12 +140,32 @@
       { keys: ['ملل'], name: 'موسسه اعتباری ملل' }
     ];
 
+    /* ۱.۳.۹۵: ارتفاع صفحه‌کلید گوشی یادگرفته می‌شود تا پنجره‌هایی که صفحه‌کلید می‌خواهند از همان لحظهٔ اول
+       طوری چیده شوند که انگار صفحه‌کلید باز است (با آمدن صفحه‌کلید هیچ چیز جلوی چشم نپرد) */
+    var HK_KB_KEY = STORAGE_KEY + '_kbH';
+    var _hkFullH = 0;
+    function hkViewH() { var vv = window.visualViewport; return Math.round(vv ? vv.height : window.innerHeight); }
+    function hkTypingNow() { var a = document.activeElement; return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable) && !a.readOnly); }
+    function hkKbTrack() {
+      var h = hkViewH();
+      if (!_hkFullH || (!hkTypingNow() && h > _hkFullH - 100) || h > _hkFullH) _hkFullH = Math.max(h, hkTypingNow() ? 0 : h);
+      if (hkTypingNow() && _hkFullH - h > 140) { try { localStorage.setItem(HK_KB_KEY, String(_hkFullH - h)); } catch (e) {} }
+    }
+    try { _hkFullH = hkViewH(); (window.visualViewport || window).addEventListener('resize', hkKbTrack); window.addEventListener('orientationchange', function () { _hkFullH = 0; setTimeout(hkKbTrack, 400); }); } catch (eKb) {}
+    /* پایین جای آزاد بالای صفحه‌کلید (اگر هنوز نیامده: ارتفاع یادگرفته یا حدود ۴۲٪ صفحه) */
+    function hkKbFreeBottom() {
+      var vv = window.visualViewport, h = hkViewH(), full = Math.max(_hkFullH, h);
+      if (full - h > 140) return (vv ? vv.offsetTop : 0) + h;
+      var kb = parseInt(localStorage.getItem(HK_KB_KEY) || '0', 10);
+      if (!(kb > 140 && kb < full * 0.7)) kb = Math.round(full * 0.42);
+      return (vv ? vv.offsetTop : 0) + full - kb;
+    }
     function openSmsImportModal() {
       // قفل اسکرول قبل از بستن منو تا پرش پشت مودال رخ ندهد
       lockBodyScroll();
       closeSideMenu();
       const ta = document.getElementById('smsImportText');
-      if (ta) ta.value = '';
+      if (ta) { ta.value = ''; ta.style.height = ''; }
       const m = document.getElementById('smsImportModal');
       if (m) {
         m.style.top = '0';
@@ -153,6 +173,12 @@
         /* ۱.۳.۸۸: باکس از اول بالای صفحه (جای صفحه‌کلید آزاد) و فوکوس همان لحظهٔ ضربه، تا باکس و صفحه‌کلید با هم بیایند و باکس نپرد */
         m.classList.add('hk-kb-top');
         m.classList.add('open');
+        m.scrollTop = 0;
+        /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز) */
+        try {
+          const box = m.querySelector('.modal-box'), over = box.getBoundingClientRect().bottom - (hkKbFreeBottom() - 8);
+          if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
+        } catch (eSz) {}
       }
       try { ta && ta.focus({ preventScroll: true }); } catch (e) { try { ta && ta.focus(); } catch (e2) {} }
       setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
@@ -162,11 +188,12 @@
     function hkSmsImportFit(on) {
       const vv = window.visualViewport, m = document.getElementById('smsImportModal'), ta = document.getElementById('smsImportText');
       if (!m || !ta) return;
+      /* ۱.۳.۹۵: فقط کوچک‌تر می‌شود (اگر صفحه‌کلید واقعی بلندتر از حدس بود)، هرگز بزرگ‌تر و دوباره کوچک؛ پنجره هم اسکرول نمی‌خورد */
       const fit = () => {
         try {
           if (!m.classList.contains('open')) return;
+          m.scrollTop = 0;
           const box = m.querySelector('.modal-box'); if (!box) return;
-          ta.style.height = '';
           const viewBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
           const over = box.getBoundingClientRect().bottom - (viewBottom - 8);
           if (over > 0) ta.style.height = Math.max(56, ta.getBoundingClientRect().height - over) + 'px';
@@ -177,7 +204,7 @@
       m._hkFit = fit;
       if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
       window.addEventListener('resize', fit);
-      [0, 150, 350, 700].forEach(t => setTimeout(fit, t));
+      [150, 350, 700].forEach(t => setTimeout(fit, t));
     }
     function closeSmsImportModal() {
       try { hkSmsImportFit(false); } catch (eF) {}

@@ -74,7 +74,8 @@ public class HkWidgetTxConfig extends Activity {
     g.setCornerRadius(14*dp);
     /* ۱.۳.۹۲: گزینهٔ فعلی با قاب پررنگ‌تر و تیک مشخص است */
     boolean on=repick && type.equals(cur);
-    if(on){ b.setText("✓  "+label); g.setColor((color & 0x00FFFFFF) | 0x26000000); }
+    /* ۱.۳.۹۵: تیک همان شکل تیکِ داخل نرم‌افزار (مسیر M5 12.5l4.5 4.5L19 7.5 با سر و گوشهٔ گرد)، نه حرف «✓» */
+    if(on){ b.setText(tickLabel(label, color)); g.setColor((color & 0x00FFFFFF) | 0x26000000); }
     g.setStroke((int)Math.max(1, on ? 2*dp : dp), (color & 0x00FFFFFF) | (on ? 0xCC000000 : 0x66000000));
     b.setBackground(g);
     b.setClickable(true);
@@ -83,6 +84,21 @@ public class HkWidgetTxConfig extends Activity {
     lp.bottomMargin=(int)(10*dp);
     b.setLayoutParams(lp);
     return b;
+  }
+  CharSequence tickLabel(String label, int color){
+    try{
+      int sz=(int)(18*dp); float k=sz/24f;
+      android.graphics.Bitmap bm=android.graphics.Bitmap.createBitmap(sz, sz, android.graphics.Bitmap.Config.ARGB_8888);
+      android.graphics.Canvas cv=new android.graphics.Canvas(bm);
+      android.graphics.Paint p=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+      p.setStyle(android.graphics.Paint.Style.STROKE); p.setStrokeWidth(2.4f*k); p.setStrokeCap(android.graphics.Paint.Cap.ROUND); p.setStrokeJoin(android.graphics.Paint.Join.ROUND); p.setColor(color);
+      android.graphics.Path ph=new android.graphics.Path(); ph.moveTo(5*k, 12.5f*k); ph.lineTo(9.5f*k, 17*k); ph.lineTo(19*k, 7.5f*k);
+      cv.drawPath(ph, p);
+      android.graphics.drawable.BitmapDrawable d=new android.graphics.drawable.BitmapDrawable(getResources(), bm); d.setBounds(0, 0, sz, sz);
+      android.text.SpannableString ss=new android.text.SpannableString("\uFFFC  "+label);
+      ss.setSpan(new android.text.style.ImageSpan(d, android.text.style.DynamicDrawableSpan.ALIGN_BOTTOM), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      return ss;
+    }catch(Throwable t){ return label; }
   }
   void choose(String type){
     try{ getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).edit().putString("tx_type_"+wid, type).apply(); }catch(Exception ignored){}

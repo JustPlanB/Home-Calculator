@@ -954,6 +954,9 @@
       /* ۱.۳.۷۲: جدول تا پایین صفحه؛ هر چند ردیف کامل که تا آنجا جا شود، بقیه داخل جدول اسکرول می‌شوند (به‌جای ۱۱ ردیف ثابت) */
       var fit = function (sc) {
         try {
+          /* ۱.۳.۹۵: پنجره‌ای باز است و صفحه فقط کوتاه شده (صفحه‌کلید): جدول پشت پنجره دوباره اندازه نمی‌گیرد */
+          if (document.body.style.position === 'fixed' && sc._hkVH && window.innerHeight < sc._hkVH) return;
+          sc._hkVH = window.innerHeight;
           var box = sc.closest('.person-detail-box'); if (!box) return;
           var tr = sc.querySelector('tbody tr'); var rh = tr ? tr.getBoundingClientRect().height : 36; if (!(rh > 10)) rh = 36;
           var sb = 0; try { sb = homeSafeBottom(); } catch (e0) {}

@@ -125,7 +125,7 @@
                 var stt = ev && ev.state;
                 var bb = _voice.el && _voice.el.querySelector('.vo-offline');
                 if (stt === 'progress') { if (bb) bb.textContent = 'در حال دانلود… ' + toPersianDigits(String(ev.progress || 0)) + '٪'; }
-                else if (stt === 'done') { _voiceStatus('بستهٔ گفتار فارسی نصب شد ✓ حالا «دوباره» را بزنید؛ از این به بعد بدون اینترنت هم کار می‌کند.'); if (bb) bb.remove(); }
+                else if (stt === 'done') { _voiceStatus('بستهٔ گفتار فارسی نصب شد؛ حالا «دوباره» را بزنید؛ از این به بعد بدون اینترنت هم کار می‌کند.'); if (bb) bb.remove(); }
                 else if (stt === 'scheduled') { _voiceStatus('دانلود در صف گوشی قرار گرفت (معمولاً وقتی به وای‌فای وصل باشید انجام می‌شود). بعد از اتمام، دوباره امتحان کنید.'); if (bb) bb.remove(); }
                 else if (stt === 'error') { _voiceStatus('دانلود بسته کامل نشد' + (ev.code != null ? ' (کد ' + toPersianDigits(String(ev.code)) + ')' : '') + '. اینترنت را بررسی و دوباره امتحان کنید.'); if (bb) { bb.disabled = false; bb.textContent = 'تلاش دوباره برای دانلود'; } }
               });
@@ -133,7 +133,7 @@
           } catch (eL) {}
           P.downloadOffline({ lang: 'fa-IR' }).then(function (r) {
             var stt = r && r.status;
-            if (stt === 'installed') { _voiceStatus('بستهٔ گفتار فارسی از قبل روی گوشی نصب است ✓ «دوباره» را بزنید.'); b.remove(); }
+            if (stt === 'installed') { _voiceStatus('بستهٔ گفتار فارسی از قبل روی گوشی نصب است؛ «دوباره» را بزنید.'); b.remove(); }
             else if (stt === 'pending') { _voiceStatus('دانلود بستهٔ فارسی قبلاً شروع شده و در جریان است؛ کمی بعد دوباره امتحان کنید.'); b.remove(); }
             else if (stt === 'downloading') { _voiceStatus('دانلود بستهٔ فارسی شروع شد. تا پایان دانلود اینترنت را روشن نگه دارید' + (r.progressEvents ? '.' : '؛ بعد از چند دقیقه دوباره میکروفون را بزنید.')); b.textContent = 'در حال دانلود…'; }
             else {

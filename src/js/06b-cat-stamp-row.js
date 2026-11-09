@@ -235,12 +235,15 @@
         var d = loadDict();
         var img = {}, ico = {}, col = {}; try { img = hkCatImgMap(); ico = hkCatUserMap('Icon'); col = hkCatUserMap('Color'); } catch (eI) {}
         var inCustom = []; try { inCustom = hkInCustomLoad(); } catch (eIn) {}
-        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom };
+        var inHidden = []; try { inHidden = hkInHiddenLoad(); } catch (eIh) {}
+        return { version: 1, custom: custom, dict: { phrases: d.phrases || {}, words: d.words || {} }, img: img, icon: ico, color: col, inCustom: inCustom, inHidden: inHidden };
       }
       function importData(o, mode) {
         if (!o || typeof o !== 'object') return;
         (Array.isArray(o.custom) ? o.custom : []).forEach(function (c) { if (c && c.id && c.label) registerCustom(c); });
         /* ۱.۳.۸۷: دسته‌های درآمدِ ساخت کاربر */
+        /* ۱.۳.۹۵: دسته‌های پیش‌فرض واریزیِ حذف‌شده */
+        try { if (Array.isArray(o.inHidden)) { var ih = o.inHidden.filter(function (x) { return /^in_[a-z]+$/.test(String(x)); }); hkStorageSet(HK_IN_HIDDEN_KEY, JSON.stringify(ih)); for (var q = HK_INCOME_CATS.length - 1; q >= 0; q--) if (ih.indexOf(HK_INCOME_CATS[q].id) >= 0 && !HK_INCOME_CATS[q].custom) HK_INCOME_CATS.splice(q, 1); } } catch (eIh2) {}
         try { if (Array.isArray(o.inCustom)) { hkInCustomSync(o.inCustom.filter(function (c) { return c && /^in_u_/.test(c.id) && c.label; })); hkInCustomSave(); } } catch (eIn) {}
         /* ۱.۳.۸۵: عکس دسته‌های ساخت کاربر */
         try { if (o.img && typeof o.img === 'object') Object.keys(o.img).forEach(function (k) { if (/^data:image\//.test(String(o.img[k]))) hkCatImgSet(k, o.img[k]); }); } catch (eIm) {}
@@ -960,7 +963,7 @@
         html += '<div class="sp-cat"><div class="sp-row"><span class="sp-l">' + spEsc(c.label) + '</span><span class="sp-v">' + spPct(c.pct) + '</span></div>' +
           '<div class="sp-bar thin"><i data-w="' + c.pct + '"></i></div></div>';
       });
-      return spHead('دسته‌بندی مخارج') + '<div class="sp-scroll' + (D.cats.items.length > 4 ? ' sp-more' : '') + '">' + html + '</div>';
+      return spHead('دسته‌بندی برداشت') + '<div class="sp-scroll' + (D.cats.items.length > 4 ? ' sp-more' : '') + '">' + html + '</div>';
     }
     /* ۵) پروژه‌ها — از گزارش پروژه */
     function spPageProjects(D) {

@@ -510,7 +510,19 @@
           i.value = toPersianDigits(String(cur()));
           var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'hk-dg-wb hk-dg-wplus'; plus.textContent = '+'; plus.setAttribute('aria-label', 'یک نفر بیشتر');
           var minus = document.createElement('button'); minus.type = 'button'; minus.className = 'hk-dg-wb hk-dg-wminus'; minus.textContent = '−'; minus.setAttribute('aria-label', 'یک نفر کمتر');
-          plus.onclick = function () { setW(cur() + 1); }; minus.onclick = function () { setW(cur() - 1); };
+          /* ۱.۳.۹۵: یک ضربه = یکی؛ نگه‌داشتن = بعد از کمی مکث، خودکار و با سرعت آرام زیاد/کم می‌شود */
+          [[plus, 1], [minus, -1]].forEach(function (pb) {
+            var btn = pb[0], d = pb[1], t1 = 0, t2 = 0, fromPtr = false;
+            var stop = function () { clearTimeout(t1); clearInterval(t2); t1 = t2 = 0; };
+            btn.addEventListener('pointerdown', function (e) {
+              if (e.button != null && e.button !== 0) return;
+              e.preventDefault(); fromPtr = true; stop(); setW(cur() + d);
+              t1 = setTimeout(function () { t2 = setInterval(function () { var b0 = cur(); setW(b0 + d); if (cur() === b0) stop(); }, 190); }, 420);
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { btn.addEventListener(ev, stop); });
+            btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+            btn.onclick = function () { if (fromPtr) { fromPtr = false; return; } setW(cur() + d); };
+          });
           i.addEventListener('input', function () { var n = parseInt(toEnglishDigits(i.value).replace(/[^0-9]/g, ''), 10); if (isNaN(n)) { i.value = ''; return; } st.w[id] = Math.max(1, Math.min(n, 99)); i.value = toPersianDigits(String(st.w[id])); drawWv(); });
           i.addEventListener('blur', function () { if (!i.value) setW(cur()); });
           i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { i.blur(); } catch (eB) {} } });

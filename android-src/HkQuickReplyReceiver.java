@@ -82,7 +82,7 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       if(oi!=null){ oi.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP); pi=PendingIntent.getActivity(c,1001,oi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE); }
       CharSequence line;
       if(found){
-        SpannableString ss=new SpannableString("ثبت شد ✔");
+        SpannableString ss=new SpannableString("ثبت شد") /* ۱.۳.۹۵: تیک فقط همان تیکِ کشیده‌شدهٔ نرم‌افزار (چیدمان اختصاصی پایین)، نه حرف ✔ */;
         ss.setSpan(new ForegroundColorSpan(0xFF30D158),0,ss.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ss.setSpan(new StyleSpan(Typeface.BOLD),0,ss.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         line=ss;

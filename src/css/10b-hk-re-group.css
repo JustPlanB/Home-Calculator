@@ -652,6 +652,7 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۳.۸۸: ثبت تکی/گروهی: باکس بالای صفحه تا با آمدن صفحه‌کلید جابه‌جا نشود */
     #sections-ledger .section:not(.collapsed) .section-body.hk-led-scroll, #sections-ledger .section.hk-led-closing .section-body.hk-led-scroll { min-height: var(--hk-led-h, 0px) !important; } /* ۱.۳.۹۴: جدول قرض ثابت (۹ ردیف) */
     #smsImportModal.hk-kb-top.open { align-items: flex-start !important; padding-top: 56px !important; } /* ۱.۳.۹۴: ثابت (نه vh) تا با آمدن صفحه‌کلید باکس نپرد؛ جای نهایی همان قبلی */
+    #smsImportModal.hk-kb-top.open { overflow: hidden !important; } /* ۱.۳.۹۵: پنجره با آمدن صفحه‌کلید اسکرول نمی‌خورد */
     /* ۱.۳.۸۸: نام فیلترهای جستجو (روز، حساب، نوع، ماه، دسته) آبی نرم‌افزار */
     .bsr-grid .bsr-cell:not(.bsr-desc):not(.bs-arange-row):not(.bs-amt-row) > .balance-acc-label { color: #08b5f5 !important; -webkit-text-fill-color: #08b5f5 !important; }
     /* ۱.۳.۸۸: دُنگ — نفرات ذخیره‌شده (بیضی آبی با × بالا)، ردیف افزودن، تعداد نفر، دکمهٔ پرداخت نشده/شد */
@@ -685,7 +686,9 @@ button, input, select, textarea { font-family: inherit; }
     .hk-dg-wt .hk-dg-wbox { gap: 0; }
     .hk-dg-wt .hk-dg-wn { flex: 0 0 34px; width: 34px; padding: 5px 2px; }
     .hk-dg-wt .hk-dg-wb { width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #08b5f5; font-size: 1.3rem; -webkit-tap-highlight-color: rgba(8,181,245,0.18); }
-    .hk-dg-wt .hk-dg-wb:active { background: rgba(8,181,245,0.14); }
+    .hk-dg-wt .hk-dg-wb:active { background: transparent; opacity: 0.6; } /* ۱.۳.۹۵: پشت «+/−» آبی نمی‌شود */
+    .hk-dg-wt .hk-dg-wb { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+    .hk-dg-wt .hk-dg-wn { flex: 0 0 34px; width: 34px !important; height: 34px !important; min-height: 0 !important; line-height: 34px; box-sizing: border-box !important; padding: 0 !important; border-radius: 8px; } /* ۱.۳.۹۵: مربعی */
     html[data-theme="light"] .hk-dg-wt { border-color: rgba(0,0,0,0.14); }
     html[data-theme="light"] .hk-dg-wt th { background: #EEF0F4; color: #2C3644; border-left-color: rgba(0,0,0,0.10); }
     html[data-theme="light"] .hk-dg-wt td { border-top-color: rgba(0,0,0,0.08); border-left-color: rgba(0,0,0,0.08); }
@@ -700,3 +703,33 @@ button, input, select, textarea { font-family: inherit; }
     .hk-dg-shmb:active { background: rgba(8,181,245,0.18); }
     html[data-theme="light"] .hk-dg-shm { background: #fff; border-color: rgba(0,0,0,0.1); }
     html[data-theme="light"] .hk-dg-shmb { background: rgba(0,0,0,0.04); }
+    /* ۱.۳.۹۵: «دسته‌ها» در شخصی‌سازی: باکس از اول بالای صفحه با ارتفاع ثابت (جای آزاد بالای صفحه‌کلید)، کاشی‌ها داخل خودش اسکرول */
+    #hkCatsSheet.hk-cats-ov { align-items: flex-start !important; justify-content: center !important; padding-top: 56px !important; overflow: hidden !important; }
+    #hkCatsSheet .hk-cats-box { display: flex; flex-direction: column; max-width: 380px; box-sizing: border-box; overflow: hidden; }
+    #hkCatsSheet .hk-cats-tabs { flex: 0 0 auto; margin-top: 6px; }
+    #hkCatsSheet .hk-cats-sc { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 4px -4px 0; padding: 0 4px; }
+    #hkCatsSheet .sp-pick-grid { transition: opacity 0.14s ease, transform 0.14s ease; }
+    #hkCatsSheet .sp-pick-grid.hk-cats-fade { opacity: 0; transform: translateY(4px); }
+    #hkCatsSheet .hk-cats-new { flex: 0 0 auto; }
+    #hkCatsSheet .hk-rax-acts { flex: 0 0 auto; margin-top: 10px; }
+    #hkCatsSheet .hk-cats-h { padding: 0 0 6px; } #hkCatsSheet .hk-cats-box { padding-top: 14px !important; }
+    /* ۱.۳.۹۵: لانگ‌پرس روی اسلاید ثابت: کلید روشن/خاموش (لایهٔ خاکستری به‌جای قرمزِ سطل) */
+    .sp-trash-ov.sp-tog-ov { background: rgba(142,142,147,0.16); }
+    .sp-tog-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--card, #1c1c1e); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+    .sp-tog-l { font-size: var(--hk-fs-body); font-weight: 700; color: var(--text); }
+    .sp-tog-sw { pointer-events: none; }
+    /* ۱.۳.۹۵: هایلایت خاکستری گزینه‌ای که از جستجوی منو پیدا شد (ظاهر و محو شدن آرام، مثل ردیف «بزرگ‌ترین خرج») */
+    .hk-sub-flash { animation: hkSubFlash 3.6s ease-in-out; }
+    @keyframes hkSubFlash { 0% { background-color: rgba(142,142,147,0); } 18% { background-color: rgba(142,142,147,0.42); } 70% { background-color: rgba(142,142,147,0.42); } 100% { background-color: rgba(142,142,147,0); } }
+    /* ۱.۳.۹۵: مداد و × گروه در گوشهٔ بالا-چپ کارت (کمی فاصله از لبه)؛ باکس خرج‌ها خاکستری‌تر و روشن‌تر */
+    .hk-dg-cacts { top: 6px !important; left: 6px !important; transform: none !important; }
+    .hk-dg-exp .hk-dg-row.hk-dg-e { background: rgba(255,255,255,0.075) !important; border: 1px solid rgba(255,255,255,0.09) !important; }
+    html[data-theme="light"] .hk-dg-exp .hk-dg-row.hk-dg-e { background: rgba(60,60,67,0.07) !important; border-color: rgba(60,60,67,0.10) !important; }
+    .hk-tick { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; } /* ۱.۳.۹۵: تیک یکسان */
+    /* ۱.۳.۹۵: همهٔ تیک‌ها یک شکل (همان تیک داخل نرم‌افزار): تیک‌های CSS و چک‌باکس‌ها */
+    .hk-pf-radio.on::after, .hk-dock-pi.on::after { width: 18px !important; height: 18px !important; border: 0 !important; transform: none !important; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    .todo-row.done .todo-check::after { left: 50% !important; top: 50% !important; width: 14px !important; height: 14px !important; margin: -7px 0 0 -7px; border: 0 !important; transform: none !important; background: #1c1c1e; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    .family-bar .sync-status.ok::before { content: "" !important; display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+    input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; flex: 0 0 auto; margin: 0; border: 1.6px solid rgba(142,142,147,0.75); border-radius: 5px; background-color: transparent; background-position: center; background-repeat: no-repeat; background-size: 86%; cursor: pointer; vertical-align: middle; transition: background-color 0.15s, border-color 0.15s; }
+    input[type="checkbox"]:checked { background-color: #08b5f5; border-color: #08b5f5; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+    input[type="checkbox"]:disabled { opacity: 0.4; }
