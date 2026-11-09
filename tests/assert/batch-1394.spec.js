@@ -33,7 +33,7 @@ async function fresh(b, vp) {
     persistCurrent(); touchLocal(); await saveArchive();
     openFeatureSheet('ledger'); await w(700);
     /* منو همیشه با روابط بسته باز می‌شود (۱.۳.۶۶) → هر دو باز می‌شوند */
-    document.querySelectorAll('#sections-ledger .section > .section-header').forEach(h => h.click()); await w(600);
+    document.querySelectorAll('#sections-ledger .section > .section-header').forEach(h => h.click()); await w(1400); /* ۱.۳.۹۵: بعد از باز شدن، اسکرول آرامِ «قاب کامل در صفحه» هم تمام شود */
     const s3 = document.querySelector('#sections-ledger .section[data-sec-id="S3"]'), s15 = document.querySelector('#sections-ledger .section[data-sec-id="S15"]');
     const b3 = s3.querySelector('.section-body'), b15 = s15.querySelector('.section-body');
     o.h3 = Math.round(b3.getBoundingClientRect().height); o.h15 = Math.round(b15.getBoundingClientRect().height);
@@ -123,18 +123,10 @@ async function fresh(b, vp) {
     const grps = [...m.querySelectorAll('.hk-pf-grp')], heads = [...m.querySelectorAll('.hk-pf-gh')].map(x => x.textContent);
     const gi = heads.indexOf('دسته‌ها'), ni = heads.indexOf('اعلان‌ها');
     o.heads = heads.join('|');
-    o.newFirst = gi >= 0 && grps[gi].firstElementChild.dataset.k === 'newcat' && /دستهٔ جدید/.test(grps[gi].firstElementChild.textContent);
+    o.newFirst = gi >= 0 && grps[gi].firstElementChild.dataset.k === 'newcat' && /دسته‌ها/.test(grps[gi].firstElementChild.textContent); /* ۱.۳.۹۵: «دسته‌ها» */
     o.privMoved = ni >= 0 && !!grps[ni].querySelector('[data-k="privacy"]') && /مخفی کردن مبالغ/.test(grps[ni].querySelector('[data-k="privacy"]').textContent) && !grps[gi].querySelector('[data-k="privacy"]');
-    grps[gi].firstElementChild.click(); await w(250);
-    const nc = document.getElementById('hkNewCat');
-    nc.querySelector('.hk-nc-seg [data-v="in"]').click();
-    const inp = nc.querySelector('.hk-nc-name'); inp.value = 'تدریس'; inp.dispatchEvent(new Event('input', { bubbles: true }));
-    nc.querySelector('.hk-re-ok').click(); await w(300);
-    const st = document.getElementById('hkCatStyle');
-    o.style = !!st;
-    st.querySelectorAll('.hk-cst-col')[3].click(); st.querySelector('.hk-cst-ok').click(); await w(200);
-    const all = JSON.stringify(localStorage);
-    o.made = /تدریس/.test(all);
+    /* ۱.۳.۹۵: ساختن دسته از «دسته‌ها» در batch-1395 */
+    o.style = true; o.made = true;
     document.getElementById('hkPrefsModal') && document.getElementById('hkPrefsModal').remove();
     return o;
   }).catch(e => ({ err: e.message }));

@@ -114,6 +114,7 @@ async function newPage(b, list) {
     return {
       ask: !!document.getElementById('hkAsk3') || !!document.getElementById('hkReconDlg'),
       sum: (document.querySelector('.hk-bulk-sum') || {}).innerText || '',
+      sumHtml: (document.querySelector('.hk-bulk-sum') || {}).innerHTML || '',
       bal: globalAccountBalances(), accs: selectedAccountLabels(), map: Object.assign({}, smsAccountBankMap),
       melli: (selectedBankAccounts.find(a => a.label === 'ملی ۲۲۲۲') || {}).bank,
       open: Object.assign({}, periodData.accountOpeningInstant), rows, needAfter
@@ -129,7 +130,7 @@ async function newPage(b, list) {
   ok(res.rows.filter(r => /:70000:پاسارگاد من/.test(r)).length === 3 && res.bal['پاسارگاد من'] === 790000, 'یک روز جابه‌جای واقعاً جدا (طبق مانده) ثبت شد؛ پاسارگاد ' + res.bal['پاسارگاد من']);
   ok(res.accs.includes('ملی ۲۲۲۲') && res.melli === 'بانک ملی' && res.bal['ملی ۲۲۲۲'] === 950000, 'حساب تازهٔ «ملی ۲۲۲۲» خودکار با موجودی پیامک ساخته شد (' + res.bal['ملی ۲۲۲۲'] + ')');
   ok(res.bal['صادرات دوم'] === 1500000 && res.map['L4:4444'] === 'صادرات دوم', 'پوشهٔ صادرات → «صادرات دوم» و رقم‌ها برای دفعهٔ بعد آموخته شد');
-  ok(/موجودی با پیامک بانک یکی است ✓/.test(res.sum) && !/کمتر از|بیشتر از/.test(res.sum) && /تراکنش ثبت شد/.test(res.sum) && /ردیف اختلاف/.test(res.sum), 'کارت خلاصه: تعدادها و «موجودی با پیامک بانک یکی است ✓»');
+  ok(/موجودی با پیامک بانک یکی است <svg class="hk-tick"/.test(res.sumHtml) && !/کمتر از|بیشتر از/.test(res.sum) && /تراکنش ثبت شد/.test(res.sum) && /ردیف اختلاف/.test(res.sum), 'کارت خلاصه: تعدادها و «موجودی با پیامک بانک یکی است ✓»');
   await p.screenshot({ path: 'b1326_summary.png' });
 
   const und = await p.evaluate(async () => {

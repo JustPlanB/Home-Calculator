@@ -93,10 +93,10 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     document.querySelector('.hk-bulk-allchk').click(); await w(80);
     const onAfterAll = [...document.querySelectorAll('.hk-bulk-folder')].map(c => c.classList.contains('on'));
     document.querySelector('.hk-bulk-ok').click(); await w(700);
-    const sum = (document.querySelector('.hk-bulk-sum') || {}).innerText || '';
+    const sum = (document.querySelector('.hk-bulk-sum') || {}).innerText || '', sumHtml = (document.querySelector('.hk-bulk-sum') || {}).innerHTML || '';
     const ov = document.getElementById('smsBulkOv');
     const rows = []; periodData.expense.sections.forEach(s => s.rows.forEach(r => r.amount && rows.push(r.day + ':' + r.amount + ':' + r.account)));
-    return { cards, allTx, onAfterAll, sum, rows, bal: globalAccountBalances()['سپه'], open: (periodData.accountOpeningInstant || {})['سپه'], center: ov && ov.classList.contains('hk-bulk-center') && getComputedStyle(ov).alignItems };
+    return { cards, allTx, onAfterAll, sum, sumHtml, rows, bal: globalAccountBalances()['سپه'], open: (periodData.accountOpeningInstant || {})['سپه'], center: ov && ov.classList.contains('hk-bulk-center') && getComputedStyle(ov).alignItems };
   });
   const bank = rb.cards.filter(c => !c.personal), pers = rb.cards.filter(c => c.personal);
   ok(bank.length === 1 && bank[0].v === 'سپه' && rb.allTx === 5, 'همهٔ پیامک‌های این حساب (حقوق، پایا، سودها، کارمزد) در یک پوشه؛ اطلاعیه کنار رفت (' + rb.allTx + ' پیامک)');
@@ -104,7 +104,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
   ok(rb.onAfterAll.filter(Boolean).length === 1 && rb.onAfterAll[rb.cards.findIndex(c => !c.personal)], '«همه» فقط پوشه‌های بانک را انتخاب می‌کند');
   ok(rb.open === 513853 && rb.bal === 453853, 'موجودی اول مهر از پیامک همین ماه (۵۱۳٬۸۵۳)، نه حقوق ۱۴۰۴؛ موجودی = ماندهٔ آخرین پیامک (' + rb.bal + ')');
   ok(rb.rows.filter(r => /^21:60000:سپه/.test(r)).length === 1, 'کارمزد فقط یک بار ثبت شد (اطلاعیه ثبت نشد)');
-  ok(/پیامک اطلاع‌رسانی/.test(rb.sum) && /یکی است ✓/.test(rb.sum), 'خلاصه: اطلاعیهٔ نادیده‌گرفته و «موجودی با پیامک بانک یکی است ✓»');
+  ok(/پیامک اطلاع‌رسانی/.test(rb.sum) && /یکی است <svg class="hk-tick"/.test(rb.sumHtml), 'خلاصه: اطلاعیهٔ نادیده‌گرفته و «موجودی با پیامک بانک یکی است ✓»');
   ok(rb.center === 'center', 'کارت خلاصه وسط صفحه');
 
   /* ---------- ج) پیامکِ کهنه: موجودی دست نخورد ---------- */

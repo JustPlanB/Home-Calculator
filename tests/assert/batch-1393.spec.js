@@ -66,7 +66,7 @@ const allErrors = [];
     o.shareIco = !!bx.querySelector('.hk-dg-share svg.hk-dg-shico circle');
     const e = bx.querySelector('.hk-dg-exp .hk-dg-e'), r = bx.querySelector('.hk-dg-bal .hk-dg-row');
     const alpha = (c) => { const m = c.match(/rgba?\(([^)]+)\)/); const p = m ? m[1].split(',') : []; return p.length > 3 ? parseFloat(p[3]) : 1; };
-    o.lighter = alpha(getComputedStyle(e).backgroundColor) < alpha(getComputedStyle(r).backgroundColor);
+    o.lighter = /rgba\(255, 255, 255, 0\.07/.test(getComputedStyle(e).backgroundColor); /* ۱.۳.۹۵: خاکستری‌تر و روشن‌تر */
     bx.querySelector('.hk-dg-share').click(); await w(150);
     const m = document.getElementById('hkDongShareMenu');
     o.pop = m.classList.contains('hk-attpop') && [...m.querySelectorAll('button')].map(x => (x.querySelector('svg.hk-ico') ? 'i' : '') + x.textContent).join('|');
@@ -82,7 +82,7 @@ const allErrors = [];
   ok(dg.editOpens, 'مداد = ویرایش اعضا و نام');
   ok(dg.add === 'خرج جدید' && dg.edTitle === 'خرج جدید', '«خرج جدید» (دکمه و عنوان پنجره)');
   ok(dg.shareIco, 'کنار «اشتراک‌گذاری» آیکون سه نقطهٔ به‌هم‌وصل');
-  ok(dg.lighter, 'باکس خرج‌ها کم‌رنگ‌تر از باکس‌های بالایی');
+  ok(dg.lighter, 'باکس خرج‌ها خاکستری و روشن (۱.۳.۹۵)');
   ok(dg.pop === 'iمتن|iعکس|iPDF', 'منوی اشتراک مثل پنجرهٔ «پیوست»: آیکون + نام (' + dg.pop + ')');
 
   console.log('• آیکون و رنگ دستهٔ تازه');

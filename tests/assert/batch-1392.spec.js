@@ -16,7 +16,7 @@ const allErrors = [];
   const patch = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'patch-android.js'), 'utf8');
   ok(/android:id="@\+id\/hk_wt_pick"[\s\S]*?layout_gravity="top\|center_horizontal"/.test(patch) && /setOnClickPendingIntent\(R\.id\.hk_wt_pick, pickIntent\(ctx, id\)\)/.test(pa), 'روی نام نوع ردیف‌ها (وسط بالای ویجت) قابل زدن است');
   ok(/new Intent\(ctx, HkWidgetTxConfig\.class\)[\s\S]*?EXTRA_REPICK, true/.test(pa) && /HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:taskAffinity=""/.test(patch) && !/FLAG_ACTIVITY_CLEAR_TASK/.test(pa.slice(pa.indexOf('static android.app.PendingIntent pickIntent'), pa.indexOf('static android.app.PendingIntent pickIntent') + 800)), 'همان پنجرهٔ «مخارج / درآمدها / همه» در تسک جدا باز می‌شود (نرم‌افزار باز بسته نمی‌شود)');
-  ok(/boolean on=repick && type\.equals\(cur\)/.test(pa) && /"✓  "\+label/.test(pa), 'گزینهٔ فعلی در منو تیک دارد');
+  ok(/boolean on=repick && type\.equals\(cur\)/.test(pa) && /tickLabel\(label, color\)/.test(pa), 'گزینهٔ فعلی در منو تیک دارد');
   ok(/فلش کوچک کنار نام/.test(pa) && /cv\.drawPath\(ch, chp\)/.test(pa), 'کنار نام بالای ویجت یک فلش کوچک (یعنی منو)');
 
   const b = await chromium.launch();
