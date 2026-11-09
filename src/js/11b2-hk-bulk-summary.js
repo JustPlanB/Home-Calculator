@@ -11,7 +11,7 @@
       (s.unknownOpen || []).forEach(function (lb) { L.push('موجودی «' + lb + '» از پیامک‌ها معلوم نشد (پیامکِ تازه‌ای با مانده نیست)' + (s.newAccs.indexOf(lb) >= 0 ? '؛ از ویرایش حساب، موجودی را وارد کنید' : '؛ موجودی حساب دست نخورد')); });
       (s.notes || []).forEach(function (x) { L.push(x); });
       var chk = s.checks.map(function (c) {
-        return '<div class="hk-bulk-sline ' + (c.ok ? 'ok' : 'bad') + '">' + escapeHtml(c.acc) + ': ' + (c.ok ? 'موجودی با پیامک بانک یکی است ✓' : formatNum(Math.abs(c.diff)) + ' تومان ' + (c.diff > 0 ? 'بیشتر' : 'کمتر') + ' از ماندهٔ آخرین پیامک بانک') + '</div>';
+        return '<div class="hk-bulk-sline ' + (c.ok ? 'ok' : 'bad') + '">' + escapeHtml(c.acc) + ': ' + (c.ok ? 'موجودی با پیامک بانک یکی است ' + HK_TICK_SVG : formatNum(Math.abs(c.diff)) + ' تومان ' + (c.diff > 0 ? 'بیشتر' : 'کمتر') + ' از ماندهٔ آخرین پیامک بانک') + '</div>';
       }).join('');
       try { var _ov = document.getElementById('smsBulkOv'); if (_ov) _ov.classList.add('hk-bulk-center'); } catch (eC) {}
       box.innerHTML = '<div class="hk-bulk-title">ثبت گروهی انجام شد</div>' +
@@ -110,7 +110,7 @@
           var t = getTodayPersian();
           if (currentYear !== t.y || currentMonth !== t.m) { try { navigateToPeriod(t.y, t.m); } catch (eN) {} }
           var cur = Number((globalAccountBalances() || {})[lb]) || 0, d = c.balance - cur;
-          if (Math.abs(d) <= 1) { showToast('موجودی «' + lb + '» با آخرین پیامک یکی است ✓'); return; }
+          if (Math.abs(d) <= 1) { showToast('موجودی «' + lb + '» با آخرین پیامک یکی است'); return; }
           hkAsk3('موجودی «' + lb + '» در نرم‌افزار ' + formatNum(cur) + ' است و طبق آخرین پیامک (' + hkJStr(c.j) + ') ' + formatNum(c.balance) + '. موجودی همگام شود؟ (اگر پیامک ثبت‌نشده‌ای مانده، اول آن را ثبت کنید)',
             [{ v: 'yes', t: 'همگام کن', cls: 'primary' }, { v: 'no', t: 'انصراف' }], function (ans) {
               if (ans !== 'yes') return;

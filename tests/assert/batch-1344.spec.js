@@ -22,7 +22,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const patch = require('../lib/android-src')();
   ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
   ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"فرستندهٔ شخصی"/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان معرفی می‌شود (از ۱.۳.۴۶ «فرستندهٔ شخصی»)');
-  ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد ✔"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),
+  ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),
     'بعد از ثبت: بالا «بابت: …» و پایین‌ترین خط «ثبت شد» سبز با تیک (از ۱.۳.۴۵ تیک نرم‌افزار، batch-1345)');
   /* از ۱.۳.۴۶ به‌جای حباب، دکمهٔ «باکس» زیر اعلان (batch-1346) */
   ok(/"باکس",bpi/.test(patch) && /class HkQuickActivity extends Activity/.test(patch) && /HkQuickActivity" android:exported="false" android:allowEmbedded="true" android:resizeableActivity="true"/.test(patch) && /setHint\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /setText\("ثبت"\)/.test(patch),

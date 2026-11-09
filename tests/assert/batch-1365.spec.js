@@ -51,6 +51,8 @@ const allErrors = [];
   const s3 = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     /* صادرات را برنداریم؛ ماندهٔ قدیمی‌اش را عوض کنیم */
+    /* ۱.۳.۹۵: پیش‌فرض «از اول همین ماه»؛ این تست روند «از امروز» را می‌سنجد */
+    const tb = document.querySelector('#hkSetupOv .hk-setup-seg [data-m="today"]'); if (tb) { tb.click(); await w(150); }
     const sad = [...document.querySelectorAll('#hkSetupOv .hk-bulk-folder')].find(c => /صادرات/.test(c.textContent));
     const bi = sad.querySelector('.hk-setup-bal input'); bi.value = '250000'; bi.dispatchEvent(new Event('input'));
     document.querySelector('#hkSetupOv .hk-bulk-ok').click(); await w(500);

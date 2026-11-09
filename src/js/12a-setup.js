@@ -86,9 +86,10 @@
       };
       var renderList = function (found) {
         list.innerHTML = '';
-        /* شروع: از امروز (پیش‌فرض) یا از اول همین ماه (با تراکنش‌ها، در ثبت گروهی) */
+        /* شروع: از اول همین ماه (پیش‌فرض، با تراکنش‌ها در ثبت گروهی) یا از امروز */
         var seg = document.createElement('div'); seg.className = 'hk-re-seg hk-setup-seg';
-        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="today">از امروز</button><button type="button" class="hk-re-segb" data-m="month">از اول همین ماه</button>';
+        /* ۱.۳.۹۵: «از اول همین ماه» سمت راست و پیش‌فرض؛ «از امروز» سمت چپ */
+        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="month">از اول همین ماه</button><button type="button" class="hk-re-segb" data-m="today">از امروز</button>';
         var note = document.createElement('div'); note.className = 'hk-bulk-hint hk-setup-note';
         var setMode = function (m) {
           mode = m;
@@ -106,7 +107,7 @@
         addB.onclick = function () { var c = addCard(null); list.insertBefore(c.card, addB); c.sync(); setTimeout(function () { try { c.name.input.focus(); } catch (e) {} }, 60); };
         list.appendChild(addB);
         if (!found.length) addB.onclick();
-        setMode('today');
+        setMode(canRead && found.length ? 'month' : 'today');
         okB.onclick = confirm;
       };
       var confirm = function () {

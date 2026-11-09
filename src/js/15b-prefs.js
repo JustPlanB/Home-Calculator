@@ -203,7 +203,7 @@
     /* ===== ۱.۳.۷۱: شخصی‌سازی تازه — هم‌سبک منوی ویرایش ردیف: گروه‌ها با عنوان کوچک، ردیف‌های یکدست با «مقدار ›»،
        کلید روشن/خاموش، و صفحهٔ دوم برای انتخاب‌ها و اسلایدها (فلش برگشت). تنظیم‌ها همان تنظیم‌های قبلی‌اند. ===== */
     var HK_PF_IC = {
-      newcat: '<path d="M12 5v14M5 12h14"/>', /* ۱.۳.۹۴: دستهٔ جدید (همان + آیکون دستهٔ جدید) */
+      newcat: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><path d="M16.75 13.5v6.5M13.5 16.75H20"/>', /* ۱.۳.۹۵: دسته‌ها */
       font: '<path d="M5 19L10 5l5 14M7 14h6M16 19l2.5-7 2.5 7"/>',
       start: '<path d="M4 11l8-6 8 6v8.5H4z"/>',
       sort: '<path d="M7 4v16M4 17l3 3 3-3M14 6h6M14 11h4M14 16h2"/>',
@@ -337,9 +337,9 @@
         goRow(g2, 'dock', 'میان‌برها', dk, function () { stack.push('dock'); render(); }, 'dock');
         var nOn = Object.keys(HK_SP_LABELS).filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
         goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(Object.keys(HK_SP_LABELS).length)), function () { stack.push('slides'); render(); }, 'slides');
-        /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ بالای همه «دستهٔ جدید» (همان کار آیکون دستهٔ جدید)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت */
+        /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت؛ ۱.۳.۹۵: گزینهٔ اول «دسته‌ها» (همهٔ دسته‌ها، ساختن و حذف) */
         var g3 = grp(body, 'دسته‌ها');
-        goRow(g3, 'newcat', 'دستهٔ جدید', '', function () { hkNewCatSheet(render); }, 'newcat');
+        goRow(g3, 'newcat', 'دسته‌ها', toPersianDigits(String(hkCatsOf('in').length + hkCatsOf('out').length)), function () { hkCatsSheet(render); }, 'newcat');
         goRow(g3, 'cats', 'اولویت دسته‌ها', (hkCatPri('in') || hkCatPri('out')) ? 'دستی' : 'خودکار', function () { openCatPriority(render); }, 'cats');
         var g4 = grp(body, 'اعلان‌ها');
         swRow(g4, 'sms', 'پیامک شخصی', p.nPersonal !== false, function (v) { hkPrefSet('nPersonal', v); }, 'nPersonal');
@@ -363,37 +363,103 @@
       render();
       document.body.appendChild(ov);
     }
-    /* ۱.۳.۹۴: «دستهٔ جدید» از منوی شخصی‌سازی: نوع (مخارج/درآمد) ← نام ← آیکون و رنگ (همان روند آیکون دستهٔ جدید) */
-    function hkNewCatSheet(after) {
-      var old = document.getElementById('hkNewCat'); if (old) old.remove();
-      var ov = document.createElement('div'); ov.id = 'hkNewCat'; ov.className = 'hk-re-ov'; ov.setAttribute('data-hk-back', '1');
-      var kind = 'out';
-      ov.innerHTML = '<div class="hk-re-box"><div class="hk-re-title">دستهٔ جدید</div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">نوع</div><div class="hk-re-seg hk-nc-seg"><button type="button" class="hk-re-segb is-paid is-exp" data-v="out">مخارج</button><button type="button" class="hk-re-segb is-paid is-inc" data-v="in">درآمد</button></div></div>' +
-        '<div class="hk-re-f"><div class="hk-re-l">نام</div><input class="hk-re-in hk-nc-name" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"></div>' +
-        '<div class="sp-pick-err hk-nc-err"></div>' +
-        '<div class="hk-re-btns"><button type="button" class="hk-re-ok">ادامه</button><button type="button" class="hk-re-no">انصراف</button></div></div>';
-      var q = function (x) { return ov.querySelector(x); }, inp = q('.hk-nc-name'), err = q('.hk-nc-err');
-      var sync = function () { ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === kind); }); };
-      ov.querySelectorAll('.hk-nc-seg button').forEach(function (b) { b.onclick = function () { kind = b.dataset.v; sync(); }; });
-      sync();
-      var close = function () { ov.remove(); };
-      ov._hkCancel = close;
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-      q('.hk-re-no').onclick = close;
-      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
-      var save = function () {
-        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; try { inp.focus(); } catch (e) {} return; }
-        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; try { inp.focus(); } catch (e) {} return; }
-        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
-        if (!cat) { try { inp.focus(); } catch (e) {} return; }
-        close();
-        hkCatStyleSheet(cat, function () { showToast('دستهٔ «' + cat.label + '» ساخته شد'); if (after) after(); });
+    /* ۱.۳.۹۵: «دسته‌ها» از منوی شخصی‌سازی: همهٔ دسته‌ها در دو تب «واریزی» (راست) و «برداشت»؛ آخرین کاشی «دستهٔ جدید».
+       نگه‌داشتن انگشت = لرزش و × حذف (مثل انتخاب دسته در اسلاید دسته‌ها). باکس از اول بالای صفحه و هم‌اندازهٔ جای آزاد بالای صفحه‌کلید،
+       پس با باز شدن صفحه‌کلید یا عوض کردن تب هیچ چیز نمی‌پرد؛ عوض کردن تب صفحه‌کلید را نمی‌بندد. */
+    function hkInRemoveCat(id) {
+      var c = HK_INCOME_CATS.filter(function (x) { return x.id === id; })[0]; if (!c) return;
+      for (var i = HK_INCOME_CATS.length - 1; i >= 0; i--) if (HK_INCOME_CATS[i].id === id) HK_INCOME_CATS.splice(i, 1);
+      if (c.custom) { hkInCustomSave(); try { hkCatImgSet(id, ''); hkCatUserSet('Icon', id, ''); hkCatUserSet('Color', id, ''); } catch (e) {} }
+      else { var h = hkInHiddenLoad(); if (h.indexOf(id) < 0) h.push(id); try { hkStorageSet(HK_IN_HIDDEN_KEY, JSON.stringify(h)); } catch (e2) {} }
+    }
+    function hkCatsOf(kind) {
+      return kind === 'in' ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); });
+    }
+    function hkCatsSheet(after) {
+      var old = document.getElementById('hkCatsSheet'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkCatsSheet'; ov.className = 'modal-overlay open hk-cats-ov'; ov.setAttribute('data-hk-back', '1');
+      ov.style.cssText = 'z-index:660;display:flex;';
+      var box = document.createElement('div'); box.className = 'modal-box hk-prefs hk-cats-box'; ov.appendChild(box);
+      var kind = 'in', jiggle = false;
+      var close = function () { ov.remove(); if (after) after(); };
+      ov._hkCancel = function () { if (jiggle) { jigOff(); return; } close(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov) { if (jiggle) jigOff(); else close(); } });
+      box.innerHTML = '<div class="hk-pf-h hk-cats-h"><div class="hk-prefs-t hk-pf-t">دسته‌ها</div><button type="button" class="hk-pf-x" aria-label="بستن"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+      box.querySelector('.hk-pf-x').onclick = close;
+      var tabs = document.createElement('div'); tabs.className = 'hk-re-seg hk-pri-tabs hk-cats-tabs';
+      [['in', 'واریزی'], ['out', 'برداشت']].forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-re-segb hk-re-pjb' + (kind === o[0] ? ' on' : ''); b.dataset.k = o[0]; b.textContent = o[1];
+        /* فوکوس (و صفحه‌کلید) سر جایش می‌ماند */
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.onclick = function () { if (kind === o[0]) return; kind = o[0]; tabs.querySelectorAll('.hk-re-segb').forEach(function (x) { x.classList.toggle('on', x === b); }); jigOff(); swap(); };
+        tabs.appendChild(b);
+      });
+      box.appendChild(tabs);
+      var hint = document.createElement('div'); hint.className = 'hk-prefs-hint'; hint.textContent = 'برای حذف، دسته را نگه دارید';
+      box.appendChild(hint);
+      var sc = document.createElement('div'); sc.className = 'hk-cats-sc'; box.appendChild(sc);
+      var grid = document.createElement('div'); grid.className = 'sp-pick-grid sms-cat-grid hk-cat-colored hk-sp-tiles'; sc.appendChild(grid);
+      var nw = document.createElement('div'); nw.className = 'sp-pick-new hk-cats-new'; nw.style.display = 'none';
+      nw.innerHTML = '<input type="text" class="sp-pick-input" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"><button type="button" class="sp-pick on">افزودن</button><div class="sp-pick-err"></div>';
+      box.appendChild(nw);
+      var inp = nw.querySelector('input'), err = nw.querySelector('.sp-pick-err');
+      var jigOn = function () { if (jiggle) return; jiggle = true; grid.classList.add('hk-jiggle'); try { appHaptic(15); } catch (e) {} };
+      function jigOff() { if (!jiggle) return false; jiggle = false; grid.classList.remove('hk-jiggle'); return true; }
+      grid.addEventListener('click', function (e) { if (e.target === grid) jigOff(); });
+      var draw = function () {
+        grid.innerHTML = '';
+        hkCatsOf(kind).forEach(function (cat) {
+          var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat sp-pick-t'; b.setAttribute('data-id', cat.id);
+          b.style.setProperty('--cc', hkCatColor(cat.id));
+          b.innerHTML = '<i>' + hkCatIco(cat.id) + '</i><span></span>'; b.querySelector('span').textContent = cat.label;
+          var x = document.createElement('span'); x.className = 'sp-pick-x hk-del-x'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'حذف دسته'); x.textContent = HK_DEL_X;
+          x.onclick = function (ev) {
+            ev.stopPropagation(); ev.preventDefault();
+            askConfirm('دستهٔ «' + cat.label + '» حذف شود؟' + (kind === 'out' ? ' شرح‌هایی که در این دسته بودند «نامشخص» می‌شوند.' : ''), function () {
+              if (kind === 'in') hkInRemoveCat(cat.id); else HKCategorizer.removeCat(cat.id);
+              b.remove();
+            });
+          };
+          b.appendChild(x);
+          var lpT = 0;
+          b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(jigOn, 520); });
+          ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
+          b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+          b.onclick = function () { if (jiggle) jigOff(); };
+          grid.appendChild(b);
+        });
+        var plus = document.createElement('button'); plus.type = 'button'; plus.className = 'sms-cat sp-pick-t sp-pick-tadd'; plus.style.setProperty('--cc', '#08b5f5');
+        plus.innerHTML = '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i><span>دستهٔ جدید</span>';
+        plus.addEventListener('mousedown', function (e) { if (nw.style.display !== 'none') e.preventDefault(); });
+        plus.onclick = function () {
+          if (jigOff()) return;
+          nw.style.display = ''; err.textContent = '';
+          try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
+        };
+        grid.appendChild(plus);
       };
-      q('.hk-re-ok').onclick = save;
+      /* عوض شدن نرم کاشی‌ها با تب (کم‌رنگ ← تازه ← پررنگ)؛ اندازهٔ باکس ثابت */
+      var swapT = 0;
+      var swap = function () {
+        clearTimeout(swapT); grid.classList.add('hk-cats-fade');
+        swapT = setTimeout(function () { draw(); sc.scrollTop = 0; requestAnimationFrame(function () { grid.classList.remove('hk-cats-fade'); }); }, 140);
+      };
+      var save = function () {
+        if (!String(inp.value || '').trim()) { err.textContent = 'نام دسته را بنویسید'; return; }
+        if (HKCategorizer.labelTaken(inp.value)) { err.textContent = 'دسته‌ای با این اسم هست'; return; }
+        var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
+        if (!cat) return;
+        inp.value = ''; try { inp.blur(); } catch (e) {} nw.style.display = 'none';
+        hkCatStyleSheet(cat, function () { draw(); var t = grid.querySelector('[data-id="' + cat.id + '"]'); if (t) { try { t.scrollIntoView({ block: 'nearest' }); } catch (e3) {} } showToast('دستهٔ «' + cat.label + '» ساخته شد'); });
+      };
+      nw.querySelector('.sp-pick').addEventListener('mousedown', function (e) { e.preventDefault(); });
+      nw.querySelector('.sp-pick').onclick = save;
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
+      draw();
       document.body.appendChild(ov);
-      setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
+      /* ارتفاع ثابت = جای آزاد بالای صفحه‌کلید (حتی وقتی هنوز باز نشده) */
+      try { box.style.height = Math.max(320, Math.round(hkKbFreeBottom() - 56 - 10)) + 'px'; } catch (eH) {}
     }
     function openCatPriority(after) {
       var old = document.getElementById('hkCatPriModal'); if (old) old.remove();
@@ -648,7 +714,19 @@
         const trs = tbody.querySelectorAll('tr');
         let rh = 0; for (let q = 0; q < trs.length && !rh; q++) rh = trs[q].offsetHeight;
         if (!(rh > 10)) { const any = document.querySelector('#sections-ledger tbody tr'); rh = (any && any.offsetHeight > 10) ? any.offsetHeight : 37; }
-        const h = thead.offsetHeight + rh * HK_LED_ROWS;
+        /* ۱.۳.۹۵: تعداد ردیف‌ها طوری که کل قاب جدول (با سربرگ رابطه و دکمهٔ ردیف تازه) در صفحه جا شود؛ حداکثر ۹، حداقل ۳ */
+        let nRows = HK_LED_ROWS;
+        try {
+          const card = body.closest('.section');
+          let sc = card ? card.parentElement : null;
+          while (sc && sc !== document.body) { const cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY)) break; sc = sc.parentElement; }
+          const top = (sc && sc !== document.body) ? sc.getBoundingClientRect().top : 0;
+          let sb = 0; try { sb = homeSafeBottom(); } catch (eSb) {}
+          const hd = card && card.querySelector('.section-header'), add = card && card.querySelector('.ledger-add-row');
+          const avail = window.innerHeight - sb - top - (hd ? hd.offsetHeight : 56) - (add ? add.offsetHeight + 28 : 64) - 28 - thead.offsetHeight;
+          if (top >= 0 && avail > 0) nRows = Math.max(3, Math.min(HK_LED_ROWS, Math.floor(avail / rh)));
+        } catch (eFit) {}
+        const h = thead.offsetHeight + rh * nRows;
         if (h > 40) { body.style.setProperty('max-height', h + 'px', 'important'); body.style.setProperty('--hk-led-h', h + 'px'); }
         /* کمتر از ۹ ردیف: قاب جدول تا پایینِ همان ارتفاع ثابت ادامه دارد (جای خالیِ زیر ردیف‌ها داخل جدول، نه بیرونش) */
         const table = tbody.parentNode; let ft = table.querySelector('tfoot.hk-led-fill');
@@ -782,6 +860,8 @@
           if (target.collapsed) { div.classList.add('hk-led-closing'); clearTimeout(div._hkCloseT); div._hkCloseT = setTimeout(function () { div.classList.remove('hk-led-closing'); }, 420); }
           else div.classList.remove('hk-led-closing');
           div.classList.toggle('collapsed', !!target.collapsed);
+          /* ۱.۳.۹۵: بعد از باز شدن، اگر قاب جدول کامل در صفحه نیست، آرام همان‌قدر اسکرول می‌شود که کامل دیده شود */
+          if (!target.collapsed) setTimeout(function () { try { const r = div.getBoundingClientRect(); if (r.bottom > window.innerHeight - 8 || r.top < 0) div.scrollIntoView({ block: r.height < window.innerHeight ? 'nearest' : 'start', behavior: 'smooth' }); } catch (eSv) {} }, 400);
           arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
           /* ۱.۳.۶۶: باز/بسته بودن فقط حالت نمایش است (منو همیشه بسته باز می‌شود) — هیچ ذخیره‌ای پشت این ضربه نیست */
         };

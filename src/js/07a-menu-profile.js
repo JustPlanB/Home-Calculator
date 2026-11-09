@@ -227,6 +227,50 @@
       });
       return out;
     }
+    /* ۱.۳.۹۵: جستجو در گزینه‌های داخل منوها هم (شخصی‌سازی، اسلایدها، پشتیبان‌گیری، امنیت، گروه‌های دُنگ، روابط قرض).
+       زدن نتیجه: همان منو باز می‌شود و گزینه با اسکرول آرام وسط می‌آید و هایلایت خاکستری می‌گیرد (مثل اسلاید «بزرگ‌ترین خرج») */
+    function hkMenuFlash(el) {
+      if (!el) return;
+      var dur = 0; try { dur = hkSlowScrollTo(el, 700); } catch (e) {}
+      setTimeout(function () { el.classList.remove('hk-sub-flash'); void el.offsetWidth; el.classList.add('hk-sub-flash'); setTimeout(function () { el.classList.remove('hk-sub-flash'); }, 3600); }, (dur || 0) + 80);
+    }
+    function hkMenuWait(find, done, t0) {
+      t0 = t0 || Date.now();
+      var el = null; try { el = find(); } catch (e) {}
+      if (el && el.getBoundingClientRect().height > 0) { done(el); return; }
+      if (Date.now() - t0 < 2500) setTimeout(function () { hkMenuWait(find, done, t0); }, 80);
+    }
+    function hkMenuSubItems() {
+      var out = [], q = function (s) { return function () { return document.querySelector(s); }; };
+      var go = function (open, find) { return function () { try { closeSideMenu(); } catch (e) {} setTimeout(function () { try { open(); } catch (e1) {} hkMenuWait(find, hkMenuFlash); }, 60); }; };
+      var P = 'شخصی‌سازی';
+      [['font', 'اندازهٔ قلم'], ['start', 'صفحهٔ اول'], ['sort', 'ترتیب ردیف‌ها'], ['dock', 'میان‌برها'], ['slides', 'اسلایدهای باکس هوشمند'], ['newcat', 'دسته‌ها'], ['cats', 'اولویت دسته‌ها'], ['nPersonal', 'پیامک شخصی'], ['nRemind', 'یادآورها'], ['nRecap', '«ماهی که گذشت» اول هر ماه'], ['privacy', 'مخفی کردن مبالغ']].forEach(function (x) {
+        out.push({ label: x[1], path: P, main: P, go: go(openPrefsModal, q('#hkPrefsModal .hk-pf-row[data-k="' + x[0] + '"]')) });
+      });
+      try {
+        Object.keys(HK_SP_LABELS).forEach(function (k) {
+          out.push({ label: 'اسلاید ' + HK_SP_LABELS[k], path: P + ' ‹ اسلایدهای باکس هوشمند', main: P, go: go(function () { openPrefsModal(); var r = document.querySelector('#hkPrefsModal .hk-pf-row[data-k="slides"]'); if (r) r.click(); }, q('#hkPrefsModal .hk-pf-slides .hk-pf-row[data-k="' + k + '"]')) });
+        });
+      } catch (eS) {}
+      out.push({ label: 'پشتیبان خودکار روزانه', path: 'پشتیبان‌گیری', main: 'پشتیبان‌گیری', go: go(askBackupParts, q('#backupPickOverlay .bk-auto-row')) });
+      out.push({ label: 'رمز فایل پشتیبان', path: 'پشتیبان‌گیری', main: 'پشتیبان‌گیری', go: go(askBackupParts, function () { return [].filter.call(document.querySelectorAll('#backupPickOverlay .bk-sw-row'), function (r) { return /رمز فایل پشتیبان/.test(r.textContent); })[0]; }) });
+      var secBtn = function (re) { return function () { return [].filter.call(document.querySelectorAll('#securityModal button'), function (b) { return re.test(b.textContent) && b.offsetParent; })[0]; }; };
+      [['قفل برنامه (رمز)', /قفل برنامه/], ['تغییر رمز', /تغییر رمز/], ['اثرانگشت', /اثرانگشت/]].forEach(function (x) {
+        out.push({ label: x[0], path: 'امنیت و قفل برنامه', main: 'امنیت و قفل برنامه', go: go(openSecurityModal, secBtn(x[1])) });
+      });
+      try {
+        hkDongLoad().groups.forEach(function (g) {
+          out.push({ label: g.name, path: 'دُنگ', main: 'دُنگ', go: go(function () { openDongModal(); }, q('#hkDong .hk-dg-card[data-g="' + g.id + '"]')) });
+        });
+      } catch (eD) {}
+      try {
+        (ensureLedger().sections || []).forEach(function (sec) {
+          var t = ledgerSectionTitle(sec); if (!t || !String(t).trim()) return;
+          out.push({ label: t, path: 'قرض', main: 'قرض', go: go(function () { switchTabFromMenu('ledger'); }, q('#sections-ledger .section[data-sec-id="' + sec.id + '"] > .section-header')) });
+        });
+      } catch (eL) {}
+      return out;
+    }
     function hkMenuSearch(q) {
       var sc = document.querySelector('#menuDropdown .menu-scroll'), res = document.getElementById('menuSearchRes'), box = document.querySelector('#menuDropdown .hk-msearch');
       if (!sc || !res) return;
@@ -247,6 +291,22 @@
         b.appendChild(sp);
         var pth = document.createElement('span'); pth.className = 'hk-sr-path'; pth.textContent = it.group; b.appendChild(pth);
         b.onclick = function (e) { e.stopPropagation(); it.el.click(); if (it.el.classList.contains('menu-theme-row')) hkMenuSearch(document.getElementById('menuSearchInput').value); };
+        bx.appendChild(b);
+      });
+      /* ۱.۳.۹۵: نتیجه‌های داخل منوها (با مسیر «منو ‹ زیرمنو») */
+      var all = hkMenuSearchItems(), seen = {};
+      hits.forEach(function (it) { seen[hkMenuNorm(it.label)] = 1; });
+      var subs = hkMenuSubItems().filter(function (it) { return hkMenuNorm(it.label).indexOf(nq) >= 0 && !seen[hkMenuNorm(it.label) + '|' + it.path]; });
+      if (subs.length && !bx) { res.innerHTML = '<div class="menu-section-label"></div><div class="hk-mg-box"></div>'; res.firstChild.textContent = 'نتیجه برای «' + String(q).trim() + '»'; bx = res.querySelector('.hk-mg-box'); }
+      subs.forEach(function (it) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'menu-item hk-sr-item hk-sr-sub';
+        var par = all.filter(function (m) { return m.label === it.main; })[0], ic = par && par.el.querySelector('.hk-mi'); if (ic) b.appendChild(ic.cloneNode(true));
+        var sp = document.createElement('span'), L = it.label, k = hkMenuNorm(L).indexOf(nq);
+        if (k >= 0 && hkMenuNorm(L) === L.replace(/\s+/g, ' ').trim().toLowerCase()) { sp.appendChild(document.createTextNode(L.slice(0, k))); var mk = document.createElement('mark'); mk.textContent = L.slice(k, k + nq.length); sp.appendChild(mk); sp.appendChild(document.createTextNode(L.slice(k + nq.length))); }
+        else sp.textContent = L;
+        b.appendChild(sp);
+        var pth = document.createElement('span'); pth.className = 'hk-sr-path'; pth.textContent = it.path; b.appendChild(pth);
+        b.onclick = function (e) { e.stopPropagation(); hkMenuSearchClear(); it.go(); };
         bx.appendChild(b);
       });
     }
@@ -350,7 +410,7 @@
       function showList() {
         ov._spPicking = false;
         if (ov._spJiggleOff) ov._spJiggleOff();
-        h.textContent = 'دسته‌بندی مخارج';
+        h.textContent = 'دسته‌بندی برداشت';
         sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ نرم‌افزار دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
         body.innerHTML = '';

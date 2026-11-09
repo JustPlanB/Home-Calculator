@@ -699,6 +699,41 @@
       };
       el.appendChild(ov);
     }
+    /* ۱.۳.۹۵: اسلایدهای ثابت (حذف‌نشدنی) با لانگ‌پرس: کلید بیضی روشن/خاموش همان سبک نرم‌افزار؛ لمس کلید = خاموش شدن اسلاید،
+       لمس جای دیگر = لغو (همان لایهٔ محافظ سطل زبالهٔ «کارهای من») */
+    function spShowSlideToggle(el, page) {
+      var old = el.querySelector('.sp-trash-ov'); if (old) { if (old._hkClose) old._hkClose(); else old.remove(); }
+      document.querySelectorAll('.sp-trash-shield').forEach(function (x) { x.remove(); });
+      var key = page.key, lab = (typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[key]) || '';
+      var ov = document.createElement('div'); ov.className = 'sp-trash-ov sp-tog-ov';
+      ov.innerHTML = '<div class="sp-tog-card"><span class="sp-tog-l"></span><button type="button" class="hk-switch on sp-tog-sw" role="switch" aria-checked="true" aria-label="روشن/خاموش اسلاید"><i></i></button></div>';
+      ov.querySelector('.sp-tog-l').textContent = lab;
+      var shield = document.createElement('div'); shield.className = 'sp-trash-shield';
+      var armed = false, downOnBtn = false;
+      var btnHit = function (x, y) { var b = ov.querySelector('.sp-tog-card'); if (!b) return false; var r = b.getBoundingClientRect(); return x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6; };
+      var close = function () { try { ov.remove(); } catch (e0) {} setTimeout(function () { try { shield.remove(); } catch (e1) {} }, 400); };
+      ov._hkClose = close;
+      var swallow = function (e) { e.stopPropagation(); if (e.cancelable) e.preventDefault(); };
+      shield.addEventListener('pointerdown', function (e) { swallow(e); armed = true; downOnBtn = btnHit(e.clientX, e.clientY); });
+      shield.addEventListener('pointermove', swallow);
+      ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'contextmenu'].forEach(function (n) { shield.addEventListener(n, swallow); });
+      shield.addEventListener('pointerup', function (e) {
+        swallow(e);
+        if (!armed) return;
+        if (downOnBtn && btnHit(e.clientX, e.clientY)) {
+          var sw = ov.querySelector('.sp-tog-sw'); sw.classList.remove('on'); sw.setAttribute('aria-checked', 'false');
+          try { window.appHaptic(15); } catch (eH) {}
+          setTimeout(function () {
+            close();
+            try { var o2 = hkPrefs().spOff || []; if (o2.indexOf(key) < 0) o2.push(key); hkPrefSet('spOff', o2); } catch (eP) {}
+            try { renderHomeCards(); } catch (eR) {}
+            showToast('اسلاید «' + lab + '» خاموش شد؛ از شخصی‌سازی دوباره روشن می‌شود');
+          }, 320);
+        } else close();
+      });
+      document.body.appendChild(shield);
+      el.appendChild(ov);
+    }
     function bindSmartPanelGestures(el) {
       if (el._spBound) return;
       el._spBound = true;
@@ -713,7 +748,8 @@
         /* لانگ‌پرس روی اسلاید ساختهٔ کاربر (کارهای من) → سطل زبالهٔ قرمز روی همان اسلاید */
         clearTimeout(el._spLp);
         var _pg0 = (el._spPages || [])[el._spIdx];
-        if (_pg0 && /^todo-/.test(String(_pg0.key || ''))) {
+        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && typeof HK_SP_LABELS !== 'undefined' && HK_SP_LABELS[_pg0.key];
+        if (_isTodo || _isTog) {
           el._spLpArmed = true;
           el._spLp = setTimeout(function () {
             /* لانگ‌پرس لمسی ممکن است pointercancel بدهد؛ ملاک فقط «حرکت نکرده و رها نشده» است */
@@ -721,7 +757,7 @@
             el._spLpArmed = false;
             down = false; moved = true;
             try { window.appHaptic(30); } catch (eH) {}
-            spShowTodoTrash(el, _pg0);
+            if (_isTodo) spShowTodoTrash(el, _pg0); else spShowSlideToggle(el, _pg0);
           }, 480);
         }
       });

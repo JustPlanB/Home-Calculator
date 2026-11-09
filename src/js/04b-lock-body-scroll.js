@@ -504,7 +504,7 @@
         html += card(showInc && showExp ? 'درآمد و مخارج — ' + titles[st.mode] : (showInc ? 'درآمد' : 'مخارج') + ' — ' + titles[st.mode], 'برای جزئیات روی ستون بزنید', (showInc && showExp ? legend : '') + '<div class="st-chart" id="stBar"></div>');
         var cmp = comparePrev();
         if (cmp) html += card('مقایسه با ' + cmp.prevLabel, periodLabel() + ' در برابر ' + cmp.prevLabel, '<div id="stCmp"></div>');
-        if (showExp) html += card('دسته‌بندی مخارج', periodLabel(), '<div id="stCats"></div>');
+        if (showExp) html += card('دسته‌بندی برداشت', periodLabel(), '<div id="stCats"></div>');
         if (showExp && st.mode !== 'yearly') html += card('خرج بر اساس روز هفته', 'کدام روزها بیشتر خرج می‌کنید', '<div id="stWeek"></div>');
         if (showExp) html += card('وضعیت پرداخت مخارج', '', '<div id="stPay"></div>');
         if (!st.card && cs.length > 1) html += card('مقایسهٔ کارت‌ها', showExp ? 'خرج هر کارت' : 'درآمد هر کارت', '<div id="stCards"></div>');

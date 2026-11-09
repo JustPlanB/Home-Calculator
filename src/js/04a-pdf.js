@@ -577,7 +577,7 @@
           lh += '<tr class="g"><td colspan="' + LC + '">' + E(g.title) + '</td></tr>';
           g.rows.forEach(function (x, i) {
             lh += '<tr' + (x.r.settled ? ' class="dim"' : '') + '><td class="c">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd(x.r, x.y, x.m) + '<td class="c tm">' + hkExpTime(x.r) + '</td><td>' + E(x.r.desc || '') + '</td>' +
-              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(x.amt) + '</td><td class="c">' + (x.r.settled ? '✓ تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || '')) + '</tr>';
+              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(x.amt) + '</td><td class="c">' + (x.r.settled ? '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || '')) + '</tr>';
           });
           lh += '<tr class="t"><td colspan="6">' + E(g.netTxt) + '</td><td class="n">' + pdfMoney(Math.abs(g.net)) + '</td><td></td>' + byTd('') + '</tr>';
         });
