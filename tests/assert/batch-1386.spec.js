@@ -63,9 +63,12 @@ const allErrors = [];
     const c2 = HKCategorizer.addCustom('کلاس سفال');
     hkCatStyleSheet(c2, function () {}); await w(100);
     const st2 = document.getElementById('hkCatStyle');
-    o.lockedIcon = !st2.querySelector('.hk-cst-ic[data-k="' + o.icon + '"]'); o.lockedColor = !st2.querySelector('.hk-cst-col[data-c="' + o.color + '"]');
+    /* ۱.۳.۹۴: آیکونِ دستهٔ دیگر سر جایش ولی کم‌رنگ و قفل؛ رنگ‌ها ۸ رنگ ثابت و تکراری مجاز */
+    const li = st2.querySelector('.hk-cst-ic[data-k="' + o.icon + '"]');
+    o.lockedIcon = !!li && li.classList.contains('hk-cst-used'); if (li) li.click(); await w(50);
+    o.lockedColor = !!st2.querySelector('.hk-cst-col[data-c="' + o.color + '"]');
     st2.querySelector('.hk-cst-ok').click(); await w(100);
-    o.uniq = hkCatColor(c2.id) !== o.color && hkCatUserMap('Icon')[c2.id] !== o.icon;
+    o.uniq = hkCatUserMap('Icon')[c2.id] !== o.icon;
     try { categorySheetBack(); categorySheetBack(); closeCategoryReviewSheet(); } catch (e) {}
     HKCategorizer.removeCat(c.id); HKCategorizer.removeCat(c2.id);
     o.cleaned = !hkCatUserMap('Color')[c.id] && !hkCatUserMap('Icon')[c.id];
@@ -75,9 +78,9 @@ const allErrors = [];
   ok(cat.dupFood && cat.dupSalary && cat.dupSpace && !cat.fresh, 'اسم تکراری (حتی با فاصلهٔ اضافه، مخارج یا درآمد) شناخته می‌شود');
   ok(cat.debtHidden && !cat.pencil, '«اقساط و وام» در انتخاب دسته نیست؛ مداد ویرایش هم نیست');
   ok(cat.enterDone && cat.dupMsg && cat.dupNotMade, 'دستهٔ تکراری ساخته نمی‌شود و پیام می‌دهد؛ دکمهٔ صفحه‌کلید «تمام»');
-  ok(cat.styleOpen && cat.icons >= 28 && cat.cols >= 10 && cat.gal, 'ساخت دسته: بلافاصله انتخاب آیکون از بانک (' + cat.icons + ')، رنگ (' + cat.cols + ') یا عکس گالری');
+  ok(cat.styleOpen && cat.icons === 150 && cat.cols === 8 && cat.gal, 'ساخت دسته: بلافاصله انتخاب آیکون از بانک (' + cat.icons + ')، رنگ (' + cat.cols + ') یا عکس گالری');
   ok(cat.color && cat.icon && !cat.builtinClash, 'آیکون و رنگ انتخابی ذخیره شد؛ رنگ با دسته‌های ثابت یکی نیست (' + cat.color + ')');
-  ok(cat.lockedIcon && cat.lockedColor && cat.uniq, 'آیکون و رنگ برداشته‌شده برای دستهٔ دیگر قفل است');
+  ok(cat.lockedIcon && cat.lockedColor && cat.uniq, 'آیکون برداشته‌شده برای دستهٔ دیگر قفل است (کم‌رنگ)؛ رنگ‌ها تکراری مجاز (۱.۳.۹۴)');
   ok(cat.cleaned, 'حذف دسته آیکون و رنگش را هم پاک می‌کند');
 
   console.log('• جدول: فقط‌خواندنی، آیکون‌های ستون ردیف');

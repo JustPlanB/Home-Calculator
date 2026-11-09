@@ -310,7 +310,7 @@ ok(ex2.newBox && ex2.created, 'بار اول از یک کارت: باکس «حس
     const o = {};
     hkDongSave({ groups: [{ id: 'g9', name: 'سفر', members: [{ id: 'a', name: 'سپهر' }, { id: 'b', name: 'سارا' }], expenses: [{ id: 'e1', desc: 'ویلا', amount: 400000, payer: 'b', shares: { a: 300000, b: 100000 }, mode: 'w', weights: { a: 3, b: 1 } }], settles: [] }] });
     openDongModal(); await w(150); document.querySelector('#hkDong .hk-dg-card').click(); await w(150);
-    o.noBack = !document.querySelector('#hkDong .hk-dg-back') && !document.querySelector('#hkDong .hk-dg-acts2') && !!document.querySelector('#hkDong .hk-dg-top .hk-dg-edit') && !!document.querySelector('#hkDong .hk-dg-top .hk-dg-del'); /* ۱.۳.۹۳: ویرایش و حذف گروه آیکونِ گوشه */
+    o.noBack = !document.querySelector('#hkDong .hk-dg-back') && !document.querySelector('#hkDong .hk-dg-acts2') && !document.querySelector('#hkDong .hk-dg-top'); /* ۱.۳.۹۴: ویرایش و حذف گروه روی کارت فهرست گروه‌ها */
     const sb = document.querySelector('#hkDong .hk-dg-share'); sb.click(); await w(350); /* ۱.۳.۹۳: صبر تا پایان حرکت باز شدن (مثل پنجرهٔ پیوست) */
     const m = document.getElementById('hkDongShareMenu');
     o.menu = m ? [...m.querySelectorAll('.hk-dg-shmb')].map(x => x.textContent).join('|') : '';

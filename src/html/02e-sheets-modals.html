@@ -1,0 +1,138 @@
+  <!-- پنجره تمام‌صفحه: درآمد ثابت / اقساط / بده‌بستان -->
+  <div class="feature-sheet stats-sheet" id="statsSheet" aria-hidden="true">
+    <div class="st-bg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="feature-sheet-bar">
+      <button type="button" class="fs-close" onclick="HKStats.close()" aria-label="بازگشت" title="بازگشت"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <div class="fs-title">آمار</div>
+    </div>
+    <div class="stats-body" id="statsBody"></div>
+  </div>
+  <div class="feature-sheet" id="featureSheet" aria-hidden="true">
+    <div class="feature-sheet-bar">
+      <button type="button" class="fs-close" id="featureSheetClose" onclick="closeFeatureSheet()" aria-label="بازگشت" title="بازگشت"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <div class="fs-title" id="featureSheetTitle"></div>
+      <button type="button" class="fs-add" id="featureSheetAdd" onclick="featureSheetAdd()" aria-label="افزودن"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="feature-sheet-body" id="featureSheetBody"></div>
+  </div>
+
+  <div class="modal-overlay" id="bankAccountsModal">
+    <div class="modal-box family-modal-box" style="max-width:340px; text-align:right;">
+      <div class="modal-msg" style="margin-bottom:12px;">حساب‌های من</div>
+      <p class="family-help">
+        می‌توانید چند حساب از یک بانک داشته باشید و برای هر کدام نام دلخواه بگذارید (مثلاً ملی حقوق، ملی پس‌انداز).
+      </p>
+      <div id="bankAccountsList" style="margin-bottom:12px;">
+        <div id="bankSelectedScroll" style="max-height:35vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;"></div>
+        <div id="bankBanksScroll" style="max-height:35vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:3px solid var(--border);padding-top:6px;margin-top:4px;"></div>
+      </div>
+      <button class="modal-btn no" style="width:100%;" type="button" onclick="closeBankAccountsModal()">بستن</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="trashModal">
+    <div class="modal-box family-modal-box" style="max-width:360px; text-align:right;">
+      <div class="modal-msg" style="margin-bottom:10px;">سطل زباله</div>
+      <p class="family-help" style="margin-bottom:8px;">آیتم‌های حذف‌شده اینجا نگه داشته می‌شوند. می‌توانید بازگردانی یا برای همیشه پاک کنید.</p>
+      <div id="trashList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="modal-btn yes" style="flex:1;background:#08b5f5;" type="button" onclick="restoreSelectedTrash()">بازگردانی</button>
+        <button class="modal-btn yes" style="flex:1;background:#c0392b;" type="button" onclick="emptyTrashConfirm()">پاک کردن</button>
+      </div>
+    </div>
+  </div>
+<div id="supabaseDebugDetail" style="word-break:break-all;opacity:.95;"></div>
+  </div>
+
+  <div class="modal-overlay" id="familyModal">
+    <div class="modal-box family-modal-box" style="max-width:340px; text-align:right;">
+      <div class="modal-msg" style="margin-bottom:12px;">حساب مشترک</div>
+      <div id="familyModalBody" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;overscroll-behavior:contain;"></div>
+      <button class="modal-btn no" style="width:100%;" type="button" onclick="closeFamilyModal()">بستن</button>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" id="savingsModal">
+    <div class="modal-box" style="max-width:420px;width:100%;text-align:right;max-height:88vh;display:flex;flex-direction:column;">
+      <div style="font-weight:800;font-size:1.1rem;margin-bottom:6px;font-family:Vazirmatn,Tahoma,sans-serif;">پس‌انداز</div>
+      <div class="sv-intro">ارز و طلایی که کنار گذاشته‌اید را ثبت کنید. قیمت روز هر مورد را خودتان وارد کنید تا ارزش و سود/زیان آن حساب شود. این بخش جداست و روی موجودی کل اثری ندارد.</div>
+      <div id="savingsSummary"></div>
+      <div id="savingsList" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:80px;max-height:46vh;margin-bottom:10px;"></div>
+      <button type="button" class="modal-btn yes" style="width:100%;margin-bottom:8px;" onclick="openSavingsEditor(null)">افزودن پس‌انداز</button>
+      <button type="button" class="modal-btn no" style="width:100%;" onclick="closeSavingsModal()">بستن</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="userRemindersModal">
+    <div class="modal-box" style="max-width:400px;width:100%;text-align:right;max-height:85vh;display:flex;flex-direction:column;">
+      <div style="font-weight:800;font-size:1.1rem;margin-bottom:6px;font-family:Vazirmatn,Tahoma,sans-serif;">یادآور</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;line-height:1.5;">بیمه، تمدید، اقساط دوره‌ای و هر موعد دیگری را ثبت کنید. یک هفته قبل از سررسید به شما یادآوری می‌شود.</div>
+      <div id="userRemindersList" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:42vh;margin-bottom:10px;"></div>
+      <button type="button" class="modal-btn yes" style="width:100%;margin-bottom:8px;" onclick="openUserReminderEditor(null)">افزودن یادآور</button>
+      <button type="button" class="modal-btn no" style="width:100%;" onclick="closeUserRemindersModal()">بستن</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+      <div class="modal-msg" id="confirmMsg"></div>
+      <div id="confirmCmp" class="hk-dup-cmp" style="display:none"></div>
+      <div class="modal-actions">
+        <button class="modal-btn yes" id="confirmYes">بلی</button>
+        <button class="modal-btn no" id="confirmNo">خیر</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-input-sheet" id="textInputModal">
+    <div class="modal-msg" id="textInputLabel" style="margin-bottom:0;font-size:0.9rem;color:var(--muted);">نام قسط</div>
+    <input id="textInputField" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="بنویسید و تأیید کنید">
+    <div style="font-size:0.75rem;color:var(--muted);text-align:center;">تأیید = ذخیره · بیرون زدن = لغو</div>
+  </div>
+  <div class="modal-overlay" id="textInputBackdrop" style="z-index:450;"></div>
+
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-box help-modal-box">
+      <div class="modal-msg">راهنمای حساب‌کتاب</div>
+      <div id="helpModalBody"></div>
+      <button class="modal-btn no" style="width:100%;margin-top:8px;" type="button" onclick="closeHelpModal()">بستن</button>
+    </div>
+  </div>
+
+  <!-- ثبت از پیامک بانکی: چسباندن متن -->
+  <div class="modal-overlay" id="smsImportModal">
+    <div class="modal-box family-modal-box" style="max-width:360px;text-align:right;">
+      <div class="modal-msg" style="margin-bottom:8px;">ثبت تکی و گروهی پیامک‌ها</div>
+      <p class="family-help" style="margin-bottom:10px;">
+        پیامک واریز/برداشت بانک را کپی کنید و اینجا بچسبانید؛ مبلغ و بانک و نوع تراکنش استخراج می‌شود.
+        برای ثبت یک‌جای پیامک‌های قبلی، «ثبت گروهی» را بزنید.
+      </p>
+      <textarea id="smsImportText" rows="6" placeholder="متن پیامک را اینجا بچسبانید…" dir="rtl"
+        style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.9rem;line-height:1.7;resize:vertical;margin-bottom:10px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;" onclick="parseAndPreviewSms()">تشخیص و ادامه</button>
+        <button type="button" class="modal-btn no" style="flex:1;" onclick="closeSmsImportModal()">بستن</button>
+      </div>
+      <button type="button" class="modal-btn hk-bulk-open-btn" style="width:100%;margin-top:8px;" onclick="openSmsBulkModal()">ثبت گروهی</button>
+    </div>
+  </div>
+
+  <!-- تأیید ثبت تراکنش از پیامک -->
+  <div class="modal-overlay" id="smsConfirmModal">
+    <div class="modal-box family-modal-box" style="max-width:360px;width:92vw;text-align:right;box-sizing:border-box;overflow:visible;">
+      <div class="modal-msg" id="smsConfirmTitle" style="margin-bottom:10px;">ثبت تراکنش بانکی</div>
+      <div id="smsConfirmMeta" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 10px;margin-bottom:12px;font-size:0.9rem;line-height:1.9;box-sizing:border-box;width:100%;max-width:100%;overflow:visible;"></div>
+      <label class="family-label">بابت چی بود؟ (شرح)</label>
+      <input id="smsConfirmDesc" class="family-input" style="letter-spacing:0;text-align:right;" placeholder="مثلاً حقوق / خرید / اجاره…" dir="rtl" enterkeyhint="done">
+      <div id="smsConfirmSectionWrap" style="display:none;margin-bottom:0;"></div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="modal-btn yes" style="background:var(--accent);flex:1;position:relative;z-index:5;" onclick="try{confirmSmsEntry();}catch(e){showToast(String(e));}">ثبت</button>
+        <button type="button" class="modal-btn no" id="smsConfirmReject" style="flex:1;" onclick="closeSmsConfirmModal('reject')">انصراف</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+    <script>

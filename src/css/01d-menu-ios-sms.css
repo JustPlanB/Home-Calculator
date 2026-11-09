@@ -1,0 +1,1104 @@
+    /* تم‌ها — الهام از App Store / سیستم: خاکستری خنثی + یک اکسنت آبی */
+    /* تم خنثی و خوانا — الهام از iOS Settings / App Store */
+    :root, [data-theme="dark"] {
+      --bg: #1b1b1b;
+      --bg2: #1c1c1e;
+      --bg3: #2c2c2e;
+      --card: #1c1c1e;
+      --border: #3a3a3c;
+      --text: #ffffff;
+      --text2: #ebebf5;
+      --muted: #98989f;
+      --accent: #08b5f5;
+      --accent2: #08b5f5;
+      --green-bg: #08351c;
+      --green-bd: #0d5c32;
+      --green-tx: #9ee858;
+      --red-bg: #3a0b12;
+      --red-bd: #7a1424;
+      --red-tx: #ff6b4a;
+      --warn-bg: #2c2c2e;
+      --warn-bd: #48484a;
+      --warn-tx: #ffffff;
+      --header-tint: #2c2c2e;
+      --input-bg: #2c2c2e;
+      --shadow: rgba(0,0,0,0.5);
+      --row-alt: #242426;
+      --footer-bg: #242426;
+      --table-text: #ffffff;
+      --table-muted: #98989f;
+    }
+    [data-theme="light"] {
+      /* تم روز — طراحی مجدد رنگ‌ها (استاندارد روشن: زمینهٔ خاکستری خیلی روشن، سطوح سفید، متن تیره، یک اکسنت آبی) */
+      --bg: #f4f5f7;
+      --bg2: #ffffff;
+      --bg3: #e9eaee;
+      --card: #ffffff;
+      --border: #dcdfe4;
+      --text: #1c1c1e;
+      --text2: #3c3c43;
+      --muted: #6e6e76;
+      --accent: #08b5f5;
+      --accent2: #08b5f5;
+      --green-bg: #e7f6ed;
+      --green-bd: #bfe3cc;
+      --green-tx: #17834a;   /* همان سبز تم شب */
+      --red-bg: #fdeced;
+      --red-bd: #f4c7c9;
+      --red-tx: #ff6b4a;     /* همان قرمز تم شب */
+      --warn-bg: #ffffff;
+      --warn-bd: #dcdfe4;
+      --warn-tx: #1c1c1e;
+      --header-tint: #f4f5f7;
+      --input-bg: #ffffff;
+      --shadow: rgba(0,0,0,0.08);
+      --row-alt: #f7f8fa;
+      --footer-bg: #f4f5f7;
+      --table-text: #1c1c1e;
+      --table-muted: #6e6e76;
+      --lt-surface: #ffffff;
+      --lt-sunken: #f1f2f5;
+      --lt-line: #e2e4e8;
+      --lt-elev: 0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.06);
+      --lt-press: #eceef1;
+      --lt-input: #ffffff;
+      /* سایهٔ داخلی هم‌سبک تم شب (برجستگی فرورفته) */
+      --lt-neu-in: inset 4px 4px 12px rgba(0,0,0,0.10), inset -3px -3px 8px rgba(255,255,255,0.95);
+    }
+
+    /* اندروید: WebView به‌صورت نیتیو بالای نوار ناوبری قرار می‌گیرد (Capacitor SystemBars)؛ env فقط اگر محتوا زیر نوار برود مقدار دارد */
+    html.cap-android { --nav-safe: env(safe-area-inset-bottom, 0px); }
+    /* نسخهٔ iOS: بخش‌های مخصوص اندروید پنهان (دسترسی پیامک و اعلان، به‌روزرسانی APK، صف پیامک‌های بعداً)؛ گزینهٔ «ثبت پیامک با میان‌برها» فقط در iOS */
+    html.cap-ios { --nav-safe: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px); }
+    /* آیفون: فاصلهٔ ساعت/Dynamic Island و نوار پایین را خود CSS نرم‌افزار با env(safe-area-inset-*) می‌دهد؛ فقط viewport-fit=cover لازم بود */
+    html.cap-ios #permRowSms, html.cap-ios #permRowNotif, html.cap-ios .menu-update-btn, html.cap-ios #menuSmsLater { display: none !important; }
+    #menuIosSms { display: none; }
+    html.cap-ios #menuIosSms { display: flex; }
+    .hk-ios-guide ol { margin: 8px 0 0; padding-right: 20px; line-height: 1.9; font-size: var(--hk-fs-body); }
+    .hk-ios-guide p { margin: 6px 0; line-height: 1.8; font-size: var(--hk-fs-body); color: var(--muted, #98989f); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* فاصلهٔ امن پایین: روی نرم‌افزار اندروید حداقل ۴۸px تا چیزی زیر دکمه‌های بازگشت/خانهٔ گوشی نرود */
+      --nav-safe: env(safe-area-inset-bottom, 0px);
+      --content-inline: max(16px, calc(12px + env(safe-area-inset-left, 0px)));
+      --content-inline-end: max(16px, calc(12px + env(safe-area-inset-right, 0px)));
+    }
+
+    body {
+      font-family: 'Vazirmatn', 'B Nazanin', 'IRANSansX', 'IRANSans', Tahoma, 'Segoe UI', sans-serif;
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      /* فاصله از بالای صفحه = ارتفاع هدر ثابت (با JS هم به‌روز می‌شود) */
+      padding-top: calc(var(--chrome-h, 140px) + env(safe-area-inset-top, 0px));
+      padding-bottom: max(96px, calc(48px + env(safe-area-inset-bottom, 0px)));
+      padding-left: var(--content-inline);
+      padding-right: var(--content-inline-end);
+      direction: rtl;
+      font-size: var(--hk-fs-control);
+      overflow-x: hidden;
+      overflow-y: auto;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding-bottom: 8px;
+    }
+
+    /* ماه/سال + یادآور + تب‌ها — سه خط ثابت زیر استاتوس‌بار */
+    .sticky-chrome {
+      background: var(--bg);
+      padding-top: 8px;
+      padding-bottom: 6px;
+      padding-left: var(--content-inline);
+      padding-right: var(--content-inline-end);
+      margin-bottom: 0;
+      box-sizing: border-box;
+    }
+    .sticky-chrome::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -10px;
+      height: 10px;
+      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.85;
+    }
+    /* RTL: راست = همبرگر، بعد ماه، چپ = سال */
+    .top-bar .menu-btn { order: 1; flex-shrink: 0; }
+    /* ۱.۳.۷۴: ماه و سال دوباره هم‌عرض (روز از باکس ماه برداشته شد و تاریخ کامل بالای کارت آمد) */
+    .top-bar #monthSelectWrap { order: 2; flex: 1 1 0; min-width: 0; }
+    .top-bar #yearSelectWrap { order: 3; flex: 1 1 0; min-width: 0; }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 30;
+      background: var(--bg);
+      direction: rtl;
+    }
+    .top-bar .dark-select-btn {
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 0 22px !important;
+      box-sizing: border-box;
+    }
+
+    .period-select, .plan-field select {
+      color-scheme: only dark;
+    }
+    [data-theme="light"] .period-select,
+    [data-theme="light"] .plan-field select {
+      color-scheme: only light;
+    }
+    .period-select {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #2c2c2e !important;
+      background-color: #2c2c2e !important;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-control);
+      font-weight: 700;
+      color: #f5f5f7 !important;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2398989f' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: left 10px center;
+      padding-left: 28px;
+    }
+    [data-theme="light"] .period-select {
+      /* رنگ‌های قدیمی تم روز ریست شد — تم روز جدید در انتهای استایل‌ها */
+    }
+    .period-select option,
+    .plan-field select option {
+      background-color: #1c1c1e;
+      color: #f5f5f7;
+    }
+    [data-theme="light"] .period-select option,
+    [data-theme="light"] .plan-field select option {
+      /* رنگ‌های قدیمی تم روز ریست شد — تم روز جدید در انتهای استایل‌ها */
+    }
+    .period-select:focus {
+      outline: none !important;
+      border-color: var(--border) !important;
+      box-shadow: none !important;
+    }
+
+    .menu-btn {
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
+      border: none !important;
+      border-radius: 12px !important;
+      background: #1b1b1b !important;
+      background-color: #1b1b1b !important;
+      box-shadow:
+        inset 4px 4px 12px rgba(0,0,0,0.72),
+        inset -3px -3px 8px rgba(255,255,255,0.14) !important;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex-shrink: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .menu-btn span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 1px;
+    }
+
+    .menu-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      height: 100svh;
+      /* مات کردن کل محیط نرم‌افزار پشت منو */
+      background: rgba(0, 0, 0, 0.72);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      z-index: 280;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      pointer-events: none;
+      touch-action: none;
+    }
+    .menu-backdrop.open {
+      display: block;
+      pointer-events: auto !important;
+      touch-action: none;
+    }
+    .menu-dropdown {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      right: 0;
+      left: auto;
+      bottom: 0;
+      width: 82vw;
+      max-width: 400px;
+      min-width: 280px;
+      /* کشیده تا پایین‌ترین نقطه صفحه — بدون فاصله و بدون فید */
+      height: 100%;
+      height: 100dvh;
+      height: 100svh;
+      min-height: 100%;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      background: var(--card);
+      border: none;
+      border-left: 1px solid var(--border);
+      border-radius: 0;
+      box-shadow: -8px 0 28px rgba(0,0,0,0.35);
+      z-index: 290;
+      overflow: hidden;
+      transform: translateX(105%);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      /* فقط بالای محتوا از استاتوس‌بار فاصله بگیرد؛ پایین تا لبه صفحه */
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: 0;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    .menu-dropdown.open {
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    .menu-app-title {
+      flex-shrink: 0;
+      margin: 14px 14px 10px;
+      padding: 14px 12px;
+      text-align: center;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-figure);
+      font-weight: 700;
+      color: var(--text);
+      background: var(--header-tint);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      letter-spacing: -0.02em;
+    }
+    .menu-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      /* محتوا از پایین زیر ناحیه دکمه بک/ناوبری سیستم فید می‌شود */
+      padding-bottom: max(96px, calc(56px + env(safe-area-inset-bottom, 0px)));
+      position: relative;
+      background: var(--card);
+    }
+    /* فید پایین داخل منوی همبرگری */
+    .menu-dropdown::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: max(72px, calc(40px + env(safe-area-inset-bottom, 0px)));
+      background: linear-gradient(to top, var(--card) 0%, var(--card) 35%, transparent 100%);
+      pointer-events: none;
+      z-index: 5;
+    }
+    /* بدون فید بالا/پایین منو — پوشش یکدست تا انتهای صفحه */
+    /* با منوی باز: فقط منو فعال — تاچ بیرون منو کاملاً بی‌اثر */
+    body.modal-scroll-lock {
+      overflow: hidden !important;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    body.modal-scroll-lock .container,
+    body.modal-scroll-lock .tab-viewport {
+      pointer-events: none;
+    }
+    body.modal-scroll-lock .modal-overlay.open,
+    body.modal-scroll-lock .modal-overlay.open * {
+      pointer-events: auto;
+      touch-action: pan-y;
+    }
+    .modal-overlay.open {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    body.menu-open {
+      overflow: hidden !important;
+      touch-action: none !important;
+      overscroll-behavior: none;
+    }
+    body.menu-open .container,
+    body.menu-open .sticky-chrome,
+    body.menu-open .tab-viewport,
+    body.menu-open .edge-fade,
+    body.menu-open .top-bar,
+    body.menu-open .tabs {
+      pointer-events: none !important;
+      user-select: none !important;
+      touch-action: none !important;
+    }
+    body.menu-open .edge-fade {
+      display: none !important;
+      opacity: 0 !important;
+    }
+    /* فقط منو، بک‌دراپ و دکمه همبرگر قابل لمس */
+    body.menu-open .menu-btn,
+    body.menu-open .menu-dropdown,
+    body.menu-open .menu-dropdown.open,
+    body.menu-open .menu-backdrop,
+    body.menu-open .menu-backdrop.open {
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+    }
+    body.menu-open .menu-dropdown,
+    body.menu-open .menu-dropdown.open {
+      touch-action: pan-y !important;
+    }
+
+    .menu-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      text-align: right;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-body);
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+    }
+    @media (hover: hover) { .menu-item:hover { background: var(--bg3); } }
+    .menu-item:active { background: var(--bg3); }
+    .menu-item.danger { color: #c0392b; }
+    .menu-section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 16px 6px;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-label);
+      font-weight: 700;
+      color: var(--muted);
+      text-align: right;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      pointer-events: none;
+      border-top: 1px solid var(--border);
+      margin-top: 2px;
+      box-sizing: border-box;
+    }
+    .menu-scroll > .menu-section-label:first-child {
+      border-top: none;
+      margin-top: 0;
+    }
+    .menu-section-label .sec-ico {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+    .menu-section-label .sec-ico svg {
+      width: 15px;
+      height: 15px;
+      display: block;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    [data-theme="light"] .menu-section-label .sec-ico svg {
+      /* رنگ‌های قدیمی تم روز ریست شد — تم روز جدید در انتهای استایل‌ها */
+    }
+    [data-theme="light"] .menu-section-label .sec-ico {
+      /* رنگ‌های قدیمی تم روز ریست شد — تم روز جدید در انتهای استایل‌ها */
+    }
+    .menu-version-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 16px 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .menu-version-label {
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-small);
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .menu-update-btn {
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-label);
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .menu-update-btn:active { opacity: 0.85; }
+    .help-modal-box {
+      max-width: 420px !important;
+      width: 100%;
+      max-height: min(80vh, 640px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 16px 14px !important;
+    }
+    .help-modal-box .modal-msg {
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .help-section {
+      margin-bottom: 10px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 12px 10px;
+      text-align: right;
+      direction: rtl;
+    }
+    .help-section h4 {
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-control);
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 0 8px;
+      text-align: right;
+    }
+    .help-section p, .help-section li {
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-small);
+      line-height: 1.75;
+      color: var(--text2);
+      margin: 0;
+      text-align: right;
+    }
+    .help-section ul {
+      margin: 0;
+      padding-right: 18px;
+      padding-left: 0;
+      text-align: right;
+    }
+    .help-section li { margin-bottom: 4px; text-align: right; }
+    .help-modal-box { text-align: right !important; direction: rtl; }
+    .menu-theme-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      width: 100%;
+      box-sizing: border-box;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-body);
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+    @media (hover: hover) { .menu-theme-row:hover { background: var(--bg3); } }
+    .menu-theme-row:active { background: var(--bg3); }
+
+    /* Professional mode toggle */
+    .menu-pro-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      width: 100%;
+      box-sizing: border-box;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: 'Vazirmatn', 'B Nazanin', Tahoma, sans-serif;
+      font-size: var(--hk-fs-body);
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+    }
+    .menu-pro-row:hover { background: var(--bg3); }
+
+    .modal-btn.primary {
+      background: #08b5f5;
+      color: #0a0a0a;
+    }
+    .modal-btn.primary:active { filter: brightness(0.95); }
+    .pro-details-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 10px;
+      margin: 6px 0 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg3);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: var(--hk-fs-small);
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .pro-details-body { display: none; margin-top: 6px; }
+    .pro-details-body.open { display: block; }
+    .proj-report-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: var(--hk-fs-body);
+    }
+    .proj-report-row .val { direction: ltr; font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
+    .proj-report-section {
+      margin: 14px 0 6px;
+      font-weight: 700;
+      font-size: var(--hk-fs-small);
+      opacity: 0.8;
+    }
+    .proj-summary {
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px 10px;
+      background: var(--bg2, var(--input-bg));
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .proj-summary .proj-report-row {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+    .proj-summary .proj-report-row {
+      color: var(--text);
+    }
+    .proj-summary .proj-report-row .val {
+      color: var(--text);
+    }
+    .proj-status {
+      margin-top: 10px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: var(--hk-fs-body);
+      text-align: center;
+      line-height: 1.5;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    
+    /* —— کارت پروژه (لیست پروژه‌ها) —— */
+    .project-card {
+      position: relative;
+      border: 1px solid var(--border);
+      background: var(--bg2, var(--input-bg));
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      width: 4px;
+      background: var(--proj-accent, #b464ff);
+      border-radius: 0 12px 12px 0;
+    }
+    .project-card-top {
+      margin-bottom: 8px;
+    }
+    .project-card-accent { display: none !important; }
+    .project-card-stats { display: none !important; }
+    .project-card-stats {
+      display: flex;
+      gap: 14px;
+      font-size: var(--hk-fs-label);
+      font-weight: 600;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+    .project-card-status {
+      font-weight: 700;
+      opacity: 0.9;
+    }
+    .project-card-status.credit { color: var(--green-tx); }
+    .project-card-status.debt { color: var(--red-tx); }
+
+    
+    
+    
+    
+    
+    
+    
+    /*
+      هایلایت ماژیک واقعی بدون خراب کردن خط‌کشی:
+      - فقط background روی خود tr (نه position روی td/tr)
+      - اندازه تا قبل از ستون حذف (2.6em از چپ)
+      - شکل قلم با SVG mask
+    */
+    tr.project-row-hl {
+      background-image: var(--proj-marker-img, none);
+      background-repeat: no-repeat;
+      /* 75% ارتفاع؛ از وسط سلول ردیف شروع (1.2em از راست)؛ قبل از حذف تمام */
+      background-size: calc(100% - 2.6em - 1.2em) 75%;
+      background-position: right 1.2em center;
+      /* مهم: position نده — border-collapse را خراب می‌کند */
+    }
+    tr.project-row-hl > td {
+      background-color: transparent !important;
+      background-image: none !important;
+      /* بدون position / z-index / transform */
+      border-color: #3a3a3c !important;
+    }
+    tr.project-row-hl > td:last-child {
+      /* ستون حذف روی پس‌زمینهٔ ردیف ماژیک نرود — بکگراند tr از قبل کوتاه شده */
+      background-color: transparent !important;
+    }
+    tr.project-row-hl > td input,
+    tr.project-row-hl > td textarea,
+    tr.project-row-hl > td select,
+    tr.project-row-hl > td .cell,
+    tr.project-row-hl > td .pd-cell,
+    tr.project-row-hl > td .pd-num,
+    tr.project-row-hl > td .pd-desc,
+    tr.project-row-hl > td .pd-amount,
+    tr.project-row-hl > td .status-num {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    .proj-table-caption {
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: var(--hk-fs-small);
+      color: #e8f1f6;
+      background: #0a1628 !important;
+      border-radius: 10px 10px 0 0;
+      position: relative;
+      z-index: 0;
+    }
+    .proj-table-wrap {
+      margin-top: 12px;
+      overflow: hidden;
+      background: transparent;
+      position: relative;
+      isolation: isolate;
+      z-index: 0;
+    }
+    .proj-table-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      pointer-events: none;
+      z-index: 5; /* استروک همیشه روی بکگراند */
+    }
+    .proj-table-scroll {
+      max-height: 210px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 0 0 9px 9px;
+      background: var(--bg2, var(--input-bg));
+      position: relative;
+      z-index: 0;
+    }
+    .proj-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg2, var(--input-bg));
+      color: var(--text);
+      z-index: 2;
+      font-size: var(--hk-fs-label);
+      padding: 8px 6px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+    }
+    .proj-table td {
+      font-size: var(--hk-fs-small);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* شرح کمتر — تاریخ و مبلغ بیشتر */
+    .proj-table .proj-td-date,
+    .proj-table th:nth-child(1) {
+      width: 26%;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .proj-table .proj-td-desc,
+    .proj-table th:nth-child(2) {
+      width: 22%;
+    }
+    .proj-table .proj-td-amt,
+    .proj-table th:nth-child(3) {
+      width: 34%;
+      color: var(--text) !important;
+      font-weight: 700;
+      direction: ltr;
+      unicode-bidi: plaintext;
+      cursor: pointer;
+    }
+    .proj-table .proj-td-bank,
+    .proj-table th:nth-child(4) {
+      width: 18%;
+    }
+    .proj-td-amt {
+      color: var(--text) !important;
+    }
+    .proj-amt-in, .proj-amt-out {
+      color: var(--text) !important;
+    }
+
+    #subjectsModal .modal-box {
+      max-width: min(96vw, 440px) !important;
+      width: 96vw !important;
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    #subjectsList {
+      max-height: 50vh !important;
+    }
+    .project-card {
+      padding: 5px 10px 6px !important;
+      margin-bottom: 7px !important;
+      border-radius: 10px !important;
+      min-height: 0 !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      direction: rtl !important;
+      gap: 8px !important;
+    }
+    .project-card-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .project-card-top {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      direction: rtl;
+    }
+    .project-card-name {
+      flex: 1;
+      text-align: right !important;
+      font-weight: 700;
+      font-size: var(--hk-fs-body);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .project-card-status {
+      text-align: right !important;
+      width: 100%;
+      margin-top: 2px;
+      margin-bottom: 0;
+      font-size: var(--hk-fs-label) !important;
+      line-height: 1.25;
+    }
+    .project-card-actions {
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      direction: ltr !important;
+      flex-shrink: 0 !important;
+      margin-left: -6px !important;
+      order: 0 !important;
+    }
+    
+    /* ادیت پروژه — مات کامل صفحه مودال، فقط کارت ادیت واضح */
+    #subjectsModal.project-rename-active .modal-box {
+      position: relative;
+    }
+    #subjectsModal.project-rename-active .modal-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.62);
+      z-index: 20;
+      border-radius: inherit;
+      pointer-events: auto;
+    }
+    #subjectsModal.project-rename-active .project-card.project-card-editing {
+      position: relative;
+      z-index: 25;
+      background: var(--bg2, #252525) !important;
+      box-shadow: 0 10px 32px rgba(0,0,0,0.5);
+    }
+    #subjectsModal.project-rename-active .project-card.project-card-editing .project-card-actions {
+      display: none !important;
+    }
+    .project-card-editing .project-rename-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding: 4px 0;
+    }
+    .project-card-editing .project-rename-stack .subject-rename-input {
+      width: 100%;
+      text-align: right;
+      box-sizing: border-box;
+    }
+    .project-card-editing .project-rename-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+      direction: rtl;
+    }
+    .project-card-editing .project-rename-btns .modal-btn {
+      flex: 1;
+      padding: 8px 10px;
+    }
+
+    #subjectsList.project-editing {
+      position: relative;
+    }
+    #subjectsList.project-editing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 5;
+      border-radius: 8px;
+      pointer-events: auto;
+    }
+    #subjectsList .project-card.project-card-editing {
+      position: relative;
+      z-index: 6;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .proj-status-credit { color: var(--green-tx); }
+    .proj-status-debt { color: var(--red-tx); }
+    .proj-status-even { color: var(--text); opacity: 0.85; }
+    .proj-amt-in { color: var(--green-tx) !important; }
+    .proj-amt-out { color: var(--red-tx) !important; }
+    .proj-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+    }
+    .proj-table {
+      width: 100%;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: var(--hk-fs-small);
+      font-weight: 600;
+      table-layout: fixed;
+    }
+    .proj-table th {
+      background: var(--bg3);
+      padding: 10px 8px;
+      text-align: right;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .proj-table td {
+      padding: 10px 8px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .proj-table tr:last-child td { border-bottom: none; }
+    .proj-td-date { white-space: nowrap; width: 22%; }
+    .proj-td-desc {
+      width: 36%;
+      max-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .proj-desc-text {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .proj-td-amt {
+      width: 24%;
+      direction: ltr;
+      unicode-bidi: plaintext;
+      text-align: left;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .proj-td-bank {
+      width: 18%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .proj-empty { font-size: var(--hk-fs-small); opacity: 0.65; padding: 10px 6px; }
+    #projectReportModal .modal-box {
+      max-width: min(98vw, 640px);
+      width: 98vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    #projectReportModal .proj-table-wrap {
+      width: 100%;
+      max-width: 100%;
+    }
+    #projectReportModal .modal-box .proj-summary,
+    #projectReportModal .modal-box .proj-table-wrap {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .subject-list-item {
+      flex-wrap: wrap;
+    }
+    .subject-list-item .sub-acts {
+      margin-right: auto;
+    }
+    .subject-list-item .sub-acts button {
+      font-family: inherit;
+      font-size: var(--hk-fs-label);
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+    }
+    .fancy-select-list {
+      z-index: 100900 !important;
+    }
+    .fancy-select-list.open {
+      z-index: 100900 !important;
+    }
+    body > .fancy-select-list.open {
+      z-index: 100950 !important;
+    }
+
+    .pro-mode-switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      flex-shrink: 0;
+      transition: background 0.25s ease, border-color 0.25s ease;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .pro-mode-switch.on {
+      background: rgba(8,181,245,0.25);
+      border-color: #08b5f5;
+    }
+    .pro-mode-switch .pro-knob {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #888;
+      transition: transform 0.25s ease, background 0.25s ease;
+    }
+    .pro-mode-switch.on .pro-knob {
+      transform: translateX(-20px);
+      background: #08b5f5;
+    }
+    .sms-seg {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      direction: rtl;
+    }
+    .sms-acct-seg {
+      margin-bottom: 0;
+    }
+    #smsProjectPickWrap {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      border: none !important;
+    }
+    #smsProjectPickWrap.sms-proj-visible {
+      display: block !important;
+      margin-top: 8px !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #smsProjectPickWrap .fancy-select-wrap {
+      width: 100%;
+    }
+    .sms-seg button {
+      flex: 1;
+      border: none;
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: var(--hk-fs-small);
+      padding: 9px 6px;
+      cursor: pointer;
+    }
+    .sms-seg button.active {
+      background: rgba(8,181,245,0.22);
+      color: #fff;
+    }

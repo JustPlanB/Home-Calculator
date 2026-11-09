@@ -169,8 +169,8 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
       const offJ = (hkPrefs().spOff || []).indexOf('jump') >= 0;
       return { heads, noChk, sws, fit, priv, priv2, sub, start, mainVal, n: rows.length, offJ, x: !!m.querySelector('.hk-pf-x'), back: !!m.querySelector('.hk-pf-back') };
     });
-    ok(pf.heads.join('|') === 'نمایش|صفحهٔ خانه|دسته‌ها و حریم|اعلان‌ها' && pf.noChk && pf.sws === 4 && pf.fit, th + ': گروه‌ها با عنوان، کلید روشن/خاموش به‌جای چک‌باکس، بدون دکمه‌های آبی درهم و دکمهٔ «بستن» (' + pf.heads.join('، ') + ')');
-    ok(pf.priv && pf.priv2, th + ': «مخفی کردن مبلغ‌ها» با کلید روشن و خاموش می‌شود');
+    ok(pf.heads.join('|') === 'نمایش|صفحهٔ خانه|دسته‌ها|اعلان‌ها' && pf.noChk && pf.sws === 4 && pf.fit, th + ': گروه‌ها با عنوان، کلید روشن/خاموش به‌جای چک‌باکس، بدون دکمه‌های آبی درهم و دکمهٔ «بستن» (' + pf.heads.join('، ') + ')');
+    ok(pf.priv && pf.priv2, th + ': «مخفی کردن مبالغ» با کلید روشن و خاموش می‌شود');
     ok(pf.sub === 'صفحهٔ اول' && pf.start === 'expense' && pf.mainVal === 'مخارج', th + ': صفحهٔ دوم برای انتخاب و برگشت با مقدار تازه');
     ok(pf.n === 15 && pf.offJ && pf.x && pf.back, th + ': صفحهٔ اسلایدها: ۱۵ اسلاید (با کارت‌های قسط، یادآورها، دُنگ و پس‌انداز) با کلید؛ فلش برگشت و ضربدر');
     /* جابه‌جایی با دستگیره */
