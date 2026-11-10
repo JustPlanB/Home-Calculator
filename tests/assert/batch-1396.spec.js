@@ -63,6 +63,10 @@ const allErrors = [];
   const T = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const o = {};
+    /* ۱.۳.۹۷: لانگ‌پرس روی اسلاید «+» کاری نمی‌کند؛ با دادهٔ مصنوعی یک اسلاید واقعی (خلاصهٔ ماه) ساخته می‌شود */
+    const t0 = hkMainTitle(), ex0 = periodData.expense.sections.find(s => s.title === t0);
+    ex0.rows.push(Object.assign(emptyRow('expense'), { day: '2', desc: 'نان', amount: 50000, status: 'paid' }));
+    persistCurrent(); renderAll(); await w(600);
     const el = document.querySelector('#homeSmartBox .pc-smart-box');
     hkPrefSet('spOff', ['jump']); await w(300);
     const ti = el._spPages.findIndex(p => HK_SP_LABELS[p.key]); if (ti >= 0) el._spIdx = ti;
@@ -71,10 +75,10 @@ const allErrors = [];
     const ov = document.querySelector('.sp-tog-ov2');
     o.open = !!ov;
     const rows = [...ov.querySelectorAll('.sp-tog-row')];
-    o.all = rows.length === Object.keys(HK_SP_LABELS).length;
+    o.all = rows.length === Object.keys(HK_SP_LABELS).length - 1 && !rows.some(x => x.dataset.k === 'todo'); /* ۱.۳.۹۷: بی «کارهای من» */
     o.cur = HK_SP_LABELS[k] ? !!ov.querySelector('.sp-tog-row.cur[data-k="' + k + '"]') : !ov.querySelector('.sp-tog-row.cur');
     const rb = el.getBoundingClientRect(), pr = ov.querySelector('.sp-tog-panel').getBoundingClientRect();
-    o.onBox = Math.abs(pr.left - rb.left) < 2 && Math.abs(pr.width - rb.width) < 2;
+    o.onBox = Math.abs(pr.left + pr.width / 2 - innerWidth / 2) < 2 && Math.abs(pr.top + pr.height / 2 - innerHeight / 2) < 2; /* ۱.۳.۹۷: وسط صفحه */
     const cur = ov.querySelector('.sp-tog-row.cur') || ov.querySelector('.sp-tog-row[data-k="stats"]'), ck = cur.dataset.k; cur.click(); await w(200);
     o.off = (hkPrefs().spOff || []).indexOf(ck) >= 0 && !cur.querySelector('.hk-switch').classList.contains('on');
     cur.click(); await w(200);
@@ -86,7 +90,7 @@ const allErrors = [];
     o.closed = !document.querySelector('.sp-tog-ov2');
     return o;
   });
-  ok(T.open && T.all && T.cur && T.onBox, 'لانگ‌پرس روی «' + T.key + '»: فهرست همهٔ اسلایدها روی همان باکس؛ اسلاید فعلی هایلایت');
+  ok(T.open && T.all && T.cur && T.onBox, 'لانگ‌پرس روی «' + T.key + '»: فهرست اسلایدها وسط صفحه؛ اسلاید فعلی هایلایت');
   ok(T.off && T.on && T.reOn && T.closed, 'خاموش و روشن کردن همان‌جا؛ اسلاید خاموش را هم از همین‌جا روشن می‌شود؛ لمس بیرون = بستن');
 
   console.log('• قرض: قاب روی جعبهٔ ثابت');
