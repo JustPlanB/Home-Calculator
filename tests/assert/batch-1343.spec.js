@@ -19,7 +19,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• ثبت از اعلان (پاسخ مستقیم)');
   const patch = require('../lib/android-src')();
-  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
+  ok(/new RemoteInput\.Builder\(KEY_DESC\)\.setLabel\("بابت چی بود؟ بنویس و فلش را بزن"\)/.test(patch) && /Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /FLAG_MUTABLE/.test(patch),
     'اعلان تراکنش دکمهٔ «ثبت» با فیلد «بابت چه بود؟» دارد (PendingIntent قابل‌تغییر برای پاسخ)');
   ok(/class HkQuickReplyReceiver/.test(patch) && /x\.put\("quickDesc",desc\)/.test(patch) && /HkQuickReplyReceiver" android:exported="false"/.test(patch) && /r\.put\("quickDesc"/.test(patch),
     'گیرندهٔ پاسخ شرح را کنار همان پیامک در صف می‌گذارد، از بیرون صدا زده نمی‌شود و صف آن را به نرم‌افزار می‌دهد');

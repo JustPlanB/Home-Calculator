@@ -705,14 +705,10 @@
       document.querySelectorAll('.sp-tog-ov2').forEach(function (x) { x.remove(); });
       var key = page.key;
       var ov = document.createElement('div'); ov.className = 'sp-tog-ov2'; ov.setAttribute('data-hk-back', '1');
-      var r = el.getBoundingClientRect();
       var pn = document.createElement('div'); pn.className = 'sp-tog-panel';
-      var h = Math.max(r.height, Math.min(window.innerHeight - 40, 360));
-      var top = Math.max(12, Math.min(r.top, window.innerHeight - h - 12));
-      pn.style.cssText = 'top:' + Math.round(top) + 'px;left:' + Math.round(r.left) + 'px;width:' + Math.round(r.width) + 'px;height:' + Math.round(h) + 'px;';
       pn.innerHTML = '<div class="sp-tog-h">اسلایدهای باکس هوشمند</div><div class="sp-tog-list"></div>';
       var list = pn.querySelector('.sp-tog-list');
-      var keys = []; try { keys = hkSpOrderKeys(); } catch (eK) { keys = Object.keys(HK_SP_LABELS); }
+      var keys = []; try { keys = hkSpToggleKeys(); } catch (eK) { keys = Object.keys(HK_SP_LABELS).filter(function (k) { return k !== 'todo'; }); }
       var cur = null;
       keys.forEach(function (k) {
         var off = (hkPrefs().spOff || []).indexOf(k) >= 0;
@@ -734,6 +730,8 @@
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       ov.appendChild(pn);
       document.body.appendChild(ov);
+      /* ۱.۳.۹۷: پنج ردیف دیده شود، بقیه با اسکرول */
+      try { var rr = list.querySelector('.sp-tog-row'); if (rr && keys.length > 5) { var cs0 = getComputedStyle(list); list.style.maxHeight = (rr.offsetHeight * 5 + (parseFloat(cs0.paddingBottom) || 0)) + 'px'; } } catch (eH5) {}
       if (cur) { try { list.scrollTop = Math.max(0, cur.offsetTop - list.clientHeight / 2 + cur.offsetHeight / 2); } catch (eS) {} }
     }
     function bindSmartPanelGestures(el) {
@@ -750,7 +748,7 @@
         /* لانگ‌پرس روی اسلاید ساختهٔ کاربر (کارهای من) → سطل زبالهٔ قرمز روی همان اسلاید */
         clearTimeout(el._spLp);
         var _pg0 = (el._spPages || [])[el._spIdx];
-        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && !_isTodo && typeof HK_SP_LABELS !== 'undefined'; /* ۱.۳.۹۶: هر اسلایدِ غیرِ «کارهای من» (حتی + و هشدار) = فهرست اسلایدها، تا اگر همه خاموش شدند هم راه روشن کردن بماند */
+        var _isTodo = _pg0 && /^todo-/.test(String(_pg0.key || '')), _isTog = _pg0 && !_isTodo && _pg0.key !== 'todoAdd' && typeof HK_SP_LABELS !== 'undefined'; /* ۱.۳.۹۷: لانگ‌پرس روی اسلاید «+» کاری نمی‌کند */ /* ۱.۳.۹۶: هر اسلایدِ غیرِ «کارهای من» (حتی + و هشدار) = فهرست اسلایدها، تا اگر همه خاموش شدند هم راه روشن کردن بماند */
         if (_isTodo || _isTog) {
           el._spLpArmed = true;
           el._spLp = setTimeout(function () {

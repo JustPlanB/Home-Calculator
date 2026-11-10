@@ -33,17 +33,30 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       String cat=in.getStringExtra("cat"); if(cat==null) cat="";
       /* ۱.۳.۹۶: اگر پیش‌تر در «ثبت سریع» شرح نوشته شده، همان شرح می‌ماند و فقط دسته اضافه می‌شود */
       String prev=""; try{ JSONObject it0=findItem(c,cn); if(it0!=null) prev=it0.optString("quickDesc","").trim(); }catch(Exception ignored){}
+      boolean catFirst=prev.isEmpty();
       if(!prev.isEmpty()) lab=prev;
       boolean ok=saveDesc(c,cn,lab);
-      if(ok){ try{ SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE); JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]")); for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null&&x.optInt("nid",0)==cn){ x.put("quickCat",cat); break; } } sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit(); }catch(Exception ignored){} }
+      /* ۱.۳.۹۷: اول دسته، بعد شرح: دسته ثبت می‌شود و تا ۳۰ ثانیه می‌شود شرح هم نوشت (نرم‌افزار تا آن موقع صبر می‌کند) */
+      if(ok){ try{ SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE); JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]")); for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null&&x.optInt("nid",0)==cn){ x.put("quickCat",cat); if(catFirst) x.put("quickWait",System.currentTimeMillis()); else x.remove("quickWait"); break; } } sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit(); }catch(Exception ignored){} }
+      if(ok && catFirst){ BankSmsReceiver.postDescAfterCat(c,cn,lab); return; }
       notifyDone(c,cn,lab,ok);
       return;
     }
-    if(!BankSmsReceiver.ACTION_QUICK.equals(in.getAction())) return;
+    if(!in.getAction().startsWith(BankSmsReceiver.ACTION_QUICK)) return;
     Bundle res=RemoteInput.getResultsFromIntent(in); if(res==null) return;
     CharSequence cs=res.getCharSequence(BankSmsReceiver.KEY_DESC);
     String desc=cs==null?"":cs.toString().trim(); if(desc.length()>200) desc=desc.substring(0,200);
     int nid=in.getIntExtra("nid",0); if(nid==0) return;
+    /* ۱.۳.۹۷: شرحِ بعد از دسته: دسته سر جایش می‌ماند؛ شرح خالی = همان اسم دسته */
+    if(in.getBooleanExtra("afterCat",false)){
+      JSONObject it1=findItem(c,nid);
+      String lab1=in.getStringExtra("label"); if(lab1==null) lab1="";
+      if(desc.isEmpty()) desc=lab1;
+      boolean f1=it1!=null && saveDesc(c,nid,desc);
+      if(f1){ try{ SharedPreferences sp=c.getSharedPreferences(BankSmsReceiver.PREFS,Context.MODE_PRIVATE); JSONArray q=new JSONArray(sp.getString(BankSmsReceiver.QUEUE,"[]")); for(int i=0;i<q.length();i++){ JSONObject x=q.optJSONObject(i); if(x!=null&&x.optInt("nid",0)==nid){ x.remove("quickWait"); break; } } sp.edit().putString(BankSmsReceiver.QUEUE,q.toString()).commit(); }catch(Exception ignored){} }
+      notifyDone(c,nid,desc,f1);
+      return;
+    }
     boolean found=saveDesc(c,nid,desc);
     /* ۱.۳.۹۶: بعد از نوشتن شرح، اعلان با «بابت: …» و دکمه‌های دسته (دسته اختیاری؛ زدنش شرح را پاک نمی‌کند) */
     if(found && !desc.isEmpty()){ BankSmsReceiver.postCatAfterDesc(c,nid,desc); return; }

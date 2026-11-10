@@ -223,6 +223,8 @@
       all.forEach(function (k) { if (o.indexOf(k) < 0) o.push(k); });
       return o;
     }
+    /* ۱.۳.۹۷: «کارهای من» روشن/خاموش ندارد (خودشان قابل حذف‌اند)؛ همیشه روشن */
+    function hkSpToggleKeys() { return hkSpOrderKeys().filter(function (k) { return k !== 'todo'; }); }
     function hkSpOrderedPages() {
       var o = hkPrefs().spOrder;
       if (!Array.isArray(o) || !o.length) return SMART_PANEL_PAGES;
@@ -306,7 +308,7 @@
           var hn = document.createElement('div'); hn.className = 'hk-pf-gh'; hn.textContent = 'روشن/خاموش؛ برای جابه‌جایی، دستگیره را نگه دارید و بکشید'; body.appendChild(hn);
           var g = document.createElement('div'); g.className = 'hk-pf-grp hk-pf-slides'; body.appendChild(g);
           var off = hkPrefs().spOff || [];
-          hkSpOrderKeys().forEach(function (k) {
+          hkSpToggleKeys().forEach(function (k) {
             var r = rowEl(g, null, HK_SP_LABELS[k]); r.dataset.k = k;
             r.insertAdjacentHTML('afterbegin', '<i class="hk-pf-hnd" aria-label="جابه‌جایی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14"/></svg></i>');
             var b = sw(off.indexOf(k) < 0, function (v) { var o2 = hkPrefs().spOff || []; var i = o2.indexOf(k); if (v && i >= 0) o2.splice(i, 1); if (!v && i < 0) o2.push(k); hkPrefSet('spOff', o2); }, HK_SP_LABELS[k]);
@@ -335,8 +337,8 @@
         var g2 = grp(body, 'صفحهٔ خانه');
         var dk = ['L', 'R'].map(function (sd) { return '<span class="hk-pf-dk"><svg viewBox="0 0 24 24" aria-hidden="true">' + HK_DOCK_ITEMS[hkDockPick(sd)].svg + '</svg></span>'; }).join('');
         goRow(g2, 'dock', 'میان‌برها', dk, function () { stack.push('dock'); render(); }, 'dock');
-        var nOn = Object.keys(HK_SP_LABELS).filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
-        goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(Object.keys(HK_SP_LABELS).length)), function () { stack.push('slides'); render(); }, 'slides');
+        var _tk = hkSpToggleKeys(), nOn = _tk.filter(function (k) { return (p.spOff || []).indexOf(k) < 0; }).length;
+        goRow(g2, 'slides', 'اسلایدهای باکس هوشمند', toPersianDigits(String(nOn)) + ' از ' + toPersianDigits(String(_tk.length)), function () { stack.push('slides'); render(); }, 'slides');
         /* ۱.۳.۹۴: «دسته‌ها» (بی «حریم»)؛ «مخفی کردن مبالغ» به بخش اعلان‌ها رفت؛ ۱.۳.۹۵: گزینهٔ اول «دسته‌ها» (همهٔ دسته‌ها، ساختن و حذف) */
         var g3 = grp(body, 'دسته‌ها');
         goRow(g3, 'newcat', 'دسته‌ها', toPersianDigits(String(hkCatsOf('in').length + hkCatsOf('out').length)), function () { hkCatsSheet(render); }, 'newcat');
@@ -540,7 +542,7 @@
     try { window.openPrefsModal = openPrefsModal; } catch (eWp) {}
     (function () {
       /* اسلایدهای خاموش‌شده ساخته نمی‌شوند */
-      try { SMART_PANEL_PAGES.forEach(function (pg) { var b0 = pg.build; pg.build = function (D) { if ((hkPrefs().spOff || []).indexOf(pg.key) >= 0) return null; return b0.apply(this, arguments); }; }); } catch (e) {}
+      try { SMART_PANEL_PAGES.forEach(function (pg) { var b0 = pg.build; pg.build = function (D) { if (pg.key !== 'todo' && (hkPrefs().spOff || []).indexOf(pg.key) >= 0) return null; return b0.apply(this, arguments); }; }); } catch (e) {}
       try { hkApplyPrefs(true); } catch (e2) {}
       /* صفحهٔ اول */
       setTimeout(function () { try { var sp = hkPrefs().startPage; if ((sp === 'expense' || sp === 'income') && !document.querySelector('.modal-overlay.open, #tourOverlay.open') && !document.body.classList.contains('detail-open')) openPersonDetail(hkMainTitle(), sp); } catch (e) {} }, 900);

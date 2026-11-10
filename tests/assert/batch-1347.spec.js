@@ -21,7 +21,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const patch = require('../lib/android-src')();
   const post = patch.slice(patch.indexOf('static void postNotification'), patch.indexOf('static void postNotification') + 3000);
   ok(!/setCustomContentView|DecoratedCustomViewStyle/.test(post) && /baseBuilder\(c,title,text\)/.test(post), 'اعلان تراکنش دوباره با چیدمان رسمی اندروید (BigTextStyle)');
-  ok(/setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch) && /setHint\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'راهنمای فیلد اعلان و باکس شناور: «بابت چی بود؟ (شرح)»');
+  ok(/setLabel\("بابت چی بود؟ بنویس و فلش را بزن"\)/.test(patch) /* ۱.۳.۹۷ */ && /setHint\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'راهنمای فیلد اعلان و باکس شناور: «بابت چی بود؟ (شرح)»');
 
   const seed = () => p.evaluate(() => {
     const t = hkMainTitle();

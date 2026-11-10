@@ -283,6 +283,22 @@ public class BankSmsReceiver extends BroadcastReceiver {
     }catch(Throwable ignored){}
   }
 
+  /* ۱.۳.۹۷: بعد از زدن دسته (بی شرح): «… ثبت شد» و دکمهٔ «افزودن شرح» (پاسخ مستقیم)؛ تا ۳۰ ثانیه، بعد همان دسته با شرح اسم دسته ثبت می‌شود */
+  static void postDescAfterCat(Context c,int nid,String label){
+    try{
+      String t1=label+" ثبت شد";
+      NotificationCompat.Builder b=baseBuilder(c,t1,"شرح هم می‌خواهید؟ «افزودن شرح» را بزنید، بنویسید و فلش را بزنید (اختیاری)");
+      b.setOnlyAlertOnce(true).setPriority(NotificationCompat.PRIORITY_LOW);
+      if(Build.VERSION.SDK_INT>=26) b.setTimeoutAfter(30000);
+      int fl=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
+      Intent qi=new Intent(c,HkQuickReplyReceiver.class); qi.setAction(ACTION_QUICK+"_AC_"+nid); qi.putExtra("nid",nid); qi.putExtra("afterCat",true); qi.putExtra("label",label);
+      PendingIntent qpi=PendingIntent.getBroadcast(c,nid*8+7,qi,fl);
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("شرح را بنویس و فلش را بزن").build();
+      b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"افزودن شرح",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build());
+      ((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).notify(nid,b.build());
+    }catch(Throwable ignored){}
+  }
+
   static NotificationCompat.Builder baseBuilder(Context c,String title,String text){
     Intent i=c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
     NotificationCompat.Builder b=new NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(text.replace('\n',' ')).setStyle(new NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).setCategory(NotificationCompat.CATEGORY_MESSAGE).setPriority(NotificationCompat.PRIORITY_HIGH);
@@ -332,7 +348,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
         qi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         qpi=PendingIntent.getActivity(c,nid,qi,fl);
       }
-      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ (شرح)").build();
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ بنویس و فلش را بزن").build(); /* ۱.۳.۹۷: راهنمای فلش */
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
     }catch(Throwable ignored){}
