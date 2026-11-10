@@ -162,7 +162,7 @@ if(fs.existsSync(manifest)){
     '        </receiver>\n    </application>');
   // ویجت صفحهٔ اصلی گوشی
   if(!s.includes('.HkWidgetProvider')) s=s.replace('</application>',
-    '        <receiver android:name=".HkWidgetProvider" android:exported="true" android:label="حساب‌کتاب">\n' +
+    '        <receiver android:name=".HkWidgetProvider" android:exported="true" android:label="موجودی و خرج امروز">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
@@ -170,7 +170,7 @@ if(fs.existsSync(manifest)){
     '        </receiver>\n    </application>');
   // ویجت حساب‌ها (موجودی هر کارت + خرج امروز)
   if(!s.includes('.HkWidgetAccountsProvider')) s=s.replace('</application>',
-    '        <receiver android:name=".HkWidgetAccountsProvider" android:exported="true" android:label="حساب‌کتاب (حساب‌ها)">\n' +
+    '        <receiver android:name=".HkWidgetAccountsProvider" android:exported="true" android:label="حساب‌ها">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
@@ -178,7 +178,7 @@ if(fs.existsSync(manifest)){
     '        </receiver>\n    </application>');
   // ۱.۳.۷۸: ویجت ردیف‌ها (مخارج / درآمدها) + صفحهٔ انتخاب + سرویس فهرست
   if(!s.includes('.HkWidgetTxProvider')) s=s.replace('</application>',
-    '        <receiver android:name=".HkWidgetTxProvider" android:exported="true" android:label="حساب‌کتاب (ردیف‌ها)">\n' +
+    '        <receiver android:name=".HkWidgetTxProvider" android:exported="true" android:label="تراکنش‌ها">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
@@ -398,6 +398,20 @@ fs.mkdirSync(path.join(resDir,'font'),{recursive:true});
 ['hk_vazir_regular.ttf','hk_vazir_bold.ttf'].forEach(function(f){
   fs.copyFileSync(path.join(root,'resources','widget-fonts',f), path.join(resDir,'font',f));
 });
+// ۱.۳.۹۸: پیش‌نمایش و توضیح هر ویجت در فهرست ویجت‌های گوشی (تا سه ویجت شبیه هم نباشند)
+fs.mkdirSync(path.join(resDir,'drawable-nodpi'),{recursive:true});
+['hk_prev_main.png','hk_prev_accounts.png','hk_prev_tx.png'].forEach(function(f){
+  fs.copyFileSync(path.join(root,'resources','widget-previews',f), path.join(resDir,'drawable-nodpi',f));
+});
+fs.mkdirSync(path.join(resDir,'values'),{recursive:true});
+fs.writeFileSync(path.join(resDir,'values','hk_widget_strings.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hk_wdesc_main">موجودی کل و خرج امروز</string>
+    <string name="hk_wdesc_accounts">موجودی هر کارت و خرج امروز</string>
+    <string name="hk_wdesc_tx">آخرین واریزها و برداشت‌ها</string>
+</resources>
+`);
 fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
@@ -424,6 +438,8 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:previewImage="@drawable/hk_prev_main"
+    android:description="@string/hk_wdesc_main"
     android:initialLayout="@layout/hk_widget"/>
 `);
 
@@ -446,11 +462,11 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
                 android:layout_gravity="center" android:adjustViewBounds="true" android:scaleType="fitXY" android:contentDescription="ردیفی نیست"/>
         </FrameLayout>
     </LinearLayout>
-    <ImageView android:id="@+id/hk_wt_eye" android:layout_width="34dp" android:layout_height="34dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="6dp" android:layout_marginTop="3dp"
+    <ImageView android:id="@+id/hk_wt_eye" android:layout_width="38dp" android:layout_height="38dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="6dp" android:layout_marginTop="5dp"
         android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
     <!-- ۱.۳.۹۲: روی نام نوع ردیف‌ها (وسط نوار عنوان): منوی واریز / برداشت / همه -->
-    <FrameLayout android:id="@+id/hk_wt_pick" android:layout_width="130dp" android:layout_height="40dp"
+    <FrameLayout android:id="@+id/hk_wt_pick" android:layout_width="140dp" android:layout_height="48dp"
         android:layout_gravity="top|center_horizontal" android:contentDescription="انتخاب نوع ردیف‌ها"/>
 </FrameLayout>
 `);
@@ -494,6 +510,8 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
     android:widgetCategory="home_screen"
     android:configure="ir.hesabketab.app.HkWidgetTxConfig"
     android:widgetFeatures="reconfigurable"
+    android:previewImage="@drawable/hk_prev_tx"
+    android:description="@string/hk_wdesc_tx"
     android:initialLayout="@layout/hk_widget_tx"/>
 `);
 
@@ -507,6 +525,8 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:previewImage="@drawable/hk_prev_accounts"
+    android:description="@string/hk_wdesc_accounts"
     android:initialLayout="@layout/hk_widget"/>
 `);
 

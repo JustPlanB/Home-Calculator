@@ -41,7 +41,7 @@
         '<button type="button" class="hk-bulk-read">خواندن پیامک‌ها</button></div>' +
         /* ۱.۳.۴۸: «پیدا کردن ردیف‌های تکراری قبلی» برداشته شد (ثبت گروهی خودش تکراری‌ها را کنار می‌گذارد) */
         '<div class="hk-bulk-list" id="hkBulkList"><div class="hk-bulk-hint">بازه را مشخص کنید و «خواندن پیامک‌ها» را بزنید. نرم‌افزار پیامک‌های تراکنش بانکی را پیدا می‌کند و بر اساس بانک و حساب دسته‌بندی می‌کند.</div></div>' +
-        '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok" disabled>ثبت تراکنش‌های انتخاب‌شده</button><button type="button" class="hk-bulk-close">بستن</button></div>' +
+        '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok" disabled>ثبت</button><button type="button" class="hk-bulk-close">بستن</button></div>' +
       '</div>';
       document.body.appendChild(ov);
       /* انتخاب تاریخ با منوهای کشویی (بدون تایپ) */

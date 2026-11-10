@@ -38,28 +38,18 @@ const allErrors = [];
   if (tourOn) { await p.evaluate(() => document.querySelector('#appTour .tour-skip').click()); await p.waitForTimeout(1000); }
   const s1 = await p.evaluate(() => ({ open: !!document.getElementById('hkSetupOv'), title: (document.querySelector('#hkSetupOv .hk-bulk-title') || {}).textContent, sameBox: !!document.querySelector('#hkSetupOv.hk-bulk-ov .hk-bulk-box .hk-bulk-btns .hk-bulk-ok') }));
   ok(s1.open && s1.title === 'حساب‌هایت را پیدا کنیم' && s1.sameBox, 'بعد از راهنما «حساب‌هایت را پیدا کنیم» با ظاهر پنجرهٔ ثبت گروهی');
+  /* ۱.۳.۹۸: «پیدا کن» مستقیم «ثبت گروهی» را باز می‌کند (بازه همان‌جا)؛ تب‌های «از اول ماه / از امروز» برداشته شد */
   const s2 = await p.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
+    const hint = (document.querySelector('#hkSetupOv .hk-bulk-hint') || {}).textContent || '';
+    const seg = !!document.querySelector('#hkSetupOv .hk-setup-seg');
     document.querySelector('#hkSetupOv .hk-bulk-ok').click(); await w(500);
-    return [...document.querySelectorAll('#hkSetupOv .hk-bulk-folder')].map(c => ({ t: c.querySelector('.hk-bulk-fname').textContent, name: (c.querySelector('.hk-bulk-newinp') || {}).value, bal: (c.querySelector('.hk-setup-bal input') || {}).value, lab: (c.querySelector('.hk-bulk-newlab') || {}).textContent }));
+    const det = hkSetupDetect(window.__inbox).map(fo => ({ bank: fo.bank, acc4: fo.acc4, bal: fo.bal }));
+    return { hint, seg, setup: !!document.getElementById('hkSetupOv'), bulk: !!document.getElementById('smsBulkOv'), notRead: !!document.querySelector('#smsBulkOv #hkBulkList .hk-bulk-hint'), done: localStorage.getItem('hesabKetabArchive_v5_bankSetupDone'), det };
   });
-  ok(s2.length === 3, 'سه کارت پیدا شد (پیامک شخصی کنار گذاشته شد): ' + s2.map(x => x.t).join('، '));
-  ok(s2.some(x => /ملت/.test(x.t) && x.name === 'ملت ۵۵۵۵' && x.bal === '۱,۲۲۴,۰۰۰'), 'ملت ۵۵۵۵: نام پیشنهادی و جدیدترین مانده (ریال→تومان)');
-  ok(s2.some(x => /ملی/.test(x.t) && x.bal === '۳,۰۰۰,۰۰۰'), 'ملی ۱۲۳۴: مانده از پیامک «انتقال:…+»');
-  ok(s2.some(x => /صادرات · ۹۹۹۹/.test(x.t)) && !s2.some(x => /۲۷۰۹/.test(x.t)), 'چهار رقم کارت به سطر تاریخ بعدی (۰۷۲۷-۰۹:۰۰) نچسبید');
-  ok(s2.every(x => x.lab === 'حساب جدید:'), 'هر کارت باکس «حساب جدید:» همان ثبت گروهی');
-  const s3 = await p.evaluate(async () => {
-    const w = ms => new Promise(r => setTimeout(r, ms));
-    /* صادرات را برنداریم؛ ماندهٔ قدیمی‌اش را عوض کنیم */
-    /* ۱.۳.۹۵: پیش‌فرض «از اول همین ماه»؛ این تست روند «از امروز» را می‌سنجد */
-    const tb = document.querySelector('#hkSetupOv .hk-setup-seg [data-m="today"]'); if (tb) { tb.click(); await w(150); }
-    const sad = [...document.querySelectorAll('#hkSetupOv .hk-bulk-folder')].find(c => /صادرات/.test(c.textContent));
-    const bi = sad.querySelector('.hk-setup-bal input'); bi.value = '250000'; bi.dispatchEvent(new Event('input'));
-    document.querySelector('#hkSetupOv .hk-bulk-ok').click(); await w(500);
-    return { open: !!document.getElementById('hkSetupOv'), accs: selectedAccountLabels(), bal: globalAccountBalances(), map: smsAccountBankMap['L4:5555'], done: localStorage.getItem('hesabKetabArchive_v5_bankSetupDone') };
-  });
-  ok(!s3.open && s3.accs.length === 3 && s3.bal['ملت ۵۵۵۵'] === 1224000 && s3.bal['صادرات ۹۹۹۹'] === 250000, 'با «تأیید» سه حساب با همان مانده‌ها ساخته شد');
-  ok(s3.map === 'ملت ۵۵۵۵' && s3.done === '1', 'پیامک‌های بعدی کارت ۵۵۵۵ به همین حساب می‌روند؛ راه‌اندازی دیگر تکرار نمی‌شود');
+  ok(/تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود/.test(s2.hint) && !s2.seg, 'متن «…«پیدا کن» را نزنید…»؛ تب «از امروز» نیست');
+  ok(!s2.setup && s2.bulk && s2.notRead && s2.done === '1', '«پیدا کن» ← همان ثبت گروهی (بازه را خود کاربر انتخاب می‌کند)؛ راه‌اندازی دیگر تکرار نمی‌شود');
+  ok(s2.det.length === 3 && s2.det.some(x => /ملت/.test(x.bank) && x.acc4 === '5555' && x.bal === 1224000), 'تشخیص کارت‌ها از پیامک‌ها همچنان درست (پیامک شخصی کنار)');
   await ctx.close();
 
   /* بدون اجازه/پلاگین: مسیر دستی، و «بعداً» */

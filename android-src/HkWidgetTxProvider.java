@@ -133,7 +133,8 @@ final class HkWidgetTxDraw {
   static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){ return header(ctx, W, k, inc, false, light); }
   static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light){
     fonts(ctx);
-    float th=40*k, hh=30*k; int H=Math.round(th+hh+1*k);
+    /* ۱.۳.۹۸: نوار بالا بلندتر (۴۸) و همهٔ نوشته‌هایش درشت‌تر؛ «حساب‌کتاب» هم‌اندازهٔ ویجت حساب‌ها (۱۷) */
+    float th=48*k, hh=30*k; int H=Math.round(th+hh+1*k);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
     /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
@@ -144,24 +145,24 @@ final class HkWidgetTxDraw {
     cv.drawPath(tp, tb);
     /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
-    Paint t=paint(BOLD, 15f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
+    Paint t=paint(BOLD, 17f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
     fitSize(t, ttl, W*0.26f);
     float tx=W/2f-5*k;
-    cv.drawText(ttl, tx, base(0, th, 15f*k), t);
+    cv.drawText(ttl, tx, base(0, th, 17f*k), t);
     /* ۱.۳.۹۲: فلش کوچک کنار نام: یعنی با زدن، منوی انتخاب باز می‌شود */
-    float cw=5*k, cx=tx-t.measureText(ttl)/2f-8*k, cy=th/2f+1*k;
+    float cw=6*k, cx=tx-t.measureText(ttl)/2f-9*k, cy=th/2f+1*k;
     android.graphics.Path ch=new android.graphics.Path();
     ch.moveTo(cx-cw, cy-cw*0.55f); ch.lineTo(cx+cw, cy-cw*0.55f); ch.lineTo(cx, cy+cw*0.6f); ch.close();
     Paint chp=new Paint(Paint.ANTI_ALIAS_FLAG); chp.setColor(t.getColor());
     cv.drawPath(ch, chp);
-    Paint an=paint(BOLD, 14f*k, text(light), Paint.Align.RIGHT);
+    Paint an=paint(BOLD, 17f*k, text(light), Paint.Align.RIGHT);
     fitSize(an, "حساب‌کتاب", W*0.3f);
-    cv.drawText("حساب‌کتاب", W-12*k, base(0, th, 14f*k), an);
+    cv.drawText("حساب‌کتاب", W-14*k, base(0, th, 17f*k), an);
     String[] td=HkWidgetDraw.todayFa();
     if(td!=null){
-      Paint dp=paint(REG, 12.5f*k, muted(light), Paint.Align.LEFT);
-      fitSize(dp, td[0], W*0.3f-34*k);
-      cv.drawText(td[0], 40*k, base(0, th, 12.5f*k), dp);
+      Paint dp=paint(REG, 14.5f*k, muted(light), Paint.Align.LEFT);
+      fitSize(dp, td[0], W*0.3f-38*k);
+      cv.drawText(td[0], 44*k, base(0, th, 14.5f*k), dp);
     }
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
     Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(headBg(light));

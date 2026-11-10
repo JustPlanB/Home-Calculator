@@ -835,46 +835,114 @@
       hkAppToBackground();
     }
 
-    /* ===== ۱.۳.۹۷: منوی همبرگری — بازگشت از زیرمنو یک مرحله عقب می‌رود =====
-       هر پنجره‌ای که از داخل منوی کناری باز شود (مثلاً شخصی‌سازی)، با بازگشت گوشی بسته می‌شود و منوی اصلی دوباره باز می‌شود؛
-       از منوی اصلی، بازگشت مثل قبل منو را می‌بندد. اگر آن پنجره از راه دیگری (دکمهٔ بستن، بیرون) بسته شده باشد، بازگشت مثل قبل است. */
-    var _hkMenuChild = null;
-    var HK_LAYER_SEL = '[data-hk-back], .modal-overlay, .modal, .hk-sheet, [id$="Modal"], [id$="Ov"], [id$="Overlay"], [id$="Sheet"]';
+    /* ===== ۱.۳.۹۸: منوی همبرگری مثل تنظیمات اندروید (سامسونگ) =====
+       زدن هر گزینهٔ منو، منو را نمی‌بندد: صفحهٔ آن گزینه (هر پنجره/برگه‌ای که باز می‌کند) از کنار کشویی روی منو می‌آید
+       و منو زیرش می‌ماند. بازگشت گوشی آن صفحه را کشویی کنار می‌برد و منوی اصلی همان‌جا پیداست (صفحهٔ اصلی دیگر یک لحظه دیده نمی‌شود).
+       اگر صفحه با دکمهٔ خودش بسته شود هم منو سر جایش است. گزینه‌ای که صفحه‌ای باز نکند، منو را مثل قبل می‌بندد. */
+    var _hkMenuChild = null, _hkMenuNavUntil = 0, _hkMenuNavOn = false, _hkMenuNavObs = null, _hkMenuNavTick = 0, _hkInBackCore = false;
+    var HK_LAYER_SEL = '[data-hk-back], .modal-overlay, .modal, .hk-sheet, .feature-sheet, .hk-bulk-ov, [id$="Modal"], [id$="Ov"], [id$="Overlay"], [id$="Sheet"]';
     function hkLayerShown(el) {
       try {
-        if (!el || !el.isConnected || el.closest('#menuDropdown')) return false;
+        if (!el || !el.isConnected || el.closest('#menuDropdown') || el.id === 'menuBackdrop') return false;
+        if (el.classList && el.classList.contains('hk-mnav-ghost')) return false;
         if (!el.getClientRects().length) return false;
         var cs = getComputedStyle(el);
-        return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity || '1') > 0.05;
+        if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') <= 0.05) return false;
+        if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+        var r = el.getBoundingClientRect();
+        return r.width > innerWidth * 0.5 && r.height > innerHeight * 0.3;
       } catch (e) { return false; }
     }
-    function hkLayersShown() { return Array.prototype.filter.call(document.querySelectorAll(HK_LAYER_SEL), hkLayerShown); }
+    function hkLayersShown() {
+      var all = Array.prototype.filter.call(document.querySelectorAll(HK_LAYER_SEL), hkLayerShown);
+      return all.filter(function (x) { return !all.some(function (y) { return y !== x && y.contains(x); }); });
+    }
     function hkMenuIsOpen() { var m = document.getElementById('menuDropdown'); return !!(m && m.classList.contains('open')); }
+    function hkMenuChildShown() { return !!(_hkMenuChild && _hkMenuChild.some(hkLayerShown)); }
+    function hkMenuSlide(el, inn) {
+      try {
+        var a = el.animate(inn ? [{ transform: 'translateX(-100%)' }, { transform: 'translateX(0)' }] : [{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }],
+          { duration: 280, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+        return a;
+      } catch (e) { return null; }
+    }
+    function hkMenuNavEnd() {
+      _hkMenuNavOn = false; _hkMenuChild = null; _hkMenuNavUntil = 0;
+      document.body.classList.remove('hk-menu-nav');
+      try { if (hkMenuIsOpen()) document.body.classList.add('menu-open'); } catch (eMo) {}
+      try { if (_hkMenuNavObs) _hkMenuNavObs.disconnect(); } catch (e) {} _hkMenuNavObs = null;
+      clearInterval(_hkMenuNavTick);
+      try { if (hkMenuIsOpen()) { unbindMenuBlockers(); bindMenuBlockers(); } } catch (eB) {}
+    }
+    function hkMenuNavStart(before) {
+      _hkMenuNavOn = true; _hkMenuChild = null; _hkMenuNavUntil = Date.now() + 1200;
+      document.body.classList.add('hk-menu-nav');
+      /* لمس و اسکرول صفحهٔ زیرمنو آزاد (قفل «منوی باز» فقط برای خود منو بود) */
+      document.body.classList.remove('menu-open');
+      try { unbindMenuBlockers(); } catch (eU) {}
+      var seen = before.slice();
+      var look = function () {
+        var nu = hkLayersShown().filter(function (x) { return seen.indexOf(x) < 0; });
+        if (!nu.length) return;
+        nu.forEach(function (x) { seen.push(x); hkMenuSlide(x, true); });
+        _hkMenuChild = (_hkMenuChild || []).concat(nu);
+      };
+      try { if (_hkMenuNavObs) _hkMenuNavObs.disconnect(); } catch (e0) {}
+      try { _hkMenuNavObs = new MutationObserver(function () { if (Date.now() < _hkMenuNavUntil) look(); }); _hkMenuNavObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] }); } catch (eO) {}
+      setTimeout(look, 60);
+      /* گزینه‌ای که صفحه‌ای باز نکرد (مثلاً رفتن به صفحهٔ اصلی): منو مثل قبل بسته شود */
+      window._hkMenuCloseWanted = false;
+      setTimeout(function () { if (!_hkMenuNavOn) return; look(); if (!_hkMenuChild) { var cw = window._hkMenuCloseWanted; hkMenuNavEnd(); if (cw) { try { closeSideMenu(); } catch (eC) {} } } }, 500);
+      clearInterval(_hkMenuNavTick);
+      _hkMenuNavTick = setInterval(function () {
+        if (!_hkMenuNavOn) { clearInterval(_hkMenuNavTick); return; }
+        if (Date.now() < _hkMenuNavUntil) return;
+        if (!hkMenuIsOpen() || !hkMenuChildShown()) hkMenuNavEnd(); /* صفحه با دکمهٔ خودش بسته شد → منو دوباره فعال */
+      }, 300);
+    }
     document.addEventListener('click', function (e) {
       var m = document.getElementById('menuDropdown');
       if (!m || !m.classList.contains('open') || !m.contains(e.target)) return;
-      var before = hkLayersShown();
-      var grab = function () {
-        if (hkMenuIsOpen()) return;
-        var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0; });
-        if (nu.length) _hkMenuChild = nu;
-      };
-      _hkMenuChild = null;
-      setTimeout(grab, 450); setTimeout(function () { if (!_hkMenuChild) grab(); }, 1000);
+      var t = e.target && e.target.closest ? e.target.closest('button, a, [onclick], [role="button"], .menu-item') : null;
+      if (!t || !m.contains(t) || t.closest('#menuSearchWrap, .menu-search, input')) return;
+      hkMenuNavStart(hkLayersShown());
     }, true);
     (function () {
+      /* تا صفحهٔ زیرمنو باز است، بستن منو (لمس بیرون منو، کار خود گزینه) آن را نمی‌بندد؛ منو زیر صفحه می‌ماند */
+      var _cs = closeSideMenu, _hkDownInChild = 0;
+      /* لمسی که داخل صفحهٔ زیرمنو شروع شد (مثلاً دکمهٔ بستن همان صفحه)، منوی زیرش را نمی‌بندد */
+      document.addEventListener('pointerdown', function (e) {
+        if (_hkMenuNavOn && _hkMenuChild && e.target && _hkMenuChild.some(function (x) { return x.contains(e.target); })) _hkDownInChild = Date.now();
+      }, true);
+      closeSideMenu = function () {
+        if (_hkMenuNavOn && Date.now() - _hkDownInChild < 1500) { setTimeout(function () { if (_hkMenuNavOn && !hkMenuChildShown()) hkMenuNavEnd(); }, 50); return; }
+        if (_hkMenuNavOn && (Date.now() < _hkMenuNavUntil || hkMenuChildShown())) {
+          window._hkMenuCloseWanted = true;
+          try { var _msi = document.getElementById('menuSearchInput'); if (_msi && document.activeElement === _msi) _msi.blur(); } catch (eMs) {}
+          try { unbindMenuBlockers(); } catch (eU) {}
+          return;
+        }
+        if (_hkMenuNavOn) hkMenuNavEnd();
+        return _cs.apply(this, arguments);
+      };
+      try { window.closeSideMenu = closeSideMenu; } catch (eW) {}
       var core = onBackGuard;
       onBackGuard = function () {
-        var ch = _hkMenuChild, busy = _backHandling;
-        if (ch && (hkMenuIsOpen() || !ch.some(hkLayerShown))) { _hkMenuChild = null; ch = null; }
-        var r = core.apply(this, arguments);
-        if (busy || !ch) return r;
-        setTimeout(function () {
-          if (_hkMenuChild !== ch) return;
-          if (ch.some(hkLayerShown)) return; /* هنوز داخل همان پنجره (مثلاً صفحهٔ دومش یک مرحله عقب رفت) */
-          _hkMenuChild = null;
-          if (!hkMenuIsOpen() && !hkLayersShown().length) { try { openSideMenu(); } catch (eO) {} }
-        }, 260);
+        var busy = _backHandling;
+        if (!_hkMenuNavOn || !hkMenuChildShown() || busy) { if (_hkMenuNavOn && !busy && !hkMenuChildShown()) hkMenuNavEnd(); return core.apply(this, arguments); }
+        var ch = _hkMenuChild.filter(hkLayerShown), m = document.getElementById('menuDropdown');
+        /* برای بازگشت، فقط صفحهٔ رو دیده شود (منوی زیرش «باز» حساب نشود) */
+        var ghosts = ch.map(function (x) { try { var r = x.getBoundingClientRect(), g = x.cloneNode(true); g.removeAttribute('id'); g.classList.add('hk-mnav-ghost'); g.removeAttribute('data-hk-back'); g.style.pointerEvents = 'none'; return { g: g, r: r, z: getComputedStyle(x).zIndex }; } catch (eG) { return null; } }).filter(Boolean);
+        var r;
+        _hkInBackCore = true;
+        try { if (m) m.classList.remove('open'); r = core.apply(this, arguments); }
+        finally { _hkInBackCore = false; if (m && _hkMenuNavOn) m.classList.add('open'); }
+        if (!ch.some(hkLayerShown)) {
+          /* صفحه بسته شد → کشویی کنار می‌رود و منوی اصلی پیداست */
+          ghosts.forEach(function (o) { try { o.g.style.position = 'fixed'; o.g.style.zIndex = o.z; document.body.appendChild(o.g); var a = hkMenuSlide(o.g, false); if (a) a.onfinish = function () { o.g.remove(); }; else o.g.remove(); setTimeout(function () { try { o.g.remove(); } catch (eR) {} }, 400); } catch (eA) {} });
+          hkMenuNavEnd();
+          try { if (!hkMenuIsOpen()) openSideMenu(); } catch (eO) {}
+        }
         return r;
       };
     })();

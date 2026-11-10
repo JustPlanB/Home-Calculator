@@ -16,7 +16,7 @@ const allErrors = [];
   ok(/if\(ok && catFirst\)\{ BankSmsReceiver\.postDescAfterCat\(c,cn,lab\); return; \}/.test(pa) && /x\.put\("quickWait",System\.currentTimeMillis\(\)\)/.test(pa), 'دسته اول: تا ۳۰ ثانیه منتظر شرح می‌ماند');
   ok(/if\(in\.getBooleanExtra\("afterCat",false\)\)/.test(pa) && /x\.remove\("quickWait"\)/.test(pa) && /startsWith\(BankSmsReceiver\.ACTION_QUICK\)/.test(pa), 'شرحِ بعد از دسته: دسته می‌ماند و انتظار تمام می‌شود');
   ok(/r\.put\("quickWait",x\.optLong\("quickWait",0\)\)/.test(pa), 'افزونه، انتظار را به نرم‌افزار می‌دهد');
-  ok(/setLabel\("بابت چی بود؟ بنویس و فلش را بزن"\)/.test(pa), 'راهنمای فلش در جای شرح');
+  ok(/setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(pa), '۱.۳.۹۸: راهنمای جای شرح مثل قبل');
 
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Tehran', hasTouch: true });
@@ -67,24 +67,22 @@ const allErrors = [];
     openSideMenu(); await w(300);
     const item = [...document.querySelectorAll('#menuDropdown [onclick]')].find(x => /openPrefsModal/.test(x.getAttribute('onclick')));
     item.click(); await w(1200);
-    const o = { opened: !!document.getElementById('hkPrefsModal') && !mOpen() };
+    const o = { opened: !!document.getElementById('hkPrefsModal') }; /* ۱.۳.۹۸: منو زیر صفحه می‌ماند */
     document.querySelector('#hkPrefsModal .hk-pf-row[data-k="slides"]').click(); await w(300);
-    onBackGuard(); await w(500); o.page2 = !!document.getElementById('hkPrefsModal') && !mOpen();
+    onBackGuard(); await w(500); o.page2 = !!document.getElementById('hkPrefsModal');
     onBackGuard(); await w(600); o.toMenu = !document.getElementById('hkPrefsModal') && mOpen();
     onBackGuard(); await w(500); o.closed = !mOpen();
-    /* بسته شدن با دکمهٔ بستن ← بازگشت بعدی منو را باز نمی‌کند */
+    /* ۱.۳.۹۸: بسته شدن با دکمهٔ بستن ← منوی اصلی سر جایش؛ بازگشت بعدی منو را می‌بندد */
     openSideMenu(); await w(300); item.click(); await w(1200);
-    document.querySelector('#hkPrefsModal .hk-pf-x, #hkPrefsModal .hk-pf-close') ? document.querySelector('#hkPrefsModal .hk-pf-x, #hkPrefsModal .hk-pf-close').click() : document.getElementById('hkPrefsModal')._hkCancel();
-    await w(300);
-    const ab = window.hkAppToBackground; let bg = 0; window.hkAppToBackground = function () { bg++; }; try { hkAppToBackground = window.hkAppToBackground; } catch (e) {}
+    { const x = document.querySelector('#hkPrefsModal .hk-pf-x'); const r0 = x.getBoundingClientRect(); x.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r0.left + 4, clientY: r0.top + 4 })); x.click(); }
+    await w(700); o.xMenu = mOpen();
     onBackGuard(); await w(500); o.noReopen = !mOpen();
-    try { hkAppToBackground = ab; } catch (e) {} window.hkAppToBackground = ab;
     return o;
   });
   ok(B.opened && B.page2, 'شخصی‌سازی از منو؛ بازگشت اول فقط صفحهٔ دوم را می‌بندد');
   ok(B.toMenu, 'بازگشت از شخصی‌سازی ← منوی اصلی همبرگری');
   ok(B.closed, 'بازگشت از منوی اصلی ← بسته شدن منو');
-  ok(B.noReopen, 'اگر پنجره با دکمهٔ خودش بسته شده باشد، بازگشت منو را دوباره باز نمی‌کند');
+  ok(B.xMenu && B.noReopen, 'پنجره با دکمهٔ خودش بسته شد ← منوی اصلی پیداست؛ بازگشت بعدی منو را می‌بندد');
 
   console.log('• کشیدن افقی بین تب‌ها');
   const C = await page.evaluate(async () => {

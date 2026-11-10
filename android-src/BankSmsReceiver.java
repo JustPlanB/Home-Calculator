@@ -328,7 +328,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
     /* ۱.۳.۶۴: رنگ عملیات: عنوان و رنگ اعلان، واریز سبز و برداشت قرمز (پس‌زمینهٔ کامل را اندروید فقط برای موزیک/تماس اجازه می‌دهد) */
     if(!personal && sg!=0){
       try{
-        int col=sg>0?0xFF34C759:0xFFFF3B30;
+        int col=sg>0?0xFF9EE858:0xFFFF6B4A; /* ۱.۳.۹۸: رنگ‌های نرم‌افزار (واریز سبز، برداشت نارنجی)؛ دکمه و نوار «ثبت سریع» هم این رنگ را می‌گیرند */
         android.text.SpannableString st=new android.text.SpannableString(title);
         st.setSpan(new android.text.style.ForegroundColorSpan(col),0,st.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         st.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),0,st.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -348,7 +348,7 @@ public class BankSmsReceiver extends BroadcastReceiver {
         qi.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         qpi=PendingIntent.getActivity(c,nid,qi,fl);
       }
-      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ بنویس و فلش را بزن").build(); /* ۱.۳.۹۷: راهنمای فلش */
+      RemoteInput ri=new RemoteInput.Builder(KEY_DESC).setLabel("بابت چی بود؟ (شرح)").build();
       NotificationCompat.Action act=new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"ثبت سریع",qpi).addRemoteInput(ri).setAllowGeneratedReplies(false).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
       b.addAction(act);
     }catch(Throwable ignored){}
@@ -359,8 +359,8 @@ public class BankSmsReceiver extends BroadcastReceiver {
       PendingIntent bpi=PendingIntent.getActivity(c,nid,bi,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
       b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_edit,"باکس",bpi).build());
     }catch(Throwable ignored){}
-    /* ۱.۳.۵۰: اعلان اختصاصی: متن پیامک + چهار دستهٔ پرکاربرد؛ زدن دسته = ثبت با همان دسته (شرح = اسم دسته) */
-    addCatButtons(c,b,nid,text,sg!=0?sg>0:(text.contains("واریز")||text.contains("+")),clean);
+    /* ۱.۳.۹۸: دکمه‌های دسته از اعلان برداشته شد؛ فقط «ثبت سریع» (شرح) و «باکس». دسته را نرم‌افزار از روی شرح حدس می‌زند
+       (نامعلوم → «تکمیل اطلاعات»). addCatButtons فقط برای اعلان‌های قدیمیِ در صف می‌ماند. */
     try{ nm.notify(nid,b.build()); }
     catch(Throwable t){ try{ nm.notify(nid,baseBuilder(c,title,text).build()); }catch(Throwable ignored){} }
   }

@@ -13,7 +13,8 @@ const allErrors = [];
   const pa = androidSource();
   ok(/static class CenterSpan extends android\.text\.style\.ImageSpan/.test(pa) && /new CenterSpan\(d\)/.test(pa) && /setStrokeWidth\(3\.2f\*k\)/.test(pa), 'تیک انتخاب نوع ویجت: بولد و دقیقاً وسط ارتفاع نوشته');
   ok(/String prev=""; try\{ JSONObject it0=findItem\(c,cn\)/.test(pa) && /if\(!prev\.isEmpty\(\)\) lab=prev;/.test(pa), 'زدن دستهٔ اعلان بعد از نوشتن شرح: شرح نوشته‌شده می‌ماند');
-  ok(/if\(found && !desc\.isEmpty\(\)\)\{ BankSmsReceiver\.postCatAfterDesc\(c,nid,desc\); return; \}/.test(pa) && /static void postCatAfterDesc\(Context c,int nid,String desc\)/.test(pa) && /addCatButtons\(c,b,nid,t1\+/.test(pa), 'بعد از «ثبت سریع» با شرح، همان اعلان دکمه‌های دسته را نشان می‌دهد');
+  /* ۱.۳.۹۸: دکمه‌های دسته از اعلان برداشته شد؛ بعد از شرح دیگر اعلان دسته نمی‌آید (۱.۳.۹۸ را ببینید) */
+  ok(/static void postCatAfterDesc\(Context c,int nid,String desc\)/.test(pa), 'تابع اعلان دسته برای اعلان‌های قدیمی می‌ماند');
   ok(/else if\(nid!=0\)\{ try\{ JSONObject it0=HkQuickReplyReceiver\.findItem\(this,nid\)/.test(pa), 'دسته/«بیشتر…» از راه نرم‌افزار هم شرح را نگه می‌دارد');
 
   const b = await chromium.launch();
