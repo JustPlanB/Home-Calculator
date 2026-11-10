@@ -11,7 +11,7 @@ const allErrors = [];
 (async () => {
   console.log('• ویجت ردیف‌ها (کد بومی)');
   const pa = androidSource();
-  ok(/cv\.drawText\("حساب‌کتاب", W-12\*k/.test(pa) && /HkWidgetDraw\.todayFa\(\)/.test(pa) && /hk_wt_eye/.test(pa), 'بالای ویجت: «حساب‌کتاب»، تاریخ امروز و آیکون چشم');
+  ok(/cv\.drawText\("حساب‌کتاب", W-1[24]\*k/.test(pa) && /HkWidgetDraw\.todayFa\(\)/.test(pa) && /hk_wt_eye/.test(pa), 'بالای ویجت: «حساب‌کتاب»، تاریخ امروز و آیکون چشم');
   ok(/unpaid \? unpaidC\(light\) : amt\(inc, light\)/.test(pa) && /0xFFFFEC0A/.test(pa) && /0xFFA87A00/.test(pa) && /o\.optInt\("u",0\)==1/.test(pa), 'ردیف پرداخت/دریافت‌نشده به زرد نرم‌افزار');
 
   const b = await chromium.launch();

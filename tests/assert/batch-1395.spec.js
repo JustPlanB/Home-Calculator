@@ -176,7 +176,7 @@ async function fresh(b) {
 
   console.log('• راه‌اندازی بار اول');
   const setupSrc = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'src', 'js', '12a-setup.js'), 'utf8');
-  ok(/data-m="month">از اول همین ماه<\/button><button type="button" class="hk-re-segb" data-m="today">از امروز/.test(setupSrc) && /setMode\(canRead && found\.length \? 'month' : 'today'\)/.test(setupSrc), '«از اول همین ماه» سمت راست و پیش‌فرض؛ «از امروز» سمت چپ');
+  ok(!/data-m="today"/.test(setupSrc) && /openSmsBulkModal\(\)/.test(setupSrc), '۱.۳.۹۸: تب «از امروز» برداشته شد؛ «پیدا کن» به ثبت گروهی با بازه می‌رود');
 
   ok(!allErrors.length, 'هیچ خطای JS در صفحه' + (allErrors.length ? ' — ' + allErrors.join(' | ') : ''));
   await b.close();
