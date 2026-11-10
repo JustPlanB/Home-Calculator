@@ -58,8 +58,7 @@ public class HkQuickReplyReceiver extends BroadcastReceiver {
       return;
     }
     boolean found=saveDesc(c,nid,desc);
-    /* ۱.۳.۹۶: بعد از نوشتن شرح، اعلان با «بابت: …» و دکمه‌های دسته (دسته اختیاری؛ زدنش شرح را پاک نمی‌کند) */
-    if(found && !desc.isEmpty()){ BankSmsReceiver.postCatAfterDesc(c,nid,desc); return; }
+    /* ۱.۳.۹۸: مثل قبل: شرح فرستاده شد → «ثبت شد» (دسته را نرم‌افزار از روی شرح حدس می‌زند) */
     notifyDone(c,nid,desc,found);
   }
   /** شرح را کنار همان پیامک در صف می‌گذارد (نرم‌افزار ردیف را می‌سازد) */

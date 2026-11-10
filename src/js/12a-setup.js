@@ -1,5 +1,7 @@
     /* ===== ۱.۳.۶۵: راه‌اندازی بار اول: کارت‌ها و مانده‌هایشان از پیامک‌های بانکی (همه روی گوشی) =====
-       ظاهر همان پنجرهٔ ثبت گروهی (قاب، عنوان، کارت پوشه، باکس «حساب جدید»، دکمه‌ها). تا «تأیید» زده نشود هیچ حسابی ساخته نمی‌شود. */
+       ظاهر همان پنجرهٔ ثبت گروهی (قاب، عنوان، کارت پوشه، باکس «حساب جدید»، دکمه‌ها). تا «پیدا کن» زده نشود هیچ حسابی ساخته نمی‌شود.
+       ۱.۳.۹۸: «پیدا کن» مستقیم «ثبت گروهی» را باز می‌کند تا بازه همان‌جا انتخاب شود (تب‌های «از اول ماه / از امروز» برداشته شد).
+       افزودن دستی حساب فقط وقتی پیامک خواندنی نیست (آیفون، بی‌اجازه). */
     var HK_SETUP_DAYS = 90, HK_SETUP_STALE_DAYS = 30;
     function hkSetupNeeded() {
       try { return localStorage.getItem(STORAGE_KEY + '_bankSetupDone') !== '1' && !(selectedBankAccounts || []).length; } catch (e) { return false; }
@@ -36,7 +38,7 @@
       ov.innerHTML = '<div class="hk-bulk-box">' +
         '<div class="hk-bulk-title">حساب‌هایت را پیدا کنیم</div>' +
         '<div class="hk-bulk-list" id="hkSetupList"><div class="hk-bulk-hint">' +
-          (canRead ? 'نرم‌افزار پیامک‌های بانکی ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «تأیید» نزنید چیزی ساخته نمی‌شود.'
+          (canRead ? 'نرم‌افزار پیامک‌های بانکی ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود.'
                    : 'حساب‌هایتان را با نام و ماندهٔ فعلی اضافه کنید.') +
         '</div></div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok">' + (canRead ? 'پیدا کن' : 'افزودن حساب') + '</button><button type="button" class="hk-bulk-close">بعداً</button></div>' +
@@ -86,28 +88,18 @@
       };
       var renderList = function (found) {
         list.innerHTML = '';
-        /* شروع: از اول همین ماه (پیش‌فرض، با تراکنش‌ها در ثبت گروهی) یا از امروز */
-        var seg = document.createElement('div'); seg.className = 'hk-re-seg hk-setup-seg';
-        /* ۱.۳.۹۵: «از اول همین ماه» سمت راست و پیش‌فرض؛ «از امروز» سمت چپ */
-        seg.innerHTML = '<button type="button" class="hk-re-segb on" data-m="month">از اول همین ماه</button><button type="button" class="hk-re-segb" data-m="today">از امروز</button>';
-        var note = document.createElement('div'); note.className = 'hk-bulk-hint hk-setup-note';
         var setMode = function (m) {
           mode = m;
-          seg.querySelectorAll('.hk-re-segb').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
-          note.textContent = m === 'today' ? 'موجودی هر حساب همان ماندهٔ فعلی است؛ گذشته وارد نمی‌شود.' : 'تراکنش‌های این ماه در «ثبت گروهی» نشان داده می‌شوند تا تأیید کنید؛ حساب‌ها و موجودی اول ماه همان‌جا ساخته می‌شوند.';
-          cards.forEach(function (c) { c.sync(); if (c.manual) c.card.style.display = m === 'today' ? '' : 'none'; });
-          addB.style.display = m === 'today' ? '' : 'none';
-          okB.textContent = m === 'today' ? 'تأیید و ساختن حساب‌ها' : 'ادامه در ثبت گروهی';
+          cards.forEach(function (c) { c.sync(); });
+          okB.textContent = 'تأیید و ساختن حساب‌ها';
         };
-        seg.querySelectorAll('.hk-re-segb').forEach(function (b) { b.onclick = function () { setMode(b.getAttribute('data-m')); }; });
-        if (canRead && found.length) { list.appendChild(seg); list.appendChild(note); }
-        else if (canRead) { var h = document.createElement('div'); h.className = 'hk-bulk-hint'; h.textContent = 'پیامک بانکی‌ای پیدا نشد؛ حساب‌ها را دستی اضافه کنید.'; list.appendChild(h); }
+        if (canRead) { var h = document.createElement('div'); h.className = 'hk-bulk-hint'; h.textContent = 'پیامک بانکی‌ای پیدا نشد؛ حساب‌ها را دستی اضافه کنید.'; list.appendChild(h); }
         found.forEach(function (fo) { list.appendChild(addCard(fo).card); });
         var addB = document.createElement('button'); addB.type = 'button'; addB.className = 'hk-bulk-read hk-setup-add'; addB.textContent = '＋ حساب دیگر';
         addB.onclick = function () { var c = addCard(null); list.insertBefore(c.card, addB); c.sync(); setTimeout(function () { try { c.name.input.focus(); } catch (e) {} }, 60); };
         list.appendChild(addB);
         if (!found.length) addB.onclick();
-        setMode(canRead && found.length ? 'month' : 'today');
+        setMode('today');
         okB.onclick = confirm;
       };
       var confirm = function () {
@@ -147,6 +139,11 @@
       };
       okB.onclick = function () {
         if (!canRead) { renderList([]); return; }
+        /* ۱.۳.۹۸: «پیدا کن» = همان «ثبت گروهی» (بازه از اول همین ماه تا امروز، قابل تغییر)؛ حساب‌ها و موجودی اول ماه همان‌جا ساخته می‌شوند */
+        try { ov.remove(); } catch (eR0) {}
+        hkSetupFinish();
+        try { openSmsBulkModal(); } catch (eB0) {}
+        return;
         okB.disabled = true;
         list.innerHTML = hkLoadingHtml('در حال خواندن پیامک‌ها');
         B.readInbox({ from: 0, limit: 6000 }).then(function (res) {
