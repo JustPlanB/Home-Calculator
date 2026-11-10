@@ -1066,6 +1066,8 @@
     function hkP2PScheduleScan() { clearTimeout(_hkP2PScanT); _hkP2PScanT = setTimeout(hkP2PScan, 900); }
     function hkP2PScan() {
       if (_hkP2PBusy || document.getElementById('hkP2PAsk')) return;
+      /* ۱.۳.۹۷: سؤال «جیب به جیب بود؟» وسط کار دیگری (باکس ثبت پیامک، مغایرت، هر پنجرهٔ باز) نمی‌پرد؛ بعد از بسته شدنش می‌آید */
+      try { if (Array.prototype.some.call(document.querySelectorAll('.modal-overlay.open, #hkReconDlg, #hkAsk3, [data-hk-back]'), function (x) { return x.getClientRects().length > 0; })) { clearTimeout(_hkP2PScanT); _hkP2PScanT = setTimeout(hkP2PScan, 3000); return; } } catch (eBusy) {}
       var pairs = hkP2PFindPairs(); if (!pairs.length) return;
       var auto = hkP2PAutoPairs(), changed = false;
       pairs = pairs.filter(function (pr) {

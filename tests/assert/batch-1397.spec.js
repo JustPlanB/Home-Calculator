@@ -58,7 +58,7 @@ const allErrors = [];
   ok(A.fit, 'عرض به اندازهٔ نوشته‌ها و کلیدها');
   ok(A.noTodo && A.prefsNoTodo && A.count, '«کارهای من» نه در لانگ‌پرس و نه در شخصی‌سازی');
   const src = await page.evaluate(() => String(bindSmartPanelGestures));
-  ok(/_pg0\.key !== 'todoAdd'/.test(src), 'لانگ‌پرس روی اسلاید «+» کاری نمی‌کند');
+  ok(/_pg0\.key\s*!==\s*['"]todoAdd['"]/.test(src), 'لانگ‌پرس روی اسلاید «+» کاری نمی‌کند');
 
   console.log('• بازگشت در منوی همبرگری');
   const B = await page.evaluate(async () => {

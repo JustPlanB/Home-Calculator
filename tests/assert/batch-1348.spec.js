@@ -97,10 +97,10 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     document.querySelector('.sp-cat-sheet .sp-cat-row').click(); await w(200);
     const n = document.querySelectorAll('.sp-cat-sheet .sp-pick-x').length;
     const cat = HKCategorizer.addCustom('باغبانی');
-    HKCategorizer.learn('کود گیاه', [cat.id]);
-    const before = !!HKCategorizer.classify('کود گیاه');
+    HKCategorizer.learn('قلمه زدن بنفشه', [cat.id]);
+    const before = !!HKCategorizer.classify('قلمه زدن بنفشه');
     HKCategorizer.removeCat(cat.id);
-    const after = HKCategorizer.classify('کود گیاه');
+    const after = HKCategorizer.classify('قلمه زدن بنفشه');
     HKCategorizer.removeCat('tech');
     const hidden = JSON.parse(localStorage.getItem(STORAGE_KEY + '_catHidden') || '[]');
     closeCategoryReviewSheet();
