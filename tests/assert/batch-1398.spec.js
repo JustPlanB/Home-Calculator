@@ -66,7 +66,7 @@ const allErrors = [];
   const S = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const src = String(hkOpenSetup);
-    return { noToday: !/data-m="today"/.test(src) && !/از امروز/.test(src), text: /تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود/.test(src), toBulk: /hkSetupFinish\(\);\s*try \{ openSmsBulkModal\(\); \}/.test(src), btn: /hk-bulk-ok" disabled>ثبت</.test(String(openSmsBulkModal)) };
+    return { noToday: !/data-m="today"/.test(src) && !/از امروز/.test(src), text: /تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود/.test(src), toBulk: /hkSetupFinish\(\);\s*try\s*\{\s*openSmsBulkModal\(\);?\s*\}/.test(src), btn: /hk-bulk-ok" disabled>ثبت</.test(String(openSmsBulkModal)) };
   });
   ok(S.noToday && S.text, 'تب «از امروز» برداشته شد؛ متن «…«پیدا کن» را نزنید…»');
   ok(S.toBulk, '«پیدا کن» مستقیم ثبت گروهی را باز می‌کند (بازه همان‌جا)');
