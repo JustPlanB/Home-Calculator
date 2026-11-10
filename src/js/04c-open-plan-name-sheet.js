@@ -738,6 +738,50 @@
       requestAnimationFrame(function () { hkTabSizeAnim(box, r0); });
     }, true);
     try { window.hkTabSizeAnim = hkTabSizeAnim; } catch (eWt) {}
+    /* ۱.۳.۹۷: در باکس‌هایی که تب دارند (دسته‌ها، اولویت دسته‌ها، آمار، شروع)، کشیدن افقی روی محتوا تب را عوض می‌کند
+       (راست‌به‌چپ: کشیدن به راست = تب بعدی که سمت چپ است). فقط تب‌های واقعی؛ دکمه‌های انتخاب مقدار (مساوی/نامساوی، نوع فایل، …) نه. */
+    var HK_SWIPE_TABS = '.hk-cats-tabs, .hk-pri-tabs, .st-seg, .hk-setup-seg';
+    var _hkTabSw = null;
+    function hkSwipeSegFor(t) {
+      for (var n = t; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+        if (n.matches && n.matches(HK_SWIPE_TABS)) return n;
+        var sg = n.querySelector ? n.querySelector(HK_SWIPE_TABS) : null;
+        if (sg && sg.getClientRects().length) return sg;
+      }
+      return null;
+    }
+    function hkHScrollable(t, stop) {
+      for (var n = t; n && n !== stop && n !== document.body; n = n.parentElement) {
+        if (n.scrollWidth > n.clientWidth + 2) { var ox = getComputedStyle(n).overflowX; if (ox === 'auto' || ox === 'scroll') return true; }
+      }
+      return false;
+    }
+    document.addEventListener('touchstart', function (e) {
+      _hkTabSw = null;
+      if (!e.touches || e.touches.length !== 1) return;
+      var t = e.target; if (!t || !t.closest) return;
+      if (t.closest('input, textarea, select, [contenteditable="true"], .hk-switch, .jiggle, .hk-jig')) return;
+      var seg = hkSwipeSegFor(t); if (!seg) return;
+      var box = seg.closest(HK_TAB_BOX + ', .hk-re-box, .hk-cats-sheet, .st-sheet') || seg.parentElement;
+      if (hkHScrollable(t, box)) return;
+      _hkTabSw = { seg: seg, x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }, { passive: true, capture: true });
+    document.addEventListener('touchend', function (e) {
+      var s0 = _hkTabSw; _hkTabSw = null;
+      if (!s0 || !s0.seg.isConnected) return;
+      var c = e.changedTouches && e.changedTouches[0]; if (!c) return;
+      var dx = c.clientX - s0.x, dy = c.clientY - s0.y;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - s0.t > 800) return;
+      var bs = Array.prototype.filter.call(s0.seg.querySelectorAll('button, [role="tab"]'), function (b) { return b.getClientRects().length && !b.disabled; });
+      if (bs.length < 2) return;
+      var cur = -1; bs.forEach(function (b, i) { if (b.classList.contains('on') || b.classList.contains('active') || b.getAttribute('aria-selected') === 'true') cur = i; });
+      if (cur < 0) return;
+      var rtl = getComputedStyle(s0.seg).direction !== 'ltr';
+      var nx = cur + ((dx > 0) === rtl ? 1 : -1);
+      if (nx < 0 || nx >= bs.length) return;
+      try { bs[nx].click(); } catch (eC) {}
+      try { if (typeof appHaptic === 'function') appHaptic(8); } catch (eH) {}
+    }, { passive: true, capture: true });
     /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
     function hkDescAutosize(el) {
       try {

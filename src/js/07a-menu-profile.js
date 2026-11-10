@@ -249,6 +249,7 @@
       });
       try {
         Object.keys(HK_SP_LABELS).forEach(function (k) {
+          if (k === 'todo') return;
           out.push({ label: 'اسلاید ' + HK_SP_LABELS[k], path: P + ' ‹ اسلایدهای باکس هوشمند', main: P, go: go(function () { openPrefsModal(); var r = document.querySelector('#hkPrefsModal .hk-pf-row[data-k="slides"]'); if (r) r.click(); }, q('#hkPrefsModal .hk-pf-slides .hk-pf-row[data-k="' + k + '"]')) });
         });
       } catch (eS) {}

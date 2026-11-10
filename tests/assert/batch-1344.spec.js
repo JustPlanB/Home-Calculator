@@ -20,7 +20,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
 
   console.log('• اعلان (کد اندروید)');
   const patch = require('../lib/android-src')();
-  ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟ \(شرح\)"\)/.test(patch), 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
+  ok(/Action\.Builder\([^)]*"ثبت سریع"/.test(patch) && /setLabel\("بابت چی بود؟ بنویس و فلش را بزن"\)/.test(patch) /* ۱.۳.۹۷: راهنمای فلش */, 'دکمهٔ اعلان «ثبت سریع» و فیلدش «بابت چی بود؟»');
   ok(/static boolean isPersonal\(String sender\)/.test(patch) && /"فرستندهٔ شخصی"/.test(patch), 'پیامک از شمارهٔ شخصی در اعلان معرفی می‌شود (از ۱.۳.۴۶ «فرستندهٔ شخصی»)');
   ok(/"بابت: "\+desc/.test(patch) && /new SpannableString\("ثبت شد"\)/.test(patch) && /ForegroundColorSpan\(0xFF30D158\)/.test(patch) && /setImageViewBitmap\(R\.id\.hk_done_tick/.test(patch),
     'بعد از ثبت: بالا «بابت: …» و پایین‌ترین خط «ثبت شد» سبز با تیک (از ۱.۳.۴۵ تیک نرم‌افزار، batch-1345)');

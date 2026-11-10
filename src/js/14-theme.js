@@ -835,6 +835,49 @@
       hkAppToBackground();
     }
 
+    /* ===== ۱.۳.۹۷: منوی همبرگری — بازگشت از زیرمنو یک مرحله عقب می‌رود =====
+       هر پنجره‌ای که از داخل منوی کناری باز شود (مثلاً شخصی‌سازی)، با بازگشت گوشی بسته می‌شود و منوی اصلی دوباره باز می‌شود؛
+       از منوی اصلی، بازگشت مثل قبل منو را می‌بندد. اگر آن پنجره از راه دیگری (دکمهٔ بستن، بیرون) بسته شده باشد، بازگشت مثل قبل است. */
+    var _hkMenuChild = null;
+    var HK_LAYER_SEL = '[data-hk-back], .modal-overlay, .modal, .hk-sheet, [id$="Modal"], [id$="Ov"], [id$="Overlay"], [id$="Sheet"]';
+    function hkLayerShown(el) {
+      try {
+        if (!el || !el.isConnected || el.closest('#menuDropdown')) return false;
+        if (!el.getClientRects().length) return false;
+        var cs = getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity || '1') > 0.05;
+      } catch (e) { return false; }
+    }
+    function hkLayersShown() { return Array.prototype.filter.call(document.querySelectorAll(HK_LAYER_SEL), hkLayerShown); }
+    function hkMenuIsOpen() { var m = document.getElementById('menuDropdown'); return !!(m && m.classList.contains('open')); }
+    document.addEventListener('click', function (e) {
+      var m = document.getElementById('menuDropdown');
+      if (!m || !m.classList.contains('open') || !m.contains(e.target)) return;
+      var before = hkLayersShown();
+      var grab = function () {
+        if (hkMenuIsOpen()) return;
+        var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0; });
+        if (nu.length) _hkMenuChild = nu;
+      };
+      _hkMenuChild = null;
+      setTimeout(grab, 450); setTimeout(function () { if (!_hkMenuChild) grab(); }, 1000);
+    }, true);
+    (function () {
+      var core = onBackGuard;
+      onBackGuard = function () {
+        var ch = _hkMenuChild, busy = _backHandling;
+        if (ch && (hkMenuIsOpen() || !ch.some(hkLayerShown))) { _hkMenuChild = null; ch = null; }
+        var r = core.apply(this, arguments);
+        if (busy || !ch) return r;
+        setTimeout(function () {
+          if (_hkMenuChild !== ch) return;
+          if (ch.some(hkLayerShown)) return; /* هنوز داخل همان پنجره (مثلاً صفحهٔ دومش یک مرحله عقب رفت) */
+          _hkMenuChild = null;
+          if (!hkMenuIsOpen() && !hkLayersShown().length) { try { openSideMenu(); } catch (eO) {} }
+        }, 260);
+        return r;
+      };
+    })();
     try {
       const C=window.Capacitor, plugins=C&&C.Plugins, App=plugins&&plugins.App;
       if(App && App.addListener) App.addListener('backButton',()=>onBackGuard());

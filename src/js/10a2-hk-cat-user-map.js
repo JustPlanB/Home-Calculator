@@ -346,11 +346,19 @@
           var cat = window._hkSmsCat, d = document.getElementById('smsConfirmDesc');
           /* ۱.۳.۸۲: جیب به جیب: ردیف تازه علامت می‌خورد (در جمع‌ها حساب نمی‌شود)؛ دسته‌بندی شرح یاد گرفته نمی‌شود */
           if (cat === 'p2p') {
+            /* ۱.۳.۹۷: علامت همان لحظهٔ ساختن ردیف (در hkSmsStamp) گذاشته می‌شود؛ قبلاً ردیف تازه بعداً با «زمان ساخت» پیدا می‌شد
+               و چون زمان ساخت هنوز خالی بود، جیب به جیب گم می‌شد */
             var _t0 = Date.now(), _amt0 = 0; try { _amt0 = parseAmount(document.getElementById('smsConfirmAmount').value) || 0; } catch (eA0) {}
-            var _res0 = _c.apply(this, arguments);
+            window._hkSmsP2PNext = true; window._hkSmsP2PHit = false;
+            var _res0;
+            try { _res0 = _c.apply(this, arguments); } finally { window._hkSmsP2PNext = false; }
             try {
               var mdl0 = document.getElementById('smsConfirmModal');
-              if (!(mdl0 && mdl0.classList.contains('open'))) { hkP2PMarkRecent(_t0, _amt0); window._hkSmsCat = ''; }
+              if (!(mdl0 && mdl0.classList.contains('open'))) {
+                if (!window._hkSmsP2PHit) hkP2PMarkRecent(_t0, _amt0);
+                else { try { persistCurrent(); scheduleSave(); renderAll(); } catch (eR0) {} }
+                window._hkSmsCat = '';
+              }
             } catch (eP0) {}
             return _res0;
           }
@@ -375,6 +383,9 @@
        درآمد ثابت، ردیف ایمنی) hkSmsStamp(row) را صدا می‌زند؛ دیگر ردیف بعداً با حدس (مبلغ/زمان ساخت) پیدا نمی‌شود. */
     function hkSmsStamp(row) {
       if (!row) return row;
+      /* ۱.۳.۹۷: ردیف تازه از همین لحظه زمان ساخت دارد (برای جفت‌یابی خودکار جیب به جیب) */
+      try { var _nw = Date.now(); if (!row.createdAt) row.createdAt = _nw; row.updatedAt = _nw; } catch (eTs) {}
+      if (window._hkSmsP2PNext) { row.p2p = true; delete row.p2pNo; window._hkSmsP2PHit = true; }
       var c = window._hkSmsCur;
       if (!c) return row;
       if (c.time && !row.time) row.time = c.time;

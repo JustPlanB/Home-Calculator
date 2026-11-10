@@ -1003,7 +1003,7 @@
       ov.style.cssText = 'z-index:100700;display:flex;align-items:center;justify-content:center;';
       ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:340px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب</div>' +
-        '<div style="line-height:1.9;font-size:var(--hk-fs-body);color:var(--muted,#98989f);">این دسته برای پولی است که فقط بین کارت‌های خودتان (یا خانواده) جابه‌جا می‌شود. در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی هر کارت درست می‌ماند. برای پرداخت به دیگران از این دسته استفاده نکنید.</div>' +
+        '<div style="line-height:1.9;font-size:var(--hk-fs-body);color:var(--muted,#98989f);">این دسته برای پولی است که فقط بین کارت‌های خودتان جابه‌جا می‌شود. در جمع درآمد و مخارج حساب نمی‌شود، ولی موجودی هر کارت درست می‌ماند. برای پرداخت به دیگران از این دسته استفاده نکنید.</div>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-ok">متوجه شدم</button></div></div>';
       var close = function () { ov.remove(); try { localStorage.setItem(HK_P2P_INTRO_KEY, '1'); } catch (e) {} };
       ov._hkCancel = close;
@@ -1066,6 +1066,8 @@
     function hkP2PScheduleScan() { clearTimeout(_hkP2PScanT); _hkP2PScanT = setTimeout(hkP2PScan, 900); }
     function hkP2PScan() {
       if (_hkP2PBusy || document.getElementById('hkP2PAsk')) return;
+      /* ۱.۳.۹۷: سؤال «جیب به جیب بود؟» وسط کار دیگری (باکس ثبت پیامک، مغایرت، هر پنجرهٔ باز) نمی‌پرد؛ بعد از بسته شدنش می‌آید */
+      try { if (Array.prototype.some.call(document.querySelectorAll('.modal-overlay.open, #hkReconDlg, #hkAsk3, [data-hk-back]'), function (x) { return x.getClientRects().length > 0; })) { clearTimeout(_hkP2PScanT); _hkP2PScanT = setTimeout(hkP2PScan, 3000); return; } } catch (eBusy) {}
       var pairs = hkP2PFindPairs(); if (!pairs.length) return;
       var auto = hkP2PAutoPairs(), changed = false;
       pairs = pairs.filter(function (pr) {

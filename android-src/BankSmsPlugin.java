@@ -56,7 +56,7 @@ public class BankSmsPlugin extends Plugin {
       for(int i=0;i<q.length();i++){
         JSONObject x=q.optJSONObject(i); if(x==null) continue;
         JSObject r=new JSObject(); r.put("text",x.optString("text")); r.put("sender",x.optString("sender")); r.put("receivedAt",x.optLong("receivedAt")); r.put("nid",x.optInt("nid",0));
-        if(x.has("quickDesc")){ r.put("quick",true); r.put("quickDesc",x.optString("quickDesc","")); r.put("quickAt",x.optLong("quickAt",0)); r.put("quickCat",x.optString("quickCat","")); r.put("quickOpen",x.optBoolean("quickOpen",false)); }
+        if(x.has("quickDesc")){ r.put("quick",true); r.put("quickDesc",x.optString("quickDesc","")); r.put("quickAt",x.optLong("quickAt",0)); r.put("quickCat",x.optString("quickCat","")); r.put("quickOpen",x.optBoolean("quickOpen",false)); r.put("quickWait",x.optLong("quickWait",0)); }
         out.put(r);
       }
       call.resolve(new JSObject().put("items",out).put("count",out.length()));
