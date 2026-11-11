@@ -269,20 +269,38 @@
       var key = function (x) { var p = String(x.k).split('-'); return (parseInt(p[0], 10) || 0) * 1e6 + (parseInt(p[1], 10) || 0) * 1e4 + (parseInt(x.row.day, 10) || 0) * 100 + (parseInt(String(x.row.time || '').replace(':', ''), 10) || 0) / 100; };
       rows.sort(function (a, b) { return key(b) - key(a); });
       var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+      /* ۱.۳.۹۹: «مانده» بعد از هر تراکنش، مثل صورت‌حساب بانک: از موجودی فعلی حساب رو به عقب (همهٔ ماه‌ها، با اقساط) */
+      var balMap = new Map();
+      try {
+        var allR = [], cur0 = periodKey(currentYear, currentMonth), ks = Object.keys(archive || {}); if (ks.indexOf(cur0) < 0) ks.push(cur0);
+        ks.forEach(function (k) {
+          var pd = k === cur0 ? periodData : archive[k]; if (!pd) return;
+          [['income', 1], ['expense', -1]].forEach(function (t) {
+            ((pd[t[0]] && pd[t[0]].sections) || []).forEach(function (sec) { ((sec && sec.rows) || []).forEach(function (r) {
+              if (!r || r.deletedAt || (r.status || 'paid') !== 'paid' || String(r.account || '').trim() !== lb) return;
+              allR.push({ r: r, v: t[1] * (Number(r.amount) || 0), k: k, kk: key({ k: k, row: r }), c: Number(r.createdAt) || 0, i: allR.length });
+            }); });
+          });
+        });
+        allR.sort(function (a, b) { return (b.kk - a.kk) || (b.c - a.c) || (b.i - a.i); });
+        var run = Number((globalAccountBalances() || {})[lb]);
+        if (isFinite(run)) allR.forEach(function (x) { balMap.set(x.r, run); run -= x.v; });
+      } catch (eBm) {}
       var src = (acc && (acc.srcName || acc.bank)) || '';
       var _dgT = ''; try { _dgT = hkAccDigits(lb); } catch (eDg) {}
       var ov = document.createElement('div'); ov.id = 'hkAccTxOv'; ov.className = 'hk-bulk-ov hk-bulk-center'; ov.setAttribute('data-hk-back', '1');
       ov.innerHTML = '<div class="hk-bulk-box hk-acctx-box"><div class="hk-bulk-title">' + escapeHtml(lb) + '</div>' +
         /* ۱.۳.۷۵: زیر اسم کاربر: اسم در پیامک‌ها | رقم‌های حساب (همان شکل ردیف بستهٔ حساب) */
         ((src || _dgT) ? '<div class="hk-acctx-src hk-acc-hint">' + escapeHtml(src) + (src && _dgT ? '<i>|</i>' : '') + (_dgT ? '<span dir="ltr">' + escapeHtml(toPersianDigits(_dgT)) + '</span>' : '') + '</div>' : '') +
-        '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span></div>' : '<div class="hk-bulk-hint">هنوز تراکنشی با این حساب ثبت نشده</div>') + '</div>' +
+        '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span><span class="b">مانده</span></div>' : '<div class="hk-bulk-hint">هنوز تراکنشی با این حساب ثبت نشده</div>') + '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
       /* ۱.۳.۴۸: اول ۴۰ تراکنش؛ آخر فهرست «بیشتر» تا بقیه هم بیاید */
       var rowHtml = function (x) {
           var p = String(x.k).split('-'), inc = x.tab === 'income';
           return '<div class="hk-acctx-r"><span class="d">' + toPersianDigits(p[0]) + '/' + p2(p[1]) + (x.row.day ? '/' + p2(x.row.day) : '') + (x.row.time ? '<small> ' + toPersianDigits(x.row.time) + '</small>' : '') + '</span>' +
             '<span class="t">' + escapeHtml((x.row.desc || '').trim() || (inc ? 'واریز' : 'برداشت')) + '</span>' +
-            '<span class="a ' + (inc ? 'inc' : 'exp') + '">' + (inc ? '+' : '−') + formatNum(Number(x.row.amount) || 0) + '</span></div>';
+            '<span class="a ' + (inc ? 'inc' : 'exp') + '">' + (inc ? '+' : '−') + formatNum(Number(x.row.amount) || 0) + '</span>' +
+            '<span class="b">' + (balMap.has(x.row) ? formatNum(balMap.get(x.row)) : '—') + '</span></div>';
       };
       document.body.appendChild(ov);
       var listEl = ov.querySelector('.hk-acctx-list'), shown = 0, PAGE = 40;
@@ -502,6 +520,7 @@
       // لیست بانک‌ها برای افزودن
       const addTitle = document.createElement('div');
       addTitle.textContent = 'افزودن حساب بانکی';
+      addTitle.className = 'hk-bank-gh';
       addTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin:4px 0 8px;color:var(--muted);';
       banksWrap.appendChild(addTitle);
       hkBankList().forEach((name) => {
@@ -572,6 +591,8 @@
       var box = banksWrap.closest('.modal-box') || banksWrap.parentElement;
       selectedWrap.style.maxHeight = 'none';
       var rest = box.getBoundingClientRect().height - selectedWrap.getBoundingClientRect().height;
+      /* ۱.۳.۹۹: در صفحهٔ تمام‌صفحه ارتفاع باکس ثابت است؛ فقط محتوای واقعی (تا پایین فهرست بانک‌ها) حساب شود */
+      if (box.closest('.hk-page')) { var bb0 = box.getBoundingClientRect(); rest = (banksWrap.getBoundingClientRect().bottom - bb0.top) - selectedWrap.getBoundingClientRect().height + 24; }
       var avail = window.innerHeight - 40 - rest;
       selectedWrap.style.maxHeight = Math.max(120, Math.floor(avail)) + 'px';
     }

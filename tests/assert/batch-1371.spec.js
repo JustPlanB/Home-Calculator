@@ -150,7 +150,7 @@ const PJ = () => { window.loadFinancialSubjects = () => [{ id: 'pj1', name: 'س�
       const heads = [...m.querySelectorAll('.hk-pf-gh')].map(x => x.textContent);
       const noChk = !m.querySelector('input[type="checkbox"]') && !m.querySelector('.hk-prefs-chip') && !/^بستن$/.test([...m.querySelectorAll('button')].map(x => x.textContent).join('|'));
       const sws = m.querySelectorAll('.hk-pf-sw').length;
-      const fit = m.querySelector('.hk-pf').getBoundingClientRect().height <= innerHeight * 0.87;
+      const fit = m.classList.contains('hk-page') || m.querySelector('.hk-pf').getBoundingClientRect().height <= innerHeight * 0.87; /* ۱.۳.۹۹: تمام‌صفحه */
       /* کلید مخفی کردن مبلغ‌ها */
       m.querySelector('.hk-pf-row[data-k="privacy"]').click(); await w(100);
       const priv = hkPrefs().privacy === true && document.body.classList.contains('hk-privacy');

@@ -616,7 +616,25 @@
        نه در ثبت گروهی می‌آیند. برداشتن از فهرست = برگشت کامل. ===== */
     var HK_BLOCK_KEY = STORAGE_KEY + '_smsBlocked';
     function hkBlockedLoad() { try { var a = JSON.parse(localStorage.getItem(HK_BLOCK_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (x) { return x && (x.d || (Array.isArray(x.s) && x.s.length)); }) : []; } catch (e) { return []; } }
-    function hkBlockedSave(a) { var ok = hkStorageSet(HK_BLOCK_KEY, JSON.stringify(a || [])); try { hkSyncNotifCats(); } catch (e) {} return ok; }
+    function hkBlockedSave(a) { var ok = hkStorageSet(HK_BLOCK_KEY, JSON.stringify(a || [])); try { hkSyncNotifCats(); } catch (e) {} try { hkBlockedMenuBadge(); } catch (eB) {} return ok; }
+    /* ۱.۳.۹۹: تعداد حساب‌های مسدود در دایرهٔ قرمز کنار «حساب‌های مسدود شده» (مثل پیامک‌های نفهمیده) */
+    function hkBlockedMenuBadge() {
+      var btn = document.getElementById('menuBlockedBtn'); if (!btn) return;
+      var n = hkBlockedLoad().length, b = btn.querySelector('.hk-unread-n');
+      if (!n) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement('b'); b.className = 'hk-unread-n'; btn.appendChild(document.createTextNode(' ')); btn.appendChild(b); }
+      b.textContent = toPersianDigits(String(n));
+    }
+    try { setTimeout(function () { try { hkBlockedMenuBadge(); } catch (e) {} }, 1200); } catch (eBm) {}
+    /* ۱.۳.۹۹: هر پیامکِ نادیده‌گرفتهٔ حساب مسدود شمرده می‌شود (برای صفحهٔ اطلاعات همان حساب) */
+    function hkBlockedNoteHit(x, raw) {
+      try {
+        var L = hkBlockedLoad(), k = hkBlockKey(x), y = L.filter(function (z) { return hkBlockKey(z) === k; })[0]; if (!y) return;
+        y.hits = (Number(y.hits) || 0) + 1; y.lastAt = Date.now();
+        try { var p = parseBankSms(raw); if (p && p.amount) { y.lastAmt = p.amount; y.lastType = p.type || ''; } } catch (eP) {}
+        hkStorageSet(HK_BLOCK_KEY, JSON.stringify(L));
+      } catch (e) {}
+    }
     function hkSenderNorm(a) { return toEnglishDigits(String(a || '')).replace(/[\s\-()]/g, '').replace(/^(\+98|0098|98)(?=9\d{9}$)/, '0').toLowerCase(); }
     /* مسدود با رقم‌های حساب (d) یا با فرستنده (s: برای پیامک شخصی یا پوشهٔ بی‌شماره) */
     function hkSmsBlockedHit(raw, sender) {
@@ -653,16 +671,31 @@
         ov.innerHTML = '<div class="hk-bulk-box hk-block-box"><div class="hk-bulk-title">حساب‌های مسدود شده</div>' +
           '<div class="hk-bulk-hint">پیامک‌های این حساب‌ها نادیده گرفته می‌شوند: اعلان نمی‌آید و در ثبت گروهی نشان داده نمی‌شوند. با برداشتن از فهرست، دوباره مثل قبل می‌شوند. برای مسدود کردن، در «ثبت تکی و گروهی پیامک‌ها» دکمهٔ مسدود کنار پوشهٔ آن حساب را بزنید.</div>' +
           (L.length ? '<div class="hk-block-list">' + L.map(function (x, i) {
-            return '<div class="hk-block-r"><i class="hk-mi" style="--c:#aeaeb2"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.4 6.4l11.2 11.2"/></svg></i><div class="nm"><b>' + escapeHtml(x.bank || 'حساب') + '</b><div class="hk-acc-hint"><span dir="ltr">' + toPersianDigits(x.d) + '</span></div></div><button type="button" class="hk-block-un" data-i="' + i + '">برداشتن</button></div>';
+            return '<div class="hk-block-r" data-i="' + i + '" role="button"><i class="hk-mi" style="--c:#aeaeb2"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.4 6.4l11.2 11.2"/></svg></i><div class="nm"><b>' + escapeHtml(x.bank || 'حساب') + '</b><div class="hk-acc-hint"><span dir="ltr">' + escapeHtml(hkBlockLabel(x)) + '</span></div></div><button type="button" class="hk-block-un" data-i="' + i + '">برداشتن</button></div>';
           }).join('') + '</div>' : '<div class="hk-block-empty">حسابی مسدود نشده</div>') +
           '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
         ov.querySelector('.hk-bulk-close').onclick = close;
+        ov.querySelectorAll('.hk-block-r').forEach(function (r) { r.onclick = function () { var x = hkBlockedLoad()[+r.dataset.i]; if (x) info(x); }; });
         ov.querySelectorAll('.hk-block-un').forEach(function (b) {
           b.onclick = function (e) { e.stopPropagation(); var L2 = hkBlockedLoad(), x = L2[+b.dataset.i]; if (!x) return; L2.splice(+b.dataset.i, 1); hkBlockedSave(L2); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); render(); };
         });
       };
       var close = function () { ov.remove(); };
-      ov._hkCancel = close;
+      var detail = false;
+      /* ۱.۳.۹۹: زدن روی هر حساب مسدود = اطلاعاتش؛ بازگشت = فهرست */
+      var info = function (x) {
+        detail = true;
+        var dt = function (ts) { try { var j = hkJalaliOfTs(ts); return hkJStr(j); } catch (e) { return ''; } };
+        var rows = [['بانک', x.bank || '—'], [x.d ? 'شمارهٔ حساب/کارت' : 'فرستنده', hkBlockLabel(x) || '—']];
+        if (x.at) rows.push(['تاریخ مسدود شدن', dt(x.at)]);
+        rows.push(['پیامک‌های نادیده‌گرفته', toPersianDigits(String(Number(x.hits) || 0))]);
+        if (x.lastAt) rows.push(['آخرین پیامک نادیده‌گرفته', dt(x.lastAt) + (x.lastAmt ? ' — ' + formatNum(x.lastAmt) + (x.lastType === 'income' ? ' واریز' : x.lastType === 'expense' ? ' برداشت' : '') : '')]);
+        ov.innerHTML = '<div class="hk-bulk-box hk-block-box"><div class="hk-bulk-title">' + escapeHtml((x.bank || 'حساب') + ' ' + hkBlockLabel(x)) + '</div>' +
+          '<div class="hk-block-info">' + rows.map(function (r) { return '<div class="hk-block-ir"><span>' + escapeHtml(r[0]) + '</span><b dir="auto">' + escapeHtml(String(r[1])) + '</b></div>'; }).join('') + '</div>' +
+          '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok hk-block-un1">برداشتن از مسدودها</button></div></div>';
+        ov.querySelector('.hk-block-un1').onclick = function () { hkUnblockAccount(x); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); detail = false; render(); };
+      };
+      ov._hkCancel = function () { if (detail) { detail = false; render(); } else close(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       document.body.appendChild(ov);
       render();

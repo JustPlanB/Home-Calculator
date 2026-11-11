@@ -30,10 +30,10 @@ async function fresh(b) {
   const s0 = await A.page.evaluate(async () => {
     openSmsImportModal(); await new Promise(r => setTimeout(r, 250));
     const m = document.getElementById('smsImportModal'), box = m.querySelector('.modal-box');
-    return { top: Math.round(box.getBoundingClientRect().top), bottom: Math.round(box.getBoundingClientRect().bottom), free: Math.round(hkKbFreeBottom()), ta: Math.round(document.getElementById('smsImportText').getBoundingClientRect().height), ovf: getComputedStyle(m).overflowY };
+    return { top: Math.round(box.getBoundingClientRect().top), bottom: Math.round(hkBoxContentBottom(box)) /* ۱.۳.۹۹: صفحهٔ تمام‌صفحه: پایین محتوا */, free: Math.round(hkKbFreeBottom()), ta: Math.round(document.getElementById('smsImportText').getBoundingClientRect().height), ovf: getComputedStyle(m).overflowY };
   });
   await A.page.setViewportSize({ width: 390, height: Math.round(844 * 0.58) }); await A.page.waitForTimeout(800);
-  const s1 = await A.page.evaluate(() => { const m = document.getElementById('smsImportModal'), box = m.querySelector('.modal-box'); return { top: Math.round(box.getBoundingClientRect().top), bottom: Math.round(box.getBoundingClientRect().bottom), ta: Math.round(document.getElementById('smsImportText').getBoundingClientRect().height), st: m.scrollTop }; });
+  const s1 = await A.page.evaluate(() => { const m = document.getElementById('smsImportModal'), box = m.querySelector('.modal-box'); return { top: Math.round(box.getBoundingClientRect().top), bottom: Math.round(hkBoxContentBottom(box)) /* ۱.۳.۹۹: صفحهٔ تمام‌صفحه: پایین محتوا */, ta: Math.round(document.getElementById('smsImportText').getBoundingClientRect().height), st: m.scrollTop }; });
   ok(s0.bottom <= s0.free - 6 && s0.ovf === 'hidden', 'همان لحظهٔ باز شدن، باکس بالای جای صفحه‌کلید چیده شده (' + s0.bottom + ' ≤ ' + s0.free + ')');
   ok(s0.top === s1.top && s0.bottom === s1.bottom && s0.ta === s1.ta && s1.st === 0, 'با آمدن صفحه‌کلید هیچ چیز جابه‌جا یا کوچک/بزرگ نمی‌شود (' + s0.top + '/' + s0.bottom + ' → ' + s1.top + '/' + s1.bottom + ')');
   await A.page.evaluate(() => closeSmsImportModal());

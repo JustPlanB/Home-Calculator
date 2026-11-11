@@ -176,7 +176,7 @@
         m.scrollTop = 0;
         /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز) */
         try {
-          const box = m.querySelector('.modal-box'), over = box.getBoundingClientRect().bottom - (hkKbFreeBottom() - 8);
+          const box = m.querySelector('.modal-box'), over = hkBoxContentBottom(box) - (hkKbFreeBottom() - 8);
           if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
         } catch (eSz) {}
       }
@@ -184,6 +184,13 @@
       setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
       /* ۱.۳.۸۹: با آمدن صفحه‌کلید، جای متن کوتاه‌تر می‌شود تا همهٔ دکمه‌ها (و «ثبت گروهی») بالای صفحه‌کلید دیده شوند */
       hkSmsImportFit(true);
+    }
+    /* ۱.۳.۹۹: پایین محتوای باکس؛ در صفحهٔ تمام‌صفحه خود باکس تا پایین صفحه است، پس پایینِ آخرین چیزِ داخلش ملاک است */
+    function hkBoxContentBottom(box) {
+      if (!box) return 0;
+      if (!box.closest('.hk-page')) return box.getBoundingClientRect().bottom;
+      var b = 0; Array.prototype.forEach.call(box.children, function (c) { var r = c.getBoundingClientRect(); if (r.height) b = Math.max(b, r.bottom); });
+      return b + 12;
     }
     function hkSmsImportFit(on) {
       const vv = window.visualViewport, m = document.getElementById('smsImportModal'), ta = document.getElementById('smsImportText');
@@ -195,7 +202,7 @@
           m.scrollTop = 0;
           const box = m.querySelector('.modal-box'); if (!box) return;
           const viewBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
-          const over = box.getBoundingClientRect().bottom - (viewBottom - 8);
+          const over = hkBoxContentBottom(box) - (viewBottom - 8);
           if (over > 0) ta.style.height = Math.max(56, ta.getBoundingClientRect().height - over) + 'px';
         } catch (e) {}
       };

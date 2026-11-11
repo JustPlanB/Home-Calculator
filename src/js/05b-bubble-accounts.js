@@ -343,20 +343,14 @@
               var bg = pr.accent || '#d000ff';
               /* بکگراند نیمه‌شفاف رنگ پروژه */
               var bgStyle = 'background:color-mix(in srgb, ' + bg + ' 28%, transparent);';
-              if (Math.abs(pr.cash) > EPS) {
-                bd += '<div class="instant-bal-row ib-bd-proj-row" style="' + bgStyle + '">' +
-                  '<span class="ib-bd-name">' +
-                  '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
-                  '<span class="ib-name">موجودی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
-                  '<span class="ib-amt ib-bd-credit' + (pr.cash < 0 ? ' ib-bd-neg' : '') + '">' + formatNum(pr.cash) + '</span></div>';
-              }
-              if (Math.abs(pr.receivable) > EPS) {
-                bd += '<div class="instant-bal-row ib-bd-proj-row" style="' + bgStyle + '">' +
-                  '<span class="ib-bd-name">' +
-                  '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
-                  '<span class="ib-name">بدهی پروژه ' + escapeHtml(pr.name) + '</span></span>' +
-                  '<span class="ib-amt ib-bd-debt">' + formatNum(pr.receivable) + '</span></div>';
-              }
+              /* ۱.۳.۹۹: برای هر پروژه یک ردیف: موجودی پروژه منهای بدهی‌اش به شما؛ مثبت = «موجودی پروژه»، منفی = «بدهی پروژه» */
+              var net = (Number(pr.cash) || 0) - (Number(pr.receivable) || 0);
+              if (Math.abs(net) <= EPS) return;
+              bd += '<div class="instant-bal-row ib-bd-proj-row" style="' + bgStyle + '">' +
+                '<span class="ib-bd-name">' +
+                '<span class="ib-proj-dot" style="background:' + escapeHtml(pr.accent) + ';"></span>' +
+                '<span class="ib-name">' + (net > 0 ? 'موجودی پروژه ' : 'بدهی پروژه ') + escapeHtml(pr.name) + '</span></span>' +
+                '<span class="ib-amt ' + (net > 0 ? 'ib-bd-credit' : 'ib-bd-debt') + '">' + formatNum(Math.abs(net)) + '</span></div>';
             });
             bd += '<div class="instant-bal-row ib-bd-personal-row">' +
               '<span class="ib-bd-name"><span class="ib-name">موجودی با احتساب پروژه</span></span>' +

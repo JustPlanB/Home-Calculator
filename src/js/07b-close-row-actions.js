@@ -241,6 +241,24 @@
       };
       dVal.onclick = function () { dtOpen('d'); };
       tVal.onclick = function () { dtOpen('t'); };
+      /* ۱.۳.۹۹: تاریخ و ساعت ردیفِ پیامکی از خود بانک است → قفل (فقط نمایش)؛ نگه‌داشتن + تأیید = باز شدن قفل برای موارد استثنا */
+      var dtLocked = !!(row && row.viaSms && String(row.day || '').trim());
+      if (dtLocked) {
+        var lockOne = function (b, which) {
+          b.classList.add('hk-re-locked');
+          b.onclick = function () { try { showToast('تاریخ و ساعت این تراکنش از پیامک بانک است؛ برای تغییر، نگه دارید'); } catch (eT) {} };
+          var lpT = 0;
+          b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(function () {
+            askConfirm('تاریخ و ساعت این تراکنش از پیامک بانک است. واقعاً می‌خواهید عوضش کنید؟', function () {
+              dtLocked = false; [dVal, tVal].forEach(function (x) { x.classList.remove('hk-re-locked'); });
+              dVal.onclick = function () { dtOpen('d'); }; tVal.onclick = function () { dtOpen('t'); };
+              dtOpen(which);
+            });
+          }, 600); });
+          ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
+        };
+        lockOne(dVal, 'd'); lockOne(tVal, 't');
+      }
       var hrs = ['—']; for (var h = 0; h < 24; h++) hrs.push(p2(h));
       var mins = []; for (var mi = 0; mi < 60; mi++) mins.push(p2(mi));
       var tm = /^(\d{1,2}):(\d{2})/.exec(row.time || '');
@@ -433,6 +451,15 @@
       cnt();
       fRow.onclick = function () { try { openRowAttachments(row, function () { cnt(); try { if (ctx.onAtt) ctx.onAtt(); } catch (e0) {} }); } catch (eO) {} };
       fF.appendChild(fRow);
+      /* ۱.۳.۹۹: «مانده»: موجودی همان حساب بعد از این تراکنش (فقط نمایش) */
+      var balRow = null;
+      try {
+        var balV = (row && row.account && (row.status || 'paid') === 'paid') ? hkRowBalanceAfter(row) : null;
+        if (balV != null) {
+          balRow = document.createElement('div'); balRow.className = 'hk-re-ro hk-re-bal';
+          balRow.innerHTML = '<span class="hk-re-rl">مانده</span><span class="hk-re-rv' + (balV < 0 ? ' neg' : '') + '" dir="ltr">' + formatNum(balV) + '</span>';
+        }
+      } catch (eBal) { balRow = null; }
       /* ===== ۱.۳.۶۹: چیدمان یکدست: بالا مبلغ درشت + شرح، بعد وضعیت، بعد فهرست پیوستهٔ جزئیات ===== */
       function reAmtColor() { box.style.setProperty('--re-amt-c', st.status === 'unpaid' ? 'var(--hk-unsettled)' : (isInc ? 'var(--hk-income)' : 'var(--hk-expense)')); }
       reAmtColor();
@@ -447,7 +474,7 @@
       dtRow.innerHTML = ''; dtRow.classList.add('hk-re-row');
       dtRow.appendChild(dtLab); dtRow.appendChild(tVal); dtRow.appendChild(dtSep); dtRow.appendChild(dVal);
       grp.appendChild(dtRow); grp.appendChild(fD); grp.appendChild(fT);
-      [accB, (typeof catB !== 'undefined' ? catB : null), pjB, (typeof recB !== 'undefined' ? recB : null), (typeof pv !== 'undefined' ? pv : null), fRow].forEach(function (el) { if (el) { el.classList.add('hk-re-row'); grp.appendChild(el); } });
+      [accB, (typeof catB !== 'undefined' ? catB : null), pjB, (typeof recB !== 'undefined' ? recB : null), (typeof pv !== 'undefined' ? pv : null), balRow, fRow].forEach(function (el) { if (el) { el.classList.add('hk-re-row'); grp.appendChild(el); } });
       box.querySelectorAll('.hk-re-f, .hk-re-pair').forEach(function (f) { f.remove(); });
       seg.classList.add('hk-re-stseg');
       var ttl = box.querySelector('.hk-re-title');

@@ -100,7 +100,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const rule = sel => css.filter(x => x.selectorText && x.selectorText.split(',').map(t => t.trim()).includes(sel)).pop();
     const add = rule('.hk-add-ov'), bm = rule('#bankAccountsModal.open > .modal-box');
     openBankAccountsModal(); await w(60);
-    const anim = document.querySelector('#bankAccountsModal .modal-box').getAnimations().length > 0;
+    const anim = document.querySelector('#bankAccountsModal .modal-box').getAnimations().length > 0 || document.getElementById('bankAccountsModal').getAnimations().length > 0; /* ۱.۳.۹۹: صفحهٔ تمام‌صفحه کشویی می‌آید */
     await w(600);
     closeBankAccountsModal(); await w(80);
     const ghost = !!document.querySelector('.hk-bm-ghost, [data-hk-bm-ghost]') || document.body.lastElementChild.classList.contains('modal-box') || [...document.body.children].some(x => x.getAnimations && x.getAnimations().length && /modal-box/.test(x.className));

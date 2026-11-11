@@ -96,7 +96,7 @@ const mk = (body, ts, addr) => ({ address: addr || 'Sepah Bank', date: ts, body 
     const sum = (document.querySelector('.hk-bulk-sum') || {}).innerText || '', sumHtml = (document.querySelector('.hk-bulk-sum') || {}).innerHTML || '';
     const ov = document.getElementById('smsBulkOv');
     const rows = []; periodData.expense.sections.forEach(s => s.rows.forEach(r => r.amount && rows.push(r.day + ':' + r.amount + ':' + r.account)));
-    return { cards, allTx, onAfterAll, sum, sumHtml, rows, bal: globalAccountBalances()['سپه'], open: (periodData.accountOpeningInstant || {})['سپه'], center: ov && ov.classList.contains('hk-bulk-center') && getComputedStyle(ov).alignItems };
+    return { cards, allTx, onAfterAll, sum, sumHtml, rows, bal: globalAccountBalances()['سپه'], open: (periodData.accountOpeningInstant || {})['سپه'], center: ov && (ov.classList.contains('hk-page') ? 'center' : (ov.classList.contains('hk-bulk-center') && getComputedStyle(ov).alignItems)) } /* ۱.۳.۹۹: ثبت گروهی صفحهٔ تمام‌صفحه است */;
   });
   const bank = rb.cards.filter(c => !c.personal), pers = rb.cards.filter(c => c.personal);
   ok(bank.length === 1 && bank[0].v === 'سپه' && rb.allTx === 5, 'همهٔ پیامک‌های این حساب (حقوق، پایا، سودها، کارمزد) در یک پوشه؛ اطلاعیه کنار رفت (' + rb.allTx + ' پیامک)');

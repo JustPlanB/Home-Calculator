@@ -34,7 +34,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     let up = 0, down = 0, maxStep = 0;
     for (let k = 1; k < hs.length; k++) { const d = hs[k] - hs[k - 1]; if (d > 0.5) up++; if (d < -0.5) down++; maxStep = Math.max(maxStep, Math.abs(d)); }
     const bar = ov.querySelector('.hk-bulk-rbar'), wrap = ov.querySelector('.hk-bulk-rwrap');
-    const out = { up, down, maxStep: Math.round(maxStep), total: Math.round(Math.max(...hs) - Math.min(...hs)), frames: hs.length };
+    const out = { up, down, page: ov.classList.contains('hk-page'), maxStep: Math.round(maxStep), total: Math.round(Math.max(...hs) - Math.min(...hs)), frames: hs.length };
     out.bar = { shown: getComputedStyle(bar).display !== 'none', txt: bar.textContent, chev: !!bar.querySelector('.hk-chev svg'), pencil: /✎/.test(bar.textContent), open: bar.classList.contains('ropen') };
     out.wrapHidden = getComputedStyle(wrap).display === 'none';
     bar.click(); await w(650);
@@ -43,7 +43,7 @@ const T = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 8);
     out.reclose = { wrap: getComputedStyle(wrap).display === 'none', bar: getComputedStyle(bar).display !== 'none', rot: !bar.classList.contains('ropen') };
     return out;
   });
-  ok(mv.down === 0 && mv.up > 4, 'ارتفاع باکس فقط در یک جهت عوض شد (' + mv.up + ' فریم بالا، ' + mv.down + ' فریم پایین؛ بی جمع‌شدن و باز شدن دوباره)');
+  ok(mv.down === 0 && (mv.up > 4 || (mv.page && mv.up === 0)) /* ۱.۳.۹۹: صفحهٔ تمام‌صفحه اصلاً تکان نمی‌خورد */, 'ارتفاع باکس فقط در یک جهت عوض شد (' + mv.up + ' فریم بالا، ' + mv.down + ' فریم پایین؛ بی جمع‌شدن و باز شدن دوباره)');
   ok(mv.maxStep <= Math.max(40, mv.total * 0.2), 'حرکت پیوسته و آرام (بیشترین گام ' + mv.maxStep + 'px از ' + mv.total + 'px در ' + mv.frames + ' فریم)');
   ok(mv.bar.shown && mv.wrapHidden && /بازه: ۱ مهر تا ۲۱ مهر/.test(mv.bar.txt) && mv.bar.chev && !mv.bar.pencil && !mv.bar.open, 'بعد از خواندن، نوار «' + mv.bar.txt.trim() + '» با فلش (بی ✎) ماند');
   ok(mv.reopen.wrap && mv.reopen.bar && mv.reopen.rot && mv.reclose.wrap && mv.reclose.bar && mv.reclose.rot, 'زدن نوار بازه را باز می‌کند و فلش می‌چرخد؛ زدن دوباره می‌بندد؛ نوار همیشه می‌ماند');

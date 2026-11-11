@@ -98,8 +98,7 @@
           place(dx, false);
           if (dx >= T - 4) {
             if (!wrap.classList.contains('is-armed')) {
-              wrap.classList.add('is-armed');
-              try { window.appHaptic(12); } catch (eV) {}
+              wrap.classList.add('is-armed'); /* ۱.۳.۹۹: کشیدن افقی بی ویبره */
             }
           } else {
             wrap.classList.remove('is-armed');
