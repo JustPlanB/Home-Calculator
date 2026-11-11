@@ -862,7 +862,7 @@
     function hkMenuSlide(el, inn) {
       try {
         var a = el.animate(inn ? [{ transform: 'translateX(-100%)' }, { transform: 'translateX(0)' }] : [{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }],
-          { duration: 280, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+          { duration: 400, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); /* ۱.۳.۹۹: ورق خوردن آرام‌تر */
         return a;
       } catch (e) { return null; }
     }
@@ -943,6 +943,54 @@
           hkMenuNavEnd();
           try { if (!hkMenuIsOpen()) openSideMenu(); } catch (eO) {}
         }
+        return r;
+      };
+    })();
+    /* ===== ۱.۳.۹۹: «صفحه»ها همیشه تمام‌صفحه (از هر جا که باز شوند) =====
+       هر بخش اصلی نرم‌افزار (شخصی‌سازی، دنگ، حساب‌ها، مسدودها، ثبت تکی/گروهی، درآمد ثابت، پروژه‌ها، …) به‌جای باکس وسط صفحه،
+       کل صفحه را می‌گیرد؛ ضربدر و فلش برگشت ندارد و فقط با دکمهٔ بک اندروید (یا کشیدن از لبه در آیفون) بسته می‌شود.
+       پرسش‌های کوتاه و انتخاب‌گرها (تاریخ، دسته، حساب، «مطمئنید؟») همان باکس کوچک می‌مانند. */
+    var HK_PAGE_OPENERS = ['openPrefsModal', 'openDongModal', 'openRecurringFromMenu', 'openSecurityModal', 'openSubjectsModal', 'openTrashModal',
+      'openMonthRecap', 'openBankAccountsModal', 'askExport', 'openHomeMandeh', 'openSmsLaterModal', 'openUserRemindersModal', 'openSavingsModal',
+      'openHelpModal', 'openSmsImportModal', 'openSmsBulkModal', 'hkOpenBlockedAccounts', 'hkOpenSmsUnread', 'hkCatsSheet', 'hkOpenAccountTx',
+      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet'];
+    function hkMarkPages(before) {
+      var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0 && !x.classList.contains('hk-page'); });
+      nu.forEach(function (x) {
+        x.classList.add('hk-page');
+        if (!document.body.classList.contains('hk-menu-nav')) hkMenuSlide(x, true);
+      });
+      return nu.length;
+    }
+    function hkWrapPageOpener(name) {
+      var f = window[name]; if (typeof f !== 'function' || f._hkPage) return;
+      var w = function () {
+        var before = hkLayersShown(), r = f.apply(this, arguments);
+        if (!hkMarkPages(before)) {
+          requestAnimationFrame(function () { if (!hkMarkPages(before)) setTimeout(function () { if (!hkMarkPages(before)) setTimeout(function () { hkMarkPages(before); }, 300); }, 80); });
+        }
+        return r;
+      };
+      Object.keys(f).forEach(function (k) { try { w[k] = f[k]; } catch (e) {} });
+      w._hkPage = true;
+      try { window[name] = w; } catch (eW) {}
+    }
+    /* بعد از اجرای همهٔ بخش‌ها (دُنگ و … بعد از این بخش تعریف می‌شوند) */
+    setTimeout(function () { HK_PAGE_OPENERS.forEach(hkWrapPageOpener); }, 0);
+    try { window.hkWrapPageOpener = hkWrapPageOpener; } catch (eWp) {}
+    (function () {
+      /* بستن صفحه با بک: همان ورق خوردن، رو به کنار (اگر از منوی همبرگری نیامده باشد؛ آن را منو خودش دارد) */
+      var inner = onBackGuard;
+      onBackGuard = function () {
+        var busy = _backHandling;
+        if (busy || _hkMenuNavOn) return inner.apply(this, arguments);
+        var pages = Array.prototype.filter.call(document.querySelectorAll('.hk-page'), hkLayerShown);
+        var ghosts = pages.map(function (x) { try { var g = x.cloneNode(true); g.removeAttribute('id'); g.classList.add('hk-mnav-ghost'); g.removeAttribute('data-hk-back'); g.style.pointerEvents = 'none'; return { x: x, g: g, z: getComputedStyle(x).zIndex }; } catch (e) { return null; } }).filter(Boolean);
+        var r = inner.apply(this, arguments);
+        ghosts.forEach(function (o) {
+          if (hkLayerShown(o.x)) return;
+          try { o.g.style.position = 'fixed'; o.g.style.zIndex = o.z; document.body.appendChild(o.g); var a = hkMenuSlide(o.g, false); if (a) a.onfinish = function () { o.g.remove(); }; setTimeout(function () { try { o.g.remove(); } catch (eR) {} }, 520); } catch (eA) {}
+        });
         return r;
       };
     })();

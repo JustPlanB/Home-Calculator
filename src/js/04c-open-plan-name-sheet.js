@@ -780,7 +780,7 @@
       var nx = cur + ((dx > 0) === rtl ? 1 : -1);
       if (nx < 0 || nx >= bs.length) return;
       try { bs[nx].click(); } catch (eC) {}
-      try { if (typeof appHaptic === 'function') appHaptic(8); } catch (eH) {}
+      /* ۱.۳.۹۹: کشیدن افقی بی ویبره */
     }, { passive: true, capture: true });
     /* شرح در حال تایپ: یک‌خطی، مگر اینکه متن جا نشود؛ آن‌وقت به اندازهٔ متن (تا سقف) بلند می‌شود */
     function hkDescAutosize(el) {

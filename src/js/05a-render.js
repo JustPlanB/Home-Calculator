@@ -710,6 +710,27 @@
       });
       return map;
     }
+    /* ۱.۳.۹۹: «مانده» بعد از هر تراکنش یک حساب در ماهِ باز: موجودی اول ماه + ردیف‌های پرداخت‌شده به ترتیب روز، ساعت و زمان ثبت.
+       خروجی: Map(row → مانده بعد از همان ردیف)؛ ردیف‌های پرداخت‌نشده و حساب‌های حذف‌شده حساب نمی‌شوند (همان قاعدهٔ globalAccountBalances) */
+    function hkAccountRunningBalances(acc) {
+      var out = new Map(); acc = String(acc || '').trim(); if (!acc) return out;
+      try { if (typeof isLiveAccountLabel === 'function' && !isLiveAccountLabel(acc)) return out; } catch (eL) {}
+      var list = [], n = 0;
+      [['income', 1], ['expense', -1]].forEach(function (t) {
+        ((periodData && periodData[t[0]] && periodData[t[0]].sections) || []).forEach(function (sec) {
+          (sec && sec.rows || []).forEach(function (r) {
+            if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+            if (String(r.account || '').trim() !== acc) return;
+            list.push({ r: r, v: t[1] * (Number(r.amount) || 0), d: parseInt(r.day, 10) || 0, tm: String(r.time || ''), c: Number(r.createdAt) || 0, i: n++ });
+          });
+        });
+      });
+      list.sort(function (a, b) { return (a.d - b.d) || (a.tm && b.tm ? (a.tm < b.tm ? -1 : a.tm > b.tm ? 1 : 0) : 0) || (a.c - b.c) || (a.i - b.i); });
+      var bal = Number(getAccountOpeningBalance(acc)) || 0;
+      list.forEach(function (x) { bal += x.v; out.set(x.r, bal); });
+      return out;
+    }
+    function hkRowBalanceAfter(row) { try { var m = hkAccountRunningBalances(row && row.account); return m.has(row) ? m.get(row) : null; } catch (e) { return null; } }
     function sumGlobalAccountBalances() {
       const map = globalAccountBalances();
       let s = 0;

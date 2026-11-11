@@ -536,7 +536,7 @@
       opts = opts || {};
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) return false;
       /* ۱.۳.۷۴: حساب مسدود → بی‌صدا نادیده */
-      if (hkSmsBlockedHit(smsText, opts.sender)) { try { cancelNativeSmsNotification(opts.nid, true); } catch (eNb) {} return false; }
+      { var _bh = hkSmsBlockedHit(smsText, opts.sender); if (_bh) { try { hkBlockedNoteHit(_bh, smsText); } catch (eNh) {} try { cancelNativeSmsNotification(opts.nid, true); } catch (eNb) {} return false; } }
       { var _ins = hkParseInstallSms(smsText);
         if (_ins) {
           var _ir = hkInstIngest(_ins, String(smsText || ''));
