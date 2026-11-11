@@ -591,6 +591,8 @@
       var box = banksWrap.closest('.modal-box') || banksWrap.parentElement;
       selectedWrap.style.maxHeight = 'none';
       var rest = box.getBoundingClientRect().height - selectedWrap.getBoundingClientRect().height;
+      /* ۱.۳.۹۹: در صفحهٔ تمام‌صفحه ارتفاع باکس ثابت است؛ فقط محتوای واقعی (تا پایین فهرست بانک‌ها) حساب شود */
+      if (box.closest('.hk-page')) { var bb0 = box.getBoundingClientRect(); rest = (banksWrap.getBoundingClientRect().bottom - bb0.top) - selectedWrap.getBoundingClientRect().height + 24; }
       var avail = window.innerHeight - 40 - rest;
       selectedWrap.style.maxHeight = Math.max(120, Math.floor(avail)) + 'px';
     }

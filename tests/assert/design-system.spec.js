@@ -30,7 +30,7 @@ async function fresh(b, theme) {
       openTrashModal(); await w(400);
       const box = document.querySelector('#trashModal .modal-box') || document.querySelector('.modal-overlay.open .modal-box');
       const btns = [...box.querySelectorAll('.modal-btn')].filter(x => x.getBoundingClientRect().height > 0).map(x => { const c = getComputedStyle(x); return { t: x.textContent.trim(), h: Math.round(x.getBoundingClientRect().height), r: c.borderRadius, fs: c.fontSize, bg: c.backgroundColor, fg: c.color }; });
-      const r = getComputedStyle(box).borderRadius;
+      const r = box.closest('.hk-page') ? 'page' : getComputedStyle(box).borderRadius; /* ۱.۳.۹۹: صفحه‌ها تمام‌صفحه */
       try { closeTrashModal(); } catch (e) {}
       return { btns, r };
     });
@@ -38,7 +38,7 @@ async function fresh(b, theme) {
     ok(restore && restore.bg === BLUE && restore.fg === 'rgb(255, 255, 255)', 'دکمهٔ اصلی پنجره همان آبی با متن سفید (' + (restore && restore.bg) + ')');
     ok(purge && purge.bg !== BLUE && /rgb\((2[0-5]\d|1\d\d), \d{1,2}, \d{1,2}\)/.test(purge.bg), 'دکمهٔ مخرب قرمز می‌ماند (' + (purge && purge.bg) + ')');
     ok(tr.btns.every(x => x.h === 44 && x.r === '10px' && x.fs === '15px'), 'دکمه‌های پنجره ۴۴px، گردی ۱۰px، نوشته ۱۵px (' + tr.btns.map(x => x.h + '/' + x.r + '/' + x.fs).join(' ') + ')');
-    ok(tr.r === '16px', 'گردی قاب پنجره ۱۶px (' + tr.r + ')');
+    ok(tr.r === '16px' || tr.r === 'page', 'گردی قاب پنجره ۱۶px یا صفحهٔ تمام‌صفحه (' + tr.r + ')');
     const sec = await page.evaluate(async () => {
       openSecurityModal(); await new Promise(r => setTimeout(r, 400));
       const p = document.querySelector('#securityModal .sec-btn-primary'), c = p && getComputedStyle(p);

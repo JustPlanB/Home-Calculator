@@ -866,6 +866,18 @@
         return a;
       } catch (e) { return null; }
     }
+    /* تصویرِ صفحهٔ بسته‌شده برای ورق خوردن رو به کنار: هیچ نشانی از «پنجرهٔ باز» ندارد (بی id، بی open، بی data-hk-back) تا بازگشت بعدی آن را لایه حساب نکند */
+    function hkMakeGhost(x) {
+      try {
+        var cs = getComputedStyle(x), g = x.cloneNode(true);
+        g.removeAttribute('id'); g.removeAttribute('data-hk-back'); g.classList.remove('open');
+        g.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+        g.querySelectorAll('[data-hk-back]').forEach(function (n) { n.removeAttribute('data-hk-back'); });
+        g.classList.add('hk-mnav-ghost');
+        g.style.display = cs.display; g.style.visibility = 'visible'; g.style.opacity = '1'; g.style.pointerEvents = 'none';
+        return g;
+      } catch (e) { return null; }
+    }
     function hkMenuNavEnd() {
       _hkMenuNavOn = false; _hkMenuChild = null; _hkMenuNavUntil = 0;
       document.body.classList.remove('hk-menu-nav');
@@ -932,7 +944,7 @@
         if (!_hkMenuNavOn || !hkMenuChildShown() || busy) { if (_hkMenuNavOn && !busy && !hkMenuChildShown()) hkMenuNavEnd(); return core.apply(this, arguments); }
         var ch = _hkMenuChild.filter(hkLayerShown), m = document.getElementById('menuDropdown');
         /* برای بازگشت، فقط صفحهٔ رو دیده شود (منوی زیرش «باز» حساب نشود) */
-        var ghosts = ch.map(function (x) { try { var r = x.getBoundingClientRect(), g = x.cloneNode(true); g.removeAttribute('id'); g.classList.add('hk-mnav-ghost'); g.removeAttribute('data-hk-back'); g.style.pointerEvents = 'none'; return { g: g, r: r, z: getComputedStyle(x).zIndex }; } catch (eG) { return null; } }).filter(Boolean);
+        var ghosts = ch.map(function (x) { var g = hkMakeGhost(x); return g ? { g: g, z: getComputedStyle(x).zIndex } : null; }).filter(Boolean);
         var r;
         _hkInBackCore = true;
         try { if (m) m.classList.remove('open'); r = core.apply(this, arguments); }
@@ -972,7 +984,8 @@
         return r;
       };
       Object.keys(f).forEach(function (k) { try { w[k] = f[k]; } catch (e) {} });
-      w._hkPage = true;
+      w._hkPage = true; w._hkOrig = f;
+      w.toString = function () { return Function.prototype.toString.call(f); };
       try { window[name] = w; } catch (eW) {}
     }
     /* بعد از اجرای همهٔ بخش‌ها (دُنگ و … بعد از این بخش تعریف می‌شوند) */
@@ -985,7 +998,7 @@
         var busy = _backHandling;
         if (busy || _hkMenuNavOn) return inner.apply(this, arguments);
         var pages = Array.prototype.filter.call(document.querySelectorAll('.hk-page'), hkLayerShown);
-        var ghosts = pages.map(function (x) { try { var g = x.cloneNode(true); g.removeAttribute('id'); g.classList.add('hk-mnav-ghost'); g.removeAttribute('data-hk-back'); g.style.pointerEvents = 'none'; return { x: x, g: g, z: getComputedStyle(x).zIndex }; } catch (e) { return null; } }).filter(Boolean);
+        var ghosts = pages.map(function (x) { var g = hkMakeGhost(x); return g ? { x: x, g: g, z: getComputedStyle(x).zIndex } : null; }).filter(Boolean);
         var r = inner.apply(this, arguments);
         ghosts.forEach(function (o) {
           if (hkLayerShown(o.x)) return;

@@ -95,7 +95,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     try { closePersonDetail(); } catch (e) {} await w(400);
     out.st = await tap('stats');
     const fs = document.querySelector('.fs-sheet, #statsSheet, .hk-stats');
-    out.stRes = !!document.querySelector('.fs-close') && getComputedStyle(document.querySelector('.fs-close').closest('[class]')).display !== 'none';
+    out.stRes = !!document.querySelector('.stats-sheet') && [...document.querySelectorAll('.stats-sheet')].some(x => x.getClientRects().length); /* ۱.۳.۹۹: بی فلش برگشت؛ خود برگهٔ آمار */
     try { HKStats.close(); } catch (e) {} await w(400);
     return out;
   });
