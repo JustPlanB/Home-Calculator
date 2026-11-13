@@ -622,16 +622,30 @@
       var btn = document.getElementById('menuBlockedBtn'); if (!btn) return;
       var n = hkBlockedLoad().length, b = btn.querySelector('.hk-unread-n');
       if (!n) { if (b) b.remove(); return; }
-      if (!b) { b = document.createElement('b'); b.className = 'hk-unread-n'; btn.appendChild(document.createTextNode(' ')); btn.appendChild(b); }
+      /* ۱.۴.۰: دایرهٔ قرمز مثل «پیامک‌های ثبت‌نشده» (نه زرد) */
+      if (!b) { b = document.createElement('b'); b.className = 'hk-unread-n hk-blk-n'; btn.appendChild(document.createTextNode(' ')); btn.appendChild(b); }
+      b.classList.add('hk-blk-n');
       b.textContent = toPersianDigits(String(n));
     }
     try { setTimeout(function () { try { hkBlockedMenuBadge(); } catch (e) {} }, 1200); } catch (eBm) {}
     /* ۱.۳.۹۹: هر پیامکِ نادیده‌گرفتهٔ حساب مسدود شمرده می‌شود (برای صفحهٔ اطلاعات همان حساب) */
-    function hkBlockedNoteHit(x, raw) {
+    /* ۱.۴.۰: خود پیامک‌ها هم نگه داشته می‌شوند (تا ۲۰۰ تای آخر، بی تکرار): هم تعداد و هم خود تراکنش‌ها در صفحهٔ اطلاعات حساب.
+       از ثبت گروهی هم (پیامک‌های پوشه‌ای که همان‌جا مسدود شد و پیامک‌های حساب مسدودی که در خواندن بعدی کنار گذاشته می‌شوند) */
+    function hkBlockedNoteHit(x, raw, o) {
       try {
+        o = o || {};
+        var body = String(raw || '').trim(); if (!body) return;
         var L = hkBlockedLoad(), k = hkBlockKey(x), y = L.filter(function (z) { return hkBlockKey(z) === k; })[0]; if (!y) return;
-        y.hits = (Number(y.hits) || 0) + 1; y.lastAt = Date.now();
-        try { var p = parseBankSms(raw); if (p && p.amount) { y.lastAmt = p.amount; y.lastType = p.type || ''; } } catch (eP) {}
+        if (!Array.isArray(y.msgs)) y.msgs = [];
+        if (y.msgs.some(function (m) { return m && m.raw === body; })) return;
+        var amt = Number(o.amount) || 0, type = o.type || '';
+        if (!amt) { try { var p = parseBankSms(body); if (p && p.amount) { amt = p.amount; type = p.type || ''; } } catch (eP) {} }
+        var at = Number(o.ts) || Date.now();
+        y.msgs.push({ raw: body, at: at, amt: amt, type: type });
+        y.msgs.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+        if (y.msgs.length > 200) y.msgs.length = 200;
+        y.hits = (Number(y.hits) || 0) + 1;
+        if (!y.lastAt || at >= y.lastAt) { y.lastAt = at; if (amt) { y.lastAmt = amt; y.lastType = type; } }
         hkStorageSet(HK_BLOCK_KEY, JSON.stringify(L));
       } catch (e) {}
     }
@@ -661,7 +675,8 @@
       return hkBlockedSave(L);
     }
     function hkUnblockAccount(x) { var k = hkBlockKey(x), L = hkBlockedLoad().filter(function (y) { return hkBlockKey(y) !== k; }); return hkBlockedSave(L); }
-    function hkBlockLabel(x) { return x.d ? toPersianDigits(x.d) : (x.s || []).map(function (q) { return toPersianDigits(String(q)); }).join('، '); }
+    /* ۱.۴.۰: شماره‌ها چپ‌به‌راست جدا (علامت + اول شماره می‌ماند، نه آخرش) */
+    function hkBlockLabel(x) { return x.d ? '\u2066' + toPersianDigits(x.d) + '\u2069' : (x.s || []).map(function (q) { return '\u2066' + toPersianDigits(String(q)) + '\u2069'; }).join('، '); }
     function hkOpenBlockedAccounts() {
       try { closeSideMenu(); } catch (e) {}
       var old = document.getElementById('hkBlockOv'); if (old) old.remove();
@@ -688,11 +703,18 @@
         var dt = function (ts) { try { var j = hkJalaliOfTs(ts); return hkJStr(j); } catch (e) { return ''; } };
         var rows = [['بانک', x.bank || '—'], [x.d ? 'شمارهٔ حساب/کارت' : 'فرستنده', hkBlockLabel(x) || '—']];
         if (x.at) rows.push(['تاریخ مسدود شدن', dt(x.at)]);
-        rows.push(['پیامک‌های نادیده‌گرفته', toPersianDigits(String(Number(x.hits) || 0))]);
+        var msgs = Array.isArray(x.msgs) ? x.msgs : [];
+        rows.push(['پیامک‌های نادیده‌گرفته', toPersianDigits(String(Math.max(Number(x.hits) || 0, msgs.length)))]);
         if (x.lastAt) rows.push(['آخرین پیامک نادیده‌گرفته', dt(x.lastAt) + (x.lastAmt ? ' — ' + formatNum(x.lastAmt) + (x.lastType === 'income' ? ' واریز' : x.lastType === 'expense' ? ' برداشت' : '') : '')]);
+        /* ۱.۴.۰: خود تراکنش‌های نادیده‌گرفته (جدیدترین بالا)؛ زدن هر کدام = متن کامل پیامک */
+        var txH = msgs.length ? '<div class="hk-bulk-hint hk-block-txh">تراکنش‌های نادیده‌گرفته</div><div class="hk-block-tx">' + msgs.map(function (m, i) {
+          var inc = m.type === 'income';
+          return '<div class="hk-block-txr" data-m="' + i + '" role="button"><span class="d">' + escapeHtml(dt(m.at)) + '</span><span class="t">' + (inc ? 'واریز' : m.type === 'expense' ? 'برداشت' : 'پیامک') + '</span><b class="' + (inc ? 'inc' : 'exp') + '" dir="ltr">' + (m.amt ? formatNum(m.amt) : '—') + '</b></div>';
+        }).join('') + '</div>' : '';
         ov.innerHTML = '<div class="hk-bulk-box hk-block-box"><div class="hk-bulk-title">' + escapeHtml((x.bank || 'حساب') + ' ' + hkBlockLabel(x)) + '</div>' +
-          '<div class="hk-block-info">' + rows.map(function (r) { return '<div class="hk-block-ir"><span>' + escapeHtml(r[0]) + '</span><b dir="auto">' + escapeHtml(String(r[1])) + '</b></div>'; }).join('') + '</div>' +
+          '<div class="hk-block-info">' + rows.map(function (r) { return '<div class="hk-block-ir"><span>' + escapeHtml(r[0]) + '</span><b dir="auto">' + escapeHtml(String(r[1])) + '</b></div>'; }).join('') + '</div>' + txH +
           '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok hk-block-un1">برداشتن از مسدودها</button></div></div>';
+        ov.querySelectorAll('.hk-block-txr').forEach(function (r) { r.onclick = function () { var m = msgs[+r.dataset.m]; if (!m) return; var o = r.nextElementSibling; if (o && o.classList.contains('hk-block-raw')) { o.remove(); return; } var d = document.createElement('div'); d.className = 'hk-block-raw'; d.textContent = m.raw; r.parentNode.insertBefore(d, r.nextSibling); }; });
         ov.querySelector('.hk-block-un1').onclick = function () { hkUnblockAccount(x); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); detail = false; render(); };
       };
       ov._hkCancel = function () { if (detail) { detail = false; render(); } else close(); };

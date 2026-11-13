@@ -90,7 +90,7 @@
       groups.forEach(function (G) { if (G.price) { tv += G.value; } else missing++; if (G.pnl != null) { tp += G.pnl; anyP = true; } tc += G.cost; });
       if (!groups.length) {
         sum.innerHTML = '';
-        list.innerHTML = '<div class="sv-empty">هنوز چیزی ثبت نشده است.<br>با «افزودن پس‌انداز» دلار، سکه یا طلای خود را ثبت کنید.</div>';
+        list.innerHTML = '<div class="sv-empty">هنوز چیزی ثبت نشده است.<br>در فیلد «پس‌انداز جدید» دلار، سکه یا طلای خود را بنویسید و «افزودن» را بزنید.</div>';
         return;
       }
       sum.innerHTML = '<div class="sv-sum">' +
@@ -207,11 +207,12 @@
         inp.value = out;
       });
     }
-    function openSavingsEditor(id) {
+    function openSavingsEditor(id, pre) {
       var sv = loadSavings();
       var ex = id ? sv.items.find(function (x) { return x.id === id; }) : null;
       var t = getTodayPersian();
-      var init = ex || { asset: 'usd', label: '', unit: '', qty: '', buy: 0, y: t.y, m: t.m, d: t.d, note: '' };
+      /* ۱.۴.۰: از فیلد «پس‌انداز جدید»: نوع (یا نام دلخواه) از همان نوشته */
+      var init = ex || Object.assign({ asset: 'usd', label: '', unit: '', qty: '', buy: 0, y: t.y, m: t.m, d: t.d, note: '' }, pre || {});
       var body =
         '<div class="sv-lbl">نوع</div><div id="svAssetWrap" class="sv-field-wrap"></div>' +
         '<div id="svOtherRow" class="sv-two"' + (init.asset === 'other' ? '' : ' hidden') + '>' +
@@ -396,7 +397,24 @@
         box.appendChild(el);
       });
     }
-    function openUserReminderEditor(id) {
+    /* ۱.۴.۰: فیلد «پس‌انداز جدید» و «یادآور جدید» (مثل «پروژه جدید»): نوشته + «افزودن» */
+    function hkSavNewFromField() {
+      var inp = document.getElementById('svNewName'), t = String(inp && inp.value || '').trim();
+      var pre = {};
+      if (t) {
+        var nt = t.replace(/[\u200c\s]+/g, '');
+        var hit = SAVINGS_ASSETS.find(function (a) { var n = a.n.replace(/[\u200c\s]+/g, ''); return a.k !== 'other' && (n === nt || n.indexOf(nt) === 0 || nt.indexOf(n) === 0 || a.u === t); });
+        if (hit) pre.asset = hit.k; else { pre.asset = 'other'; pre.label = t; }
+      }
+      if (inp) inp.value = '';
+      openSavingsEditor(null, pre);
+    }
+    function hkUrNewFromField() {
+      var inp = document.getElementById('urNewName'), t = String(inp && inp.value || '').trim();
+      if (inp) inp.value = '';
+      openUserReminderEditor(null, t);
+    }
+    function openUserReminderEditor(id, preTitle) {
       const existing = id ? userReminders.find(function(x) { return x.id === id; }) : null;
       let dim = document.getElementById('urEditorDim');
       if (!dim) {
@@ -412,7 +430,7 @@
       editor.id = 'urEditor';
       editor.style.cssText = 'position:fixed;left:16px;right:16px;top:12%;z-index:480;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:0 12px 40px rgba(0,0,0,0.4);max-height:78vh;overflow-y:auto;font-family:Vazirmatn,Tahoma,sans-serif;';
       const t = getTodayPersian();
-      const init = existing || { title: '', note: '', repeat: 'yearly', y: t.y, m: t.m, d: t.d, advanceDays: 7 };
+      const init = existing || { title: preTitle || '', note: '', repeat: 'yearly', y: t.y, m: t.m, d: t.d, advanceDays: 7 };
       const monthsOpts = (MONTHS || []).map(function(name, i) {
         const v = i + 1;
         return '<option value="' + v + '"' + (parseInt(init.m, 10) === v ? ' selected' : '') + '>' + name + '</option>';

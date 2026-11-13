@@ -76,7 +76,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     await w(900);
     const full = body.getBoundingClientRect().height;
     const bw = document.getElementById('bankBanksScroll'), rows = bw.querySelectorAll('.hk-bank-add-row');
-    const vis = [...rows].filter(r => r.getBoundingClientRect().bottom <= bw.getBoundingClientRect().bottom + 1).length;
+    const vis = [...rows].filter(r => r.getBoundingClientRect().bottom <= bw.getBoundingClientRect().bottom + 1).length, bwBottom = bw.getBoundingClientRect().bottom;
     const plus = rows[0].querySelector('button').getBoundingClientRect().height;
     const sep = getComputedStyle(bw).borderTopWidth;
     document.getElementById('bankAccountsModal').classList.remove('open');
@@ -90,11 +90,11 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const st = hkInstStatusHtml(hkInstStatus(hkInstCards().find(c => c.id === '2979')), false);
     const d = document.createElement('div'); d.innerHTML = st;
     const comma = d.querySelector('.hk-inst-ok').textContent.trim().endsWith('،');
-    return { icBg, title, anim, mid, full, vis, plus, sep, renamed, comma };
+    return { icBg, title, anim, mid, full, vis, plus, sep, renamed, comma, bwBottom, ih: innerHeight };
   }, [sms('18,500,000', '1405/08/06-09:05', '1037', 12, 0, 0, '90012'), sms('2,000,000', '1405/08/12-11:40', '1037', 12, 0, 0, '90013'), sms('21,652,000', '1405/08/06-08:30', '2979', 36, 0, 0, '90031')]);
   ok(bb.icBg === 'rgba(0, 0, 0, 0)' && /255, 197, 49|201, 138, 0/.test(bb.title), 'پوشه: فقط آیکون پوشهٔ زرد بی زمینه؛ اسم زرد');
   ok(bb.anim && bb.mid < bb.full, 'پوشه آرام باز می‌شود (افکت مثل رمز پشتیبان)');
-  ok(bb.vis === 3 && bb.plus <= 26.5, 'بانک‌ها: «نام بانک دلخواه» و سه بانک دیده می‌شود، بقیه با اسکرول؛ «+» کوچک‌تر (' + bb.vis + ')');
+  /* ۱.۴.۰: صفحهٔ تمام‌صفحه: فهرست بانک‌ها تا پایین صفحه (بیش از سه بانک پیداست)، بقیه با اسکرول */ ok(bb.vis >= 3 && bb.bwBottom >= bb.ih - 90 && bb.plus <= 26.5, 'بانک‌ها: فهرست تا پایین صفحه، بقیه با اسکرول؛ «+» کوچک (' + bb.vis + ')');
   ok(bb.sep === '0px', '۱.۳.۹۹: «حساب‌های من» هم‌شکل بقیهٔ صفحه‌ها: به‌جای خط تفکیک کلفت، گروه گرد جدا');
   ok(bb.renamed === 'قسط خانه', 'تغییر نام کارت قسط در باکس ویرایش با «ثبت»');
   ok(bb.comma, 'اسلاید قسط: ویرگول هم‌رنگ جمله');

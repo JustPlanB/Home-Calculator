@@ -205,9 +205,10 @@
     }
     function closeBankAccountsModal() {
       var bm = document.getElementById('bankAccountsModal');
-      /* ۱.۳.۷۸: بسته شدن نرم (یک نسخهٔ تصویری محو می‌شود؛ وضعیت همان لحظه بسته است) */
+      /* ۱.۳.۷۸: بسته شدن نرم (یک نسخهٔ تصویری محو می‌شود؛ وضعیت همان لحظه بسته است)
+         ۱.۴.۰: در حالت صفحه، بسته شدن مثل همهٔ صفحه‌ها (این محو شدن جدا نیست) */
       try {
-        var bx0 = bm && bm.classList.contains('open') && bm.querySelector('.modal-box');
+        var bx0 = bm && bm.classList.contains('open') && !bm.classList.contains('hk-page') && bm.querySelector('.modal-box');
         if (bx0 && bx0.animate) {
           var r0 = bx0.getBoundingClientRect(), gh = bx0.cloneNode(true);
           gh.removeAttribute('id'); gh.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
@@ -343,10 +344,11 @@
         box.innerHTML = '';
         selectedWrap = document.createElement('div');
         selectedWrap.id = 'bankSelectedScroll';
-        selectedWrap.style.cssText = 'max-height:35vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:0;padding-bottom:4px;';
+        /* ۱.۴.۰: ظاهر این صفحه کامل در CSS (بخش «حساب‌های من» در 10c-pages.css) */
+        selectedWrap.className = 'hk-bank-grp hk-bank-sel';
         banksWrap = document.createElement('div');
         banksWrap.id = 'bankBanksScroll';
-        banksWrap.style.cssText = 'max-height:35vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:3px solid var(--border);padding-top:6px;margin-top:4px;';
+        banksWrap.className = 'hk-bank-grp hk-bank-all';
         box.appendChild(selectedWrap);
         box.appendChild(banksWrap);
       }
@@ -360,16 +362,14 @@
         selectedBankAccounts.forEach((acc, idx) => {
           const row = document.createElement('div');
           const isLast = idx === selectedBankAccounts.length - 1;
-          row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 4px;' +
-            (isLast ? '' : 'border-bottom:1px solid var(--border);');
+          row.className = 'hk-bank-acc-row' + (isLast ? ' last' : '');
           const info = document.createElement('div');
-          info.style.cssText = 'flex:1;min-width:0;';
+          info.className = 'hk-bank-acc-info';
           /* ۱.۳.۷۴: زیر اسم: بانک · رقم‌های کارت/حساب (از پیامک‌ها) */
           var _dg = hkAccDigits(acc.label);
-          info.innerHTML = '<div style="font-weight:700;font-size:0.9rem;">' + escapeHtml(acc.label) + '</div>' +
+          info.innerHTML = '<div class="hk-bank-acc-name">' + escapeHtml(acc.label) + '</div>' +
             '<div class="hk-acc-hint">' + escapeHtml(acc.bank) + (_dg ? '<i>|</i><span dir="ltr">' + escapeHtml(toPersianDigits(_dg)) + '</span>' : '') + '</div>';
           /* ۱.۳.۴۶: زدن روی نام حساب → تراکنش‌های این حساب از آخر به اول */
-          info.style.cursor = 'pointer';
           info.onclick = (e) => { e.stopPropagation(); hkOpenAccountTx(acc); };
           const editBtn = document.createElement('button');
           editBtn.type = 'button';
@@ -384,7 +384,7 @@
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
           delBtn.textContent = '×';
-          delBtn.style.cssText = 'padding:4px 10px;border:none;border-radius:8px;background:transparent;color:#ff453a;font-family:inherit;font-weight:800;font-size:1.25rem;line-height:1;';
+          delBtn.className = 'hk-bank-acc-del';
           delBtn.onclick = (e) => {
             e.stopPropagation();
             var _rmLb0 = ''; try { _rmLb0 = accountLabel(selectedBankAccounts[idx]); } catch (eL0) {}
@@ -521,27 +521,23 @@
       const addTitle = document.createElement('div');
       addTitle.textContent = 'افزودن حساب بانکی';
       addTitle.className = 'hk-bank-gh';
-      addTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin:4px 0 8px;color:var(--muted);';
       banksWrap.appendChild(addTitle);
       hkBankList().forEach((name) => {
         const row = document.createElement('div');
         row.className = 'hk-bank-add-row';
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border);cursor:pointer;';
         const span = document.createElement('span');
         span.textContent = name;
-        span.style.flex = '1';
         const addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.setAttribute('aria-label', 'افزودن');
+        addBtn.className = 'hk-bank-plus';
         addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
-        addBtn.style.cssText = 'width:26px;height:26px;padding:0;border:none;border-radius:7px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
         const doAdd = () => {
           const defaultLabel = bankShortLabel(name) || name;
           openBankNameEditor(null, -1, null, name, defaultLabel);
         };
         addBtn.onclick = (e) => { e.stopPropagation(); doAdd(); };
         /* ۱.۳.۴۸: زدن هر جای ردیف (نام بانک یا بعلاوه) = افزودن حساب */
-        row.style.cursor = 'pointer';
         row.onclick = doAdd;
         row.appendChild(span);
         row.appendChild(addBtn);
@@ -551,17 +547,16 @@
       (function () {
         const row = document.createElement('div');
         row.className = 'bank-custom-row';
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 4px;';
         const inp = document.createElement('input');
         inp.type = 'text'; inp.id = 'bankCustomName'; inp.maxLength = 30; inp.autocomplete = 'off';
         inp.placeholder = 'نام بانک (دلخواه)';
         inp.setAttribute('enterkeyhint', 'done');
-        inp.style.cssText = 'flex:1;min-width:0;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:inherit;font-size:0.85rem;box-sizing:border-box;';
+        inp.className = 'hk-bank-custom-in';
         const addBtn = document.createElement('button');
         addBtn.type = 'button'; addBtn.id = 'bankCustomAdd';
         addBtn.setAttribute('aria-label', 'افزودن بانک دیگر');
+        addBtn.className = 'hk-bank-plus';
         addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
-        addBtn.style.cssText = 'width:26px;height:26px;padding:0;border:none;border-radius:7px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
         const go = () => {
           const nm = hkCustomBankName(inp.value);
           if (!nm) { try { showToast('نام بانک را بنویسید'); } catch (e0) {} try { inp.focus(); } catch (e1) {} return; }
@@ -583,6 +578,8 @@
     }
     function hkBankListFit(selectedWrap, banksWrap) {
       if (!selectedWrap || !banksWrap || !banksWrap.isConnected) return;
+      /* ۱.۴.۰: صفحهٔ تمام‌صفحه: اندازه‌ها با CSS (حساب‌ها بالا، فهرست بانک‌ها تا پایین صفحه) */
+      if (banksWrap.closest('.hk-page') || !banksWrap.closest('.modal-overlay.open')) { selectedWrap.style.maxHeight = ''; banksWrap.style.maxHeight = ''; return; }
       var rows = banksWrap.querySelectorAll('.hk-bank-add-row');
       if (rows.length > 3) {
         var bt = banksWrap.getBoundingClientRect().top - banksWrap.scrollTop, r3 = rows[2].getBoundingClientRect();

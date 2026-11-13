@@ -108,12 +108,13 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   const bk = await p.evaluate(async () => {
     openBankAccountsModal(); await new Promise(r => setTimeout(r, 300));
     const a = document.getElementById('bankSelectedScroll'), c = document.getElementById('bankBanksScroll');
-    const out = { sel: parseFloat(a.style.maxHeight), all: parseFloat(c.style.maxHeight) };
+    /* ۱.۴.۰: تمام‌صفحه: حساب‌ها بالا (ارتفاع خودشان)، فهرست بانک‌ها تا پایین صفحه */
+    const out = { sel: a.getBoundingClientRect().height, all: c.getBoundingClientRect().height, bottom: c.getBoundingClientRect().bottom, ih: innerHeight };
     closeBankAccountsModal();
     return out;
   });
   /* از ۱.۳.۴۶ نصف‌نصف (batch-1346) */
-  /* ۱.۳.۷۷: بانک‌ها فقط دلخواه + سه ردیف؛ بقیهٔ جا مال حساب‌ها */ ok(bk.sel > bk.all && bk.all > 0, 'حساب‌های ساخته‌شده جای بیشتری دارند و فهرست بانک‌ها جمع‌وجور است (' + bk.sel + ' / ' + bk.all + ')');
+  /* ۱.۳.۷۷: بانک‌ها فقط دلخواه + سه ردیف؛ بقیهٔ جا مال حساب‌ها */ ok(bk.sel > 0 && bk.all > 140 && bk.bottom >= bk.ih - 90, 'حساب‌ها بالا و فهرست بانک‌ها تا پایین صفحه (' + Math.round(bk.sel) + ' / ' + Math.round(bk.all) + ')');
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

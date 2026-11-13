@@ -40,13 +40,29 @@
       { id: 'blue', accent: '#00e8ff', bg: 'rgba(0, 232, 255, 0.35)', glow: 'rgba(0, 232, 255, 0.35)' },
       { id: 'yellow', accent: '#f5ff33', bg: 'rgba(245, 255, 51, 0.35)', glow: 'rgba(245, 255, 51, 0.35)' },
       { id: 'orange', accent: '#ff6a00', bg: 'rgba(255, 106, 0, 0.35)', glow: 'rgba(255, 106, 0, 0.35)' },
-      { id: 'pink', accent: '#ff2d95', bg: 'rgba(255, 45, 149, 0.35)', glow: 'rgba(255, 45, 149, 0.35)' },
-      { id: 'green', accent: '#b8ff00', bg: 'rgba(184, 255, 0, 0.35)', glow: 'rgba(184, 255, 0, 0.35)' },
-      { id: 'lime', accent: '#66ff66', bg: 'rgba(102, 255, 102, 0.35)', glow: 'rgba(102, 255, 102, 0.35)' },
-      { id: 'cyan', accent: '#00ffd0', bg: 'rgba(0, 255, 208, 0.35)', glow: 'rgba(0, 255, 208, 0.35)' },
-      { id: 'magenta', accent: '#ff00aa', bg: 'rgba(255, 0, 170, 0.35)', glow: 'rgba(255, 0, 170, 0.35)' },
-      { id: 'gold', accent: '#ffd000', bg: 'rgba(255, 208, 0, 0.35)', glow: 'rgba(255, 208, 0, 0.35)' }
+      /* ۱.۴.۰: از پروژهٔ پنجم به بعد رنگ‌های پاستلی (همان شناسه‌های قبلی، رنگ تازه)؛ هیچ دو پروژه‌ای هم‌رنگ نیست */
+      { id: 'pink', accent: '#ffadd2', bg: 'rgba(255, 173, 210, 0.35)', glow: 'rgba(255, 173, 210, 0.35)' },
+      { id: 'green', accent: '#b9f2a1', bg: 'rgba(185, 242, 161, 0.35)', glow: 'rgba(185, 242, 161, 0.35)' },
+      { id: 'lime', accent: '#a8d8ff', bg: 'rgba(168, 216, 255, 0.35)', glow: 'rgba(168, 216, 255, 0.35)' },
+      { id: 'cyan', accent: '#9ff0e0', bg: 'rgba(159, 240, 224, 0.35)', glow: 'rgba(159, 240, 224, 0.35)' },
+      { id: 'magenta', accent: '#d9c2ff', bg: 'rgba(217, 194, 255, 0.35)', glow: 'rgba(217, 194, 255, 0.35)' },
+      { id: 'gold', accent: '#ffd6a5', bg: 'rgba(255, 214, 165, 0.35)', glow: 'rgba(255, 214, 165, 0.35)' },
+      { id: 'p7', accent: '#fff3a3', bg: 'rgba(255, 243, 163, 0.35)', glow: 'rgba(255, 243, 163, 0.35)' },
+      { id: 'p8', accent: '#ffc4b8', bg: 'rgba(255, 196, 184, 0.35)', glow: 'rgba(255, 196, 184, 0.35)' },
+      { id: 'p9', accent: '#c4cdff', bg: 'rgba(196, 205, 255, 0.35)', glow: 'rgba(196, 205, 255, 0.35)' },
+      { id: 'p10', accent: '#d6f5a8', bg: 'rgba(214, 245, 168, 0.35)', glow: 'rgba(214, 245, 168, 0.35)' },
+      { id: 'p11', accent: '#f4c2f0', bg: 'rgba(244, 194, 240, 0.35)', glow: 'rgba(244, 194, 240, 0.35)' },
+      { id: 'p12', accent: '#b5ecf7', bg: 'rgba(181, 236, 247, 0.35)', glow: 'rgba(181, 236, 247, 0.35)' },
+      { id: 'p13', accent: '#e8d5b9', bg: 'rgba(232, 213, 185, 0.35)', glow: 'rgba(232, 213, 185, 0.35)' },
+      { id: 'p14', accent: '#c8f0d0', bg: 'rgba(200, 240, 208, 0.35)', glow: 'rgba(200, 240, 208, 0.35)' }
     ];
+    /* بیش از این: رنگ پاستلی ساخته‌شده از شماره (زاویهٔ طلایی؛ تکرار نمی‌شود) */
+    function hkProjPastel(n) {
+      var h = Math.round((n * 137.508) % 360), s = 70, l = 82;
+      var f = function (k) { var a = s / 100 * Math.min(l / 100, 1 - l / 100), kk = (k + h / 30) % 12; return Math.round(255 * (l / 100 - a * Math.max(-1, Math.min(kk - 3, 9 - kk, 1)))); };
+      var r = f(0), g = f(8), b = f(4), rgba = 'rgba(' + r + ', ' + g + ', ' + b + ', 0.35)';
+      return { id: 'g' + n, accent: '#' + [r, g, b].map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''), bg: rgba, glow: rgba };
+    }
     function accentToRgba(hex, alpha) {
       var h = String(hex || '').replace('#', '').trim();
       if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
@@ -84,6 +100,7 @@
       for (var i = 0; i < PROJECT_HIGHLIGHT_PALETTE.length; i++) {
         if (PROJECT_HIGHLIGHT_PALETTE[i].id === id) return PROJECT_HIGHLIGHT_PALETTE[i];
       }
+      var gm = /^g(\d+)$/.exec(id); if (gm) return hkProjPastel(parseInt(gm[1], 10));
       return PROJECT_HIGHLIGHT_PALETTE[0];
     }
     function nextProjectHighlightColor(list) {
@@ -94,7 +111,18 @@
       for (var i = 0; i < PROJECT_HIGHLIGHT_PALETTE.length; i++) {
         if (!used[PROJECT_HIGHLIGHT_PALETTE[i].id]) return PROJECT_HIGHLIGHT_PALETTE[i].id;
       }
-      return PROJECT_HIGHLIGHT_PALETTE[(list || []).length % PROJECT_HIGHLIGHT_PALETTE.length].id;
+      for (var n = PROJECT_HIGHLIGHT_PALETTE.length; ; n++) { if (!used['g' + n]) return 'g' + n; }
+    }
+    /* ۱.۴.۰: دو پروژه هم‌رنگ (از نسخه‌های قبل) → دومی رنگ آزاد بعدی را می‌گیرد */
+    function hkProjDedupeColors(list) {
+      var seen = {}, changed = false;
+      (list || []).forEach(function (s) {
+        if (!s) return;
+        var c = s.highlightColor;
+        if (!c || seen[c]) { s.highlightColor = nextProjectHighlightColor((list || []).filter(function (q) { return q !== s && seen[q.highlightColor]; })); changed = true; }
+        seen[s.highlightColor] = true;
+      });
+      return changed;
     }
     function loadFinancialSubjects() {
       if (_financialSubjects) return _financialSubjects;
@@ -125,6 +153,7 @@
             dirty = true;
           }
         });
+        try { if (hkProjDedupeColors(_financialSubjects)) dirty = true; } catch (eDd) {}
         if (dirty) saveFinancialSubjects();
       } catch (e) { _financialSubjects = []; }
       return _financialSubjects;

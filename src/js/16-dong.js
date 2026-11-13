@@ -314,7 +314,9 @@
           '<span class="hk-dg-cacts"><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
           '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></span></div>';
       });
-      h += '</div><div class="hk-rax-acts hk-dg-acts"><button type="button" class="modal-btn yes hk-dg-new">گروه تازه</button><button type="button" class="modal-btn no hk-dg-close">بستن</button></div>';
+      /* ۱.۴.۰: مثل «پروژه جدید»: فیلد «گروه جدید» + افزودن (دکمهٔ «گروه تازه» برداشته شد) */
+      h += '</div><label class="family-label hk-dg-newl">گروه جدید</label><input type="text" class="family-input hk-dg-newin" dir="rtl" maxlength="30" placeholder="مثلاً: سفر شمال" style="margin-bottom:8px;">' +
+        '<div class="hk-new-acts" style="display:flex;gap:8px;"><button type="button" class="modal-btn primary hk-dg-new">افزودن</button><button type="button" class="modal-btn hk-dg-close">بستن</button></div>';
       bx.innerHTML = h;
       bx.querySelectorAll('.hk-dg-card').forEach(function (c) {
         var gid = c.getAttribute('data-g'), g = D.groups.filter(function (x) { return x.id === gid; })[0];
@@ -328,7 +330,10 @@
           });
         };
       });
-      bx.querySelector('.hk-dg-new').onclick = function () { hkDongGroupEditor(null); };
+      var _ngIn = bx.querySelector('.hk-dg-newin');
+      var _ng = function () { var v = String(_ngIn.value || '').trim(); _ngIn.value = ''; hkDongGroupEditor(null, v); };
+      bx.querySelector('.hk-dg-new').onclick = _ng;
+      _ngIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); _ng(); } });
       bx.querySelector('.hk-dg-close').onclick = closeDongModal;
     }
     function hkDongRenderGroup(bx, D, g) {
@@ -384,15 +389,15 @@
       document.body.appendChild(ov);
       return { ov: ov, bx: bx };
     }
-    function hkDongGroupEditor(gid) {
+    function hkDongGroupEditor(gid, preName) {
       var D = hkDongLoad(), g0 = gid && D.groups.filter(function (x) { return x.id === gid; })[0];
-      var st = { name: g0 ? g0.name : '', members: g0 ? g0.members.map(function (m) { return { id: m.id, name: m.name }; }) : [{ id: hkDongId('m'), name: hkDongMe() }] };
+      var st = { name: g0 ? g0.name : String(preName || '').trim(), members: g0 ? g0.members.map(function (m) { return { id: m.id, name: m.name }; }) : [{ id: hkDongId('m'), name: hkDongMe() }] };
       var used = {};
       if (g0) {
         g0.expenses.forEach(function (e) { used[e.payer] = 1; Object.keys(e.shares || {}).forEach(function (id) { used[id] = 1; }); });
         g0.settles.forEach(function (s) { used[s.from] = 1; used[s.to] = 1; });
       }
-      var sh = hkDongSheet(g0 ? 'اعضا و نام گروه' : 'گروه تازه'), bx = sh.bx;
+      var sh = hkDongSheet(g0 ? 'اعضا و نام گروه' : 'گروه جدید'), bx = sh.bx;
       bx.classList.add('hk-dg-kb');
       /* ۱.۳.۸۸: صفحه‌کلید در طول تایپ نام گروه و نفرات باز می‌ماند (Enter و دکمه‌ها فوکوس را نمی‌گیرند)؛ پایان کار فقط با «ثبت» */
       var keep = function (el) { el.addEventListener('mousedown', function (e) { e.preventDefault(); }); el.addEventListener('touchstart', function () { el._hkKeep = Date.now(); }, { passive: true }); };

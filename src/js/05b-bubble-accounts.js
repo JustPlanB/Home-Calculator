@@ -1008,14 +1008,31 @@
     function hkP2PAllRows(fn) {
       try {
         ['income', 'expense'].forEach(function (tab) {
-          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur'); }); });
+          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur', sec); }); });
         });
         var py = currentYear, pm = currentMonth - 1; if (pm < 1) { pm = 12; py--; }
         var pd = archive && archive[periodKey(py, pm)];
         if (pd) ['income', 'expense'].forEach(function (tab) {
-          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev'); }); });
+          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev', sec); }); });
         });
       } catch (e) {}
+    }
+    /* ۱.۴.۰: کارمزد انتقال: برداشت کمی بیشتر از واریز است (همان مبلغ + کارمزد بانک) */
+    function hkP2PFeeCap(amt) { return Math.min(50000, Math.max(5000, Math.round((Number(amt) || 0) * 0.003))); }
+    /* جفت تأییدشده: مبلغ واریز «جیب به جیب» (بیرون از جمع‌ها)؛ اختلاف برداشت = کارمزد، یک ردیف خرجِ معمولیِ جدا «کارمزد انتقال» */
+    function hkP2PApply(pr) {
+      var inc = pr.inc, exp = pr.exp;
+      inc.p2p = exp.p2p = true; inc.p2pPaired = exp.p2pPaired = true; delete inc.p2pNo; delete exp.p2pNo;
+      var fee = Math.round((Number(exp.amount) || 0) - (Number(inc.amount) || 0));
+      if (fee > 0 && pr.expSec && Array.isArray(pr.expSec.rows)) {
+        var f = emptyRow('expense');
+        Object.assign(f, { day: exp.day || '', time: exp.time || '', desc: 'کارمزد انتقال', amount: fee, status: 'paid', account: exp.account || '', createdAt: Date.now(), updatedAt: Date.now(), p2pFeeFor: Number(exp.createdAt) || 0 });
+        try { if (typeof stampRowOwner === 'function') stampRowOwner(f); } catch (eSo) {}
+        exp.amount = Number(inc.amount) || 0; exp.updatedAt = Date.now();
+        var ix = pr.expSec.rows.indexOf(exp); pr.expSec.rows.splice(ix >= 0 ? ix + 1 : pr.expSec.rows.length, 0, f);
+        try { if (pr.expW === 'prev') saveArchive(); } catch (eSa) {}
+      }
+      return fee > 0 ? fee : 0;
     }
     /* ردیفی که همین الان از باکس پیامک با دستهٔ «جیب به جیب» ثبت شد */
     function hkP2PMarkRecent(t0, amt) {
@@ -1038,21 +1055,29 @@
     function hkP2PFindPairs() {
       var since = hkP2PSince(), own = {};
       try { selectedAccountLabels().forEach(function (l) { own[l] = 1; }); } catch (e) {}
-      var inc = [], exp = [];
-      hkP2PAllRows(function (r, tab) {
-        if (r.deletedAt || r.p2p || r.p2pNo || r.p2pAsked) return;
+      var inc = [], exp = [], secOf = new Map(), wOf = new Map();
+      hkP2PAllRows(function (r, tab, w, sec) {
+        /* ۱.۴.۰: ردیفی که دستی (یک‌طرفه) جیب به جیب شده هم دنبال طرف دیگرش می‌گردد */
+        if (r.deletedAt || r.p2pPaired || r.p2pNo || r.p2pAsked || r.p2pFeeFor) return;
         if ((r.status || 'paid') !== 'paid' || !(Number(r.amount) > 0)) return;
         var acc = String(r.account || '').trim(); if (!acc || !own[acc]) return;
         if (!(Number(r.createdAt) >= since)) return;
-        (tab === 'income' ? inc : exp).push(r);
+        (tab === 'income' ? inc : exp).push(r); secOf.set(r, sec); wOf.set(r, w);
       });
       var out = [], used = new Set();
       inc.forEach(function (i) {
-        var cands = exp.filter(function (e) { return !used.has(e) && Number(e.amount) === Number(i.amount) && String(e.account).trim() !== String(i.account).trim() && Math.abs((Number(e.createdAt) || 0) - (Number(i.createdAt) || 0)) <= 3 * 86400000; });
+        var ia = Number(i.amount) || 0;
+        var cands = exp.filter(function (e) {
+          if (used.has(e) || (i.p2p && e.p2p) || String(e.account).trim() === String(i.account).trim()) return false;
+          if (Math.abs((Number(e.createdAt) || 0) - (Number(i.createdAt) || 0)) > 3 * 86400000) return false;
+          var d = (Number(e.amount) || 0) - ia;
+          return d >= 0 && d <= hkP2PFeeCap(ia);
+        });
         if (!cands.length) return;
-        cands.sort(function (a, b) { return Math.abs(a.createdAt - i.createdAt) - Math.abs(b.createdAt - i.createdAt); });
+        /* اول هم‌مبلغ، بعد کمترین کارمزد، بعد نزدیک‌ترین زمان */
+        cands.sort(function (a, b) { return ((Number(a.amount) - ia) - (Number(b.amount) - ia)) || (Math.abs(a.createdAt - i.createdAt) - Math.abs(b.createdAt - i.createdAt)); });
         used.add(cands[0]);
-        out.push({ inc: i, exp: cands[0], alts: cands.length });
+        out.push({ inc: i, exp: cands[0], alts: cands.filter(function (c) { return Number(c.amount) === Number(cands[0].amount); }).length, expSec: secOf.get(cands[0]), expW: wOf.get(cands[0]), fee: Math.round(Number(cands[0].amount) - ia) });
       });
       return out;
     }
@@ -1065,7 +1090,7 @@
       var pairs = hkP2PFindPairs(); if (!pairs.length) return;
       var auto = hkP2PAutoPairs(), changed = false;
       pairs = pairs.filter(function (pr) {
-        if (auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { pr.inc.p2p = pr.exp.p2p = true; changed = true; return false; }
+        if (auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { hkP2PApply(pr); changed = true; return false; }
         return true;
       });
       if (changed) { try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); showToast('جابه‌جایی بین کارت‌های خودتان «جیب به جیب» شد'); } catch (e) {} finally { _hkP2PBusy = false; } }
@@ -1081,14 +1106,15 @@
         '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
         '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#ff453a;">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
-      ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت همین مبلغ از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
+      ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت ' + (pr.fee > 0 ? formatNum(pr.exp.amount) : 'همین مبلغ') + ' از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است' + (pr.fee > 0 ? ' (' + formatNum(pr.fee) + ' کارمزد بانک)' : '') + '. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.fee > 0 ? ' کارمزد به‌عنوان یک خرج جدا («کارمزد انتقال») ثبت می‌شود.' : '') + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
       var done = function (yes) {
         var alw = ov.querySelector('.hk-p2p-always').checked;
         ov.remove();
-        if (yes) { pr.inc.p2p = pr.exp.p2p = true; delete pr.inc.p2pNo; delete pr.exp.p2pNo; if (alw) { var a = hkP2PAutoPairs(), k = hkP2PPairKey(pr.inc.account, pr.exp.account); if (a.indexOf(k) < 0) { a.push(k); try { localStorage.setItem(HK_P2P_AUTO_KEY, JSON.stringify(a)); } catch (e) {} } } }
-        else { pr.inc.p2pNo = pr.exp.p2pNo = true; }
+        var fee = 0;
+        if (yes) { fee = hkP2PApply(pr); if (alw) { var a = hkP2PAutoPairs(), k = hkP2PPairKey(pr.inc.account, pr.exp.account); if (a.indexOf(k) < 0) { a.push(k); try { localStorage.setItem(HK_P2P_AUTO_KEY, JSON.stringify(a)); } catch (e) {} } } }
+        else { if (!pr.inc.p2p) pr.inc.p2pNo = true; if (!pr.exp.p2p) pr.exp.p2pNo = true; }
         try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); } catch (e) {} finally { _hkP2PBusy = false; }
-        if (yes) showToast('«جیب به جیب» شد — در جمع‌ها حساب نمی‌شود');
+        if (yes) showToast('«جیب به جیب» شد — در جمع‌ها حساب نمی‌شود' + (fee ? '؛ کارمزد ' + formatNum(fee) + ' خرج شد' : ''));
         setTimeout(hkP2PScan, 400);
       };
       ov._hkCancel = function () { ov.remove(); };
@@ -1105,4 +1131,4 @@
         persistCurrent = w; try { window.persistCurrent = w; } catch (e2) {}
       }
     })();
-    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan }); } catch (eP2) {}
+    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan, hkP2PApply: hkP2PApply }); } catch (eP2) {}

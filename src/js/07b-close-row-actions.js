@@ -249,8 +249,9 @@
           b.onclick = function () { try { showToast('تاریخ و ساعت این تراکنش از پیامک بانک است؛ برای تغییر، نگه دارید'); } catch (eT) {} };
           var lpT = 0;
           b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(function () {
-            askConfirm('تاریخ و ساعت این تراکنش از پیامک بانک است. واقعاً می‌خواهید عوضش کنید؟', function () {
+            askConfirm('تاریخ و ساعت از پیامک بانک آمده است. تغییرش می‌دهید؟', function () {
               dtLocked = false; [dVal, tVal].forEach(function (x) { x.classList.remove('hk-re-locked'); });
+              try { var lk = dtRow.querySelector('.hk-re-dtlk'); if (lk) lk.classList.remove('hk-re-dtlk'); } catch (eLk) {}
               dVal.onclick = function () { dtOpen('d'); }; tVal.onclick = function () { dtOpen('t'); };
               dtOpen(which);
             });
@@ -303,7 +304,7 @@
       if (fromPlan) { var nA = document.createElement('div'); nA.className = 'hk-re-note'; nA.textContent = 'مبلغ و شرح قسط از بخش اقساط عوض می‌شود'; fA.appendChild(nA); }
       /* وضعیت پرداخت */
       var fS = field('وضعیت');
-      var seg = document.createElement('div'); seg.className = 'hk-re-seg';
+      var seg = document.createElement('div'); seg.className = 'hk-re-seg hk-re-stseg'; /* ۱.۴.۰: کشیدن افقی روی باکس = عوض شدن وضعیت */
       [['paid', paidL], ['unpaid', unpaidL]].forEach(function (o) {
         var b = document.createElement('button'); b.type = 'button'; b.textContent = o[1]; b.dataset.v = o[0];
         b.className = 'hk-re-segb ' + (o[0] === 'paid' ? (isInc ? 'is-paid is-inc' : 'is-paid is-exp') : 'is-unpaid');
@@ -469,7 +470,7 @@
       if (typeof nA !== 'undefined' && nA) hero.appendChild(nA);
       var grp = document.createElement('div'); grp.className = 'hk-re-group';
       /* تاریخ و زمان در یک ردیف: زمان (راست)، خط جداکننده، تاریخ با میلادی زیرش (چپ) */
-      var dtLab = document.createElement('span'); dtLab.className = 'hk-re-rl'; dtLab.textContent = 'تاریخ و زمان';
+      var dtLab = document.createElement('span'); dtLab.className = 'hk-re-rl' + (dtLocked ? ' hk-re-dtlk' : ''); dtLab.textContent = 'تاریخ و زمان'; /* ۱.۴.۰: یک قفل، کنار همین نوشته */
       var dtSep = document.createElement('i'); dtSep.className = 'hk-re-dtsep'; dtSep.setAttribute('aria-hidden', 'true');
       dtRow.innerHTML = ''; dtRow.classList.add('hk-re-row');
       dtRow.appendChild(dtLab); dtRow.appendChild(tVal); dtRow.appendChild(dtSep); dtRow.appendChild(dVal);
