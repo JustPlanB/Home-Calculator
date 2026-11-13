@@ -160,7 +160,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     ];
     persistCurrent();
     openBankAccountsModal(); await w(300);
-    const sh = document.getElementById('bankSelectedScroll').style.maxHeight + '/' + document.getElementById('bankBanksScroll').style.maxHeight;
+    /* ۱.۴.۰: صفحهٔ تمام‌صفحه: فهرست بانک‌ها تا پایین صفحه */ const _bb = document.getElementById('bankBanksScroll').getBoundingClientRect(), sh = Math.round(_bb.bottom) + '/' + innerHeight + '/' + Math.round(document.getElementById('bankSelectedScroll').getBoundingClientRect().height);
     const infos = [...document.querySelectorAll('#bankSelectedScroll > div > div')].filter(x => /ملت من/.test(x.textContent));
     infos[0] && infos[0].click(); await w(300);
     const ov = document.getElementById('hkAccTxOv');
@@ -191,7 +191,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     await w(200);
     return out;
   });
-  /* ۱.۳.۷۷: بانک‌ها فقط سه ردیف + دلخواه، بقیهٔ جا مال حساب‌ها */ ok(/px\/\d+px$/.test(acc.sh) && parseFloat(acc.sh) > parseFloat(acc.sh.split('/')[1]), 'منوی انتخاب حساب: فضای بیشتر برای حساب‌های ساخته‌شده، بانک‌ها جمع‌وجور (' + acc.sh + ')');
+  /* ۱.۳.۷۷: بانک‌ها فقط سه ردیف + دلخواه، بقیهٔ جا مال حساب‌ها */ ok((function (q) { return q[0] >= q[1] - 90 && q[0] <= q[1] && q[2] > 20; })(acc.sh.split('/').map(Number)), '۱.۴.۰ منوی انتخاب حساب: حساب‌ها بالا و فهرست بانک‌ها تا پایین صفحه (' + acc.sh + ')');
   ok(acc.ov && /بانک ملت · ۵۵۵۵/.test(acc.src || '') && acc.order === 'جدید,قدیمی' && acc.fixed, 'زدن نام حساب: تراکنش‌ها از آخر به اول در قاب ثابتِ اسکرول‌شونده، با نام اصلی پیامک بالای آن');
   ok(acc.closed, 'بازگشت پنجرهٔ تراکنش‌های حساب را می‌بندد');
   /* ۱.۳.۴۸: پوشهٔ بی‌حساب کادر نام را از اول نشان می‌دهد */ ok(/افزودن حساب|حساب جدید/.test(acc.optLabel || '') && acc.newShown && acc.account === 'سپه من' && acc.noAccMenu, 'ثبت گروهی: «＋ حساب جدید» → نوشتن نام در همان پوشه (بدون رفتن به منوی انتخاب حساب)');

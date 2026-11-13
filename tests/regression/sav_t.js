@@ -16,13 +16,13 @@ const { chromium } = require('playwright');
   r.open = await p.evaluate(() => document.getElementById('savingsModal').classList.contains('open'));
   await p.screenshot({ path: `sav-empty-${theme}.png` });
   // add usd
-  await p.click('#savingsModal .modal-btn.yes'); await p.waitForTimeout(200);
+  await p.click('#savingsModal .hk-new-acts .modal-btn.primary'); await p.waitForTimeout(200);
   await p.screenshot({ path: `sav-editor-${theme}.png` });
   await p.fill('#svQty', '۵۰۰'); await p.type('#svBuy', '58000');
   r.buyFmt = await p.inputValue('#svBuy');
   await p.click('#svEditor .sv-ok'); await p.waitForTimeout(200);
   // add gold via API-ish: choose asset
-  await p.click('#savingsModal .modal-btn.yes'); await p.waitForTimeout(200);
+  await p.click('#savingsModal .hk-new-acts .modal-btn.primary'); await p.waitForTimeout(200);
   await p.click('#svAssetSelect .dark-select-btn'); await p.waitForTimeout(200);
   await p.evaluate(() => { const it=[...document.querySelectorAll('.dark-select-list.sv-dl.open *')].find(e=>e.textContent.trim()==='طلای ۱۸ عیار' && e.children.length===0); it.click(); });
   await p.waitForTimeout(150);
@@ -30,7 +30,7 @@ const { chromium } = require('playwright');
   await p.fill('#svQty', '12/5'); await p.fill('#svNote', 'گردنبند');
   await p.click('#svEditor .sv-ok'); await p.waitForTimeout(200);
   // other w/o name -> blocked
-  await p.click('#savingsModal .modal-btn.yes'); await p.waitForTimeout(150);
+  await p.click('#savingsModal .hk-new-acts .modal-btn.primary'); await p.waitForTimeout(150);
   await p.click('#svAssetSelect .dark-select-btn'); await p.waitForTimeout(150);
   await p.evaluate(() => { const it=[...document.querySelectorAll('.dark-select-list.sv-dl.open *')].find(e=>e.textContent.trim()==='سایر (نام دلخواه)' && e.children.length===0); it.click(); });
   await p.fill('#svQty', '3'); await p.click('#svEditor .sv-ok'); await p.waitForTimeout(150);

@@ -237,7 +237,7 @@
         try {
           var body = String(it.body || ''); if (!body) return;
           if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(body)) return;
-          if (hkSmsBlockedHit(body, it.address)) return;
+          { var _bh = hkSmsBlockedHit(body, it.address); if (_bh) { try { hkBlockedNoteHit(_bh, body, { ts: Number(it.date) || 0 }); } catch (eNh) {} return; } }
           var p = parseBankSms(body); if (!p || !p.amount) return;
           if (hkIsSmsNotice(body, p)) { skipNotice++; return; }
           var ts = Number(it.date) || 0;
@@ -488,7 +488,12 @@
           e.stopPropagation();
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
           if (fo._blocked) { hkUnblockAccount(blkEntry()); fo._blocked = false; showToast('«' + nm + '» دوباره فعال شد'); }
-          else { hkBlockAccount(fo.acc4 && !fo.personal ? fo.acc4 : '', fo.personal ? 'پیامک شخصی' : fo.bank, { senders: blkEntry().s, nodig: !fo.acc4 && !fo.personal, personal: !!fo.personal }); fo._blocked = true; showToast('«' + nm + '» مسدود شد'); }
+          else {
+            hkBlockAccount(fo.acc4 && !fo.personal ? fo.acc4 : '', fo.personal ? 'پیامک شخصی' : fo.bank, { senders: blkEntry().s, nodig: !fo.acc4 && !fo.personal, personal: !!fo.personal });
+            /* ۱.۴.۰: تراکنش‌های همین پوشه (که حالا نادیده گرفته می‌شوند) در اطلاعات حساب مسدود می‌مانند */
+            try { (fo.all || fo.inRange || []).forEach(function (r) { if (r && r.body) hkBlockedNoteHit(blkEntry(), r.body, { ts: r.ts, amount: r.amount, type: r.type }); }); } catch (eNh) {}
+            fo._blocked = true; showToast('«' + nm + '» مسدود شد');
+          }
           paintBlk();
         });
         if (fo._blocked) paintBlk();
@@ -526,7 +531,8 @@
     }
     function hkBulkOkState() {
       var ok = document.querySelector('#smsBulkOv .hk-bulk-ok');
-      if (ok && _hkBulk) ok.disabled = !_hkBulk.folders.some(function (fo) { return fo.checked; });
+      /* ۱.۴.۰: مسدود کردن یک پوشه هم کاری است که با «ثبت» تمام می‌شود (ثبت فعال می‌ماند) */
+      if (ok && _hkBulk) ok.disabled = !_hkBulk.folders.some(function (fo) { return fo.checked || fo._blocked; });
     }
     /* موجودی اولیهٔ حساب تازه برای یک پوشه: آخرین ماندهٔ پیامک‌ها، منهای اثر تراکنش‌های ماه جاری که همین حالا ثبت می‌شوند
        (تا بعد از ثبت، موجودی حساب دقیقاً برابر آخرین مانده شود) */
@@ -566,7 +572,12 @@
     function hkBulkSubmit() {
       if (!_hkBulk) return;
       var chosen = _hkBulk.folders.filter(function (fo) { return fo.checked; });
-      if (!chosen.length) return;
+      if (!chosen.length) {
+        /* ۱.۴.۰: فقط حساب مسدود شد (تراکنشی برای ثبت انتخاب نشده): همان مسدود کردن ثبت است */
+        var nb = _hkBulk.folders.filter(function (fo) { return fo._blocked; }).length;
+        if (nb) { try { closeSmsBulkModal(); } catch (eC) {} try { showToast(toPersianDigits(String(nb)) + ' حساب مسدود شد'); } catch (eT) {} }
+        return;
+      }
       if (chosen.some(function (fo) { return (fo.needName || fo._typing) && (fo.dupName || hkAccNameTaken(fo.account, selectedAccountLabels())); })) { showToast('نام حساب تازه تکراری است؛ نام دیگری بنویسید'); return; }
       var missing = chosen.filter(function (fo) { return !fo.account; });
       if (missing.length) {

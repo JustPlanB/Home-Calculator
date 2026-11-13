@@ -86,7 +86,7 @@ const ACC = 'ملت مصنوعی';
     const w = ms => new Promise(r => setTimeout(r, ms));
     askBackupParts(); await w(250);
     const enc = document.getElementById('bkEncRow'), panel = document.querySelector('#backupPickOverlay .backup-pick-panel');
-    const out = { h0: Math.round(enc.getBoundingClientRect().height), p0: Math.round(panel.getBoundingClientRect().height) };
+    const out = { h0: Math.round(enc.getBoundingClientRect().height), p0: Math.round(panel.getBoundingClientRect().height), page: !!panel.closest('.hk-page') };
     document.getElementById('bkAutoOn').click();
     await w(150);
     out.hMid = Math.round(enc.getBoundingClientRect().height); out.pMid = Math.round(panel.getBoundingClientRect().height);
@@ -102,7 +102,8 @@ const ACC = 'ملت مصنوعی';
     document.querySelectorAll('.backup-pick-overlay').forEach(x => x.remove());
     return out;
   });
-  ok(bk.h0 === 0 && bk.hMid > 0 && bk.hMid < bk.h1 && bk.p0 < bk.pMid && bk.pMid < bk.p1 && bk.op === '1', 'روشن کردن پشتیبان خودکار: سطر رمزنگاری آرام باز شد و پنجره نرم بزرگ شد (ارتفاع ' + bk.h0 + '→' + bk.hMid + '→' + bk.h1 + '، پنجره ' + bk.p0 + '→' + bk.pMid + '→' + bk.p1 + ')');
+  /* ۱.۴.۰: پشتیبان‌گیری تمام‌صفحه است؛ صفحه بزرگ نمی‌شود، فقط سطر رمزنگاری آرام باز می‌شود */
+  ok(bk.h0 === 0 && bk.hMid > 0 && bk.hMid < bk.h1 && (bk.page || (bk.p0 < bk.pMid && bk.pMid < bk.p1)) && bk.op === '1', 'روشن کردن پشتیبان خودکار: سطر رمزنگاری آرام باز شد و پنجره نرم بزرگ شد (ارتفاع ' + bk.h0 + '→' + bk.hMid + '→' + bk.h1 + '، پنجره ' + bk.p0 + '→' + bk.pMid + '→' + bk.p1 + ')');
   ok(bk.h2 === 0, 'خاموش کردن: سطر رمزنگاری دوباره بسته شد');
   ok(!bk.pwdInfo && bk.pwdTitle === 'رمز فایل پشتیبان', 'باکس دو فیلد رمز فایل پشتیبان آیکون اطلاعات ندارد');
 

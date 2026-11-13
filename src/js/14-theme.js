@@ -963,23 +963,37 @@
        کل صفحه را می‌گیرد؛ ضربدر و فلش برگشت ندارد و فقط با دکمهٔ بک اندروید (یا کشیدن از لبه در آیفون) بسته می‌شود.
        پرسش‌های کوتاه و انتخاب‌گرها (تاریخ، دسته، حساب، «مطمئنید؟») همان باکس کوچک می‌مانند. */
     var HK_PAGE_OPENERS = ['openPrefsModal', 'openDongModal', 'openRecurringFromMenu', 'openSecurityModal', 'openSubjectsModal', 'openTrashModal',
-      'openMonthRecap', 'openBankAccountsModal', 'askExport', 'openHomeMandeh', 'openSmsLaterModal', 'openUserRemindersModal', 'openSavingsModal',
+      'openMonthRecap', 'openBankAccountsModal', 'askBackupParts', 'openProjectReportModal', 'openHomeMandeh', 'openSmsLaterModal', 'openUserRemindersModal', 'openSavingsModal',
       'openHelpModal', 'openSmsImportModal', 'openSmsBulkModal', 'hkOpenBlockedAccounts', 'hkOpenSmsUnread', 'hkCatsSheet', 'hkOpenAccountTx',
-      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet'];
-    function hkMarkPages(before) {
-      var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0 && !x.classList.contains('hk-page'); });
+      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet', 'openFeatureSheet', 'hkOpenRecArcExport'];
+    var _hkInPageBack = false;
+    function hkMarkPages(before, under) {
+      var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0 && !x._hkPgSeen; });
       nu.forEach(function (x) {
         x.classList.add('hk-page');
-        if (!document.body.classList.contains('hk-menu-nav')) hkMenuSlide(x, true);
+        /* تا وقتی باز است دوباره «تازه» حساب نشود (چند بار تلاشِ پیدا کردن صفحه) */
+        x._hkPgSeen = true; setTimeout(function chk() { if (hkLayerShown(x)) setTimeout(chk, 400); else x._hkPgSeen = false; }, 400);
+        /* ۱.۴.۰: سربرگ «بک + نام صفحه» */
+        try { if (typeof window.hkPageDecorate === 'function') window.hkPageDecorate(x); } catch (eDc) {}
+        if (!document.body.classList.contains('hk-menu-nav') && !_hkInPageBack) {
+          /* ۱.۴.۰: صفحه‌ای که از دل صفحهٔ دیگر باز شد (مثلاً یک پروژه از فهرست پروژه‌ها): صفحهٔ قبلی تا پایان ورق خوردن زیرش دیده می‌شود */
+          var gs = (under || []).filter(function (o) { return !hkLayerShown(o.x); });
+          gs.forEach(function (o) { try { o.g.style.position = 'fixed'; o.g.style.zIndex = String((parseInt(getComputedStyle(x).zIndex, 10) || 1000) - 1); document.body.appendChild(o.g); } catch (eG) {} });
+          var a = hkMenuSlide(x, true);
+          var rm = function () { gs.forEach(function (o) { try { o.g.remove(); } catch (eR) {} }); };
+          if (a) a.onfinish = rm; setTimeout(rm, 520);
+        }
       });
       return nu.length;
     }
     function hkWrapPageOpener(name) {
       var f = window[name]; if (typeof f !== 'function' || f._hkPage) return;
       var w = function () {
-        var before = hkLayersShown(), r = f.apply(this, arguments);
-        if (!hkMarkPages(before)) {
-          requestAnimationFrame(function () { if (!hkMarkPages(before)) setTimeout(function () { if (!hkMarkPages(before)) setTimeout(function () { hkMarkPages(before); }, 300); }, 80); });
+        var before = hkLayersShown();
+        var under = before.filter(function (x) { return x.classList.contains('hk-page'); }).map(function (x) { var g = hkMakeGhost(x); if (g) g.style.display = 'flex'; return g ? { x: x, g: g } : null; }).filter(Boolean);
+        var r = f.apply(this, arguments);
+        if (!hkMarkPages(before, under)) {
+          requestAnimationFrame(function () { if (!hkMarkPages(before, under)) setTimeout(function () { if (!hkMarkPages(before, under)) setTimeout(function () { hkMarkPages(before, under); }, 300); }, 80); });
         }
         return r;
       };
@@ -999,7 +1013,12 @@
         if (busy || _hkMenuNavOn) return inner.apply(this, arguments);
         var pages = Array.prototype.filter.call(document.querySelectorAll('.hk-page'), hkLayerShown);
         var ghosts = pages.map(function (x) { var g = hkMakeGhost(x); return g ? { x: x, g: g, z: getComputedStyle(x).zIndex } : null; }).filter(Boolean);
-        var r = inner.apply(this, arguments);
+        var r;
+        _hkInPageBack = true;
+        try { r = inner.apply(this, arguments); } finally { _hkInPageBack = false; }
+        /* ۱.۴.۰: بازگشت به صفحهٔ اصلی مثل قبل بی ورق خوردن؛ فقط برگشت از صفحهٔ فرعی به صفحهٔ قبلی‌اش ورق می‌خورد */
+        var still = Array.prototype.filter.call(document.querySelectorAll('.hk-page'), hkLayerShown);
+        if (!still.length) return r;
         ghosts.forEach(function (o) {
           if (hkLayerShown(o.x)) return;
           try { o.g.style.position = 'fixed'; o.g.style.zIndex = o.z; document.body.appendChild(o.g); var a = hkMenuSlide(o.g, false); if (a) a.onfinish = function () { o.g.remove(); }; setTimeout(function () { try { o.g.remove(); } catch (eR) {} }, 520); } catch (eA) {}

@@ -108,8 +108,9 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     return { addBg: add && add.style.background, dur: bm && parseFloat(bm.style.animationDuration || bm.style.animation.match(/([\d.]+)s/)[1]), anim, ghost, modalClosed };
   });
   ok(/rgba\(0, 0, 0, 0\.1[0-9]?\)/.test(s.addBg || '') , 'پشت «+» و انتخاب میان‌بر کمتر مات (' + s.addBg + ')');
-  ok(s.anim && s.dur >= 0.4, '«انتخاب حساب» آرام باز می‌شود (' + s.dur + 's)');
-  ok(s.modalClosed && s.ghost, '«انتخاب حساب» آرام بسته می‌شود');
+  /* ۱.۴.۰: «انتخاب حساب» از نو: مثل بقیهٔ صفحه‌ها کشویی باز می‌شود و مثل آن‌ها بسته می‌شود (محو شدن جدای قبلی برداشته شد) */
+  ok(s.anim, '«انتخاب حساب» مثل بقیهٔ صفحه‌ها کشویی باز می‌شود');
+  ok(s.modalClosed, '«انتخاب حساب» مثل بقیهٔ صفحه‌ها بسته می‌شود');
   const src = fs.readFileSync(process.env.HK_INDEX || path.join(__dirname, '../../index.html'), 'utf8');
   ok(/_hkSlideMs\s*=\s*780/.test(src), 'پوشهٔ کارت‌های قسط آهسته‌تر باز و بسته می‌شود');
   await S.ctx.close();

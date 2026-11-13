@@ -174,7 +174,9 @@
         m.classList.add('hk-kb-top');
         m.classList.add('open');
         m.scrollTop = 0;
-        /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز) */
+        /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز)
+           ۱.۴.۰: چیدمان صفحه (تمام‌صفحه + سربرگ بک و نام) همین‌جا، پیش از اندازه‌گیری، تا بعداً چیزی جابه‌جا نشود */
+        try { if (typeof window.hkPageDecorate === 'function') { m.classList.add('hk-page'); window.hkPageDecorate(m); } } catch (ePg) {}
         try {
           const box = m.querySelector('.modal-box'), over = hkBoxContentBottom(box) - (hkKbFreeBottom() - 8);
           if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
@@ -371,7 +373,8 @@
           '</div>' + body + '</div>';
       }
       var nBody = cur.raw ? '<div class="hk-dc-sms">' + escapeHtml(String(cur.raw).trim()) + '</div>' : '';
-      var oBody = (row.desc ? '<div class="hk-dc-desc">' + escapeHtml(row.desc) + (hit.section ? ' <small>(' + escapeHtml(hit.section) + ')</small>' : '') + '</div>' : '') +
+      /* ۱.۴.۰: نام جدول (در پرانتز) دیگر کنار شرح نوشته نمی‌شود */
+      var oBody = (row.desc ? '<div class="hk-dc-desc">' + escapeHtml(row.desc) + '</div>' : '') +
         (prev ? '<div class="hk-dc-sms">' + escapeHtml(String(prev.raw).trim()) + '</div>' : '<div class="hk-dc-none">ثبت دستی یا بدون متن پیامک</div>');
       askConfirm('احتمال ثبت تکراری؛ دو تراکنش را مقایسه کنید. باز هم ثبت شود؟', onYes);
       var cc = document.getElementById('confirmCmp'), cm = document.getElementById('confirmModal');
