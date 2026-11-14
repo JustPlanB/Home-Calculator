@@ -166,7 +166,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   await H.page.mouse.up();
   ok(pop.popped && pop.done && after, 'بیش از ۱۰ ثانیه: به هم می‌خورند، می‌ترکند و نگه‌داشتن رها می‌شود');
   /* ویجت ردیف‌ها */
-  const wt = await H.page.evaluate(() => ({ e: hkWidgetTxRows('expense'), i: hkWidgetTxRows('income'), f: formatNum(800000) }));
+  const wt = await H.page.evaluate(() => (hkPrefSet('sort', 'new') /* ۱.۴.۱: ویجت به ترتیب شخصی‌سازی */, { e: hkWidgetTxRows('expense'), i: hkWidgetTxRows('income'), f: formatNum(800000) }));
   ok(wt.i.length === 2 && wt.i[0].t === 'واریز' && wt.i[1].t === 'حقوق' && /۶ /.test(wt.i[0].d), 'ویجت ردیف‌ها: درآمدها تازه‌ترین بالا (' + wt.i.map(x => x.d + ' ' + x.t).join('، ') + ')');
   ok(wt.e.length === 1 && wt.e[0].t === 'خرید' && wt.e[0].a === wt.f, 'ویجت ردیف‌ها: مخارج با مبلغ');
   await H.ctx.close();

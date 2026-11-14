@@ -302,7 +302,8 @@
             var r = goRow(g, null, sd === 'L' ? 'میان‌بر چپ' : 'میان‌بر راست', '<span class="hk-pf-dk"><svg viewBox="0 0 24 24" aria-hidden="true">' + it.svg + '</svg></span>' + it.label, function () { hkOpenDockPicker(sd, render); });
             r.classList.add('hk-dock-go'); r.dataset.side = sd;
           });
-          var hn = document.createElement('div'); hn.className = 'hk-pf-note'; hn.textContent = 'روی صفحهٔ اصلی هم با نگه داشتن هر میان‌بر می‌توانید عوضش کنید.'; body.appendChild(hn);
+          /* ۱.۴.۱: راهنما بالای باکس */
+          var hn = document.createElement('div'); hn.className = 'hk-pf-note hk-pf-note-top'; hn.textContent = 'روی صفحهٔ اصلی هم با نگه داشتن هر میان‌بر می‌توانید عوضش کنید.'; body.insertBefore(hn, g);
         } }; },
         slides: function () { return { title: 'اسلایدهای باکس هوشمند', build: function (body) {
           var hn = document.createElement('div'); hn.className = 'hk-pf-gh'; hn.textContent = 'روشن/خاموش؛ برای جابه‌جایی، دستگیره را نگه دارید و بکشید'; body.appendChild(hn);
@@ -358,6 +359,8 @@
           '<button type="button" class="hk-pf-x" aria-label="بستن"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
         box.appendChild(hd);
         var body = document.createElement('div'); body.className = 'hk-pf-body' + (top ? ' sub' : ''); box.appendChild(body);
+        /* ۱.۴.۱: «اسلایدهای باکس هوشمند»: راهنما و سر جدول ثابت، فقط ردیف‌ها اسکرول */
+        box.classList.toggle('hk-pf-fixpg', stack[stack.length - 1] === 'slides');
         hd.querySelector('.hk-pf-x').onclick = close;
         var bk = hd.querySelector('.hk-pf-back'); if (bk) bk.onclick = function () { stack.pop(); render(); };
         if (top) top.build(body); else drawMain(body);

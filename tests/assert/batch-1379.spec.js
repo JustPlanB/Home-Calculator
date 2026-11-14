@@ -160,7 +160,7 @@ const sms = (amt, dt, to, n, tr) => `بانک مسکن\nواريز قسط به �
   ok(!/\.hk-bub[^{]*\{[^}]*--pc/.test(src) && !/hkBubShine/.test(src), 'خط صافِ براق و رنگ دور پروژه برداشته شد');
   ok(gaps.length > 8 && Math.min(...gaps) >= 0, 'پیش از ۱۰ ثانیه حباب‌ها به هم نمی‌خورند (کمترین فاصله ' + Math.min(...gaps) + 'px)');
   ok(popAt >= 10 && popAt <= 17.5, 'سر ۱۰ ثانیه آرام به هم می‌رسند و می‌ترکند (' + popAt.toFixed(1) + 's)');
-  const wt = await H.page.evaluate(() => hkWidgetTxRows('income'));
+  const wt = await H.page.evaluate(() => (hkPrefSet('sort', 'new') /* ۱.۴.۱: ویجت به ترتیب شخصی‌سازی */, hkWidgetTxRows('income')));
   ok(wt[0] && wt[0].b === 'ملی' && wt[1].b === 'ملت', 'ویجت ردیف‌ها: اسم حساب هر ردیف هم فرستاده می‌شود');
   await H.ctx.close();
 

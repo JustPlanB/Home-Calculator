@@ -167,6 +167,7 @@ const allErrors = [];
     ex.rows = [Object.assign(emptyRow('expense'), { day: '2', desc: 'نان', amount: 30000, status: 'paid' })];
     inc.rows = [Object.assign(emptyRow('income'), { day: '3', desc: 'حقوق آبان', amount: 9000000, status: 'paid' })];
     persistCurrent();
+    hkPrefSet('sort', 'new'); /* ۱.۴.۱: ویجت به ترتیب شخصی‌سازی */
     const all = hkWidgetTxRows('all');
     return { n: all.length, first: all[0], second: all[1], exp: hkWidgetTxRows('expense').length };
   });

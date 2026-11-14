@@ -61,8 +61,35 @@
         hkShowReconcileWarning(snap, c.appBal, c.diff);
       } catch (e) {}
     }
+    /* ۱.۴.۱: آخرین تراکنش ثبت‌شدهٔ همین حساب پیش از این پیامک (بازه‌ای که تراکنشِ بی‌پیامک در آن بوده) */
+    function hkReconPrevPoint(snap) {
+      var best = null, tk = function (d, t) { var m = /^(\d{1,2}):(\d{2})/.exec(toEnglishDigits(String(t || ''))); return (parseInt(toEnglishDigits(String(d || '')), 10) || 0) * 10000 + (m ? (+m[1]) * 60 + (+m[2]) : 0); };
+      var me = tk(snap.day, snap.time);
+      try {
+        ['income', 'expense'].forEach(function (tab) {
+          ((periodData && periodData[tab] && periodData[tab].sections) || []).forEach(function (sec) {
+            ((sec && sec.rows) || []).forEach(function (r) {
+              if (!r || r.deletedAt || (r.status || 'paid') !== 'paid' || (r.account || '').trim() !== snap.bank || !r.day) return;
+              if (tab === snap.type && Number(r.amount) === Number(snap.amount) && String(r.day) === String(snap.day)) return; /* خود همین تراکنش */
+              var k = tk(r.day, r.time); if (k >= me) return;
+              if (!best || k > best.k) best = { k: k, day: parseInt(toEnglishDigits(String(r.day)), 10) || 0, time: String(r.time || '') };
+            });
+          });
+        });
+      } catch (e) {}
+      return best;
+    }
     function hkShowReconcileWarning(snap, appBal, diff, onChoice) {
       var old = document.getElementById('hkReconDlg'); if (old) old.remove();
+      var prev = hkReconPrevPoint(snap), sd = parseInt(toEnglishDigits(String(snap.day || '')), 10) || 0;
+      var dLbl = function (d, t) { return toPersianDigits(String(d)) + ' ' + (MONTHS[(snap.m || currentMonth) - 1] || '') + (t ? ' ساعت ' + toPersianDigits(String(t)) : ''); };
+      var from = prev && prev.day ? prev.day : (sd ? Math.max(1, sd - 0) : 0);
+      snap._gapDay = from || sd || 0; snap._gapPrev = prev;
+      var pickH = '';
+      if (sd && from && from < sd) {
+        var opts = ''; for (var d = from; d <= sd; d++) opts += '<option value="' + d + '"' + (d === from ? ' selected' : '') + '>' + dLbl(d) + '</option>';
+        pickH = '<div class="hk-recon-when"><span>روز ثبت ردیف اختلاف</span><select class="hk-recon-day">' + opts + '</select></div>';
+      }
       var miss = diff < 0 ? 'خرج' : 'درآمد', amt = Math.abs(diff);
       var sg = function (v) { return (v < 0 ? '−' : '') + formatNum(Math.abs(v)); };
       var tri = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 1.4 21h21.2z" fill="#ffc531" stroke="#ffc531" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v5.6" stroke="#1c1c1e" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.7" r="1.35" fill="#1c1c1e"/></svg>';
@@ -75,8 +102,9 @@
           '<span>موجودی در نرم‌افزار بعد از این تراکنش</span><b>' + sg(appBal) + '</b>' +
           '<span>اختلاف</span><b class="hk-recon-diff">' + formatNum(amt) + '</b>' +
         '</div>' +
-        '<div class="hk-recon-txt">یعنی احتمالاً حدود ' + formatNum(amt) + ' تومان ' + miss + ' از این حساب، بین آخرین ثبت و همین تراکنش، در نرم‌افزار ثبت نشده است' +
-          (amt <= 2000 && diff < 0 ? ' (اختلاف کم معمولاً کارمزد بانک است)' : '') + '.</div>' +
+        '<div class="hk-recon-txt">یعنی احتمالاً حدود ' + formatNum(amt) + ' تومان ' + miss + ' از این حساب، ' +
+          (prev && prev.day ? 'بین ' + dLbl(prev.day, prev.time) + ' و ' + dLbl(sd, snap.time) : 'بین آخرین ثبت و همین تراکنش') + '، در نرم‌افزار ثبت نشده است' +
+          (amt <= 2000 && diff < 0 ? ' (اختلاف کم معمولاً کارمزد بانک است)' : (diff < 0 && amt < 30000 ? ' (خریدهای زیر ۳۰ هزار تومان معمولاً پیامک ندارند)' : '')) + '.</div>' + pickH +
         /* جهت اختلاف با نوع تراکنش جور نیست (برداشت ولی موجودی بیشتر، یا برعکس) */
         ((snap.type === 'expense' && diff > 0) || (snap.type === 'income' && diff < 0)
           ? '<div class="hk-recon-warn">جهت این اختلاف با نوع تراکنش جور نیست؛ ممکن است این پیامک مربوط به حساب دیگری (مثلاً حساب دیگری از همین بانک) باشد.</div>' : '') +
@@ -84,6 +112,7 @@
           (onChoice ? '<button type="button" class="hk-recon-back">بازگشت</button>' : '') + '</div>' +
       '</div>';
       document.body.appendChild(ov);
+      try { var dsel = ov.querySelector('.hk-recon-day'); if (dsel) dsel.onchange = function () { snap._gapDay = parseInt(dsel.value, 10) || snap._gapDay; }; } catch (eDs) {}
       var close = function () { try { ov.remove(); } catch (e) {} };
       if (onChoice) {
         /* پیش از ثبت: سه گزینه */
@@ -111,7 +140,10 @@
         row.amount = amt;
         row.status = 'paid';
         row.account = snap.bank;
-        row.desc = (amt <= 2000 && diff < 0) ? 'کارمزد / اختلاف جزئی بانک' : (diff < 0 ? 'مجموع خرج‌های ثبت‌نشده در این بازه' : 'مجموع درآمدهای ثبت‌نشده در این بازه');
+        row.desc = (amt <= 2000 && diff < 0) ? 'کارمزد / اختلاف جزئی بانک' : (diff < 0 && amt < 30000 ? 'خرید بی‌پیامک (زیر ۳۰ هزار تومان)' : (diff < 0 ? 'مجموع خرج‌های ثبت‌نشده در این بازه' : 'مجموع درآمدهای ثبت‌نشده در این بازه'));
+        /* ۱.۴.۱: روزی که کاربر انتخاب کرد (پیش‌فرض: روز آخرین ثبتِ پیش از این پیامک، نه روز همین پیامک) */
+        var gd = parseInt(snap._gapDay, 10) || 0, sd0 = parseInt(toEnglishDigits(String(snap.day || '')), 10) || 0;
+        if (gd && gd !== sd0) row.day = String(gd);
         row.reconGap = true;
         row.createdAt = Date.now(); row.updatedAt = row.createdAt;
         try { if (typeof stampRowOwner === 'function') stampRowOwner(row); } catch (eS) {}
@@ -127,7 +159,10 @@
         });
         /* ۱.۳.۶۵: ساعت همان تراکنش؛ بی‌ساعت آخر روز می‌افتاد و تراکنش‌های بعدی (مثلاً کارت دیگر) بالایش می‌رفتند */
         row.time = (hit && hit.time) || snap.time || '';
-        if (tab === snap.type && hit && hitSec) { hitSec.rows.splice(hitSec.rows.indexOf(hit), 0, row); placed = true; }
+        var otherDay = gd && gd !== sd0;
+        if (otherDay) { var pv = snap._gapPrev; row.time = (pv && pv.day === gd && pv.time) ? pv.time : ''; }
+        if (tab === snap.type && hit && hitSec && !otherDay) { hitSec.rows.splice(hitSec.rows.indexOf(hit), 0, row); placed = true; }
+        else if (tab === snap.type && hitSec && otherDay) { hitSec.rows.push(row); hitSec.rows.sort(function (a, b) { return (parseInt(a.day, 10) || 99) - (parseInt(b.day, 10) || 99); }); placed = true; }
         /* نوع مخالف (مثلاً پیامک برداشت ولی اختلاف درآمد): در همان کارت، جدول دیگر — نه کارت تازه */
         if (!placed && hitSec && (hitSec.title || '').trim()) {
           var ttl = (hitSec.title || '').trim();

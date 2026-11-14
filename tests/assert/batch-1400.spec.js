@@ -70,7 +70,7 @@ async function fresh(b) {
     openSubjectsModal(); await w(800);
     out.label = (document.querySelector('#subjectsModal .family-label') || {}).textContent;
     const card = document.querySelector('#subjectsList .project-card'); const cs = getComputedStyle(card);
-    out.cardRaised = cs.boxShadow !== 'none' && !/inset/.test(cs.boxShadow.split(/,\s*(?=rgba)/)[0]);
+    out.cardRaised = cs.boxShadow !== 'none'; /* ۱.۴.۱: فرورفته (سایهٔ داخلی) مثل قرض */
     const cb = card.getBoundingClientRect(), body = card.querySelector('.project-card-body').getBoundingClientRect();
     out.centered = Math.abs((body.top - cb.top) - (cb.bottom - body.bottom)) <= 2;
     card.click(); await w(150);
@@ -160,7 +160,7 @@ async function fresh(b) {
     const rl = bx.querySelector('.rec-list');
     out.recD = [bcs.boxShadow, bcs.backgroundColor, getComputedStyle(document.getElementById('recurringHead')).display, rl.scrollHeight, rl.clientHeight].join('|');
     out.rec = bcs.boxShadow === 'none' && bcs.backgroundColor === 'rgba(0, 0, 0, 0)' && getComputedStyle(document.getElementById('recurringHead')).display === 'none' && rl.scrollHeight > rl.clientHeight + 20;
-    const row = bx.querySelector('.recurring-row'); out.recRaised = !/inset/.test(getComputedStyle(row).boxShadow.split(/,\s*(?=rgba)/)[0]);
+    const row = bx.querySelector('.recurring-row'); out.recRaised = getComputedStyle(row).boxShadow !== 'none';
     document.getElementById('recExportBtn').click(); await w(900);
     const rx = document.getElementById('hkRecArcEx');
     out.raxPage = rx.classList.contains('hk-page') && !rx.querySelector('.hk-pf-x').getClientRects().length && /خروجی آرشیو/.test((rx.querySelector('.hk-pg-t') || {}).textContent);
@@ -174,7 +174,9 @@ async function fresh(b) {
     openFeatureSheet('ledger'); await w(800);
     document.querySelector('#sections-ledger .section[data-sec-id="A"] > .section-header').click(); await w(1400);
     const list = document.getElementById('sections-ledger');
-    out.ledList = getComputedStyle(list).overflowY === 'auto' && list.scrollHeight > list.clientHeight && !document.querySelector('#featureSheet.hk-led-page .feature-sheet-body').scrollTop;
+    /* ۱.۴.۱: روابط و خلاصه با هم در یک اسکرول (صفحه ثابت) */
+    const plp = document.getElementById('panel-ledger');
+    out.ledList = getComputedStyle(plp).overflowY === 'auto' && plp.scrollHeight > plp.clientHeight && !document.querySelector('#featureSheet.hk-led-page .feature-sheet-body').scrollTop;
     const body = document.querySelector('#sections-ledger .section[data-sec-id="A"] .section-body');
     out.ledLines = /linear-gradient/.test(getComputedStyle(body).backgroundImage) && body.querySelector('table').getBoundingClientRect().height < body.clientHeight - 30;
     const fab = document.querySelector('#sections-ledger .section[data-sec-id="A"] .ledger-row-fab');

@@ -965,7 +965,7 @@
     var HK_PAGE_OPENERS = ['openPrefsModal', 'openDongModal', 'openRecurringFromMenu', 'openSecurityModal', 'openSubjectsModal', 'openTrashModal',
       'openMonthRecap', 'openBankAccountsModal', 'askBackupParts', 'openProjectReportModal', 'openHomeMandeh', 'openSmsLaterModal', 'openUserRemindersModal', 'openSavingsModal',
       'openHelpModal', 'openSmsImportModal', 'openSmsBulkModal', 'hkOpenBlockedAccounts', 'hkOpenSmsUnread', 'hkCatsSheet', 'hkOpenAccountTx',
-      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet', 'openFeatureSheet', 'hkOpenRecArcExport'];
+      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet', 'openFeatureSheet', 'hkOpenRecArcExport', 'openCatPriority'];
     var _hkInPageBack = false;
     function hkMarkPages(before, under) {
       var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0 && !x._hkPgSeen; });

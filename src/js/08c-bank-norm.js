@@ -656,19 +656,26 @@
       var ds = [];
       try { var a4 = hkSmsAcc4(raw); if (a4) ds.push(String(a4)); } catch (e) {}
       try { var ip = hkParseInstallSms(raw); if (ip) { ds.push(ip.to); } } catch (e2) {}
-      var sn = sender ? hkSenderNorm(sender) : '';
+      var sn = sender ? hkSenderNorm(sender) : '', same4 = function (a, b) { a = String(a || ''); b = String(b || ''); return a === b || (a.length >= 4 && b.length >= 4 && a.slice(-4) === b.slice(-4)); };
+      var bySender = [];
       for (var i = 0; i < L.length; i++) {
         var x = L[i];
-        if (x.d) for (var j = 0; j < ds.length; j++) { var a = String(x.d), b = ds[j]; if (a === b || (a.length >= 4 && b.length >= 4 && (a.slice(-4) === b.slice(-4)))) return x; }
-        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) return x;
+        if (x.d) for (var j = 0; j < ds.length; j++) { if (same4(x.d, ds[j])) return x; }
+        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) bySender.push(x);
+      }
+      /* ۱.۴.۱: فرستندهٔ شخصیِ مسدود: هر حسابش جدا (pd)؛ پیامک به همان حساب نوشته می‌شود، حساب تازه‌اش هم مسدود است */
+      if (bySender.length) {
+        var ex = bySender.filter(function (x) { return x.pd && ds.some(function (d) { return same4(x.pd, d); }); })[0];
+        return ex || bySender.filter(function (x) { return !x.pd; })[0] || bySender[0];
       }
       return null;
     }
-    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(','); }
+    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(',') + (x.pd ? '|' + x.pd : ''); }
     function hkBlockAccount(d, bank, opt) {
       opt = opt || {};
       d = String(d || '').replace(/[^0-9]/g, '');
       var x = d ? { d: d, bank: bank || '', at: Date.now() } : { s: (opt.senders || []).filter(Boolean), bank: bank || '', nodig: !!opt.nodig, personal: !!opt.personal, at: Date.now() };
+      if (!d && opt.pd) x.pd = String(opt.pd).replace(/[^0-9]/g, '');
       if (!x.d && !(x.s && x.s.length)) return false;
       var L = hkBlockedLoad(), k = hkBlockKey(x); if (L.some(function (y) { return hkBlockKey(y) === k; })) return true;
       L.push(x);
@@ -676,7 +683,9 @@
     }
     function hkUnblockAccount(x) { var k = hkBlockKey(x), L = hkBlockedLoad().filter(function (y) { return hkBlockKey(y) !== k; }); return hkBlockedSave(L); }
     /* ۱.۴.۰: شماره‌ها چپ‌به‌راست جدا (علامت + اول شماره می‌ماند، نه آخرش) */
-    function hkBlockLabel(x) { return x.d ? '\u2066' + toPersianDigits(x.d) + '\u2069' : (x.s || []).map(function (q) { return '\u2066' + toPersianDigits(String(q)) + '\u2069'; }).join('، '); }
+    function hkBlockLabel(x) { return x.d ? '\u2066' + toPersianDigits(x.d) + '\u2069' : (x.s || []).map(function (q) { return '\u2066' + toPersianDigits(String(q)) + '\u2069'; }).join('، ') + (x.pd ? ' · \u2066' + toPersianDigits(x.pd) + '\u2069' : ''); }
+    /* همهٔ مسدودهای یک فرستندهٔ شخصی */
+    function hkUnblockSender(senders) { var sn = (senders || []).map(hkSenderNorm); var L = hkBlockedLoad().filter(function (y) { return !(y.s && !y.d && (y.s || []).some(function (q) { return sn.indexOf(hkSenderNorm(q)) >= 0; })); }); return hkBlockedSave(L); }
     function hkOpenBlockedAccounts() {
       try { closeSideMenu(); } catch (e) {}
       var old = document.getElementById('hkBlockOv'); if (old) old.remove();
@@ -722,7 +731,7 @@
       document.body.appendChild(ov);
       render();
     }
-    try { Object.assign(window, { hkBlockedLoad: hkBlockedLoad, hkSmsBlockedHit: hkSmsBlockedHit, hkBlockAccount: hkBlockAccount, hkUnblockAccount: hkUnblockAccount, hkOpenBlockedAccounts: hkOpenBlockedAccounts }); } catch (eWb) {}
+    try { Object.assign(window, { hkBlockedLoad: hkBlockedLoad, hkSmsBlockedHit: hkSmsBlockedHit, hkBlockAccount: hkBlockAccount, hkUnblockAccount: hkUnblockAccount, hkUnblockSender: hkUnblockSender, hkBlockKey: hkBlockKey, hkOpenBlockedAccounts: hkOpenBlockedAccounts }); } catch (eWb) {}
     function parseBankSms(text) {
       const t = hkSmsUnsplit(String(text || '').trim());
       if (!t) return null;

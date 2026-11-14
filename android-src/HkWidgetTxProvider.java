@@ -25,7 +25,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
     try{
       AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
       int[] ids=mgr.getAppWidgetIds(new ComponentName(ctx, HkWidgetTxProvider.class));
-      for(int id: ids) render(ctx, mgr, id);
+      for(int id: ids) render(ctx, mgr, id, false); /* ۱.۴.۱: از نرم‌افزار: فقط اگر چیزی عوض شده */
     }catch(Exception ignored){}
   }
   static boolean isIncome(Context ctx, int id){
@@ -46,12 +46,23 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
     if(android.os.Build.VERSION.SDK_INT>=23) fl|=android.app.PendingIntent.FLAG_IMMUTABLE;
     return android.app.PendingIntent.getActivity(ctx, 9100+id, it, fl);
   }
+  /* ۱.۴.۱: پرش ویجت: هر به‌روزرسانی (حتی بی تغییر داده) کل ویجت را از نو می‌ساخت و فهرست را به اول برمی‌گرداند.
+     حالا فقط وقتی داده، تم، پنهان بودن مبالغ، اندازه یا نوع ردیف‌ها واقعاً عوض شده باشد دوباره ساخته می‌شود. */
+  static final java.util.HashMap<Integer,String> LAST_SIG=new java.util.HashMap<>();
+  static String sig(Context ctx, HkWidgetDraw.Data d, float[] sz, boolean inc, boolean all){
+    String js="";
+    try{ js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(all ? "tx_all" : (inc ? "tx_inc" : "tx_exp"), "[]"); }catch(Exception ignored){}
+    return js.hashCode()+"|"+js.length()+"|"+(d!=null&&d.light)+"|"+(d!=null&&d.hidden)+"|"+(d!=null&&d.locked)+"|"+(int)sz[0]+"|"+sz[1]+"|"+inc+"|"+all;
+  }
+  static void render(Context ctx, AppWidgetManager mgr, int id){ render(ctx, mgr, id, true); }
   @SuppressWarnings("deprecation")
-  static void render(Context ctx, AppWidgetManager mgr, int id){
+  static void render(Context ctx, AppWidgetManager mgr, int id, boolean force){
     try{
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
       boolean inc=isIncome(ctx, id);
       float[] sz=HkWidgetTxDraw.dims(ctx, mgr, id);
+      String sg=sig(ctx, d, sz, inc, isAll(ctx, id));
+      synchronized(LAST_SIG){ if(!force && sg.equals(LAST_SIG.get(id))) return; LAST_SIG.put(id, sg); }
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx);
       v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
       v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, isAll(ctx, id), d.light));

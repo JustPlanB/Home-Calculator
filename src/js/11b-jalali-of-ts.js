@@ -478,7 +478,7 @@
         chk.addEventListener('click', function (e) { e.stopPropagation(); });
         /* ۱.۳.۷۵: مسدود برای همهٔ پوشه‌ها (شخصی و بی‌شماره با فرستنده)؛ همان‌جا روشن/خاموش، آیکون قرمز؛ بعد از بستن در منوی «حساب‌های مسدود شده» */
         var blk = card.querySelector('.hk-bulk-block');
-        var blkEntry = function () { return fo.acc4 && !fo.personal ? { d: String(fo.acc4) } : { s: (fo.senders || [fo.sender]).filter(Boolean) }; };
+        var blkEntry = function (f) { f = f || fo; return f.acc4 && !f.personal ? { d: String(f.acc4) } : (f.personal && f.acc4 ? { s: (f.senders || [f.sender]).filter(Boolean), pd: String(f.acc4) } : { s: (f.senders || [f.sender]).filter(Boolean) }); };
         var paintBlk = function () {
           blk.classList.toggle('on', !!fo._blocked); card.classList.toggle('blocked', !!fo._blocked);
           chk.disabled = !!fo._blocked; if (fo._blocked && fo.checked) { fo.checked = false; chk.checked = false; card.classList.remove('on'); }
@@ -487,13 +487,24 @@
         if (blk) blk.addEventListener('click', function (e) {
           e.stopPropagation();
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
-          if (fo._blocked) { hkUnblockAccount(blkEntry()); fo._blocked = false; showToast('«' + nm + '» دوباره فعال شد'); }
-          else {
-            hkBlockAccount(fo.acc4 && !fo.personal ? fo.acc4 : '', fo.personal ? 'پیامک شخصی' : fo.bank, { senders: blkEntry().s, nodig: !fo.acc4 && !fo.personal, personal: !!fo.personal });
-            /* ۱.۴.۰: تراکنش‌های همین پوشه (که حالا نادیده گرفته می‌شوند) در اطلاعات حساب مسدود می‌مانند */
-            try { (fo.all || fo.inRange || []).forEach(function (r) { if (r && r.body) hkBlockedNoteHit(blkEntry(), r.body, { ts: r.ts, amount: r.amount, type: r.type }); }); } catch (eNh) {}
-            fo._blocked = true; showToast('«' + nm + '» مسدود شد');
+          /* ۱.۴.۱: پیامک شخصی: همهٔ پوشه‌های همان فرستنده (هر حساب یک مسدود جدا) با هم */
+          var sn0 = fo.personal ? hkSenderNorm(fo.sender) : '';
+          var grpF = fo.personal ? _hkBulk.folders.filter(function (f) { return f.personal && hkSenderNorm(f.sender) === sn0; }) : [fo];
+          if (fo._blocked) {
+            if (fo.personal) hkUnblockSender(fo.senders || [fo.sender]); else hkUnblockAccount(blkEntry());
+            grpF.forEach(function (f) { f._blocked = false; });
+            showToast('«' + nm + '» دوباره فعال شد');
+          } else {
+            grpF.forEach(function (f) {
+              var e0 = blkEntry(f);
+              hkBlockAccount(f.acc4 && !f.personal ? f.acc4 : '', f.personal ? 'پیامک شخصی' + (f.bank && f.bank !== 'بانک نامشخص' ? ' · ' + f.bank : '') : f.bank, { senders: e0.s, pd: e0.pd, nodig: !f.acc4 && !f.personal, personal: !!f.personal });
+              /* ۱.۴.۰: تراکنش‌های همین پوشه (که حالا نادیده گرفته می‌شوند) در اطلاعات حساب مسدود می‌مانند */
+              try { (f.all || f.inRange || []).forEach(function (r) { if (r && r.body) hkBlockedNoteHit(e0, r.body, { ts: r.ts, amount: r.amount, type: r.type }); }); } catch (eNh) {}
+              f._blocked = true;
+            });
+            showToast(grpF.length > 1 ? toPersianDigits(String(grpF.length)) + ' حسابِ «' + nm + '» مسدود شد' : '«' + nm + '» مسدود شد');
           }
+          if (grpF.length > 1) { try { hkBulkRender(); } catch (eRr) {} return; }
           paintBlk();
         });
         if (fo._blocked) paintBlk();
