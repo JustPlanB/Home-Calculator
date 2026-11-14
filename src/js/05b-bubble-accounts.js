@@ -968,8 +968,7 @@
           var _tm = function (x) { var mm = /^(\d{1,2}):(\d{2})/.exec(toEnglishDigits(String(x.r.time || ''))); return mm ? (+mm[1]) * 60 + (+mm[2]) : -1; };
           list.forEach(function (x) { x.t = _tm(x); });
           list.sort(function (p, q) { return (q.d - p.d) || (q.t - p.t) || (q.k - p.k) || (q.i - p.i); });
-          var _old = false; try { _old = (hkPrefs().sort || 'old') === 'old'; } catch (eS) {}
-          if (_old) list.reverse();
+          /* ۱.۴.۳: «قدیمی بالا» برای کل فهرست (نه هر ماه جدا): آخرین تراکنش واقعاً آخرِ فهرست است */
           for (var j = 0; j < list.length && out.length < max; j++) {
             var r = list[j].r, a2 = Number(r.amount) || 0, kd2 = list[j].kd;
             var o = {
@@ -989,6 +988,7 @@
           m--; if (m < 1) { m = 12; y--; }
         }
       } catch (e) {}
+      try { if ((hkPrefs().sort || 'old') === 'old') out.reverse(); } catch (eS) {}
       return out;
     }
     try { window.hkWidgetTxRows = hkWidgetTxRows; } catch (eWt) {}

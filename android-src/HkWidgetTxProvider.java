@@ -153,7 +153,8 @@ final class HkWidgetTxDraw {
     float[] c=cols(W, k);
     /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
     Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(HkWidgetDraw.withAlpha(titleBg(light), alpha));
-    float rr=22*k;
+    /* ۱.۴.۳: نوار عنوان تا دو لبهٔ ویجت؛ از اندروید ۱۲ خود ویجت گوشه‌ها را گرد می‌بُرد، پس گوشهٔ نوار صاف است */
+    float rr=android.os.Build.VERSION.SDK_INT>=31 ? 0 : 22*k;
     android.graphics.Path tp=new android.graphics.Path();
     tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
     cv.drawPath(tp, tb);

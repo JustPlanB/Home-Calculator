@@ -177,14 +177,10 @@
         /* ۱.۳.۹۵: همان لحظهٔ باز شدن، اندازهٔ نهایی (با صفحه‌کلید باز)
            ۱.۴.۰: چیدمان صفحه (تمام‌صفحه + سربرگ بک و نام) همین‌جا، پیش از اندازه‌گیری، تا بعداً چیزی جابه‌جا نشود */
         try { if (typeof window.hkPageDecorate === 'function') { m.classList.add('hk-page'); window.hkPageDecorate(m); } } catch (ePg) {}
-        try {
-          const box = m.querySelector('.modal-box'), over = hkBoxContentBottom(box) - (hkKbFreeBottom() - 8);
-          if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
-        } catch (eSz) {}
+        /* ۱.۴.۳: جای متن همیشه بلند می‌ماند تا یک پیامک کامل دیده شود (با آمدن صفحه‌کلید کوچک نمی‌شود) */
       }
       /* ۱.۴.۱: بی صفحه‌کلید باز می‌شود؛ صفحه‌کلید فقط با زدن روی جای متن (چیدمان از قبل برای آن آماده است، چیزی نمی‌پرد) */
       /* ۱.۳.۸۹: با آمدن صفحه‌کلید، جای متن کوتاه‌تر می‌شود تا همهٔ دکمه‌ها (و «ثبت گروهی») بالای صفحه‌کلید دیده شوند */
-      hkSmsImportFit(true);
     }
     /* ۱.۳.۹۹: پایین محتوای باکس؛ در صفحهٔ تمام‌صفحه خود باکس تا پایین صفحه است، پس پایینِ آخرین چیزِ داخلش ملاک است */
     function hkBoxContentBottom(box) {

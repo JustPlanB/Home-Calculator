@@ -244,6 +244,13 @@
       /* بازگشت: اول از صفحهٔ دوم به صفحهٔ اصلی، بعد بستن */
       ov._hkCancel = function () { if (stack.length) { stack.pop(); render(); } else close(); };
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      /* ۱.۴.۳: هفت بار زدن روی عنوان «شخصی‌سازی» = نمایش بخش پنهان «گزارش اشکال» */
+      var _dgTaps = [];
+      ov.addEventListener('click', function (e) {
+        if (stack.length || !e.target.closest || !e.target.closest('.hk-pg-t, .hk-pf-t')) return;
+        var now = Date.now(); _dgTaps = _dgTaps.filter(function (t) { return now - t < 3000; }); _dgTaps.push(now);
+        if (_dgTaps.length >= 7) { _dgTaps = []; try { localStorage.setItem('hk_diag_vis', '1'); } catch (eV) {} try { showToast('بخش «گزارش اشکال» پایین همین صفحه باز شد'); } catch (eT) {} render(); }
+      });
       var chev = '<i class="hk-pf-chev" aria-hidden="true"></i>';
       var ic = function (k) { return '<span class="hk-pf-ic" style="background:' + HK_PF_COL[k] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + HK_PF_IC[k] + '</svg></span>'; };
       var grp = function (parent, title) {
@@ -287,9 +294,39 @@
           });
         } };
       };
+      var FONT_SZ = [['s', 'کوچک'], ['m', 'معمولی'], ['l', 'بزرگ']];
       var SORT = [['old', 'قدیمی بالا'], ['new', 'جدید بالا']], START = [['home', 'خانه'], ['expense', 'مخارج'], ['income', 'درآمد']];
       var lab = function (arr, v) { var f = arr.filter(function (x) { return x[0] === v; })[0]; return f ? f[1] : arr[0][1]; };
       var pages = {
+        /* ۱.۴.۳: مثل «اندازه و نوع فونت» گوشی: بالا پیش‌نمایش نوشته و عدد فارسی، پایین نوار با سه پله (کوچک / معمولی / بزرگ) بین «آ» کوچک و بزرگ */
+        font: function () { return { title: 'اندازه فونت', build: function (body) {
+          body.classList.add('hk-fz-body');
+          var pv = document.createElement('div'); pv.className = 'hk-fz-prev';
+          pv.innerHTML = '<div class="hk-fz-p1">نوشته‌های نرم‌افزار این‌طور دیده می‌شوند.</div><div class="hk-fz-p2">خرید از فروشگاه ۱۲,۴۵۰,۰۰۰ تومان</div><div class="hk-fz-p3">۱۴۰۵/۰۸/۲۳ · ۰۱۲۳۴۵۶۷۸۹</div>';
+          body.appendChild(pv);
+          var bar = document.createElement('div'); bar.className = 'hk-fz-bar';
+          var steps = ['s', 'm', 'l'], cur = steps.indexOf(hkPrefs().font || 'm'); if (cur < 0) cur = 1;
+          bar.innerHTML = '<span class="hk-fz-a sm">آ</span><div class="hk-fz-track" role="slider" aria-label="اندازه فونت" aria-valuemin="0" aria-valuemax="2"><i class="hk-fz-dot" data-i="0"></i><i class="hk-fz-dot" data-i="1"></i><i class="hk-fz-dot" data-i="2"></i><b class="hk-fz-knob"></b></div><span class="hk-fz-a lg">آ</span>';
+          body.appendChild(bar);
+          var tr = bar.querySelector('.hk-fz-track'), kn = bar.querySelector('.hk-fz-knob');
+          var place = function () {
+            var dots = tr.querySelectorAll('.hk-fz-dot'), d = dots[cur], tb = tr.getBoundingClientRect(), r = d.getBoundingClientRect();
+            kn.style.left = (r.left - tb.left + r.width / 2) + 'px';
+            dots.forEach(function (x, i) { x.classList.toggle('on', i === cur); });
+            tr.setAttribute('aria-valuenow', String(cur));
+          };
+          var pick = function (x) {
+            var dots = tr.querySelectorAll('.hk-fz-dot'), best = cur, bd = 1e9;
+            dots.forEach(function (d, i) { var r = d.getBoundingClientRect(), dd = Math.abs(x - (r.left + r.width / 2)); if (dd < bd) { bd = dd; best = i; } });
+            if (best !== cur) { cur = best; hkPrefSet('font', steps[cur]); try { appHaptic(10); } catch (eH) {} requestAnimationFrame(place); }
+          };
+          var drag = false;
+          tr.addEventListener('pointerdown', function (e) { drag = true; try { tr.setPointerCapture(e.pointerId); } catch (e1) {} pick(e.clientX); });
+          tr.addEventListener('pointermove', function (e) { if (drag) pick(e.clientX); });
+          var up = function () { drag = false; };
+          tr.addEventListener('pointerup', up); tr.addEventListener('pointercancel', up);
+          requestAnimationFrame(place); setTimeout(place, 450);
+        } }; },
         sort: function () { return pickPage('ترتیب ردیف‌ها', SORT, function () { return hkPrefs().sort || 'old'; }, function (v) {
           hkPrefSet('sort', v);
           try { renderAll(); if (typeof _detailContext !== 'undefined' && _detailContext && (_detailContext.kind === 'income' || _detailContext.kind === 'expense')) renderPersonDetailPanel(_detailContext.kind, _detailContext.title); } catch (e) {}
@@ -306,7 +343,7 @@
           var hn = document.createElement('div'); hn.className = 'hk-pf-note hk-pf-note-top'; hn.textContent = 'روی صفحهٔ اصلی هم با نگه داشتن هر میان‌بر می‌توانید عوضش کنید.'; body.insertBefore(hn, g);
         } }; },
         slides: function () { return { title: 'اسلایدهای باکس هوشمند', build: function (body) {
-          var hn = document.createElement('div'); hn.className = 'hk-pf-gh'; hn.textContent = 'روشن/خاموش؛ برای جابه‌جایی، دستگیره را نگه دارید و بکشید'; body.appendChild(hn);
+          var hn = document.createElement('div'); hn.className = 'hk-pf-tip'; hn.textContent = 'روشن/خاموش؛ برای جابه‌جایی، دستگیره را نگه دارید و بکشید'; body.appendChild(hn);
           var g = document.createElement('div'); g.className = 'hk-pf-grp hk-pf-slides'; body.appendChild(g);
           var off = hkPrefs().spOff || [];
           hkSpToggleKeys().forEach(function (k) {
@@ -331,8 +368,8 @@
       var drawMain = function (body) {
         var p = hkPrefs();
         var g1 = grp(body, 'نمایش');
-        var fr = rowEl(g1, 'font', 'اندازهٔ قلم'); fr.dataset.k = 'font';
-        fr.appendChild(miniSeg([['s', 'کوچک'], ['m', 'معمولی'], ['l', 'بزرگ']], p.font || 'm', function (v) { hkPrefSet('font', v); }));
+        /* ۱.۴.۳: «اندازه فونت» صفحهٔ خودش را دارد (پیش‌نمایش + نوار سه‌پله‌ای) */
+        goRow(g1, 'font', 'اندازه فونت', lab(FONT_SZ, p.font || 'm'), function () { stack.push('font'); render(); }, 'font');
         goRow(g1, 'start', 'صفحهٔ اول', lab(START, p.startPage || 'home'), function () { stack.push('start'); render(); }, 'start');
         goRow(g1, 'sort', 'ترتیب ردیف‌ها', lab(SORT, p.sort || 'old'), function () { stack.push('sort'); render(); }, 'sort');
         var g2 = grp(body, 'صفحهٔ خانه');
@@ -349,6 +386,15 @@
         swRow(g4, 'remind', 'یادآورها', p.nRemind !== false, function (v) { hkPrefSet('nRemind', v); try { scheduleNativeReminders(); } catch (e) {} }, 'nRemind');
         swRow(g4, 'recap', '«ماهی که گذشت» اول هر ماه', p.nRecap !== false, function (v) { hkPrefSet('nRecap', v); }, 'nRecap');
         swRow(g4, 'privacy', 'مخفی کردن مبالغ', !!p.privacy, function (v) { hkPrefSet('privacy', v); }, 'privacy');
+        /* ۱.۴.۳: «گزارش اشکال» پنهان — با هفت بار زدن روی عنوان «شخصی‌سازی» پیدا می‌شود */
+        var dgVis = false; try { dgVis = localStorage.getItem('hk_diag_vis') === '1' || (window.hkDiagOn && window.hkDiagOn()); } catch (eDv) {}
+        if (dgVis && window.hkDiagSet) {
+          var g5 = grp(body, 'گزارش اشکال');
+          var r1 = swRow(g5, null, 'ثبت گزارش اشکال', window.hkDiagOn(), function (v) { window.hkDiagSet(v); try { showToast(v ? 'گزارش اشکال روشن شد؛ کار را تکرار کنید تا ایراد دیده شود' : 'گزارش اشکال خاموش شد'); } catch (e) {} }, 'diag');
+          r1.classList.add('hk-pf-diag');
+          var r2 = rowEl(g5, null, 'کپی گزارش', 'button'); r2.dataset.k = 'diagCopy'; r2.onclick = function () { window.hkDiagCopy(); };
+          var r3 = rowEl(g5, null, 'پاک کردن گزارش', 'button'); r3.dataset.k = 'diagClear'; r3.onclick = function () { window.hkDiagClear(); try { showToast('گزارش پاک شد'); } catch (e) {} };
+        }
       };
       var render = function () {
         var top = stack.length ? pages[stack[stack.length - 1]]() : null;
@@ -360,7 +406,7 @@
         box.appendChild(hd);
         var body = document.createElement('div'); body.className = 'hk-pf-body' + (top ? ' sub' : ''); box.appendChild(body);
         /* ۱.۴.۱: «اسلایدهای باکس هوشمند»: راهنما و سر جدول ثابت، فقط ردیف‌ها اسکرول */
-        box.classList.toggle('hk-pf-fixpg', stack[stack.length - 1] === 'slides');
+        box.classList.toggle('hk-pf-fixpg', ['slides', 'font'].indexOf(stack[stack.length - 1]) >= 0);
         hd.querySelector('.hk-pf-x').onclick = close;
         var bk = hd.querySelector('.hk-pf-back'); if (bk) bk.onclick = function () { stack.pop(); render(); };
         if (top) top.build(body); else drawMain(body);
@@ -405,7 +451,7 @@
       var sc = document.createElement('div'); sc.className = 'hk-cats-sc'; box.appendChild(sc);
       var grid = document.createElement('div'); grid.className = 'sp-pick-grid sms-cat-grid hk-cat-colored hk-sp-tiles'; sc.appendChild(grid);
       var nw = document.createElement('div'); nw.className = 'sp-pick-new hk-cats-new'; nw.style.display = 'none';
-      nw.innerHTML = '<input type="text" class="sp-pick-input" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"><button type="button" class="sp-pick on">افزودن</button><div class="sp-pick-err"></div>';
+      nw.innerHTML = '<input type="text" class="sp-pick-input" maxlength="24" enterkeyhint="done" placeholder="نام دستهٔ جدید"><button type="button" class="hk-newf-add" aria-label="افزودن دسته"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><div class="sp-pick-err"></div>';
       box.appendChild(nw);
       var inp = nw.querySelector('input'), err = nw.querySelector('.sp-pick-err');
       var jigOn = function () { if (jiggle) return; jiggle = true; grid.classList.add('hk-jiggle'); try { appHaptic(15); } catch (e) {} };
@@ -457,8 +503,8 @@
         inp.value = ''; try { inp.blur(); } catch (e) {} nw.style.display = 'none';
         hkCatStyleSheet(cat, function () { draw(); var t = grid.querySelector('[data-id="' + cat.id + '"]'); if (t) { try { t.scrollIntoView({ block: 'nearest' }); } catch (e3) {} } showToast('دستهٔ «' + cat.label + '» ساخته شد'); });
       };
-      nw.querySelector('.sp-pick').addEventListener('mousedown', function (e) { e.preventDefault(); });
-      nw.querySelector('.sp-pick').onclick = save;
+      nw.querySelector('.hk-newf-add').addEventListener('mousedown', function (e) { e.preventDefault(); });
+      nw.querySelector('.hk-newf-add').onclick = save;
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
       inp.addEventListener('input', function () { err.textContent = HKCategorizer.labelTaken(inp.value) ? 'دسته‌ای با این اسم هست' : ''; });
       draw();

@@ -539,8 +539,9 @@
           inp.maxLength = 24;
           var ok = document.createElement('button');
           ok.type = 'button';
-          ok.className = 'sp-pick on';
-          ok.textContent = 'افزودن';
+          /* ۱.۴.۳: آیکون بعلاوه به‌جای دکمهٔ «افزودن» */
+          ok.className = 'hk-newf-add'; ok.setAttribute('aria-label', 'افزودن دسته');
+          ok.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
           var msg = document.createElement('div'); msg.className = 'sp-pick-err';
           var save = function () {
             /* ۱.۳.۸۶: اسم تکراری (بین همهٔ دسته‌ها: مخارج، درآمد، جیب به جیب، نامشخص) ساخته نمی‌شود */

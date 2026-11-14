@@ -522,7 +522,8 @@
       addTitle.textContent = 'افزودن حساب بانکی';
       addTitle.className = 'hk-bank-gh';
       banksWrap.appendChild(addTitle);
-      hkBankList().forEach((name) => {
+      /* ۱.۴.۳: فهرست پایین فقط بانک‌های از پیش تعریف‌شده؛ بانک دلخواه فقط به‌صورت حساب ساخته‌شده (بالا) دیده می‌شود */
+      hkBankList(true).forEach((name) => {
         const row = document.createElement('div');
         row.className = 'hk-bank-add-row';
         const span = document.createElement('span');
@@ -561,8 +562,7 @@
           const nm = hkCustomBankName(inp.value);
           if (!nm) { try { showToast('نام بانک را بنویسید'); } catch (e0) {} try { inp.focus(); } catch (e1) {} return; }
           try { inp.blur(); } catch (e2) {}
-          /* بانک تازه جزو فهرست بانک‌ها می‌ماند */
-          hkAddCustomBank(nm);
+          /* ۱.۴.۳: بانک دلخواه دیگر به فهرست بانک‌های پایین اضافه نمی‌شود؛ فقط حسابش بالا ساخته می‌شود */
           openBankNameEditor(null, -1, null, nm, bankShortLabel(nm) || nm);
         };
         addBtn.onclick = (e) => { e.stopPropagation(); go(); };
@@ -606,9 +606,9 @@
       try { localStorage.setItem(STORAGE_KEY + '_customBanks', JSON.stringify(a)); } catch (e) {}
     }
     /* فهرست بانک‌ها: بانک‌های ایران + بانک‌های دلخواهی که کاربر ساخته (بی تکرار) */
-    function hkBankList() {
+    function hkBankList(baseOnly) {
       var out = [], seen = {};
-      (ALL_IRAN_BANKS || []).concat(hkCustomBanks()).forEach(function (b) { var key = hkNormTitle(String(b || '').replace(/^بانک/, '')); if (!key || seen[key]) return; seen[key] = 1; out.push(b); });
+      (ALL_IRAN_BANKS || []).concat(baseOnly ? [] : hkCustomBanks()).forEach(function (b) { var key = hkNormTitle(String(b || '').replace(/^بانک/, '')); if (!key || seen[key]) return; seen[key] = 1; out.push(b); });
       return out;
     }
     function openBankNameEditor(acc, idx, anchorRow, bankName, defaultLabel) {

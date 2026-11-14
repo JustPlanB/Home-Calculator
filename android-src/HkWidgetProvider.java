@@ -43,6 +43,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
     }catch(Exception ignored){}
     try{ HkWidgetAccountsProvider.refreshAll(ctx); }catch(Exception ignored){}
     try{ HkWidgetTxProvider.refreshAll(ctx); }catch(Exception ignored){}
+    try{ HkWidgetLineProvider.refreshAll(ctx); }catch(Exception ignored){}
   }
 
   static PendingIntent eyeIntent(Context ctx){

@@ -57,6 +57,8 @@ const hkWidgetTxConfig=readJava('HkWidgetTxConfig.java');
 
 const hkWidgetStyle=readJava('HkWidgetStyle.java');
 
+const hkWidgetLine=readJava('HkWidgetLineProvider.java');
+
 const hkWidgetPlugin=readJava('HkWidgetPlugin.java');
 
 const hkMedia=readJava('HkMediaPlugin.java');
@@ -85,6 +87,7 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetTxProvider.java'),hkWidgetTx);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxService.java'),hkWidgetTxService);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxConfig.java'),hkWidgetTxConfig);
 fs.writeFileSync(path.join(javaDir,'HkWidgetStyle.java'),hkWidgetStyle);
+fs.writeFileSync(path.join(javaDir,'HkWidgetLineProvider.java'),hkWidgetLine);
 fs.writeFileSync(path.join(javaDir,'HkMediaPlugin.java'),hkMedia);
 
 const gradle=path.join(base,'app/build.gradle');
@@ -186,6 +189,14 @@ if(fs.existsSync(manifest)){
     '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
     '            </intent-filter>\n' +
     '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_tx_info"/>\n' +
+    '        </receiver>\n    </application>');
+  // ۱.۴.۳: ویجت یک‌خطی موجودی
+  if(!s.includes('.HkWidgetLineProvider')) s=s.replace('</application>',
+    '        <receiver android:name=".HkWidgetLineProvider" android:exported="true" android:label="موجودی (یک خط)">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>\n' +
+    '            </intent-filter>\n' +
+    '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hk_widget_line_info"/>\n' +
     '        </receiver>\n    </application>');
   if(!s.includes('.HkWidgetTxConfig')) s=s.replace('</application>',
     '        <activity android:name=".HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
@@ -420,6 +431,7 @@ fs.writeFileSync(path.join(resDir,'values','hk_widget_strings.xml'),
     <string name="hk_wdesc_main">موجودی کل و خرج امروز</string>
     <string name="hk_wdesc_accounts">موجودی هر کارت و خرج امروز</string>
     <string name="hk_wdesc_tx">آخرین واریزها و برداشت‌ها</string>
+    <string name="hk_wdesc_line">موجودی کل در یک خط</string>
 </resources>
 `);
 fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg.xml'),
@@ -461,9 +473,9 @@ for(let st=0; st<10; st++){
 fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
+    android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="3"
+    android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
@@ -482,6 +494,7 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
     android:id="@+id/hk_wt_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToOutline="true"
     android:background="@drawable/hk_widget_bg">
     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingBottom="8dp">
         <ImageView android:id="@+id/hk_wt_head" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -533,9 +546,9 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_more.xml'),
 fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
+    android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="3"
+    android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
@@ -547,12 +560,29 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
     android:initialLayout="@layout/hk_widget_tx"/>
 `);
 
+// ۱.۴.۳: ویجت یک‌خطی موجودی (۴ در ۱)
+fs.writeFileSync(path.join(xmlDir,'hk_widget_line_info.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:configure="ir.hesabketab.app.HkWidgetStyle"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:previewImage="@drawable/hk_prev_main"
+    android:description="@string/hk_wdesc_line"
+    android:initialLayout="@layout/hk_widget"/>
+`);
 fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
+    android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="3"
+    android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"

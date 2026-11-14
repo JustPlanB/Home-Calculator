@@ -144,6 +144,7 @@ public class HkWidgetStyle extends Activity {
       String cls=info!=null && info.provider!=null ? info.provider.getClassName() : "";
       if(cls.endsWith("HkWidgetTxProvider")) HkWidgetTxProvider.render(c, m, id, true);
       else if(cls.endsWith("HkWidgetAccountsProvider")) HkWidgetAccountsProvider.render(c, m, id);
+      else if(cls.endsWith("HkWidgetLineProvider")) HkWidgetLineProvider.render(c, m, id);
       else HkWidgetProvider.render(c, m, id);
     }catch(Exception ignored){}
   }
