@@ -175,7 +175,7 @@
         _actCache[k] = on;
         return on;
       }
-      var _skipped = 0;
+      var _skipped = 0, _catRows = {};
       function filtered(list) {
         return list.filter(function (x) {
           if (st.card && x.title !== st.card) return false;
@@ -356,11 +356,11 @@
       function donut(wrap, items, total, centerLabel) {
         var pal = isLight() ? CAT_LIGHT : CAT_DARK;
         var list = items.slice(0, 7), rest = items.slice(7).reduce(function (s, x) { return s + x.amount; }, 0);
-        if (rest > 0) list.push({ label: 'سایر', amount: rest, other: true });
+        if (rest > 0) list.push({ label: 'سایر', amount: rest, other: true, keys: items.slice(7).map(function (x) { return x.key; }) });
         var R = 64, r0 = 42, C = 80, a = -Math.PI / 2, svg = '<svg viewBox="0 0 160 160" width="160" height="160">';
         list.forEach(function (x, i) {
           var frac = x.amount / total, a2 = a + frac * Math.PI * 2;
-          var large = frac > 0.5 ? 1 : 0, col = x.other ? 'var(--st-other)' : pal[i];
+          var large = frac > 0.5 ? 1 : 0, col = x.other ? 'var(--st-other)' : (x.color || pal[i]);
           x.color = col;
           if (frac >= 0.9999) {
             svg += '<circle class="st-slice" data-i="' + i + '" cx="' + C + '" cy="' + C + '" r="' + ((R + r0) / 2) + '" fill="none" stroke="' + col + '" stroke-width="' + (R - r0) + '"/>';
@@ -379,9 +379,31 @@
           wrap.querySelectorAll('.st-slice').forEach(function (s) { s.classList.toggle('dim', i >= 0 && +s.getAttribute('data-i') !== i); });
           wrap.querySelectorAll('.st-leg').forEach(function (s) { s.classList.toggle('on', +s.getAttribute('data-i') === i); });
         }
+        /* ۱.۴.۲: زدن برش یا نام دسته = صفحهٔ تازه با همهٔ تراکنش‌های همان دسته (همان ورق خوردن صفحه‌ها) */
         wrap.querySelectorAll('.st-slice, .st-leg').forEach(function (el) {
-          el.addEventListener('click', function () { var i = +el.getAttribute('data-i'); pick(el.classList.contains('on') ? -1 : i); });
+          el.addEventListener('click', function () {
+            var i = +el.getAttribute('data-i'), x = list[i]; pick(i);
+            if (x && typeof window.hkOpenStatsCatTx === 'function') window.hkOpenStatsCatTx(x.other ? x.keys : [x.key], x.label, x.color);
+          });
         });
+        /* ۱.۴.۲: نوشتهٔ وسط دایره (مثلاً «میلیون») با قلم بزرگ هم داخل حلقه بماند */
+        hkFitDonutText(wrap.querySelector('.st-donut svg'), r0);
+      }
+      function hkFitDonutText(svg, r0) {
+        if (!svg) return;
+        var fit = function () {
+          [['.st-dc1', 0], ['.st-dc2', 1]].forEach(function (o) {
+            var t = svg.querySelector(o[0]); if (!t || !t.getBBox) return;
+            t.style.removeProperty('font-size');
+            var fs = parseFloat(getComputedStyle(t).fontSize) || 12, maxW = (o[1] ? 1.5 : 1.8) * r0 - 4, n = 0, w;
+            try { w = t.getBBox().width; } catch (e) { return; }
+            while (w > maxW && fs > 6 && n++ < 40) { fs -= 0.5; t.style.setProperty('font-size', fs + 'px', 'important'); try { w = t.getBBox().width; } catch (e2) { break; } }
+          });
+          /* دو خط وسط با هم تداخل نکنند */
+          var a = svg.querySelector('.st-dc1'), b = svg.querySelector('.st-dc2');
+          if (a && b) { var fa1 = parseFloat(getComputedStyle(a).fontSize) || 14, fb = parseFloat(getComputedStyle(b).fontSize) || 10; a.setAttribute('y', (80 + (fa1 * 0.35) - (fb * 0.55)).toFixed(1)); b.setAttribute('y', (80 + (fa1 * 0.35) + fb * 0.95).toFixed(1)); }
+        };
+        fit(); try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit); } catch (eF) {}
       }
       /* افقی: فهرست مقایسه‌ای (کارت‌ها / روزهای هفته / بیشترین خرج‌ها) */
       function hbars(wrap, list, cls) {
@@ -477,7 +499,7 @@
         b.forEach(function (x) { inc += x.inc; exp += x.exp; });
         var cs = cards();
         var nav = st.mode === 'yearly' ? '<span class="st-nav-l">' + periodLabel() + '</span>' :
-          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">›</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">‹</button>';
+          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">‹</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">›</button>';
         var html = '<div class="st-filters">' +
           '<div class="st-seg" role="tablist">' + [['daily', 'روزانه'], ['weekly', 'هفتگی'], ['monthly', 'ماهانه'], ['yearly', 'سالانه']].map(function (o) {
             return '<button type="button" data-mode="' + o[0] + '" class="' + (st.mode === o[0] ? 'on' : '') + '">' + o[1] + '</button>';
@@ -515,16 +537,21 @@
         try { if (cmp && document.getElementById('stCmp')) compareChart(document.getElementById('stCmp'), cmp, showInc, showExp); } catch (e2) {}
         var expRows = rows.filter(function (x) { return x.kind === 'expense'; });
         if (document.getElementById('stCats')) {
-          var cm = {}, tot = 0;
+          /* ۱.۴.۲: هر دسته با رنگ ثابت خودش (HK_CAT_COLORS، مثل همه‌جای نرم‌افزار)؛ تراکنش‌های هر دسته برای صفحهٔ «تراکنش‌های دسته» نگه داشته می‌شود */
+          var cm = {}, tot = 0; _catRows = {};
+          var addC = function (key, label, color, a, x) {
+            if (!cm[key]) cm[key] = { key: key, label: label, amount: 0, color: color };
+            cm[key].amount += a; (_catRows[key] = _catRows[key] || []).push({ x: x, a: a });
+          };
           expRows.forEach(function (x) {
             var a = amt(x); if (!a) return; tot += a;
             var c = null; try { c = HKCategorizer.classify(x.desc, x.row); } catch (e) {}
-            if (!c) { cm['نامشخص'] = (cm['نامشخص'] || 0) + a; return; }
-            c.ids.forEach(function (id) { var l = HKCategorizer.byId[id].label; cm[l] = (cm[l] || 0) + a / c.ids.length; });
+            if (!c || !c.ids || !c.ids.length) { addC('', 'نامشخص', 'var(--st-other)', a, x); return; }
+            c.ids.forEach(function (id) { var bc = HKCategorizer.byId[id] || {}; var col = ''; try { col = hkCatColor(id); } catch (eC) {} addC(id, bc.label || id, col, a / c.ids.length, x); });
           });
-          var cl = Object.keys(cm).map(function (k) { return { label: k, amount: cm[k] }; }).sort(function (p, q) { return q.amount - p.amount; });
-          var un = cl.filter(function (x) { return x.label === 'نامشخص'; });
-          cl = cl.filter(function (x) { return x.label !== 'نامشخص'; }).concat(un);
+          var cl = Object.keys(cm).map(function (k) { return cm[k]; }).sort(function (p, q) { return q.amount - p.amount; });
+          var un = cl.filter(function (x) { return x.key === ''; });
+          cl = cl.filter(function (x) { return x.key !== ''; }).concat(un);
           var el = document.getElementById('stCats');
           if (tot > 0) donut(el, cl, tot, 'جمع مخارج'); else el.innerHTML = '<div class="st-empty">داده‌ای برای نمایش نیست</div>';
         }
@@ -554,7 +581,17 @@
         }), kindT === 'expense' ? 'exp' : 'inc');
         bind(root);
       }
+      /* ۱.۴.۲: هایلایت تب‌ها یک تکهٔ جداست (هم‌رنگ و هم‌شکل گزینهٔ انتخاب‌شده) که موقع عوض شدن تب نرم جابه‌جا می‌شود */
+      function segPill(root, from, ez) {
+        var seg = root.querySelector('.st-seg'), on = seg && seg.querySelector('button.on'); if (!on) return;
+        seg.classList.remove('st-has-pill'); Array.prototype.forEach.call(seg.querySelectorAll('.st-seg-pill'), function (x) { x.remove(); });
+        var cs = getComputedStyle(on), pill = document.createElement('i'); pill.className = 'st-seg-pill';
+        pill.style.cssText = 'left:' + on.offsetLeft + 'px;top:' + on.offsetTop + 'px;width:' + on.offsetWidth + 'px;height:' + on.offsetHeight + 'px;background:' + cs.backgroundColor + ';box-shadow:' + cs.boxShadow + ';border-radius:' + cs.borderRadius + ';';
+        seg.insertBefore(pill, seg.firstChild); seg.classList.add('st-has-pill');
+        if (from && pill.animate && from.l !== on.offsetLeft) pill.animate([{ transform: 'translateX(' + (from.l - on.offsetLeft) + 'px)', width: from.w + 'px' }, { transform: 'translateX(0)', width: on.offsetWidth + 'px' }], ez || { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+      }
       function bind(root) {
+        try { if (!root.querySelector('.st-seg-pill')) segPill(root, null); } catch (eSp) {}
         root.querySelectorAll('[data-mode]').forEach(function (bt) { bt.onclick = function () {
           var nm = bt.getAttribute('data-mode'); if (nm === st.mode) return;
           /* ۱.۴.۱: عوض شدن تب = ورق خوردن نرم (محتوای قبلی کنار می‌رود و تب تازه از همان سمت تبش می‌آید) */
@@ -567,8 +604,11 @@
             Array.prototype.forEach.call(root.children, function (c) { if (c !== fl) inner.appendChild(c.cloneNode(true)); else { var sp = document.createElement('div'); sp.style.height = c.offsetHeight + 'px'; sp.style.marginBottom = getComputedStyle(c).marginBottom; inner.appendChild(sp); } });
             ghost.appendChild(inner); (root.closest('.feature-sheet') || document.body).appendChild(ghost);
           } catch (eG) { ghost = null; }
+          var segOld = null; try { var on0 = root.querySelector('.st-seg button.on'); if (on0) segOld = { l: on0.offsetLeft, w: on0.offsetWidth }; } catch (eS) {}
           st.mode = nm; render();
           var ez = { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
+          /* ۱.۴.۲: هایلایت تب‌ها نرم از گزینهٔ قبلی به گزینهٔ تازه می‌رود */
+          try { segPill(root, segOld, ez); } catch (eP) {}
           try {
             Array.prototype.forEach.call(root.children, function (c) { if (!c.classList.contains('st-filters') && c.animate) c.animate([{ transform: 'translateX(' + (-dir * 100) + '%)' }, { transform: 'translateX(0)' }], ez); });
             if (ghost) { var ga = ghost.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (dir * 100) + '%)' }], ez); ga.onfinish = function () { ghost.remove(); }; setTimeout(function () { try { ghost.remove(); } catch (eR) {} }, 600); }
@@ -620,9 +660,41 @@
         try { unlockBodyScroll(); } catch (e) {}
         return true;
       }
-      return { open: open, close: close, render: render, _weekday: weekday, _monthLen: monthLen };
+      function catTx(keys) {
+        var seen = new Map();
+        (keys || []).forEach(function (k) { (_catRows[k] || []).forEach(function (o) { var c = seen.get(o.x); seen.set(o.x, { x: o.x, a: (c ? c.a : 0) + o.a }); }); });
+        return { rows: Array.from(seen.values()), period: periodLabel(), card: st.card };
+      }
+      return { open: open, close: close, render: render, catTx: catTx, _weekday: weekday, _monthLen: monthLen };
     })();
     function openStatsSheet(opts) { setTimeout(function () { HKStats.open(opts && opts.type ? null : opts); }, 40); }
+    /* ۱.۴.۲: صفحهٔ «تراکنش‌های یک دسته» از دایرهٔ دسته‌بندی آمار (همان بازه و کارت و وضعیتِ انتخاب‌شده در آمار)؛
+       ظاهر همان صورت‌حساب حساب‌ها؛ تازه‌ترین بالا. ردیفی که چند دسته دارد، فقط سهم همین دسته را نشان می‌دهد */
+    function hkOpenStatsCatTx(keys, label, color) {
+      var old = document.getElementById('hkStCatTx'); if (old) old.remove();
+      var d = HKStats.catTx(keys), p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+      var rows = d.rows.slice().sort(function (a, b) {
+        var ka = a.x.y * 1e6 + a.x.m * 1e4 + (a.x.d || 0) * 100, kb = b.x.y * 1e6 + b.x.m * 1e4 + (b.x.d || 0) * 100;
+        return (kb - ka) || ((Number(b.x.row.createdAt) || 0) - (Number(a.x.row.createdAt) || 0));
+      });
+      var tot = rows.reduce(function (s, o) { return s + o.a; }, 0);
+      var ov = document.createElement('div'); ov.id = 'hkStCatTx'; ov.className = 'hk-bulk-ov hk-bulk-center'; ov.setAttribute('data-hk-back', '1');
+      ov.innerHTML = '<div class="hk-bulk-box hk-acctx-box hk-stcat-box"><div class="hk-bulk-title">' + escapeHtml(label) + '</div>' +
+        '<div class="hk-acctx-src hk-stcat-sum"><span>' + escapeHtml(d.period) + (d.card ? ' · ' + escapeHtml(d.card) : '') + '</span><b style="color:' + escapeHtml(color || 'var(--text)') + '">' + formatNum(Math.round(tot)) + ' <small>تومان</small></b></div>' +
+        '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span><span class="b">کارت</span></div>' +
+        rows.map(function (o) {
+          var x = o.x, part = Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);
+          return '<div class="hk-acctx-r"><span class="d">' + toPersianDigits(String(x.y)) + '/' + p2(x.m) + (x.d ? '/' + p2(x.d) : '') + (x.row.time ? '<small> ' + toPersianDigits(x.row.time) + '</small>' : '') + '</span>' +
+            '<span class="t">' + escapeHtml(x.desc || 'برداشت') + (part ? '<small> (سهم این دسته)</small>' : '') + '</span>' +
+            '<span class="a exp">−' + formatNum(Math.round(o.a)) + '</span><span class="b">' + escapeHtml(x.title || '') + '</span></div>';
+        }).join('') : '<div class="hk-acctx-empty">تراکنشی در این دسته نیست</div>') + '</div>' +
+        '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
+      document.body.appendChild(ov);
+      var close = function () { ov.remove(); };
+      ov._hkCancel = close;
+      ov.querySelector('.hk-bulk-close').onclick = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    }
 
     function closeSideMenu() {
       /* ۱.۳.۸۰: بستن منو جستجویش را همیشه غیرفعال می‌کند (متن پاک، کیبورد بسته، فهرست کامل) */

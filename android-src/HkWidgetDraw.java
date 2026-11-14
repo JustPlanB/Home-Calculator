@@ -18,7 +18,7 @@ final class HkWidgetDraw {
   /* کادر فشردهٔ متن نسبت به اندازهٔ فونت (اندازه‌گیری‌شده برای وزیرمتن) */
   private static final float TXT_A=0.74f, TXT_D=0.36f, NUM_A=0.70f, NUM_D=0.20f;
 
-  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none, hidden, mask; }
+  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none, hidden, mask; int alpha=100; }
 
   static final String[] MONTHS_FA={"فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"};
   static final String ACTION_MIDNIGHT="ir.hesabketab.app.WIDGET_MIDNIGHT";
@@ -203,6 +203,31 @@ final class HkWidgetDraw {
       if(saved.length()>0 && !saved.equals(t[1])){ d.today=faDigits(0); d.none=true; }
     }
     return d;
+  }
+
+  /* ۱.۴.۲: تنظیمات هر ویجت (از نگه داشتن ویجت ← تنظیمات): رنگ پس‌زمینه (مطابق گوشی / روشن / تیره) و شفافیت.
+     تا وقتی چیزی انتخاب نشده، مثل قبل هم‌رنگ تم خود نرم‌افزار می‌ماند. */
+  static String bgMode(Context c, int id){ try{ return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("bg_mode_"+id, ""); }catch(Exception e){ return ""; } }
+  static int bgAlpha(Context c, int id){ try{ return Math.max(0, Math.min(100, c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt("bg_alpha_"+id, 100))); }catch(Exception e){ return 100; } }
+  static boolean phoneDark(Context c){ try{ return (c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES; }catch(Exception e){ return true; } }
+  static boolean lightFor(Context c, int id, boolean appLight){
+    String m=bgMode(c, id);
+    if("light".equals(m)) return true;
+    if("dark".equals(m)) return false;
+    if("auto".equals(m)) return !phoneDark(c);
+    return appLight;
+  }
+  static Data load(Context c, int id){ Data d=load(c); d.light=lightFor(c, id, d.light); d.alpha=bgAlpha(c, id); return d; }
+  /** پس‌زمینهٔ گرد ویجت با شفافیت (۱۱ پله، هر پله ۱۰٪) */
+  static int bgRes(Context c, boolean light, int alpha){
+    int step=Math.max(0, Math.min(10, Math.round(alpha/10f)));
+    int def=light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg;
+    if(step>=10) return def;
+    try{ int r=c.getResources().getIdentifier((light ? "hk_widget_bg_l" : "hk_widget_bg_d")+step, "drawable", c.getPackageName()); return r!=0 ? r : def; }catch(Exception e){ return def; }
+  }
+  static int withAlpha(int col, int alpha){ int a=(col>>>24)&0xFF; a=Math.round(a*Math.max(0, Math.min(100, alpha))/100f); return (col&0x00FFFFFF)|(a<<24); }
+  static void forget(Context c, int[] ids){
+    try{ SharedPreferences.Editor e=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids){ e.remove("bg_mode_"+id); e.remove("bg_alpha_"+id); } e.apply(); }catch(Exception ignored){}
   }
 
   static void fonts(Context c){

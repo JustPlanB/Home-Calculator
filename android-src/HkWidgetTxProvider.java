@@ -20,6 +20,7 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
   @Override public void onDeleted(Context ctx, int[] ids){
     try{ android.content.SharedPreferences.Editor e=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).edit(); for(int id: ids){ e.remove("tx_type_"+id); e.remove(HkWidgetTxService.shownKey(id)); } e.apply(); }catch(Exception ignored){}
+    HkWidgetDraw.forget(ctx, ids);
   }
   static void refreshAll(Context ctx){
     try{
@@ -52,20 +53,20 @@ public class HkWidgetTxProvider extends AppWidgetProvider {
   static String sig(Context ctx, HkWidgetDraw.Data d, float[] sz, boolean inc, boolean all){
     String js="";
     try{ js=ctx.getSharedPreferences(HkWidgetDraw.PREFS, Context.MODE_PRIVATE).getString(all ? "tx_all" : (inc ? "tx_inc" : "tx_exp"), "[]"); }catch(Exception ignored){}
-    return js.hashCode()+"|"+js.length()+"|"+(d!=null&&d.light)+"|"+(d!=null&&d.hidden)+"|"+(d!=null&&d.locked)+"|"+(int)sz[0]+"|"+sz[1]+"|"+inc+"|"+all;
+    return js.hashCode()+"|"+js.length()+"|"+(d!=null&&d.light)+"|"+(d!=null?d.alpha:100)+"|"+(d!=null&&d.hidden)+"|"+(d!=null&&d.locked)+"|"+(int)sz[0]+"|"+sz[1]+"|"+inc+"|"+all;
   }
   static void render(Context ctx, AppWidgetManager mgr, int id){ render(ctx, mgr, id, true); }
   @SuppressWarnings("deprecation")
   static void render(Context ctx, AppWidgetManager mgr, int id, boolean force){
     try{
-      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx, id);
       boolean inc=isIncome(ctx, id);
       float[] sz=HkWidgetTxDraw.dims(ctx, mgr, id);
       String sg=sig(ctx, d, sz, inc, isAll(ctx, id));
       synchronized(LAST_SIG){ if(!force && sg.equals(LAST_SIG.get(id))) return; LAST_SIG.put(id, sg); }
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget_tx);
-      v.setInt(R.id.hk_wt_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
-      v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, isAll(ctx, id), d.light));
+      v.setInt(R.id.hk_wt_root,"setBackgroundResource", HkWidgetDraw.bgRes(ctx, d.light, d.alpha));
+      v.setImageViewBitmap(R.id.hk_wt_head, HkWidgetTxDraw.header(ctx, (int)sz[0], sz[1], inc, isAll(ctx, id), d.light, d.alpha));
       v.setImageViewBitmap(R.id.hk_wt_empty, HkWidgetTxDraw.empty(ctx, (int)sz[0], sz[1], d.locked ? "برنامه قفل است" : "ردیفی نیست", d.light));
       HkWidgetTxService.resetShown(ctx, id); /* ۱.۳.۹۱: با هر تازه شدن، دوباره ۲۰ ردیف اول */
       Intent svc=new Intent(ctx, HkWidgetTxService.class);
@@ -142,14 +143,16 @@ final class HkWidgetTxDraw {
   /* آبی نرم‌افزار برای عنوان و دکمهٔ «همه» */
   static final int ALL_C=0xFF08B5F5;
   static Bitmap header(Context ctx, int W, float k, boolean inc, boolean light){ return header(ctx, W, k, inc, false, light); }
-  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light){
+  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light){ return header(ctx, W, k, inc, all, light, 100); }
+  /* ۱.۴.۲: نوار عنوان و سرستون‌ها هم با شفافیت انتخاب‌شده برای پس‌زمینهٔ ویجت */
+  static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light, int alpha){
     fonts(ctx);
     /* ۱.۳.۹۸: نوار بالا بلندتر (۴۸) و همهٔ نوشته‌هایش درشت‌تر؛ «حساب‌کتاب» هم‌اندازهٔ ویجت حساب‌ها (۱۷) */
     float th=48*k, hh=30*k; int H=Math.round(th+hh+1*k);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
     /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
-    Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(titleBg(light));
+    Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(HkWidgetDraw.withAlpha(titleBg(light), alpha));
     float rr=22*k;
     android.graphics.Path tp=new android.graphics.Path();
     tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
@@ -176,7 +179,7 @@ final class HkWidgetTxDraw {
       cv.drawText(td[0], 44*k, base(0, th, 14.5f*k), dp);
     }
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
-    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(headBg(light));
+    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(HkWidgetDraw.withAlpha(headBg(light), alpha));
     cv.drawRect(c[4], th, c[0], th+hh, band);
     Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(headLine(light)); ln.setStrokeWidth(Math.max(1f, k*0.6f));
     for(int i=1;i<=3;i++) cv.drawLine(c[i], th, c[i], th+hh, ln);

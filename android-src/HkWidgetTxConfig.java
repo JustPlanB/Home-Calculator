@@ -35,6 +35,15 @@ public class HkWidgetTxConfig extends Activity {
     if(it!=null && it.getExtras()!=null) wid=it.getExtras().getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
     if(wid==AppWidgetManager.INVALID_APPWIDGET_ID){ finish(); return; }
     repick=it.getBooleanExtra(EXTRA_REPICK, false);
+    /* ۱.۴.۲: ویجتی که از قبل روی صفحه است و از «تنظیمات» خود گوشی (نگه داشتن ویجت) آمده: صفحهٔ تنظیمات ظاهر
+       (نوع ردیف‌ها همچنان با زدن روی نامش در بالای ویجت عوض می‌شود) */
+    boolean exists=false;
+    try{ exists=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).contains("tx_type_"+wid); }catch(Exception ignored){}
+    if(!repick && exists){
+      Intent r=new Intent(); r.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid); setResult(RESULT_OK, r);
+      try{ Intent st=new Intent(this, HkWidgetStyle.class); st.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid); startActivity(st); }catch(Exception ignored){}
+      finish(); return;
+    }
     try{ cur=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).getString("tx_type_"+wid, "exp"); }catch(Exception ignored){}
     try{ light=getSharedPreferences(HkWidgetDraw.PREFS, MODE_PRIVATE).getBoolean("light", false); }catch(Exception ignored){}
     dp=getResources().getDisplayMetrics().density;

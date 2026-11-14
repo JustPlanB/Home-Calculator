@@ -11,6 +11,7 @@ import android.widget.RemoteViews;
 public class HkWidgetAccountsProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
+  @Override public void onDeleted(Context ctx, int[] ids){ HkWidgetDraw.forget(ctx, ids); }
   static void refreshAll(Context ctx){
     try{
       AppWidgetManager mgr=AppWidgetManager.getInstance(ctx);
@@ -20,10 +21,10 @@ public class HkWidgetAccountsProvider extends AppWidgetProvider {
   }
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
-      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx, id);
       float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 200);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget);
-      v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      v.setInt(R.id.hk_w_root,"setBackgroundResource", HkWidgetDraw.bgRes(ctx, d.light, d.alpha));
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.accounts(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, HkWidgetProvider.openApp(ctx, false));
       HkWidgetProvider.applyEye(ctx, v, R.id.hk_w_eye, d);

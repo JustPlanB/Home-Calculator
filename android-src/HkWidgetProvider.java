@@ -21,6 +21,7 @@ public class HkWidgetProvider extends AppWidgetProvider {
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){
     render(ctx, mgr, id);
   }
+  @Override public void onDeleted(Context ctx, int[] ids){ HkWidgetDraw.forget(ctx, ids); }
   /* نیمه‌شب: تاریخ و «خرج امروز» همهٔ ویجت‌ها بدون باز شدن نرم‌افزار به‌روز شوند */
   static final String ACTION_EYE="ir.hesabketab.app.WIDGET_EYE";
   @Override public void onReceive(Context ctx, Intent intent){
@@ -68,10 +69,10 @@ public class HkWidgetProvider extends AppWidgetProvider {
 
   static void render(Context ctx, AppWidgetManager mgr, int id){
     try{
-      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx);
+      HkWidgetDraw.Data d=HkWidgetDraw.load(ctx, id);
       float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 180);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget);
-      v.setInt(R.id.hk_w_root,"setBackgroundResource", d.light ? R.drawable.hk_widget_bg_light : R.drawable.hk_widget_bg);
+      v.setInt(R.id.hk_w_root,"setBackgroundResource", HkWidgetDraw.bgRes(ctx, d.light, d.alpha));
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.full(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, openApp(ctx, false));
       applyEye(ctx, v, R.id.hk_w_eye, d);
