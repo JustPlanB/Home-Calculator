@@ -95,11 +95,39 @@
     }
     /* ۱.۴.۱: نگهبان «صفحهٔ نیمه‌کشیده»: گاهی بعد از ورق خوردن، نمایشگر گوشی فقط تکهٔ بالای صفحه را دوباره می‌کشد و بقیه
        تصویر کهنهٔ صفحهٔ زیرین می‌ماند (و لمس‌ها به صفحهٔ نامرئی می‌خورد). بعد از هر ورق خوردن، صفحه یک بار کامل دوباره کشیده می‌شود. */
-    function hkPageRepaint(el) {
+    var _hkPgTouchN = 0, _hkPgTouchAt = 0;
+    (function () {
+      var dn = function (e) { _hkPgTouchAt = Date.now(); _hkPgTouchN = e.touches ? e.touches.length : 1; };
+      var up = function (e) { _hkPgTouchAt = Date.now(); _hkPgTouchN = e.touches ? e.touches.length : 0; };
+      document.addEventListener('touchstart', dn, { capture: true, passive: true });
+      document.addEventListener('touchmove', dn, { capture: true, passive: true });
+      document.addEventListener('touchend', up, { capture: true, passive: true });
+      document.addEventListener('touchcancel', up, { capture: true, passive: true });
+      document.addEventListener('pointerdown', function () { _hkPgTouchAt = Date.now(); }, true);
+      document.addEventListener('wheel', function () { _hkPgTouchAt = Date.now(); }, { capture: true, passive: true });
+    })();
+    function hkPageRepaint(el, hard) {
       try {
         if (!el || !el.isConnected) return;
         el.getAnimations && el.getAnimations().forEach(function (a) { try { if (a.playState !== 'finished') a.finish(); } catch (eF) {} });
         el.style.transform = 'none';
+        /* ۱.۴.۲: نگهبان قوی‌تر — صفحه یک لحظه (در همان فریم، بی آنکه دیده شود) از نو چیده می‌شود تا نمایشگر همهٔ آن را دوباره بکشد
+           (صفحه‌ای که باز بود ولی دیده نمی‌شد یا دوتایی دیده می‌شد). جای اسکرول‌ها حفظ می‌شود؛ وقتی فیلدی در حال تایپ است این کار نمی‌شود */
+        var ae = document.activeElement;
+        /* انگشت روی صفحه است یا تازه برداشته شده (کشیدن/اسکرول): دوباره چیدن، حرکت کاربر را قطع می‌کند → فقط حالت سبک */
+        if (hard && (_hkPgTouchN > 0 || Date.now() - _hkPgTouchAt < 900)) hard = false;
+        /* انیمیشن داخل صفحه (مثلاً قاب یادآور) از اول شروع نشود */
+        try { if (hard && el.getAnimations({ subtree: true }).some(function (a) { return a.playState === 'running' && a.effect && a.effect.target !== el; })) hard = false; } catch (eAn) {}
+        if (hard &&!(ae && el.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) {
+          var sc = [];
+          if (el.scrollTop || el.scrollLeft) sc.push([el, el.scrollTop, el.scrollLeft]);
+          Array.prototype.forEach.call(el.querySelectorAll('*'), function (n) { if (n.scrollTop || n.scrollLeft) sc.push([n, n.scrollTop, n.scrollLeft]); });
+          var d0 = el.style.getPropertyValue('display'), dp = el.style.getPropertyPriority('display');
+          el.style.setProperty('display', 'none', 'important'); void el.offsetHeight;
+          if (d0) el.style.setProperty('display', d0, dp); else el.style.removeProperty('display');
+          void el.offsetHeight;
+          sc.forEach(function (s) { try { s[0].scrollTop = s[1]; s[0].scrollLeft = s[2]; } catch (eS) {} });
+        }
         var o = el.style.opacity; el.style.opacity = '0.999'; void el.offsetHeight;
         requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; });
       } catch (e) {}
@@ -112,9 +140,11 @@
         try {
           var big = el.classList && (el.classList.contains('hk-page') || (el.parentElement && el.parentElement.classList && el.parentElement.classList.contains('hk-page')));
           if (big && !el.classList.contains('hk-mnav-ghost')) {
-            var fin = function () { hkPageRepaint(el); };
+            /* یک بار کامل (همان پایان ورق خوردن)، یک بار هم کمی بعد برای اطمینان */
+            var done = 0, fin = function () { if (done++) return; hkPageRepaint(el, true); };
             a.addEventListener('finish', fin); a.addEventListener('cancel', fin);
             setTimeout(fin, ((opt && opt.duration) || 400) + 250);
+            setTimeout(function () { if (el.isConnected && el.getClientRects().length) hkPageRepaint(el, true); }, ((opt && opt.duration) || 400) + 900);
           }
         } catch (eG) {}
         return a;

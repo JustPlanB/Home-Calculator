@@ -341,16 +341,17 @@
       /* ۱.۳.۹۴: ویرایش و حذف گروه از کارت فهرست گروه‌ها (داخل باکس گروه فقط نام) */
       var h = '<div class="hk-dg-t">' + escapeHtml(g.name) + '</div>';
       h += '<div class="hk-dg-sum"><span>خرج کل</span><b>' + hkDongAmt(hkDongTotal(g)) + ' <small>تومان</small></b></div>';
-      h += '<div class="hk-dg-h">وضعیت هر نفر</div><div class="hk-dg-bal">';
-      g.members.forEach(function (m) {
-        var v = Math.round(bal[m.id] || 0);
-        h += '<div class="hk-dg-row"><span>' + escapeHtml(m.name) + '</span><b class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero') + '">' + (v > 0 ? 'طلبکار ' + hkDongAmt(v) : v < 0 ? 'بدهکار ' + hkDongAmt(-v) : 'تسویه') + '</b></div>';
-      });
-      h += '</div><div class="hk-dg-h">برای تسویه</div><div class="hk-dg-tr">';
+      /* ۱.۴.۲: «برای تسویه» بالای «وضعیت هر نفر» */
+      h += '<div class="hk-dg-h">برای تسویه</div><div class="hk-dg-tr">';
       if (!tr.length) h += '<div class="hk-dg-empty">' + (g.expenses.length ? 'همه تسویه‌اند.' : 'هنوز خرجی ثبت نشده.') + '</div>';
       tr.forEach(function (t, i) {
         /* ۱.۳.۸۸: پیش‌فرض نارنجی «پرداخت نشده»؛ یک ضربه = سبز «پرداخت شد»، ضربهٔ دوباره = برگشت (بی پیام تأیید) */
         h += '<div class="hk-dg-row hk-dg-pay' + (t.paid ? ' paid' : '') + '"><span><b>' + escapeHtml(hkDongName(g, t.from)) + '</b> ← به <b>' + escapeHtml(hkDongName(g, t.to)) + '</b></span><span class="hk-dg-pa">' + hkDongAmt(t.amount) + '</span><button type="button" class="hk-dg-paid' + (t.paid ? ' on' : '') + '" data-i="' + i + '">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</button></div>';
+      });
+      h += '</div><div class="hk-dg-h">وضعیت هر نفر</div><div class="hk-dg-bal">';
+      g.members.forEach(function (m) {
+        var v = Math.round(bal[m.id] || 0);
+        h += '<div class="hk-dg-row"><span>' + escapeHtml(m.name) + '</span><b class="' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero') + '">' + (v > 0 ? 'طلبکار ' + hkDongAmt(v) : v < 0 ? 'بدهکار ' + hkDongAmt(-v) : 'تسویه') + '</b></div>';
       });
       h += '</div><div class="hk-dg-h">خرج‌ها</div><div class="hk-dg-exp">';
       if (!g.expenses.length) h += '<div class="hk-dg-empty">با «خرج جدید» اولین خرج را ثبت کنید.</div>';

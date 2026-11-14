@@ -33,7 +33,7 @@ public class HkWidgetTxService extends RemoteViewsService {
       public void onCreate(){ load(); }
       void load(){
         try{
-          d=HkWidgetDraw.load(ctx);
+          d=HkWidgetDraw.load(ctx, id); /* ۱.۴.۲: تم همین ویجت */
           inc=HkWidgetTxProvider.isIncome(ctx, id);
           all=HkWidgetTxProvider.isAll(ctx, id);
           sz=HkWidgetTxDraw.dims(ctx, AppWidgetManager.getInstance(ctx), id);

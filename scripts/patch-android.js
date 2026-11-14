@@ -55,6 +55,8 @@ const hkWidgetTxService=readJava('HkWidgetTxService.java');
 
 const hkWidgetTxConfig=readJava('HkWidgetTxConfig.java');
 
+const hkWidgetStyle=readJava('HkWidgetStyle.java');
+
 const hkWidgetPlugin=readJava('HkWidgetPlugin.java');
 
 const hkMedia=readJava('HkMediaPlugin.java');
@@ -82,6 +84,7 @@ fs.writeFileSync(path.join(javaDir,'HkWidgetAccountsProvider.java'),hkWidgetAcco
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxProvider.java'),hkWidgetTx);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxService.java'),hkWidgetTxService);
 fs.writeFileSync(path.join(javaDir,'HkWidgetTxConfig.java'),hkWidgetTxConfig);
+fs.writeFileSync(path.join(javaDir,'HkWidgetStyle.java'),hkWidgetStyle);
 fs.writeFileSync(path.join(javaDir,'HkMediaPlugin.java'),hkMedia);
 
 const gradle=path.join(base,'app/build.gradle');
@@ -186,6 +189,13 @@ if(fs.existsSync(manifest)){
     '        </receiver>\n    </application>');
   if(!s.includes('.HkWidgetTxConfig')) s=s.replace('</application>',
     '        <activity android:name=".HkWidgetTxConfig" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
+    '            <intent-filter>\n' +
+    '                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>\n' +
+    '            </intent-filter>\n' +
+    '        </activity>\n    </application>');
+  // ۱.۴.۲: تنظیمات ظاهر ویجت‌ها (رنگ پس‌زمینه و شفافیت)
+  if(!s.includes('.HkWidgetStyle')) s=s.replace('</application>',
+    '        <activity android:name=".HkWidgetStyle" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>\n' +
     '            </intent-filter>\n' +
@@ -428,6 +438,26 @@ fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg_light.xml'),
     <stroke android:width="1dp" android:color="#1A000000"/>
 </shape>
 `);
+// ۱.۴.۲: پس‌زمینهٔ ویجت با شفافیت (۰ تا ۹۰٪ کدری، هر پله ۱۰٪؛ پلهٔ ۱۰ همان دو پس‌زمینهٔ بالا)
+for(let st=0; st<10; st++){
+  const hx=v=>Math.round(v*st/10).toString(16).padStart(2,'0').toUpperCase();
+  fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg_d'+st+'.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#${hx(0xF2)}1B1B1B"/>
+    <corners android:radius="22dp"/>
+    <stroke android:width="1dp" android:color="#${hx(0x22)}FFFFFF"/>
+</shape>
+`);
+  fs.writeFileSync(path.join(resDir,'drawable','hk_widget_bg_l'+st+'.xml'),
+`<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#${hx(0xF7)}FFFFFF"/>
+    <corners android:radius="22dp"/>
+    <stroke android:width="1dp" android:color="#${hx(0x1A)}000000"/>
+</shape>
+`);
+}
 fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
@@ -438,6 +468,8 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:configure="ir.hesabketab.app.HkWidgetStyle"
+    android:widgetFeatures="reconfigurable|configuration_optional"
     android:previewImage="@drawable/hk_prev_main"
     android:description="@string/hk_wdesc_main"
     android:initialLayout="@layout/hk_widget"/>
@@ -525,6 +557,8 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:configure="ir.hesabketab.app.HkWidgetStyle"
+    android:widgetFeatures="reconfigurable|configuration_optional"
     android:previewImage="@drawable/hk_prev_accounts"
     android:description="@string/hk_wdesc_accounts"
     android:initialLayout="@layout/hk_widget"/>

@@ -144,3 +144,10 @@
 ## ۱۲. سرور تست (از ۱.۴.۱)
 - `ubuntu-latest` در GitHub به Ubuntu 26.04 رفت و Playwright 1.56.1 روی آن نصب نمی‌شود؛ کارهای `regression` و `regression-built` در `.github/workflows/tests.yml` فعلاً روی `ubuntu-24.04` ثابت شده‌اند.
 - **بعداً:** وقتی Playwright از Ubuntu 26.04 پشتیبانی کرد، نسخهٔ Playwright در `tests/package.json` بالا برود و این دو کار به `ubuntu-latest` برگردند (به خواست کاربر).
+
+## ۱۳. ۱.۴.۲
+- **بک و منوهای شناور:** `hkCloseFloatPop` در `14-theme.js` (پیش از هر لایهٔ دیگر): `#hkDongShareMenu`، `.hk-attpop`، `.status-menu`، `[data-hk-pop]` و هر بچهٔ مستقیم body که کلاسش pop/menu دارد و کوچک است. منوی تازه اگر یکی از این‌ها باشد، خودش با بک بسته می‌شود.
+- **نگهبان صفحه:** `hkPageRepaint(el, true)` در `17-pages.js` بعد از ورق خوردن صفحه یک بار (و ~۹۰۰ms بعد دوباره) صفحه را در همان فریم از نو می‌چیند (display none/دوباره)، با حفظ اسکرول‌ها؛ وقتی فیلدی فوکوس دارد یا انیمیشنی داخل صفحه در جریان است، فقط حالت سبک.
+- **دکمه‌ها پایین صفحه:** قواعد CSS آخر `10c-pages.css` (پس‌انداز، یادآور، پروژه‌ها، دنگ، امنیت، پشتیبان، صورت‌حساب حساب و تراکنش‌های دسته).
+- **آمار:** `.st-filters` چسبان (sticky)، هایلایت جدای `.st-seg-pill`، رنگ دسته‌ها از `hkCatColor`، صفحهٔ `hkOpenStatsCatTx` (در `HK_PAGE_OPENERS`)، `hkFitDonutText`.
+- **ویجت‌ها:** `HkWidgetStyle.java` (رنگ پس‌زمینه: auto/light/dark؛ شفافیت ۰–۱۰۰ در ۱۱ پله) با کلیدهای `bg_mode_<id>` و `bg_alpha_<id>`؛ بی انتخاب = هم‌رنگ تم نرم‌افزار مثل قبل. پس‌زمینه‌ها `hk_widget_bg_d0..9` و `hk_widget_bg_l0..9` در `patch-android.js`. در حالت «مطابق گوشی» ویجت در به‌روزرسانی بعدی با تم گوشی هماهنگ می‌شود.

@@ -700,6 +700,37 @@
       try{ window.close(); }catch(e){}
     }
 
+    /* ۱.۴.۲: منوهای شناور کوچک کنار دکمه‌ها (نه صفحه و نه پنجرهٔ وسط صفحه). هر منوی تازه‌ای که کلاسش pop یا menu دارد
+       و مستقیم روی صفحه آمده، بی نوشتن جداگانه همین‌جا شناخته می‌شود */
+    var HK_FLOAT_POP_SEL = '#hkDongShareMenu, .hk-attpop, .status-menu, [data-hk-pop]';
+    function hkFloatPops() {
+      var out = Array.prototype.slice.call(document.querySelectorAll(HK_FLOAT_POP_SEL));
+      Array.prototype.forEach.call(document.body.children, function (el) {
+        if (out.indexOf(el) >= 0) return;
+        var cn = typeof el.className === 'string' ? el.className : '';
+        if (!/(^|[\s-])(pop|popup|popover|menu)([\s-]|$)/i.test(cn) || /menu-backdrop|hk-mnav-ghost|cell-text-popup|pd-desc-popup/.test(cn)) return;
+        if (el.id === 'menuDropdown' || el.id === 'menuBackdrop') return;
+        out.push(el);
+      });
+      return out.filter(function (el) {
+        try {
+          if (!el.isConnected || !el.getClientRects().length) return false;
+          var cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') <= 0.05) return false;
+          if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+          var r = el.getBoundingClientRect(); return r.width < innerWidth * 0.9 && r.height < innerHeight * 0.6;
+        } catch (e) { return false; }
+      });
+    }
+    function hkCloseFloatPop() {
+      var ps = hkFloatPops(); if (!ps.length) return false;
+      ps.forEach(function (p) {
+        try {
+          if (p.classList.contains('hk-attpop') && typeof hkCloseAttPop === 'function') { hkCloseAttPop(); return; }
+          if (typeof p._hkCancel === 'function') p._hkCancel(); else if (typeof p._hkClose === 'function') p._hkClose(); else p.remove();
+        } catch (e) { try { p.remove(); } catch (e2) {} }
+      });
+      return true;
+    }
     function hkBackTopLayer() {
       var pts = [[0.5, 0.5], [0.5, 0.3], [0.5, 0.75]], el = null;
       for (var i = 0; i < pts.length && !el; i++) {
@@ -738,6 +769,8 @@
       /* ۱.۳.۸۰: حباب‌های موجودی: برگشت = محو شدن آرام همه در حال حرکت */
       try { if (document.getElementById('hkBubbles') && window._hkBubAlive && window._hkBubAlive()) { hkBubblesEnd(false); return; } } catch (eBb) {}
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
+      /* ۱.۴.۲: قانون کلی — منوی شناور کوچک (متن/عکس/PDF دُنگ، پیوست، وضعیت پرداخت، …) با بک بسته می‌شود و صفحهٔ زیرش سر جایش می‌ماند */
+      try { if (hkCloseFloatPop()) return; } catch (eFp) {}
       /* ۱.۳.۵۴: باکس شناور یک‌خطی (شرح/مبلغ/حساب در همهٔ جدول‌ها): بازگشت آن را می‌بندد و همزمان یک مرحله هم عقب می‌رود */
       try { if (document.querySelector('.pd-desc-popup, .cell-text-popup')) closeCellTextPopups(); } catch (eCt) {}
       try { if (typeof closeSmsCatMore === 'function' && closeSmsCatMore()) return; } catch (eCm) {}
@@ -965,7 +998,7 @@
     var HK_PAGE_OPENERS = ['openPrefsModal', 'openDongModal', 'openRecurringFromMenu', 'openSecurityModal', 'openSubjectsModal', 'openTrashModal',
       'openMonthRecap', 'openBankAccountsModal', 'askBackupParts', 'openProjectReportModal', 'openHomeMandeh', 'openSmsLaterModal', 'openUserRemindersModal', 'openSavingsModal',
       'openHelpModal', 'openSmsImportModal', 'openSmsBulkModal', 'hkOpenBlockedAccounts', 'hkOpenSmsUnread', 'hkCatsSheet', 'hkOpenAccountTx',
-      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet', 'openFeatureSheet', 'hkOpenRecArcExport', 'openCatPriority'];
+      'hkOpenSetup', 'openCategoryReviewSheet', 'openStatsSheet', 'openFeatureSheet', 'hkOpenRecArcExport', 'openCatPriority', 'hkOpenStatsCatTx'];
     var _hkInPageBack = false;
     function hkMarkPages(before, under) {
       var nu = hkLayersShown().filter(function (x) { return before.indexOf(x) < 0 && !x._hkPgSeen; });
