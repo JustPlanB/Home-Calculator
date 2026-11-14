@@ -249,6 +249,7 @@
           b.onclick = function () { try { showToast('تاریخ و ساعت این تراکنش از پیامک بانک است؛ برای تغییر، نگه دارید'); } catch (eT) {} };
           var lpT = 0;
           b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(function () {
+            try { window.appHaptic(20); } catch (eHp) {} /* ۱.۴.۱: لانگ‌پرس با ویبره */
             askConfirm('تاریخ و ساعت از پیامک بانک آمده است. تغییرش می‌دهید؟', function () {
               dtLocked = false; [dVal, tVal].forEach(function (x) { x.classList.remove('hk-re-locked'); });
               try { var lk = dtRow.querySelector('.hk-re-dtlk'); if (lk) lk.classList.remove('hk-re-dtlk'); } catch (eLk) {}

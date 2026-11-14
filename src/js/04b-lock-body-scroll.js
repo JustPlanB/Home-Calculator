@@ -555,7 +555,25 @@
         bind(root);
       }
       function bind(root) {
-        root.querySelectorAll('[data-mode]').forEach(function (bt) { bt.onclick = function () { st.mode = bt.getAttribute('data-mode'); render(); }; });
+        root.querySelectorAll('[data-mode]').forEach(function (bt) { bt.onclick = function () {
+          var nm = bt.getAttribute('data-mode'); if (nm === st.mode) return;
+          /* ۱.۴.۱: عوض شدن تب = ورق خوردن نرم (محتوای قبلی کنار می‌رود و تب تازه از همان سمت تبش می‌آید) */
+          var MODES = ['daily', 'weekly', 'monthly', 'yearly'], dir = MODES.indexOf(nm) > MODES.indexOf(st.mode) ? 1 : -1, ghost = null;
+          try {
+            var fl = root.querySelector('.st-filters'), rr = root.getBoundingClientRect(), top0 = fl ? fl.getBoundingClientRect().bottom : rr.top;
+            ghost = document.createElement('div'); ghost.className = 'st-turn-ghost';
+            ghost.style.cssText = 'position:fixed;left:' + rr.left + 'px;width:' + rr.width + 'px;top:' + top0 + 'px;height:' + Math.max(0, rr.bottom - top0) + 'px;overflow:hidden;pointer-events:none;z-index:5;background:var(--bg,#000);';
+            var inner = document.createElement('div'); inner.style.cssText = 'position:absolute;left:0;right:0;top:' + (-(top0 - rr.top) - root.scrollTop) + 'px;padding:' + getComputedStyle(root).padding + ';box-sizing:border-box;';
+            Array.prototype.forEach.call(root.children, function (c) { if (c !== fl) inner.appendChild(c.cloneNode(true)); else { var sp = document.createElement('div'); sp.style.height = c.offsetHeight + 'px'; sp.style.marginBottom = getComputedStyle(c).marginBottom; inner.appendChild(sp); } });
+            ghost.appendChild(inner); (root.closest('.feature-sheet') || document.body).appendChild(ghost);
+          } catch (eG) { ghost = null; }
+          st.mode = nm; render();
+          var ez = { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
+          try {
+            Array.prototype.forEach.call(root.children, function (c) { if (!c.classList.contains('st-filters') && c.animate) c.animate([{ transform: 'translateX(' + (-dir * 100) + '%)' }, { transform: 'translateX(0)' }], ez); });
+            if (ghost) { var ga = ghost.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (dir * 100) + '%)' }], ez); ga.onfinish = function () { ghost.remove(); }; setTimeout(function () { try { ghost.remove(); } catch (eR) {} }, 600); }
+          } catch (eA) { if (ghost) ghost.remove(); }
+        }; });
         root.querySelectorAll('.st-dd').forEach(function (b) { b.onclick = function () { openDd(b); }; });
         root.querySelectorAll('[data-nav]').forEach(function (bt) {
           bt.onclick = function () {

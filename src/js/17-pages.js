@@ -68,6 +68,21 @@
         }
         tEl.textContent = txt;
       }
+      /* ۱.۴.۱: توضیح بالای صفحه (اولین متن بلند درست زیر عنوان) → آیکون اطلاعات کنار نام صفحه */
+      try {
+        var intro = null;
+        if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
+          if (nx && !nx.id && /^(DIV|P)$/.test(nx.tagName) && (nx.matches('.family-help, .sv-intro, .hk-dg-intro, .hk-bulk-hint, .sms-later-hint, .hk-pg-intro') || (!nx.className && nx.querySelectorAll('input, button, select, textarea').length === 0)) && (nx.textContent || '').trim().length > 40) intro = nx; }
+        Array.prototype.forEach.call(box.querySelectorAll(':scope > .hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
+        var ib = hd.querySelector('.hk-info-btn'), sp = hd.querySelector('.hk-pg-sp');
+        if (intro) {
+          intro.classList.add('hk-pg-intro-hid');
+          var tip = (intro.textContent || '').replace(/\s+/g, ' ').trim();
+          if (!ib) { var tmp = document.createElement('div'); tmp.innerHTML = hkInfoBtnHtml(tip); ib = tmp.firstChild; hd.insertBefore(ib, tEl.nextSibling); }
+          else if (ib.getAttribute('data-tip') !== tip) ib.setAttribute('data-tip', tip);
+          if (!sp) { sp = document.createElement('span'); sp.className = 'hk-pg-sp'; hd.appendChild(sp); }
+        } else { if (ib) ib.remove(); if (sp) sp.remove(); }
+      } catch (eIn) {}
       page.classList.add('hk-pg-has-hd');
       if (!page._hkPgObs) {
         var pend = 0;
@@ -78,6 +93,40 @@
         page._hkPgObs.observe(page, { childList: true, subtree: true, characterData: true });
       }
     }
+    /* ۱.۴.۱: نگهبان «صفحهٔ نیمه‌کشیده»: گاهی بعد از ورق خوردن، نمایشگر گوشی فقط تکهٔ بالای صفحه را دوباره می‌کشد و بقیه
+       تصویر کهنهٔ صفحهٔ زیرین می‌ماند (و لمس‌ها به صفحهٔ نامرئی می‌خورد). بعد از هر ورق خوردن، صفحه یک بار کامل دوباره کشیده می‌شود. */
+    function hkPageRepaint(el) {
+      try {
+        if (!el || !el.isConnected) return;
+        el.getAnimations && el.getAnimations().forEach(function (a) { try { if (a.playState !== 'finished') a.finish(); } catch (eF) {} });
+        el.style.transform = 'none';
+        var o = el.style.opacity; el.style.opacity = '0.999'; void el.offsetHeight;
+        requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; });
+      } catch (e) {}
+    }
+    (function () {
+      if (typeof Element === 'undefined' || !Element.prototype.animate || Element.prototype.animate._hk141) return;
+      var an0 = Element.prototype.animate;
+      var an1 = function (kf, opt) {
+        var el = this, a = an0.call(this, kf, opt);
+        try {
+          var big = el.classList && (el.classList.contains('hk-page') || (el.parentElement && el.parentElement.classList && el.parentElement.classList.contains('hk-page')));
+          if (big && !el.classList.contains('hk-mnav-ghost')) {
+            var fin = function () { hkPageRepaint(el); };
+            a.addEventListener('finish', fin); a.addEventListener('cancel', fin);
+            setTimeout(fin, ((opt && opt.duration) || 400) + 250);
+          }
+        } catch (eG) {}
+        return a;
+      };
+      an1._hk141 = true;
+      try { Element.prototype.animate = an1; } catch (eS) {}
+      /* نرم‌افزار وسط ورق خوردن به پس‌زمینه رفت: برگشتن = صفحه‌های باز بی انیمیشن و کامل */
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) return;
+        Array.prototype.forEach.call(document.querySelectorAll('.hk-page'), function (p) { if (p.getClientRects().length) { hkPageRepaint(p); var bx = hkPageBox(p); if (bx) hkPageRepaint(bx); } });
+      });
+    })();
     /* صفحه بسته شد ← بار بعد از عنوان اول شروع شود */
     function hkPageResetStacks() {
       Array.prototype.forEach.call(document.querySelectorAll('.hk-page.hk-pg-has-hd'), function (p) { if (!p.getClientRects().length) p._hkPgStack = []; });
@@ -114,19 +163,17 @@
       if (!on) return;
       var fb = document.getElementById('featureSheetBody'); if (!fb) return;
       var secs = Array.prototype.filter.call(list.children, function (x) { return x.classList && x.classList.contains('section'); });
-      var sum = pl.querySelector('.ledger-summary'), flt = document.getElementById('ledgerFilters');
-      var fbr = fb.getBoundingClientRect(), lr = list.getBoundingClientRect();
-      var below = 0;
-      [flt, sum].forEach(function (el) { if (el && el.getClientRects().length) { var cs = getComputedStyle(el); below += el.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); } });
+      /* ۱.۴.۱: روابط و خلاصه در یک اسکرول (خلاصه هم کامل، نه چند ردیف)؛ صفحه ثابت. جدولِ رابطهٔ باز تقریباً کل جای صفحه را می‌گیرد */
+      var fbr = fb.getBoundingClientRect(), pr = pl.getBoundingClientRect();
       var sb = 0; try { sb = homeSafeBottom(); } catch (eSb) {}
-      var listH = Math.floor(fbr.bottom - lr.top - below - sb - 12);
-      if (!(listH > 120)) return;
-      list.style.setProperty('max-height', listH + 'px', 'important');
-      /* یک باکس رابطهٔ بسته (با فاصله‌اش) */
+      var listH = Math.floor(fbr.bottom - pr.top - sb - 8);
+      if (!(listH > 160)) return;
+      pl.style.setProperty('max-height', listH + 'px', 'important');
+      list.style.removeProperty('max-height');
       var closed = secs.filter(function (s) { return s.classList.contains('collapsed') && !s.classList.contains('hk-led-closing'); })[0] || secs[0];
       var secH = 74;
       if (closed) { var hd = closed.querySelector('.section-header'), cs0 = getComputedStyle(closed); secH = (hd ? hd.offsetHeight : 64) + (parseFloat(cs0.marginTop) || 0) + (parseFloat(cs0.marginBottom) || 0) + (parseFloat(cs0.paddingTop) || 0) + (parseFloat(cs0.paddingBottom) || 0); }
-      var k = Math.min(4, Math.max(1, secs.length));
+      var k = 1;
       secs.forEach(function (s) {
         var body = s.querySelector('.section-body.hk-led-scroll'); if (!body) return;
         var lwIn = s.querySelector('.hk-lw-in'), add = s.querySelector('.ledger-add-row');
@@ -139,6 +186,10 @@
         body.style.setProperty('max-height', h + 'px', 'important');
         body.style.setProperty('--hk-led-h', h + 'px');
         if (!s.classList.contains('collapsed')) hkLedLines(body);
+        /* رابطه‌ای که تازه باز شد: آرام تا سرِ همان رابطه (جدولش کل صفحه را بگیرد) */
+        var open = !s.classList.contains('collapsed');
+        if (open && !s._hkWasOpen) { setTimeout(function () { try { var t = s.getBoundingClientRect().top - pl.getBoundingClientRect().top + pl.scrollTop - 4; pl.scrollTo({ top: Math.max(0, t), behavior: 'smooth' }); } catch (eSc) {} }, 380); }
+        s._hkWasOpen = open;
       });
     }
     (function () {

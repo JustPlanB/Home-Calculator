@@ -77,8 +77,12 @@ public class HkWidgetTxService extends RemoteViewsService {
       }
       public RemoteViews getLoadingView(){ return null; }
       public int getViewTypeCount(){ return 2; }
-      public long getItemId(int pos){ return pos; }
-      public boolean hasStableIds(){ return false; }
+      /* ۱.۴.۱: شناسهٔ ثابت هر ردیف (از خود محتوا) تا فهرست با هر تازه شدن چشمک نزند و نپرد */
+      public long getItemId(int pos){
+        try{ if(pos<visible()){ JSONObject o=rows.getJSONObject(pos); return ((long)o.toString().hashCode()<<8) ^ pos; } }catch(Exception ignored){}
+        return -1L-pos;
+      }
+      public boolean hasStableIds(){ return true; }
     };
   }
 }

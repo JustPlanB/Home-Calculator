@@ -182,8 +182,7 @@
           if (ta && over > 0) ta.style.height = Math.max(56, Math.round(ta.getBoundingClientRect().height - over)) + 'px';
         } catch (eSz) {}
       }
-      try { ta && ta.focus({ preventScroll: true }); } catch (e) { try { ta && ta.focus(); } catch (e2) {} }
-      setTimeout(() => { try { if (ta && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (e) {} }, 80);
+      /* ۱.۴.۱: بی صفحه‌کلید باز می‌شود؛ صفحه‌کلید فقط با زدن روی جای متن (چیدمان از قبل برای آن آماده است، چیزی نمی‌پرد) */
       /* ۱.۳.۸۹: با آمدن صفحه‌کلید، جای متن کوتاه‌تر می‌شود تا همهٔ دکمه‌ها (و «ثبت گروهی») بالای صفحه‌کلید دیده شوند */
       hkSmsImportFit(true);
     }
