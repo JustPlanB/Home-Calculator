@@ -53226,10 +53226,15 @@ function openProjectRowPicker(secId) {
       /* ۱.۴.۱: توضیح بالای صفحه (اولین متن بلند درست زیر عنوان) → آیکون اطلاعات کنار نام صفحه */
       try {
         var intro = null;
-        if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
+        /* ۱.۴.۴: انتخاب توضیحِ هر صفحه (با همان عنوان) ثابت می‌ماند — بی این، روی بعضی گوشی‌ها هر فریم یک بار پیدا و یک بار گم می‌شد
+           و توضیح پنهان/آشکار می‌شد (لرزش صفحهٔ یادآور: فهرست و فیلد ۴۸px بالا و پایین، ۱۲۰ بار در ثانیه) */
+        var kept = page._hkPgIntro;
+        if (kept && page._hkPgIntroKey === txt && kept.isConnected && box.contains(kept)) intro = kept;
+        else if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
           if (nx && !nx.id && /^(DIV|P)$/.test(nx.tagName) && (nx.matches('.family-help, .sv-intro, .hk-dg-intro, .hk-bulk-hint, .sms-later-hint, .hk-pg-intro') || (!nx.className && nx.querySelectorAll('input, button, select, textarea').length === 0)) && (nx.textContent || '').trim().length > 40) intro = nx; }
         /* ۱.۴.۳: راهنماهای صفحه‌های شخصی‌سازی (هر جای صفحه) هم به ⓘ کنار نام می‌روند */
         if (!intro) { var hn0 = box.querySelector('.hk-prefs-hint, .hk-pf-note, .hk-pf-tip'); if (hn0 && (hn0.textContent || '').trim().length > 8) intro = hn0; }
+        page._hkPgIntro = intro; page._hkPgIntroKey = txt;
         Array.prototype.forEach.call(box.querySelectorAll('.hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
         var ib = hd.querySelector('.hk-info-btn'), sp = hd.querySelector('.hk-pg-sp');
         if (intro) {
@@ -53245,6 +53250,14 @@ function openProjectRowPicker(secId) {
         var pend = 0;
         page._hkPgObs = new MutationObserver(function () {
           if (pend) return;
+          /* ۱.۴.۴: ترمز چرخه: اگر در نیم‌ثانیه بیش از ۲۰ بار پشت سر هم اجرا شد، ۴۰۰ms صبر (و ثبت در گزارش اشکال) */
+          var nowT = Date.now();
+          if (nowT - (page._hkPgDecT || 0) > 500) { page._hkPgDecT = nowT; page._hkPgDecN = 0; }
+          if (++page._hkPgDecN > 20) {
+            if (page._hkPgDecN === 21) { try { if (window.hkDiag) hkDiag('loop', 'decorate ' + (page.id || '')); } catch (eL) {} }
+            pend = setTimeout(function () { pend = 0; page._hkPgDecN = 0; page._hkPgDecT = Date.now(); if (page.classList.contains('hk-page')) hkPageDecorate(page); }, 400);
+            return;
+          }
           pend = requestAnimationFrame(function () { pend = 0; if (page.classList.contains('hk-page')) hkPageDecorate(page); });
         });
         page._hkPgObs.observe(page, { childList: true, subtree: true, characterData: true });
@@ -53514,8 +53527,11 @@ function openProjectRowPicker(secId) {
       document.addEventListener('pointerdown', function (e) { if (hkDiagOn()) hkDiag('tap', hkDiagNm(e.target && e.target.closest ? (e.target.closest('button, [onclick], .hk-page, .modal-overlay') || e.target) : e.target) + ' @' + Math.round(e.clientX) + ',' + Math.round(e.clientY)); }, true);
     })();
     function hkDiagText() {
-      return 'گزارش اشکال حساب‌کتاب ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '') + '\n' + _hkDiagBuf.join('\n');
+      /* ۱.۴.۴: نسخهٔ نصب‌شده از خود اندروید (نه ثابت قدیمی APP_VERSION) */
+      var vi = (typeof _appInfo !== 'undefined' && _appInfo) ? (_appInfo.name + (_appInfo.code ? ' (' + _appInfo.code + ')' : '')) : '';
+      return 'گزارش اشکال حساب‌کتاب ' + vi + '\n' + _hkDiagBuf.join('\n');
     }
+    try { setTimeout(function () { if (typeof getInstalledVersion === 'function') getInstalledVersion(); }, 2500); } catch (eV) {}
     function hkDiagCopy() {
       var txt = hkDiagText();
       var ok = function () { try { showToast('گزارش کپی شد؛ آن را برای پشتیبانی بفرستید'); } catch (e) {} };
