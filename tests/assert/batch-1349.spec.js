@@ -32,7 +32,7 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
     const br = bx.getBoundingClientRect(), ls = [...bx.querySelectorAll('.psl-l')].map(e => e.getBoundingClientRect());
     return { top: ls[0].top - br.top, bottom: br.bottom - ls[ls.length - 1].bottom, gap: ls[1].top - ls[0].bottom };
   });
-  ok(card.top < 18 && card.bottom < 18 && card.gap > 6, 'ردیف‌های باکس درآمد/مخارج کارت کل ارتفاع را پر می‌کنند (بالا ' + Math.round(card.top) + '، پایین ' + Math.round(card.bottom) + '، فاصله ' + Math.round(card.gap) + ')');
+  ok(card.top < 18 && card.bottom < 18 && card.gap >= 5 /* ۱.۴.۵: کارت کمی کوتاه‌تر */, 'ردیف‌های باکس درآمد/مخارج کارت کل ارتفاع را پر می‌کنند (بالا ' + Math.round(card.top) + '، پایین ' + Math.round(card.bottom) + '، فاصله ' + Math.round(card.gap) + ')');
   const sp = await p.evaluate(async (t) => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     /* پروژه‌ای که فقط در ماه قبل تراکنش دارد و بدهکار مانده */

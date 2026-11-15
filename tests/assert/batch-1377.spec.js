@@ -59,7 +59,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
   ok(Math.abs(a.sides[0] - a.sides[1]) < 2 && a.gap < 20, 'راهنمای جدول: فضای خالی دو طرف نوشته یکی (' + a.sides.map(Math.round).join(' / ') + ')، فاصله تا جدول همان');
   ok(a.noCircle, 'فلش اسکرول بی دایره');
   ok(a.addDim && a.dockDim, 'پشت باکس «+» و انتخاب میان‌بر مات');
-  ok(!a.midHide && a.fastHide, 'جستجوی منو فقط با اسکرول خیلی سریع محو می‌شود');
+  ok(!a.midHide /* ۱.۴.۵: منوی خلوت دیگر اسکرول نمی‌خورد */, 'جستجوی منو فقط با اسکرول خیلی سریع محو می‌شود');
   await A.ctx.close();
 
   console.log('• انتخاب حساب و کارت‌های قسط');

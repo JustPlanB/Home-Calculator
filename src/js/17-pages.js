@@ -495,8 +495,8 @@
     function hkFabAction(page) {
       var id = page.id;
       if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', 'مثلاً: سهراب/ساختمان آسمان', '#subjectNewName', function () { addSubjectFromModal(); }); } };
-      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { var i = document.getElementById('svNewName'); if (i) i.value = ''; hkSavNewFromField(); } };
-      if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { var i = document.getElementById('urNewName'); if (i) i.value = ''; hkUrNewFromField(); } };
+      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
+      if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { hkUrNewFromField(); } };
       if (id === 'hkDong') {
         var add = page.querySelector('.hk-dg-add');
         if (add) return { l: 'خرج جدید', f: function () { add.click(); } };

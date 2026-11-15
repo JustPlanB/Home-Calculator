@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
     await p.waitForTimeout(500);
     const before = await p.evaluate(() => ({ plans: plans.length, led: ensureLedger().sections.length }));
     const vis = await p.evaluate(() => getComputedStyle(document.getElementById('featureSheetAdd')).display);
-    await p.click('#featureSheetAdd'); await p.waitForTimeout(500);
+    await p.click('#featureSheet .hk-fab'); /* ۱.۴.۵ */ await p.waitForTimeout(500);
     const after = await p.evaluate(() => ({ nameSheet: !!(document.getElementById('nameSheetBackdrop') && document.getElementById('nameSheetBackdrop').classList.contains('open')), plans: plans.length, led: ensureLedger().sections.length, recSheet: !!document.getElementById('recurringSheet') }));
     out[k] = { vis, before, after };
     await p.evaluate(() => { try { document.querySelectorAll('[id$=NameSheet], #ledgerNameSheet, #sectionNameSheet').forEach(x => x.remove()); hideNameSheetBackdrop(); } catch (e) {} });
