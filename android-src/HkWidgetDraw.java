@@ -18,7 +18,7 @@ final class HkWidgetDraw {
   /* کادر فشردهٔ متن نسبت به اندازهٔ فونت (اندازه‌گیری‌شده برای وزیرمتن) */
   private static final float TXT_A=0.74f, TXT_D=0.36f, NUM_A=0.70f, NUM_D=0.20f;
 
-  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none, hidden, mask; int alpha=100; }
+  static final class Data { String month, balance, today, accounts; boolean neg, locked, light, none, hidden, mask; int alpha=100; int pct=-1; }
 
   static final String[] MONTHS_FA={"فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"};
   static final String ACTION_MIDNIGHT="ir.hesabketab.app.WIDGET_MIDNIGHT";
@@ -162,6 +162,7 @@ final class HkWidgetDraw {
       long bal=sp.getLong("balRaw",0)+sg*amt;
       SharedPreferences.Editor e=sp.edit();
       e.putLong("balRaw",bal); e.putString("balance",fmtFa(bal)); e.putBoolean("neg",bal<0);
+      if(sg<0) e.putLong("monthSpentRaw", sp.getLong("monthSpentRaw",0)+amt); /* ۱.۴.۵: درصد ویجت کپسولی */
       String[] td=todayFa();
       if(sg<0 && td!=null && sameDay(at)){
         boolean same=td[1].equals(sp.getString("dayKey",""));
@@ -195,6 +196,11 @@ final class HkWidgetDraw {
     d.light=sp.getBoolean("light",false);
     d.none=sp.getBoolean("todayNone",false);
     d.accounts=sp.getString("accounts","[]");
+    /* ۱.۴.۵: درصدِ مانده از «موجودی + خرج‌های پرداخت‌شدهٔ این ماه» (بی خرج = ۱۰۰)؛ بی داده = -۱ (کپسول خالی) */
+    try{
+      long b0=sp.getLong("balRaw",0), ms=sp.getLong("monthSpentRaw",0), base=b0+ms;
+      d.pct=(!sp.contains("balRaw") || base<=0) ? -1 : (int)Math.max(0, Math.min(100, Math.round(b0*100.0/base)));
+    }catch(Exception ignored){ d.pct=-1; }
     /* تاریخ همیشه از خود گوشی؛ اگر از آخرین به‌روزرسانی نرم‌افزار روز عوض شده، خرج امروز هنوز صفر است */
     String[] t=todayFa();
     if(t!=null){
@@ -285,19 +291,47 @@ final class HkWidgetDraw {
   }
 
   /** ۱.۴.۳: ویجت یک‌خطی موجودی: راست «موجودی»، چپ مبلغ (رنگ سبز/نارنجی، یا •••• وقتی پنهان/قفل است) */
+  /** ۱.۴.۵: ویجت یک‌خطی = کپسول. خالی: فقط قاب. پُر: از راست به اندازهٔ درصدِ مانده رنگ می‌شود
+      (۵۰ به بالا سبز نرم‌افزار، زیر ۵۰ زرد، زیر ۳۰ نارنجی، زیر ۱۵ قرمز)؛ درصد سمت راست و مبلغ موجودی سمت چپ، با وزیرمتن. */
+  static int capColor(int pct, boolean light){
+    if(pct<15) return expC(light);
+    if(pct<30) return 0xFFFF9F0A;
+    if(pct<50) return light ? 0xFFE0B800 : 0xFFFFEC0A;
+    return incC(light);
+  }
   static Bitmap line(Context c, int W, int H, float k, Data d){
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    float padX=16*k, cy=H/2f, size=Math.min(H*0.46f, 22*k);
-    Paint lp=paint(BOLD, size*0.82f, text(d), Paint.Align.RIGHT);
-    String lab="موجودی";
-    cv.drawText(lab, W-padX, cy+size*0.3f, lp);
-    float labW=lp.measureText(lab);
-    String v=d.mask?"••••••":(d.balance==null?"—":d.balance);
-    float aw=W-2*padX-labW-14*k;
-    float vs=fit(BOLD, size, v, aw);
-    cv.drawText(v, padX, cy+vs*0.36f, paint(BOLD, vs, balColor(d), Paint.Align.LEFT));
+    float in=1.5f*k, r=(H-2*in)/2f;
+    android.graphics.RectF box=new android.graphics.RectF(in, in, W-in, H-in);
+    Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG); bg.setColor(withAlpha(d.light ? 0xFFFFFFFF : 0xFF1B1B1B, d.alpha));
+    cv.drawRoundRect(box, r, r, bg);
+    boolean show=!d.mask && d.pct>=0;
+    if(show && d.pct>0){
+      android.graphics.Path clip=new android.graphics.Path(); clip.addRoundRect(box, r, r, android.graphics.Path.Direction.CW);
+      cv.save(); cv.clipPath(clip);
+      float fw=Math.max(2*r, box.width()*d.pct/100f);
+      Paint fp=new Paint(Paint.ANTI_ALIAS_FLAG); fp.setColor(capColor(d.pct, d.light));
+      cv.drawRoundRect(new android.graphics.RectF(box.right-fw, box.top, box.right, box.bottom), r, r, fp);
+      cv.restore();
+    }
+    Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(Math.max(1f, 1.2f*k)); st.setColor(d.light ? 0x38000000 : 0x47FFFFFF);
+    cv.drawRoundRect(box, r, r, st);
+    float padX=r*0.9f, cy=H/2f, size=Math.min(H*0.44f, 21*k);
+    int tc=d.light ? 0xFF1C1C1E : Color.WHITE, sh=d.light ? 0xCCFFFFFF : 0xE6000000;
+    if(show){
+      String ps=faDigits(d.pct)+"٪";
+      Paint pp=paint(BOLD, size, tc, Paint.Align.RIGHT); pp.setShadowLayer(2.5f*k, 0, 0, sh);
+      cv.drawText(ps, W-padX, cy+size*0.36f, pp);
+      String v=d.balance==null?"—":d.balance;
+      float vs=fit(BOLD, size, v, W-2*padX-pp.measureText(ps)-12*k);
+      Paint vp=paint(BOLD, vs, tc, Paint.Align.LEFT); vp.setShadowLayer(2.5f*k, 0, 0, sh);
+      cv.drawText(v, padX, cy+vs*0.36f, vp);
+    }else if(d.mask){
+      Paint mp=paint(BOLD, size, tc, Paint.Align.CENTER);
+      cv.drawText("••••••", W/2f, cy+size*0.36f, mp);
+    }
     return bm;
   }
 

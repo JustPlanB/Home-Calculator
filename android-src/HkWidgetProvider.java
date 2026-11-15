@@ -58,6 +58,12 @@ public class HkWidgetProvider extends AppWidgetProvider {
     v.setViewVisibility(viewId, d.locked ? android.view.View.GONE : android.view.View.VISIBLE);
     v.setOnClickPendingIntent(viewId, eyeIntent(ctx));
     v.setContentDescription(viewId, d.hidden ? "نمایش مبالغ" : "پنهان کردن مبالغ");
+    /* ۱.۴.۵: جای لمس بزرگ‌تر؛ زدن روی تاریخ کنار چشم هم همان کار چشم را می‌کند */
+    try{
+      int ex=viewId==R.id.hk_wt_eye ? R.id.hk_wt_eye2 : R.id.hk_w_eye2;
+      v.setViewVisibility(ex, d.locked ? android.view.View.GONE : android.view.View.VISIBLE);
+      v.setOnClickPendingIntent(ex, eyeIntent(ctx));
+    }catch(Exception ignored){}
   }
   static PendingIntent openApp(Context ctx, boolean mutable){
     Intent open=new Intent(ctx, MainActivity.class);

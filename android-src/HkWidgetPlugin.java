@@ -33,7 +33,7 @@ public class HkWidgetPlugin extends Plugin {
       /* ۱.۳.۸۶: گزینهٔ «همه» (درآمد و مخارج با هم) */
       e.putString("tx_all", call.getString("txAll","[]"));
       /* ۱.۳.۵۶: مبلغ‌های خام برای به‌روزرسانی ویجت در لحظهٔ رسیدن پیامک */
-      try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
+      try{ org.json.JSONObject dj=call.getData(); if(dj.has("balRaw")){ e.putLong("balRaw", dj.optLong("balRaw",0)); e.putLong("todayRaw", dj.optLong("todayRaw",0)); e.putLong("monthSpentRaw", dj.optLong("monthSpentRaw",0)); e.putString("acc4Map", dj.optString("acc4Map","{}")); } }catch(Exception ignored){}
       e.apply();
       /* ۱.۳.۶۴: پیامک‌های تازهٔ صف که نرم‌افزار هنوز نخوانده، روی عدد تازه دوباره اعمال شوند */
       try{ org.json.JSONObject dj2=call.getData(); if(dj2.has("seenNids")) HkWidgetDraw.applyUnseen(getContext(), dj2.optString("seenNids","[]")); }catch(Exception ignored){}

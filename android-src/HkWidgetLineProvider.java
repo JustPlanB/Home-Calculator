@@ -7,7 +7,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-/** ۱.۴.۳: ویجت یک‌خطی موجودی (۴ در ۱): فقط «موجودی» و مبلغش؛ با همان تنظیمات ظاهر (رنگ پس‌زمینه و شفافیت) و پنهان شدن مبالغ */
+/** ۱.۴.۳: ویجت یک‌خطی (۴ در ۱)؛ ۱.۴.۵: کپسول درصدی موجودی؛ با همان تنظیمات ظاهر (رنگ پس‌زمینه و شفافیت) و پنهان شدن مبالغ */
 public class HkWidgetLineProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids){ for(int id: ids) render(ctx, mgr, id); }
   @Override public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr, int id, Bundle o){ render(ctx, mgr, id); }
@@ -24,9 +24,11 @@ public class HkWidgetLineProvider extends AppWidgetProvider {
       HkWidgetDraw.Data d=HkWidgetDraw.load(ctx, id);
       float[] sz=HkWidgetDraw.size(ctx, mgr, id, 250, 56);
       RemoteViews v=new RemoteViews(ctx.getPackageName(), R.layout.hk_widget);
-      v.setInt(R.id.hk_w_root,"setBackgroundResource", HkWidgetDraw.bgRes(ctx, d.light, d.alpha));
+      /* ۱.۴.۵: خود کپسول قاب و پس‌زمینه را می‌کشد */
+      v.setInt(R.id.hk_w_root,"setBackgroundResource", android.R.color.transparent);
       v.setImageViewBitmap(R.id.hk_w_img, HkWidgetDraw.line(ctx, (int)sz[0], (int)sz[1], sz[2], d));
       v.setOnClickPendingIntent(R.id.hk_w_root, HkWidgetProvider.openApp(ctx, false));
+      v.setViewVisibility(R.id.hk_w_eye2, android.view.View.GONE);
       v.setViewVisibility(R.id.hk_w_eye, android.view.View.GONE); /* یک خط جای دکمهٔ چشم ندارد؛ چشم بقیهٔ ویجت‌ها این را هم پنهان می‌کند */
       mgr.updateAppWidget(id, v);
     }catch(Exception ignored){}

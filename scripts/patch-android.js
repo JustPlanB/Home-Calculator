@@ -391,9 +391,12 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget.xml'),
     android:background="@drawable/hk_widget_bg">
     <ImageView android:id="@+id/hk_w_img" android:layout_width="match_parent" android:layout_height="match_parent"
         android:scaleType="fitCenter" android:contentDescription="حساب‌کتاب"/>
-    <ImageView android:id="@+id/hk_w_eye" android:layout_width="34dp" android:layout_height="34dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="4dp" android:layout_marginTop="2dp"
-        android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
+    <!-- ۱.۴.۵: جای لمس بزرگ‌تر برای چشم؛ روی تاریخ کنار آن هم همان کار -->
+    <FrameLayout android:id="@+id/hk_w_eye2" android:layout_width="130dp" android:layout_height="44dp"
+        android:layout_gravity="top|left" android:contentDescription="پنهان کردن مبالغ"/>
+    <ImageView android:id="@+id/hk_w_eye" android:layout_width="44dp" android:layout_height="44dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="0dp" android:layout_marginTop="0dp"
+        android:paddingLeft="12dp" android:paddingTop="10dp" android:paddingRight="14dp" android:paddingBottom="16dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
 </FrameLayout>
 `);
 // ۱.۳.۸۶: ویجت پشته‌ای (یک‌خطی) حذف شد
@@ -475,7 +478,7 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_info.xml'),
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="4"
+    android:targetCellWidth="5"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
@@ -507,9 +510,12 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
                 android:layout_gravity="center" android:adjustViewBounds="true" android:scaleType="fitXY" android:contentDescription="ردیفی نیست"/>
         </FrameLayout>
     </LinearLayout>
-    <ImageView android:id="@+id/hk_wt_eye" android:layout_width="38dp" android:layout_height="38dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="6dp" android:layout_marginTop="5dp"
-        android:padding="8dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
+    <!-- ۱.۴.۵: جای لمس بزرگ‌تر برای چشم؛ روی تاریخ کنار آن هم همان کار -->
+    <FrameLayout android:id="@+id/hk_wt_eye2" android:layout_width="124dp" android:layout_height="48dp"
+        android:layout_gravity="top|left" android:contentDescription="پنهان کردن مبالغ"/>
+    <ImageView android:id="@+id/hk_wt_eye" android:layout_width="48dp" android:layout_height="48dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="1dp" android:layout_marginTop="0dp"
+        android:padding="13dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
     <!-- ۱.۳.۹۲: روی نام نوع ردیف‌ها (وسط نوار عنوان): منوی واریز / برداشت / همه -->
     <FrameLayout android:id="@+id/hk_wt_pick" android:layout_width="140dp" android:layout_height="48dp"
         android:layout_gravity="top|center_horizontal" android:contentDescription="انتخاب نوع ردیف‌ها"/>
@@ -548,7 +554,7 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_tx_info.xml'),
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="4"
+    android:targetCellWidth="5"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
@@ -566,7 +572,7 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_line_info.xml'),
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="40dp"
-    android:targetCellWidth="4"
+    android:targetCellWidth="5"
     android:targetCellHeight="1"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
@@ -582,7 +588,7 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_accounts_info.xml'),
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
-    android:targetCellWidth="4"
+    android:targetCellWidth="5"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"

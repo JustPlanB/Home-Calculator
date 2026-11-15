@@ -677,9 +677,10 @@
     function openStatsSheet(opts) { setTimeout(function () { HKStats.open(opts && opts.type ? null : opts); }, 40); }
     /* ۱.۴.۲: صفحهٔ «تراکنش‌های یک دسته» از دایرهٔ دسته‌بندی آمار (همان بازه و کارت و وضعیتِ انتخاب‌شده در آمار)؛
        ظاهر همان صورت‌حساب حساب‌ها؛ تازه‌ترین بالا. ردیفی که چند دسته دارد، فقط سهم همین دسته را نشان می‌دهد */
-    function hkOpenStatsCatTx(keys, label, color) {
+    /* ۱.۴.۵: data اختیاری = فهرست آماده (از «دسته‌بندی برداشت»)؛ جمع بالای صفحه همیشه نارنجی برداشت */
+    function hkOpenStatsCatTx(keys, label, color, data) {
       var old = document.getElementById('hkStCatTx'); if (old) old.remove();
-      var d = HKStats.catTx(keys), p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
+      var d = data || HKStats.catTx(keys), p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
       var rows = d.rows.slice().sort(function (a, b) {
         var ka = a.x.y * 1e6 + a.x.m * 1e4 + (a.x.d || 0) * 100, kb = b.x.y * 1e6 + b.x.m * 1e4 + (b.x.d || 0) * 100;
         return (kb - ka) || ((Number(b.x.row.createdAt) || 0) - (Number(a.x.row.createdAt) || 0));
@@ -687,7 +688,7 @@
       var tot = rows.reduce(function (s, o) { return s + o.a; }, 0);
       var ov = document.createElement('div'); ov.id = 'hkStCatTx'; ov.className = 'hk-bulk-ov hk-bulk-center'; ov.setAttribute('data-hk-back', '1');
       ov.innerHTML = '<div class="hk-bulk-box hk-acctx-box hk-stcat-box"><div class="hk-bulk-title">' + escapeHtml(label) + '</div>' +
-        '<div class="hk-acctx-src hk-stcat-sum"><span>' + escapeHtml(d.period) + (d.card ? ' · ' + escapeHtml(d.card) : '') + '</span><b style="color:' + escapeHtml(color || 'var(--text)') + '">' + formatNum(Math.round(tot)) + ' <small>تومان</small></b></div>' +
+        '<div class="hk-acctx-src hk-stcat-sum"><span>' + escapeHtml(d.period) + (d.card ? ' · ' + escapeHtml(d.card) : '') + '</span><b class="hk-stcat-tot">' + formatNum(Math.round(tot)) + ' <small>تومان</small></b></div>' +
         '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span><span class="b">کارت</span></div>' +
         rows.map(function (o) {
           var x = o.x, part = Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);

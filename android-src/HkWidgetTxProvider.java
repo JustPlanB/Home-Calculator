@@ -127,7 +127,8 @@ final class HkWidgetTxDraw {
   /* ستون‌ها از راست مثل جدول نرم‌افزار: تاریخ | شرح | حساب | مبلغ — مرزها: [راست، چپِ تاریخ، چپِ شرح، چپِ حساب، چپ] */
   static float[] cols(float W, float k){
     float L=10*k, R=W-10*k, w=R-L;
-    return new float[]{ R, R-w*0.19f, L+w*0.47f, L+w*0.25f, L };
+    /* ۱.۴.۵: تاریخ (راست‌چین) و مبلغ (چپ‌چین) و حساب باریک‌تر؛ جای آزادشده به «شرح» رسید (۳۴٪ ← ۴۴٪) */
+    return new float[]{ R, R-w*0.15f, L+w*0.41f, L+w*0.23f, L };
   }
   static float base(float top, float h, float size){ return top+h/2f+size*0.19f; }
   static void grid(Canvas cv, float[] c, float top, float h, boolean light, boolean bottom){
@@ -197,23 +198,39 @@ final class HkWidgetTxDraw {
   static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light){ return row(ctx, W, k, date, desc, bank, amount, inc, light, false); }
   /* ۱.۳.۸۸: پرداخت‌نشده/دریافت‌نشده به زرد نرم‌افزار (#ffec0a، تم روشن #a87a00) */
   static int unpaidC(boolean light){ return light ? 0xFFA87A00 : 0xFFFFEC0A; }
-  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light, boolean unpaid){
+  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light, boolean unpaid){ return row(ctx, W, k, date, desc, bank, amount, inc, light, unpaid, null); }
+  /* ۱.۴.۵: proj = رنگ هایلایت پروژه (مثل #d000ff) یا null */
+  static Bitmap row(Context ctx, int W, float k, String date, String desc, String bank, String amount, boolean inc, boolean light, boolean unpaid, String proj){
     fonts(ctx);
     float rh=38*k; int H=Math.round(rh);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
+    /* هایلایت پروژه: مثل ماژیک — نوار گرد و کمی کج، ۳۵٪ همان رنگ پروژه (همان مقدار نرم‌افزار) */
+    if(proj!=null && proj.length()>0){
+      try{
+        int pc=android.graphics.Color.parseColor(proj);
+        Paint hp=new Paint(Paint.ANTI_ALIAS_FLAG); hp.setColor((pc&0x00FFFFFF)|0x59000000);
+        float x0=c[4]-4*k, x1=c[0]+4*k, y0=6*k, y1=rh-6*k, rr=(y1-y0)*0.42f;
+        android.graphics.Path mp=new android.graphics.Path();
+        mp.moveTo(x0+rr, y0+1.2f*k); mp.lineTo(x1-rr*0.7f, y0); mp.quadTo(x1+1*k, y0+0.5f*k, x1, y0+rr);
+        mp.lineTo(x1-0.8f*k, y1-rr); mp.quadTo(x1-1*k, y1, x1-rr, y1-0.6f*k);
+        mp.lineTo(x0+rr*0.8f, y1); mp.quadTo(x0-1*k, y1-0.4f*k, x0+0.6f*k, y1-rr);
+        mp.lineTo(x0, y0+rr); mp.quadTo(x0, y0+1*k, x0+rr, y0+1.2f*k); mp.close();
+        cv.drawPath(mp, hp);
+      }catch(Exception ignored){}
+    }
     grid(cv, c, 0, rh, light, true);
-    Paint pd=paint(REG, 12.5f*k, muted(light), Paint.Align.CENTER);
+    Paint pd=paint(REG, 12.5f*k, muted(light), Paint.Align.RIGHT);
     fitSize(pd, date, (c[0]-c[1])-6*k);
-    cv.drawText(date, (c[0]+c[1])/2f, base(0, rh, 12.5f*k), pd);
+    cv.drawText(date, c[0]-3*k, base(0, rh, 12.5f*k), pd);
     Paint ps=paint(REG, 14.5f*k, text(light), Paint.Align.RIGHT);
     cv.drawText(ell(ps, desc, (c[1]-c[2])-12*k), c[1]-6*k, base(0, rh, 14.5f*k), ps);
     Paint pb=paint(REG, 12.5f*k, muted(light), Paint.Align.CENTER);
     String b2=(bank==null || bank.length()==0) ? "—" : bank;
     cv.drawText(ell(pb, b2, (c[2]-c[3])-8*k), (c[2]+c[3])/2f, base(0, rh, 12.5f*k), pb);
-    Paint pa=paint(BOLD, 14.5f*k, unpaid ? unpaidC(light) : amt(inc, light), Paint.Align.CENTER);
+    Paint pa=paint(BOLD, 14.5f*k, unpaid ? unpaidC(light) : amt(inc, light), Paint.Align.LEFT);
     fitSize(pa, amount, (c[3]-c[4])-6*k);
-    cv.drawText(amount, (c[3]+c[4])/2f, base(0, rh, 14.5f*k), pa);
+    cv.drawText(amount, c[4]+3*k, base(0, rh, 14.5f*k), pa);
     return bm;
   }
   static Bitmap empty(Context ctx, int W, float k, String msg, boolean light){

@@ -898,18 +898,19 @@
           var _tw = getTodayPersian();
           if (currentYear !== _tw.y || currentMonth !== _tw.m) return;
           var bal = 0; try { bal = Number(sumGlobalAccountBalances()) || 0; } catch (e0) {}
-          var t = getTodayPersian(), spent = 0;
+          var t = getTodayPersian(), spent = 0, mSpent = 0;
           var key = periodKey(t.y, t.m);
           var pd = (key === periodKey(currentYear, currentMonth)) ? periodData : (archive && archive[key]);
           (((pd && pd.expense && pd.expense.sections) || [])).forEach(function (sec) {
             (sec.rows || []).forEach(function (r) {
               if (!r || r.deletedAt || r.p2p || (r.status || 'paid') !== 'paid') return;
+              mSpent += Number(r.amount) || 0; /* ۱.۴.۵: خرج پرداخت‌شدهٔ کل ماه برای درصد ویجت کپسولی */
               if (dayNum(r) === t.d) spent += Number(r.amount) || 0;
             });
           });
           var locked = false; try { locked = !!(await lockIsEnabled()); } catch (eL) {}
           /* ۱.۳.۵۶: پیامک‌های ثبت‌نشده (در صف) موقتاً حساب می‌شوند */
-          var pdl = hkPendingDelta(); bal += pdl.tot; spent += pdl.today;
+          var pdl = hkPendingDelta(); bal += pdl.tot; spent += pdl.today; mSpent += pdl.today;
           /* ویجت حساب‌ها: موجودی هر حساب (کارت) جدا */
           var accs = [];
           try {
@@ -928,7 +929,7 @@
             todayNone: !(spent > 0),
             balance: (bal < 0 ? '-' : '') + formatNum(Math.abs(bal)),
             today: formatNum(spent),
-            balRaw: Math.round(bal), todayRaw: Math.round(spent), acc4Map: JSON.stringify(a4m),
+            balRaw: Math.round(bal), todayRaw: Math.round(spent), monthSpentRaw: Math.round(mSpent), acc4Map: JSON.stringify(a4m),
             /* ۱.۳.۶۴: پیامک‌هایی که این عدد حسابشان کرده یا تعیین تکلیف شده‌اند؛ بقیهٔ صف نیتیو دوباره روی ویجت اعمال می‌شود */
             seenNids: JSON.stringify(hkWidgetSeenNids()),
             negative: bal < 0,
@@ -983,6 +984,8 @@
             /* «همه»: نوع ردیف (رنگ سبز/قرمز در ویجت) و علامت + / − کنار مبلغ */
             var _unp = (r.status || 'paid') !== 'paid';
             if (_unp) o.u = 1;
+            /* ۱.۴.۵: ردیف پروژه با همان رنگ هایلایت پروژه در نرم‌افزار */
+            try { var _fc = r.financialContext, _sid = _fc && _fc.subjectId; if (_sid && _sid !== 'personal') { var _sb = getSubjectById(_sid), _mt = _sb && getProjectHighlightMeta(_sb.highlightColor); if (_mt && _mt.accent) o.p = _mt.accent; } } catch (eP2) {}
             if (kind === 'all') o.x = kd2 === 'income' ? 'i' : 'e';
             /* «همه» و ردیف‌های پرداخت/دریافت‌نشده: + واریز، − برداشت */
             if (kind === 'all' || _unp) o.a = (kd2 === 'income' ? '+' : '−') + o.a;

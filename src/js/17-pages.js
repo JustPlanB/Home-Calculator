@@ -37,6 +37,7 @@
         var bar = page.querySelector('.feature-sheet-bar');
         if (bar && !bar.querySelector('.hk-pg-back')) { var t0 = bar.querySelector('.fs-title'); bar.insertBefore(hkPageBackBtn(), t0 || bar.firstChild); }
         page.classList.add('hk-pg-fs');
+        try { hkFabSync(page); } catch (eFb) {}
         return;
       }
       var box = hkPageBox(page); if (!box) return;
@@ -93,6 +94,7 @@
         } else { if (ib) ib.remove(); if (sp) sp.remove(); }
       } catch (eIn) {}
       page.classList.add('hk-pg-has-hd');
+      try { hkFabSync(page); } catch (eFb2) {}
       if (!page._hkPgObs) {
         var pend = 0;
         page._hkPgObs = new MutationObserver(function () {
@@ -415,4 +417,111 @@
       };
       if (document.readyState === 'complete') settle(); else window.addEventListener('load', settle);
       setTimeout(show, 1400);
+    })();
+    /* ===== ۱.۴.۵: منوی همبرگری خلوت =====
+       هر قسمت (بخش‌ها، حساب‌ها و پیامک، …) یک ردیف کلی است که زیرش نام چند منوی همان قسمت با طوسی کوچک آمده؛
+       زدن روی آن صفحهٔ همان قسمت را (همان‌جا، با ورق خوردن نرم) باز می‌کند و بازگشت به فهرست قسمت‌ها برمی‌گردد.
+       باکس نام نرم‌افزار، باکس نام کاربر و جستجو دست نخورده‌اند. خود گزینه‌ها همان دکمه‌های قبلی‌اند (جستجو و تست‌ها مثل قبل). */
+    (function () {
+      var dd = document.getElementById('menuDropdown'); if (!dd) return;
+      var CH = '<svg class="hk-mgr-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+      var itemName = function (el) {
+        if (el.classList.contains('menu-theme-row')) { var s = el.querySelector('span'); return s ? s.textContent.trim() : ''; }
+        return Array.prototype.filter.call(el.childNodes, function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; }).join(' ').replace(/\s+/g, ' ').trim();
+      };
+      var slide = function (el, fwd) { try { if (el && el.animate) el.animate([{ transform: 'translateX(' + (fwd ? -28 : 28) + 'px)', opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); } catch (e) {} };
+      var exit = function (quiet) {
+        if (!dd.classList.contains('hk-mgv')) return false;
+        dd.classList.remove('hk-mgv');
+        Array.prototype.forEach.call(dd.querySelectorAll('.hk-mg-on'), function (g) { g.classList.remove('hk-mg-on'); });
+        if (!quiet) slide(dd.querySelector('.menu-scroll'), false);
+        return true;
+      };
+      var enter = function (g) {
+        dd.classList.add('hk-mgv'); g.classList.add('hk-mg-on');
+        var sc = dd.querySelector('.menu-scroll'); if (sc) sc.scrollTop = 0;
+        slide(sc, true);
+      };
+      var build = function () {
+        Array.prototype.forEach.call(dd.querySelectorAll('.hk-mg[data-g]'), function (g) {
+          var lab = g.querySelector(':scope > .menu-section-label'), box = g.querySelector(':scope > .hk-mg-box'); if (!lab || !box) return;
+          var row = g.querySelector(':scope > .hk-mgr');
+          if (!row) {
+            row = document.createElement('button'); row.type = 'button'; row.className = 'hk-mgr';
+            row.innerHTML = '<i class="hk-mi"></i><span class="hk-mgr-tx"><b></b><small></small></span>' + CH;
+            row.querySelector('b').textContent = lab.textContent.trim();
+            row.onclick = function (e) { e.stopPropagation(); enter(g); };
+            g.insertBefore(row, g.firstChild);
+            var hd = document.createElement('button'); hd.type = 'button'; hd.className = 'hk-mgh';
+            hd.innerHTML = (window.HK_BACK_SVG || '') + '<span></span>'; hd.querySelector('span').textContent = lab.textContent.trim();
+            hd.onclick = function (e) { e.stopPropagation(); exit(); };
+            g.insertBefore(hd, row.nextSibling);
+          }
+          var its = Array.prototype.filter.call(box.children, function (c) { return (c.classList.contains('menu-item') || c.classList.contains('menu-theme-row')) && c.style.display !== 'none'; });
+          var nm = its.map(itemName).filter(Boolean);
+          row.querySelector('small').textContent = nm.slice(0, 3).join('، ') + (nm.length > 3 ? ' …' : '');
+          var ic = its[0] && its[0].querySelector('.hk-mi'), my = row.querySelector('.hk-mi');
+          if (ic && my && my.getAttribute('data-src') !== ic.outerHTML) { my.setAttribute('style', ic.getAttribute('style') || ''); my.innerHTML = ic.innerHTML; my.setAttribute('data-src', ic.outerHTML); }
+        });
+      };
+      build();
+      /* هر بار باز شدن منو: از فهرست قسمت‌ها، با زیرنویس تازه */
+      if (typeof window.openSideMenu === 'function' && !window.openSideMenu._hkMg) {
+        var o0 = window.openSideMenu;
+        var o1 = function () { try { exit(true); build(); } catch (e) {} return o0.apply(this, arguments); };
+        o1._hkMg = true; o1.toString = function () { return Function.prototype.toString.call(o0); };
+        try { window.openSideMenu = o1; openSideMenu = o1; } catch (eW) {}
+      }
+      /* بک گوشی داخل یک قسمت: برگشت به فهرست قسمت‌ها (منو باز می‌ماند) */
+      var b0 = onBackGuard;
+      onBackGuard = function () {
+        try { if (dd.classList.contains('open') && dd.classList.contains('hk-mgv') && !document.querySelector('.hk-page.open, .modal-overlay.open, .feature-sheet.open, .backup-pick-overlay, .hk-recon-ov') && exit()) return true; } catch (e) {}
+        return b0.apply(this, arguments);
+      };
+      /* جستجو همیشه روی همهٔ منوها */
+      try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
+      try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
+    })();
+    /* ===== ۱.۴.۵: مربع آبی «افزودن» گوشهٔ پایین راست صفحه‌ها =====
+       جای فیلدهای «… جدید» و «+» بالای قرض/درآمد ثابت و «خرج جدید» دُنگ. فهرست از زیرش رد می‌شود و مربع همیشه رو و قابل لمس است. */
+    var HK_FAB_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    function hkFabAsk(label, hint, inputSel, run) {
+      askTextInput(label, '', function (v) {
+        v = String(v || '').trim(); if (!v) return;
+        var inp = document.querySelector(inputSel); if (inp) inp.value = v;
+        run();
+      }, hint);
+    }
+    function hkFabAction(page) {
+      var id = page.id;
+      if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', 'مثلاً: سهراب/ساختمان آسمان', '#subjectNewName', function () { addSubjectFromModal(); }); } };
+      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { var i = document.getElementById('svNewName'); if (i) i.value = ''; hkSavNewFromField(); } };
+      if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { var i = document.getElementById('urNewName'); if (i) i.value = ''; hkUrNewFromField(); } };
+      if (id === 'hkDong') {
+        var add = page.querySelector('.hk-dg-add');
+        if (add) return { l: 'خرج جدید', f: function () { add.click(); } };
+        if (page.querySelector('.hk-dg-new')) return { l: 'گروه جدید', f: function () { hkFabAsk('گروه جدید', 'مثلاً: سفر شمال', '#hkDong .hk-dg-newin', function () { var b = document.querySelector('#hkDong .hk-dg-new'); if (b) b.click(); }); } };
+        return null;
+      }
+      if (id === 'featureSheet' && page.classList.contains('open') && (_featureActive === 'ledger' || _featureActive === 'recurring')) return { l: _featureActive === 'ledger' ? 'رابطهٔ جدید' : 'درآمد ثابت جدید', f: function () { featureSheetAdd(); } };
+      return null;
+    }
+    function hkFabSync(page) {
+      if (!page) return;
+      var act = hkFabAction(page), fab = page.querySelector(':scope > .hk-fab');
+      /* classList.add/remove حتی بی تغییر هم رکورد تغییر می‌سازد ← فقط وقتی لازم است */
+      if (!act) { if (fab) fab.remove(); if (page.classList.contains('hk-fab-on')) page.classList.remove('hk-fab-on'); return; }
+      if (!fab) {
+        fab = document.createElement('button'); fab.type = 'button'; fab.className = 'hk-fab'; fab.innerHTML = HK_FAB_SVG;
+        fab.addEventListener('click', function (e) { e.stopPropagation(); var a = hkFabAction(page); if (a) a.f(); });
+        page.appendChild(fab);
+      }
+      if (fab.getAttribute('aria-label') !== act.l) fab.setAttribute('aria-label', act.l);
+      if (!page.classList.contains('hk-fab-on')) page.classList.add('hk-fab-on');
+    }
+    try { window.hkFabSync = hkFabSync; } catch (eFw) {}
+    /* برگهٔ قرض/درآمد ثابت با عوض شدن تب */
+    (function () {
+      var fs = document.getElementById('featureSheet'); if (!fs) return;
+      try { new MutationObserver(function () { try { hkFabSync(fs); } catch (e) {} }).observe(fs, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true }); } catch (eM) {}
     })();

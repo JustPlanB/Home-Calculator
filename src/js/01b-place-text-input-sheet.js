@@ -615,10 +615,10 @@
         ['menuBtn', 'monthSelectWrap', 'yearSelectWrap'].forEach(function (id) { var e = document.getElementById(id); if (e && e.offsetHeight) bot = Math.max(bot, e.getBoundingClientRect().bottom); });
         if (!bot) bot = br.bottom;
         var ct = card.getBoundingClientRect().top;
-        if (!(ct > bot)) return;
         var b = ln.querySelector('b'), lr = ln.getBoundingClientRect(), tr = b ? b.getBoundingClientRect() : lr;
         var glyphOff = (tr.top + tr.height / 2) - (lr.top + lr.height / 2);
-        var mid = (bot + ct) / 2;
+        /* ۱.۴.۵: تاریخ بالای صفحه، وسط فاصلهٔ لبهٔ بالای صفحه تا ردیف همبرگری/ماه/سال (دیگر بین آن ردیف و کارت نیست) */
+        var mid = br.top / 2;
         var top = mid - br.top - ln.offsetHeight / 2 - glyphOff;
         ln.style.top = (Math.round(top * 2) / 2) + 'px';
       } catch (e) {}

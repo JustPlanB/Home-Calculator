@@ -457,7 +457,8 @@
       panel.style.setProperty('height', panelH + 'px', 'important');
       panel.style.setProperty('max-height', panelH + 'px', 'important');
       var off = Math.max(0, Math.round(pr.top - tb.bottom));
-      var bottomY = Math.round(screenBottom - gTop);
+      /* ۱.۴.۵: بالای ردیف همبرگری حالا جای تاریخ است؛ حاشیهٔ پایین همان ۸px قبلی می‌ماند */
+      var bottomY = Math.round(screenBottom - Math.min(gTop, 8));
       stack.style.setProperty('margin-top', '0px', 'important');
       stack.style.setProperty('padding-top', '0px', 'important');
       stack.style.setProperty('gap', off + 'px', 'important');
