@@ -180,9 +180,9 @@ const allErrors = [];
   const E = await page.evaluate(async () => {
     const o = {};
     const pdf = hkRecArcPdfBlocks.toString();
-    o.recPdf = /<th style="width:6%">ردیف<\/th>/.test(pdf) && /border-top:2\.5px solid #333/.test(pdf) && /gi % 2/.test(pdf);
+    o.recPdf = /<th style="width:6%">ردیف<\/th>/.test(pdf) && /border-top:2\.5px solid #333/.test(pdf) && /gi\s*%\s*2/.test(pdf);
     const css = [...document.styleSheets].map(s => { try { return [...s.cssRules].map(r => r.cssText).join('\n'); } catch (e) { return ''; } }).join('\n');
-    o.led = /hk-led-closing\)[^{]*\.hk-led-scroll\s*\{\s*min-height:\s*0px\s*!important/.test(css) && /textarea\[readonly\]:focus[^{]*\{[^}]*caret-color: transparent/.test(css);
+    o.led = /\.section\.hk-led-closing \.section-body\.hk-led-scroll\s*\{\s*min-height:\s*0px\s*!important/.test(css) /* باز و در حال بسته شدن: هر دو متناسب */ && /textarea\[readonly\]:focus[^{]*\{[^}]*caret-color: transparent/.test(css);
     o.proj = /#projectReportModal \.proj-table thead th \{[^}]*position: sticky[^}]*inset/.test(css);
     return o;
   });
