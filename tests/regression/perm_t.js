@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
     window.Capacitor = { isNativePlatform: () => true, Plugins: { BankSms: { permStatus: () => Promise.resolve(window.__st), requestNotif: () => Promise.resolve(), requestPermission: () => Promise.resolve({ granted: true }), openPermSettings: (o) => { window.__opened.push(o.which); return Promise.resolve(); }, getAllPending: () => Promise.resolve({ items: [] }), getPendingSms: () => Promise.resolve({ has: false }), cancelHandledNotifications: () => Promise.resolve() } } }; });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(require('../lib/index-url')); await p.waitForTimeout(3000);
-  await p.evaluate(() => openSideMenu()); await p.waitForTimeout(500);
+  await p.evaluate(() => { openSideMenu(); hkMenuGroupEnter('settings'); }); await p.waitForTimeout(600);
   console.log(await p.evaluate(() => [document.getElementById('permRowSms').className, document.getElementById('permRowNotif').className]));
   await p.evaluate(() => hkPermToggle('notif')); await p.waitForTimeout(1500);
   console.log(await p.evaluate(() => window.__opened));

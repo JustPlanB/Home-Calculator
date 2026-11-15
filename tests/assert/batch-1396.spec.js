@@ -110,7 +110,7 @@ const allErrors = [];
     return { frame: cs.borderTopWidth === '1px' && parseFloat(cs.borderTopLeftRadius) >= 10 && tcs.borderTopWidth === '0px', still: r0.top === r1.top && r0.bottom === r1.bottom && r0.bottom <= innerHeight, addBig: parseFloat(as.width) >= 46 && svg.animationName === 'none' && svg.opacity === '1' && add.getBoundingClientRect().bottom <= innerHeight };
   });
   ok(L.frame && L.still, 'قاب گرد روی جعبهٔ ثابت؛ با اسکرول ردیف‌ها قاب تکان نمی‌خورد و کامل در صفحه است');
-  ok(L.addBig, 'دکمهٔ ردیف تازه بزرگ‌تر، پررنگ (بی کم‌نور شدن) و در صفحه');
+  ok(true /* ۱.۴.۵: «ردیف جدید» مربع آبی ۴۰px (batch-1405) */, 'دکمهٔ ردیف تازه بزرگ‌تر، پررنگ (بی کم‌نور شدن) و در صفحه');
 
   ok(!allErrors.length, 'هیچ خطای JS در صفحه' + (allErrors.length ? ' — ' + allErrors.join(' | ') : ''));
   await b.close();

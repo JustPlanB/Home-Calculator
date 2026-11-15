@@ -73,6 +73,7 @@ const ACC = 'ملت مصنوعی';
 
   console.log('• کلیدهای روشن/خاموش');
   const sw = await p.evaluate(async () => {
+    try { openSideMenu(); hkMenuGroupEnter('settings'); } catch (e) {} await new Promise(r => setTimeout(r, 500)); /* ۱.۴.۵: گزینه‌ها داخل صفحهٔ «تنظیمات» منو */
     const w = ms => new Promise(r => setTimeout(r, ms));
     const pos = (s) => { const r = s.getBoundingClientRect(), k = s.querySelector('i').getBoundingClientRect(); return (k.left + k.width / 2) > (r.left + r.width / 2) ? 'R' : 'L'; };
     const out = {};

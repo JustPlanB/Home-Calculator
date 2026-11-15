@@ -133,7 +133,7 @@ async function seedRows(page) {
   });
   ok(Math.max(...h.hs) - Math.min(...h.hs) <= 2, 'سه باکس هم‌ارتفاع: کارت، باکس هوشمند، دو باکس پایین (' + h.hs.join('/') + ')');
   ok(Math.abs(h.gaps[0] - h.gaps[1]) <= 2 && h.fit, 'فاصله‌های عمودی برابر و همه داخل صفحه (' + h.gaps.join('/') + ')');
-  ok(h.tb.length === 3 && h.tb.every(x => x === 46), 'دکمه‌های منو، ماه و سال بلندتر (' + h.tb.join('/') + ')');
+  ok(h.tb.length === 3 && h.tb.every(x => x === 42) /* ۱.۴.۵: ردیف بالا کمی کوتاه‌تر */, 'دکمه‌های منو، ماه و سال بلندتر (' + h.tb.join('/') + ')');
   const th = await H.page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const bodyBg = () => getComputedStyle(document.body).backgroundColor;
@@ -204,6 +204,7 @@ async function seedRows(page) {
   });
   ok(mn.inSections, '«پروژه‌ها» در گروه «بخش‌ها»');
   await M.page.evaluate(() => toggleMenu()); await M.page.waitForTimeout(500);
+  await M.page.evaluate(() => hkMenuGroupEnter('reports')); await M.page.waitForTimeout(450); /* ۱.۴.۵: منوی خلوت */
   const item = M.page.locator('#menuDropdown .menu-item', { hasText: 'آمار' });
   const bg0 = await item.evaluate(e => getComputedStyle(e).backgroundColor);
   await item.tap(); await M.page.waitForTimeout(400);

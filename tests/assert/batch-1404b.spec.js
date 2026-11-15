@@ -177,30 +177,8 @@ const allErrors = [];
   ok(M.help.noFam && M.help.priv, 'راهنما ← حریم خصوصی: بی توضیح همگام‌سازی خانوادگی');
   ok(M.go === 'rgb(8, 181, 245)', 'دکمهٔ «ساخت خروجی» درآمد ثابت آبی نرم‌افزار (' + M.go + ')');
 
-  console.log('• فیلدهای «… جدید»');
-  const N = await page.evaluate(async () => {
-    const w = ms => new Promise(r => setTimeout(r, ms));
-    const sv = loadSavings(); sv.items.push({ id: 'a1', asset: 'usd', qty: 1200, buy: 95000, y: 1405, m: 3, d: 12, note: '' }); saveSavings();
-    loadUserReminders(); userReminders.push({ id: 'u1', title: 'بیمه', d: 20, m: 9, y: 1405, repeat: 'none', advanceDays: 7, note: '', lastNotified: '' }); saveUserReminders();
-    const l = loadFinancialSubjects(); l.push({ id: 's1', name: 'ساختمان', highlightColor: nextProjectHighlightColor(l) }); _financialSubjects = l; saveFinancialSubjects();
-    const out = [];
-    openBankAccountsModal(); await w(900);
-    const bi = document.querySelector('#bankAccountsModal .hk-bank-custom-in'), bc = getComputedStyle(bi);
-    const ref = { bg: bc.backgroundColor, ta: bc.textAlign === 'start' ? 'right' : bc.textAlign };
-    onBackGuard(); await w(700);
-    for (const f of [openSubjectsModal, openUserRemindersModal, openSavingsModal, openDongModal]) {
-      f(); await w(1000);
-      const nf = [...document.querySelectorAll('.hk-newf')].find(x => x.getClientRects().length), i = nf.querySelector('input'), c = getComputedStyle(i);
-      let p = nf.previousElementSibling; while (p && !p.getClientRects().length) p = p.previousElementSibling;
-      const kids = [...p.children].filter(x => x.getClientRects().length);
-      out.push({ n: f.name, bg: c.backgroundColor, ta: c.textAlign, gap: Math.round(nf.getBoundingClientRect().top - Math.max(...kids.map(x => x.getBoundingClientRect().bottom))) });
-      onBackGuard(); await w(700);
-    }
-    return { ref, out };
-  });
-  ok(N.out.every(x => x.bg === N.ref.bg && x.ta === 'right'), 'رنگ داخل فیلد و جای راهنما مثل باکس «نام بانک (دلخواه)» (' + N.ref.bg + ')');
-  ok(N.out.every(x => x.gap === N.out[0].gap) && N.out[0].gap === 12, 'فاصلهٔ فیلد تا آخرین مورد بالایش در همهٔ صفحه‌ها یکی (' + N.out.map(x => x.gap).join(' ') + ')');
-
+  /* ۱.۴.۵: فیلدهای «… جدید» جایشان را به مربع آبی دادند (batch-1405) */
+  await page.evaluate(() => { const l = loadFinancialSubjects(); l.push({ id: 's1', name: 'ساختمان', highlightColor: nextProjectHighlightColor(l) }); _financialSubjects = l; saveFinancialSubjects(); });
   console.log('• جدول‌های پروژه');
   const PJ = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));

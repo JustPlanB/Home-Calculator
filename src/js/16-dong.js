@@ -313,7 +313,7 @@
         /* ۱.۳.۹۴: مداد ویرایش و × حذف روی همین کارت فهرست گروه‌ها، کنار هم سمت چپ (مثل باکس بستهٔ رابطه در منوی قرض) */
         h += '<div role="button" tabindex="0" class="hk-dg-card" data-g="' + escapeHtml(g.id) + '"><b>' + escapeHtml(g.name) + '</b><span class="hk-dg-sub">' + toPersianDigits(String(g.members.length)) + ' نفر · خرج کل ' + hkDongAmt(hkDongTotal(g)) + '</span>' +
           '<span class="hk-dg-st ' + (open ? 'open' : 'done') + '">' + (open ? 'تسویه‌نشده: ' + hkDongAmt(open) : (g.expenses.length ? 'تسویه است' : 'بدون خرج')) + '</span>' +
-          '<span class="hk-dg-cacts"><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
+          '<span class="hk-dg-cacts"><button type="button" class="hk-dg-ico hk-dg-shr" aria-label="اشتراک‌گذاری"><svg class="hk-dg-shico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></svg></button><button type="button" class="hk-dg-ico hk-dg-edit" aria-label="ویرایش اعضا و نام">' + HK_EDIT_SVG + '</button>' +
           '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></span></div>';
       });
       /* ۱.۴.۰: مثل «پروژه جدید»: فیلد «گروه جدید» + افزودن (دکمهٔ «گروه تازه» برداشته شد) */
@@ -325,6 +325,8 @@
         var gid = c.getAttribute('data-g'), g = D.groups.filter(function (x) { return x.id === gid; })[0];
         c.onclick = function () { _hkDongView.gid = gid; hkDongRender(); };
         c.querySelector('.hk-dg-edit').onclick = function (e) { e.stopPropagation(); hkDongGroupEditor(gid); };
+        /* ۱.۴.۵: اشتراک‌گذاری همین گروه از روی کارتش (کنار مداد)؛ دکمهٔ اشتراک‌گذاری داخل گروه برداشته شد */
+        c.querySelector('.hk-dg-shr').onclick = function (e) { e.stopPropagation(); if (g) hkDongShareMenu(c.querySelector('.hk-dg-shr'), g); };
         c.querySelector('.hk-dg-del').onclick = function (e) {
           e.stopPropagation();
           askConfirm('گروه «' + (g ? g.name : '') + '» با همهٔ خرج‌هایش حذف شود؟', function () {

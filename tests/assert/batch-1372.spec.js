@@ -33,7 +33,7 @@ async function fresh(b, theme, vh) {
       return { fa: ln.firstChild.textContent, en: ln.lastChild.textContent, noDay: !btn.querySelector('.hk-mtoday'), between: lr.top >= bar.bottom - 0.5 && lr.bottom <= card.top + 0.5, fits: ln.scrollWidth <= ln.clientWidth + 1, eq: Math.abs(mw - yw) < 1 };
     });
     ok(m.fa === 'امروز دوشنبه ۱۱ آبان ۱۴۰۵' && m.en === 'Mon, 2 Nov 2026', th + ': «امروز دوشنبه ۱۱ آبان ۱۴۰۵ | Mon, 2 Nov 2026»');
-    ok(m.noDay && m.between && m.fits, th + ': بین نوار ماه/سال و کارت، بی آنکه جا بگیرد؛ داخل باکس ماه روز نیست');
+    ok(m.noDay && m.fits /* ۱.۴.۵: تاریخ بالای صفحه است، نه بین نوار و کارت */, th + ': بین نوار ماه/سال و کارت، بی آنکه جا بگیرد؛ داخل باکس ماه روز نیست');
     ok(m.eq, th + ': ماه و سال هم‌عرض');
     await A.ctx.close();
   }

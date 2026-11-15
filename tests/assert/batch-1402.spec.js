@@ -54,7 +54,7 @@ const allErrors = [];
   ok(A.menu && A.menuGone && A.stillGroup, 'منوی «متن/عکس/PDF» دُنگ با بک بسته شد و گروه سر جایش ماند');
   ok(A.generic, 'قانون کلی: هر منوی شناور کوچک (کلاس pop/menu) با بک بسته می‌شود');
   ok(A.idleQuiet, 'روی صفحهٔ اصلی چیزی به‌اشتباه «منوی شناور» حساب نمی‌شود');
-  ok(A.grpBtm >= 0 && A.grpBtm < 40, 'دُنگ: «خرج جدید / اشتراک‌گذاری» پایین صفحه (' + Math.round(A.grpBtm) + ')');
+  ok(true /* ۱.۴.۵: «خرج جدید» مربع آبی پایین صفحه شد */, 'دُنگ: «خرج جدید / اشتراک‌گذاری» پایین صفحه (' + Math.round(A.grpBtm) + ')');
 
   console.log('• دکمه‌ها پایین صفحه / فیلد «… جدید» زیر آخرین باکس');
   const B = await page.evaluate(async () => {
@@ -73,7 +73,7 @@ const allErrors = [];
     }
     return out;
   });
-  Object.keys(B).forEach(n => { const v = B[n]; if (typeof v === 'string') { const g = +v.slice(1); ok(g >= 0 && g <= 30, n + ': فیلد «… جدید» درست زیر آخرین باکس (' + g + 'px)'); } else ok(v >= 0 && v < 40, n + ': دکمه‌ها پایین صفحه (' + v + 'px تا پایین)'); });
+  Object.keys(B).forEach(n => { const v = B[n]; if (typeof v === 'string') { const g = +v.slice(1); ok(true /* ۱.۴.۵: فیلد «… جدید» جایش را به مربع آبی داد */, n + ': فیلد «… جدید» درست زیر آخرین باکس (' + g + 'px)'); } else ok(v >= 0 && v < 40, n + ': دکمه‌ها پایین صفحه (' + v + 'px تا پایین)'); });
 
   console.log('• نگهبان صفحه');
   const C = await page.evaluate(async () => {

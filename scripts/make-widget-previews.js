@@ -17,9 +17,9 @@ html,body{margin:0;background:transparent}
 .tbar{height:96px;display:flex;align-items:center;justify-content:space-between;padding:0 30px}
 .band{background:#0a1628;height:54px;border-bottom:1px solid #3a3a3c;display:flex;font-weight:700;font-size:24px;align-items:center}
 .cols{display:flex;align-items:center;margin:0 20px}.cols>*{text-align:center;box-sizing:border-box}
-.c1{width:19%}.c2{width:34%;text-align:right!important;padding-right:12px}.c3{width:22%}.c4{width:25%}
+.c1{width:15%;text-align:right!important}.c2{width:44%;text-align:right!important;padding-right:12px}.c3{width:18%}.c4{width:23%;text-align:left!important;direction:ltr}
 .tr{height:70px;border-bottom:1px solid rgba(255,255,255,.14);font-size:27px}.tr .c1,.tr .c3{color:#98989f;font-size:24px}.tr .c4{font-weight:700}
-.band .cols{width:100%}.band .c2{text-align:center!important;padding:0}
+.band .cols{width:100%}.band .c1,.band .c2,.band .c4{text-align:center!important;padding:0}
 .line{display:flex;align-items:center;justify-content:space-between;height:100%;padding:0 44px}
 </style></head><body>`;
 const P = {
@@ -30,7 +30,7 @@ const P = {
   hk_prev_tx: [360, `<div class="w h2"><div class="tbar"><span class="app">حساب‌کتاب</span><span class="r" style="font-weight:700;font-size:32px">مخارج ▾</span><span class="mo">۱۹ آبان</span></div>
     <div class="band"><div class="cols"><span class="c1">تاریخ</span><span class="c2">شرح</span><span class="c3">حساب</span><span class="c4">مبلغ</span></div></div>
     ${[['۱۹', 'نان', 'ملت', '۸۰,۰۰۰'], ['۱۹', 'بنزین', 'ملی', '۳۰۰,۰۰۰'], ['۱۸', 'داروخانه', 'سامان', '۲۴۵,۰۰۰']].map(x => `<div class="cols tr"><span class="c1">${x[0]}</span><span class="c2">${x[1]}</span><span class="c3">${x[2]}</span><span class="c4 r">${x[3]}</span></div>`).join('')}</div>`],
-  hk_prev_line: [180, `<div class="w h1"><div class="line"><span style="font-weight:700;font-size:50px">موجودی</span><span class="g" style="font-weight:700;font-size:62px">۴۸,۷۵۰,۰۰۰</span></div></div>`]
+  hk_prev_line: [180, `<div class="w h1" style="border-radius:90px;border:3px solid rgba(255,255,255,.28)"><i style="position:absolute;right:0;top:0;bottom:0;width:72%;background:#9ee858;border-radius:90px"></i><div class="line" style="position:relative;text-shadow:0 0 6px #000,0 2px 4px #000"><span style="font-weight:700;font-size:56px">۷۲٪</span><span style="font-weight:700;font-size:60px">۴۸,۷۵۰,۰۰۰</span></div></div>`]
 };
 (async () => {
   const b = await chromium.launch();

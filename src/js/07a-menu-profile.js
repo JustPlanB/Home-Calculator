@@ -412,7 +412,7 @@
         ov._spPicking = false;
         if (ov._spJiggleOff) ov._spJiggleOff();
         h.textContent = 'دسته‌بندی برداشت';
-        sub.textContent = items.length ? 'روی هر شرح بزن و دسته‌اش را انتخاب کن (چند دسته هم می‌شود)؛ نرم‌افزار دفعه‌های بعد همین را به خاطر می‌سپارد.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
+        sub.textContent = items.length ? 'روی نام دسته بزن و دسته را انتخاب کن (چند دسته هم می‌شود)؛ روی خودِ شرح بزن تا همهٔ خرج‌های همان دسته را ببینی.' : 'هنوز شرحی برای مخارج این ماه ثبت نشده.';
         btn.textContent = 'بستن';
         body.innerHTML = '';
         var cw = chipWidths();
@@ -432,6 +432,21 @@
           row.appendChild(lab);
           row.appendChild(chips);
           row.onclick = function () { showPicker(d, c && !c.p2p ? c.ids.slice() : []); };
+          /* ۱.۴.۵: زدن روی خودِ شرح = همهٔ خرج‌های همین ماه در دستهٔ آن (مثل آمار)؛ زدن روی نام دسته = انتخاب/عوض کردن دسته مثل قبل */
+          lab.onclick = function (e) {
+            if (!c || c.p2p || !c.ids || !c.ids.length) return;
+            e.stopPropagation();
+            var rs = [];
+            ((sec && sec.rows) || []).forEach(function (r) {
+              if (!r || r.deletedAt || r.p2p) return;
+              var a = Number(r.amount) || 0; if (!(a > 0)) return;
+              var cc = null; try { cc = HKCategorizer.classify(String(r.desc || '').trim(), r); } catch (eC) {}
+              if (!cc || !cc.ids || !cc.ids.length) return;
+              var hit = cc.ids.filter(function (id) { return c.ids.indexOf(id) >= 0; }).length; if (!hit) return;
+              rs.push({ x: { y: currentYear, m: currentMonth, d: dayNum(r), desc: r.desc, title: sec.title, row: r, paid: a, unpaid: 0 }, a: a * hit / cc.ids.length });
+            });
+            hkOpenStatsCatTx(c.ids, c.label, '', { rows: rs, period: MONTHS[currentMonth - 1] + ' ' + toPersianDigits(String(currentYear)), card: '' });
+          };
           body.appendChild(row);
           rows.push({ chips: chips, c: c, row: row });
         });
