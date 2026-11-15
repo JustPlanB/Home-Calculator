@@ -38,7 +38,9 @@ async function fresh(b, vp) {
     const b3 = s3.querySelector('.section-body'), b15 = s15.querySelector('.section-body');
     o.h3 = Math.round(b3.getBoundingClientRect().height); o.h15 = Math.round(b15.getBoundingClientRect().height);
     const rh = s15.querySelector('tbody tr').getBoundingClientRect().height, th = s15.querySelector('thead').getBoundingClientRect().height;
-    o.nine = Math.abs(o.h15 - (th + 9 * rh)) <= 2;
+    o.nine = Math.abs(o.h15 - (th + 9 * rh)) <= 2; o.rh = Math.round(rh);
+    /* ۱.۴.۳: جدول به اندازهٔ ردیف‌هایش (فقط سقف دارد) */
+    o.prop3 = Math.abs(b3.clientHeight - s3.querySelector('table').getBoundingClientRect().height) <= 3;
     /* ۱.۴.۰: در صفحهٔ قرض جدول هر چه جا (با احتساب ۴ باکس رابطه) می‌ماند را ثابت می‌گیرد */
     o.fill = !!document.querySelector('#featureSheet.hk-led-page') && o.h15 >= th + 3 * rh;
     o.scroll15 = b15.scrollHeight > b15.clientHeight + 20;
@@ -69,9 +71,9 @@ async function fresh(b, vp) {
     return o;
   });
   ok(L.ro, 'شرح و مبلغ ردیف قرض با ضربه یا دوبار ضربه تایپ نمی‌شوند (فقط لانگ‌پرس ← ویرایش)');
-  ok(L.h3 === L.h15 && (L.nine || L.fill), 'جدول ثابت: ۳ ردیف و ۱۵ ردیف هم‌ارتفاع (فضای باقی‌ماندهٔ صفحه) (' + L.h3 + '/' + L.h15 + ')');
+  ok(L.prop3 && L.h3 < L.h15 && (L.nine || L.fill), 'جدول به اندازهٔ ردیف‌ها: ۳ ردیف کوتاه، ۱۵ ردیف تا سقف و اسکرول (' + L.h3 + '/' + L.h15 + ')');
   ok(L.scroll15, 'بیشتر از ۹ ردیف: فقط ردیف‌ها داخل جدول اسکرول می‌شوند');
-  ok(L.y1 === 0 && L.edTitle === 'ردیف جدید', 'دکمهٔ ردیف تازه پایین نمی‌رود و باکس «ردیف جدید» باز می‌شود (جابه‌جایی ' + L.y1 + ')');
+  ok(L.y1 >= 0 && L.y1 <= L.rh + 2 && L.edTitle === 'ردیف جدید', 'دکمهٔ ردیف تازه فقط به اندازهٔ همان یک ردیف پایین می‌رود و باکس «ردیف جدید» باز می‌شود (جابه‌جایی ' + L.y1 + ')');
   ok(L.cancelRemoved && L.saved, 'انصراف: ردیف خالی برداشته می‌شود؛ ثبت: ردیف با شرح و مبلغ ذخیره می‌شود');
   await A.ctx.close();
 

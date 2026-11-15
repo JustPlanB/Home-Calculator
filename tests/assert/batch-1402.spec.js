@@ -17,7 +17,7 @@ const allErrors = [];
   ok(/R\.font\.hk_vazir_bold/.test(pa.slice(pa.indexOf('class HkWidgetStyle'))) && /BLUE=0xFF08B5F5/.test(pa), 'تنظیمات ویجت با فونت وزیر و آبی نرم‌افزار');
   ok(/static int bgRes\(Context c, boolean light, int alpha\)/.test(pa) && /HkWidgetDraw\.bgRes\(ctx, d\.light, d\.alpha\)/.test(pa) && (pa.match(/HkWidgetDraw\.load\(ctx, id\)/g) || []).length >= 4, 'هر سه ویجت پس‌زمینه و تم را از تنظیمات همان ویجت می‌گیرند');
   ok(/hk_widget_bg_d'\+st\+'\.xml'/.test(pa) && /hk_widget_bg_l'\+st\+'\.xml'/.test(pa), 'پس‌زمینه‌های شفاف ۱۰ پله (تیره و روشن) ساخته می‌شوند');
-  ok((pa.match(/android:configure="ir\.hesabketab\.app\.HkWidgetStyle"/g) || []).length === 2 && /reconfigurable\|configuration_optional/.test(pa) && /android:name="\.HkWidgetStyle"/.test(pa), 'ویجت موجودی و حساب‌ها: «تنظیمات» از نگه داشتن ویجت (نه هنگام افزودن)');
+  ok((pa.match(/android:configure="ir\.hesabketab\.app\.HkWidgetStyle"/g) || []).length === 3 /* ۱.۴.۳: + ویجت یک‌خطی موجودی */ && /reconfigurable\|configuration_optional/.test(pa) && /android:name="\.HkWidgetStyle"/.test(pa), 'ویجت موجودی و حساب‌ها: «تنظیمات» از نگه داشتن ویجت (نه هنگام افزودن)');
   ok(/if\(!repick && exists\)/.test(pa) && /new Intent\(this, HkWidgetStyle\.class\)/.test(pa), 'ویجت تراکنش‌ها: هنگام افزودن نوع ردیف‌ها، بعد از آن «تنظیمات» = ظاهر');
   ok(/withAlpha\(titleBg\(light\), alpha\)/.test(pa) && /withAlpha\(headBg\(light\), alpha\)/.test(pa), 'نوار عنوان ویجت تراکنش‌ها هم با همان شفافیت');
 
@@ -56,13 +56,16 @@ const allErrors = [];
   ok(A.idleQuiet, 'روی صفحهٔ اصلی چیزی به‌اشتباه «منوی شناور» حساب نمی‌شود');
   ok(A.grpBtm >= 0 && A.grpBtm < 40, 'دُنگ: «خرج جدید / اشتراک‌گذاری» پایین صفحه (' + Math.round(A.grpBtm) + ')');
 
-  console.log('• دکمه‌ها پایین صفحه');
+  console.log('• دکمه‌ها پایین صفحه / فیلد «… جدید» زیر آخرین باکس');
   const B = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const out = {};
     for (const n of ['openSavingsModal', 'openUserRemindersModal', 'openSubjectsModal', 'openDongModal', 'askBackupParts', 'openTrashModal']) {
       window[n](); await w(900);
       const pg = [...document.querySelectorAll('.hk-page')].find(x => x.getClientRects().length);
+      /* ۱.۴.۳: صفحه‌های «… جدید»: فیلد درست زیر آخرین باکس (نه پایین صفحه) */
+      const nf = pg && pg.querySelector('.hk-newf');
+      if (nf) { let pv = nf.previousElementSibling; while (pv && !pv.getClientRects().length) pv = pv.previousElementSibling; out[n] = 'f' + Math.round(nf.getBoundingClientRect().top - (pv ? pv.getBoundingClientRect().bottom : 0)); onBackGuard(); await w(700); continue; }
       const btns = pg ? [...pg.querySelectorAll('button')].filter(x => x.getClientRects().length && !x.closest('.hk-pg-hd')) : [];
       const last = btns.map(x => x.getBoundingClientRect().bottom).sort((a, c) => c - a)[0] || 0;
       out[n] = Math.round(innerHeight - last);
@@ -70,7 +73,7 @@ const allErrors = [];
     }
     return out;
   });
-  Object.keys(B).forEach(n => ok(B[n] >= 0 && B[n] < 40, n + ': دکمه‌ها پایین صفحه (' + B[n] + 'px تا پایین)'));
+  Object.keys(B).forEach(n => { const v = B[n]; if (typeof v === 'string') { const g = +v.slice(1); ok(g >= 0 && g <= 30, n + ': فیلد «… جدید» درست زیر آخرین باکس (' + g + 'px)'); } else ok(v >= 0 && v < 40, n + ': دکمه‌ها پایین صفحه (' + v + 'px تا پایین)'); });
 
   console.log('• نگهبان صفحه');
   const C = await page.evaluate(async () => {
@@ -100,8 +103,8 @@ const allErrors = [];
     o.stuck = Math.abs(f.getBoundingClientRect().top - body.getBoundingClientRect().top) < 2;
     body.scrollTop = 0;
     const nb = [...body.querySelectorAll('.st-nav-b')];
-    o.arrows = nb.map(x => x.getAttribute('data-nav') + x.textContent).join(',');
-    o.bigArrow = parseFloat(getComputedStyle(nb[0]).fontSize) > 24;
+    o.arrows = nb.map(x => { const d = (x.querySelector('svg path') || { getAttribute: () => '' }).getAttribute('d'); return x.getAttribute('data-nav') + (d === 'M15 5l-7 7 7 7' ? '‹' : d === 'M9 5l7 7-7 7' ? '›' : x.textContent); }).join(','); /* ۱.۴.۳: فلش‌ها SVG وسط دایره */
+    o.bigArrow = (() => { const sv = nb[0].querySelector('svg'); if (!sv) return parseFloat(getComputedStyle(nb[0]).fontSize) > 24; const a = sv.getBoundingClientRect(), c = nb[0].getBoundingClientRect(); return a.width >= 18 && Math.abs((a.left + a.width / 2) - (c.left + c.width / 2)) < 1.5 && Math.abs((a.top + a.height / 2) - (c.top + c.height / 2)) < 1.5; })();
     const leg = [...document.querySelectorAll('#stCats .st-leg')];
     const col = l => { const x = leg.find(y => y.querySelector('.st-leg-l').textContent === l); return x && x.querySelector('i').style.background; };
     o.colors = [col('خوراکی'), col('حمل‌ونقل'), col('قبوض')].join('|');
@@ -124,7 +127,7 @@ const allErrors = [];
     return o;
   });
   ok(D.sticky && D.stuck, 'آمار: تب‌ها و فیلترها و ماه/سال بالا ثابت؛ محتوا زیرشان اسکرول می‌شود');
-  ok(D.arrows === '-1‹,1›' && D.bigArrow, 'فلش‌های دو طرف ماه/سال برعکس شدند و درشت‌تر (' + D.arrows + ')');
+  ok(D.arrows === '-1‹,1›' && D.bigArrow, 'فلش‌های دو طرف ماه/سال برعکس، درشت و درست وسط دایره (' + D.arrows + ')');
   ok(D.colors === 'rgb(255, 159, 10)|rgb(79, 157, 255)|rgb(230, 177, 44)', 'رنگ دسته‌ها در آمار همان رنگ ثابت دسته‌ها (' + D.colors + ')');
   ok(D.pill && D.pillAt, 'هایلایت تب‌ها یک تکهٔ جداست و نرم به تب تازه می‌رود');
   ok(D.page && D.rows === 'نان سنگک|نان' && /۱,۳۶۰,۰۰۰/.test(D.total), 'زدن نام دسته: صفحهٔ تازه با تراکنش‌های همان دسته (تازه‌ترین بالا) و جمعش');

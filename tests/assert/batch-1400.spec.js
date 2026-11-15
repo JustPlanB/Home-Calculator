@@ -56,7 +56,7 @@ async function fresh(b) {
     onBackGuard(); await w(400);
     return out;
   });
-  const names = { openPrefsModal: 'شخصی‌سازی', openSubjectsModal: 'پروژه‌ها', openTrashModal: 'سطل زباله', openSavingsModal: 'پس‌انداز', openUserRemindersModal: 'یادآور', openBankAccountsModal: 'حساب‌های من', openStatsSheet: 'آمار', openRecurringFromMenu: 'درآمدهای ثابت', askBackupParts: 'از چه بخش‌هایی پشتیبان گرفته شود؟', openSmsLaterModal: 'پیامک‌های ثبت‌نشده' };
+  const names = { openPrefsModal: 'شخصی‌سازی', openSubjectsModal: 'پروژه‌ها', openTrashModal: 'سطل زباله', openSavingsModal: 'پس‌انداز (ارز و طلا)', openUserRemindersModal: 'یادآور', openBankAccountsModal: 'انتخاب حساب بانکی', openStatsSheet: 'آمار', openRecurringFromMenu: 'درآمدهای ثابت', askBackupParts: 'پشتیبان‌گیری', /* ۱.۴.۳: نام صفحه همان نام منو */ openSmsLaterModal: 'پیامک‌های ثبت‌نشده' };
   const bad = Object.keys(names).filter(n => !(H[n] && H[n].title === names[n] && H[n].right && H[n].order && H[n].top && H[n + '_closed']));
   ok(!bad.length, 'بالای هر صفحه سمت راست: اول آیکون بک، جلویش نام صفحه؛ زدنش صفحه را می‌بندد' + (bad.length ? ' — ' + bad.map(n => n + ':' + JSON.stringify(H[n])).join(' ') : ''));
   ok(H.noGhostHome, 'بازگشت به صفحهٔ اصلی بی ورق خوردن (مثل قبل)');
@@ -68,7 +68,7 @@ async function fresh(b) {
     const out = {};
     ['ویلا شمال', 'دفتر'].forEach(n => { document.getElementById('subjectNewName').value = n; addSubjectFromModal(); });
     openSubjectsModal(); await w(800);
-    out.label = (document.querySelector('#subjectsModal .family-label') || {}).textContent;
+    out.label = (document.getElementById('subjectNewName') || {}).placeholder; /* ۱.۴.۳: راهنما داخل فیلد */
     const card = document.querySelector('#subjectsList .project-card'); const cs = getComputedStyle(card);
     out.cardRaised = cs.boxShadow !== 'none'; /* ۱.۴.۱: فرورفته (سایهٔ داخلی) مثل قرض */
     const cb = card.getBoundingClientRect(), body = card.querySelector('.project-card-body').getBoundingClientRect();
@@ -104,7 +104,7 @@ async function fresh(b) {
     onBackGuard(); await w(600);
     return out;
   });
-  ok(Z.label === 'پروژه جدید', 'پروژه‌ها: «نام پروژه» → «پروژه جدید»');
+  ok(/^پروژه جدید \(مثلاً: /.test(Z.label || ''), 'پروژه‌ها: راهنمای داخل فیلد «پروژه جدید (مثلاً: …)»');
   ok(Z.cardRaised && Z.centered, 'باکس پروژه سایه‌دار (برجسته) و نام/وضعیت وسط عمودی (' + Z.cardRaised + '/' + Z.centered + ')');
   ok(Z.sub.page && Z.sub.anim && Z.subFull && /ویلا شمال|دفتر/.test(Z.subTitle || ''), 'زدن یک پروژه: صفحهٔ کامل با ورق خوردن و نام پروژه بالای آن (' + Z.subTitle + ')');
   ok(Z.backToList, 'بازگشت از پروژه: همان فهرست پروژه‌ها');
@@ -121,14 +121,14 @@ async function fresh(b) {
     onBackGuard(); await w(40); out.bankNoFade = !document.querySelector('body > .modal-box'); await w(600);
     openSavingsModal(); await w(700);
     const sv = document.getElementById('savingsModal');
-    out.svField = !!document.getElementById('svNewName') && /پس‌انداز جدید/.test(sv.textContent) && !/افزودن پس‌انداز/.test(sv.textContent);
+    out.svField = !!document.getElementById('svNewName') && /پس‌انداز جدید/.test(document.getElementById('svNewName').placeholder) && !/افزودن پس‌انداز/.test(sv.textContent);
     out.svBtnH = Math.max(...[...sv.querySelectorAll('.modal-btn')].filter(x => x.getClientRects().length).map(x => x.getBoundingClientRect().height));
     document.getElementById('svNewName').value = 'سکه امامی'; hkSavNewFromField(); await w(300);
     out.svPre = (document.querySelector('#svAssetSelect .dark-select-btn') || {}).textContent;
     closeSavingsEditor(); await w(150); onBackGuard(); await w(600);
     openUserRemindersModal(); await w(700);
     const ur = document.getElementById('userRemindersModal');
-    out.urField = !!document.getElementById('urNewName') && /یادآور جدید/.test(ur.textContent) && !/افزودن یادآور/.test(ur.textContent) && !/یک هفته/.test(ur.textContent);
+    out.urField = !!document.getElementById('urNewName') && /یادآور جدید/.test(document.getElementById('urNewName').placeholder) && !/افزودن یادآور/.test(ur.textContent) && !/یک هفته/.test(ur.textContent);
     out.urBtnH = Math.max(...[...ur.querySelectorAll('.modal-btn')].filter(x => x.getClientRects().length).map(x => x.getBoundingClientRect().height));
     document.getElementById('urNewName').value = 'بیمه بدنه'; hkUrNewFromField(); await w(300);
     out.urPre = (document.getElementById('urTitle') || {}).value;
@@ -136,7 +136,7 @@ async function fresh(b) {
     onBackGuard(); await w(600);
     openDongModal(); await w(700);
     const dg = document.getElementById('hkDong');
-    out.dgField = !!dg.querySelector('.hk-dg-newin') && /گروه جدید/.test(dg.textContent) && !/گروه تازه/.test(dg.textContent);
+    out.dgField = !!dg.querySelector('.hk-dg-newin') && /گروه جدید/.test(dg.querySelector('.hk-dg-newin').placeholder) && !/گروه تازه/.test(dg.textContent);
     dg.querySelector('.hk-dg-newin').value = 'سفر شمال'; dg.querySelector('.hk-dg-new').click(); await w(300);
     out.dgPre = [...document.querySelectorAll('.hk-dg-in')].map(x => x.value).indexOf('سفر شمال') >= 0;
     onBackGuard(); await w(300); onBackGuard(); await w(600);
@@ -178,7 +178,7 @@ async function fresh(b) {
     const plp = document.getElementById('panel-ledger');
     out.ledList = getComputedStyle(plp).overflowY === 'auto' && plp.scrollHeight > plp.clientHeight && !document.querySelector('#featureSheet.hk-led-page .feature-sheet-body').scrollTop;
     const body = document.querySelector('#sections-ledger .section[data-sec-id="A"] .section-body');
-    out.ledLines = /linear-gradient/.test(getComputedStyle(body).backgroundImage) && body.querySelector('table').getBoundingClientRect().height < body.clientHeight - 30;
+    out.ledLines = /linear-gradient/.test(getComputedStyle(body).backgroundImage) && Math.abs(body.querySelector('table').getBoundingClientRect().height - body.clientHeight) < 4; /* ۱.۴.۳: جدول به اندازهٔ ردیف‌هایش */
     const fab = document.querySelector('#sections-ledger .section[data-sec-id="A"] .ledger-row-fab');
     out.ledFab = /inset/.test(getComputedStyle(fab).boxShadow) && getComputedStyle(fab).opacity === '1';
     out.ledMask = getComputedStyle(document.querySelector('#featureSheet .feature-sheet-body')).maskImage;
@@ -193,7 +193,7 @@ async function fresh(b) {
   ok(R.rec && R.recRaised, 'درآمد ثابت مثل پروژه‌ها: باکس بیرونی دیده نمی‌شود، بیش از ۷ درآمد در همان فضا اسکرول، باکس‌ها سایه‌دار (' + R.recD + '/' + R.recRaised + ')');
   ok(R.raxPage && R.raxSwipe, 'خروجی درآمد ثابت: تمام‌صفحه، بی ضربدر، نام و بک بالا؛ اکسل/PDF با کشیدن افقی');
   ok(R.ledList, 'قرض: بیش از ۴ رابطه فقط فهرست روابط اسکرول می‌شود (صفحه ثابت)');
-  ok(R.ledLines, 'قرض: خط‌کشی ستون‌ها تا پایین قاب جدول حتی با یک ردیف');
+  ok(R.ledLines, 'قرض: خط‌کشی ستون‌ها؛ قاب جدول به اندازهٔ ردیف‌ها (یک ردیف = قاب کوتاه)');
   ok(R.ledFab && (R.ledMask === 'none' || !R.ledMask), 'قرض: دکمهٔ ردیف تازه فرورفته و هیچ‌وقت کم‌رنگ');
   ok(R.colors && R.pastel, 'رنگ پروژه‌ها: ۴ رنگ اول همان، بعدی‌ها پاستلی و هیچ دو پروژه‌ای هم‌رنگ نیست');
 
