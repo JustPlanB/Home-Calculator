@@ -90,7 +90,7 @@
       groups.forEach(function (G) { if (G.price) { tv += G.value; } else missing++; if (G.pnl != null) { tp += G.pnl; anyP = true; } tc += G.cost; });
       if (!groups.length) {
         sum.innerHTML = '';
-        list.innerHTML = '<div class="sv-empty">هنوز چیزی ثبت نشده است.<br>در فیلد «پس‌انداز جدید» دلار، سکه یا طلای خود را بنویسید و «افزودن» را بزنید.</div>';
+        list.innerHTML = '<div class="sv-empty">هنوز چیزی ثبت نشده است.<br>در فیلد «پس‌انداز جدید» دلار، سکه یا طلای خود را بنویسید و + کنارش را بزنید.</div>';
         return;
       }
       sum.innerHTML = '<div class="sv-sum">' +

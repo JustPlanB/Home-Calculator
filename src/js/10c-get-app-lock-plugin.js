@@ -596,15 +596,17 @@
       var sel = document.getElementById('secAutoLockSelect');
       if (sel) sel.value = String(autoSec);
       try { updateSecAutoLockUI(String(autoSec)); } catch (eA) {}
+      /* ۱.۴.۳: کلید روشن/خاموش قفل برنامه */
+      var sw = document.getElementById('secLockSw');
+      if (sw) {
+        sw.classList.toggle('on', !!enabled); sw.setAttribute('aria-checked', String(!!enabled));
+        sw.onclick = function () { if (sw.classList.contains('on')) disableAppLockFlow(); else enableAppLockFlow(); };
+      }
+      var arow = document.querySelector('#securityModal .sec-row-auto'); if (arow) arow.style.display = enabled ? '' : 'none';
       var act = document.getElementById('secActions');
       if (!act) return;
       act.innerHTML = '';
       if (!enabled) {
-        var b1 = document.createElement('button');
-        b1.className = 'sec-btn-primary';
-        b1.textContent = 'فعال کردن قفل برنامه';
-        b1.onclick = enableAppLockFlow;
-        act.appendChild(b1);
       } else {
         var bCh = document.createElement('button');
         bCh.className = 'sec-btn-secondary';
@@ -631,11 +633,6 @@
           };
           act.appendChild(bBio);
         }
-        var bOff = document.createElement('button');
-        bOff.className = 'sec-btn-danger';
-        bOff.textContent = 'غیرفعال کردن قفل برنامه';
-        bOff.onclick = disableAppLockFlow;
-        act.appendChild(bOff);
       }
     }
     async function enableAppLockFlow() {
@@ -677,6 +674,13 @@
       var list = document.getElementById('secAutoLockList');
       if (hid) hid.value = val;
       if (lab) lab.textContent = SEC_AUTO_LABELS[val] || SEC_AUTO_LABELS['0'];
+      /* ۱.۴.۳: فهرست کشویی استاندارد نرم‌افزار */
+      var ns = document.getElementById('secAutoLockSel');
+      if (ns) {
+        ns.value = val;
+        if (!ns._hkBound) { ns._hkBound = 1; ns.addEventListener('change', function () { if (hid) hid.value = ns.value; onAutoLockChange(); }); }
+        try { enhanceSelectFont(ns); } catch (eF) {}
+      }
       if (list) {
         Array.prototype.forEach.call(list.querySelectorAll('.sec-autolock-opt'), function(b) {
           b.classList.toggle('selected', b.getAttribute('data-v') === val);

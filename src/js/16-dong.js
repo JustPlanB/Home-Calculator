@@ -315,8 +315,9 @@
           '<button type="button" class="hk-dg-ico hk-dg-del hk-del-x" aria-label="حذف گروه">' + HK_DEL_X + '</button></span></div>';
       });
       /* ۱.۴.۰: مثل «پروژه جدید»: فیلد «گروه جدید» + افزودن (دکمهٔ «گروه تازه» برداشته شد) */
-      h += '</div><label class="family-label hk-dg-newl">گروه جدید</label><input type="text" class="family-input hk-dg-newin" dir="rtl" maxlength="30" placeholder="مثلاً: سفر شمال" style="margin-bottom:8px;">' +
-        '<div class="hk-new-acts" style="display:flex;gap:8px;"><button type="button" class="modal-btn primary hk-dg-new">افزودن</button><button type="button" class="modal-btn hk-dg-close">بستن</button></div>';
+      /* ۱.۴.۳: «گروه جدید» زیر آخرین گروه با آیکون بعلاوه (بی دکمهٔ افزودن/بستن) */
+      h += '</div><div class="hk-newf"><input type="text" class="family-input hk-newf-in hk-dg-newin" dir="rtl" maxlength="30" enterkeyhint="done" placeholder="گروه جدید (مثلاً: سفر شمال)">' +
+        '<button type="button" class="hk-newf-add hk-dg-new" aria-label="افزودن گروه"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>';
       bx.innerHTML = h;
       bx.querySelectorAll('.hk-dg-card').forEach(function (c) {
         var gid = c.getAttribute('data-g'), g = D.groups.filter(function (x) { return x.id === gid; })[0];
@@ -334,7 +335,6 @@
       var _ng = function () { var v = String(_ngIn.value || '').trim(); _ngIn.value = ''; hkDongGroupEditor(null, v); };
       bx.querySelector('.hk-dg-new').onclick = _ng;
       _ngIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); _ng(); } });
-      bx.querySelector('.hk-dg-close').onclick = closeDongModal;
     }
     function hkDongRenderGroup(bx, D, g) {
       var bal = hkDongBalances(g), tr = hkDongPlan(g);
@@ -408,7 +408,8 @@
       var saved = document.createElement('div'); saved.className = 'hk-dg-saved';
       var addRow = document.createElement('div'); addRow.className = 'hk-dg-addm';
       var mi = document.createElement('input'); mi.type = 'text'; mi.className = 'hk-dg-in'; mi.placeholder = 'نام نفر تازه'; mi.maxLength = 20; mi.setAttribute('enterkeyhint', 'enter');
-      var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'hk-dg-addb'; mb.textContent = 'افزودن'; keep(mb);
+      /* ۱.۴.۳: افزودن نفر با آیکون بعلاوه جلوی فیلد (مثل نام بانک دلخواه) */
+      var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'hk-newf-add hk-dg-addb'; mb.setAttribute('aria-label', 'افزودن نفر'); mb.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'; keep(mb);
       var err = document.createElement('div'); err.className = 'sp-pick-err';
       addRow.appendChild(mi); addRow.appendChild(mb);
       var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim(); };

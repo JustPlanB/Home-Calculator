@@ -756,6 +756,7 @@
       doAppExit();
     }
     function onBackGuard(){
+      try { if (window.hkDiag) window.hkDiag('back', _backHandling ? '(busy)' : ''); } catch (eDg) {}
       if(_backHandling) return;
       _backHandling=true;
       setTimeout(function () { try { hkResetEditIcons(); if (document.activeElement && document.activeElement.blur && /BUTTON/.test(document.activeElement.tagName)) document.activeElement.blur(); } catch (eRi) {} }, 30);
@@ -771,6 +772,8 @@
       try { if (document.getElementById('hkInfoTip')) { hkCloseInfoTip(); return; } } catch (eIt) {}
       /* ۱.۴.۲: قانون کلی — منوی شناور کوچک (متن/عکس/PDF دُنگ، پیوست، وضعیت پرداخت، …) با بک بسته می‌شود و صفحهٔ زیرش سر جایش می‌ماند */
       try { if (hkCloseFloatPop()) return; } catch (eFp) {}
+      /* ۱.۴.۳: پرسش‌های کوتاه (مثل «با پیوست‌ها / بدون پیوست‌ها» پشتیبان) همیشه پیش از هر صفحه‌ای زیرشان بسته شوند */
+      try { var _a3e = document.getElementById('hkAsk3'); if (_a3e) { if (_a3e._hkCancel) _a3e._hkCancel(); else _a3e.remove(); return; } } catch (eA3e) {}
       /* ۱.۳.۵۴: باکس شناور یک‌خطی (شرح/مبلغ/حساب در همهٔ جدول‌ها): بازگشت آن را می‌بندد و همزمان یک مرحله هم عقب می‌رود */
       try { if (document.querySelector('.pd-desc-popup, .cell-text-popup')) closeCellTextPopups(); } catch (eCt) {}
       try { if (typeof closeSmsCatMore === 'function' && closeSmsCatMore()) return; } catch (eCm) {}
@@ -857,6 +860,8 @@
           if (document.getElementById('smsBulkOv')) { var _dn = document.querySelector('#smsBulkOv .hk-bulk-done'); if (_dn) _dn.click(); else closeSmsBulkModal(); return; }
         }
       } catch (eSb) {}
+      /* ۱.۴.۳: پنجره‌ای که دکمهٔ «بستن/انصراف» پنهانش تنها راه بستن بود */
+      try { if (typeof window.hkBackHiddenCancel === 'function' && window.hkBackHiddenCancel()) return; } catch (eHc) {}
       if(closeTopOverlayOrMenu()) return;
       // از صفحه درآمد/مخارج/مانده کارت به خانه
       try {
@@ -1006,6 +1011,8 @@
         x.classList.add('hk-page');
         /* تا وقتی باز است دوباره «تازه» حساب نشود (چند بار تلاشِ پیدا کردن صفحه) */
         x._hkPgSeen = true; setTimeout(function chk() { if (hkLayerShown(x)) setTimeout(chk, 400); else x._hkPgSeen = false; }, 400);
+        x._hkMenuTitle = _hkPgTitleNext || '';
+        try { if (window.hkDiag) window.hkDiag('page', (x.id || x.className || '').toString().slice(0, 40) + (x._hkMenuTitle ? ' «' + x._hkMenuTitle + '»' : '')); } catch (eDg) {}
         /* ۱.۴.۰: سربرگ «بک + نام صفحه» */
         try { if (typeof window.hkPageDecorate === 'function') window.hkPageDecorate(x); } catch (eDc) {}
         if (!document.body.classList.contains('hk-menu-nav') && !_hkInPageBack) {
@@ -1019,9 +1026,25 @@
       });
       return nu.length;
     }
+    /* ۱.۴.۳: نام بالای هر صفحه همیشه همان نام گزینه‌اش در منو است (از هر جا باز شود) */
+    var _hkPgMenuTitles = null, _hkPgTitleNext = '';
+    function hkPgMenuTitle(name) {
+      if (!_hkPgMenuTitles) {
+        _hkPgMenuTitles = {};
+        try {
+          Array.prototype.forEach.call(document.querySelectorAll('#menuDropdown [onclick]'), function (el) {
+            var oc = el.getAttribute('onclick') || '', lab = (el.textContent || '').replace(/[0-9۰-۹]+/g, '').replace(/\s+/g, ' ').trim();
+            if (!lab) return;
+            HK_PAGE_OPENERS.forEach(function (n) { if (new RegExp('\\b' + n + '\\(').test(oc) && !_hkPgMenuTitles[n]) _hkPgMenuTitles[n] = lab; });
+          });
+        } catch (e) {}
+      }
+      return _hkPgMenuTitles[name] || '';
+    }
     function hkWrapPageOpener(name) {
       var f = window[name]; if (typeof f !== 'function' || f._hkPage) return;
       var w = function () {
+        _hkPgTitleNext = hkPgMenuTitle(name);
         var before = hkLayersShown();
         var under = before.filter(function (x) { return x.classList.contains('hk-page'); }).map(function (x) { var g = hkMakeGhost(x); if (g) g.style.display = 'flex'; return g ? { x: x, g: g } : null; }).filter(Boolean);
         var r = f.apply(this, arguments);

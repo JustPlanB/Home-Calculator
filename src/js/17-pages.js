@@ -55,8 +55,10 @@
       if (src) src.classList.add('hk-pg-tsrc');
       var tEl = hd.querySelector('.hk-pg-t');
       var stack = page._hkPgStack || (page._hkPgStack = []);
-      if (txt && !stack.length) { stack.push(txt); tEl.textContent = txt; }
-      else if (txt && tEl.textContent !== txt) {
+      /* ۱.۴.۳: عنوان اول صفحه = نام همان گزینه در منو (مثلاً «پشتیبان‌گیری» به‌جای پرسش بالای صفحه) */
+      var disp = function (t) { return (page._hkMenuTitle && stack[0] === t) ? page._hkMenuTitle : t; };
+      if (txt && !stack.length) { stack.push(txt); tEl.textContent = disp(txt); }
+      else if (txt && tEl.textContent !== disp(txt)) {
         var prevIx = stack.indexOf(txt);
         if (prevIx >= 0) stack.length = prevIx + 1;
         else {
@@ -66,14 +68,16 @@
           }
           stack.push(txt);
         }
-        tEl.textContent = txt;
+        tEl.textContent = disp(txt);
       }
       /* ۱.۴.۱: توضیح بالای صفحه (اولین متن بلند درست زیر عنوان) → آیکون اطلاعات کنار نام صفحه */
       try {
         var intro = null;
         if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
           if (nx && !nx.id && /^(DIV|P)$/.test(nx.tagName) && (nx.matches('.family-help, .sv-intro, .hk-dg-intro, .hk-bulk-hint, .sms-later-hint, .hk-pg-intro') || (!nx.className && nx.querySelectorAll('input, button, select, textarea').length === 0)) && (nx.textContent || '').trim().length > 40) intro = nx; }
-        Array.prototype.forEach.call(box.querySelectorAll(':scope > .hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
+        /* ۱.۴.۳: راهنماهای صفحه‌های شخصی‌سازی (هر جای صفحه) هم به ⓘ کنار نام می‌روند */
+        if (!intro) { var hn0 = box.querySelector('.hk-prefs-hint, .hk-pf-note, .hk-pf-tip'); if (hn0 && (hn0.textContent || '').trim().length > 8) intro = hn0; }
+        Array.prototype.forEach.call(box.querySelectorAll('.hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
         var ib = hd.querySelector('.hk-info-btn'), sp = hd.querySelector('.hk-pg-sp');
         if (intro) {
           intro.classList.add('hk-pg-intro-hid');
@@ -141,10 +145,10 @@
           var big = el.classList && (el.classList.contains('hk-page') || (el.parentElement && el.parentElement.classList && el.parentElement.classList.contains('hk-page')));
           if (big && !el.classList.contains('hk-mnav-ghost')) {
             /* یک بار کامل (همان پایان ورق خوردن)، یک بار هم کمی بعد برای اطمینان */
-            var done = 0, fin = function () { if (done++) return; hkPageRepaint(el, true); };
+            /* ۱.۴.۳: دوباره‌چیدن کامل (۱.۴.۲) خودش روی گوشی چشمک می‌زد؛ فقط حالت سبک، یک بار بعد از ورق خوردن */
+            var done = 0, fin = function () { if (done++) return; hkPageRepaint(el, false); };
             a.addEventListener('finish', fin); a.addEventListener('cancel', fin);
             setTimeout(fin, ((opt && opt.duration) || 400) + 250);
-            setTimeout(function () { if (el.isConnected && el.getClientRects().length) hkPageRepaint(el, true); }, ((opt && opt.duration) || 400) + 900);
           }
         } catch (eG) {}
         return a;
@@ -248,3 +252,128 @@
     })();
     /* ۱.۴.۰: کشیدن افقی هم در «خروجی آرشیو درآمدهای ثابت» (اکسل / PDF) و هم در باکس ویرایش ردیف (پرداخت/دریافت شده ↔ نشده) */
     try { HK_SWIPE_TABS += ', .hk-rax-kind, .hk-re-stseg'; } catch (eSw) {}
+    /* ===== ۱.۴.۳: دکمه‌های «بستن» و «انصراف» در هیچ‌جا نیستند =====
+       برگشت گوشی (و زدن بیرون پنجره) همان کار را می‌کند. دکمه پنهان می‌شود ولی کارش سر جایش است: برگشت، اگر پنجره‌ای جز این
+       راهی برای بسته شدن نداشته باشد، همان دکمهٔ پنهان را می‌زند (تا هر کار پاک‌سازی آن پنجره درست انجام شود).
+       دکمهٔ باقی‌مانده کنارش پهنای هر دو را می‌گیرد. پرسش‌های «بلی/خیر» و پنجره‌های انتخاب (که «انصراف» یکی از جواب‌هاست) دست نمی‌خورند. */
+    var HK_NOBTN_RE = /^(بستن|انصراف)$/;
+    var HK_NOBTN_KEEP = '#confirmModal, #recPickModal, #hkAsk3, #recAddPrevModal, #recRenewModal, #smsConfirmModal, #pinSetupModal, .pin-setup, .pin-cancel, .hk-keep-btns';
+    function hkStripBtns(root) {
+      if (!root || !root.querySelectorAll) return;
+      var list = root.tagName === 'BUTTON' ? [root] : root.querySelectorAll('button');
+      Array.prototype.forEach.call(list, function (b) {
+        if (b._hkNb) return;
+        var t = (b.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!HK_NOBTN_RE.test(t) || b.closest(HK_NOBTN_KEEP)) return;
+        b._hkNb = 1; b.classList.add('hk-nobtn');
+        var par = b.parentElement; if (!par) return;
+        var kids = Array.prototype.slice.call(par.children), btns = kids.filter(function (x) { return x.tagName === 'BUTTON'; });
+        var rest = btns.filter(function (x) { return x !== b && !x.classList.contains('hk-nobtn'); });
+        if (!rest.length) { if (kids.every(function (x) { return x.tagName === 'BUTTON'; })) par.classList.add('hk-nobtn-wrap'); }
+        else if (kids.every(function (x) { return x.tagName === 'BUTTON'; })) par.classList.add('hk-nobtn-row');
+      });
+    }
+    (function () {
+      var pend = [], tm = 0;
+      var run = function () { tm = 0; var p = pend; pend = []; p.forEach(function (n) { try { if (n.isConnected) hkStripBtns(n); } catch (e) {} }); };
+      try {
+        new MutationObserver(function (ms) {
+          ms.forEach(function (m) {
+            if (m.type === 'childList') Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) pend.push(n); });
+            else if (m.target && m.target.parentElement) pend.push(m.target.nodeType === 1 ? m.target : m.target.parentElement);
+          });
+          if (!tm) tm = requestAnimationFrame(run);
+        }).observe(document.body, { childList: true, subtree: true, characterData: true });
+      } catch (eMo) {}
+      hkStripBtns(document.body);
+    })();
+    /* برگشت: بالاترین پنجرهٔ بازی که دکمهٔ «بستن/انصراف» پنهان دارد → همان دکمه */
+    function hkBackHiddenCancel() {
+      var cands = Array.prototype.filter.call(document.querySelectorAll('button.hk-nobtn'), function (b) {
+        var ly = b.closest('[data-hk-back], .modal-overlay, .hk-bulk-ov, .backup-pick-overlay, [id$="Ov"], [id$="Overlay"], [id$="Modal"], [id$="Sheet"], [id$="Editor"]');
+        if (!ly || !ly.getClientRects().length) return false;
+        var cs = getComputedStyle(ly); if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+        b._hkLy = ly; return true;
+      });
+      if (!cands.length) return false;
+      var z = function (b) { return parseInt(getComputedStyle(b._hkLy).zIndex, 10) || 0; };
+      cands.sort(function (a, c) { return (z(c) - z(a)) || (a.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : -1); });
+      try { cands[0].click(); return true; } catch (e) { return false; }
+    }
+    try { window.hkStripBtns = hkStripBtns; window.hkBackHiddenCancel = hkBackHiddenCancel; } catch (eW) {}
+    /* ===== ۱.۴.۳: «گزارش اشکال» پنهان (برای پیدا کردن دقیق پرش‌ها، صفحه‌های دوتایی/نامرئی و گیر کردن منوها روی گوشی) =====
+       روشن کردن: در «شخصی‌سازی» هفت بار روی عنوان «شخصی‌سازی» بزنید. وقتی روشن است، با زمان دقیق ثبت می‌شود:
+       باز و بسته شدن صفحه‌ها، شروع و پایان ورق خوردن‌ها، جابه‌جایی ناگهانی محتوا (layout-shift)، کارهای کند (longtask)،
+       لایه‌هایی که هم‌زمان روی صفحه‌اند، تغییر اندازهٔ صفحه (صفحه‌کلید)، رفتن/برگشتن نرم‌افزار و خطاها. هیچ مبلغ یا متن ردیفی ثبت نمی‌شود. */
+    var HK_DIAG_KEY = 'hk_diag_on', HK_DIAG_LOG = 'hk_diag_log', _hkDiagBuf = [], _hkDiagT0 = Date.now();
+    function hkDiagOn() { try { return localStorage.getItem(HK_DIAG_KEY) === '1'; } catch (e) { return false; } }
+    function hkDiagNm(el) {
+      try { if (!el || !el.tagName) return '?'; var c = typeof el.className === 'string' ? el.className.trim().split(/\s+/).slice(0, 2).join('.') : ''; return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (c ? '.' + c : ''); } catch (e) { return '?'; }
+    }
+    function hkDiag(kind, msg) {
+      if (!hkDiagOn()) return;
+      var d = new Date(), t = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) + '.' + ('00' + d.getMilliseconds()).slice(-3);
+      _hkDiagBuf.push(t + ' ' + kind + ' ' + String(msg || '').slice(0, 220));
+      if (_hkDiagBuf.length > 500) _hkDiagBuf.splice(0, _hkDiagBuf.length - 500);
+      clearTimeout(hkDiag._s); hkDiag._s = setTimeout(function () { try { localStorage.setItem(HK_DIAG_LOG, JSON.stringify(_hkDiagBuf.slice(-400))); } catch (e) {} }, 400);
+    }
+    (function () {
+      try { var old = JSON.parse(localStorage.getItem(HK_DIAG_LOG) || '[]'); if (Array.isArray(old)) _hkDiagBuf = old; } catch (e) {}
+      var started = false;
+      var start = function () {
+        if (started || !hkDiagOn()) return; started = true;
+        hkDiag('start', (navigator.userAgent || '').replace(/\s+/g, ' ').slice(0, 160) + ' | ' + innerWidth + 'x' + innerHeight + ' dpr=' + (window.devicePixelRatio || 1));
+        try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (e.value < 0.001) return; hkDiag('SHIFT', e.value.toFixed(3) + ' ' + (e.sources || []).slice(0, 3).map(function (s) { return hkDiagNm(s.node) + ' ' + Math.round(s.previousRect.y) + '>' + Math.round(s.currentRect.y); }).join(' ; ')); }); }).observe({ type: 'layout-shift', buffered: false }); } catch (e1) {}
+        try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { hkDiag('SLOW', Math.round(e.duration) + 'ms'); }); }).observe({ type: 'longtask', buffered: false }); } catch (e2) {}
+        document.addEventListener('visibilitychange', function () { hkDiag('app', document.hidden ? 'background' : 'foreground'); });
+        window.addEventListener('resize', function () { hkDiag('resize', innerWidth + 'x' + innerHeight + (window.visualViewport ? ' vv=' + Math.round(visualViewport.height) : '')); });
+        window.addEventListener('error', function (e) { hkDiag('ERROR', (e.message || '') + ' @' + (e.lineno || '')); });
+        /* لایه‌های هم‌زمان: هر بار که عوض شوند */
+        var last = '';
+        setInterval(function () {
+          try {
+            var ls = (typeof hkLayersShown === 'function' ? hkLayersShown() : []).map(function (x) { var r = x.getBoundingClientRect(); return hkDiagNm(x) + '[' + Math.round(r.left) + ',' + Math.round(r.top) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + (getComputedStyle(x).transform !== 'none' ? ' T' : '') + ']'; });
+            var gh = document.querySelectorAll('.hk-mnav-ghost, .st-turn-ghost').length;
+            var cur = ls.join(' + ') + (gh ? ' ghosts=' + gh : '');
+            if (cur !== last) { last = cur; hkDiag('layers', cur || '(home)'); }
+          } catch (e3) {}
+        }, 250);
+      };
+      try { window.hkDiagStart = start; } catch (eW) {}
+      start();
+      /* ورق خوردن صفحه‌ها و باز/بسته شدن با برگشت */
+      try {
+        var an = Element.prototype.animate;
+        Element.prototype.animate = function (kf, opt) {
+          var a = an.apply(this, arguments);
+          try {
+            if (hkDiagOn() && this.classList && (this.classList.contains('hk-page') || this.classList.contains('hk-mnav-ghost') || (this.parentElement && this.parentElement.classList.contains('hk-page')))) {
+              var nm = hkDiagNm(this), t0 = performance.now();
+              hkDiag('anim+', nm + ' ' + ((opt && opt.duration) || '') + 'ms');
+              a.addEventListener('finish', function () { hkDiag('anim=', nm + ' ' + Math.round(performance.now() - t0) + 'ms'); });
+              a.addEventListener('cancel', function () { hkDiag('anim-x', nm); });
+            }
+          } catch (eA) {}
+          return a;
+        };
+        Element.prototype.animate._hk141 = an._hk141;
+      } catch (eAn) {}
+      document.addEventListener('pointerdown', function (e) { if (hkDiagOn()) hkDiag('tap', hkDiagNm(e.target && e.target.closest ? (e.target.closest('button, [onclick], .hk-page, .modal-overlay') || e.target) : e.target) + ' @' + Math.round(e.clientX) + ',' + Math.round(e.clientY)); }, true);
+    })();
+    function hkDiagText() {
+      return 'گزارش اشکال حساب‌کتاب ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '') + '\n' + _hkDiagBuf.join('\n');
+    }
+    function hkDiagCopy() {
+      var txt = hkDiagText();
+      var ok = function () { try { showToast('گزارش کپی شد؛ آن را برای پشتیبانی بفرستید'); } catch (e) {} };
+      try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, function () { fb(); }); return; } } catch (e0) {}
+      fb();
+      function fb() { try { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); ok(); } catch (e1) {} }
+    }
+    function hkDiagSet(on) {
+      try { localStorage.setItem(HK_DIAG_KEY, on ? '1' : '0'); } catch (e) {}
+      if (on && typeof window.hkDiagStart === 'function') window.hkDiagStart();
+      hkDiag('diag', on ? 'on' : 'off');
+    }
+    function hkDiagClear() { _hkDiagBuf = []; try { localStorage.removeItem(HK_DIAG_LOG); } catch (e) {} }
+    try { Object.assign(window, { hkDiag: hkDiag, hkDiagOn: hkDiagOn, hkDiagCopy: hkDiagCopy, hkDiagSet: hkDiagSet, hkDiagClear: hkDiagClear, hkDiagText: hkDiagText }); } catch (eDw) {}

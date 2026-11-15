@@ -928,6 +928,8 @@ if (item.type === 'recurring') {
       });
       box.appendChild(row); ov.appendChild(box);
       ov.addEventListener('click', function (e) { if (e.target === ov) done('cancel'); });
+      /* ۱.۴.۳: لمس بیرون باکس همان لحظهٔ لمس (نه بعد از رها کردن) پرسش را می‌بندد و به صفحهٔ زیرش نمی‌رسد */
+      ov.addEventListener('pointerdown', function (e) { if (e.target === ov) { e.preventDefault(); e.stopPropagation(); done('cancel'); } });
       ov._hkCancel = function () { done('cancel'); };
       document.body.appendChild(ov);
     }

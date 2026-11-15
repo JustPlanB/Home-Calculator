@@ -65,7 +65,7 @@ const allErrors = [];
     closeSmsImportModal(); await w(300);
     /* فیلدهای «… جدید» وسط */
     openSavingsModal(); await w(600);
-    out.lblC = getComputedStyle(document.querySelector('#savingsModal .family-label')).textAlign === 'center';
+    out.lblC = !!document.querySelector('#savingsModal .hk-newf .hk-newf-in[placeholder^="پس‌انداز جدید"]'); /* ۱.۴.۳: برچسب جای خود را به راهنمای داخل فیلد داد */
     out.sum = !!document.querySelector('#savingsSummary') ;
     onBackGuard(); await w(600);
     return out;
@@ -76,7 +76,7 @@ const allErrors = [];
   ok(A.sunken, 'باکس‌های منوها فرورفته، مثل باکس روابط قرض');
   ok(A.half, '«حساب‌های من» از وسط نصف: بالا حساب‌ها، پایین افزودن حساب بانکی');
   ok(A.noKb, 'ثبت تکی/گروهی بی صفحه‌کلید باز می‌شود');
-  ok(A.lblC, 'نام فیلد «پس‌انداز جدید» وسط، مثل «پروژه جدید»');
+  ok(A.lblC, 'فیلد «پس‌انداز جدید» با راهنمای داخل فیلد، مثل «پروژه جدید»');
 
   console.log('• آمار، شخصی‌سازی، یادآور');
   const B = await page.evaluate(async () => {

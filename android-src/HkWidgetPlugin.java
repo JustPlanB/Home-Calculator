@@ -10,7 +10,13 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class HkWidgetPlugin extends Plugin {
   @com.getcapacitor.PluginMethod public void update(PluginCall call){
     try{
-      SharedPreferences.Editor e=getContext().getSharedPreferences(HkWidgetProvider.PREFS, Context.MODE_PRIVATE).edit();
+      SharedPreferences sp0=getContext().getSharedPreferences(HkWidgetProvider.PREFS, Context.MODE_PRIVATE);
+      SharedPreferences.Editor e=sp0.edit();
+      /* ۱.۴.۳: تم تازه‌ای که داخل نرم‌افزار انتخاب شد، پیش‌فرض همهٔ ویجت‌ها هم می‌شود (رنگی که قبلاً در «تنظیمات» ویجت انتخاب شده بود کنار می‌رود؛ شفافیت می‌ماند) */
+      boolean lightNow=Boolean.TRUE.equals(call.getBoolean("light",false));
+      if(sp0.contains("light") && sp0.getBoolean("light",false)!=lightNow){
+        for(String k: sp0.getAll().keySet()) if(k.startsWith("bg_mode_")) e.remove(k);
+      }
       e.putString("title", call.getString("title","حساب‌کتاب"));
       e.putString("month", call.getString("month", call.getString("title","")));
       e.putBoolean("todayNone", Boolean.TRUE.equals(call.getBoolean("todayNone",false)));

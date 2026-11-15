@@ -284,6 +284,23 @@ final class HkWidgetDraw {
     float asc(){ return num?NUM_A:TXT_A; }
   }
 
+  /** ۱.۴.۳: ویجت یک‌خطی موجودی: راست «موجودی»، چپ مبلغ (رنگ سبز/نارنجی، یا •••• وقتی پنهان/قفل است) */
+  static Bitmap line(Context c, int W, int H, float k, Data d){
+    fonts(c);
+    Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+    Canvas cv=new Canvas(bm);
+    float padX=16*k, cy=H/2f, size=Math.min(H*0.46f, 22*k);
+    Paint lp=paint(BOLD, size*0.82f, text(d), Paint.Align.RIGHT);
+    String lab="موجودی";
+    cv.drawText(lab, W-padX, cy+size*0.3f, lp);
+    float labW=lp.measureText(lab);
+    String v=d.mask?"••••••":(d.balance==null?"—":d.balance);
+    float aw=W-2*padX-labW-14*k;
+    float vs=fit(BOLD, size, v, aw);
+    cv.drawText(v, padX, cy+vs*0.36f, paint(BOLD, vs, balColor(d), Paint.Align.LEFT));
+    return bm;
+  }
+
   /** ویجت اصلی: اسم نرم‌افزار و ماه/سال، موجودی و مبلغ، خرج امروز و مبلغ */
   static Bitmap full(Context c, int W, int H, float k, Data d){
     fonts(c);

@@ -203,7 +203,7 @@
           if (bx.querySelector('.sp-pick-new')) return;
           var wrap = document.createElement('div'); wrap.className = 'sp-pick-new';
           var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'sp-pick-input'; inp.placeholder = 'نام دستهٔ جدید'; inp.maxLength = 24; inp.setAttribute('enterkeyhint', 'done');
-          var okb = document.createElement('button'); okb.type = 'button'; okb.className = 'sp-pick on'; okb.textContent = 'افزودن';
+          var okb = document.createElement('button'); okb.type = 'button'; okb.className = 'hk-newf-add'; okb.setAttribute('aria-label', 'افزودن دسته'); okb.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'; /* ۱.۴.۳ */
           var msg = document.createElement('div'); msg.className = 'sp-pick-err';
           var save = function () {
             if (HKCategorizer.labelTaken(inp.value)) { msg.textContent = 'دسته‌ای با این اسم هست'; return; }

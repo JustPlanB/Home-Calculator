@@ -490,6 +490,9 @@
             '<div class="st-cmp-l prev"><small>قبل</small><div class="st-hb-bar st-tube"><i class="prev" style="animation-delay:' + (k * 120 + 60) + 'ms;width:' + w(x.b) + '%"></i></div><b>' + sg(x.b) + '</b></div></div>';
         }).join('');
       }
+      /* ۱.۴.۳: فلش‌های دو طرف ماه/سال آیکون (نه حرف) تا دقیقاً وسط دایره باشند */
+      var ST_CHEV_L = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+      var ST_CHEV_R = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
       function render() {
         var root = document.getElementById('statsBody');
         if (!root) return;
@@ -499,7 +502,7 @@
         b.forEach(function (x) { inc += x.inc; exp += x.exp; });
         var cs = cards();
         var nav = st.mode === 'yearly' ? '<span class="st-nav-l">' + periodLabel() + '</span>' :
-          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">‹</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">›</button>';
+          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">' + ST_CHEV_L + '</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">' + ST_CHEV_R + '</button>';
         var html = '<div class="st-filters">' +
           '<div class="st-seg" role="tablist">' + [['daily', 'روزانه'], ['weekly', 'هفتگی'], ['monthly', 'ماهانه'], ['yearly', 'سالانه']].map(function (o) {
             return '<button type="button" data-mode="' + o[0] + '" class="' + (st.mode === o[0] ? 'on' : '') + '">' + o[1] + '</button>';
@@ -606,6 +609,8 @@
           } catch (eG) { ghost = null; }
           var segOld = null; try { var on0 = root.querySelector('.st-seg button.on'); if (on0) segOld = { l: on0.offsetLeft, w: on0.offsetWidth }; } catch (eS) {}
           st.mode = nm; render();
+          /* ۱.۴.۳: تب تازه از بالای محتوایش؛ اسکرول وسط ورق خوردن ناگهان کوتاه نمی‌شود (پرش) */
+          try { root.scrollTop = 0; } catch (eSt) {}
           var ez = { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
           /* ۱.۴.۲: هایلایت تب‌ها نرم از گزینهٔ قبلی به گزینهٔ تازه می‌رود */
           try { segPill(root, segOld, ez); } catch (eP) {}

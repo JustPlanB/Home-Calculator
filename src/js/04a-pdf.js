@@ -124,19 +124,22 @@
       var lbl = keys.length ? (keys.length === 1 ? hkRecArcKeyLabel(keys[0]) : hkRecArcKeyLabel(keys[0]) + ' تا ' + hkRecArcKeyLabel(keys[keys.length - 1])) : '';
       B.push({ html: '<div class="pb hd"><div><h1>آرشیو درآمدهای ثابت' + (lbl ? ' — ' + E(lbl) : '') + '</h1></div><div class="sub">حساب‌کتاب<br>تاریخ تهیه: ' + toPersianDigits(today.y) + '/' + toPersianPad2(today.m) + '/' + toPersianPad2(today.d) + '</div></div>' });
       if (!groups.length) { B.push({ html: '<div class="pb sec"><div class="empty">موردی برای این انتخاب نیست</div></div>' }); return B; }
-      var h = '<div class="pb sec"><div class="st inc">واریزهای درآمدهای ثابت</div><table><thead><tr><th style="width:4%">#</th><th style="width:12%">تاریخ</th><th style="width:7%">ساعت</th><th>شرح</th><th style="width:15%">مبلغ</th><th style="width:15%">حساب</th><th style="width:14%">وضعیت</th></tr></thead><tbody>', gp = 0, gu = 0;
-      groups.forEach(function (g) {
-        h += '<tr class="g"><td colspan="7">' + E(g.it.name || '—') + (g.it.account ? ' <span style="font-weight:400;color:#555">(' + E(g.it.account) + ')</span>' : '') + '</td></tr>';
+      /* ۱.۴.۳: ستون اول = ردیف هر درآمد ثابت؛ ردیف‌های هر درآمد یک بلوک هم‌رنگ با خط پررنگ بالایش، تا با درآمد بالایی/پایینی قاطی نشود */
+      var h = '<div class="pb sec"><div class="st inc">واریزهای درآمدهای ثابت</div><table><thead><tr><th style="width:6%">ردیف</th><th style="width:4%">#</th><th style="width:12%">تاریخ</th><th style="width:7%">ساعت</th><th>شرح</th><th style="width:14%">مبلغ</th><th style="width:14%">حساب</th><th style="width:13%">وضعیت</th></tr></thead><tbody>', gp = 0, gu = 0;
+      groups.forEach(function (g, gi) {
+        var bg = gi % 2 ? '#ffffff' : '#eef4fa', cs = 'background:' + bg + ';', no = toPersianDigits(gi + 1);
+        var ord = function (show) { return '<td class="c" style="' + cs + 'font-weight:800;font-size:12px;color:#0b6fa4;border-left:2px solid #9fb6c9;">' + (show ? no : '') + '</td>'; };
+        h += '<tr class="g" style="border-top:2.5px solid #333;">' + ord(true) + '<td colspan="7" style="' + cs + '">' + E(g.it.name || '—') + (g.it.account ? ' <span style="font-weight:400;color:#555">(' + E(g.it.account) + ')</span>' : '') + '</td></tr>';
         var p = 0, u = 0;
         g.rows.forEach(function (x, i) {
           var ok = x.row.status === 'paid', amt = Number(x.row.amount) || 0, y = Math.floor(x.key / 100), m = x.key % 100;
           if (ok) p += amt; else u += amt;
-          h += '<tr><td class="c">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd({ day: x.row.day }, y, m) + '<td class="c tm">' + hkExpTime(x.row) + '</td><td>' + E(x.row.desc || g.it.name || '') + '</td><td class="n">' + pdfMoney(amt) + '</td><td class="c">' + E(x.row.account || '—') + '</td><td class="c' + (ok ? '' : ' un') + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
+          h += '<tr style="' + cs + '">' + ord(false) + '<td class="c" style="' + cs + '">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd({ day: x.row.day }, y, m).replace('<td', '<td style="' + cs + '"') + '<td class="c tm" style="' + cs + '">' + hkExpTime(x.row) + '</td><td style="' + cs + '">' + E(x.row.desc || g.it.name || '') + '</td><td class="n" style="' + cs + '">' + pdfMoney(amt) + '</td><td class="c" style="' + cs + '">' + E(x.row.account || '—') + '</td><td class="c' + (ok ? '' : ' un') + '" style="' + cs + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
         });
         gp += p; gu += u;
-        h += '<tr class="t"><td colspan="4">جمع ' + E(g.it.name || '') + ' — دریافت‌شده ' + pdfMoney(p) + (u ? ' · دریافت‌نشده ' + pdfMoney(u) : '') + '</td><td class="n">' + pdfMoney(p + u) + '</td><td colspan="2"></td></tr>';
+        h += '<tr class="t">' + ord(false) + '<td colspan="4">جمع ' + E(g.it.name || '') + ' — دریافت‌شده ' + pdfMoney(p) + (u ? ' · دریافت‌نشده ' + pdfMoney(u) : '') + '</td><td class="n">' + pdfMoney(p + u) + '</td><td colspan="2"></td></tr>';
       });
-      h += '<tr class="T"><td colspan="4">جمع کل — دریافت‌شده ' + pdfMoney(gp) + (gu ? ' · دریافت‌نشده ' + pdfMoney(gu) : '') + '</td><td class="n">' + pdfMoney(gp + gu) + '</td><td colspan="2"></td></tr></tbody></table></div>';
+      h += '<tr class="T" style="border-top:2.5px solid #333;"><td colspan="5">جمع کل — دریافت‌شده ' + pdfMoney(gp) + (gu ? ' · دریافت‌نشده ' + pdfMoney(gu) : '') + '</td><td class="n">' + pdfMoney(gp + gu) + '</td><td colspan="2"></td></tr></tbody></table></div>';
       B.push({ html: h, split: true });
       return B;
     }
