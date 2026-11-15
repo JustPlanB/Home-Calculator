@@ -502,7 +502,7 @@
         b.forEach(function (x) { inc += x.inc; exp += x.exp; });
         var cs = cards();
         var nav = st.mode === 'yearly' ? '<span class="st-nav-l">' + periodLabel() + '</span>' :
-          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">' + ST_CHEV_L + '</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">' + ST_CHEV_R + '</button>';
+          '<button type="button" class="st-nav-b" data-nav="-1" aria-label="قبلی">' + ST_CHEV_R + '</button><span class="st-nav-l">' + periodLabel() + '</span><button type="button" class="st-nav-b" data-nav="1" aria-label="بعدی">' + ST_CHEV_L + '</button>';
         var html = '<div class="st-filters">' +
           '<div class="st-seg" role="tablist">' + [['daily', 'روزانه'], ['weekly', 'هفتگی'], ['monthly', 'ماهانه'], ['yearly', 'سالانه']].map(function (o) {
             return '<button type="button" data-mode="' + o[0] + '" class="' + (st.mode === o[0] ? 'on' : '') + '">' + o[1] + '</button>';
@@ -606,6 +606,8 @@
             var inner = document.createElement('div'); inner.style.cssText = 'position:absolute;left:0;right:0;top:' + (-(top0 - rr.top) - root.scrollTop) + 'px;padding:' + getComputedStyle(root).padding + ';box-sizing:border-box;';
             Array.prototype.forEach.call(root.children, function (c) { if (c !== fl) inner.appendChild(c.cloneNode(true)); else { var sp = document.createElement('div'); sp.style.height = c.offsetHeight + 'px'; sp.style.marginBottom = getComputedStyle(c).marginBottom; inner.appendChild(sp); } });
             ghost.appendChild(inner); (root.closest('.feature-sheet') || document.body).appendChild(ghost);
+            /* ۱.۴.۴: کپی دقیقاً سر جای محتوای واقعی (نوار چسبان بالای آمار حاشیهٔ منفی دارد و کپی ۱۲px پایین‌تر می‌افتاد = پرش) */
+            try { for (var gi = 0; gi < root.children.length; gi++) { if (root.children[gi] === fl || !inner.children[gi]) continue; var gd = root.children[gi].getBoundingClientRect().top - inner.children[gi].getBoundingClientRect().top; if (gd) inner.style.top = (parseFloat(inner.style.top) + gd) + 'px'; break; } } catch (eGd) {}
           } catch (eG) { ghost = null; }
           var segOld = null; try { var on0 = root.querySelector('.st-seg button.on'); if (on0) segOld = { l: on0.offsetLeft, w: on0.offsetWidth }; } catch (eS) {}
           st.mode = nm; render();

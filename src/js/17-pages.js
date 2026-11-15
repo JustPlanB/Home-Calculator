@@ -73,10 +73,15 @@
       /* ۱.۴.۱: توضیح بالای صفحه (اولین متن بلند درست زیر عنوان) → آیکون اطلاعات کنار نام صفحه */
       try {
         var intro = null;
-        if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
+        /* ۱.۴.۴: انتخاب توضیحِ هر صفحه (با همان عنوان) ثابت می‌ماند — بی این، روی بعضی گوشی‌ها هر فریم یک بار پیدا و یک بار گم می‌شد
+           و توضیح پنهان/آشکار می‌شد (لرزش صفحهٔ یادآور: فهرست و فیلد ۴۸px بالا و پایین، ۱۲۰ بار در ثانیه) */
+        var kept = page._hkPgIntro;
+        if (kept && page._hkPgIntroKey === txt && kept.isConnected && box.contains(kept)) intro = kept;
+        else if (src) { var nx = src.nextElementSibling; while (nx && (nx.classList.contains('hk-pg-hd') || (nx.offsetParent === null && !nx.classList.contains('hk-pg-intro-hid')))) nx = nx.nextElementSibling;
           if (nx && !nx.id && /^(DIV|P)$/.test(nx.tagName) && (nx.matches('.family-help, .sv-intro, .hk-dg-intro, .hk-bulk-hint, .sms-later-hint, .hk-pg-intro') || (!nx.className && nx.querySelectorAll('input, button, select, textarea').length === 0)) && (nx.textContent || '').trim().length > 40) intro = nx; }
         /* ۱.۴.۳: راهنماهای صفحه‌های شخصی‌سازی (هر جای صفحه) هم به ⓘ کنار نام می‌روند */
         if (!intro) { var hn0 = box.querySelector('.hk-prefs-hint, .hk-pf-note, .hk-pf-tip'); if (hn0 && (hn0.textContent || '').trim().length > 8) intro = hn0; }
+        page._hkPgIntro = intro; page._hkPgIntroKey = txt;
         Array.prototype.forEach.call(box.querySelectorAll('.hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
         var ib = hd.querySelector('.hk-info-btn'), sp = hd.querySelector('.hk-pg-sp');
         if (intro) {
@@ -92,6 +97,14 @@
         var pend = 0;
         page._hkPgObs = new MutationObserver(function () {
           if (pend) return;
+          /* ۱.۴.۴: ترمز چرخه: اگر در نیم‌ثانیه بیش از ۲۰ بار پشت سر هم اجرا شد، ۴۰۰ms صبر (و ثبت در گزارش اشکال) */
+          var nowT = Date.now();
+          if (nowT - (page._hkPgDecT || 0) > 500) { page._hkPgDecT = nowT; page._hkPgDecN = 0; }
+          if (++page._hkPgDecN > 20) {
+            if (page._hkPgDecN === 21) { try { if (window.hkDiag) hkDiag('loop', 'decorate ' + (page.id || '')); } catch (eL) {} }
+            pend = setTimeout(function () { pend = 0; page._hkPgDecN = 0; page._hkPgDecT = Date.now(); if (page.classList.contains('hk-page')) hkPageDecorate(page); }, 400);
+            return;
+          }
           pend = requestAnimationFrame(function () { pend = 0; if (page.classList.contains('hk-page')) hkPageDecorate(page); });
         });
         page._hkPgObs.observe(page, { childList: true, subtree: true, characterData: true });
@@ -245,7 +258,7 @@
         var mo = new MutationObserver(function (ms) { if (ms.some(function (m) { return m.target && m.target.classList && m.target.classList.contains('section'); })) { later(); setTimeout(hkLedPageFit, 450); } });
         var hook = function () { var l = document.getElementById('sections-ledger'); if (l) mo.observe(l, { attributes: true, attributeFilter: ['class'], subtree: true }); };
         hook();
-        var fsO = new MutationObserver(later); var fsEl = document.getElementById('featureSheet'); if (fsEl) fsO.observe(fsEl, { attributes: true, attributeFilter: ['class'] });
+        /* ۱.۴.۴: همان لحظهٔ باز شدن هم اندازه شود (نه ۶۰ms بعد) تا خلاصهٔ قرض ۲ پیکسل نپرد */ var fsO = new MutationObserver(function () { try { hkLedPageFit(); } catch (eF) {} later(); }); var fsEl = document.getElementById('featureSheet'); if (fsEl) fsO.observe(fsEl, { attributes: true, attributeFilter: ['class'] });
       } catch (eMo) {}
       window.addEventListener('resize', later);
       try { window.hkLedPageFit = hkLedPageFit; } catch (eX) {}
@@ -361,8 +374,11 @@
       document.addEventListener('pointerdown', function (e) { if (hkDiagOn()) hkDiag('tap', hkDiagNm(e.target && e.target.closest ? (e.target.closest('button, [onclick], .hk-page, .modal-overlay') || e.target) : e.target) + ' @' + Math.round(e.clientX) + ',' + Math.round(e.clientY)); }, true);
     })();
     function hkDiagText() {
-      return 'گزارش اشکال حساب‌کتاب ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '') + '\n' + _hkDiagBuf.join('\n');
+      /* ۱.۴.۴: نسخهٔ نصب‌شده از خود اندروید (نه ثابت قدیمی APP_VERSION) */
+      var vi = (typeof _appInfo !== 'undefined' && _appInfo) ? (_appInfo.name + (_appInfo.code ? ' (' + _appInfo.code + ')' : '')) : '';
+      return 'گزارش اشکال حساب‌کتاب ' + vi + '\n' + _hkDiagBuf.join('\n');
     }
+    try { setTimeout(function () { if (typeof getInstalledVersion === 'function') getInstalledVersion(); }, 2500); } catch (eV) {}
     function hkDiagCopy() {
       var txt = hkDiagText();
       var ok = function () { try { showToast('گزارش کپی شد؛ آن را برای پشتیبانی بفرستید'); } catch (e) {} };
@@ -377,3 +393,26 @@
     }
     function hkDiagClear() { _hkDiagBuf = []; try { localStorage.removeItem(HK_DIAG_LOG); } catch (e) {} }
     try { Object.assign(window, { hkDiag: hkDiag, hkDiagOn: hkDiagOn, hkDiagCopy: hkDiagCopy, hkDiagSet: hkDiagSet, hkDiagClear: hkDiagClear, hkDiagText: hkDiagText }); } catch (eDw) {}
+    /* ===== ۱.۴.۴: شروع بی‌پرش =====
+       صفحهٔ اول تا وقتی جای سربرگ، کارت‌ها و باکس هوشمند چند فریم پشت هم ثابت نمانده نشان داده نمی‌شود (html.hk-ready).
+       سقف انتظار ۹۰۰ms بعد از بارگذاری؛ خود CSS هم بعد از ۱٫۵ ثانیه صفحه را نشان می‌دهد (اگر این کد اجرا نشود). */
+    (function () {
+      var done = false;
+      var show = function () { if (done) return; done = true; try { document.documentElement.classList.add('hk-ready'); } catch (e) {} };
+      var settle = function () {
+        var last = null, n = 0, t0 = Date.now();
+        var step = function () {
+          if (done) return;
+          var k = '';
+          try {
+            ['.container', '#homeSmartBox', '#stickyChrome', '.hk-notch'].forEach(function (s) { var el = document.querySelector(s); if (el) { var r = el.getBoundingClientRect(); k += Math.round(r.top) + 'h' + Math.round(r.height) + '|'; } });
+          } catch (e) {}
+          if (k === last) n++; else { n = 0; last = k; }
+          if (n >= 10 || Date.now() - t0 > 900) return show();
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      if (document.readyState === 'complete') settle(); else window.addEventListener('load', settle);
+      setTimeout(show, 1400);
+    })();

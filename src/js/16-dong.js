@@ -302,6 +302,8 @@
       var bx = ov.querySelector('.hk-dg-box'), D = hkDongLoad();
       var g = _hkDongView.gid && D.groups.filter(function (x) { return x.id === _hkDongView.gid; })[0];
       if (!g) { _hkDongView.gid = ''; hkDongRenderList(bx, D); } else hkDongRenderGroup(bx, D, g);
+      /* ۱.۴.۴: سربرگ صفحه در همان لحظهٔ چیدن ساخته شود، نه یک فریم بعد (محتوا ۲۰ تا ۳۳ پیکسل می‌پرید) */
+      try { if (ov.classList.contains('hk-page') && typeof window.hkPageDecorate === 'function') window.hkPageDecorate(ov); } catch (ePd) {}
     }
     function hkDongRenderList(bx, D) {
       var h = '<div class="hk-dg-t">دُنگ</div><div class="hk-dg-intro">خرج‌های مشترک (سفر، مهمانی، خانهٔ دانشجویی و …) را بین دوستان تقسیم کنید. جداست و روی حساب‌کتاب شما اثری ندارد.</div><div class="hk-dg-list">';
