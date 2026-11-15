@@ -421,7 +421,7 @@ fs.mkdirSync(path.join(resDir,'font'),{recursive:true});
 });
 // ۱.۳.۹۸: پیش‌نمایش و توضیح هر ویجت در فهرست ویجت‌های گوشی (تا سه ویجت شبیه هم نباشند)
 fs.mkdirSync(path.join(resDir,'drawable-nodpi'),{recursive:true});
-['hk_prev_main.png','hk_prev_accounts.png','hk_prev_tx.png'].forEach(function(f){
+['hk_prev_main.png','hk_prev_accounts.png','hk_prev_tx.png','hk_prev_line.png'].forEach(function(f){
   fs.copyFileSync(path.join(root,'resources','widget-previews',f), path.join(resDir,'drawable-nodpi',f));
 });
 fs.mkdirSync(path.join(resDir,'values'),{recursive:true});
@@ -573,7 +573,7 @@ fs.writeFileSync(path.join(xmlDir,'hk_widget_line_info.xml'),
     android:widgetCategory="home_screen"
     android:configure="ir.hesabketab.app.HkWidgetStyle"
     android:widgetFeatures="reconfigurable|configuration_optional"
-    android:previewImage="@drawable/hk_prev_main"
+    android:previewImage="@drawable/hk_prev_line"
     android:description="@string/hk_wdesc_line"
     android:initialLayout="@layout/hk_widget"/>
 `);

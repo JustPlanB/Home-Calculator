@@ -258,7 +258,7 @@
         var mo = new MutationObserver(function (ms) { if (ms.some(function (m) { return m.target && m.target.classList && m.target.classList.contains('section'); })) { later(); setTimeout(hkLedPageFit, 450); } });
         var hook = function () { var l = document.getElementById('sections-ledger'); if (l) mo.observe(l, { attributes: true, attributeFilter: ['class'], subtree: true }); };
         hook();
-        var fsO = new MutationObserver(later); var fsEl = document.getElementById('featureSheet'); if (fsEl) fsO.observe(fsEl, { attributes: true, attributeFilter: ['class'] });
+        /* ۱.۴.۴: همان لحظهٔ باز شدن هم اندازه شود (نه ۶۰ms بعد) تا خلاصهٔ قرض ۲ پیکسل نپرد */ var fsO = new MutationObserver(function () { try { hkLedPageFit(); } catch (eF) {} later(); }); var fsEl = document.getElementById('featureSheet'); if (fsEl) fsO.observe(fsEl, { attributes: true, attributeFilter: ['class'] });
       } catch (eMo) {}
       window.addEventListener('resize', later);
       try { window.hkLedPageFit = hkLedPageFit; } catch (eX) {}
@@ -393,3 +393,26 @@
     }
     function hkDiagClear() { _hkDiagBuf = []; try { localStorage.removeItem(HK_DIAG_LOG); } catch (e) {} }
     try { Object.assign(window, { hkDiag: hkDiag, hkDiagOn: hkDiagOn, hkDiagCopy: hkDiagCopy, hkDiagSet: hkDiagSet, hkDiagClear: hkDiagClear, hkDiagText: hkDiagText }); } catch (eDw) {}
+    /* ===== ۱.۴.۴: شروع بی‌پرش =====
+       صفحهٔ اول تا وقتی جای سربرگ، کارت‌ها و باکس هوشمند چند فریم پشت هم ثابت نمانده نشان داده نمی‌شود (html.hk-ready).
+       سقف انتظار ۹۰۰ms بعد از بارگذاری؛ خود CSS هم بعد از ۱٫۵ ثانیه صفحه را نشان می‌دهد (اگر این کد اجرا نشود). */
+    (function () {
+      var done = false;
+      var show = function () { if (done) return; done = true; try { document.documentElement.classList.add('hk-ready'); } catch (e) {} };
+      var settle = function () {
+        var last = null, n = 0, t0 = Date.now();
+        var step = function () {
+          if (done) return;
+          var k = '';
+          try {
+            ['.container', '#homeSmartBox', '#stickyChrome', '.hk-notch'].forEach(function (s) { var el = document.querySelector(s); if (el) { var r = el.getBoundingClientRect(); k += Math.round(r.top) + 'h' + Math.round(r.height) + '|'; } });
+          } catch (e) {}
+          if (k === last) n++; else { n = 0; last = k; }
+          if (n >= 10 || Date.now() - t0 > 900) return show();
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      if (document.readyState === 'complete') settle(); else window.addEventListener('load', settle);
+      setTimeout(show, 1400);
+    })();

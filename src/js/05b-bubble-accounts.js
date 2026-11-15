@@ -945,11 +945,15 @@
     }
     /* ۱.۳.۷۸: آخرین ردیف‌های مخارج یا درآمدها برای ویجت ردیف‌ها — تازه‌ترین بالا؛ از ماه جاری به ماه‌های قبل */
     function hkWidgetTxRows(kind, max) {
-      max = max || 300; /* ۱.۳.۹۱: ویجت این‌ها را ۲۰ تا ۲۰ تا با اسکرول نشان می‌دهد */
+      /* ۱.۴.۴: ترتیب همان ترتیب انتخاب‌شده در نرم‌افزار:
+         «قدیمی بالا» = فقط همین ماه؛ اولین تراکنش ماه بالا و آخرین تراکنش ماه پایین (با اسکرول).
+         «جدید بالا» = تازه‌ترین بالا و با اسکرول به ماه‌های قبل هم می‌رسد. */
+      var oldTop = true; try { oldTop = (hkPrefs().sort || 'old') === 'old'; } catch (eS0) {}
+      max = max || (oldTop ? 2000 : 300); /* ۱.۳.۹۱: ویجت این‌ها را ۲۰ تا ۲۰ تا با اسکرول نشان می‌دهد */
       var out = [];
       try {
         var t = getTodayPersian(), y = t.y, m = t.m;
-        for (var i = 0; i < 36 && out.length < max; i++) {
+        for (var i = 0; i < (oldTop ? 1 : 36) && out.length < max; i++) {
           var key = periodKey(y, m);
           var pd = (key === periodKey(currentYear, currentMonth)) ? periodData : (archive && archive[key]);
           var list = [];
@@ -968,7 +972,6 @@
           var _tm = function (x) { var mm = /^(\d{1,2}):(\d{2})/.exec(toEnglishDigits(String(x.r.time || ''))); return mm ? (+mm[1]) * 60 + (+mm[2]) : -1; };
           list.forEach(function (x) { x.t = _tm(x); });
           list.sort(function (p, q) { return (q.d - p.d) || (q.t - p.t) || (q.k - p.k) || (q.i - p.i); });
-          /* ۱.۴.۳: «قدیمی بالا» برای کل فهرست (نه هر ماه جدا): آخرین تراکنش واقعاً آخرِ فهرست است */
           for (var j = 0; j < list.length && out.length < max; j++) {
             var r = list[j].r, a2 = Number(r.amount) || 0, kd2 = list[j].kd;
             var o = {
@@ -988,7 +991,7 @@
           m--; if (m < 1) { m = 12; y--; }
         }
       } catch (e) {}
-      try { if ((hkPrefs().sort || 'old') === 'old') out.reverse(); } catch (eS) {}
+      if (oldTop) out.reverse();
       return out;
     }
     try { window.hkWidgetTxRows = hkWidgetTxRows; } catch (eWt) {}

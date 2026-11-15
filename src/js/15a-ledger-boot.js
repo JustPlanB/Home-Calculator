@@ -922,6 +922,22 @@
       var editing = function (t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) && !t.readOnly && document.activeElement === t; };
       document.addEventListener('selectstart', function (e) { var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement); if (!editing(t)) e.preventDefault(); }, true);
       document.addEventListener('contextmenu', function (e) { if (!editing(e.target)) e.preventDefault(); }, true);
+      /* ۱.۴.۴: اگر گوشی با نگه داشتن انگشت باز هم نوشته‌ای را انتخاب کرد (گاهی پیش از لانگ‌پرس خود نرم‌افزار)، همان لحظه انتخاب برداشته می‌شود؛ فقط خانهٔ در حال ویرایش انتخاب‌پذیر است */
+      var dropSel = function (el) {
+        try { if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !editing(el) && el.selectionStart !== el.selectionEnd) { el.setSelectionRange(0, 0); if (document.activeElement === el) el.blur(); } } catch (eD) {}
+      };
+      document.addEventListener('selectionchange', function (ev) {
+        try {
+          var ae = document.activeElement;
+          dropSel(ev && ev.target && ev.target.nodeType === 1 ? ev.target : null);
+          if (editing(ae)) return;
+          dropSel(ae);
+          var sel = window.getSelection && window.getSelection();
+          if (sel && !sel.isCollapsed) sel.removeAllRanges();
+        } catch (eSel) {}
+      }, true);
+      /* انتخاب داخل خانهٔ فقط‌خواندنی (ردیف‌های جدول) رویداد select خودش را دارد */
+      document.addEventListener('select', function (ev) { dropSel(ev.target); }, true);
     })();
     /* ۱.۳.۵۲: دکمهٔ شناور اسکرول جدول درآمد/مخارج (کانتینر واقعی = .person-detail-scroll):
        بالا یا وسط لیست → فلش دوتایی پایین (رفتن به انتهای واقعی)، در انتها → فلش بالا (رفتن به ابتدا)؛
@@ -1004,7 +1020,9 @@
       var sched = function () { if (!raf) raf = requestAnimationFrame(update); };
       document.addEventListener('scroll', sched, true);
       window.addEventListener('resize', sched);
-      try { new MutationObserver(sched).observe(document.body, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true }); } catch (eM) {}
+      /* ۱.۴.۴: جدولی که تازه باز شده همان لحظه (پیش از اولین نقاشی) اندازه شود، نه یک فریم بعد (راهنمای زیر جدول و خود جدول می‌پریدند) */
+      var fitNew = function () { try { var sc0 = curSc(); if (sc0 && !sc0._hkFitKey) fit(sc0); } catch (eFn) {} sched(); };
+      try { new MutationObserver(fitNew).observe(document.body, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true }); } catch (eM) {}
       setTimeout(sched, 600);
     })();
 

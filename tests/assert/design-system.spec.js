@@ -41,13 +41,13 @@ async function fresh(b, theme) {
     ok(tr.r === '16px' || tr.r === 'page', 'گردی قاب پنجره ۱۶px یا صفحهٔ تمام‌صفحه (' + tr.r + ')');
     const sec = await page.evaluate(async () => {
       openSecurityModal(); await new Promise(r => setTimeout(r, 400));
-      /* ۱.۴.۳: دکمهٔ «فعال کردن قفل» جای خود را به کلید روشن/خاموش داد */
-      const sw = document.getElementById('secLockSw'), row = document.querySelector('#securityModal .sec-sw-row'), c = row && getComputedStyle(row);
-      const out = (sw && sw.getClientRects().length && c) ? { sw: sw.classList.contains('hk-switch'), ff: c.fontFamily } : null;
+      /* ۱.۴.۴: امنیت دوباره با دکمهٔ «فعال کردن قفل برنامه» */
+      const p = document.querySelector('#securityModal .sec-btn-primary'), c = p && getComputedStyle(p);
+      const out = c ? { bg: c.backgroundColor, fs: c.fontSize, ff: c.fontFamily } : null;
       document.querySelectorAll('.modal-overlay.open').forEach(o => o.classList.remove('open'));
       return out;
     });
-    ok(sec && sec.sw && /Vazirmatn/.test(sec.ff), 'قفل برنامه: کلید روشن/خاموش با همان شکل کلیدهای نرم‌افزار و فونت نرم‌افزار (' + JSON.stringify(sec) + ')');
+    ok(sec && sec.bg === BLUE && sec.fs === '15px' && /Vazirmatn/.test(sec.ff), '«فعال کردن قفل برنامه» همان آبی و فونت نرم‌افزار (' + JSON.stringify(sec) + ')');
     const home = await page.evaluate(() => {
       let min = 99, where = ''; const w = document.createTreeWalker(document.getElementById('panel-home') || document.body, NodeFilter.SHOW_TEXT);
       while (w.nextNode()) { const n = w.currentNode; if (!n.textContent.trim()) continue; const el = n.parentElement, r = el.getBoundingClientRect(); if (!r.width || r.top > innerHeight) continue; const fs = parseFloat(getComputedStyle(el).fontSize); if (fs < min) { min = fs; where = el.className + ':' + n.textContent.trim().slice(0, 10); } }

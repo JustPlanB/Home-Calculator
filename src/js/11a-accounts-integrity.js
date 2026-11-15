@@ -914,6 +914,14 @@ if (item.type === 'recurring') {
       try { scheduleSave(); } catch (e3) {}
     }
     /* پرسش سه‌گزینه‌ای ساده */
+    /* ۱.۴.۴: لمسی که یک باکس را از بیرونش بست، کار دیگری نکند: «کلیک»ِ همان لمس (که بعد از برداشتن انگشت می‌آید و باکس دیگر زیرش نیست) به صفحهٔ زیر نمی‌رسد */
+    function hkSwallowTap() {
+      var kill = function (e) { try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); } catch (eK) {} off(); };
+      var off = function () { document.removeEventListener('click', kill, true); clearTimeout(t); };
+      var t = setTimeout(off, 700);
+      document.addEventListener('click', kill, true);
+    }
+    try { window.hkSwallowTap = hkSwallowTap; } catch (eSw) {}
     function hkAsk3(msg, opts, cb) {
       var old = document.getElementById('hkAsk3'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkAsk3'; ov.className = 'hk-recon-ov';
@@ -929,7 +937,7 @@ if (item.type === 'recurring') {
       box.appendChild(row); ov.appendChild(box);
       ov.addEventListener('click', function (e) { if (e.target === ov) done('cancel'); });
       /* ۱.۴.۳: لمس بیرون باکس همان لحظهٔ لمس (نه بعد از رها کردن) پرسش را می‌بندد و به صفحهٔ زیرش نمی‌رسد */
-      ov.addEventListener('pointerdown', function (e) { if (e.target === ov) { e.preventDefault(); e.stopPropagation(); done('cancel'); } });
+      ov.addEventListener('pointerdown', function (e) { if (e.target === ov) { e.preventDefault(); e.stopPropagation(); hkSwallowTap(); done('cancel'); } });
       ov._hkCancel = function () { done('cancel'); };
       document.body.appendChild(ov);
     }

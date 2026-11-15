@@ -177,7 +177,7 @@
           '<div class="hk-pf-gh">درآمدهای ثابت</div><div class="hk-pf-grp hk-rax-list">' + chkRow('<b>همه</b>', '*', 'i') + items.map(function (it) { return chkRow(escapeHtml(it.name || '—'), it.id, 'i'); }).join('') + '</div>' +
           '<div class="hk-pf-gh">ماه‌ها</div><div class="hk-pf-grp hk-rax-list">' + (months.length ? chkRow('<b>همه</b>', '*', 'k') + months.map(function (k) { return chkRow(hkRecArcKeyLabel(k), k, 'k'); }).join('') : '<div class="hk-pf-row"><span class="hk-pf-l" style="color:var(--muted)">هنوز واریزی در آرشیو نیست</span></div>') + '</div>' +
         '</div>' +
-        '<div class="hk-rax-acts"><button type="button" class="modal-btn hk-rax-go">ساخت خروجی</button><button type="button" class="modal-btn hk-rax-cancel">انصراف</button></div>';
+        '<div class="hk-rax-acts"><button type="button" class="modal-btn primary hk-rax-go">ساخت خروجی</button><button type="button" class="modal-btn hk-rax-cancel">انصراف</button></div>';
       document.body.appendChild(ov);
       box.querySelector('.hk-pf-x').onclick = close; box.querySelector('.hk-rax-cancel').onclick = close;
       box.querySelectorAll('.hk-rax-kind button').forEach(function (b) { b.onclick = function () { kind = b.dataset.k; box.querySelectorAll('.hk-rax-kind button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });

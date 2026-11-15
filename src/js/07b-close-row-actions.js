@@ -52,20 +52,22 @@
       tr.addEventListener('pointerdown', function (e) {
         if (e.button != null && e.button !== 0) return;
         x0 = e.clientX; y0 = e.clientY; clear();
-        t = setTimeout(function () {
-          t = null;
+        t = setTimeout(fire, 480);
+      });
+      var fire = function () {
+          if (t) { clearTimeout(t); } t = null;
           tr._hkLpAt = Date.now();
           try { if (document.activeElement && tr.contains(document.activeElement)) document.activeElement.blur(); } catch (eB) {}
           try { document.querySelectorAll('.pd-desc-popup, .cell-text-popup').forEach(function (p) { p.remove(); }); } catch (eP) {}
           try { window.appHaptic(25); } catch (eV) {}
           try { hkLpSwallowArm(); } catch (eSw) {}
           onFire();
-        }, 480);
-      });
+      };
       tr.addEventListener('pointermove', function (e) { if (t && (Math.abs(e.clientX - x0) > 10 || Math.abs(e.clientY - y0) > 10)) clear(); });
       tr.addEventListener('pointerup', clear);
       tr.addEventListener('pointercancel', clear);
-      tr.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      /* ۱.۴.۴: اگر گوشی «نگه داشتن» را زودتر از ۴۸۰ms خود نرم‌افزار تشخیص داد، همان لحظه منوی ویرایش/حذف بیاید (نه انتخاب متن) */
+      tr.addEventListener('contextmenu', function (e) { e.preventDefault(); if (t) fire(); });
       /* کلیکِ بعد از رها کردن لانگ‌پرس کار دیگری (مثلاً عوض شدن وضعیت مبلغ) نکند */
       tr.addEventListener('click', function (e) { if (tr._hkLpAt && Date.now() - tr._hkLpAt < 700) { e.stopPropagation(); e.preventDefault(); } }, true);
     }

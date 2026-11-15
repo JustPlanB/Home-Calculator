@@ -55,7 +55,7 @@ const allErrors = [];
     const ta = document.getElementById('smsImportText');
     const h0 = ta.getBoundingClientRect().height; ta.focus(); await w(500); const h1 = ta.getBoundingClientRect().height;
     const row = document.querySelector('#smsImportModal .hk-bulk-open-btn').parentElement;
-    o.sms = { bb, sameRow: row.querySelectorAll('button').length === 2 && /تشخیص/.test(row.textContent), tall: h0 >= 200 && Math.abs(h1 - h0) < 2 };
+    o.sms = { bb, sameRow: row.querySelectorAll('button').length === 2 && /تشخیص/.test(row.textContent), tall: h0 >= 180 && Math.abs(h1 - h0) < 2 /* ۱.۴.۴: جای ۷ خط */ };
     ta.blur(); onBackGuard(); await w(700);
     /* پنجره‌ای که «انصراف» پنهان دارد با برگشت درست بسته می‌شود (کار خود دکمه) */
     const ov = document.createElement('div'); ov.className = 'modal-overlay open'; ov.id = 'hkTestOv'; ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;';
@@ -105,15 +105,15 @@ const allErrors = [];
     await w(100); o.askOutside = !document.getElementById('hkAsk3');
     /* امنیت */
     openSecurityModal(); await w(900);
-    const sw = document.getElementById('secLockSw');
-    o.sec = { sw: !!sw && sw.getClientRects().length > 0, noBtn: !document.querySelector('#securityModal .sec-btn-primary, #securityModal .sec-btn-danger'), line: getComputedStyle(document.querySelector('#securityModal .sec-row')).borderBottomStyle, fancy: !!document.querySelector('#securityModal .fancy-select-wrap #secAutoLockSel') };
+    /* ۱.۴.۴: امنیت به شکل قبل برگشت (دکمهٔ فعال/غیرفعال، بی کلید روشن/خاموش) */
+    o.sec = { noSw: !document.getElementById('secLockSw'), btn: !!document.querySelector('#securityModal .sec-btn-primary') };
     onBackGuard(); await w(700);
     return o;
   });
   ok(B.titles.askBackupParts === 'پشتیبان‌گیری' && B.titles.openBankAccountsModal === 'انتخاب حساب بانکی' && B.titles.openSavingsModal === 'پس‌انداز (ارز و طلا)' && B.titles.openHelpModal === 'راهنما', 'نام بالای صفحه‌ها همان نام گزینه در منو (' + Object.values(B.titles).join('، ') + ')');
   ok(!B.bankBottom, 'بانک دلخواهِ ساخته‌شده در فهرست بانک‌های پایین نیست');
   ok(B.askFirst && B.askOutside, 'پرسش «با/بدون پیوست‌ها»: برگشت و لمس بیرون اول همان را می‌بندد');
-  ok(B.sec.sw && B.sec.noBtn && B.sec.line === 'none' && B.sec.fancy, 'امنیت: کلید روشن/خاموش، بی خط زیر گزینه‌ها، فهرست کشویی مثل بقیه');
+  ok(B.sec.noSw && B.sec.btn, 'امنیت (۱.۴.۴): مثل قبل با دکمهٔ «فعال کردن قفل برنامه»، بی کلید روشن/خاموش');
 
   console.log('• شخصی‌سازی');
   const C = await page.evaluate(async () => {
@@ -183,7 +183,7 @@ const allErrors = [];
     o.recPdf = /<th style="width:6%">ردیف<\/th>/.test(pdf) && /border-top:2\.5px solid #333/.test(pdf) && /gi\s*%\s*2/.test(pdf);
     const css = [...document.styleSheets].map(s => { try { return [...s.cssRules].map(r => r.cssText).join('\n'); } catch (e) { return ''; } }).join('\n');
     o.led = /\.section\.hk-led-closing \.section-body\.hk-led-scroll\s*\{\s*min-height:\s*0px\s*!important/.test(css) /* باز و در حال بسته شدن: هر دو متناسب */ && /textarea\[readonly\]:focus[^{]*\{[^}]*caret-color: transparent/.test(css);
-    o.proj = /#projectReportModal \.proj-table thead th \{[^}]*position: sticky[^}]*inset/.test(css);
+    o.proj = /#projectReportModal \.proj-table thead th \{[^}]*position: sticky[^}]*background-color/.test(css) && /#projectReportModal \.proj-table \{[^}]*border-collapse: separate/.test(css); /* ۱.۴.۴: خط‌کشی هر خانه مال خودش */
     return o;
   });
   ok(E.recPdf, 'PDF آرشیو درآمد ثابت: ستون اول «ردیف» هر درآمد؛ هر درآمد یک بلوک جدا (رنگ و خط پررنگ)');
