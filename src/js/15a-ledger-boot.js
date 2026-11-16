@@ -179,8 +179,18 @@
       closeRemindBarIfOpen();
       const led = ensureLedger();
       const sec = emptyLedgerSection();
-      sec.id = 'l' + (led.nextId || 1);
-      led.nextId = (led.nextId || 1) + 1;
+      /* ۱.۴.۶: شناسهٔ رابطهٔ تازه هرگز تکراری نباشد. شمارندهٔ هر ماه جداست ولی رابطه‌ها از ماه‌های قبل می‌آیند؛ شناسهٔ تکراری یعنی
+         رابطهٔ تازه با نام یک رابطهٔ قدیمی دیده می‌شد و حذفش، رابطهٔ قدیمی را هم (از همهٔ ماه‌ها) پاک می‌کرد. */
+      var usedIds = {};
+      try {
+        (led.sections || []).forEach(function (x) { if (x && x.id) usedIds[x.id] = 1; });
+        Object.keys(archive || {}).forEach(function (k) { var pdl = archive[k] && archive[k].ledger; ((pdl && pdl.sections) || []).forEach(function (x) { if (x && x.id) usedIds[x.id] = 1; }); });
+        try { (hkLedGone() || []).forEach(function (k) { usedIds[k] = 1; }); } catch (eG) {}
+      } catch (eU) {}
+      var nid = led.nextId || 1;
+      while (usedIds['l' + nid]) nid++;
+      sec.id = 'l' + nid;
+      led.nextId = nid + 1;
       sec.collapsed = true;
       stampRowOwner(sec);
       led.sections.push(sec);

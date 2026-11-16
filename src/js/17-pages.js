@@ -468,16 +468,22 @@
       /* هر بار باز شدن منو: از فهرست قسمت‌ها، با زیرنویس تازه */
       if (typeof window.openSideMenu === 'function' && !window.openSideMenu._hkMg) {
         var o0 = window.openSideMenu;
-        var o1 = function () { try { exit(true); build(); } catch (e) {} return o0.apply(this, arguments); };
+        /* ۱.۴.۶: باز شدن منو فقط زیرنویس‌ها را تازه می‌کند؛ برگشتن به فهرست قسمت‌ها فقط با دکمهٔ همبرگری (برگشتن از «راهنما»/«انتخاب حساب» هم openSideMenu را صدا می‌زند و نباید قسمت را ببندد) */
+        var o1 = function () { try { build(); } catch (e) {} return o0.apply(this, arguments); };
         o1._hkMg = true; o1.toString = function () { return Function.prototype.toString.call(o0); };
         try { window.openSideMenu = o1; openSideMenu = o1; } catch (eW) {}
       }
       /* بک گوشی داخل یک قسمت: برگشت به فهرست قسمت‌ها (منو باز می‌ماند) */
       var b0 = onBackGuard;
       onBackGuard = function () {
-        try { if (dd.classList.contains('open') && dd.classList.contains('hk-mgv') && !document.querySelector('.hk-page.open, .modal-overlay.open, .feature-sheet.open, .backup-pick-overlay, .hk-recon-ov') && exit()) return true; } catch (e) {}
+        /* ۱.۴.۶: فقط وقتی هیچ صفحه/پنجره‌ای روی منو باز نیست (تشخیص با همان فهرست لایه‌های خود نرم‌افزار)؛ وگرنه بک مال همان صفحه است */
+        try {
+          var layers = 0; try { layers = hkLayersShown().length; } catch (eL) { layers = document.querySelector('.hk-page, .modal-overlay.open, .feature-sheet.open') ? 1 : 0; }
+          if (!layers && !document.querySelector('.hk-mnav-ghost') && dd.classList.contains('open') && dd.classList.contains('hk-mgv') && exit()) return true;
+        } catch (e) {}
         return b0.apply(this, arguments);
       };
+      try { var mb = document.getElementById('menuBtn'); if (mb) mb.addEventListener('click', function () { exit(true); }, true); } catch (eMb) {}
       /* جستجو همیشه روی همهٔ منوها */
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
