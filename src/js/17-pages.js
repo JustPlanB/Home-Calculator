@@ -373,6 +373,20 @@
         };
         Element.prototype.animate._hk141 = an._hk141;
       } catch (eAn) {}
+      /* ۱.۴.۷: نگهبان «لمس پنهان»: لمسی که به لایه‌ای می‌رسد در حالی که لایهٔ دیگری روی آن دیده می‌شود */
+      document.addEventListener('pointerdown', function (e) {
+        if (!hkDiagOn()) return;
+        try {
+          var t = e.target, x = e.clientX, y = e.clientY, tz = 0;
+          var lay = function (n) { for (; n && n !== document.body; n = n.parentElement) { var c = getComputedStyle(n); if (c.position === 'fixed' && c.zIndex !== 'auto') return n; } return null; };
+          var tl = lay(t); tz = tl ? (parseInt(getComputedStyle(tl).zIndex, 10) || 0) : 0;
+          (typeof hkLayersShown === 'function' ? hkLayersShown() : []).forEach(function (L2) {
+            if (!L2 || L2 === tl || (tl && (L2.contains(tl) || tl.contains(L2)))) return;
+            var c2 = getComputedStyle(L2), r = L2.getBoundingClientRect(), z2 = parseInt(c2.zIndex, 10) || 0;
+            if (c2.pointerEvents === 'none' && z2 > tz && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom && parseFloat(c2.opacity) > 0.2) hkDiag('HIDDEN-TAP', hkDiagNm(t) + ' under ' + hkDiagNm(L2));
+          });
+        } catch (eH) {}
+      }, true);
       document.addEventListener('pointerdown', function (e) { if (hkDiagOn()) hkDiag('tap', hkDiagNm(e.target && e.target.closest ? (e.target.closest('button, [onclick], .hk-page, .modal-overlay') || e.target) : e.target) + ' @' + Math.round(e.clientX) + ',' + Math.round(e.clientY)); }, true);
     })();
     function hkDiagText() {

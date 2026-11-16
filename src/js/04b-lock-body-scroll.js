@@ -33,6 +33,9 @@
       function busy() {
         try {
           if (document.body.classList.contains('menu-open')) return true;
+          /* ۱.۴.۷: روی صفحه‌ها (قرض، پروژه‌ها، …) کشیدن از لبه منو را باز نمی‌کند: منو زیر صفحه باز می‌شد، دیده نمی‌شد و لمس‌ها را می‌گرفت */
+          try { if (typeof hkLayersShown === 'function' && hkLayersShown().length) return true; } catch (eLs) {}
+          if (document.querySelector('.hk-page.open, .feature-sheet.open, .hk-page[style*="flex"]')) return true;
           if (document.querySelector('.modal-overlay.open, .backup-pick-overlay, .hk-recon-ov, #recPickModal, #recArchiveModal, #recRenewModal, #hkExportModal, #recurringSheet, .tour-root')) return true;
           /* ۱.۳.۵۵: از هر صفحه‌ای (مخارج/درآمد، منوها) هم باز می‌شود؛ فقط پنجره‌های روی صفحه مانع‌اند */
           var lk = document.getElementById('appLockOverlay'); if (lk && lk.classList.contains('show')) return true;
