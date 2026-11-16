@@ -114,14 +114,15 @@ function ok(cond, msg) { if (cond) { passed++; console.log('  ✓ ' + msg); } el
   await p.evaluate(() => closeSideMenu());
   await p.tap('#menuBtn'); await p.waitForTimeout(500);
   /* ۱.۳.۷۴: فلش کنار اسم = خلاصه؛ «تغییر نام» و «ماهی که گذشت» از این کادر برداشته شدند (اسم همان‌جا ویرایش می‌شود) */
-  await p.tap('#menuUserName .hk-mprof-more'); await p.waitForTimeout(400);
+  /* ۱.۴.۷: فلش کارت کاربر برداشته شد؛ زدن خود کارت (کنار اسم) همان خلاصه را باز می‌کند */
+  { const bb = await (await p.$('#menuUserName')).boundingBox(); await p.touchscreen.tap(bb.x + 30, bb.y + bb.height / 2); } await p.waitForTimeout(400);
   const pf = await p.evaluate(() => {
     const ov = document.getElementById('menuUserPanel');
     return ov && ov.classList.contains('open') && !document.querySelector('.hk-prof-ov') ? { txt: ov.innerText, btns: !!ov.querySelector('.hk-prof-bknow') && !ov.querySelector('.hk-prof-rename') && !ov.querySelector('.hk-prof-recap') } : null;
   });
   ok(!!pf, 'لمس فلش پروفایل در منو (لمس واقعی) همان باکس را به پایین باز می‌کند');
   ok(pf && pf.btns && /موجودی کل/.test(pf.txt) && /حساب‌ها/.test(pf.txt) && /شروع/.test(pf.txt) && /آخرین پشتیبان/.test(pf.txt), 'پروفایل: خلاصهٔ سریع، آخرین پشتیبان + پشتیبان‌گیری الان (بی «تغییر نام» و «ماهی که گذشت»)');
-  await p.tap('#menuUserNameText'); await p.waitForTimeout(300);
+  await p.tap('#menuUserNameText .hk-mprof-pen'); await p.waitForTimeout(300); /* ۱.۴.۷: مداد کنار اسم */
   ok(await p.evaluate(() => !!document.querySelector('#menuUserNameText input') && !document.querySelector('.person-edit-sheet')), 'زدن اسم: همان‌جا قابل ویرایش (بی پنجرهٔ جدا)');
   await p.evaluate(() => { const i = document.querySelector('#menuUserNameText input'); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
