@@ -584,7 +584,7 @@
         try {
           Array.prototype.forEach.call(document.querySelectorAll(SEL), function (g) {
             var now = Date.now(); if (!g._hkBorn) g._hkBorn = now;
-            var running = false; try { running = g.getAnimations({ subtree: false }).some(function (a) { return a.playState === 'running'; }); } catch (e) {}
+            var running = false; try { running = g.getAnimations({ subtree: false }).some(function (a) { return a.playState === 'running' && a.effect && a.effect.getTiming().iterations !== Infinity; }); } catch (e) {}
             if (all || (!running && now - g._hkBorn > 900) || now - g._hkBorn > 3000) { try { g.remove(); } catch (eR) {} }
           });
         } catch (e) {}

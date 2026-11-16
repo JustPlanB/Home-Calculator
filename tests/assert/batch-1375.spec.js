@@ -139,15 +139,16 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     hkOpenBlockedAccounts(); await w(100);
     const rows = [...document.querySelectorAll('#hkBlockOv .hk-block-r')].map(x => x.textContent.replace(/\s+/g, ' '));
     document.getElementById('hkBlockOv')._hkCancel();
+    window.__bl = JSON.stringify(hkBlockedLoad());
     const persBlocked = !!hkSmsBlockedHit('بانک ملی\nبرداشت:1,000\nمانده:5', '+989121234567');
     const otherOk = !hkSmsBlockedHit('بانک ملی\nبرداشت:1,000\nمانده:5', '09350000000');
-    return { btns, red, stays, list1, unred, rows, persBlocked, otherOk };
+    return { btns, red, stays, list1, unred, rows, persBlocked, otherOk, bl: window.__bl };
   });
   ok(k.btns.length === 3 && k.btns.every(Boolean), 'دکمهٔ مسدود برای همهٔ پوشه‌ها (شخصی و بی‌شماره هم)');
   ok(k.red && k.stays && k.list1 === 1, 'زدن مسدود: همان‌جا آیکون قرمز، پوشه می‌ماند و از ثبت کنار می‌رود');
   ok(k.unred, 'زدن دوباره: همان لحظه دوباره فعال');
   ok(k.rows.length === 2 && k.rows.some(r => /۵۵۱۲/.test(r)) && k.rows.some(r => /پیامک شخصی/.test(r)), 'بعد از بستن ثبت گروهی، در «حساب‌های مسدود شده» هستند');
-  ok(k.persBlocked && k.otherOk, 'پیامک شخصی با شمارهٔ فرستنده مسدود می‌شود (۰۹… و ‎+۹۸۹… یکی)');
+  ok(k.persBlocked && k.otherOk, 'پیامک شخصی با شمارهٔ فرستنده مسدود می‌شود (۰۹… و ‎+۹۸۹… یکی)' + (k.persBlocked ? '' : ' ' + k.bl));
   await K.ctx.close();
 
   console.log('• اسلاید یادآورها و حاشیهٔ چرخان');

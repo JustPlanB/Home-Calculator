@@ -124,7 +124,7 @@ const allErrors = [];
     const fs = document.getElementById('featureSheet'), g = hkMakeGhost(fs); document.body.appendChild(g); g.style.position = 'fixed';
     const sec = fs.querySelector('#sections-ledger .section'), gsec = g.querySelector('.section');
     o.look = Math.round(sec.getBoundingClientRect().height) === Math.round(gsec.getBoundingClientRect().height) && getComputedStyle(g.querySelector('#featureSheetAdd') || g).display === getComputedStyle(fs.querySelector('#featureSheetAdd') || fs).display;
-    g.classList.add('hk-mnav-ghost'); await w(1700);
+    g.classList.add('hk-mnav-ghost'); await w(2300);
     o.swept = !g.isConnected;
     onBackGuard(); await w(800);
     return o;

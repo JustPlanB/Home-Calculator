@@ -33921,7 +33921,8 @@ container.innerHTML = '';
       if (bySender.length) {
         var ex = bySender.filter(function (x) { return x.pd && ds.some(function (d) { return same4(x.pd, d); }); })[0];
         /* ۱.۴.۷: مسدودِ حساب دیگری از همین فرستنده این پیامک را مسدود نمی‌کند */
-        return ex || bySender.filter(function (x) { return !x.pd; })[0] || null;
+        /* پیامکِ بی شمارهٔ حساب از همان فرستنده: معلوم نیست مال کدام حساب است، پس مثل قبل مسدود */
+        return ex || bySender.filter(function (x) { return !x.pd; })[0] || (ds.length ? null : bySender[0]);
       }
       return null;
     }
@@ -53978,7 +53979,7 @@ function openProjectRowPicker(secId) {
         try {
           Array.prototype.forEach.call(document.querySelectorAll(SEL), function (g) {
             var now = Date.now(); if (!g._hkBorn) g._hkBorn = now;
-            var running = false; try { running = g.getAnimations({ subtree: false }).some(function (a) { return a.playState === 'running'; }); } catch (e) {}
+            var running = false; try { running = g.getAnimations({ subtree: false }).some(function (a) { return a.playState === 'running' && a.effect && a.effect.getTiming().iterations !== Infinity; }); } catch (e) {}
             if (all || (!running && now - g._hkBorn > 900) || now - g._hkBorn > 3000) { try { g.remove(); } catch (eR) {} }
           });
         } catch (e) {}

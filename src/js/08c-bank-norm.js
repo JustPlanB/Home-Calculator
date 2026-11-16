@@ -680,7 +680,8 @@
       if (bySender.length) {
         var ex = bySender.filter(function (x) { return x.pd && ds.some(function (d) { return same4(x.pd, d); }); })[0];
         /* ۱.۴.۷: مسدودِ حساب دیگری از همین فرستنده این پیامک را مسدود نمی‌کند */
-        return ex || bySender.filter(function (x) { return !x.pd; })[0] || null;
+        /* پیامکِ بی شمارهٔ حساب از همان فرستنده: معلوم نیست مال کدام حساب است، پس مثل قبل مسدود */
+        return ex || bySender.filter(function (x) { return !x.pd; })[0] || (ds.length ? null : bySender[0]);
       }
       return null;
     }
