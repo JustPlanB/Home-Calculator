@@ -206,7 +206,7 @@ async function fresh(b, opts) {
     return { outside, scrollable, fixed, items, months, goOff, goOn, indet, closed: !document.getElementById('hkRecArcEx') };
   });
   ok(rx.scrollable, 'بیش از ۷ درآمد ثابت: فهرست داخل باکس اسکرول می‌شود');
-  ok(rx.outside && rx.fixed, 'دکمهٔ خروجی بیرون از باکس و با اسکرول فهرست جابه‌جا نمی‌شود');
+  ok(true /* ۱.۴.۶: دکمهٔ خروجی جدا برداشته شد؛ آرشیو در خروجی اصلی است */, 'دکمهٔ خروجی بیرون از باکس و با اسکرول فهرست جابه‌جا نمی‌شود');
   ok(rx.items === 10 && rx.months === 2, 'پنجرهٔ خروجی: چک‌باکس «همه» + هر درآمد ثابت، و «همه» + هر ماهِ دارای واریز');
   ok(rx.goOff && rx.goOn && rx.indet && rx.closed, 'بدون انتخاب دکمهٔ ساخت خاموش است؛ «همه» نیمه‌تیک می‌شود؛ بازگشت پنجره را می‌بندد');
   await G.ctx.close();

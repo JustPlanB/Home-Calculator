@@ -14,6 +14,8 @@ const { chromium } = require('playwright');
   // 2) ledger default credit
   await p.evaluate(() => { switchTabFromMenu('ledger'); }); await p.waitForTimeout(400);
   await p.evaluate(() => { addLedgerSection(); }); await p.waitForTimeout(300);
+  /* ۱.۴.۶: رابطه بعد از نام دو نفر ساخته می‌شود */
+  await p.evaluate(() => { const ins = document.querySelectorAll('#ledgerNameSheet input'); ins[0].value = 'من'; ins[1].value = 'شخص نمونه'; [...document.querySelectorAll('#ledgerNameSheet button')].find(x => /ثبت|تأیید|ذخیره/.test(x.textContent)).click(); }); await p.waitForTimeout(300);
   await p.evaluate(() => { const led = ensureLedger(); const s = led.sections[led.sections.length - 1]; s.personA = 'من'; s.personB = 'شخص نمونه'; s.collapsed = false;
     s.rows.push({ day: '', desc: '', amount: 0, status: 'debt' }); s.rows.push({ day: '3', desc: 'قرض', amount: 500000, status: 'debt' }); persistCurrent(); renderLedgerTab(); }); await p.waitForTimeout(400);
   console.log('ledger statuses', await p.evaluate(() => { const led = ensureLedger(); const s = led.sections[led.sections.length - 1]; return s.rows.map(r => r.status); }));
