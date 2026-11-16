@@ -12926,6 +12926,18 @@ button, input, select, textarea { font-family: inherit; }
     /* ۱.۴.۷: قاعدهٔ همیشگی — صفحه‌ای که روی صفحه دیده می‌شود همیشه لمس‌پذیر است. منوی همبرگری زیر همهٔ صفحه‌ها رسم می‌شود؛
        قبلاً با باز بودن منو کل container (و صفحه‌های داخلش) لمس‌ناپذیر می‌شد و لمس از صفحهٔ دیده‌شده رد می‌شد و به منوی پنهانِ زیرش می‌رسید. */
     body.menu-open .container .hk-page, body.menu-open .feature-sheet.open, body.menu-open .container .modal-overlay.open { pointer-events: auto !important; }
+    /* ۱.۴.۷: منوی همبرگری — بی فلش جلوی ردیف‌ها و کارت کاربر */
+    .hk-mgr-ch, #menuUserName .hk-mprof-more { display: none !important; }
+    .hk-mgr-tx small { text-overflow: clip !important; }
+    /* ۱.۴.۷: اسلاید کارت‌های قسط: تاریخ میلادی زیر تاریخ شمسی، کوچک‌تر و کم‌رنگ */
+    .sp-inst-r .hk-inst-g { display: block; font-size: 0.78em; opacity: 0.6; margin-top: 1px; }
+    /* ۱.۴.۷: قاعدهٔ همیشگی — آیکون حذف در هر دو تم فقط × قرمز: بی هاله، بی سایه، بی زمینه (هر آیکون حذفی که بعداً ساخته شود هم با کلاس hk-del-x همین را می‌گیرد) */
+    .hk-del-x, .hk-del-x *, .btn-del-row, .btn-del-row *, .ur-del, .ur-del *, .hk-dg-del, .hk-dg-del *, .sv-del, .sv-del * {
+      text-shadow: none !important; box-shadow: none !important; filter: none !important; background: transparent !important; }
+    .hk-del-x:active, .btn-del-row:active, .ur-del:active, .hk-dg-del:active { background: transparent !important; box-shadow: none !important; }
+    /* ۱.۴.۷: مربع افزودن چند پیکسل بالاتر و راست‌تر؛ علامت + مثل آیکون‌های دور «موجودی» آرام کم‌نور و پرنور می‌شود */
+    .hk-fab { right: 11px !important; bottom: calc(23px + env(safe-area-inset-bottom, 0px)) !important; }
+    .hk-fab svg { animation: plusStrokePulse 5.2s ease-in-out infinite; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -33673,7 +33685,7 @@ container.innerHTML = '';
       return out;
     }
     /* ۱.۴.۶: تاریخ کارت‌های قسط با سال و تاریخ میلادی */
-    function hkInstDayLabel(e) { var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {} return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1] + (e.y ? ' ' + toPersianDigits(String(e.y)) : '') + (gs ? ' <span dir="ltr" class="hk-inst-g">(' + gs + ')</span>' : ''); }
+    function hkInstDayLabel(e) { var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {} return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1] + (e.y ? ' ' + toPersianDigits(String(e.y)) : '') + (gs ? ' <span dir="ltr" class="hk-inst-g">' + gs + '</span>' : ''); }
     function hkInstStatusHtml(s, two) {
       if (!s) return '';
       var sep = two ? '<br>' : '، ';
@@ -33899,16 +33911,21 @@ container.innerHTML = '';
       for (var i = 0; i < L.length; i++) {
         var x = L[i];
         if (x.d) for (var j = 0; j < ds.length; j++) { if (same4(x.d, ds[j])) return x; }
-        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) bySender.push(x);
+        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) {
+          /* ۱.۴.۷: یک شماره دربارهٔ چند بانک: مسدودِ بی‌شمارهٔ یک بانک، پیامک بانک دیگرِ همان شماره را مسدود نمی‌کند */
+          if (x.nodig && x.bank && !x.personal) { var bk = ''; try { bk = detectBankFromSms(raw, true) || ''; } catch (eBk) {} if (bk && hkBankNorm && hkBankNorm(bk) !== hkBankNorm(x.bank)) continue; }
+          bySender.push(x);
+        }
       }
       /* ۱.۴.۱: فرستندهٔ شخصیِ مسدود: هر حسابش جدا (pd)؛ پیامک به همان حساب نوشته می‌شود، حساب تازه‌اش هم مسدود است */
       if (bySender.length) {
         var ex = bySender.filter(function (x) { return x.pd && ds.some(function (d) { return same4(x.pd, d); }); })[0];
-        return ex || bySender.filter(function (x) { return !x.pd; })[0] || bySender[0];
+        /* ۱.۴.۷: مسدودِ حساب دیگری از همین فرستنده این پیامک را مسدود نمی‌کند */
+        return ex || bySender.filter(function (x) { return !x.pd; })[0] || null;
       }
       return null;
     }
-    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(',') + (x.pd ? '|' + x.pd : ''); }
+    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(',') + (x.pd ? '|' + x.pd : '') + (x.nodig && x.bank && !x.personal ? '|b:' + x.bank : ''); }
     function hkBlockAccount(d, bank, opt) {
       opt = opt || {};
       d = String(d || '').replace(/[^0-9]/g, '');
@@ -41595,7 +41612,7 @@ if (item.type === 'recurring') {
         chk.addEventListener('click', function (e) { e.stopPropagation(); });
         /* ۱.۳.۷۵: مسدود برای همهٔ پوشه‌ها (شخصی و بی‌شماره با فرستنده)؛ همان‌جا روشن/خاموش، آیکون قرمز؛ بعد از بستن در منوی «حساب‌های مسدود شده» */
         var blk = card.querySelector('.hk-bulk-block');
-        var blkEntry = function (f) { f = f || fo; return f.acc4 && !f.personal ? { d: String(f.acc4) } : (f.personal && f.acc4 ? { s: (f.senders || [f.sender]).filter(Boolean), pd: String(f.acc4) } : { s: (f.senders || [f.sender]).filter(Boolean) }); };
+        var blkEntry = function (f) { f = f || fo; return f.acc4 && !f.personal ? { d: String(f.acc4) } : (f.personal && f.acc4 ? { s: (f.senders || [f.sender]).filter(Boolean), pd: String(f.acc4) } : (f.personal ? { s: (f.senders || [f.sender]).filter(Boolean) } : { s: (f.senders || [f.sender]).filter(Boolean), nodig: true, bank: f.bank })); };
         var paintBlk = function () {
           blk.classList.toggle('on', !!fo._blocked); card.classList.toggle('blocked', !!fo._blocked);
           chk.disabled = !!fo._blocked; if (fo._blocked && fo.checked) { fo.checked = false; chk.checked = false; card.classList.remove('on'); }
@@ -41605,10 +41622,10 @@ if (item.type === 'recurring') {
           e.stopPropagation();
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
           /* ۱.۴.۱: پیامک شخصی: همهٔ پوشه‌های همان فرستنده (هر حساب یک مسدود جدا) با هم */
-          var sn0 = fo.personal ? hkSenderNorm(fo.sender) : '';
-          var grpF = fo.personal ? _hkBulk.folders.filter(function (f) { return f.personal && hkSenderNorm(f.sender) === sn0; }) : [fo];
+          /* ۱.۴.۷: هر پوشه (هر بانک/حساب، حتی از یک شمارهٔ مشترک) جدا مسدود و آزاد می‌شود */
+          var grpF = [fo];
           if (fo._blocked) {
-            if (fo.personal) hkUnblockSender(fo.senders || [fo.sender]); else hkUnblockAccount(blkEntry());
+            hkUnblockAccount(blkEntry());
             grpF.forEach(function (f) { f._blocked = false; });
             showToast('«' + nm + '» دوباره فعال شد');
           } else {
@@ -53850,17 +53867,25 @@ function openProjectRowPicker(secId) {
           }
           var its = Array.prototype.filter.call(box.children, function (c) { return (c.classList.contains('menu-item') || c.classList.contains('menu-theme-row')) && c.style.display !== 'none'; });
           var nm = its.map(itemName).filter(Boolean);
-          row.querySelector('small').textContent = nm.slice(0, 3).join('، ') + (nm.length > 3 ? ' …' : '');
+          /* ۱.۴.۷: بی «…»: فقط همان تعداد نامی که در یک خط جا می‌شود */
+          var sm = row.querySelector('small'); sm.textContent = nm.join('، ');
+          if (sm.clientWidth > 0) { for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }
+          row._hkNeedFit = nm; /* بعد از باز شدن منو (فونت و پهنای واقعی) دوباره */
           var ic = its[0] && its[0].querySelector('.hk-mi'), my = row.querySelector('.hk-mi');
           if (ic && my && my.getAttribute('data-src') !== ic.outerHTML) { my.setAttribute('style', ic.getAttribute('style') || ''); my.innerHTML = ic.innerHTML; my.setAttribute('data-src', ic.outerHTML); }
+          /* ۱.۴.۷: رنگ آیکون هر قسمت متفاوت (قبلاً چهار تا آبی‌های نزدیک به هم بودند) */
+          var GC = { sections: '#9ee858', accounts: '#ff453a', data: '#4f9dff', reports: '#bf5af2', settings: '#ff9f0a', about: '#aeaeb2' };
+          var gk = g.getAttribute('data-g'); if (my && GC[gk]) my.style.setProperty('--c', GC[gk]);
         });
       };
       build();
+      /* زیرنویس‌ها وقتی منو پنهان بود اندازه نداشتند: بعد از باز شدن یک بار دیگر جا داده شوند */
+      var fitLater = function () { Array.prototype.forEach.call(dd.querySelectorAll('.hk-mgr'), function (row) { var nm = row._hkNeedFit, sm = row.querySelector('small'); if (!nm || !sm.clientWidth) return; row._hkNeedFit = null; sm.textContent = nm.join('، '); for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }); };
       /* هر بار باز شدن منو: از فهرست قسمت‌ها، با زیرنویس تازه */
       if (typeof window.openSideMenu === 'function' && !window.openSideMenu._hkMg) {
         var o0 = window.openSideMenu;
         /* ۱.۴.۶: باز شدن منو فقط زیرنویس‌ها را تازه می‌کند؛ برگشتن به فهرست قسمت‌ها فقط با دکمهٔ همبرگری (برگشتن از «راهنما»/«انتخاب حساب» هم openSideMenu را صدا می‌زند و نباید قسمت را ببندد) */
-        var o1 = function () { try { build(); } catch (e) {} return o0.apply(this, arguments); };
+        var o1 = function () { try { build(); } catch (e) {} var r = o0.apply(this, arguments); requestAnimationFrame(fitLater); setTimeout(fitLater, 350); return r; };
         o1._hkMg = true; o1.toString = function () { return Function.prototype.toString.call(o0); };
         try { window.openSideMenu = o1; openSideMenu = o1; } catch (eW) {}
       }
@@ -53875,6 +53900,8 @@ function openProjectRowPicker(secId) {
         return b0.apply(this, arguments);
       };
       try { var mb = document.getElementById('menuBtn'); if (mb) mb.addEventListener('click', function () { exit(true); }, true); } catch (eMb) {}
+      /* ۱.۴.۷: هر بار که منو واقعاً بسته شد، دفعهٔ بعد از فهرست قسمت‌ها شروع شود */
+      try { new MutationObserver(function () { if (!dd.classList.contains('open') && dd.classList.contains('hk-mgv')) { var nav = false; try { nav = _hkMenuNavOn || hkMenuChildShown(); } catch (eN) {} if (!nav) exit(true); } }).observe(dd, { attributes: true, attributeFilter: ['class'] }); } catch (eMo) {}
       /* جستجو همیشه روی همهٔ منوها */
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}

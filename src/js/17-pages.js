@@ -473,17 +473,25 @@
           }
           var its = Array.prototype.filter.call(box.children, function (c) { return (c.classList.contains('menu-item') || c.classList.contains('menu-theme-row')) && c.style.display !== 'none'; });
           var nm = its.map(itemName).filter(Boolean);
-          row.querySelector('small').textContent = nm.slice(0, 3).join('، ') + (nm.length > 3 ? ' …' : '');
+          /* ۱.۴.۷: بی «…»: فقط همان تعداد نامی که در یک خط جا می‌شود */
+          var sm = row.querySelector('small'); sm.textContent = nm.join('، ');
+          if (sm.clientWidth > 0) { for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }
+          row._hkNeedFit = nm; /* بعد از باز شدن منو (فونت و پهنای واقعی) دوباره */
           var ic = its[0] && its[0].querySelector('.hk-mi'), my = row.querySelector('.hk-mi');
           if (ic && my && my.getAttribute('data-src') !== ic.outerHTML) { my.setAttribute('style', ic.getAttribute('style') || ''); my.innerHTML = ic.innerHTML; my.setAttribute('data-src', ic.outerHTML); }
+          /* ۱.۴.۷: رنگ آیکون هر قسمت متفاوت (قبلاً چهار تا آبی‌های نزدیک به هم بودند) */
+          var GC = { sections: '#9ee858', accounts: '#ff453a', data: '#4f9dff', reports: '#bf5af2', settings: '#ff9f0a', about: '#aeaeb2' };
+          var gk = g.getAttribute('data-g'); if (my && GC[gk]) my.style.setProperty('--c', GC[gk]);
         });
       };
       build();
+      /* زیرنویس‌ها وقتی منو پنهان بود اندازه نداشتند: بعد از باز شدن یک بار دیگر جا داده شوند */
+      var fitLater = function () { Array.prototype.forEach.call(dd.querySelectorAll('.hk-mgr'), function (row) { var nm = row._hkNeedFit, sm = row.querySelector('small'); if (!nm || !sm.clientWidth) return; row._hkNeedFit = null; sm.textContent = nm.join('، '); for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }); };
       /* هر بار باز شدن منو: از فهرست قسمت‌ها، با زیرنویس تازه */
       if (typeof window.openSideMenu === 'function' && !window.openSideMenu._hkMg) {
         var o0 = window.openSideMenu;
         /* ۱.۴.۶: باز شدن منو فقط زیرنویس‌ها را تازه می‌کند؛ برگشتن به فهرست قسمت‌ها فقط با دکمهٔ همبرگری (برگشتن از «راهنما»/«انتخاب حساب» هم openSideMenu را صدا می‌زند و نباید قسمت را ببندد) */
-        var o1 = function () { try { build(); } catch (e) {} return o0.apply(this, arguments); };
+        var o1 = function () { try { build(); } catch (e) {} var r = o0.apply(this, arguments); requestAnimationFrame(fitLater); setTimeout(fitLater, 350); return r; };
         o1._hkMg = true; o1.toString = function () { return Function.prototype.toString.call(o0); };
         try { window.openSideMenu = o1; openSideMenu = o1; } catch (eW) {}
       }
@@ -498,6 +506,8 @@
         return b0.apply(this, arguments);
       };
       try { var mb = document.getElementById('menuBtn'); if (mb) mb.addEventListener('click', function () { exit(true); }, true); } catch (eMb) {}
+      /* ۱.۴.۷: هر بار که منو واقعاً بسته شد، دفعهٔ بعد از فهرست قسمت‌ها شروع شود */
+      try { new MutationObserver(function () { if (!dd.classList.contains('open') && dd.classList.contains('hk-mgv')) { var nav = false; try { nav = _hkMenuNavOn || hkMenuChildShown(); } catch (eN) {} if (!nav) exit(true); } }).observe(dd, { attributes: true, attributeFilter: ['class'] }); } catch (eMo) {}
       /* جستجو همیشه روی همهٔ منوها */
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
