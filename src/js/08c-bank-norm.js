@@ -405,8 +405,16 @@
       var L = hkInstEntries(c); if (!L.length) return null;
       var last = L[L.length - 1], lastPay = null, pre = 0;
       for (var i = L.length - 1; i >= 0; i--) { if (L[i].kind === 'pay') { lastPay = L[i]; break; } pre += Number(L[i].amount) || 0; }
-      var st = (last.overdue > 0 || last.penalty > 0) ? 'bad' : (pre > 0 ? 'pre' : 'ok');
-      return { st: st, last: last, lastPay: lastPay || L[0], count: last.count, pre: pre, overdue: last.overdue || 0, penalty: last.penalty || 0, n: L.length };
+      /* ۱.۴.۶: معوقی که بعدش در ماه دیگری قسط پرداخت شده (تعداد اقساط بالا رفته) حل‌شده است: نه در اسلاید و نه بالای کارت در «انتخاب حساب»؛
+         فقط در تاریخچهٔ همان کارت، کنار همان ردیف با برچسب «معوق» */
+      var bad = (last.overdue > 0 || last.penalty > 0);
+      if (bad) {
+        var fi = -1; for (var j = L.length - 1; j >= 0 && (L[j].overdue > 0 || L[j].penalty > 0); j--) fi = j;
+        var f0 = L[fi];
+        for (var k2 = fi + 1; k2 < L.length; k2++) { if (L[k2].kind === 'pay' && (L[k2].y * 12 + L[k2].m) > (f0.y * 12 + f0.m)) { bad = false; break; } }
+      }
+      var st = bad ? 'bad' : (pre > 0 ? 'pre' : 'ok');
+      return { st: st, last: last, lastPay: lastPay || L[0], count: last.count, pre: pre, overdue: bad ? (last.overdue || 0) : 0, penalty: bad ? (last.penalty || 0) : 0, n: L.length };
     }
     /* ۱.۳.۸۷: معوقِ دیده‌شده: با باز کردن تاریخچهٔ همان کارت (از اسلاید یا منوی حساب‌ها) دایرهٔ قرمز و نوار چرخان برداشته می‌شود
        و فقط برچسب قرمز «معوق» می‌ماند؛ پیامک تازه‌ای که باز معوق دارد دوباره هشدار می‌دهد */
@@ -435,7 +443,8 @@
       try { hkInstCards().forEach(function (c) { var lb = hkAcc4Label(c.id); if (lb) out[lb] = c.id; }); } catch (e) {}
       return out;
     }
-    function hkInstDayLabel(e) { return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1]; }
+    /* ۱.۴.۶: تاریخ کارت‌های قسط با سال و تاریخ میلادی */
+    function hkInstDayLabel(e) { var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {} return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1] + (e.y ? ' ' + toPersianDigits(String(e.y)) : '') + (gs ? ' <span dir="ltr" class="hk-inst-g">(' + gs + ')</span>' : ''); }
     function hkInstStatusHtml(s, two) {
       if (!s) return '';
       var sep = two ? '<br>' : '، ';
@@ -482,7 +491,7 @@
         L.map(function (e) {
           return '<div class="hk-acctx-r hk-inst-r"><span class="d"><b>' + toPersianDigits(String(e.y)) + '/' + p2(e.m) + '/' + p2(e.d) + '</b><small>' + escapeHtml(g(e)) + '</small></span>' +
             '<span>' + (e.time ? toPersianDigits(e.time) : '—') + '</span><span>' + formatNum(e.amount) + '</span><span>' + toPersianDigits(String(e.count)) + '</span>' +
-            '<span><i class="hk-inst-chip ' + e.kind + '">' + (e.kind === 'pay' ? 'قسط' : 'پیش‌پرداخت') + '</i></span></div>';
+            '<span><i class="hk-inst-chip ' + e.kind + '">' + (e.kind === 'pay' ? 'قسط' : 'پیش‌پرداخت') + '</i>' + ((e.overdue > 0 || e.penalty > 0) ? '<i class="hk-inst-chip bad">معوق ' + formatNum(e.overdue || 0) + '</i>' : '') + '</span></div>';
         }).join('') + '</div>' +
         '<div class="hk-inst-note">پرداخت‌های قسط در درآمد و خرج حساب نمی‌شوند و در موجودی نمی‌آیند.</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-inst-ren">تغییر نام</button><button type="button" class="hk-bulk-close">بستن</button></div></div>';

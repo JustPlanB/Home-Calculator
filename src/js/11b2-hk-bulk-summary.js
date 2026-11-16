@@ -487,7 +487,8 @@
         if (i !== cur) { cur = i; dots.forEach(function (d, k) { d.classList.toggle('on', k === i); }); }
       }, { passive: true });
       dots.forEach(function (d, k) { d.onclick = function () { tr.scrollTo({ left: (getComputedStyle(tr).direction === 'rtl' ? -1 : 1) * k * tr.clientWidth, behavior: 'smooth' }); }; });
-      requestAnimationFrame(function () { ov.classList.add('open'); });
+      /* ۱.۴.۶: از همان اولین فریم صفحهٔ کامل (قبلاً یک فریم باکس وسط صفحه دیده می‌شد و بعد می‌پرید) */
+      ov.classList.add('hk-page', 'open'); try { if (typeof window.hkPageDecorate === 'function') window.hkPageDecorate(ov); } catch (ePd) {}
     }
     try { window.openMonthRecap = openMonthRecap; } catch (eW) {}
     function openDupCleanup() { openDupCleanup0(); }

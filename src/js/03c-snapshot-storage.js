@@ -773,6 +773,24 @@
         });
         sheets.push({ name: 'پس‌انداز', rows: srows, widths: [20, 14, 16, 18, 18, 24], freeze: 1 });
       }
+      /* ۱.۴.۶: دُنگ */
+      if (want('dong')) {
+        try {
+          var drows = [[H('گروه'), H('تاریخ (شمسی · میلادی)'), H('شرح'), H('پرداخت‌کننده'), H('بین'), H('مبلغ')]], any = false;
+          hkDongLoad().groups.forEach(function (g) {
+            if (!g.expenses || !g.expenses.length) return; any = true; var tot = 0;
+            g.expenses.slice().sort(function (a, b) { return ((a.y || 0) - (b.y || 0)) || ((a.m || 0) - (b.m || 0)) || ((a.d || 0) - (b.d || 0)); }).forEach(function (e) {
+              var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {}
+              tot += Number(e.amount) || 0;
+              drows.push([T(g.name || ''), T((e.y ? toPersianDigits(e.y + '/' + String(e.m).padStart(2, '0') + '/' + String(e.d).padStart(2, '0')) : '') + (gs ? '  ·  ' + gs : '')), T(e.desc || 'خرج'), T(hkDongName(g, e.payer)), T(Object.keys(e.shares || {}).map(function (id) { return hkDongName(g, id); }).join('، ')), N(e.amount)]);
+            });
+            drows.push([TT('جمع ' + (g.name || '')), TT(''), TT(''), TT(''), TT(''), TN(tot)]);
+            hkDongPlan(g).forEach(function (t) { drows.push([T(g.name || ''), T(''), T('برای تسویه: «' + hkDongName(g, t.from) + '» به «' + hkDongName(g, t.to) + '»'), T(t.paid ? 'پرداخت شد' : 'پرداخت نشده'), T(''), N(t.amount)]); });
+            drows.push([]);
+          });
+          if (any) sheets.push({ name: 'دنگ', rows: drows, widths: [16, 26, 26, 16, 24, 16], freeze: 1 });
+        } catch (eDg) {}
+      }
       return { sheets: sheets, periodLabel: periodLabel };
     }
     function buildXlsxWorkbook() {

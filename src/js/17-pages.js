@@ -468,16 +468,22 @@
       /* هر بار باز شدن منو: از فهرست قسمت‌ها، با زیرنویس تازه */
       if (typeof window.openSideMenu === 'function' && !window.openSideMenu._hkMg) {
         var o0 = window.openSideMenu;
-        var o1 = function () { try { exit(true); build(); } catch (e) {} return o0.apply(this, arguments); };
+        /* ۱.۴.۶: باز شدن منو فقط زیرنویس‌ها را تازه می‌کند؛ برگشتن به فهرست قسمت‌ها فقط با دکمهٔ همبرگری (برگشتن از «راهنما»/«انتخاب حساب» هم openSideMenu را صدا می‌زند و نباید قسمت را ببندد) */
+        var o1 = function () { try { build(); } catch (e) {} return o0.apply(this, arguments); };
         o1._hkMg = true; o1.toString = function () { return Function.prototype.toString.call(o0); };
         try { window.openSideMenu = o1; openSideMenu = o1; } catch (eW) {}
       }
       /* بک گوشی داخل یک قسمت: برگشت به فهرست قسمت‌ها (منو باز می‌ماند) */
       var b0 = onBackGuard;
       onBackGuard = function () {
-        try { if (dd.classList.contains('open') && dd.classList.contains('hk-mgv') && !document.querySelector('.hk-page.open, .modal-overlay.open, .feature-sheet.open, .backup-pick-overlay, .hk-recon-ov') && exit()) return true; } catch (e) {}
+        /* ۱.۴.۶: فقط وقتی هیچ صفحه/پنجره‌ای روی منو باز نیست (تشخیص با همان فهرست لایه‌های خود نرم‌افزار)؛ وگرنه بک مال همان صفحه است */
+        try {
+          var layers = 0; try { layers = hkLayersShown().length; } catch (eL) { layers = document.querySelector('.hk-page, .modal-overlay.open, .feature-sheet.open') ? 1 : 0; }
+          if (!layers && !document.querySelector('.hk-mnav-ghost') && dd.classList.contains('open') && dd.classList.contains('hk-mgv') && exit()) return true;
+        } catch (e) {}
         return b0.apply(this, arguments);
       };
+      try { var mb = document.getElementById('menuBtn'); if (mb) mb.addEventListener('click', function () { exit(true); }, true); } catch (eMb) {}
       /* جستجو همیشه روی همهٔ منوها */
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
@@ -485,22 +491,42 @@
     /* ===== ۱.۴.۵: مربع آبی «افزودن» گوشهٔ پایین راست صفحه‌ها =====
        جای فیلدهای «… جدید» و «+» بالای قرض/درآمد ثابت و «خرج جدید» دُنگ. فهرست از زیرش رد می‌شود و مربع همیشه رو و قابل لمس است. */
     var HK_FAB_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    /* ۱.۴.۶: باکس نام برای مربع افزودن: همیشه بالاترین لایه (روی همان صفحه)، از همان لحظهٔ باز شدن با اندازهٔ «صفحه‌کلید باز» چیده می‌شود (بی‌پرش)،
+       راهنمای داخل فیلد همان راهنمای قبلی، و با بک یا زدن بیرون بسته می‌شود */
     function hkFabAsk(label, hint, inputSel, run) {
-      askTextInput(label, '', function (v) {
-        v = String(v || '').trim(); if (!v) return;
-        var inp = document.querySelector(inputSel); if (inp) inp.value = v;
+      var old = document.getElementById('hkFabAsk'); if (old) old.remove();
+      var ov = document.createElement('div'); ov.id = 'hkFabAsk'; ov.className = 'hk-fab-ask'; ov.setAttribute('data-hk-back', '1');
+      ov.innerHTML = '<div class="hk-fab-ask-box"><div class="hk-fab-ask-t"></div><div class="hk-fab-ask-row"><input type="text" dir="rtl" maxlength="40" enterkeyhint="done" autocomplete="off"><button type="button" class="hk-fab-ask-ok" aria-label="افزودن">' + HK_FAB_SVG + '</button></div></div>';
+      ov.querySelector('.hk-fab-ask-t').textContent = label;
+      var inp = ov.querySelector('input'); inp.placeholder = hint || label;
+      var close = function () { try { inp.blur(); } catch (e) {} ov.remove(); };
+      var ok = function () {
+        var v = String(inp.value || '').trim(); if (!v) { try { inp.focus(); } catch (e) {} return; }
+        close();
+        var t = document.querySelector(inputSel); if (t) t.value = v;
         run();
-      }, hint);
+      };
+      ov._hkCancel = close;
+      ov.addEventListener('pointerdown', function (e) { if (e.target === ov) { e.preventDefault(); e.stopPropagation(); try { hkSwallowTap(); } catch (eS) {} close(); } });
+      ov.querySelector('.hk-fab-ask-ok').addEventListener('mousedown', function (e) { e.preventDefault(); });
+      ov.querySelector('.hk-fab-ask-ok').onclick = ok;
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
+      var box = ov.querySelector('.hk-fab-ask-box');
+      var place = function () { var fb = 0; try { fb = hkKbFreeBottom(); } catch (e) { fb = innerHeight * 0.58; } box.style.top = Math.max(70, Math.round(fb - box.offsetHeight - 14)) + 'px'; };
+      document.body.appendChild(ov); place();
+      try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
+      setTimeout(place, 350);
     }
+    var _hkFabHint = function (sel, def) { var e = document.querySelector(sel); return (e && e.placeholder) || def; };
     function hkFabAction(page) {
       var id = page.id;
-      if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', 'مثلاً: سهراب/ساختمان آسمان', '#subjectNewName', function () { addSubjectFromModal(); }); } };
+      if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', _hkFabHint('#subjectNewName', 'پروژه جدید'), '#subjectNewName', function () { addSubjectFromModal(); }); } };
       if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
       if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { hkUrNewFromField(); } };
       if (id === 'hkDong') {
         var add = page.querySelector('.hk-dg-add');
         if (add) return { l: 'خرج جدید', f: function () { add.click(); } };
-        if (page.querySelector('.hk-dg-new')) return { l: 'گروه جدید', f: function () { hkFabAsk('گروه جدید', 'مثلاً: سفر شمال', '#hkDong .hk-dg-newin', function () { var b = document.querySelector('#hkDong .hk-dg-new'); if (b) b.click(); }); } };
+        if (page.querySelector('.hk-dg-new')) return { l: 'گروه جدید', f: function () { hkFabAsk('گروه جدید', _hkFabHint('#hkDong .hk-dg-newin', 'گروه جدید'), '#hkDong .hk-dg-newin', function () { var b = document.querySelector('#hkDong .hk-dg-new'); if (b) b.click(); }); } };
         return null;
       }
       if (id === 'featureSheet' && page.classList.contains('open') && (_featureActive === 'ledger' || _featureActive === 'recurring')) return { l: _featureActive === 'ledger' ? 'رابطهٔ جدید' : 'درآمد ثابت جدید', f: function () { featureSheetAdd(); } };
@@ -524,4 +550,22 @@
     (function () {
       var fs = document.getElementById('featureSheet'); if (!fs) return;
       try { new MutationObserver(function () { try { hkFabSync(fs); } catch (e) {} }).observe(fs, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true }); } catch (eM) {}
+    })();
+    /* ===== ۱.۴.۶: پاک‌کنِ تصویرهای ورق خوردن =====
+       تصویر (کپی) صفحه برای انیمیشن باز/بسته شدن ساخته و بعد پاک می‌شود. اگر نرم‌افزار وسط انیمیشن به پس‌زمینه رفت، ممکن بود پاک نشود
+       و تکه‌ای از صفحهٔ قبلی (مثلاً یادآور) روی صفحهٔ اصلی و منو بماند. هر کپی‌ای که انیمیشنش تمام شده و بیش از ۰٫۹ ثانیه مانده پاک می‌شود. */
+    (function () {
+      var SEL = '.hk-mnav-ghost, .st-turn-ghost';
+      var sweep = function (all) {
+        try {
+          Array.prototype.forEach.call(document.querySelectorAll(SEL), function (g) {
+            var now = Date.now(); if (!g._hkBorn) g._hkBorn = now;
+            var running = false; try { running = g.getAnimations({ subtree: false }).some(function (a) { return a.playState === 'running'; }); } catch (e) {}
+            if (all || (!running && now - g._hkBorn > 900) || now - g._hkBorn > 3000) { try { g.remove(); } catch (eR) {} }
+          });
+        } catch (e) {}
+      };
+      setInterval(function () { sweep(false); }, 600);
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') sweep(true); });
+      try { window.hkGhostSweep = sweep; } catch (eW) {}
     })();
