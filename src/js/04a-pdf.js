@@ -261,7 +261,7 @@
        ===================================================================== */
     var HK_EXPORT_SECTIONS = [
       ['income', 'درآمدها'], ['expense', 'مخارج'], ['ledger', 'طلب و بدهی'],
-      ['projects', 'پروژه‌ها'], ['recurring', 'درآمدهای ثابت (با آرشیو)'], ['savings', 'پس‌انداز'], ['accounts', 'موجودی حساب‌ها']
+      ['projects', 'پروژه‌ها'], ['recurring', 'درآمدهای ثابت (با آرشیو)'], ['savings', 'پس‌انداز'], ['dong', 'دُنگ'], ['accounts', 'موجودی حساب‌ها']
     ];
     var HK_EXPORT_RANGES = [['month', 'این ماه'], ['3m', '۳ ماه اخیر'], ['year', 'امسال'], ['all', 'همه']];
     var _hkExportOpts = null;
@@ -314,6 +314,7 @@
       try { if ((loadFinancialSubjects() || []).some(function (x) { return x && x.id && x.id !== 'personal'; })) av.projects = true; } catch (e) {}
       try { if ((recurringIncomes || []).some(function (r) { return r && !r.deletedAt && (r.name || r.amount) && (!user || (r.sectionTitle || '').trim() === user); })) av.recurring = true; } catch (e) {}
       try { if (savingsExportData()) av.savings = true; } catch (e) {}
+      try { if (hkDongLoad().groups.some(function (g) { return g && g.expenses && g.expenses.length; })) av.dong = true; } catch (e) {}
       try { if ((selectedBankAccounts || []).length) av.accounts = true; } catch (e) {}
       return av;
     }
@@ -327,7 +328,8 @@
     function hkOpenExportDialog(kind) {
       var old = document.getElementById('hkExportModal'); if (old) old.remove();
       var KEY = STORAGE_KEY + '_exportOpts';
-      var saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+      /* ۱.۴.۶: هر بار از اول (تنظیمات قبلی نگه داشته نمی‌شود) */
+      var saved = {}; try { localStorage.removeItem(KEY); } catch (e) {}
       var titles = []; try { titles = allSectionTitles(); } catch (e) {}
       /* ۱.۳.۴۷: تک‌کاربره: منوی «بخش» برداشته شد؛ خروجی همیشه کل داده */
       var st = { range: saved.range || 'month', user: '', sections: saved.sections || null };
@@ -389,7 +391,7 @@
       go.onclick = async function () {
         var ks = checked();
         if (!ks.length) return;
-        try { localStorage.setItem(KEY, JSON.stringify({ range: st.range, user: st.user, sections: sel })); } catch (e) {}
+
         close();
         _hkExportOpts = { range: st.range, user: st.user, sections: {} };
         ks.forEach(function (k) { _hkExportOpts.sections[k] = true; });
@@ -538,6 +540,8 @@
           rows.forEach(function (x) { dep.push({ it: it, x: x, d: parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0 }); });
         });
         dep.sort(function (a, b) { return (a.x.key - b.x.key) || (a.d - b.d); });
+        /* ۱.۴.۶: جزئیات همان «خروجی آرشیو درآمدهای ثابت» (ردیف هر درآمد، تاریخ شمسی و میلادی، ساعت، جمع هر درآمد) با ظاهر بقیهٔ بخش‌ها */
+        if (dep.length) { try { var _sv0 = _hkRecArc; _hkRecArc = { keys: mk }; var _rb = hkRecArcPdfBlocks().slice(1); _hkRecArc = _sv0; _rb.forEach(function (x) { B.push(x); }); dep = []; } catch (eRa) { _hkRecArc = null; } }
         if (dep.length) {
           var ar = '', paidSum = 0;
           dep.forEach(function (o) {
@@ -651,6 +655,8 @@
         });
         B.push({ html: dh + '</tbody></table></div>', split: true });
       }
+      /* ---- ۱.۴.۶: دُنگ — هر گروه: خرج‌ها، وضعیت هر نفر و برای تسویه ---- */
+      if (want('dong')) { try { hkDongLoad().groups.forEach(function (g) { if (!g.expenses || !g.expenses.length) return; B.push({ html: '<div class="pb sec">' + hkDongExportHtml(g) + '</div>', split: true }); }); } catch (eDg) {} }
       return B;
     }
     /* اندازه‌گیری در iframe ایزوله (استایل‌های نرم‌افزار روی گزارش اثر نگذارند) */

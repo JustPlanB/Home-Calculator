@@ -151,6 +151,21 @@
       return Promise.resolve();
     }
     /* گزارش با همان جدول‌های خروجی PDF نرم‌افزار (سرصفحه، ردیف عنوان، سرستون تیره، ردیف جمع) */
+    /* ۱.۴.۶: بخش دُنگ در خروجی اصلی (PDF)، با همان ظاهر بقیهٔ بخش‌ها */
+    function hkDongExportHtml(g) {
+      var E = escapeHtml, tot = 0, bal = hkDongBalances(g), tr = hkDongPlan(g);
+      var h = '<div class="st">دُنگ — ' + E(g.name || '') + '</div><table><thead><tr><th style="width:24%">تاریخ</th><th>شرح</th><th style="width:16%">پرداخت‌کننده</th><th style="width:22%">بین</th><th style="width:16%">مبلغ</th></tr></thead><tbody>';
+      g.expenses.slice().sort(function (a, b) { return ((a.y || 0) - (b.y || 0)) || ((a.m || 0) - (b.m || 0)) || ((a.d || 0) - (b.d || 0)); }).forEach(function (e) {
+        var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {}
+        tot += Number(e.amount) || 0;
+        h += '<tr><td class="c">' + (e.y ? toPersianDigits(e.y + '/' + String(e.m).padStart(2, '0') + '/' + String(e.d).padStart(2, '0')) : '—') + (gs ? '<br><small>' + E(gs) + '</small>' : '') + '</td><td>' + E(e.desc || 'خرج') + '</td><td class="c">' + E(hkDongName(g, e.payer)) + '</td><td class="c">' + E(Object.keys(e.shares || {}).map(function (id) { return hkDongName(g, id); }).join('، ')) + '</td><td class="n">' + pdfMoney(e.amount) + '</td></tr>';
+      });
+      h += '<tr class="T"><td colspan="4">جمع خرج‌ها</td><td class="n">' + pdfMoney(tot) + '</td></tr></tbody></table>';
+      h += '<table><thead><tr><th>نفر</th><th style="width:30%">وضعیت</th></tr></thead><tbody>' + g.members.map(function (m) { var v = Math.round(bal[m.id] || 0); return '<tr><td>' + E(m.name) + '</td><td class="n">' + (v > 0 ? 'طلبکار ' + pdfMoney(v) : v < 0 ? 'بدهکار ' + pdfMoney(-v) : 'تسویه') + '</td></tr>'; }).join('') + '</tbody></table>';
+      if (tr.length) h += '<table><thead><tr><th>برای تسویه</th><th style="width:18%">مبلغ</th><th style="width:18%">وضعیت</th></tr></thead><tbody>' + tr.map(function (t) { return '<tr><td>«' + E(hkDongName(g, t.from)) + '» به «' + E(hkDongName(g, t.to)) + '»</td><td class="n">' + pdfMoney(t.amount) + '</td><td class="c">' + (t.paid ? 'پرداخت شد' : 'پرداخت نشده') + '</td></tr>'; }).join('') + '</tbody></table>';
+      return h;
+    }
+    try { window.hkDongExportHtml = hkDongExportHtml; } catch (eDx) {}
     function hkDongReportHtml(g) {
       var esc = escapeHtml, amt = function (n) { return hkDongAmt(n); };
       var bal = hkDongBalances(g), plan = hkDongPlan(g), paid = {}, share = {};
