@@ -253,7 +253,8 @@
       document.body.appendChild(m);
       var r = btn.getBoundingClientRect(), mr = { width: m.offsetWidth, height: m.offsetHeight }; /* اندازهٔ واقعی (بی اثر حرکت باز شدن) */
       m.style.left = Math.max(8, Math.round(r.right - mr.width)) + 'px';
-      m.style.top = Math.max(8, Math.round(r.top - mr.height - 6)) + 'px';
+      /* ۱.۴.۶: رو به پایین (زیر آیکون روی کارت گروه)؛ فقط اگر جا نبود رو به بالا */
+      m.style.top = Math.round(r.bottom + 6 + mr.height <= innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - mr.height - 6)) + 'px';
       requestAnimationFrame(function () { m.classList.add('in'); });
       var close = function (e) { if (!m.contains(e.target) && e.target !== btn) { m.remove(); document.removeEventListener('pointerdown', close, true); } };
       setTimeout(function () { document.addEventListener('pointerdown', close, true); }, 0);

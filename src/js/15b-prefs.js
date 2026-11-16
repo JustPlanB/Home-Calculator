@@ -719,6 +719,7 @@
         if (dup) { showToast('این رابطه قبلاً ثبت شده است'); return; }
         sec.personA = a;
         sec.personB = b;
+        if (!(led.sections || []).some(s => s === sec)) { led.sections.push(sec); try { hkLedGoneSet(sec.id, false); } catch (eG) {} } /* ۱.۴.۶: رابطهٔ تازه همین‌جا ساخته می‌شود */
         if (titleDisplay) {
           titleDisplay.textContent = ledgerSectionTitle(sec);
           titleDisplay.style.opacity = '1';

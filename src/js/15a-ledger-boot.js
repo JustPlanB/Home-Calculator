@@ -193,6 +193,8 @@
       led.nextId = nid + 1;
       sec.collapsed = true;
       stampRowOwner(sec);
+      /* ۱.۴.۶: اول نام دو نفر، بعد ساخته شدن رابطه (فهرست زیر باکس نام نمی‌پرد؛ انصراف چیزی نمی‌سازد) */
+      try { if (typeof openLedgerNameEditor === 'function') { openLedgerNameEditor(sec, null, null); return; } } catch (eNe) {}
       led.sections.push(sec);
       pendingRenameLedgerId = sec.id;
       persistCurrent();

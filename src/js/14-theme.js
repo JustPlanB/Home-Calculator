@@ -909,7 +909,10 @@
       try {
         var cs = getComputedStyle(x), g = x.cloneNode(true);
         g.removeAttribute('id'); g.removeAttribute('data-hk-back'); g.classList.remove('open');
-        g.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+        /* ۱.۴.۶: شناسهٔ بچه‌ها می‌ماند تا ظاهر کپی همان ظاهر صفحه باشد (قاعده‌های CSS با شناسه)؛ بی آن، یک لحظه صفحه‌ای به‌هم‌ریخته
+           (رابطه‌های باز، «+» قدیمی بالا، …) دیده می‌شد. کپی آخر body است، پس getElementById همیشه اصل را پیدا می‌کند؛
+           اگر اصل از صفحه برداشته شد، شناسه‌های کپی هم بعد از یک فریم برداشته می‌شوند. */
+        requestAnimationFrame(function () { try { if (!x.isConnected) g.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); }); } catch (eI) {} });
         g.querySelectorAll('[data-hk-back]').forEach(function (n) { n.removeAttribute('data-hk-back'); });
         g.classList.add('hk-mnav-ghost');
         g.style.display = cs.display; g.style.visibility = 'visible'; g.style.opacity = '1'; g.style.pointerEvents = 'none';
