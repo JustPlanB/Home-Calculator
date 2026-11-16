@@ -478,7 +478,7 @@
         chk.addEventListener('click', function (e) { e.stopPropagation(); });
         /* ۱.۳.۷۵: مسدود برای همهٔ پوشه‌ها (شخصی و بی‌شماره با فرستنده)؛ همان‌جا روشن/خاموش، آیکون قرمز؛ بعد از بستن در منوی «حساب‌های مسدود شده» */
         var blk = card.querySelector('.hk-bulk-block');
-        var blkEntry = function (f) { f = f || fo; return f.acc4 && !f.personal ? { d: String(f.acc4) } : (f.personal && f.acc4 ? { s: (f.senders || [f.sender]).filter(Boolean), pd: String(f.acc4) } : { s: (f.senders || [f.sender]).filter(Boolean) }); };
+        var blkEntry = function (f) { f = f || fo; return f.acc4 && !f.personal ? { d: String(f.acc4) } : (f.personal && f.acc4 ? { s: (f.senders || [f.sender]).filter(Boolean), pd: String(f.acc4) } : (f.personal ? { s: (f.senders || [f.sender]).filter(Boolean) } : { s: (f.senders || [f.sender]).filter(Boolean), nodig: true, bank: f.bank })); };
         var paintBlk = function () {
           blk.classList.toggle('on', !!fo._blocked); card.classList.toggle('blocked', !!fo._blocked);
           chk.disabled = !!fo._blocked; if (fo._blocked && fo.checked) { fo.checked = false; chk.checked = false; card.classList.remove('on'); }
@@ -488,10 +488,10 @@
           e.stopPropagation();
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
           /* ۱.۴.۱: پیامک شخصی: همهٔ پوشه‌های همان فرستنده (هر حساب یک مسدود جدا) با هم */
-          var sn0 = fo.personal ? hkSenderNorm(fo.sender) : '';
-          var grpF = fo.personal ? _hkBulk.folders.filter(function (f) { return f.personal && hkSenderNorm(f.sender) === sn0; }) : [fo];
+          /* ۱.۴.۷: هر پوشه (هر بانک/حساب، حتی از یک شمارهٔ مشترک) جدا مسدود و آزاد می‌شود */
+          var grpF = [fo];
           if (fo._blocked) {
-            if (fo.personal) hkUnblockSender(fo.senders || [fo.sender]); else hkUnblockAccount(blkEntry());
+            hkUnblockAccount(blkEntry());
             grpF.forEach(function (f) { f._blocked = false; });
             showToast('«' + nm + '» دوباره فعال شد');
           } else {

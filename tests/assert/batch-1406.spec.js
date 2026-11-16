@@ -124,7 +124,7 @@ const allErrors = [];
     const fs = document.getElementById('featureSheet'), g = hkMakeGhost(fs); document.body.appendChild(g); g.style.position = 'fixed';
     const sec = fs.querySelector('#sections-ledger .section'), gsec = g.querySelector('.section');
     o.look = Math.round(sec.getBoundingClientRect().height) === Math.round(gsec.getBoundingClientRect().height) && getComputedStyle(g.querySelector('#featureSheetAdd') || g).display === getComputedStyle(fs.querySelector('#featureSheetAdd') || fs).display;
-    g.classList.add('hk-mnav-ghost'); await w(1700);
+    g.classList.add('hk-mnav-ghost'); await w(2300);
     o.swept = !g.isConnected;
     onBackGuard(); await w(800);
     return o;
@@ -175,6 +175,53 @@ const allErrors = [];
   ok(K.dong && K.reset, 'خروجی: «دُنگ» در فهرست؛ تنظیمات با هر بار بیرون آمدن از اول');
   ok(K.dongOut, 'دُنگ در PDF و اکسل خروجی اصلی');
   ok(K.recBtn, 'دکمهٔ «خروجی آرشیو درآمدها» از صفحهٔ درآمد ثابت برداشته شد');
+
+  console.log('• ۱.۴.۷: لمس پنهان، منو، آیکون‌ها، مسدود');
+  const Z = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms)), o = {};
+    const hitIsPage = id => [[150, 260], [200, 400], [300, 200]].every(([x, y]) => { const h = document.elementFromPoint(x, y); return !!h && !h.closest('#menuDropdown') && !!h.closest('#' + id); });
+    /* منو وقتی صفحه‌ای باز است زیر صفحه است؛ لمس روی صفحهٔ دیده‌شده باید به همان صفحه برسد */
+    openFeatureSheet('ledger'); await w(1200);
+    openSideMenu(); await w(600);
+    o.pageGetsTap = hitIsPage('featureSheet');
+    closeSideMenu(); await w(500); onBackGuard(); await w(800);
+    /* منو: بی فلش، زیرنویس بی «…»، رنگ آیکون‌ها متفاوت؛ بسته شدن = از اول */
+    openSideMenu(); await w(700);
+    const rows = [...document.querySelectorAll('#menuDropdown .hk-mgr')].filter(x => x.getClientRects().length);
+    o.noChev = rows.every(r => !r.querySelector('.hk-mgr-ch') || !r.querySelector('.hk-mgr-ch').getClientRects().length) && !(document.querySelector('#menuUserName .hk-mprof-more') || { getClientRects: () => [] }).getClientRects().length;
+    o.noDots = rows.every(r => { const sm = r.querySelector('small'); return !/…/.test(sm.textContent) && sm.scrollWidth <= sm.clientWidth + 1; });
+    const cols = rows.map(r => getComputedStyle(r.querySelector('.hk-mi')).getPropertyValue('--c').trim());
+    o.colors = new Set(cols).size === cols.length;
+    hkMenuGroupEnter('reports'); await w(400);
+    closeSideMenu(); await w(600); openSideMenu(); await w(600);
+    o.reset = !document.getElementById('menuDropdown').classList.contains('hk-mgv');
+    closeSideMenu(); await w(500);
+    /* آیکون حذف بی هاله */
+    openUserRemindersModal(); await w(1000);
+    const d = document.querySelector('#userRemindersModal .ur-del'), dc = getComputedStyle(d);
+    o.noHalo = dc.textShadow === 'none' && dc.boxShadow === 'none' && dc.backgroundColor === 'rgba(0, 0, 0, 0)';
+    const fab = document.querySelector('#userRemindersModal > .hk-fab'), fr = fab.getBoundingClientRect();
+    o.fab = [Math.round(innerWidth - fr.right), Math.round(innerHeight - fr.bottom), getComputedStyle(fab.querySelector('svg')).animationName];
+    onBackGuard(); await w(800);
+    /* اسلاید قسط: میلادی زیر شمسی */
+    const tmp = document.createElement('div'); tmp.className = 'sp-inst-r'; tmp.innerHTML = '<span>' + hkInstStatusHtml(hkInstStatus(hkInstLoad().cards['1234']), false) + '</span>'; document.body.appendChild(tmp);
+    const g = tmp.querySelector('.hk-inst-g'); o.gBlock = !!g && getComputedStyle(g).display === 'block' && !/[()]/.test(g.textContent); tmp.remove();
+    /* مسدود: یک شماره، چند حساب/بانک، هر کدام جدا */
+    const saved = localStorage.getItem(STORAGE_KEY + '_blocked'); localStorage.removeItem(STORAGE_KEY + '_blocked');
+    hkBlockAccount('', 'پیامک شخصی', { senders: ['09120000000'], pd: '1111', personal: true });
+    hkBlockAccount('', 'بانک ملت', { senders: ['3000'], nodig: true });
+    o.block = !!hkSmsBlockedHit('واریز به حساب ...1111 مبلغ 100', '09120000000') && !hkSmsBlockedHit('واریز به حساب ...2222 مبلغ 100', '09120000000') && !!hkSmsBlockedHit('بانک ملت\nبرداشت 50,000', '3000') && !hkSmsBlockedHit('بانک ملی\nبرداشت 50,000', '3000');
+    if (saved) localStorage.setItem(STORAGE_KEY + '_blocked', saved); else localStorage.removeItem(STORAGE_KEY + '_blocked');
+    return o;
+  });
+  ok(Z.pageGetsTap, 'منو زیر صفحهٔ باز: لمس روی صفحهٔ دیده‌شده به همان صفحه می‌رسد، نه به منوی پنهان');
+  ok(Z.noChev && Z.noDots, 'منو: بی فلش؛ زیرنویس بی «…» و در یک خط');
+  ok(Z.colors, 'رنگ آیکون هر قسمت منو متفاوت');
+  ok(Z.reset, 'بسته شدن منو = دفعهٔ بعد از فهرست قسمت‌ها');
+  ok(Z.noHalo, 'آیکون حذف فقط × قرمز، بی هاله و بی زمینه');
+  ok(Z.fab[0] === 11 && Z.fab[1] >= 20 && Z.fab[1] <= 35 && Z.fab[2] === 'plusStrokePulse', 'مربع افزودن کمی بالاتر و راست‌تر، با کم‌نور/پرنور شدن (' + Z.fab.join(' ') + ')');
+  ok(Z.gBlock, 'اسلاید قسط: تاریخ میلادی در خط جدا زیر تاریخ شمسی');
+  ok(Z.block, 'یک شماره برای چند حساب/بانک: هر کدام جدا مسدود می‌شود');
 
   await b.close();
   const errs = allErrors.filter(e => !/ResizeObserver/.test(e));

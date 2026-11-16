@@ -135,7 +135,8 @@ const allErrors = [];
     const L = hkBlockedLoad();
     out.perAcc = L.length === 2;
     out.hit2 = (hkSmsBlockedHit('برداشت 10,000\nکارت 2222', '+989120000000') || {}).pd === '2222';
-    out.hitNew = !!hkSmsBlockedHit('برداشت 10,000\nکارت 9999', '09120000000');
+    /* ۱.۴.۷: هر حساب جدا؛ حساب تازهٔ همان شماره خودش جدا مسدود می‌شود، نه خودکار */
+    out.hitNew = !hkSmsBlockedHit('برداشت 10,000\nکارت 9999', '09120000000');
     hkBlockedMenuBadge(); out.badge = (document.querySelector('#menuBlockedBtn .hk-unread-n') || {}).textContent;
     hkUnblockSender(['09120000000']); out.unblockAll = !hkBlockedLoad().length;
     /* مغایرت: خرید بی‌پیامک با روز انتخابی */
@@ -161,7 +162,7 @@ const allErrors = [];
   });
   ok(C.rowsVis >= 8, 'قرض: جدول رابطهٔ باز تقریباً کل صفحه (' + C.rowsVis + ' ردیف بی اسکرول)');
   ok(C.sumIn, 'قرض: خلاصه کامل و در همان اسکرول روابط');
-  ok(C.perAcc && C.hit2 && C.hitNew && C.badge === '۲' && C.unblockAll, 'پیامک شخصی: هر حساب یک مسدود جدا، عدد دایره به تعداد آن‌ها؛ حساب تازهٔ همان شماره هم نادیده؛ برداشتن همه با هم');
+  ok(C.perAcc && C.hit2 && C.hitNew && C.badge === '۲' && C.unblockAll, 'پیامک شخصی: هر حساب یک مسدود جدا، عدد دایره به تعداد آن‌ها؛ حساب تازهٔ همان شماره جدا (۱.۴.۷)؛ برداشتن همه با هم');
   ok(C.range && C.pickDef, 'مغایرت: بازهٔ «بین … و …» و انتخاب روز (پیش‌فرض روز آخرین ثبت)');
   ok(C.gap, 'ردیف اختلاف در روز انتخاب‌شده با نام «خرید بی‌پیامک»');
   ok(C.order, 'ویجت تراکنش‌ها به همان ترتیب شخصی‌سازی');

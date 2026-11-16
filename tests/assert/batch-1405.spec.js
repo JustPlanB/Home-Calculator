@@ -92,7 +92,7 @@ const allErrors = [];
     for (const [n, f, id, card, del, edit] of [['proj', openSubjectsModal, 'subjectsModal', '.project-card', '.btn-del-row', '.btn-edit-title'], ['sav', openSavingsModal, 'savingsModal', '.sv-lot', '.btn-del-row', '.btn-edit-title'], ['rem', openUserRemindersModal, 'userRemindersModal', '.ur-item', '.ur-del', '.ur-edit'], ['dong', openDongModal, 'hkDong', '.hk-dg-card', '.hk-dg-del', '.hk-dg-edit']]) {
       f(); await w(1100);
       const pg = document.getElementById(id), fab = pg.querySelector(':scope > .hk-fab'), r = fab && fab.getBoundingClientRect();
-      out[n] = { fab: vis(fab) && Math.round(innerWidth - r.right) === 16 && innerHeight - r.bottom >= 10 && innerHeight - r.bottom <= 30 && Math.round(r.width) === 58, label: fab && fab.getAttribute('aria-label'), newf: [...pg.querySelectorAll('.hk-newf')].some(vis), ic: icons('#' + id + ' ' + card, del, edit), bg: fab && /inset/.test(getComputedStyle(fab).boxShadow) };
+      out[n] = { fab: vis(fab) && Math.round(innerWidth - r.right) === 11 && innerHeight - r.bottom >= 10 && innerHeight - r.bottom <= 30 && Math.round(r.width) === 58, label: fab && fab.getAttribute('aria-label'), newf: [...pg.querySelectorAll('.hk-newf')].some(vis), ic: icons('#' + id + ' ' + card, del, edit), bg: fab && /inset/.test(getComputedStyle(fab).boxShadow) };
       if (n !== 'dong') { onBackGuard(); await w(700); }
     }
     /* دُنگ: اشتراک‌گذاری روی کارت، بعد داخل گروه */

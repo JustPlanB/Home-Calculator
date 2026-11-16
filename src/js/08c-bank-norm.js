@@ -444,7 +444,7 @@
       return out;
     }
     /* ۱.۴.۶: تاریخ کارت‌های قسط با سال و تاریخ میلادی */
-    function hkInstDayLabel(e) { var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {} return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1] + (e.y ? ' ' + toPersianDigits(String(e.y)) : '') + (gs ? ' <span dir="ltr" class="hk-inst-g">(' + gs + ')</span>' : ''); }
+    function hkInstDayLabel(e) { var gs = ''; try { gs = hkGregStr(e.y, e.m, e.d); } catch (eG) {} return toPersianDigits(String(e.d)) + ' ' + MONTHS[(e.m || 1) - 1] + (e.y ? ' ' + toPersianDigits(String(e.y)) : '') + (gs ? ' <span dir="ltr" class="hk-inst-g">' + gs + '</span>' : ''); }
     function hkInstStatusHtml(s, two) {
       if (!s) return '';
       var sep = two ? '<br>' : '، ';
@@ -670,16 +670,22 @@
       for (var i = 0; i < L.length; i++) {
         var x = L[i];
         if (x.d) for (var j = 0; j < ds.length; j++) { if (same4(x.d, ds[j])) return x; }
-        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) bySender.push(x);
+        if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) {
+          /* ۱.۴.۷: یک شماره دربارهٔ چند بانک: مسدودِ بی‌شمارهٔ یک بانک، پیامک بانک دیگرِ همان شماره را مسدود نمی‌کند */
+          if (x.nodig && x.bank && !x.personal) { var bk = ''; try { bk = detectBankFromSms(raw, true) || ''; } catch (eBk) {} if (bk && hkBankNorm && hkBankNorm(bk) !== hkBankNorm(x.bank)) continue; }
+          bySender.push(x);
+        }
       }
       /* ۱.۴.۱: فرستندهٔ شخصیِ مسدود: هر حسابش جدا (pd)؛ پیامک به همان حساب نوشته می‌شود، حساب تازه‌اش هم مسدود است */
       if (bySender.length) {
         var ex = bySender.filter(function (x) { return x.pd && ds.some(function (d) { return same4(x.pd, d); }); })[0];
-        return ex || bySender.filter(function (x) { return !x.pd; })[0] || bySender[0];
+        /* ۱.۴.۷: مسدودِ حساب دیگری از همین فرستنده این پیامک را مسدود نمی‌کند */
+        /* پیامکِ بی شمارهٔ حساب از همان فرستنده: معلوم نیست مال کدام حساب است، پس مثل قبل مسدود */
+        return ex || bySender.filter(function (x) { return !x.pd; })[0] || (ds.length ? null : bySender[0]);
       }
       return null;
     }
-    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(',') + (x.pd ? '|' + x.pd : ''); }
+    function hkBlockKey(x) { return x.d ? 'd:' + x.d : 's:' + (x.s || []).map(hkSenderNorm).sort().join(',') + (x.pd ? '|' + x.pd : '') + (x.nodig && x.bank && !x.personal ? '|b:' + x.bank : ''); }
     function hkBlockAccount(d, bank, opt) {
       opt = opt || {};
       d = String(d || '').replace(/[^0-9]/g, '');
