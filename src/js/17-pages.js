@@ -210,6 +210,7 @@
       var on = fs.classList.contains('open') && pl.getClientRects().length > 0;
       fs.classList.toggle('hk-led-page', on);
       if (!on) return;
+      if (fs.classList.contains('hk-led-rel')) { try { hkLedRelFit(); } catch (eRf) {} return; }
       var fb = document.getElementById('featureSheetBody'); if (!fb) return;
       var secs = Array.prototype.filter.call(list.children, function (x) { return x.classList && x.classList.contains('section'); });
       /* ۱.۴.۱: روابط و خلاصه در یک اسکرول (خلاصه هم کامل، نه چند ردیف)؛ صفحه ثابت. جدولِ رابطهٔ باز تقریباً کل جای صفحه را می‌گیرد */
@@ -512,6 +513,20 @@
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
     })();
+    /* ۱.۴.۸: بک در صفحهٔ یک رابطهٔ قرض → فهرست روابط (وقتی پنجرهٔ دیگری روی آن نیست) */
+    (function () {
+      var b0 = onBackGuard;
+      onBackGuard = function () {
+        try {
+          var fs = document.getElementById('featureSheet');
+          if (fs && fs.classList.contains('hk-led-rel') && fs.classList.contains('open')) {
+            var top = hkLayersShown().filter(function (x) { return x !== fs; });
+            if (!top.length && !document.querySelector('.hk-mnav-ghost') && hkLedRelClose()) return true;
+          }
+        } catch (e) {}
+        return b0.apply(this, arguments);
+      };
+    })();
     /* ===== ۱.۴.۵: مربع آبی «افزودن» گوشهٔ پایین راست صفحه‌ها =====
        جای فیلدهای «… جدید» و «+» بالای قرض/درآمد ثابت و «خرج جدید» دُنگ. فهرست از زیرش رد می‌شود و مربع همیشه رو و قابل لمس است. */
     var HK_FAB_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -553,6 +568,7 @@
         if (page.querySelector('.hk-dg-new')) return { l: 'گروه جدید', f: function () { hkFabAsk('گروه جدید', _hkFabHint('#hkDong .hk-dg-newin', 'گروه جدید'), '#hkDong .hk-dg-newin', function () { var b = document.querySelector('#hkDong .hk-dg-new'); if (b) b.click(); }); } };
         return null;
       }
+      if (id === 'featureSheet' && _featureActive === 'ledger' && page.classList.contains('hk-led-rel')) { var rb = page.querySelector('.section.hk-lrel .ledger-add-row'); return rb ? { l: 'ردیف جدید', f: function () { rb.click(); } } : null; }
       if (id === 'featureSheet' && page.classList.contains('open') && (_featureActive === 'ledger' || _featureActive === 'recurring')) return { l: _featureActive === 'ledger' ? 'رابطهٔ جدید' : 'درآمد ثابت جدید', f: function () { featureSheetAdd(); } };
       return null;
     }

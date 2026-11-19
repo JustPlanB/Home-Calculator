@@ -806,6 +806,78 @@
         }, { timeout: 600 });
       }, 380);
     }
+    /* ===== ۱.۴.۸: قرض — فهرست روابط (کارت) و صفحهٔ جدای هر رابطه ===== */
+    var _hkLedRel = '', _hkLedTitle = '';
+    var HK_SHARE_SVG = '<svg class="hk-dg-shico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></svg>';
+    /* «الف به ب مبلغ ... تومان بدهکار است» برای همین رابطه (جمع ردیف‌های تسویه‌نشده) */
+    function hkLedSecLine(sec) {
+      var a = (sec.personA || '').trim(), b = (sec.personB || '').trim(); if (!a || !b) return '';
+      var d = 0;
+      try { hkLedViewRows(sec).forEach(function (x) { var r = x.row, amt = Number(r && r.amount) || 0; if (!amt || r.settled || r.deletedAt) return; d += r.status === 'credit' ? -amt : amt; }); } catch (e) {}
+      if (!d) return 'تسویه است';
+      return (d > 0 ? a : b) + ' به ' + (d > 0 ? b : a) + ' مبلغ ' + formatNum(Math.abs(d)) + ' تومان بدهکار است';
+    }
+    function hkLedRelFit() {
+      if (!_hkLedRel) return;
+      var sec = document.querySelector('#sections-ledger .section.hk-lrel'), body = sec && sec.querySelector('.section-body'); if (!body) return;
+      var sb = 0; try { sb = homeSafeBottom(); } catch (e) {}
+      var hint = sec.querySelector('.hk-lrel-hint'), hh = hint ? hint.offsetHeight + 8 : 44;
+      var top = body.getBoundingClientRect().top, avail = Math.floor(window.innerHeight - sb - 12 - top - hh);
+      body.style.setProperty('max-height', Math.max(150, avail) + 'px', 'important');
+      var go = sec.querySelector('.hk-lrel-go'); if (go) go.style.visibility = body.scrollHeight > body.clientHeight + 4 ? 'visible' : 'hidden';
+    }
+    function hkLedOpenRel(id) {
+      var sec = (ensureLedger().sections || []).find(function (s) { return s.id === id; }); if (!sec) return;
+      var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle');
+      _hkLedRel = id; if (t) { _hkLedTitle = _hkLedTitle || t.textContent; t.textContent = ledgerSectionTitle(sec); }
+      if (fs) fs.classList.add('hk-led-rel');
+      renderLedgerTab();
+      try { var a = hkMenuSlide(document.getElementById('featureSheetBody'), true); } catch (e) {}
+      hkLedRelFit(); setTimeout(hkLedRelFit, 450);
+    }
+    /* برگشت از صفحهٔ رابطه به فهرست روابط؛ true = کاری انجام شد */
+    function hkLedRelClose(quiet) {
+      if (!_hkLedRel) return false;
+      var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle');
+      _hkLedRel = ''; if (fs) fs.classList.remove('hk-led-rel');
+      if (t && _hkLedTitle) { t.textContent = _hkLedTitle; } _hkLedTitle = '';
+      if (quiet) return true;
+      renderLedgerTab();
+      try { hkMenuSlide(document.getElementById('featureSheetBody'), false); } catch (e) {}
+      return true;
+    }
+    function hkLedShareText(sec) {
+      var L = [ledgerSectionTitle(sec), hkLedSecLine(sec), ''];
+      hkLedViewRows(sec).filter(function (x) { return x.row && !x.row.deletedAt && (x.row.amount || x.row.desc); }).forEach(function (x, i) {
+        var r = x.row;
+        L.push(toPersianDigits(String(i + 1)) + '. ' + (hkLedDateNum(r, x.y, x.m) || '—') + ' | ' + (String(r.desc || '').trim() || '—') + ' | ' + (r.status === 'credit' ? '+' : '−') + formatNum(Number(r.amount) || 0) + (r.settled ? ' (تسویه شد)' : ''));
+      });
+      return L.join('\n');
+    }
+    function hkLedReportHtml(sec) {
+      var E = escapeHtml, td = hkDongToday();
+      var h = '<div class="pdf-page hk-dg-rep" style="height:auto;min-height:0;padding-bottom:26px"><div class="hd"><h1>قرض «' + E(ledgerSectionTitle(sec)) + '»</h1><div class="sub">' + toPersianDigits(String(td.d)) + ' ' + MONTHS[td.m - 1] + ' ' + toPersianDigits(String(td.y)) + '<br>حساب‌کتاب</div></div>';
+      h += '<div class="pb sec"><div class="st led">' + E(hkLedSecLine(sec)) + '</div><table><thead><tr><th style="width:8%">ردیف</th><th style="width:22%">تاریخ</th><th>شرح</th><th style="width:22%">مبلغ</th></tr></thead><tbody>';
+      var rows = hkLedViewRows(sec).filter(function (x) { return x.row && !x.row.deletedAt && (x.row.amount || x.row.desc); });
+      rows.forEach(function (x, i) { var r = x.row; h += '<tr><td class="c">' + toPersianDigits(String(i + 1)) + '</td><td class="c">' + (hkLedDateNum(r, x.y, x.m) || '—') + '</td><td>' + E(String(r.desc || '—')) + (r.settled ? ' <small style="color:#666">· تسویه شد</small>' : '') + '</td><td class="n">' + (r.status === 'credit' ? '+' : '−') + formatNum(Number(r.amount) || 0) + '</td></tr>'; });
+      if (!rows.length) h += '<tr class="dim"><td colspan="4" class="c">ردیفی ثبت نشده</td></tr>';
+      return h + '</tbody></table></div></div>';
+    }
+    function hkLedShare(sec, kind) {
+      var title = 'قرض ' + ledgerSectionTitle(sec), base = 'ledger-' + String(ledgerSectionTitle(sec)).replace(/[\\/:*?"<>|\s]+/g, '-');
+      if (!kind || kind === 'text') return hkDongShareText2(hkLedShareText(sec), title);
+      showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
+      return hkDongReportBlob(sec, kind, hkLedReportHtml).then(function (blob) {
+        if (!blob || !blob.size) throw new Error('empty');
+        return hkDongShareBlob(blob, base + (kind === 'pdf' ? '.pdf' : '.png'), kind === 'pdf' ? 'application/pdf' : 'image/png', title);
+      }).catch(function () { showToast('ساخت فایل ممکن نشد', 'warn'); });
+    }
+    function hkLedShareMenu(btn, secId) {
+      var sec = (ensureLedger().sections || []).find(function (s) { return s.id === secId; }); if (!sec) return;
+      hkDongShareMenu(btn, sec, hkLedShare);
+    }
+    try { Object.assign(window, { hkLedOpenRel: hkLedOpenRel, hkLedRelClose: hkLedRelClose, hkLedRelFit: hkLedRelFit }); } catch (eLr) {}
+
     function renderLedgerTab() {
       hkLedPrebuildQ.length = 0;
       const led = ensureLedger();
@@ -816,16 +888,14 @@
 
       // هدرها همیشه ثابت — فیلتر فقط روی خلاصه اعمال می‌شود
       (led.sections || []).forEach(sec => {
-        if (sec.collapsed === undefined) {
-          const hasData = (sec.rows || []).some(r => r.desc || r.amount || r.day) ||
-            (sec.personA || '').trim() || (sec.personB || '').trim();
-          sec.collapsed = !hasData;
-        }
+        /* ۱.۴.۸: فهرست روابط همه بسته؛ فقط رابطهٔ بازِ «صفحهٔ رابطه» ردیف می‌سازد */
+        sec.collapsed = _hkLedRel !== sec.id;
 
         const div = document.createElement('div');
         div.className = 'section bank-card' + (sec.collapsed ? ' collapsed' : '');
         div.dataset.secId = sec.id;
         div.id = 'sec-ledger-' + sec.id;
+        if (_hkLedRel === sec.id) div.classList.add('hk-lrel');
 
         const header = document.createElement('div');
         header.className = 'section-header';
@@ -854,6 +924,7 @@
         titleDisplay.style.cssText = 'font-family:Vazirmatn,B Nazanin,Tahoma,sans-serif;font-weight:bold;font-size:1.05rem;padding:5px 10px;border-radius:6px;border:none;background:transparent;color:var(--text);-webkit-text-fill-color:var(--text);display:block;visibility:visible;opacity:1;';
         if (!(sec.personA || '').trim() && !(sec.personB || '').trim()) titleDisplay.style.opacity = '0.5';
         titleWrap.appendChild(titleDisplay);
+        const subLine = document.createElement('div'); subLine.className = 'hk-led-sub'; subLine.textContent = hkLedSecLine(sec); titleWrap.appendChild(subLine);
 
         const editTitleBtn = document.createElement('button');
         editTitleBtn.type = 'button';
@@ -881,37 +952,18 @@
         header.appendChild(titleWrap);
         header.appendChild(editTitleBtn);
         header.appendChild(btnDel);
+        const shareBtn = document.createElement('button');
+        shareBtn.type = 'button'; shareBtn.className = 'hk-dg-ico hk-led-shr'; shareBtn.title = 'اشتراک‌گذاری'; shareBtn.setAttribute('aria-label', 'اشتراک‌گذاری');
+        shareBtn.innerHTML = HK_SHARE_SVG;
+        shareBtn.onclick = (e) => { e.stopPropagation(); hkLedShareMenu(shareBtn, thisSecId); };
+        header.appendChild(shareBtn);
 
         // شناسه ثابت روی خود هدر تا هر کلیک فقط همان بخش را باز/بسته کند
         header.dataset.secId = sec.id;
         header.onclick = (e) => {
           if (div._skipClick || div.classList.contains('dragging')) return;
-          if (e.target.closest && (
-            e.target.closest('.btn-add-row') ||
-            e.target.closest('.btn-del-row') ||
-            e.target.closest('.btn-edit-title') ||
-            e.target.closest('.drag-handle')
-          )) return;
-          const sid = header.dataset.secId;
-          const ledNow = ensureLedger();
-          const target = (ledNow.sections || []).find(s => s.id === sid);
-          if (!target) return;
-          target.collapsed = !target.collapsed;
-          /* ۱.۳.۷۳: بازنویسی حرکت باز/بسته: ردیف‌ها (اگر هنوز ساخته نشده‌اند) و سقف ۱۰ ردیف پیش از شروع آماده می‌شوند؛
-             بعد فقط کلاس عوض می‌شود و قابِ بدنه با یک انتقال CSS (بدون اندازه‌گیری و بدون جابه‌جایی بقیهٔ اجزا) باز یا بسته می‌شود.
-             ضربهٔ دوباره وسط حرکت، همان‌جا جهت را برمی‌گرداند. داده و ذخیره دست نمی‌خورد. */
-          if (!target.collapsed) {
-            buildRows();
-            if (body.classList.contains('hk-led-scroll') && !body.style.getPropertyValue('max-height')) hkLedCap(body, thead, tbody);
-          }
-          /* ۱.۳.۹۴: در طول حرکت بستن، ارتفاع ثابت جدول می‌ماند تا قاب یکباره کوچک نشود */
-          if (target.collapsed) { div.classList.add('hk-led-closing'); clearTimeout(div._hkCloseT); div._hkCloseT = setTimeout(function () { div.classList.remove('hk-led-closing'); }, 420); }
-          else div.classList.remove('hk-led-closing');
-          div.classList.toggle('collapsed', !!target.collapsed);
-          /* ۱.۳.۹۵: بعد از باز شدن، اگر قاب جدول کامل در صفحه نیست، آرام همان‌قدر اسکرول می‌شود که کامل دیده شود */
-          if (!target.collapsed) setTimeout(function () { try { const r = div.getBoundingClientRect(); if (r.bottom > window.innerHeight - 8 || r.top < 0) div.scrollIntoView({ block: r.height < window.innerHeight ? 'nearest' : 'start', behavior: 'smooth' }); } catch (eSv) {} }, 400);
-          arrow.innerHTML = target.collapsed ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
-          /* ۱.۳.۶۶: باز/بسته بودن فقط حالت نمایش است (منو همیشه بسته باز می‌شود) — هیچ ذخیره‌ای پشت این ضربه نیست */
+          if (e.target.closest && (e.target.closest('.btn-add-row') || e.target.closest('.btn-del-row') || e.target.closest('.btn-edit-title') || e.target.closest('.hk-led-shr') || e.target.closest('.drag-handle'))) return;
+          try { hkLedOpenRel(header.dataset.secId); } catch (eRel) {}
         };
 
         // همیشه بدنه را بساز؛ جمع‌شدن فقط با کلاس CSS (مثل درآمد)
@@ -983,6 +1035,15 @@
         const lwIn = document.createElement('div'); lwIn.className = 'hk-lw-in';
         lwIn.appendChild(body); lwIn.appendChild(btnAddRow); lw.appendChild(lwIn);
         div.appendChild(lw);
+        if (_hkLedRel === sec.id) {
+          const hint = document.createElement('div'); hint.className = 'hk-lrel-hint';
+          hint.innerHTML = '<span>برای ویرایش یا حذف، انگشت را روی ردیف نگه دارید</span><button type="button" class="hk-lrel-go" aria-label="رفتن به انتها"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l5 5 5-5"/><path d="M7 12.5l5 5 5-5"/></svg></button>';
+          const go = hint.querySelector('.hk-lrel-go');
+          const atEnd = () => body.scrollTop + body.clientHeight >= body.scrollHeight - 4;
+          go.onclick = () => { body.scrollTo({ top: atEnd() ? 0 : body.scrollHeight, behavior: 'smooth' }); };
+          body.addEventListener('scroll', () => { go.classList.toggle('up', atEnd()); }, { passive: true });
+          div.appendChild(hint);
+        }
         div.classList.add('hk-lv2');
         try { requestAnimationFrame(function() { ensureShapeFrame(div); }); } catch (e) {}
         container.appendChild(div);

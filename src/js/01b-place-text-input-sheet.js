@@ -211,6 +211,7 @@
           try { recExpanded.clear(); } catch (e2) {}
         }
       } catch (eClose) {}
+      try { if (typeof hkLedRelClose === 'function') hkLedRelClose(true); } catch (eLr) {}
       if (sheet) {
         sheet.classList.remove('open');
         sheet.setAttribute('aria-hidden', 'true');

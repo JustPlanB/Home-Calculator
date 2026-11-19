@@ -200,10 +200,10 @@
     var HK_DONG_REP_CSS = '.hk-dg-rep .st.exp{border-right-color:#ff6b4a;}.hk-dg-rep .st.acc{border-right-color:#08b5f5;}.hk-dg-rep .st.led{border-right-color:#9ee858;}.hk-dg-rep .pb.sec{border-top-color:#08b5f5;}' +
       '.hk-dg-rep td.hk-dgr-pos{background:#9ee858;color:#111;font-weight:700;}.hk-dg-rep td.hk-dgr-neg{background:#ff6b4a;color:#111;font-weight:700;}.hk-dg-rep td.hk-dgr-zero{color:#555;font-weight:700;}';
     /* ساخت تصویر گزارش (همان روش خروجی PDF: SVG ← بوم) */
-    function hkDongReportCanvas(g) {
+    function hkDongReportCanvas(g, htmlFn) {
       var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
       return ready.then(function () {
-        var css = pdfStyleCss() + HK_DONG_REP_CSS, html = hkDongReportHtml(g), SCALE = 2;
+        var css = pdfStyleCss() + HK_DONG_REP_CSS, html = (htmlFn || hkDongReportHtml)(g), SCALE = 2;
         var probe = document.createElement('div'); probe.className = 'pdf-root'; probe.setAttribute('dir', 'rtl');
         probe.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PDF_W + 'px;visibility:hidden;';
         probe.innerHTML = '<style>' + css + '</style>' + html; document.body.appendChild(probe);
@@ -232,8 +232,8 @@
         });
       });
     }
-    function hkDongReportBlob(g, kind) {
-      return hkDongReportCanvas(g).then(function (r) {
+    function hkDongReportBlob(g, kind, htmlFn) {
+      return hkDongReportCanvas(g, htmlFn).then(function (r) {
         if (kind === 'png') return new Promise(function (res) { r.canvas.toBlob(function (b) { res(b); }, 'image/png'); });
         var bin = atob(r.canvas.toDataURL('image/jpeg', 0.92).split(',')[1]), jpg = new Uint8Array(bin.length);
         for (var k = 0; k < bin.length; k++) jpg[k] = bin.charCodeAt(k);
@@ -251,7 +251,7 @@
       }).catch(function () { showToast('ساخت فایل ممکن نشد', 'warn'); });
     }
     /* باکس عمودی کوچک بالا و سمت راستِ دکمهٔ اشتراک‌گذاری */
-    function hkDongShareMenu(btn, g) {
+    function hkDongShareMenu(btn, g, shareFn) {
       var old = document.getElementById('hkDongShareMenu'); if (old) { old.remove(); return; }
       /* ۱.۳.۹۳: ظاهر همان پنجرهٔ «پیوست» در ثبت تراکنش: هر گزینه آیکون + نام، با خط جداکننده */
       var m = document.createElement('div'); m.id = 'hkDongShareMenu'; m.className = 'hk-attpop hk-dg-shpop';
@@ -262,7 +262,7 @@
       };
       [['text', 'متن'], ['png', 'عکس'], ['pdf', 'PDF']].forEach(function (o) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-dg-shmb'; b.dataset.k = o[0]; b.innerHTML = ICO[o[0]] + '<span>' + o[1] + '</span>';
-        b.onclick = function (e) { e.stopPropagation(); m.remove(); hkDongShare(g, o[0]); };
+        b.onclick = function (e) { e.stopPropagation(); m.remove(); (shareFn || hkDongShare)(g, o[0]); };
         m.appendChild(b);
       });
       document.body.appendChild(m);
