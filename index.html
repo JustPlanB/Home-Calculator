@@ -12975,6 +12975,13 @@ html[data-theme="light"] #svEditorDim, html[data-theme="light"] #urEditorDim, ht
 
 /* ===== ۱.۴.۸: تم روز — هایلایت ماژیکی پروژه در جدول‌ها دیده شود (خانه‌ها شفاف تا هایلایت ردیف پشتشان بیاید) ===== */
 html[data-theme="light"] body tr.project-row-hl > td, html[data-theme="light"] body tr.project-row-hl > td:last-child { background-color: transparent !important; border-color: #c9d1dc !important; }
+
+/* ===== ۱.۴.۸: یادداشت دست‌نویس — انتخاب اندازهٔ قلم ===== */
+.hk-ink-sizes { display: flex; justify-content: center; gap: 14px; margin: 8px 0 2px; }
+.hk-ink-sizes button { width: 40px; height: 32px; border-radius: 10px; border: 2px solid transparent; background: none; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.hk-ink-sizes button.on { border-color: var(--hk-primary, #08b5f5); }
+.hk-ink-sizes button i { display: block; width: 100%; max-width: 22px; border-radius: 99px; background: var(--text, #fff); }
+.hk-ink-sizes button[data-w="3"] i { height: 3px; } .hk-ink-sizes button[data-w="6"] i { height: 6px; } .hk-ink-sizes button[data-w="10"] i { height: 10px; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -28598,6 +28605,7 @@ async function openPdfPrintWindow(){
       ov.innerHTML = '<div class="todo-box hk-ink-box" role="dialog" aria-label="یادداشت دست‌نویس">' +
         '<div class="todo-title">یادداشت دست‌نویس</div>' +
         '<div class="hk-ink-pad"><canvas></canvas><div class="hk-ink-hint">با انگشت یا قلم بنویس</div></div>' +
+        '<div class="hk-ink-sizes" role="group" aria-label="اندازهٔ قلم"><button type="button" data-w="3" aria-label="قلم نازک"><i></i></button><button type="button" data-w="6" class="on" aria-label="قلم متوسط"><i></i></button><button type="button" data-w="10" aria-label="قلم ضخیم"><i></i></button></div>' +
         '<div class="hk-ink-tools">' +
           '<div class="hk-ink-colors"><button type="button" data-c="t" class="on" aria-label="رنگ اصلی"><i></i></button><button type="button" data-c="b" aria-label="آبی"><i></i></button><button type="button" data-c="r" aria-label="قرمز"><i></i></button><button type="button" data-c="g" aria-label="سبز"><i></i></button><button type="button" data-c="o" aria-label="نارنجی"><i></i></button><button type="button" data-c="y" aria-label="زرد"><i></i></button></div>' +
           '<button type="button" class="hk-ink-undo" aria-label="برگشت یک قدم"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>' +
@@ -28607,9 +28615,10 @@ async function openPdfPrintWindow(){
         '<div class="todo-actions"><button type="button" class="todo-cancel">انصراف</button><button type="button" class="todo-save">ثبت</button></div></div>';
       document.body.appendChild(ov);
       var pad = ov.querySelector('.hk-ink-pad'), cv = pad.querySelector('canvas'), ctx2 = cv.getContext('2d'), hint = pad.querySelector('.hk-ink-hint');
-      var color = 't', drawing = null, scale = 1, dpr = window.devicePixelRatio || 1;
+      var color = 't', penW = 6, drawing = null, scale = 1, dpr = window.devicePixelRatio || 1;
       var cssVar = function (n, d) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d; };
       var inkCol = function (c) { if (c === 't') return getComputedStyle(pad).color; if (c === 'b') return '#08b5f5'; if (c === 'g') return cssVar('--hk-income', '#9ee858'); if (c === 'o') return cssVar('--hk-personal', '#ff9f0a'); if (c === 'y') return cssVar('--hk-warning', '#ffc531'); return cssVar('--hk-expense', '#ff6b4a'); };
+      try { cv.addEventListener('contextmenu', function (e) { e.preventDefault(); }); } catch (eCm) {}
       /* پاک‌کن و «برگشت»: پیش از هر کشیدن/پاک کردن، یک نسخه از خط‌ها نگه داشته می‌شود */
       var erasing = false, erGest = null, erAt = null, hist = [], ER_R = 16;
       var snap = function () { hist.push(JSON.stringify(strokes)); if (hist.length > 60) hist.shift(); };
@@ -28667,10 +28676,12 @@ async function openPdfPrintWindow(){
       var pt = function (e) { var r = cv.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * HK_INK_W), Math.round((e.clientY - r.top) / r.height * HK_INK_H)]; };
       cv.addEventListener('pointerdown', function (e) {
         e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (eC) {}
-        if (erasing) { snap(); erGest = pt(e); erAt = erGest; eraseAt(erGest); redraw(); return; }
+        /* ۱.۴.۸: نگه داشتن دکمهٔ کناری قلم (S Pen) یا سرِ پاک‌کنِ قلم = همان لحظه پاک‌کن (مثل نوت سامسونگ) */
+        var penBtn = e.pointerType === 'pen' && (e.buttons & 34) > 0;
+        if (erasing || penBtn) { snap(); erGest = pt(e); erAt = erGest; eraseAt(erGest); redraw(); return; }
         snap();
-        /* قلم: ضخامت با فشار؛ انگشت: ضخامت ثابت */
-        var w = e.pointerType === 'pen' && e.pressure > 0 ? Math.max(3, Math.min(10, 3 + e.pressure * 7)) : 6;
+        /* قلم: ضخامت با فشار؛ انگشت: ضخامت ثابت؛ هر دو بر پایهٔ اندازهٔ انتخاب‌شده */
+        var w = e.pointerType === 'pen' && e.pressure > 0 ? Math.max(2, Math.min(14, penW * (0.5 + e.pressure))) : penW;
         drawing = { c: color, w: Math.round(w * 10) / 10, p: [pt(e)] }; redraw();
       });
       cv.addEventListener('pointermove', function (e) {
@@ -28692,6 +28703,9 @@ async function openPdfPrintWindow(){
       var erBtn = ov.querySelector('.hk-ink-eraser');
       var setErase = function (on) { erasing = on; erBtn.classList.toggle('on', on); erBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); pad.classList.toggle('erasing', on); };
       ov.querySelectorAll('.hk-ink-colors button').forEach(function (b) { b.onclick = function () { color = b.dataset.c; setErase(false); ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+      ov.querySelectorAll('.hk-ink-sizes button').forEach(function (b) {
+        b.onclick = function () { penW = +b.dataset.w; setErase(false); ov.querySelectorAll('.hk-ink-sizes button').forEach(function (x) { x.classList.toggle('on', x === b); }); ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', x.dataset.c === color); }); };
+      });
       erBtn.onclick = function () { var on = !erasing; setErase(on); ov.querySelectorAll('.hk-ink-colors button').forEach(function (x) { x.classList.toggle('on', !on && x.dataset.c === color); }); };
       ov.querySelector('.hk-ink-undo').onclick = function () { if (hist.length) { strokes = JSON.parse(hist.pop()); redraw(); } };
       var close = function () { ov.classList.remove('open'); window.removeEventListener('resize', size); setTimeout(function () { try { ov.remove(); } catch (e) {} }, 200); };
