@@ -177,3 +177,14 @@
 - **دُنگ:** `hkDongExpenseEditor` در `HK_PAGE_OPENERS`؛ `.hk-dg-sum` چسبان؛ اشتراک‌گذاری `.hk-dg-shr` روی کارت گروه.
 - **ویجت‌ها:** کپسول `HkWidgetDraw.line` (`Data.pct` از `balRaw` و `monthSpentRaw`)، ستون‌های تازهٔ `HkWidgetTxProvider.cols`، هایلایت پروژه (`p` در ردیف)، `hk_w_eye2`/`hk_wt_eye2`، `targetCellWidth=5`.
 - **مانده برای ۱.۴.۶:** تاریخ میلادی و سال روی کارت‌های قسط و پنهان شدن معوق‌های حل‌شده؛ برداشتن دکمهٔ خروجی درآمد ثابت و آوردن جزئیاتش به خروجی اصلی؛ ریست تنظیمات خروجی و افزودن دُنگ به آن؛ باکس مشکی لحظه‌ای در ثبت تراکنش (بازسازی نشده).
+
+## ۱۷. ۱.۴.۸
+- **قرض:** کارت رابطه بی‌کشو (`.hk-led-sub` زیرنویس نارنجی از `hkLedSecLine`؛ `.hk-led-shr` اشتراک‌گذاری با `hkDongShareMenu(btn, g, shareFn)` و `hkLedShare` در `15b-prefs.js`)؛ ضربه روی کارت = `hkLedOpenRel(id)` (حالت `#featureSheet.hk-led-rel`، فقط همان رابطه با `hkLedRelFit`)، بک = `hkLedRelClose` (پوشش `onBackGuard` در `17-pages.js`)؛ «ردیف جدید» همان مربع `.hk-fab` است. خلاصهٔ قرض در CSS پنهان است.
+- **پشتِ باکس‌های افزودن:** آخر `10c-pages.css` — `#svEditorDim/#urEditorDim/#nameSheetBackdrop/#textInputBackdrop` (وقتی `#recurringSheet` هست) همه ۰٫۱۶ + blur ۱٫۵px مثل `hkFabAsk`.
+- **صفحهٔ پروژه:** `hkProjFit` در `09a-financial-context.js` فضای زیر خلاصه را بین دو جدول تقسیم می‌کند.
+- **مسدودسازی:** بی‌شمارهٔ حساب و شخصی = کل شماره (`grpF` در `11b-jalali-of-ts.js`، بی فیلتر بانک در `hkSmsBlockedHit`)؛ آزاد کردن از فهرست = همهٔ بانک‌های همان شماره.
+- **دسته‌ها:** مداد `.sp-pick-e` برای `cat.custom` (۰۷a و ۱۵b) → `hkCatStyleSheet`. **دست‌نویس:** `.hk-ink-sizes` (`penW`) و دکمهٔ کناری قلم (`e.buttons & 34`) = پاک‌کنِ همان کشیدن.
+- **تم روز:** `tr.project-row-hl > td` شفاف (آخر `10c-pages.css`).
+- **مانده (۱.۴.۹، با مدل قوی‌تر):** چنددسته در ویرایش ردیف، جیب‌به‌جیب (۵)، ویجت‌ها (۶)، انتخاب‌نشدن متن ردیف با لانگ‌پرس. **باکس مشکی تم روز** با اسکن خودکار پیدا نشد؛ نیاز به شرح/عکس.
+- **روی گوشی امتحان شود:** صفحهٔ رابطهٔ قرض با ردیف زیاد، اشتراک‌گذاری عکس/PDF قرض، دکمهٔ کناری S Pen.
+
