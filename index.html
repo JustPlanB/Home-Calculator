@@ -12967,6 +12967,11 @@ html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel .section-body 
 /* ===== ۱.۴.۸: پشتِ باکس‌های «افزودن» در همهٔ منوها همان پشتِ باکس نام پروژه/گروه (کم‌تیره، نه صفحهٔ تقریباً مات) ===== */
 #svEditorDim, #urEditorDim, #nameSheetBackdrop, body:has(#recurringSheet) #textInputBackdrop { background: rgba(0,0,0,0.16) !important; -webkit-backdrop-filter: blur(1.5px) !important; backdrop-filter: blur(1.5px) !important; }
 html[data-theme="light"] #svEditorDim, html[data-theme="light"] #urEditorDim, html[data-theme="light"] #nameSheetBackdrop, html[data-theme="light"] body:has(#recurringSheet) #textInputBackdrop { background: rgba(20,30,45,0.12) !important; }
+
+/* ===== ۱.۴.۸: دستهٔ ساخت کاربر — مداد ویرایش روبه‌روی × (فقط در حالت لرزش) ===== */
+.hk-sp-tiles .sp-pick-t .sp-pick-e { position: absolute; top: -7px; left: 50%; margin-left: 14px; width: 16px; height: 16px; display: none; z-index: 3; color: var(--text, #fff); background: none; }
+.hk-sp-tiles.hk-jiggle .sp-pick-t .sp-pick-e { display: block; }
+.sp-pick-e svg { width: 12px; height: 12px; display: block; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -29856,6 +29861,12 @@ async function openPdfPrintWindow(){
               });
             };
             b.appendChild(x);
+            /* ۱.۴.۸: دستهٔ ساخت کاربر: روبه‌روی × مداد ویرایش (همان صفحهٔ آیکون/عکس گالری و رنگ) */
+            if (cat.custom) {
+              var pe = document.createElement('span'); pe.className = 'sp-pick-e'; pe.setAttribute('role', 'button'); pe.setAttribute('aria-label', 'ویرایش دسته'); pe.innerHTML = HK_EDIT_SVG;
+              pe.onclick = function (ev) { ev.stopPropagation(); ev.preventDefault(); hkCatStyleSheet(cat, function () { var t2 = grid.querySelector('[data-id="' + cat.id + '"]'); if (t2) { t2.style.setProperty('--cc', hkCatColor(cat.id)); var ic = t2.querySelector('i'); if (ic) ic.innerHTML = hkCatIco(cat.id); } }); };
+              b.appendChild(pe);
+            }
             b.addEventListener('pointerdown', function () { lpFired = false; clearTimeout(lpT); lpT = setTimeout(function () { lpFired = true; jiggleOn(); }, 520); });
             ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
             b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -33942,8 +33953,7 @@ container.innerHTML = '';
         var x = L[i];
         if (x.d) for (var j = 0; j < ds.length; j++) { if (same4(x.d, ds[j])) return x; }
         if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) {
-          /* ۱.۴.۷: یک شماره دربارهٔ چند بانک: مسدودِ بی‌شمارهٔ یک بانک، پیامک بانک دیگرِ همان شماره را مسدود نمی‌کند */
-          if (x.nodig && x.bank && !x.personal) { var bk = ''; try { bk = detectBankFromSms(raw, true) || ''; } catch (eBk) {} if (bk && hkBankNorm && hkBankNorm(bk) !== hkBankNorm(x.bank)) continue; }
+          /* ۱.۴.۸: مسدودِ یک شماره = کل شماره، هر بانکی که از آن بنویسد (فهرست مسدودها بانک‌ها را جدا نشان می‌دهد) */
           bySender.push(x);
         }
       }
@@ -33987,7 +33997,7 @@ container.innerHTML = '';
         ov.querySelector('.hk-bulk-close').onclick = close;
         ov.querySelectorAll('.hk-block-r').forEach(function (r) { r.onclick = function () { var x = hkBlockedLoad()[+r.dataset.i]; if (x) info(x); }; });
         ov.querySelectorAll('.hk-block-un').forEach(function (b) {
-          b.onclick = function (e) { e.stopPropagation(); var L2 = hkBlockedLoad(), x = L2[+b.dataset.i]; if (!x) return; L2.splice(+b.dataset.i, 1); hkBlockedSave(L2); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); render(); };
+          b.onclick = function (e) { e.stopPropagation(); var L2 = hkBlockedLoad(), x = L2[+b.dataset.i]; if (!x) return; /* ۱.۴.۸: آزاد کردن یک شماره = همهٔ بانک‌های همان شماره */ var sx = (x.s || []).map(hkSenderNorm); L2 = L2.filter(function (y, k) { return k !== +b.dataset.i && (x.d || !(y.s && !y.d && (y.s || []).some(function (q) { return sx.indexOf(hkSenderNorm(q)) >= 0; }))); }); hkBlockedSave(L2); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); render(); };
         });
       };
       var close = function () { ov.remove(); };
@@ -41678,9 +41688,13 @@ if (item.type === 'recurring') {
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
           /* ۱.۴.۱: پیامک شخصی: همهٔ پوشه‌های همان فرستنده (هر حساب یک مسدود جدا) با هم */
           /* ۱.۴.۷: هر پوشه (هر بانک/حساب، حتی از یک شمارهٔ مشترک) جدا مسدود و آزاد می‌شود */
+          /* ۱.۴.۸: مسدود کردن یک شماره = کل شماره (همهٔ پوشه‌های بی‌شمارهٔ حساب و شخصیِ همان فرستنده)؛ در «حساب‌های مسدود شده» هر بانک جدا نشان داده می‌شود.
+             پوشهٔ دارای شمارهٔ حساب (۴ رقم) فقط همان حساب را می‌بندد */
+          var snk = function (f) { return (f.senders || [f.sender]).filter(Boolean).map(function (q) { return hkSenderNorm(q); }); };
           var grpF = [fo];
+          if (!fo.acc4 || fo.personal) { var sn0 = snk(fo); grpF = (_hkBulk.folders || []).filter(function (f) { return f === fo || ((!f.acc4 || f.personal) && snk(f).some(function (q) { return sn0.indexOf(q) >= 0; })); }); }
           if (fo._blocked) {
-            hkUnblockAccount(blkEntry());
+            grpF.forEach(function (f) { hkUnblockAccount(blkEntry(f)); });
             grpF.forEach(function (f) { f._blocked = false; });
             showToast('«' + nm + '» دوباره فعال شد');
           } else {
@@ -42611,7 +42625,7 @@ if (item.type === 'recurring') {
       ov.innerHTML = '<div class="hk-bulk-box">' +
         '<div class="hk-bulk-title">حساب‌هایت را پیدا کنیم</div>' +
         '<div class="hk-bulk-list" id="hkSetupList"><div class="hk-bulk-hint">' +
-          (canRead ? 'نرم‌افزار پیامک‌های بانکی ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود.'
+          (canRead ? 'نرم‌افزار پیامک‌های بانکی را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود.'
                    : 'حساب‌هایتان را با نام و ماندهٔ فعلی اضافه کنید.') +
         '</div></div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok">' + (canRead ? 'پیدا کن' : 'افزودن حساب') + '</button><button type="button" class="hk-bulk-close">بعداً</button></div>' +
@@ -42641,7 +42655,7 @@ if (item.type === 'recurring') {
         card.innerHTML = '<div class="hk-bulk-fhead"><input type="checkbox" class="hk-bulk-chk" checked aria-label="انتخاب">' +
           '<span class="hk-bulk-fico">' + HK_FOLDER_SVG + '</span>' +
           '<span class="hk-bulk-fname">' + (manual ? 'حساب دیگر' : escapeHtml(fo.bank) + (fo.acc4 ? ' · ' + toPersianDigits(fo.acc4) : '')) + '</span></div>' +
-          (manual ? '' : '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.n)) + ' تراکنش در ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر' +
+          (manual ? '' : '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.n)) + ' تراکنش در پیامک‌ها' +
             (fo.bal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.bal) + ' (' + hkJStr(hkJalaliOfTs(fo.balTs)) + ')' : '<br>مانده در پیامک‌ها نیست') +
             (stale ? '<br><span class="hk-bulk-unsure">ماندهٔ فعلی را بنویسید (اختیاری)</span>' : '') + '</div>');
         var sug = manual ? '' : (short + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
@@ -51379,6 +51393,12 @@ function openProjectRowPicker(secId) {
             });
           };
           b.appendChild(x);
+          /* ۱.۴.۸: دستهٔ ساخت کاربر: روبه‌روی × مداد ویرایش (همان صفحهٔ انتخاب آیکون/عکس گالری و رنگ) */
+          if (cat.custom) {
+            var pe = document.createElement('span'); pe.className = 'sp-pick-e'; pe.setAttribute('role', 'button'); pe.setAttribute('aria-label', 'ویرایش دسته'); pe.innerHTML = HK_EDIT_SVG;
+            pe.onclick = function (ev) { ev.stopPropagation(); ev.preventDefault(); hkCatStyleSheet(cat, function () { draw(); }); };
+            b.appendChild(pe);
+          }
           var lpT = 0;
           b.addEventListener('pointerdown', function () { clearTimeout(lpT); lpT = setTimeout(jigOn, 520); });
           ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });

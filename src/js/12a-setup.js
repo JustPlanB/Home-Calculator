@@ -38,7 +38,7 @@
       ov.innerHTML = '<div class="hk-bulk-box">' +
         '<div class="hk-bulk-title">حساب‌هایت را پیدا کنیم</div>' +
         '<div class="hk-bulk-list" id="hkSetupList"><div class="hk-bulk-hint">' +
-          (canRead ? 'نرم‌افزار پیامک‌های بانکی ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود.'
+          (canRead ? 'نرم‌افزار پیامک‌های بانکی را روی همین گوشی می‌خواند (جایی فرستاده نمی‌شود) و کارت‌ها و ماندهٔ هر کدام را پیدا می‌کند. تا «پیدا کن» را نزنید چیزی ساخته نمی‌شود.'
                    : 'حساب‌هایتان را با نام و ماندهٔ فعلی اضافه کنید.') +
         '</div></div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-ok">' + (canRead ? 'پیدا کن' : 'افزودن حساب') + '</button><button type="button" class="hk-bulk-close">بعداً</button></div>' +
@@ -68,7 +68,7 @@
         card.innerHTML = '<div class="hk-bulk-fhead"><input type="checkbox" class="hk-bulk-chk" checked aria-label="انتخاب">' +
           '<span class="hk-bulk-fico">' + HK_FOLDER_SVG + '</span>' +
           '<span class="hk-bulk-fname">' + (manual ? 'حساب دیگر' : escapeHtml(fo.bank) + (fo.acc4 ? ' · ' + toPersianDigits(fo.acc4) : '')) + '</span></div>' +
-          (manual ? '' : '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.n)) + ' تراکنش در ' + toPersianDigits(String(HK_SETUP_DAYS)) + ' روز اخیر' +
+          (manual ? '' : '<div class="hk-bulk-fmeta">' + toPersianDigits(String(fo.n)) + ' تراکنش در پیامک‌ها' +
             (fo.bal != null ? '<br>آخرین مانده در پیامک‌ها: ' + formatNum(fo.bal) + ' (' + hkJStr(hkJalaliOfTs(fo.balTs)) + ')' : '<br>مانده در پیامک‌ها نیست') +
             (stale ? '<br><span class="hk-bulk-unsure">ماندهٔ فعلی را بنویسید (اختیاری)</span>' : '') + '</div>');
         var sug = manual ? '' : (short + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));

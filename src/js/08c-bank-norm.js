@@ -671,8 +671,7 @@
         var x = L[i];
         if (x.d) for (var j = 0; j < ds.length; j++) { if (same4(x.d, ds[j])) return x; }
         if (x.s && sn && (x.s || []).some(function (q) { return hkSenderNorm(q) === sn; }) && (!x.nodig || !ds.length)) {
-          /* ۱.۴.۷: یک شماره دربارهٔ چند بانک: مسدودِ بی‌شمارهٔ یک بانک، پیامک بانک دیگرِ همان شماره را مسدود نمی‌کند */
-          if (x.nodig && x.bank && !x.personal) { var bk = ''; try { bk = detectBankFromSms(raw, true) || ''; } catch (eBk) {} if (bk && hkBankNorm && hkBankNorm(bk) !== hkBankNorm(x.bank)) continue; }
+          /* ۱.۴.۸: مسدودِ یک شماره = کل شماره، هر بانکی که از آن بنویسد (فهرست مسدودها بانک‌ها را جدا نشان می‌دهد) */
           bySender.push(x);
         }
       }
@@ -716,7 +715,7 @@
         ov.querySelector('.hk-bulk-close').onclick = close;
         ov.querySelectorAll('.hk-block-r').forEach(function (r) { r.onclick = function () { var x = hkBlockedLoad()[+r.dataset.i]; if (x) info(x); }; });
         ov.querySelectorAll('.hk-block-un').forEach(function (b) {
-          b.onclick = function (e) { e.stopPropagation(); var L2 = hkBlockedLoad(), x = L2[+b.dataset.i]; if (!x) return; L2.splice(+b.dataset.i, 1); hkBlockedSave(L2); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); render(); };
+          b.onclick = function (e) { e.stopPropagation(); var L2 = hkBlockedLoad(), x = L2[+b.dataset.i]; if (!x) return; /* ۱.۴.۸: آزاد کردن یک شماره = همهٔ بانک‌های همان شماره */ var sx = (x.s || []).map(hkSenderNorm); L2 = L2.filter(function (y, k) { return k !== +b.dataset.i && (x.d || !(y.s && !y.d && (y.s || []).some(function (q) { return sx.indexOf(hkSenderNorm(q)) >= 0; }))); }); hkBlockedSave(L2); showToast('«' + (x.bank || 'حساب') + ' ' + hkBlockLabel(x) + '» دوباره فعال شد'); render(); };
         });
       };
       var close = function () { ov.remove(); };

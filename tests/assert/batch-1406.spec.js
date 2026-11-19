@@ -210,7 +210,7 @@ const allErrors = [];
     const saved = localStorage.getItem(STORAGE_KEY + '_blocked'); localStorage.removeItem(STORAGE_KEY + '_blocked');
     hkBlockAccount('', 'پیامک شخصی', { senders: ['09120000000'], pd: '1111', personal: true });
     hkBlockAccount('', 'بانک ملت', { senders: ['3000'], nodig: true });
-    o.block = !!hkSmsBlockedHit('واریز به حساب ...1111 مبلغ 100', '09120000000') && !hkSmsBlockedHit('واریز به حساب ...2222 مبلغ 100', '09120000000') && !!hkSmsBlockedHit('بانک ملت\nبرداشت 50,000', '3000') && !hkSmsBlockedHit('بانک ملی\nبرداشت 50,000', '3000');
+    o.block = !!hkSmsBlockedHit('واریز به حساب ...1111 مبلغ 100', '09120000000') && !hkSmsBlockedHit('واریز به حساب ...2222 مبلغ 100', '09120000000') && !!hkSmsBlockedHit('بانک ملت\nبرداشت 50,000', '3000') && !!hkSmsBlockedHit('بانک ملی\nبرداشت 50,000', '3000');
     if (saved) localStorage.setItem(STORAGE_KEY + '_blocked', saved); else localStorage.removeItem(STORAGE_KEY + '_blocked');
     return o;
   });
@@ -221,7 +221,7 @@ const allErrors = [];
   ok(Z.noHalo, 'آیکون حذف فقط × قرمز، بی هاله و بی زمینه');
   ok(Z.fab[0] === 21 && Z.fab[1] >= 20 && Z.fab[1] <= 35 && Z.fab[2] === 'plusStrokePulse', 'مربع افزودن کمی بالاتر و راست‌تر، با کم‌نور/پرنور شدن (' + Z.fab.join(' ') + ')');
   ok(Z.gBlock, 'اسلاید قسط: تاریخ میلادی در خط جدا زیر تاریخ شمسی');
-  ok(Z.block, 'یک شماره برای چند حساب/بانک: هر کدام جدا مسدود می‌شود');
+  ok(Z.block, '۱.۴.۸: مسدود کردن یک شماره، کل شماره را می‌بندد (حساب‌های شخصیِ دارای pd هنوز جدا)');
 
   await b.close();
   const errs = allErrors.filter(e => !/ResizeObserver/.test(e));
