@@ -30,6 +30,15 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   await page.evaluate(() => onBackGuard()); await page.waitForTimeout(900);
   const B = await page.evaluate(() => ({ rel: document.getElementById('featureSheet').classList.contains('hk-led-rel'), open: document.getElementById('featureSheet').classList.contains('open'), n: [...document.querySelectorAll('#sections-ledger .section')].filter(e => e.getClientRects().length).length }));
   ok(!B.rel && B.open && B.n === 2, 'بک: برگشت به فهرست روابط (صفحهٔ قرض باز می‌ماند)');
+  /* صفحهٔ پروژه: فضای باقیمانده بین دو جدول تقسیم می‌شود و تا پایین صفحه نمی‌رسد */
+  const J = await page.evaluate(async () => {
+    const t = hkMainTitle(); const l = loadFinancialSubjects(); l.push({ id: 'pj1', name: 'ساختمان', highlightColor: nextProjectHighlightColor(l) }); _financialSubjects = l; saveFinancialSubjects();
+    ['income', 'expense'].forEach(tab => { const sec = findSectionByTitle(tab, t); sec.rows = sec.rows || []; for (let i = 0; i < 20; i++) { const fc = defaultFinancialContext(); fc.classification = 'third_party'; fc.accountType = 'project'; fc.subjectId = 'pj1'; fc.subjectName = 'ساختمان'; fc.fundingSource = 'subject'; sec.rows.push(Object.assign(emptyRow(tab), { status: 'paid', day: String(1 + i), desc: 'ردیف ' + i, amount: 1000 * (i + 1), financialContext: fc })); } });
+    persistCurrent(); openProjectReportModal('pj1'); await new Promise(r => setTimeout(r, 900));
+    const sc = [...document.querySelectorAll('#projectReportModal .proj-table-scroll')], r = sc.map(e => e.getBoundingClientRect());
+    return { h: r.map(x => Math.round(x.height)), bottom: Math.round(r[1].bottom), vh: innerHeight, scroll: sc.every(e => e.scrollHeight > e.clientHeight + 10) };
+  });
+  ok(Math.abs(J.h[0] - J.h[1]) <= 2 && J.bottom <= J.vh - 20 && J.scroll, 'پروژه: دو جدول هم‌اندازه از فضای باقیمانده؛ ردیف زیاد = اسکرول داخل جدول (' + J.h.join('/') + ')');
   ok(errs.length === 0, 'بدون خطای JS' + (errs.length ? ': ' + errs[0] : ''));
   await b.close(); console.log('batch-1408: ' + passed + ' passed, ' + failed + ' failed'); process.exit(failed ? 1 : 0);
 })();
