@@ -179,21 +179,7 @@ async function seedRows(page) {
     led.sections = [{ id: 'LA', personA: 'من', personB: 'علی', collapsed: true, rows: Array.from({ length: 14 }, (_, i) => Object.assign(emptyLedgerRow(), { day: String(i + 1), desc: 'قرض ' + i, amount: (i + 1) * 100000, ly: currentYear, lm: currentMonth })) }];
     persistCurrent(); openFeatureSheet('ledger'); await w(1500);
   });
-  const geo = () => L.page.evaluate(() => { const h = document.querySelector('#sections-ledger .section[data-sec-id="LA"] .section-header'); return ['.btn-edit-title', '.btn-del-row'].map(s => { const r = h.querySelector(s).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(','); }).join(' '); });
-  const g0 = await geo();
-  await L.page.click('#sections-ledger .section[data-sec-id="LA"] .section-header .title-display'); await L.page.waitForTimeout(700);
-  const g1 = await geo();
-  const st = await L.page.evaluate(async () => {
-    const body = document.querySelector('#sections-ledger .section[data-sec-id="LA"] .section-body'), th = body.querySelector('thead');
-    const t0 = th.getBoundingClientRect().top; body.scrollTop = 250; await new Promise(r => setTimeout(r, 200));
-    return { moved: body.scrollTop > 50, same: Math.abs(th.getBoundingClientRect().top - body.getBoundingClientRect().top) <= 2, t0 };
-  });
-  await L.page.click('#sections-ledger .section[data-sec-id="LA"] .section-header', { position: { x: 200, y: 20 } }); await L.page.waitForTimeout(150);
-  const gMid = await geo();
-  await L.page.waitForTimeout(600);
-  const g2 = await geo();
-  ok(g0 === g1 && g1 === gMid && gMid === g2, 'آیکن ویرایش و حذف رابطه در باز، حین بستن و بسته یک اندازه و یک جا (' + g0 + ')');
-  ok(st.moved && st.same, 'اسکرول داخل جدول: عنوان رابطه و نام ستون‌ها بالای جدول ثابت می‌مانند');
+  /* ۱.۴.۸: کشویی بودن/آیکون‌های حین باز و بسته شدن قرض منسوخ است */
   await L.ctx.close();
 
   console.log('• منوی همبرگری');

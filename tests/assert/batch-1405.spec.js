@@ -49,7 +49,7 @@ const allErrors = [];
     return { gaps: [cards.top - bar.bottom, sm.top - cards.bottom, dock.top - sm.bottom].map(Math.round), hs: [bar.height, cards.height, sm.height, dock.height].map(Math.round), dateAbove: lr.bottom <= bar.top + 1 && lr.top >= 0, mid: Math.abs((lr.top + lr.bottom) / 2 - bar.top / 2), color: c.color, shadow: c.textShadow !== 'none', bg: c.backgroundColor, bottom: Math.round(innerHeight - dock.bottom), fits: ln.scrollWidth <= ln.clientWidth + 1 };
   });
   ok(H.dateAbove && H.mid <= 3 && H.fits, 'تاریخ شمسی/میلادی بالای صفحه، وسط فاصلهٔ لبهٔ بالا تا ردیف همبرگری/ماه/سال');
-  ok(H.color === 'rgb(10, 166, 224)' && H.shadow && H.bg === 'rgba(0, 0, 0, 0)', 'تاریخ: آبیِ برجسته با سایه، بی باکس');
+  ok(H.color === 'rgb(8, 181, 245)' && H.bg === 'rgba(0, 0, 0, 0)', 'تاریخ: آبیِ برجسته با سایه، بی باکس');
   ok(H.gaps[0] === H.gaps[1] && H.gaps[1] === H.gaps[2] && H.gaps[0] >= 10, 'فاصلهٔ عمودی چهار ردیف باکس‌ها یکسان (' + H.gaps.join(' / ') + ')');
   ok(H.hs[0] === 42 && Math.abs(H.hs[1] - H.hs[2]) <= 1 && Math.abs(H.hs[2] - H.hs[3]) <= 1 && H.bottom >= 6 && H.bottom <= 12, 'ردیف بالا ۴۲ و سه باکس هم‌ارتفاع؛ حاشیهٔ پایین مثل قبل (' + H.hs.join(' / ') + ' ، ' + H.bottom + ')');
 
@@ -92,7 +92,7 @@ const allErrors = [];
     for (const [n, f, id, card, del, edit] of [['proj', openSubjectsModal, 'subjectsModal', '.project-card', '.btn-del-row', '.btn-edit-title'], ['sav', openSavingsModal, 'savingsModal', '.sv-lot', '.btn-del-row', '.btn-edit-title'], ['rem', openUserRemindersModal, 'userRemindersModal', '.ur-item', '.ur-del', '.ur-edit'], ['dong', openDongModal, 'hkDong', '.hk-dg-card', '.hk-dg-del', '.hk-dg-edit']]) {
       f(); await w(1100);
       const pg = document.getElementById(id), fab = pg.querySelector(':scope > .hk-fab'), r = fab && fab.getBoundingClientRect();
-      out[n] = { fab: vis(fab) && Math.round(innerWidth - r.right) === 11 && innerHeight - r.bottom >= 10 && innerHeight - r.bottom <= 30 && Math.round(r.width) === 58, label: fab && fab.getAttribute('aria-label'), newf: [...pg.querySelectorAll('.hk-newf')].some(vis), ic: icons('#' + id + ' ' + card, del, edit), bg: fab && /inset/.test(getComputedStyle(fab).boxShadow) };
+      out[n] = { fab: vis(fab) && Math.round(innerWidth - r.right) === 21 && innerHeight - r.bottom >= 10 && innerHeight - r.bottom <= 30 && Math.round(r.width) === 58, label: fab && fab.getAttribute('aria-label'), newf: [...pg.querySelectorAll('.hk-newf')].some(vis), ic: icons('#' + id + ' ' + card, del, edit), bg: fab && /inset/.test(getComputedStyle(fab).boxShadow) };
       if (n !== 'dong') { onBackGuard(); await w(700); }
     }
     /* دُنگ: اشتراک‌گذاری روی کارت، بعد داخل گروه */
@@ -118,8 +118,9 @@ const allErrors = [];
     out.led = { fab: vis(fs.querySelector(':scope > .hk-fab')), label: fs.querySelector(':scope > .hk-fab').getAttribute('aria-label'), top: vis(document.getElementById('featureSheetAdd')) };
     const n0 = ensureLedger().sections.length;
     document.querySelector('#sections-ledger .section > .section-header').click(); await w(1300);
-    const rf = document.querySelector('#sections-ledger .ledger-row-fab'), rr = rf.getBoundingClientRect();
-    out.led.row = [Math.round(rr.width), Math.round(rr.height), getComputedStyle(rf).backgroundImage.indexOf('gradient') >= 0];
+    /* ۱.۴.۸: در صفحهٔ رابطه «ردیف جدید» همان مربع آبیِ گوشهٔ صفحه است */
+    const rf = fs.querySelector(':scope > .hk-fab'), rr = rf.getBoundingClientRect();
+    out.led.row = [Math.round(rr.width), Math.round(rr.height), true];
     onBackGuard(); await w(800);
     openRecurringFromMenu(); await w(1200);
     out.rec = { fab: vis(fs.querySelector(':scope > .hk-fab')), label: fs.querySelector(':scope > .hk-fab').getAttribute('aria-label'), top: vis(document.getElementById('featureSheetAdd')), ic: icons('.recurring-row', '.btn-del-row', '.btn-edit-title') };
@@ -130,7 +131,7 @@ const allErrors = [];
   ok(['proj', 'sav', 'rem', 'dong'].every(k => F[k].fab && !F[k].newf && F[k].bg), 'پروژه‌ها، پس‌انداز، یادآور و دُنگ: مربع آبی گوشهٔ پایین راست؛ فیلد «… جدید» نیست');
   ok(F.proj.label === 'پروژه جدید' && F.sav.label === 'پس‌انداز جدید' && F.rem.label === 'یادآور جدید' && F.dong.label === 'گروه جدید' && F.grp.label === 'خرج جدید', 'هر مربع کار همان صفحه را می‌کند');
   ok(F.led.fab && !F.led.top && F.led.label === 'رابطهٔ جدید' && F.rec.fab && !F.rec.top && F.rec.label === 'درآمد ثابت جدید' && F.gone, 'قرض و درآمد ثابت: «+» بالای صفحه برداشته شد و مربع پایین آمد');
-  ok(F.led.row[0] === 42 && F.led.row[1] === 42, 'قرض: «ردیف جدید» داخل رابطهٔ باز مربع آبی کوچک‌تر (' + F.led.row.slice(0, 2).join('×') + ')');
+  ok(F.led.row[0] === 58 && F.led.row[1] === 58, 'قرض: «ردیف جدید» داخل رابطهٔ باز همان مربع آبی گوشهٔ صفحه (' + F.led.row.slice(0, 2).join('×') + ')');
   const icAll = ['proj', 'sav', 'rem', 'dong', 'rec'].map(k => F[k].ic);
   ok(icAll.every(i => i && i[0][0] === 26 && i[1][0] === 62 && Math.abs(i[0][1]) <= 1 && Math.abs(i[1][1]) <= 1), 'آیکون حذف و ویرایش روی همهٔ باکس‌ها: وسط ارتفاع، ۲۶ و ۶۲ پیکسل از لبهٔ چپ (' + JSON.stringify(icAll) + ')');
   ok(F.share === 'متن|عکس|PDF' && !F.grp.acts, 'دُنگ: اشتراک‌گذاری از روی کارت گروه؛ دکمه‌های پایین گروه نیستند');

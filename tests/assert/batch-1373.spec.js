@@ -106,34 +106,7 @@ async function fresh(b, opts) {
   ok(ad.cut && ad.narrow < ad.w, 'اسم خیلی بلند با «…»؛ با اسم کوتاه باکس باریک‌تر است (' + Math.round(ad.narrow) + ')');
   await D.ctx.close();
 
-  console.log('• باز/بسته شدن روابط قرض');
-  const E = await fresh(b);
-  const lg = await E.page.evaluate(async () => {
-    const w = ms => new Promise(r => setTimeout(r, ms));
-    const led = ensureLedger(); led.sections = [];
-    for (let s = 0; s < 3; s++) { const rows = []; for (let i = 0; i < 6; i++) rows.push(Object.assign(emptyLedgerRow(), { day: String(1 + i), desc: 'ردیف ' + i, amount: 10000 * (i + 1), ly: currentYear, lm: currentMonth })); led.sections.push({ id: 'S' + s, personA: 'من', personB: 'نفر ' + s, collapsed: true, rows }); }
-    persistCurrent(); touchLocal(); await saveArchive(); openFeatureSheet('ledger'); await w(1800);
-    const sec = document.querySelector('#sections-ledger .section[data-sec-id="S1"]'), hdr = sec.querySelector('.section-header'), lw = sec.querySelector('.hk-lw');
-    const closedH = lw.getBoundingClientRect().height;
-    const hdrH = [], secH = []; let run = true;
-    const tick = () => { hdrH.push(Math.round(hdr.getBoundingClientRect().height)); secH.push(sec.getBoundingClientRect().height); if (run) requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
-    const t0 = performance.now(); hdr.click(); const click = performance.now() - t0;
-    await w(600);
-    const openH = lw.getBoundingClientRect().height, rows = sec.querySelectorAll('tbody tr').length, fab = sec.querySelector('.ledger-add-row').getBoundingClientRect();
-    hdr.click(); await w(150); hdr.click(); await w(600); /* وسط بسته شدن دوباره باز */
-    const reopened = !sec.classList.contains('collapsed') && Math.abs(lw.getBoundingClientRect().height - openH) < 1;
-    hdr.click(); await w(600); run = false;
-    let mono = true; /* ارتفاع باکس در هر حرکت بی‌پرش: هیچ گام ناگهانی بزرگ‌تر از نصف کل تغییر نیست */
-    for (let i = 1; i < secH.length; i++) if (Math.abs(secH[i] - secH[i - 1]) > (openH * 0.5)) mono = false;
-    return { closedH, openH, rows, click, hdrSame: new Set(hdrH).size === 1, reopened, mono, closedEnd: sec.classList.contains('collapsed') && sec.querySelector('.hk-lw').getBoundingClientRect().height < 1, fabLeft: fab.left < sec.getBoundingClientRect().left + 80 };
-  });
-  ok(lg.closedH < 1 && lg.openH > 150 && lg.rows === 6, 'بسته = قاب بدنه صفر؛ باز = همهٔ ردیف‌ها (' + Math.round(lg.openH) + 'px)');
-  ok(lg.click < 30, 'ضربه هیچ کار سنگینی ندارد (' + Math.round(lg.click) + 'ms)');
-  ok(lg.hdrSame && lg.mono, 'سربرگ در طول حرکت ثابت و ارتفاع باکس بی‌پرش عوض می‌شود');
-  ok(lg.reopened && lg.closedEnd, 'ضربهٔ دوباره وسط حرکت جهت را برمی‌گرداند؛ در پایان بسته کامل');
-  ok(lg.fabLeft, 'دکمهٔ ردیف تازه مثل قبل سمت چپ باکس');
-  await E.ctx.close();
+  /* ۱.۴.۸: باز/بسته شدن کشویی روابط قرض حذف شد (صفحهٔ جدای هر رابطه؛ batch-1408) */
 
   console.log('• خروجی‌ها');
   const F = await fresh(b);
