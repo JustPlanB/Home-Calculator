@@ -244,6 +244,9 @@
     function hkDongShare(g, kind) {
       var title = 'دُنگ ' + g.name, base = 'dong-' + String(g.name || 'group').replace(/[\\/:*?"<>|\s]+/g, '-');
       if (!kind || kind === 'text') return hkDongShareText2(hkDongShareText(g), title);
+      /* ۱.۴.۱۴: PDF = همان خروجی منوی گزارش‌ها برای همین گروه (گروه بی خرج: گزارش ساده) */
+      if (kind === 'pdf' && g.expenses && g.expenses.length) return hkShareExportPdf('dong', { dong: [g.id] });
+      if (kind === 'photo' && g.expenses && g.expenses.length) return hkShareExportImage('dong', { dong: [g.id] }, '', title);
       showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
       return hkDongReportBlob(g, kind).then(function (blob) {
         if (!blob || !blob.size) throw new Error('empty');
