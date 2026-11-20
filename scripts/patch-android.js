@@ -512,13 +512,13 @@ fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx.xml'),
     </LinearLayout>
     <!-- ۱.۴.۵: جای لمس بزرگ‌تر برای چشم؛ روی تاریخ کنار آن هم همان کار -->
     <FrameLayout android:id="@+id/hk_wt_eye2" android:layout_width="124dp" android:layout_height="48dp"
-        android:layout_gravity="top|left" android:contentDescription="پنهان کردن مبالغ"/>
+        android:layout_gravity="top|left" android:layout_marginTop="10dp" android:contentDescription="پنهان کردن مبالغ"/>
     <ImageView android:id="@+id/hk_wt_eye" android:layout_width="48dp" android:layout_height="48dp"
-        android:layout_gravity="top|left" android:layout_marginLeft="1dp" android:layout_marginTop="0dp"
+        android:layout_gravity="top|left" android:layout_marginLeft="1dp" android:layout_marginTop="10dp"
         android:padding="13dp" android:src="@drawable/hk_ic_eye" android:contentDescription="پنهان کردن مبالغ"/>
     <!-- ۱.۳.۹۲: روی نام نوع ردیف‌ها (وسط نوار عنوان): منوی واریز / برداشت / همه -->
     <FrameLayout android:id="@+id/hk_wt_pick" android:layout_width="140dp" android:layout_height="48dp"
-        android:layout_gravity="top|center_horizontal" android:contentDescription="انتخاب نوع ردیف‌ها"/>
+        android:layout_gravity="top|center_horizontal" android:layout_marginTop="10dp" android:contentDescription="انتخاب نوع ردیف‌ها"/>
 </FrameLayout>
 `);
 fs.writeFileSync(path.join(resDir,'layout','hk_widget_tx_item.xml'),

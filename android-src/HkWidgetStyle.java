@@ -75,7 +75,7 @@ public class HkWidgetStyle extends Activity {
     root.addView(t, mw());
 
     preview=new PreviewView(this);
-    int ph=(int)(getResources().getDisplayMetrics().heightPixels*0.36f);
+    int ph=(int)(getResources().getDisplayMetrics().heightPixels*0.29f); /* ۱.۴.۱۷: هم‌اندازهٔ پنجرهٔ پیش‌نمایش موزیک سامسونگ (۵۸۰ از ۱۹۹۹)؛ تم، شفافیت و دکمه‌ها بی‌اسکرول دیده شوند */
     LinearLayout.LayoutParams plp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ph); plp.bottomMargin=(int)(14*dp);
     root.addView(preview, plp);
     preview.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){ public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob){ hole.setHole(l, tp, r, b); } });

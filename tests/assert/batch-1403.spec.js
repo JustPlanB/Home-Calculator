@@ -15,7 +15,7 @@ const allErrors = [];
   ok(/public class HkWidgetLineProvider extends AppWidgetProvider/.test(pa) && /static Bitmap line\(Context c, int W, int H, float k, Data d\)/.test(pa) && /hk_widget_line_info/.test(pa) && /android:targetCellHeight="1"/.test(pa), 'ویجت یک‌خطی موجودی (۴ در ۱) با همان تنظیمات ظاهر');
   ok(!/android:targetCellWidth="3"/.test(pa) && (pa.match(/android:targetCellWidth="5"/g) || []).length === 4 /* ۱.۴.۵: تا آخرین ستون صفحه */ && !/android:minWidth="180dp"/.test(pa), 'اندازهٔ پیش‌فرض ویجت‌ها ۴ در ۲ (یک‌خطی ۴ در ۱)');
   ok(/sp0\.getBoolean\("light",false\)!=lightNow/.test(pa) && /startsWith\("bg_mode_"\)/.test(pa), 'تم انتخاب‌شده در نرم‌افزار پیش‌فرض همهٔ ویجت‌ها می‌شود');
-  ok(/float rr=android\.os\.Build\.VERSION\.SDK_INT>=31 \? 0 : 22\*k;/.test(pa) && /android:clipToOutline="true"/.test(pa), 'نوار عنوان ویجت تراکنش‌ها تا دو لبه');
+  ok(/clipP\.addRoundRect\(new android\.graphics\.RectF\(c\[4\], 0, c\[0\], th\+hh\), 14\*k, 14\*k/.test(pa) && /android:clipToOutline="true"/.test(pa), 'نوار عنوان ویجت تراکنش‌ها تا دو لبه');
   ok(/HkWidgetLineProvider\.refreshAll\(ctx\)/.test(pa) && /HkWidgetLineProvider\.render\(c, m, id\)/.test(pa), 'ویجت یک‌خطی با بقیه به‌روز می‌شود و تنظیماتش همان را دوباره می‌کشد');
 
   const b = await chromium.launch();

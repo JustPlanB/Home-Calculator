@@ -149,16 +149,18 @@ final class HkWidgetTxDraw {
   static Bitmap header(Context ctx, int W, float k, boolean inc, boolean all, boolean light, int alpha){
     fonts(ctx);
     /* ۱.۳.۹۸: نوار بالا بلندتر (۴۸) و همهٔ نوشته‌هایش درشت‌تر؛ «حساب‌کتاب» هم‌اندازهٔ ویجت حساب‌ها (۱۷) */
-    float th=48*k, hh=30*k; int H=Math.round(th+hh+1*k);
+    float th=48*k, hh=30*k, ti=10*k; int H=Math.round(ti+th+hh+1*k);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
     /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
     Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(HkWidgetDraw.withAlpha(titleBg(light), alpha));
     /* ۱.۴.۳: نوار عنوان تا دو لبهٔ ویجت؛ از اندروید ۱۲ خود ویجت گوشه‌ها را گرد می‌بُرد، پس گوشهٔ نوار صاف است */
-    float rr=android.os.Build.VERSION.SDK_INT>=31 ? 0 : 22*k;
-    android.graphics.Path tp=new android.graphics.Path();
-    tp.addRoundRect(new android.graphics.RectF(0, 0, W, th), new float[]{ rr, rr, rr, rr, 0, 0, 0, 0 }, android.graphics.Path.Direction.CW);
-    cv.drawPath(tp, tb);
+    /* ۱.۴.۱۷: نوار عنوان و سرستون‌ها دقیقاً هم‌عرض جدول (ستون‌ها: از c[4] تا c[0]) و هر چهار گوشه گرد؛ فاصلهٔ بالا هم‌اندازهٔ کنار */
+    cv.translate(0, ti);
+    android.graphics.Path clipP=new android.graphics.Path();
+    clipP.addRoundRect(new android.graphics.RectF(c[4], 0, c[0], th+hh), 14*k, 14*k, android.graphics.Path.Direction.CW);
+    cv.clipPath(clipP);
+    cv.drawRect(c[4], 0, c[0], th, tb);
     /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
     Paint t=paint(BOLD, 17f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
@@ -173,20 +175,20 @@ final class HkWidgetTxDraw {
     cv.drawPath(ch, chp);
     Paint an=paint(BOLD, 17f*k, text(light), Paint.Align.RIGHT);
     fitSize(an, "حساب‌کتاب", W*0.3f);
-    cv.drawText("حساب‌کتاب", W-14*k, base(0, th, 17f*k), an);
+    cv.drawText("حساب‌کتاب", c[0]-14*k, base(0, th, 17f*k), an);
     String[] td=HkWidgetDraw.todayFa();
     if(td!=null){
       Paint dp=paint(REG, 14.5f*k, muted(light), Paint.Align.LEFT);
       fitSize(dp, td[0], W*0.3f-38*k);
-      cv.drawText(td[0], 44*k, base(0, th, 14.5f*k), dp);
+      cv.drawText(td[0], c[4]+34*k, base(0, th, 14.5f*k), dp);
     }
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
     Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(HkWidgetDraw.withAlpha(headBg(light), alpha));
     /* ۱.۴.۴: نوار سرستون‌ها از دو طرف تا لبهٔ کادر ویجت (کنار «تاریخ» و «مبلغ» خالی نمی‌ماند) */
-    cv.drawRect(0, th, W, th+hh, band);
+    cv.drawRect(c[4], th, c[0], th+hh, band);
     Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(headLine(light)); ln.setStrokeWidth(Math.max(1f, k*0.6f));
     for(int i=1;i<=3;i++) cv.drawLine(c[i], th, c[i], th+hh, ln);
-    cv.drawLine(0, th+hh, W, th+hh, ln);
+    cv.drawLine(c[4], th+hh, c[0], th+hh, ln);
     String[] lb={"تاریخ","شرح","حساب","مبلغ"};
     for(int i=0;i<4;i++){
       Paint p=paint(BOLD, 12.5f*k, headFg(light), Paint.Align.CENTER);
