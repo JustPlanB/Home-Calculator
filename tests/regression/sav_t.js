@@ -38,7 +38,8 @@ const { chromium } = require('playwright');
   await p.keyboard.press('Escape');
   await p.evaluate(() => closeSavingsEditor());
   r.listsLeft = await p.evaluate(() => document.querySelectorAll('.dark-select-list.sv-dl').length);
-  // set price on usd
+  // set price on usd (۱.۴.۱۱: قیمت و خریدها در صفحهٔ جزئیات)
+  await p.evaluate(() => hkSvOpen('usd')); await p.waitForTimeout(200);
   await p.evaluate(() => document.querySelector('#savingsModal .sv-fx .sv-price-btn').click()); await p.waitForTimeout(150);
   await p.type('#svPrice', '61500'); await p.click('#svEditor .sv-ok'); await p.waitForTimeout(200);
   r.summary = await p.evaluate(() => document.getElementById('savingsSummary').innerText.replace(/\s+/g,' '));
@@ -50,6 +51,7 @@ const { chromium } = require('playwright');
   r.editQty = await p.inputValue('#svQty');
   r.back1 = await p.evaluate(() => { onBackGuard && onBackGuard(); return [!!document.getElementById('svEditor'), document.getElementById('savingsModal').classList.contains('open')]; });
   await p.waitForTimeout(350);
+  await p.evaluate(() => hkSvClose(true));
   r.back2 = await p.evaluate(() => { onBackGuard(); return document.getElementById('savingsModal').classList.contains('open'); });
   // balance untouched
   r.balanceUnrelated = await p.evaluate(() => typeof sumGlobalAccountBalances === 'function' ? sumGlobalAccountBalances() : 'n/a');
