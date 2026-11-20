@@ -48,7 +48,30 @@ public class MainActivity extends BridgeActivity {
       }
     }catch(Exception ignored){}
   }
-  @Override public boolean dispatchTouchEvent(MotionEvent ev){ hkPenTrack(ev); return super.dispatchTouchEvent(ev); }
+  /* ۱.۴.۱۱: با دکمهٔ کناریِ قلم نگه‌داشته، WebView لمس را «کلیک راست» می‌گیرد و حرکت‌ها نمی‌رسند؛ لمسِ قلمِ دکمه‌دار را به
+     «سرِ پاک‌کنِ قلم» (TOOL_TYPE_ERASER، بی وضعیت دکمه) تبدیل می‌کنیم تا صفحه pointerdown/move عادی با buttons=32 بگیرد (پاک‌کن) */
+  private MotionEvent hkPenEraserCopy(MotionEvent ev){
+    try{
+      int n=ev.getPointerCount();
+      if(n<1 || ev.getToolType(0)!=MotionEvent.TOOL_TYPE_STYLUS) return ev;
+      if((ev.getButtonState()&(MotionEvent.BUTTON_STYLUS_PRIMARY|MotionEvent.BUTTON_STYLUS_SECONDARY))==0) return ev;
+      MotionEvent.PointerProperties[] pp=new MotionEvent.PointerProperties[n];
+      MotionEvent.PointerCoords[] pc=new MotionEvent.PointerCoords[n];
+      for(int i=0;i<n;i++){
+        pp[i]=new MotionEvent.PointerProperties(); ev.getPointerProperties(i,pp[i]);
+        if(pp[i].toolType==MotionEvent.TOOL_TYPE_STYLUS) pp[i].toolType=MotionEvent.TOOL_TYPE_ERASER;
+        pc[i]=new MotionEvent.PointerCoords(); ev.getPointerCoords(i,pc[i]);
+      }
+      return MotionEvent.obtain(ev.getDownTime(),ev.getEventTime(),ev.getAction(),n,pp,pc,ev.getMetaState(),0,ev.getXPrecision(),ev.getYPrecision(),ev.getDeviceId(),ev.getEdgeFlags(),ev.getSource(),ev.getFlags());
+    }catch(Exception e){ return ev; }
+  }
+  @Override public boolean dispatchTouchEvent(MotionEvent ev){
+    hkPenTrack(ev);
+    MotionEvent use=hkPenEraserCopy(ev);
+    boolean r=super.dispatchTouchEvent(use);
+    if(use!=ev){ try{ use.recycle(); }catch(Exception ignored){} }
+    return r;
+  }
   @Override public boolean dispatchGenericMotionEvent(MotionEvent ev){ hkPenTrack(ev); return super.dispatchGenericMotionEvent(ev); }
   @Override public void onNewIntent(android.content.Intent intent){
     super.onNewIntent(intent);

@@ -30,6 +30,19 @@
       c.querySelectorAll('button, .hk-pf-x, .hk-pf-back, svg, .hk-unread-n, input').forEach(function (n) { n.remove(); });
       return (c.textContent || '').replace(/\s+/g, ' ').trim();
     }
+    /* ۱.۴.۱۱: متن آمادهٔ آیکون اطلاعات کنار نام صفحه */
+    function hkPgTipFor(page) {
+      try {
+        var id = page.id;
+        if (id === 'subjectsModal') return 'هر پروژه یک حساب جدا برای واریزی‌ها و مخارجش دارد. هنگام ثبت ردیف می‌توانید پروژه را انتخاب کنید؛ با زدن روی هر پروژه گزارش واریز و مخارجش باز می‌شود.';
+        if (id === 'backupPickOverlay') return 'از بخش‌هایی که می‌خواهید در فایل پشتیبان باشند تیک بگذارید. فایل را جایی امن نگه دارید؛ با آن می‌توانید داده‌ها را روی همین گوشی یا گوشی دیگر برگردانید.';
+        if (id === 'featureSheet' && typeof _featureActive !== 'undefined') {
+          if (_featureActive === 'recurring') return 'درآمدهای ثابتِ تکراری (مثل اجاره یا حقوق). برای هر ماه خودکار یک ردیف «دریافت‌نشده» ساخته می‌شود و با واریز، به همان وصل می‌شود. پوشه: آرشیو دوره‌های قبلی.';
+          if (_featureActive === 'ledger') return 'برای هر دو نفر یک رابطه بسازید. روی رابطه بزنید تا جدولش باز شود؛ روی هر ردیف انگشت را نگه دارید تا ویرایش، تسویه یا حذف بیاید. زیر نام هر رابطه می‌نویسد چه کسی چقدر بدهکار است.';
+        }
+      } catch (e) {}
+      return '';
+    }
     function hkPageDecorate(page) {
       if (!page || !page.isConnected) return;
       /* برگه‌های بالانواردار (آمار، درآمد ثابت): خود نوار سربرگ است — آیکون بک کنار نام، سمت راست */
@@ -37,6 +50,14 @@
         var bar = page.querySelector('.feature-sheet-bar');
         if (bar && !bar.querySelector('.hk-pg-back')) { var t0 = bar.querySelector('.fs-title'); bar.insertBefore(hkPageBackBtn(), t0 || bar.firstChild); }
         page.classList.add('hk-pg-fs');
+        /* ۱.۴.۱۱: آیکون اطلاعات کنار نام (درآمد ثابت، قرض) */
+        try {
+          var ftip0 = hkPgTipFor(page), ib0 = bar && bar.querySelector('.hk-info-btn');
+          if (bar && ftip0) {
+            if (!ib0) { var tmp0 = document.createElement('div'); tmp0.innerHTML = hkInfoBtnHtml(ftip0); ib0 = tmp0.firstChild; var tt0 = bar.querySelector('.fs-title'); bar.insertBefore(ib0, tt0 ? tt0.nextSibling : null); }
+            else if (ib0.getAttribute('data-tip') !== ftip0) ib0.setAttribute('data-tip', ftip0);
+          } else if (ib0) ib0.remove();
+        } catch (eFi) {}
         try { hkFabSync(page); } catch (eFb) {}
         return;
       }
@@ -85,7 +106,13 @@
         page._hkPgIntro = intro; page._hkPgIntroKey = txt;
         Array.prototype.forEach.call(box.querySelectorAll('.hk-pg-intro-hid'), function (x) { if (x !== intro) x.classList.remove('hk-pg-intro-hid'); });
         var ib = hd.querySelector('.hk-info-btn'), sp = hd.querySelector('.hk-pg-sp');
-        if (intro) {
+        /* ۱.۴.۱۱: صفحه‌هایی که متن توضیحِ خودشان را ندارند (درآمد ثابت، پروژه‌ها، قرض، پشتیبان‌گیری): آیکون اطلاعات با متن آماده */
+        var ftip = intro ? '' : hkPgTipFor(page);
+        if (!intro && ftip) {
+          if (!ib) { var tmp2 = document.createElement('div'); tmp2.innerHTML = hkInfoBtnHtml(ftip); ib = tmp2.firstChild; hd.insertBefore(ib, tEl.nextSibling); }
+          else if (ib.getAttribute('data-tip') !== ftip) ib.setAttribute('data-tip', ftip);
+          if (!sp) { sp = document.createElement('span'); sp.className = 'hk-pg-sp'; hd.appendChild(sp); }
+        } else if (intro) {
           intro.classList.add('hk-pg-intro-hid');
           var tip = (intro.textContent || '').replace(/\s+/g, ' ').trim();
           if (!ib) { var tmp = document.createElement('div'); tmp.innerHTML = hkInfoBtnHtml(tip); ib = tmp.firstChild; hd.insertBefore(ib, tEl.nextSibling); }
@@ -148,7 +175,9 @@
           sc.forEach(function (s) { try { s[0].scrollTop = s[1]; s[0].scrollLeft = s[2]; } catch (eS) {} });
         }
         var o = el.style.opacity; el.style.opacity = '0.999'; void el.offsetHeight;
-        requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; });
+        /* ۱.۴.۱۱: «نصفه‌باز»: بالای صفحه نو و بقیه هنوز تصویر قدیمی (کاشی‌های ناقص لایهٔ بزرگ در WebView). یک لحظه لایهٔ جدا (will-change) تا کاشی‌ها از نو نقاشی شوند؛ بی پلک زدن */
+        var wc = el.style.willChange; el.style.willChange = 'transform, opacity';
+        requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; requestAnimationFrame(function () { el.style.willChange = wc; }); });
       } catch (e) {}
     }
     (function () {
@@ -164,6 +193,7 @@
             var done = 0, fin = function () { if (done++) return; hkPageRepaint(el, false); };
             a.addEventListener('finish', fin); a.addEventListener('cancel', fin);
             setTimeout(fin, ((opt && opt.duration) || 400) + 250);
+            setTimeout(function () { try { hkPageRepaint(el, false); } catch (eN) {} }, ((opt && opt.duration) || 400) + 900);
           }
         } catch (eG) {}
         return a;
@@ -513,6 +543,20 @@
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
     })();
+    /* ۱.۴.۱۱: بک در صفحهٔ جزئیاتِ یک پس‌انداز → فهرست پس‌اندازها (ویرایشگر و پنجره‌های روی آن اول بسته می‌شوند) */
+    (function () {
+      var b1 = onBackGuard;
+      onBackGuard = function () {
+        try {
+          var sm = document.getElementById('savingsModal');
+          if (sm && typeof _hkSvDet !== 'undefined' && _hkSvDet && sm.classList.contains('open') && !document.getElementById('svEditor')) {
+            var top = hkLayersShown().filter(function (x) { return x !== sm; });
+            if (!top.length && !document.querySelector('.hk-mnav-ghost') && hkSvClose()) return true;
+          }
+        } catch (e) {}
+        return b1.apply(this, arguments);
+      };
+    })();
     /* ۱.۴.۸: بک در صفحهٔ یک رابطهٔ قرض → فهرست روابط (وقتی پنجرهٔ دیگری روی آن نیست) */
     (function () {
       var b0 = onBackGuard;
@@ -562,7 +606,7 @@
     function hkFabAction(page) {
       var id = page.id;
       if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', _hkFabHint('#subjectNewName', 'پروژه جدید'), '#subjectNewName', function () { addSubjectFromModal(); }); } };
-      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
+      if (id === 'savingsModal') return (typeof _hkSvDet !== 'undefined' && _hkSvDet) ? { l: 'خرید جدید', f: function () { openSavingsEditor(null, hkSvDetPre()); } } : { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
       if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { hkUrNewFromField(); } };
       if (id === 'hkDong') {
         var add = page.querySelector('.hk-dg-add');

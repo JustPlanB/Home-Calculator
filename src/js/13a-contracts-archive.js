@@ -494,18 +494,37 @@
       }
       return n;
     }
+    /* ۱.۴.۱۱: ردیفِ دریافت‌نشدهٔ درآمد ثابت که سررسیدش گذشته در شرحش «معوقه» می‌نویسد (از این به بعد؛ شرح نوشتهٔ کاربر دست نمی‌خورد).
+       پیش‌پرداخت هم هنگام وصل شدن واریز (recDueDesc) نوشته می‌شود */
+    function recMarkLateDesc(item) {
+      var n = 0;
+      try {
+        if (!item || !item.id || item.deletedAt) return 0;
+        var today = recTodayKey(), td = getTodayPersian();
+        recRowsOf(item).forEach(function (z) {
+          var r = z.row; if (!r || r.deletedAt || recIsPaid(r) || !recIsAutoDesc(item, r.desc)) return;
+          var due = parseInt(toEnglishDigits(String(r.day || recDayFor(item, z.key) || '')), 10) || 0;
+          var late = z.key < today || (z.key === today && due && td && due < td.d);
+          if (!late) return;
+          var nd = recOtherDueDesc(item, z.key, 'late');
+          if (nd && nd !== r.desc) { r.desc = nd; r.updatedAt = Date.now(); n++; }
+        });
+      } catch (e) {}
+      return n;
+    }
     function ensureRecurringRows(opts) {
       opts = opts || {};
-      var notes = [], n = 0, touched = false;
+      var notes = [], n = 0, nl = 0, touched = false;
       /* تعریف‌هایی که از پشتیبان/جای دیگر بی‌«ماه ساخت» آمده‌اند: از همین ماه */
       try { if (migrateRecurringItems()) touched = true; } catch (e) {}
       (recurringIncomes || []).forEach(function (item) {
         var before = item && item.genKey;
         n += recEnsureItem(item, notes);
+        nl += recMarkLateDesc(item);
         if (item && item.genKey !== before) touched = true;
       });
       if (touched) { try { saveRecurring(); } catch (e) {} }
-      if (n) {
+      if (n || nl) {
         recPersist();
         if (opts.render !== false) { try { renderAll(); } catch (e) {} }
       }
@@ -769,6 +788,7 @@
             (recurringSelectMode ? '' : (
               '<div class="rec-tools">' +
               '<button class="rec-folder-btn" type="button" data-rec-arch="' + i + '" title="آرشیو" aria-label="آرشیو">' + HK_FOLDER_SVG + '</button>' +
+              '<button class="hk-dg-ico hk-gen-shr" type="button" data-rs="' + i + '" title="اشتراک‌گذاری" aria-label="اشتراک‌گذاری">' + HK_SHARE_SVG + '</button>' +
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
               '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="color:#ff1744!important;-webkit-text-fill-color:#ff1744!important;text-shadow:0 0 4px rgba(255,23,68,0.55);-webkit-text-stroke:0.3px #ff1744;font-weight:900;font-size:1.4rem;background:transparent;border:none;line-height:1;">×</button>' +
               '</div>'
@@ -1010,6 +1030,9 @@
           const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-links'), 10)];
           if (r) recLinksModal(r, () => { try { renderRecurringBar(); } catch (e2) {} });
         };
+      });
+      box.querySelectorAll('[data-rs]').forEach(btn => {
+        btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); const r = recurringIncomes[parseInt(btn.getAttribute('data-rs'), 10)]; if (r) hkDongShareMenu(btn, r, hkRecShare); });
       });
       box.querySelectorAll('[data-rec-arch]').forEach(btn => {
         btn.onclick = (e) => {

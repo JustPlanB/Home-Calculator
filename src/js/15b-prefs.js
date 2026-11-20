@@ -879,6 +879,70 @@
       var sec = (ensureLedger().sections || []).find(function (s) { return s.id === secId; }); if (!sec) return;
       hkDongShareMenu(btn, sec, hkLedShare);
     }
+    /* ===== ۱.۴.۱۱: اشتراک‌گذاری عمومی (متن / عکس / PDF) برای باکس پروژه، پس‌انداز و درآمد ثابت ===== */
+    /* tables: [{ head, cols: [{h, w}], rows: [[سلول…]] }] */
+    function hkRepHtml(title, line, tables) {
+      var E = escapeHtml, td = hkDongToday();
+      var h = '<div class="pdf-page hk-dg-rep" style="height:auto;min-height:0;padding-bottom:26px"><div class="hd"><h1>' + E(title) + '</h1><div class="sub">' + toPersianDigits(String(td.d)) + ' ' + MONTHS[td.m - 1] + ' ' + toPersianDigits(String(td.y)) + '<br>حساب‌کتاب</div></div>';
+      if (line) h += '<div class="pb sec"><div class="st led">' + E(line) + '</div></div>';
+      (tables || []).forEach(function (t) {
+        h += '<div class="pb sec">' + (t.head ? '<div class="st">' + E(t.head) + '</div>' : '') + '<table><thead><tr>' + t.cols.map(function (c) { return '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + '>' + E(c.h) + '</th>'; }).join('') + '</tr></thead><tbody>';
+        if (!t.rows.length) h += '<tr class="dim"><td colspan="' + t.cols.length + '" class="c">موردی نیست</td></tr>';
+        t.rows.forEach(function (r) { h += '<tr>' + r.map(function (x, i) { return '<td' + (i === 0 ? ' class="c"' : '') + '>' + E(String(x == null ? '' : x)) + '</td>'; }).join('') + '</tr>'; });
+        h += '</tbody></table></div>';
+      });
+      return h + '</div>';
+    }
+    /* o = { title(g), text(g), html(g) } ← تابع اشتراک برای hkDongShareMenu */
+    function hkMakeShareFn(o) {
+      return function (g, kind) {
+        var title = o.title(g), base = 'share-' + String(title).replace(/[\\/:*?"<>|\s]+/g, '-');
+        if (!kind || kind === 'text') return hkDongShareText2(o.text(g), title);
+        showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
+        return hkDongReportBlob(g, kind, o.html).then(function (blob) {
+          if (!blob || !blob.size) throw new Error('empty');
+          return hkDongShareBlob(blob, base + (kind === 'pdf' ? '.pdf' : '.png'), kind === 'pdf' ? 'application/pdf' : 'image/png', title);
+        }).catch(function () { showToast('ساخت فایل ممکن نشد', 'warn'); });
+      };
+    }
+    function hkShareIconBtn(cls) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'hk-dg-ico hk-gen-shr ' + (cls || ''); b.title = 'اشتراک‌گذاری'; b.setAttribute('aria-label', 'اشتراک‌گذاری'); b.innerHTML = HK_SHARE_SVG;
+      return b;
+    }
+    /* --- پروژه --- */
+    function hkProjRows(s) {
+      var rep = {}; try { rep = computeSubjectReport(s.id) || {}; } catch (e) {}
+      var fd = function (key, day) { var p = String(key || '').split('-'), y = p[0] || '', m = parseInt(toEnglishDigits(String(p[1] || '0')), 10) || 0, d = parseInt(toEnglishDigits(String(day || '')), 10) || 0; if (!y) return '—'; return toPersianDigits(y + '/' + String(m).padStart(2, '0') + (d ? '/' + String(d).padStart(2, '0') : '')); };
+      var rows = hkSortRowsByDate(rep.rows || []);
+      var mapR = function (x) { return [fd(x.key, x.day), x.desc || '—', formatNum(x.amt), x.bank || '—']; };
+      return { rep: rep, inn: rows.filter(function (x) { return x.tab === 'income'; }).map(mapR), out: rows.filter(function (x) { return x.tab === 'expense'; }).map(mapR),
+        dep: Number(rep.received) || 0, exp: Number(rep.totalExpense != null ? rep.totalExpense : rep.totalCost) || 0 };
+    }
+    function hkProjLine(s, r) { var net = r.dep - r.exp; return net > 0 ? 'پروژه ' + s.name + ' ' + formatNum(net) + ' تومان طلب دارد' : (net < 0 ? 'پروژه ' + s.name + ' ' + formatNum(-net) + ' تومان بدهکار است' : 'پروژه ' + s.name + ' تسویه است'); }
+    var hkProjShare = hkMakeShareFn({
+      title: function (s) { return 'پروژه ' + s.name; },
+      text: function (s) { var r = hkProjRows(s), L = ['پروژه ' + s.name, hkProjLine(s, r), 'جمع واریزی: ' + formatNum(r.dep) + ' تومان', 'جمع مخارج: ' + formatNum(r.exp) + ' تومان', '', 'واریزی‌ها:'];
+        r.inn.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); L.push('', 'مخارج:'); r.out.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); return L.join('\n'); },
+      html: function (s) { var r = hkProjRows(s), cols = [{ h: 'تاریخ', w: '22%' }, { h: 'شرح' }, { h: 'مبلغ', w: '22%' }, { h: 'حساب', w: '20%' }]; return hkRepHtml('پروژه ' + s.name, hkProjLine(s, r), [{ head: 'واریزی‌ها', cols: cols, rows: r.inn }, { head: 'مخارج', cols: cols, rows: r.out }]); }
+    });
+    /* --- پس‌انداز (گروه G از _savGroups) --- */
+    function hkSavLine(G) { if (G.pnl == null) return G.price ? 'قیمت خرید ثبت نشده' : 'قیمت روز وارد نشده'; return formatNum(Math.abs(Math.round(G.pnl))) + ' تومان ' + (G.pnl >= 0 ? 'سود' : 'زیان') + ' نسبت به قیمت خرید'; }
+    function hkSavRows(G) { return G.items.map(function (it) { var d = it.y ? toPersianDigits(String(it.y)) + '/' + toPersianPad2(it.m || 1) + '/' + toPersianPad2(it.d || 1) : '—'; return [d, _savFmtQty(Number(it.qty) || 0) + ' ' + _savUnit(it), Number(it.buy) > 0 ? formatNum(Number(it.buy)) : '—', it.note || '']; }); }
+    var hkSavShare = hkMakeShareFn({
+      title: function (G) { return 'پس‌انداز ' + G.name; },
+      text: function (G) { var L = ['پس‌انداز ' + G.name, 'مقدار: ' + _savFmtQty(G.qty) + ' ' + G.unit, hkSavLine(G)]; if (G.price) L.push('قیمت روز: ' + formatNum(G.price) + ' تومان · ارزش روز: ' + formatNum(Math.round(G.value)) + ' تومان'); L.push('');
+        hkSavRows(G).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | خرید ' + x[2] + (x[3] ? ' | ' + x[3] : '')); }); return L.join('\n'); },
+      html: function (G) { return hkRepHtml('پس‌انداز ' + G.name, _savFmtQty(G.qty) + ' ' + G.unit + ' · ' + hkSavLine(G), [{ head: 'خریدها', cols: [{ h: 'تاریخ', w: '22%' }, { h: 'مقدار' }, { h: 'قیمت خرید هر واحد', w: '28%' }, { h: 'یادداشت', w: '22%' }], rows: hkSavRows(G) }]); }
+    });
+    /* --- درآمد ثابت (item از recurringIncomes) --- */
+    function hkRecRows(item) { var out = []; try { recRowsOf(item).forEach(function (z) { var r = z.row; out.push([(MONTHS[(z.key % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(z.key / 100))), r.day ? toPersianDigits(String(r.day)) : '—', formatNum(Number(r.amount) || 0), recIsPaid(r) ? 'دریافت شد' : 'دریافت نشده', r.desc || '']); }); } catch (e) {} return out; }
+    var hkRecShare = hkMakeShareFn({
+      title: function (it) { return 'درآمد ثابت ' + (it.name || ''); },
+      text: function (it) { var L = ['درآمد ثابت ' + (it.name || ''), 'مبلغ ماهانه: ' + formatNum(it.amount || 0) + ' تومان', (Number(it.deposit) > 0 ? 'رهن: ' + formatNum(it.deposit) + ' تومان' : ''), ''].filter(function (x, i) { return x || i === 3; });
+        hkRecRows(it).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2] + ' | ' + x[3] + (x[4] ? ' | ' + x[4] : '')); }); return L.join('\n'); },
+      html: function (it) { return hkRepHtml('درآمد ثابت ' + (it.name || ''), 'مبلغ ماهانه ' + formatNum(it.amount || 0) + ' تومان', [{ head: 'ماه‌ها', cols: [{ h: 'ماه', w: '24%' }, { h: 'روز', w: '10%' }, { h: 'مبلغ', w: '20%' }, { h: 'وضعیت', w: '20%' }, { h: 'شرح' }], rows: hkRecRows(it) }]); }
+    });
+    try { Object.assign(window, { hkRepHtml: hkRepHtml, hkMakeShareFn: hkMakeShareFn, hkShareIconBtn: hkShareIconBtn, hkProjShare: hkProjShare, hkSavShare: hkSavShare, hkRecShare: hkRecShare }); } catch (eGs) {}
     try { Object.assign(window, { hkLedOpenRel: hkLedOpenRel, hkLedRelClose: hkLedRelClose, hkLedRelFit: hkLedRelFit }); } catch (eLr) {}
 
     function renderLedgerTab() {
@@ -927,7 +991,7 @@
         titleDisplay.style.cssText = 'font-family:Vazirmatn,B Nazanin,Tahoma,sans-serif;font-weight:bold;font-size:1.05rem;padding:5px 10px;border-radius:6px;border:none;background:transparent;color:var(--text);-webkit-text-fill-color:var(--text);display:block;visibility:visible;opacity:1;';
         if (!(sec.personA || '').trim() && !(sec.personB || '').trim()) titleDisplay.style.opacity = '0.5';
         titleWrap.appendChild(titleDisplay);
-        const subLine = document.createElement('div'); subLine.className = 'hk-led-sub'; subLine.textContent = hkLedSecLine(sec); titleWrap.appendChild(subLine);
+        const subLine = document.createElement('div'); subLine.className = 'hk-led-sub'; subLine.textContent = hkLedSecLine(sec); if (subLine.textContent === 'تسویه است') subLine.classList.add('hk-led-ok'); titleWrap.appendChild(subLine);
 
         const editTitleBtn = document.createElement('button');
         editTitleBtn.type = 'button';

@@ -82,6 +82,24 @@
       var cls = v > 0 ? 'sv-up' : (v < 0 ? 'sv-down' : '');
       return '<span class="sv-pnl ' + cls + '">' + (v > 0 ? 'سود ' : (v < 0 ? 'زیان ' : '')) + formatNum(Math.abs(Math.round(v))) + '</span>';
     }
+    /* ۱.۴.۱۱: صفحهٔ جزئیاتِ یک پس‌انداز داخل همان صفحه (مثل صفحهٔ رابطهٔ قرض) */
+    var _hkSvDet = '';
+    function hkSvOpen(key) {
+      _hkSvDet = key; renderSavings();
+      try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) hkMenuSlide(fb, true); } catch (e) {}
+    }
+    function hkSvClose(quiet) {
+      if (!_hkSvDet) return false;
+      _hkSvDet = ''; renderSavings();
+      if (!quiet) { try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) fb.animate([{ transform: 'translateX(-28px)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); } catch (e) {} }
+      return true;
+    }
+    /* پیش‌فرضِ «خرید جدید» در صفحهٔ جزئیات: همان نوع */
+    function hkSvDetPre() {
+      var G = _savGroups().filter(function (g) { return g.key === _hkSvDet; })[0]; if (!G) return {};
+      return _hkSvDet.indexOf('other:') === 0 ? { asset: 'other', label: G.name, unit: G.unit } : { asset: _hkSvDet };
+    }
+    try { Object.assign(window, { hkSvOpen: hkSvOpen, hkSvClose: hkSvClose, hkSvDetPre: hkSvDetPre }); } catch (eSv) {}
     function renderSavings() {
       var list = document.getElementById('savingsList'), sum = document.getElementById('savingsSummary');
       if (!list || !sum) return;
@@ -100,6 +118,41 @@
         (missing ? '<div class="sv-sum-hint">قیمت روز ' + toPersianDigits(String(missing)) + ' مورد وارد نشده؛ ارزش آن‌ها در جمع نیامده است.</div>' : '') +
         '</div>';
       list.innerHTML = '';
+      /* ۱.۴.۱۱: فهرست = باکس کوچکِ هر پس‌انداز؛ ضربه روی باکس = صفحهٔ جزئیات خریدها (_hkSvDet) */
+      var modal = document.getElementById('savingsModal');
+      if (_hkSvDet && !groups.some(function (g) { return g.key === _hkSvDet; })) _hkSvDet = '';
+      if (modal) modal.classList.toggle('hk-sv-det', !!_hkSvDet);
+      if (!_hkSvDet) {
+        groups.forEach(function (G) {
+          var card = document.createElement('div');
+          card.className = 'sv-group sv-' + G.g + ' hk-sv-card';
+          var up = G.pnl != null && G.pnl >= 0;
+          card.innerHTML = '<div class="hk-sv-t"><b class="hk-sv-n">' + escapeHtml(G.name) + '</b><b class="hk-sv-q">' + _savFmtQty(G.qty) + ' ' + escapeHtml(G.unit) + '</b></div>' +
+            (G.pnl != null ? '<div class="hk-sv-l ' + (up ? 'sv-up' : 'sv-down') + '">' + formatNum(Math.abs(Math.round(G.pnl))) + ' تومان ' + (up ? 'سود' : 'زیان') + ' نسبت به قیمت خرید</div>'
+              : '<div class="hk-sv-l hk-sv-m">' + (G.price ? 'قیمت خرید ثبت نشده' : 'قیمت روز وارد نشده') + '</div>');
+          var acts = document.createElement('div'); acts.className = 'sv-g-acts';
+          var bShr = hkShareIconBtn(); bShr.onclick = function (e) { e.stopPropagation(); hkDongShareMenu(bShr, G, hkSavShare); };
+          var bEd = document.createElement('button'); bEd.type = 'button'; bEd.className = 'btn-edit-title'; bEd.title = 'قیمت روز'; bEd.setAttribute('aria-label', 'ویرایش قیمت روز'); bEd.innerHTML = HK_EDIT_SVG;
+          bEd.onclick = function (e) { e.stopPropagation(); openSavingsPriceEditor(G); };
+          var bDel = document.createElement('button'); bDel.type = 'button'; bDel.className = 'btn btn-del-row hk-del-x'; bDel.title = 'حذف'; bDel.setAttribute('aria-label', 'حذف'); bDel.textContent = HK_DEL_X;
+          bDel.onclick = function (e) {
+            e.stopPropagation();
+            askConfirm('همهٔ خریدهای «' + G.name + '» از پس‌انداز حذف شود؟', function () {
+              var sv = loadSavings();
+              G.items.forEach(function (it) { try { pushToTrash('savings_item', (it.label || it.asset || 'پس‌انداز') + (it.qty ? ' · ' + toPersianDigits(String(it.qty)) : ''), { sourceLabel: 'پس‌انداز', item: JSON.parse(JSON.stringify(it)) }); } catch (eT) {} });
+              var ids = {}; G.items.forEach(function (it) { ids[it.id] = 1; });
+              sv.items = sv.items.filter(function (x) { return !ids[x.id]; });
+              saveSavings(); renderSavings();
+            });
+          };
+          acts.appendChild(bDel); acts.appendChild(bEd); acts.appendChild(bShr);
+          card.appendChild(acts);
+          card.onclick = function () { hkSvOpen(G.key); };
+          list.appendChild(card);
+        });
+        return;
+      }
+      groups = groups.filter(function (g) { return g.key === _hkSvDet; });
       groups.forEach(function (G) {
         var box = document.createElement('div');
         box.className = 'sv-group sv-' + G.g;
@@ -157,13 +210,14 @@
     try { window.spPageSavings = spPageSavings; } catch (eSp) {}
     function openSavingsModal() {
       try { closeSideMenu(); } catch (e) {}
+      _hkSvDet = '';
       loadSavings();
       renderSavings();
       var m = document.getElementById('savingsModal');
       if (m) m.classList.add('open');
     }
     function closeSavingsModal() {
-      closeSavingsEditor();
+      closeSavingsEditor(); _hkSvDet = '';
       var m = document.getElementById('savingsModal');
       if (m) m.classList.remove('open');
     }
