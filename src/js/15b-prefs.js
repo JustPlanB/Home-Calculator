@@ -948,7 +948,7 @@
 
         const btnDel = document.createElement('button');
         btnDel.type = 'button';
-        btnDel.className = 'btn btn-del-row';
+        btnDel.className = 'btn btn-del-row hk-del-x';
         btnDel.title = 'حذف رابطه';
         btnDel.textContent = '×';
         btnDel.onclick = (e) => { e.stopPropagation(); deleteLedgerSection(thisSecId); };
