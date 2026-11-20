@@ -699,7 +699,9 @@
       lgx.forEach(function (g) {
         g.rows.forEach(function (x) {
           var dx = hkExpDate(x.r, x.y, x.m);
-          lr.push([T(g.title), T(dx.fa ? dx.fa + '  ·  ' + dx.en : ''), T(hkExpTime(x.r)), T(x.r.desc || ''), T(x.debtor), T(x.creditor), N(x.amt), T(x.r.settled ? 'تسویه‌شده' : 'باز'), T(x.r.createdByName || '')]);
+          /* ۱.۴.۱۳: ردیف منفی (بستانکار): مبلغ با «−» و هایلایت طوسی */
+          var ng = x.r.status === 'credit', TG = function (t) { return { v: t, s: ng ? 8 : 2 }; };
+          lr.push([TG(g.title), TG(dx.fa ? dx.fa + '  ·  ' + dx.en : ''), TG(hkExpTime(x.r)), TG(x.r.desc || ''), TG(x.debtor), TG(x.creditor), { v: Math.round((ng ? -1 : 1) * (Number(x.amt) || 0)), s: ng ? 9 : 3 }, TG(x.r.settled ? 'تسویه‌شده' : 'باز'), TG(x.r.createdByName || '')]);
         });
         lr.push([TT('مانده ' + g.title), TT(''), TT(''), TT(g.netTxt), TT(g.net > 0 ? g.a : g.net < 0 ? g.b : ''), TT(g.net > 0 ? g.b : g.net < 0 ? g.a : ''), TN(Math.abs(g.net)), TT(''), TT('')]);
       });
@@ -817,10 +819,10 @@
       var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
         '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>' +
         '<fonts count="4"><font><sz val="11"/><name val="Tahoma"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font><font><b/><sz val="11"/><name val="Tahoma"/></font><font><b/><sz val="14"/><name val="Tahoma"/></font></fonts>' +
-        '<fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF333333"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6E6E6"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F3F3"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+        '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF333333"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6E6E6"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F3F3"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDFE2E7"/><bgColor indexed="64"/></patternFill></fill></fills>' +
         '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' + bd + '</borders>' +
         '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-        '<cellXfs count="8">' +
+        '<cellXfs count="10">' +
           '<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>' +
           '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
           '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1" readingOrder="2"/></xf>' +
@@ -829,6 +831,8 @@
           '<xf numFmtId="164" fontId="2" fillId="3" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
           '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
           '<xf numFmtId="0" fontId="2" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1"/>' +
+          '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1" readingOrder="2"/></xf>' +
+          '<xf numFmtId="164" fontId="0" fillId="5" borderId="1" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
         '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0"/></styleSheet>';
       var core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"><dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">حساب کتاب — ' + xlsxEsc(built.periodLabel) + '</dc:title></cp:coreProperties>';
       var files = [{ name: '[Content_Types].xml', data: content }, { name: '_rels/.rels', data: rootrels }, { name: 'xl/workbook.xml', data: workbook }, { name: 'xl/_rels/workbook.xml.rels', data: wbRels }, { name: 'xl/styles.xml', data: styles }, { name: 'xl/sharedStrings.xml', data: sst }, { name: 'docProps/core.xml', data: core }].concat(sheetFiles);
