@@ -37,7 +37,7 @@ public class HkWidgetStyle extends Activity {
   int transp=0; /* شفافیت ۰ تا ۱۰ (هر پله ۱۰٪)؛ ۰ = پس‌زمینهٔ کامل */
   final View[] radios=new View[3];
   final String[] MODES={ "auto", "light", "dark" };
-  DotSlider slider; TextView pct;
+  DotSlider slider; TextView pct; View preview;
 
   @Override protected void onCreate(Bundle b){
     super.onCreate(b);
@@ -65,6 +65,11 @@ public class HkWidgetStyle extends Activity {
     TextView t=text("تنظیمات ویجت", 17, true, fg());
     t.setGravity(Gravity.CENTER); t.setPadding(0, 0, 0, (int)(14*dp));
     root.addView(t, mw());
+
+    /* ۱.۴.۱۵: پیش‌نمایش زنده: با هر انتخابِ رنگ و شفافیت همین‌جا دیده می‌شود (روی پس‌زمینهٔ رنگی تا شفافیت پیدا باشد) */
+    preview=new PreviewView(this);
+    LinearLayout.LayoutParams plp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int)(120*dp)); plp.bottomMargin=(int)(14*dp);
+    root.addView(preview, plp);
 
     root.addView(label("رنگ پس‌زمینه"), mw());
     LinearLayout box=section();
@@ -124,7 +129,7 @@ public class HkWidgetStyle extends Activity {
     r.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
     r.setMinimumHeight((int)(54*dp));
     r.setClickable(true);
-    r.setOnClickListener(new View.OnClickListener(){ public void onClick(View v){ mode=MODES[i]; paintRadios(); } });
+    r.setOnClickListener(new View.OnClickListener(){ public void onClick(View v){ mode=MODES[i]; paintRadios(); if(preview!=null) preview.invalidate(); } });
     return r;
   }
   void paintRadios(){ for(int i=0;i<3;i++) if(radios[i]!=null) radios[i].invalidate(); }
@@ -187,10 +192,37 @@ public class HkWidgetStyle extends Activity {
         getParent().requestDisallowInterceptTouchEvent(true);
         int best=0; float bd=Float.MAX_VALUE;
         for(int i=0;i<=10;i++){ float d=Math.abs(e.getX()-xOf(i)); if(d<bd){ bd=d; best=i; } }
-        if(best!=transp){ transp=best; showPct(); invalidate(); try{ performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK); }catch(Exception ignored){} }
+        if(best!=transp){ transp=best; showPct(); invalidate(); if(preview!=null) preview.invalidate(); try{ performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK); }catch(Exception ignored){} }
         return true;
       }
       return super.onTouchEvent(e);
+    }
+  }
+
+  /** پیش‌نمایش ویجت: پس‌زمینهٔ رنگی + کارت ویجت با رنگ (روشن/تیره/مطابق گوشی) و شفافیتِ انتخاب‌شده و چند خط نمونه */
+  class PreviewView extends View {
+    final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
+    PreviewView(Context c){ super(c); }
+    @Override protected void onDraw(Canvas cv){
+      float w=getWidth(), h=getHeight(), r=18*dp;
+      boolean lt="light".equals(mode) || ("auto".equals(mode) && !HkWidgetDraw.phoneDark(getContext()));
+      int alpha=100-transp*10;
+      /* پس‌زمینهٔ نمونه (مثل تصویر زمینهٔ گوشی) */
+      p.setShader(new android.graphics.LinearGradient(0, 0, w, h, 0xFF5B6EE1, 0xFF30D5C8, android.graphics.Shader.TileMode.CLAMP));
+      cv.drawRoundRect(new android.graphics.RectF(0, 0, w, h), r, r, p); p.setShader(null);
+      /* کارت ویجت */
+      float in=14*dp; android.graphics.RectF box=new android.graphics.RectF(in, in*0.8f, w-in, h-in*0.8f);
+      p.setStyle(Paint.Style.FILL); p.setColor(HkWidgetDraw.withAlpha(lt ? 0xFFFFFFFF : 0xFF1B1B1B, alpha));
+      cv.drawRoundRect(box, 16*dp, 16*dp, p);
+      Typeface fb=hkFB!=null ? hkFB : Typeface.DEFAULT_BOLD, fr=hkFR!=null ? hkFR : Typeface.DEFAULT;
+      int tc=lt ? 0xFF1C1C1E : 0xFFFFFFFF, mc=lt ? 0xFF6E6E76 : 0xFF98989F;
+      p.setTextAlign(Paint.Align.RIGHT);
+      float x=box.right-14*dp, y=box.top+26*dp;
+      p.setTypeface(fb); p.setColor(tc); p.setTextSize(16*dp); cv.drawText("حساب‌کتاب", x, y, p);
+      p.setTypeface(fr); p.setColor(mc); p.setTextSize(12*dp); cv.drawText("موجودی", x, y+24*dp, p);
+      p.setTypeface(fb); p.setColor(HkWidgetDraw.incC(lt)); p.setTextSize(15*dp); p.setTextAlign(Paint.Align.LEFT); cv.drawText("۱۲٬۵۰۰٬۰۰۰", box.left+14*dp, y+24*dp, p);
+      p.setTypeface(fr); p.setColor(mc); p.setTextSize(12*dp); p.setTextAlign(Paint.Align.RIGHT); cv.drawText("خرج امروز", x, y+46*dp, p);
+      p.setTypeface(fb); p.setColor(HkWidgetDraw.expC(lt)); p.setTextSize(15*dp); p.setTextAlign(Paint.Align.LEFT); cv.drawText("۳۸۰٬۰۰۰", box.left+14*dp, y+46*dp, p);
     }
   }
 }
