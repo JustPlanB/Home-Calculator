@@ -33,7 +33,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   });
   ok(E.card.del === 36 && E.card.edit === 72 && E.card.shr === 108, 'آیکون‌های کارت قرض هم‌تراز «درآمد ثابت» (۳۶، ۷۲، ۱۰۸): ' + [E.card.del, E.card.edit, E.card.shr]);
   ok(E.card.oneLine && E.card.nameRight === E.card.subRight, 'خط نارنجی تک‌خطی و نام هم‌راستای آن');
-  ok(E.rel.bar !== 'none' && E.rel.rh >= 35 && E.rel.rh <= 38 && E.rel.rows === 12 && E.rel.hintOne && E.rel.noGap, 'صفحهٔ رابطه: نوار بالا (فلش بک و نام رابطه)، ردیف ۳۶، ۱۲ ردیف تا اسکرول، هینت تک‌خطی و بی فضای خالی (' + JSON.stringify(E.rel) + ')');
+  ok(E.rel.bar !== 'none' && E.rel.rh >= 35 && E.rel.rh <= 38 && E.rel.rows >= 12 && E.rel.hintOne && E.rel.noGap, 'صفحهٔ رابطه: نوار بالا (فلش بک و نام رابطه)، ردیف ۳۶، ۱۲ ردیف یا بیشتر تا اسکرول (۱.۴.۱۵: ارتفاع تا نزدیک مربع افزودن)، هینت تک‌خطی و بی فضای خالی (' + JSON.stringify(E.rel) + ')');
   /* لانگ‌پرس ردیف: آیکون‌ها؛ بک فقط آن‌ها را برمی‌دارد */
   await page.mouse.move(E.x, E.y); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up(); await page.waitForTimeout(400);
   const A1 = await page.evaluate(() => !!document.querySelector('.hk-row-act .hk-ra-settle'));
