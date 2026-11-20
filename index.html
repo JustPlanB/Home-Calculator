@@ -45686,18 +45686,37 @@ if (item.type === 'recurring') {
       }
       return n;
     }
+    /* ۱.۴.۱۱: ردیفِ دریافت‌نشدهٔ درآمد ثابت که سررسیدش گذشته در شرحش «معوقه» می‌نویسد (از این به بعد؛ شرح نوشتهٔ کاربر دست نمی‌خورد).
+       پیش‌پرداخت هم هنگام وصل شدن واریز (recDueDesc) نوشته می‌شود */
+    function recMarkLateDesc(item) {
+      var n = 0;
+      try {
+        if (!item || !item.id || item.deletedAt) return 0;
+        var today = recTodayKey(), td = getTodayPersian();
+        recRowsOf(item).forEach(function (z) {
+          var r = z.row; if (!r || r.deletedAt || recIsPaid(r) || !recIsAutoDesc(item, r.desc)) return;
+          var due = parseInt(toEnglishDigits(String(r.day || recDayFor(item, z.key) || '')), 10) || 0;
+          var late = z.key < today || (z.key === today && due && td && due < td.d);
+          if (!late) return;
+          var nd = recOtherDueDesc(item, z.key, 'late');
+          if (nd && nd !== r.desc) { r.desc = nd; r.updatedAt = Date.now(); n++; }
+        });
+      } catch (e) {}
+      return n;
+    }
     function ensureRecurringRows(opts) {
       opts = opts || {};
-      var notes = [], n = 0, touched = false;
+      var notes = [], n = 0, nl = 0, touched = false;
       /* تعریف‌هایی که از پشتیبان/جای دیگر بی‌«ماه ساخت» آمده‌اند: از همین ماه */
       try { if (migrateRecurringItems()) touched = true; } catch (e) {}
       (recurringIncomes || []).forEach(function (item) {
         var before = item && item.genKey;
         n += recEnsureItem(item, notes);
+        nl += recMarkLateDesc(item);
         if (item && item.genKey !== before) touched = true;
       });
       if (touched) { try { saveRecurring(); } catch (e) {} }
-      if (n) {
+      if (n || nl) {
         recPersist();
         if (opts.render !== false) { try { renderAll(); } catch (e) {} }
       }
