@@ -28,6 +28,19 @@
       return paid;
     }
     /* سررسیدهای قرارداد با فرض نوع t */
+    /* ۱.۴.۱۳: دادهٔ همان «جدول آرشیو» (همهٔ دوره‌ها و ماه‌ها، با وضعیت هر ماه) برای خروجی PDF/اکسل */
+    function hkRecArcTable(item, sel) {
+      var out = [];
+      try {
+        if (!item || !recStartKey(item)) return out;
+        try { recInferTiming(item); } catch (e0) {}
+        var terms = recTermsOf(item);
+        var all = recArchiveRows(item).map(function (x) { x.term = recTermIndexFor(terms, x.key, parseInt(toEnglishDigits(String(x.row.day || '')), 10) || 0); return x; });
+        terms.forEach(function (t, i) { recSchedHtml(item, t, all.filter(function (x) { return x.term === i; }), out); });
+        if (sel && sel.keys) out = out.filter(function (e) { return sel.keys[e.k] || sel.keys[e.rk]; });
+      } catch (e) {}
+      return out;
+    }
     function recDueList(item, t, n) {
       var s = item.contractStart, due = recDueDay(item), k0 = recMonthKey(s.y, s.m), out = [];
       if (t === 'end') k0 = recNextKey(k0);
@@ -88,7 +101,8 @@
       while (k <= l && g++ < 120) { out.push(k); k = recNextKey(k); }
       return out;
     }
-    function recSchedHtml(item, term, rows) {
+    /* out (اختیاری): همان ردیف‌های جدول، به شکل دادهٔ خام برای خروجی‌ها (hkRecArcTable) */
+    function recSchedHtml(item, term, rows, out) {
       var keys = recTermDueKeys(item, term), today = getTodayPersian(), tIdx = recDayIndex(today.y, today.m, today.d), due = recDueDay(item);
       var p2 = function (n) { return toPersianDigits(String(n).padStart(2, '0')); };
       var dStr = function (d) { return toPersianDigits(String(d.y)) + '/' + p2(d.m) + '/' + p2(d.d); };
@@ -107,6 +121,7 @@
         var r = z.x.row, d = recPayDateOf(z.x), tag = '';
         var _lb = recLabelFor(item, k, recMonthKey(d.y, d.m)); if (_lb) tag = _lb === 'late' ? 'معوقه' : 'پیش‌پرداخت';
         stat.sum += Number(r.amount) || 0;
+        if (out) out.push({ k: k, bab: lab(k), kind: 'paid', row: r, d: d, tag: tag, desc: r.desc || item.name || '', amount: Number(r.amount) || 0, bank: r.account || '', rk: z.x.key });
         return '<tr class="rec-arch-row is-paid" data-i="' + z.i + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(d) + (tag ? '<small class="rec-sch-tag">' + tag + '</small>' : '') + '</td>' +
           '<td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(r.desc || item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(r.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(r.account || '—') + '</td>' +
           '<td class="rec-arch-x"><button type="button" class="rec-arch-del" data-i="' + z.i + '" aria-label="جدا کردن">×</button></td></tr>';
@@ -120,6 +135,7 @@
         var ex = (item.extPaid || {})[String(k)];
         if (ex) {
           stat.paid++;
+          if (out) out.push({ k: k, bab: lab(k), kind: ex.y ? 'ext' : 'extnote', d: ex.y ? { y: ex.y, m: ex.m, d: ex.d } : null, tag: 'فقط ثبت دستی', desc: item.name || '', amount: Number(ex.amount) || 0, bank: '', st: 'پرداخت شده (بدون پیامک)', rk: k });
           if (ex.y) { stat.sum += Number(ex.amount) || 0; h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td class="rec-arch-date">' + dStr(ex) + '<small class="rec-sch-tag">فقط آرشیو</small></td><td class="rec-arch-dcell"><span class="rec-arch-desc">' + escapeHtml(item.name || '') + '</span></td><td><span class="pd-amt status-paid">' + formatNum(Number(ex.amount) || 0) + '</span></td><td class="rec-arch-acc">' + escapeHtml(ex.bank || '—') + '</td><td></td></tr>'; }
           else h += '<tr class="rec-arch-row is-paid rec-sch-ext" data-k="' + k + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="5" class="rec-sch-st ok">پرداخت شده (بدون پیامک)</td></tr>';
           return;
@@ -130,6 +146,7 @@
         if (dIdx > tIdx) { st = 'هنوز موعدش نرسیده'; cls = 'future'; }
         else if (tIdx - dIdx <= 10) { st = 'در انتظار'; cls = 'wait'; }
         else { st = 'پیدا نشد'; cls = 'miss'; stat.miss++; btns = '<button type="button" class="rec-sch-btn" data-act="link" data-k="' + k + '">وصل دستی</button><button type="button" class="rec-sch-btn" data-act="mark" data-k="' + k + '">پرداخت شده</button>'; }
+        if (out) out.push({ k: k, bab: lab(k), kind: 'empty', st: st, amount: 0, rk: k });
         h += '<tr class="rec-sch-empty ' + cls + '"><td class="rec-sch-k">' + lab(k) + '</td><td colspan="5" class="rec-sch-st"><span>' + st + '</span>' + btns + '</td></tr>';
       });
       extra.forEach(function (z) { h += paidTr(z.k, z); });
