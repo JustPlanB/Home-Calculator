@@ -110,7 +110,7 @@ async function fresh(b) {
   const L = await A.page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));
     const o = {};
-    const led = ensureLedger(); const rows = []; for (let i = 0; i < 14; i++) rows.push(Object.assign(emptyLedgerRow(), { day: String(1 + i), desc: 'ردیف ' + i, amount: 10000 * (i + 1), ly: currentYear, lm: currentMonth }));
+    const led = ensureLedger(); const rows = []; for (let i = 0; i < 30; i++) rows.push(Object.assign(emptyLedgerRow(), { day: String(1 + (i % 28)), desc: "ردیف " + i, amount: 10000 * (i + 1), ly: currentYear, lm: currentMonth }));
     led.sections = [{ id: 'S1', personA: 'من', personB: 'علی', collapsed: false, rows }];
     persistCurrent(); touchLocal(); await saveArchive();
     openFeatureSheet('ledger'); await w(700);
