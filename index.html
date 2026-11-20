@@ -28638,7 +28638,7 @@ async function openPdfPrintWindow(){
       } catch (e) { hkPersistFailed(TODO_KEY, e); return false; }
     }
     /* ۱.۴.۹: دکمهٔ کناریِ قلم (S Pen) یا سرِ پاک‌کن: بسته به گوشی buttons=2 یا ۳۲، یا button=2/5، و گاهی نوعِ نشانگر mouse است */
-    function hkInkPenBtn(e) { return (e.pointerType === 'pen' || e.pointerType === 'mouse') && ((e.buttons & 34) > 0 || e.button === 2 || e.button === 5) && !(e.pointerType === 'mouse' && e.button === 0 && e.buttons === 1); }
+    function hkInkPenBtn(e) { if (window.__hkPenBtn === true && e.pointerType !== 'touch') return true; /* از کد بومی (MainActivity) */ return (e.pointerType === 'pen' || e.pointerType === 'mouse') && ((e.buttons & 34) > 0 || e.button === 2 || e.button === 5) && !(e.pointerType === 'mouse' && e.button === 0 && e.buttons === 1); }
     /* ضخامت: پایه = اندازهٔ انتخاب‌شده (مثل انگشت)؛ فقط فشارِ بیشتر از معمول کلفت‌تر می‌کند و هرگز نازک‌تر نمی‌شود */
     function hkInkW(e, base) { if (e.pointerType !== 'pen' || !(e.pressure > 0.35)) return base; return Math.round(Math.min(base * 2.2, base * (1 + (e.pressure - 0.35) * 2.2)) * 10) / 10; }
     function openInkEditor(title, noteId) {
