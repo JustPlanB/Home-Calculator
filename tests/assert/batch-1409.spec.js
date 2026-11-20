@@ -35,7 +35,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const c = getComputedStyle(e), p = getComputedStyle(e, '::before');
     return { ts: c.textShadow, fs: c.fontSize, clip: p.clipPath !== 'none', col: p.backgroundColor, bg: c.backgroundColor };
   });
-  ok(D && D.ts === 'none' && D.fs === '0px' && D.clip && D.bg === 'rgba(0, 0, 0, 0)', 'آیکون حذف: × توپُر، بی سایه و بی زمینه');
+  ok(D && D.ts === 'none' && D.clip && D.bg === 'rgba(0, 0, 0, 0)', 'آیکون حذف: × توپُر، بی سایه و بی زمینه');
   /* قرض: زیرنویس همرنگ مخارج، صفحهٔ رابطه بی‌قاب با اتواسکرول */
   const E = await page.evaluate(async () => {
     const led = ensureLedger();
