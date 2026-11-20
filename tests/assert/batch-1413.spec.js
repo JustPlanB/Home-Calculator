@@ -44,7 +44,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const top = s.top - bar.bottom, bottom = innerHeight - s.bottom;
     return { top: Math.round(top), bottom: Math.round(bottom) };
   });
-  ok(C.top > 40 && Math.abs(C.top - (C.bottom - 80)) < 90 && C.bottom > C.top - 10, 'جدول رابطه با چند ردیف: وسط عمودی (فاصله بالا ' + C.top + '، پایین ' + C.bottom + ')');
+  ok(C.top >= 14 && C.top <= 60, 'جدول رابطه: شروع ثابت از بالا فارغ از تعداد ردیف (۱.۴.۱۷؛ فاصله بالا ' + C.top + ')');
   /* عرض: خالیِ چپ و راست برابر؛ خط ردیف آخر فقط در ته جدول */
   const H = await page.evaluate(async () => {
     const led = ensureLedger(); led.sections = [{ id: 'Z', personA: 'من', personB: 'ملی', collapsed: true, rows: Array.from({ length: 30 }, (_, i) => Object.assign(emptyLedgerRow(), { day: String(1 + i % 28), desc: 'ردیف ' + i, amount: 1000 * (i + 1), ly: currentYear, lm: currentMonth })) }]; persistCurrent();
