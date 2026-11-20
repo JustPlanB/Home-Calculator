@@ -994,7 +994,13 @@
         const vsec = Object.assign({}, secRef, { rows: _view.map(x => x.row) });
         /* ۱.۳.۶۶: رابطهٔ بسته ردیف نمی‌سازد؛ ساخت ردیف‌ها به اولین باز شدن موکول می‌شود */
         let rowsBuilt = false;
-        const buildRows = () => { if (rowsBuilt) return; rowsBuilt = true; vsec.rows.forEach((_, i) => tbody.appendChild(buildLedgerRowEl(vsec, i))); };
+        const buildRows = () => {
+          if (rowsBuilt) return; rowsBuilt = true;
+          /* ۱.۴.۱۰: صفحهٔ رابطه: ۱۲ ردیفِ اول همان لحظه، بقیه (زیر صفحه) فریم بعد؛ لحظهٔ باز شدن سبک می‌ماند */
+          const n = vsec.rows.length, first = (_hkLedRel === sec.id && n > 14) ? 12 : n;
+          for (let i = 0; i < first; i++) tbody.appendChild(buildLedgerRowEl(vsec, i));
+          if (first < n) requestAnimationFrame(() => { try { for (let i = first; i < n; i++) tbody.appendChild(buildLedgerRowEl(vsec, i)); } catch (eRb) {} });
+        };
         div._hkLedBuild = buildRows;
         if (!sec.collapsed) buildRows();
         /* ۱.۳.۶۸: رابطهٔ بسته در زمان بیکاری (بعد از باز شدن منو) ردیف‌هایش را می‌سازد و پنهان و بی‌ارتفاع چیده می‌شود؛
