@@ -205,18 +205,14 @@ final class HkWidgetTxDraw {
     float rh=38*k; int H=Math.round(rh);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
-    /* هایلایت پروژه: مثل ماژیک — نوار گرد و کمی کج، ۳۵٪ همان رنگ پروژه (همان مقدار نرم‌افزار) */
+    /* هایلایت پروژه: همان شکل و شفافیتِ ضربهٔ ماژیکِ نرم‌افزار (buildMarkerDataUrl در 09a: مسیر SVG در بوم ۴۰۰×۴۸، شفافیت ۰٫۲۶)،
+       ارتفاع ۷۵٪ ردیف، وسط‌چین */
     if(proj!=null && proj.length()>0){
       try{
         int pc=android.graphics.Color.parseColor(proj);
-        Paint hp=new Paint(Paint.ANTI_ALIAS_FLAG); hp.setColor((pc&0x00FFFFFF)|0x59000000);
-        float x0=c[4]-4*k, x1=c[0]+4*k, y0=6*k, y1=rh-6*k, rr=(y1-y0)*0.42f;
-        android.graphics.Path mp=new android.graphics.Path();
-        mp.moveTo(x0+rr, y0+1.2f*k); mp.lineTo(x1-rr*0.7f, y0); mp.quadTo(x1+1*k, y0+0.5f*k, x1, y0+rr);
-        mp.lineTo(x1-0.8f*k, y1-rr); mp.quadTo(x1-1*k, y1, x1-rr, y1-0.6f*k);
-        mp.lineTo(x0+rr*0.8f, y1); mp.quadTo(x0-1*k, y1-0.4f*k, x0+0.6f*k, y1-rr);
-        mp.lineTo(x0, y0+rr); mp.quadTo(x0, y0+1*k, x0+rr, y0+1.2f*k); mp.close();
-        cv.drawPath(mp, hp);
+        Paint hp=new Paint(Paint.ANTI_ALIAS_FLAG); hp.setColor((pc&0x00FFFFFF)|0x42000000);
+        float x0=c[4]-4*k, x1=c[0]+4*k;
+        cv.drawPath(markerPath(x0, rh*0.125f, x1-x0, rh*0.75f), hp);
       }catch(Exception ignored){}
     }
     grid(cv, c, 0, rh, light, true);
@@ -232,6 +228,19 @@ final class HkWidgetTxDraw {
     fitSize(pa, amount, (c[3]-c[4])-6*k);
     cv.drawText(amount, c[4]+3*k, base(0, rh, 14.5f*k), pa);
     return bm;
+  }
+  /** همان مسیر ماژیک نرم‌افزار (بوم ۴۰۰×۴۸) کشیده‌شده در جعبهٔ (x0,y0,w,h) */
+  static android.graphics.Path markerPath(float x0, float y0, float w, float h){
+    float sx=w/400f, sy=h/48f;
+    float[][] top={{14,2,32,3,52,5},{90,8,120,2,160,5},{200,8,240,2,280,6},{320,9,350,3,375,7},{386,8,395,6,399,10}};
+    float[][] bot={{390,44,375,42,360,41},{330,39,300,44,270,42},{230,40,190,45,150,43},{110,41,80,46,50,43},{32,42,14,44,2,38}};
+    android.graphics.Path p=new android.graphics.Path();
+    p.moveTo(x0+3*sx, y0+8*sy);
+    for(float[] q: top) p.cubicTo(x0+q[0]*sx, y0+q[1]*sy, x0+q[2]*sx, y0+q[3]*sy, x0+q[4]*sx, y0+q[5]*sy);
+    p.lineTo(x0+399*sx, y0+38*sy);
+    for(float[] q: bot) p.cubicTo(x0+q[0]*sx, y0+q[1]*sy, x0+q[2]*sx, y0+q[3]*sy, x0+q[4]*sx, y0+q[5]*sy);
+    p.close();
+    return p;
   }
   static Bitmap empty(Context ctx, int W, float k, String msg, boolean light){
     fonts(ctx);

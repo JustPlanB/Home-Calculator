@@ -497,11 +497,12 @@
         };
         var _lt = document.documentElement.getAttribute('data-theme') === 'light';
         /* یک ماه انتخاب شده: جمع درآمد و مخارج همان ماه؛ وگرنه اگر چند مورد پیدا شد، جمع کل آن‌ها */
-        if (rangeF !== 'all') {
+        /* ۱.۴.۱۳: یک روز مشخص انتخاب شده: «کل ماه» درست نیست؛ مثل بقیهٔ نتیجه‌ها «جمع … (n مورد)» */
+        if (rangeF !== 'all' && !dayF) {
           var mName = MONTHS[parseInt(rangeF, 10) - 1] || '';
           if (typeF !== 'expense' && !catF) addF('درآمد کل ' + mName, sumI, _lt ? '#17834a' : '#9ee858');
           if (typeF !== 'income') addF('مخارج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
-        } else if (list.length > 1) {
+        } else if (list.length > 1 || dayF) {
           if (sumI > 0) addF('جمع درآمد (' + toPersianDigits(String(list.filter(function (x) { return x.tab === 'income'; }).length)) + ' مورد)', sumI, _lt ? '#17834a' : '#9ee858');
           if (sumE > 0) addF('جمع مخارج (' + toPersianDigits(String(list.filter(function (x) { return x.tab !== 'income'; }).length)) + ' مورد)', sumE, _lt ? '#dc2626' : '#ff6b4a');
         }

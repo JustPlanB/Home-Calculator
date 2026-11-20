@@ -17,7 +17,7 @@ const allErrors = [];
   ok(/static int capColor\(int pct, boolean light\)/.test(pa) && /if\(pct<15\) return expC\(light\)/.test(pa) && /if\(pct<30\) return 0xFFFF9F0A/.test(pa) && /if\(pct<50\)/.test(pa), 'کپسول: زیر ۵۰ زرد، زیر ۳۰ نارنجی، زیر ۱۵ قرمز، وگرنه سبز');
   ok(/d\.pct=\(!sp\.contains\("balRaw"\) \|\| base<=0\) \? -1/.test(pa) && /monthSpentRaw/.test(pa), 'درصد = موجودی از «موجودی + خرج‌های پرداخت‌شدهٔ ماه»؛ بی داده = کپسول خالی');
   ok(/R-w\*0\.15f, L\+w\*0\.41f, L\+w\*0\.23f/.test(pa) && /Paint\.Align\.RIGHT\);\s*fitSize\(pd, date/.test(pa) && /Paint\.Align\.LEFT\);\s*fitSize\(pa, amount/.test(pa), 'ویجت تراکنش‌ها: شرح پهن‌تر، تاریخ راست‌چین، مبلغ چپ‌چین');
-  ok(/\(pc&0x00FFFFFF\)\|0x59000000/.test(pa) && /o\.optString\("p", null\)/.test(pa), 'ردیف پروژه در ویجت با ۳۵٪ همان رنگ هایلایت پروژه');
+  ok(/\(pc&0x00FFFFFF\)\|0x42000000/.test(pa) && /markerPath\(/.test(pa) && /o\.optString\("p", null\)/.test(pa), 'ردیف پروژه در ویجت: همان شکل ماژیک و شفافیت ۰٫۲۶ نرم‌افزار (۱.۴.۱۳)');
   ok(/hk_wt_eye2/.test(pa) && /hk_w_eye2/.test(pa) && /android:id="@\+id\/hk_wt_eye2"/.test(patch) && /android:id="@\+id\/hk_w_eye2"/.test(patch), 'چشم ویجت: جای لمس بزرگ‌تر و تاریخ کنار آن هم همان کار');
   ok((patch.match(/android:targetCellWidth="5"/g) || []).length === 4, 'ویجت‌ها تا آخرین ستون صفحه پهن می‌شوند');
 

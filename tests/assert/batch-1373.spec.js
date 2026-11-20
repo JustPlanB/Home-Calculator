@@ -135,7 +135,7 @@ async function fresh(b, opts) {
     return {
       dateCell: /<td class="c dt"><b>۱۴۰۵\/۰۸\/۰۳<\/b><i>25 Oct 2026<\/i><\/td><td class="c tm">۱۳:۱۵<\/td>/.test(pdf),
       ledCarried: /قرض مهر باز/.test(pdf) && !/تسویه قدیمی/.test(pdf) && /<b>۱۴۰۵\/۰۷\/۲۰<\/b>/.test(pdf) && /علی به من بدهکار است/.test(pdf),
-      ledStatus: /<td class="c">باز<\/td>/.test(pdf),
+      ledStatus: /<td class="c"[^>]*>باز<\/td>/.test(pdf) /* ۱.۴.۱۳: ردیف منفی استایل طوسی دارد */,
       xlsDate: expSheet.some(r => /۱۴۰۵\/۰۸\/۰۳ +· +25 Oct 2026\|۱۳:۱۵\|سوپرمارکت/.test(r)),
       xlsLed: ledSheet[0] === 'رابطه|تاریخ (شمسی · میلادی)|ساعت|شرح|بدهکار|بستانکار|مبلغ|وضعیت|ثبت‌کننده' && ledSheet.some(r => /قرض مهر باز/.test(r)) && ledSheet.some(r => /^مانده .*علی به من بدهکار است/.test(r)),
       rec: /اجاره واحد ۱/.test(rpdf) && !/اجاره واحد ۲/.test(rpdf) && !/مهر<\/td>/.test(rpdf) && /۰۸:۴۰/.test(rpdf),

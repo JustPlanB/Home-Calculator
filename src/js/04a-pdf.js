@@ -118,6 +118,19 @@
       return Object.keys(keys).map(Number).sort(function (a, b) { return b - a; });
     }
     function hkRecArcKeyLabel(k) { return (MONTHS[(k % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(k / 100))); }
+    /* ۱.۴.۱۳: ردیف‌های «جدول آرشیو» یک درآمد ثابت با تاریخ کامل (شمسی + میلادی + ساعت) و وضعیت هر ماه */
+    function hkRecArcEntries(g) {
+      var tab = []; try { tab = hkRecArcTable(g.it, _hkRecArc); } catch (e) {}
+      if (!tab.length) tab = g.rows.map(function (x) { var r = x.row; return { k: x.key, bab: hkRecArcKeyLabel(x.key), kind: 'paid', row: r, d: null, tag: '', desc: r.desc || g.it.name || '', amount: Number(r.amount) || 0, bank: r.account || '', rk: x.key, y: Math.floor(x.key / 100), m: x.key % 100, paid: r.status === 'paid' }; });
+      return tab.map(function (e) {
+        var fa = '', en = '', time = '';
+        var d = e.d || (e.row ? { y: e.y || Math.floor(e.rk / 100), m: e.m || e.rk % 100, d: parseInt(toEnglishDigits(String((e.row && e.row.day) || '')), 10) || 0 } : null);
+        if (d && d.y && d.m && d.d) { fa = toPersianDigits(d.y + '/' + String(d.m).padStart(2, '0') + '/' + String(d.d).padStart(2, '0')); try { en = hkGregStr(d.y, d.m, d.d); } catch (e1) {} }
+        if (e.row) time = hkExpTime(e.row);
+        var status = e.kind === 'empty' ? e.st : (e.tag || (e.paid === false ? 'دریافت‌نشده' : 'دریافت‌شده'));
+        return { bab: e.bab, fa: fa, en: en, time: time, status: status, desc: e.desc || '', amount: e.amount || 0, bank: e.bank || '' };
+      });
+    }
     function hkRecArcPdfBlocks() {
       var E = escapeHtml, B = [], today = getTodayPersian(), groups = hkRecArcCollect(_hkRecArc);
       var keys = Object.keys(_hkRecArc.keys || {}).map(Number).sort(function (a, b) { return a - b; });
@@ -125,39 +138,39 @@
       B.push({ html: '<div class="pb hd"><div><h1>آرشیو درآمدهای ثابت' + (lbl ? ' — ' + E(lbl) : '') + '</h1></div><div class="sub">حساب‌کتاب<br>تاریخ تهیه: ' + toPersianDigits(today.y) + '/' + toPersianPad2(today.m) + '/' + toPersianPad2(today.d) + '</div></div>' });
       if (!groups.length) { B.push({ html: '<div class="pb sec"><div class="empty">موردی برای این انتخاب نیست</div></div>' }); return B; }
       /* ۱.۴.۳: ستون اول = ردیف هر درآمد ثابت؛ ردیف‌های هر درآمد یک بلوک هم‌رنگ با خط پررنگ بالایش، تا با درآمد بالایی/پایینی قاطی نشود */
-      var h = '<div class="pb sec"><div class="st inc">واریزهای درآمدهای ثابت</div><table><thead><tr><th style="width:6%">ردیف</th><th style="width:4%">#</th><th style="width:12%">تاریخ</th><th style="width:7%">ساعت</th><th>شرح</th><th style="width:14%">مبلغ</th><th style="width:14%">حساب</th><th style="width:13%">وضعیت</th></tr></thead><tbody>', gp = 0, gu = 0;
+      /* ۱.۴.۱۳: همان ستون‌های «جدول آرشیو» درآمد ثابت: بابت، تاریخ تراکنش (شمسی و میلادی)، وضعیت، شرح، مبلغ، بانک؛ هر درآمد یک بلوک هم‌رنگ */
+      var h = '<div class="pb sec"><div class="st inc">آرشیو درآمدهای ثابت</div><table><thead><tr><th style="width:5%">ردیف</th><th style="width:13%">بابت</th><th style="width:17%">تاریخ تراکنش</th><th style="width:10%">وضعیت</th><th>شرح</th><th style="width:14%">مبلغ</th><th style="width:13%">بانک</th></tr></thead><tbody>', gp = 0;
       groups.forEach(function (g, gi) {
         var bg = gi % 2 ? '#ffffff' : '#eef4fa', cs = 'background:' + bg + ';', no = toPersianDigits(gi + 1);
         var ord = function (show) { return '<td class="c" style="' + cs + 'font-weight:800;font-size:12px;color:#0b6fa4;border-left:2px solid #9fb6c9;">' + (show ? no : '') + '</td>'; };
-        h += '<tr class="g" style="border-top:2.5px solid #333;">' + ord(true) + '<td colspan="7" style="' + cs + '">' + E(g.it.name || '—') + (g.it.account ? ' <span style="font-weight:400;color:#555">(' + E(g.it.account) + ')</span>' : '') + '</td></tr>';
-        var p = 0, u = 0;
-        g.rows.forEach(function (x, i) {
-          var ok = x.row.status === 'paid', amt = Number(x.row.amount) || 0, y = Math.floor(x.key / 100), m = x.key % 100;
-          if (ok) p += amt; else u += amt;
-          h += '<tr style="' + cs + '">' + ord(false) + '<td class="c" style="' + cs + '">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd({ day: x.row.day }, y, m).replace('<td', '<td style="' + cs + '"') + '<td class="c tm" style="' + cs + '">' + hkExpTime(x.row) + '</td><td style="' + cs + '">' + E(x.row.desc || g.it.name || '') + '</td><td class="n" style="' + cs + '">' + pdfMoney(amt) + '</td><td class="c" style="' + cs + '">' + E(x.row.account || '—') + '</td><td class="c' + (ok ? '' : ' un') + '" style="' + cs + '">' + (ok ? '● دریافت‌شده' : '○ دریافت‌نشده') + '</td></tr>';
+        h += '<tr class="g" style="border-top:2.5px solid #333;">' + ord(true) + '<td colspan="6" style="' + cs + '">' + E(g.it.name || '—') + (g.it.account ? ' <span style="font-weight:400;color:#555">(' + E(g.it.account) + ')</span>' : '') + '</td></tr>';
+        var p = 0;
+        hkRecArcEntries(g).forEach(function (e) {
+          p += e.amount || 0;
+          h += '<tr style="' + cs + '">' + ord(false) + '<td class="c" style="' + cs + '">' + E(e.bab) + '</td><td class="c dt" style="' + cs + '">' + (e.fa ? '<b>' + e.fa + '</b><i>' + E(e.en) + (e.time ? ' · ' + e.time : '') + '</i>' : '—') + '</td><td class="c" style="' + cs + '">' + E(e.status) + '</td><td style="' + cs + '">' + E(e.desc || '') + '</td><td class="n" style="' + cs + '">' + (e.amount ? pdfMoney(e.amount) : '—') + '</td><td class="c" style="' + cs + '">' + E(e.bank || '—') + '</td></tr>';
         });
-        gp += p; gu += u;
-        h += '<tr class="t">' + ord(false) + '<td colspan="4">جمع ' + E(g.it.name || '') + ' — دریافت‌شده ' + pdfMoney(p) + (u ? ' · دریافت‌نشده ' + pdfMoney(u) : '') + '</td><td class="n">' + pdfMoney(p + u) + '</td><td colspan="2"></td></tr>';
+        gp += p;
+        h += '<tr class="t">' + ord(false) + '<td colspan="4">جمع ' + E(g.it.name || '') + '</td><td class="n" colspan="2">' + pdfMoney(p) + '</td></tr>';
       });
-      h += '<tr class="T" style="border-top:2.5px solid #333;"><td colspan="5">جمع کل — دریافت‌شده ' + pdfMoney(gp) + (gu ? ' · دریافت‌نشده ' + pdfMoney(gu) : '') + '</td><td class="n">' + pdfMoney(gp + gu) + '</td><td colspan="2"></td></tr></tbody></table></div>';
+      h += '<tr class="T" style="border-top:2.5px solid #333;"><td colspan="5">جمع کل</td><td class="n" colspan="2">' + pdfMoney(gp) + '</td></tr></tbody></table></div>';
       B.push({ html: h, split: true });
       return B;
     }
     function hkRecArcSheets() {
       var H = function (t) { return { v: t, s: 1 }; }, T = function (t) { return { v: t, s: 2 }; }, N = function (n) { return { v: Math.round(Number(n) || 0), s: 3 }; };
       var TT = function (t) { return { v: t, s: 4 }; }, TN = function (n) { return { v: Math.round(Number(n) || 0), s: 5 }; };
-      var rows = [[{ v: 'آرشیو درآمدهای ثابت', s: 6 }], [], [H('درآمد ثابت'), H('تاریخ (شمسی · میلادی)'), H('ساعت'), H('شرح'), H('مبلغ'), H('حساب'), H('وضعیت')]], gt = 0;
+      var rows = [[{ v: 'آرشیو درآمدهای ثابت', s: 6 }], [], [H('درآمد ثابت'), H('بابت'), H('تاریخ تراکنش (شمسی · میلادی)'), H('ساعت'), H('وضعیت'), H('شرح'), H('مبلغ'), H('بانک')]], gt = 0;
       hkRecArcCollect(_hkRecArc).forEach(function (g) {
         var st = 0;
-        g.rows.forEach(function (x) {
-          var y = Math.floor(x.key / 100), m = x.key % 100, dx = hkExpDate({ day: x.row.day }, y, m), amt = Number(x.row.amount) || 0; st += amt;
-          rows.push([T(g.it.name || ''), T(dx.fa ? dx.fa + '  ·  ' + dx.en : hkRecArcKeyLabel(x.key)), T(hkExpTime(x.row)), T(x.row.desc || ''), N(amt), T(x.row.account || ''), T(x.row.status === 'paid' ? 'دریافت‌شده' : 'دریافت‌نشده')]);
+        hkRecArcEntries(g).forEach(function (e) {
+          st += e.amount || 0;
+          rows.push([T(g.it.name || ''), T(e.bab), T(e.fa ? e.fa + '  ·  ' + e.en : ''), T(e.time), T(e.status), T(e.desc), N(e.amount), T(e.bank)]);
         });
         gt += st;
-        rows.push([TT('جمع ' + (g.it.name || '')), TT(''), TT(''), TT(''), TN(st), TT(''), TT('')]);
+        rows.push([TT('جمع ' + (g.it.name || '')), TT(''), TT(''), TT(''), TT(''), TT(''), TN(st), TT('')]);
       });
-      rows.push([TT('جمع کل'), TT(''), TT(''), TT(''), TN(gt), TT(''), TT('')]);
-      return [{ name: 'آرشیو درآمد ثابت', rows: rows, widths: [24, 26, 8, 28, 16, 16, 14], merges: ['A1:G1'], freeze: 3 }];
+      rows.push([TT('جمع کل'), TT(''), TT(''), TT(''), TT(''), TT(''), TN(gt), TT('')]);
+      return [{ name: 'آرشیو درآمد ثابت', rows: rows, widths: [24, 14, 34, 8, 16, 28, 16, 16], merges: ['A1:H1'], freeze: 3 }];
     }
     function hkOpenRecArcExport() {
       var old = document.getElementById('hkRecArcEx'); if (old) old.remove();
@@ -583,8 +596,13 @@
         lgs.forEach(function (g) {
           lh += '<tr class="g"><td colspan="' + LC + '">' + E(g.title) + '</td></tr>';
           g.rows.forEach(function (x, i) {
-            lh += '<tr' + (x.r.settled ? ' class="dim"' : '') + '><td class="c">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd(x.r, x.y, x.m) + '<td class="c tm">' + hkExpTime(x.r) + '</td><td>' + E(x.r.desc || '') + '</td>' +
-              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(x.amt) + '</td><td class="c">' + (x.r.settled ? '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || '')) + '</tr>';
+            /* ۱.۴.۱۳: ردیف منفی (بستانکار) علاوه بر علامت «−»، هایلایت طوسی هم دارد */
+            var neg = x.r.status === 'credit';
+            var cells = '<td class="c">' + toPersianDigits(i + 1) + '</td>' + hkExpDateTd(x.r, x.y, x.m) + '<td class="c tm">' + hkExpTime(x.r) + '</td><td>' + E(x.r.desc || '') + '</td>' +
+              '<td class="c">' + E(x.debtor) + '</td><td class="c">' + E(x.creditor) + '</td><td class="n">' + pdfMoney(neg ? -x.amt : x.amt) + '</td>' +
+              '<td class="c">' + (x.r.settled ? '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> تسویه' : 'باز') + '</td>' + byTd(E(x.r.createdByName || ''));
+            if (neg) cells = cells.replace(/<td( class="[^"]*")?/g, '<td$1 style="background:#dfe2e7"');
+            lh += '<tr' + (x.r.settled ? ' class="dim"' : '') + '>' + cells + '</tr>';
           });
           lh += '<tr class="t"><td colspan="6">' + E(g.netTxt) + '</td><td class="n">' + pdfMoney(Math.abs(g.net)) + '</td><td></td>' + byTd('') + '</tr>';
         });
