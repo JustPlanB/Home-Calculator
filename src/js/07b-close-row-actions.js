@@ -1073,7 +1073,7 @@
         var inp = document.getElementById('balanceSearchInput');
         if (inp && inp.value) { inp.value = ''; }
         ['balanceSearchAmtMin', 'balanceSearchAmtMax'].forEach(function (id) { var a = document.getElementById(id); if (a) a.value = ''; });
-        ['balanceSearchCat', 'balanceSearchRange'].forEach(function (id) {
+        ['balanceSearchCat', 'balanceSearchProj', 'balanceSearchRange'].forEach(function (id) {
           var el = document.getElementById(id); if (!el) return;
           el.value = id === 'balanceSearchRange' ? 'all' : '';
           try { if (el._fancyRender) el._fancyRender(); } catch (e2) {}
