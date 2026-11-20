@@ -958,6 +958,9 @@
       var fab = null, raf = 0;
       var CHEV = '<span class="fab-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5 5 5-5"/><path d="M7 12.5l5 5 5-5"/></svg></span>';
       var curSc = function () {
+        /* ۱.۴.۹: صفحهٔ رابطهٔ قرض هم همین دکمهٔ اتواسکرول را دارد */
+        var lr = document.querySelector('#featureSheet.hk-led-rel.open .section.hk-lrel .section-body');
+        if (lr && lr.offsetParent && lr.clientHeight > 0) return lr;
         if (!document.body.classList.contains('detail-open')) return null;
         var list = document.querySelectorAll('.person-detail-scroll');
         for (var i = 0; i < list.length; i++) { if (list[i].offsetParent && list[i].clientHeight > 0) return list[i]; }
@@ -1015,7 +1018,7 @@
         /* ۱.۳.۵۵: قفل فقط وقتی باز می‌شود که حرکت به مقصدش رسید (لحظهٔ شروع از بالا آیکون برنگردد) */
         else if ((fab._goal === 'end' && atEnd) || (fab._goal === 'top' && sc.scrollTop <= 2)) fab._lockUntil = 0;
         fab.setAttribute('aria-label', atEnd ? 'رفتن به ابتدا' : 'رفتن به انتها');
-        var box = sc.closest('.person-detail-box') || sc, br = box.getBoundingClientRect();
+        var box = sc.closest('.person-detail-box') || sc.closest('.section.hk-lrel') || sc, br = box.getBoundingClientRect();
         /* ۱.۳.۷۲: داخل خود جدول، هم‌ردیف «برای ویرایش یا حذف…» و سمت راست */
         var hint = box.querySelector('.person-detail-hint'), hr = hint && hint.getBoundingClientRect();
         var fs = fab.offsetWidth || 36;
@@ -1026,7 +1029,8 @@
         top += 7; /* ۱.۳.۸۰: کمی پایین‌تر */
 
         fab.style.top = Math.round(top) + 'px';
-        fab.style.left = Math.round(br.right - 14 - fs) + 'px';
+        /* صفحهٔ رابطهٔ قرض: مربع افزودن گوشهٔ راست است، پس اتواسکرول گوشهٔ چپ */
+        fab.style.left = Math.round(sc.closest('.section.hk-lrel') ? br.left + 14 : br.right - 14 - fs) + 'px';
         fab.classList.add('show');
       };
       var sched = function () { if (!raf) raf = requestAnimationFrame(update); };

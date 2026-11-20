@@ -830,12 +830,11 @@
       var hint = sec.querySelector('.hk-lrel-hint'), hh = hint ? hint.offsetHeight + 8 : 44;
       var top = body.getBoundingClientRect().top, avail = Math.floor(window.innerHeight - sb - 12 - top - hh);
       body.style.setProperty('max-height', Math.max(150, avail) + 'px', 'important');
-      var go = sec.querySelector('.hk-lrel-go'); if (go) go.style.visibility = body.scrollHeight > body.clientHeight + 4 ? 'visible' : 'hidden';
     }
     function hkLedOpenRel(id) {
       var sec = (ensureLedger().sections || []).find(function (s) { return s.id === id; }); if (!sec) return;
       var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle');
-      _hkLedRel = id; if (t) { _hkLedTitle = _hkLedTitle || t.textContent; t.textContent = ledgerSectionTitle(sec); }
+      _hkLedRel = id; if (t) { _hkLedTitle = _hkLedTitle || t.textContent; t.textContent = ''; } /* ۱.۴.۹: نام رابطه فقط بالای جدول است، نه بالای صفحه */
       if (fs) fs.classList.add('hk-led-rel');
       renderLedgerTab();
       try { var a = hkMenuSlide(document.getElementById('featureSheetBody'), true); } catch (e) {}
@@ -844,12 +843,14 @@
     /* برگشت از صفحهٔ رابطه به فهرست روابط؛ true = کاری انجام شد */
     function hkLedRelClose(quiet) {
       if (!_hkLedRel) return false;
-      var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle');
+      var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle'), fs0 = quiet ? null : fs;
       _hkLedRel = ''; if (fs) fs.classList.remove('hk-led-rel');
       if (t && _hkLedTitle) { t.textContent = _hkLedTitle; } _hkLedTitle = '';
       if (quiet) return true;
+      /* ۱.۴.۹: ورق خوردن به فهرست روابط با کپیِ صفحهٔ رابطه که کنار می‌رود (نه کنار رفتنِ خودِ صفحه که چند صدم ثانیه خالی می‌ماند) */
+      var gh = null; try { if (fs0) { gh = hkMakeGhost(fs0); if (gh) { gh.style.position = 'fixed'; gh.style.zIndex = getComputedStyle(fs0).zIndex; } } } catch (eG) {}
       renderLedgerTab();
-      try { hkMenuSlide(document.getElementById('featureSheetBody'), false); } catch (e) {}
+      try { if (gh) { document.body.appendChild(gh); var an = hkMenuSlide(gh, false); if (an) an.onfinish = function () { gh.remove(); }; setTimeout(function () { try { gh.remove(); } catch (e) {} }, 700); } } catch (e) {}
       return true;
     }
     function hkLedShareText(sec) {
@@ -1042,12 +1043,9 @@
         lwIn.appendChild(body); lwIn.appendChild(btnAddRow); lw.appendChild(lwIn);
         div.appendChild(lw);
         if (_hkLedRel === sec.id) {
-          const hint = document.createElement('div'); hint.className = 'hk-lrel-hint';
-          hint.innerHTML = '<span>برای ویرایش یا حذف، انگشت را روی ردیف نگه دارید</span><button type="button" class="hk-lrel-go" aria-label="رفتن به انتها"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l5 5 5-5"/><path d="M7 12.5l5 5 5-5"/></svg></button>';
-          const go = hint.querySelector('.hk-lrel-go');
-          const atEnd = () => body.scrollTop + body.clientHeight >= body.scrollHeight - 4;
-          go.onclick = () => { body.scrollTo({ top: atEnd() ? 0 : body.scrollHeight, behavior: 'smooth' }); };
-          body.addEventListener('scroll', () => { go.classList.toggle('up', atEnd()); }, { passive: true });
+          /* ۱.۴.۹: راهنما مثل جدول درآمد/مخارج (وسط‌چین)؛ دکمهٔ اتواسکرول همان #hkScrollFab درآمد/مخارج است (15a) */
+          const hint = document.createElement('div'); hint.className = 'person-detail-hint hk-lrel-hint';
+          hint.textContent = 'برای ویرایش یا حذف، انگشت را روی ردیف نگه دارید';
           div.appendChild(hint);
         }
         div.classList.add('hk-lv2');
