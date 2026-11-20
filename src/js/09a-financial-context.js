@@ -240,12 +240,16 @@
         btnEdit.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
         btnEdit.onclick = function(e) { e.preventDefault(); e.stopPropagation(); renameSubject(s.id); };
 
+        var btnShr = hkShareIconBtn();
+        btnShr.onclick = function(e) { e.preventDefault(); e.stopPropagation(); hkDongShareMenu(btnShr, s, hkProjShare); };
+
         actions.appendChild(btnDel);
         actions.appendChild(btnEdit);
+        actions.appendChild(btnShr);
         card.appendChild(actions);
 
         card.onclick = function(e) {
-          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row') || e.target.closest('.subject-rename-input') || e.target.closest('.modal-btn') || e.target.closest('.project-rename-stack'))) return;
+          if (e.target.closest && (e.target.closest('.btn-edit-title') || e.target.closest('.btn-del-row') || e.target.closest('.hk-gen-shr') || e.target.closest('.subject-rename-input') || e.target.closest('.modal-btn') || e.target.closest('.project-rename-stack'))) return;
           openProjectReportModal(s.id);
         };
 

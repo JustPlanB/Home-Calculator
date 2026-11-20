@@ -788,6 +788,7 @@
             (recurringSelectMode ? '' : (
               '<div class="rec-tools">' +
               '<button class="rec-folder-btn" type="button" data-rec-arch="' + i + '" title="آرشیو" aria-label="آرشیو">' + HK_FOLDER_SVG + '</button>' +
+              '<button class="hk-dg-ico hk-gen-shr" type="button" data-rs="' + i + '" title="اشتراک‌گذاری" aria-label="اشتراک‌گذاری">' + HK_SHARE_SVG + '</button>' +
               '<button class="btn-edit-title" type="button" data-re="' + i + '" title="ویرایش">' + editSvg + '</button>' +
               '<button class="btn btn-del-row" type="button" data-rd="' + i + '" title="حذف" style="color:#ff1744!important;-webkit-text-fill-color:#ff1744!important;text-shadow:0 0 4px rgba(255,23,68,0.55);-webkit-text-stroke:0.3px #ff1744;font-weight:900;font-size:1.4rem;background:transparent;border:none;line-height:1;">×</button>' +
               '</div>'
@@ -1029,6 +1030,9 @@
           const r = recurringIncomes[parseInt(btn.getAttribute('data-rec-links'), 10)];
           if (r) recLinksModal(r, () => { try { renderRecurringBar(); } catch (e2) {} });
         };
+      });
+      box.querySelectorAll('[data-rs]').forEach(btn => {
+        btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); const r = recurringIncomes[parseInt(btn.getAttribute('data-rs'), 10)]; if (r) hkDongShareMenu(btn, r, hkRecShare); });
       });
       box.querySelectorAll('[data-rec-arch]').forEach(btn => {
         btn.onclick = (e) => {
