@@ -247,3 +247,8 @@
 - سرچ: `balanceSearchProj` (پیش‌فرض «ندارد»؛ `bsFillProjects`)، فیلتر روی `row.financialContext.subjectId`؛ سلول دسته دیگر عرض کامل نیست.
 - ویجت: `HkWidgetStyle` تمام‌صفحه (`Theme.Wallpaper.NoTitleBar`)؛ `HoleView` سوراخ گرد شفاف و `PreviewView` خودِ ویجت همان نوع (`full/accounts/line` یا سرستون+ردیف نمونهٔ تراکنش) با حاشیهٔ ۱۵٪؛ ثابت `HkWidgetDraw.LINE_H=154/180` کپسول تک‌خطی. فقط CI جاوا را کامپایل می‌کند؛ روی گوشی بررسی شود (شفاف بودن پنجره روی زمینه).
 
+## ۲۶. ۱.۴.۱۷
+- رابطهٔ قرض: `margin-block` بالای `#sections-ledger` = محاسبهٔ ثابت برای بیشترین اندازهٔ جدول (جای `margin-block: auto`)؛ `padding-bottom: 1.5px` روی `.section.hk-lrel` (فقط فریم).
+- ویجت تراکنش: سرستون (`HkWidgetTxDraw.header`) از `c[4]` تا `c[0]` با گوشهٔ ۱۴k و فاصلهٔ بالا `ti=10k`؛ دکمهٔ چشم و منوی نوع با `layout_marginTop=10dp` در `hk_widget_tx.xml`.
+- `HkWidgetStyle`: ارتفاع پیش‌نمایش ۲۹٪ صفحه. فقط CI جاوا را کامپایل می‌کند؛ روی گوشی بررسی شود (چشم/عنوان ویجت تراکنش و دکمهٔ انصراف).
+

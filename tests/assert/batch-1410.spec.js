@@ -27,7 +27,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const bar = getComputedStyle(document.querySelector('#featureSheet > .feature-sheet-bar')).display;
     const body = document.querySelector('#sections-ledger .section.hk-lrel .section-body'), tr = body.querySelector('tbody tr'), th = body.querySelector('thead');
     const hint = document.querySelector('.hk-lrel-hint'), hr2 = hint.getBoundingClientRect(), sec = document.querySelector('.section.hk-lrel').getBoundingClientRect();
-    const rel = { bar, rh: Math.round(tr.getBoundingClientRect().height), rows: Math.round((body.clientHeight - th.getBoundingClientRect().height) / tr.getBoundingClientRect().height), hintOne: hr2.height < 60, noGap: Math.abs(sec.bottom - hr2.bottom) <= 2 };
+    const rel = { bar, rh: Math.round(tr.getBoundingClientRect().height), rows: Math.round((body.clientHeight - th.getBoundingClientRect().height) / tr.getBoundingClientRect().height), hintOne: hr2.height < 60, noGap: Math.abs(sec.bottom - hr2.bottom) <= 4 };
     const r3 = body.querySelectorAll('tbody tr')[2].getBoundingClientRect();
     return { card, rel, y: Math.round(r3.top + r3.height / 2), x: Math.round(r3.left + r3.width * 0.6) };
   });

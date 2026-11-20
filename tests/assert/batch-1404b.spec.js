@@ -15,7 +15,7 @@ const allErrors = [];
   console.log('• کد بومی و پیش‌نمایش ویجت‌ها');
   const root = path.join(__dirname, '..', '..');
   const pa = androidSource();
-  ok(/cv\.drawRect\(0, th, W, th\+hh, band\)/.test(pa) && /cv\.drawLine\(0, th\+hh, W, th\+hh, ln\)/.test(pa), 'نوار سرستون ویجت تراکنش‌ها از لبه تا لبهٔ ویجت');
+  ok(/cv\.drawRect\(c\[4\], th, c\[0\], th\+hh, band\)/.test(pa) && /cv\.drawLine\(c\[4\], th\+hh, c\[0\], th\+hh, ln\)/.test(pa), 'نوار سرستون ویجت تراکنش‌ها هم‌عرض جدول (۱.۴.۱۷)');
   const patch = fs.readFileSync(path.join(root, 'scripts', 'patch-android.js'), 'utf8');
   ok(/hk_widget_line_info\.xml[\s\S]{0,700}previewImage="@drawable\/hk_prev_line"/.test(patch) && /'hk_prev_line\.png'/.test(patch), 'ویجت یک‌خطی پیش‌نمایش خودش را دارد');
   const size = f => { const b = fs.readFileSync(path.join(root, 'resources', 'widget-previews', f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
