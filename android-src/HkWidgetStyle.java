@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -15,7 +16,9 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 /** ۱.۴.۲: تنظیمات ظاهر هر ویجت (نگه داشتن ویجت روی صفحهٔ گوشی ← تنظیمات):
@@ -37,7 +40,8 @@ public class HkWidgetStyle extends Activity {
   int transp=0; /* شفافیت ۰ تا ۱۰ (هر پله ۱۰٪)؛ ۰ = پس‌زمینهٔ کامل */
   final View[] radios=new View[3];
   final String[] MODES={ "auto", "light", "dark" };
-  DotSlider slider; TextView pct; View preview;
+  DotSlider slider; TextView pct; PreviewView preview; HoleView hole; String cls="";
+  int sysDim(String n){ try{ int r=getResources().getIdentifier(n, "dimen", "android"); return r!=0 ? getResources().getDimensionPixelSize(r) : 0; }catch(Exception e){ return 0; } }
 
   @Override protected void onCreate(Bundle b){
     super.onCreate(b);
@@ -54,28 +58,35 @@ public class HkWidgetStyle extends Activity {
     if(!"auto".equals(mode) && !"light".equals(mode) && !"dark".equals(mode)) mode=light ? "light" : "dark";
     transp=Math.round((100-HkWidgetDraw.bgAlpha(this, wid))/10f);
 
+    /* ۱.۴.۱۶: صفحهٔ تمام‌صفحه (مثل تنظیمات ویجت‌های سامسونگ): بالا اسم نرم‌افزار، وسط «پنجرهٔ پیش‌نمایش» که شفاف است و
+       همان بالای تصویر زمینهٔ گوشی را یک‌به‌یک نشان می‌دهد (ثابت، فارغ از جای ویجت روی صفحه)، پایین گزینه‌ها. */
+    try{ AppWidgetProviderInfo inf=AppWidgetManager.getInstance(this).getAppWidgetInfo(wid); cls=inf!=null && inf.provider!=null ? inf.provider.getClassName() : ""; }catch(Exception ignored){}
+    FrameLayout frame=new FrameLayout(this);
+    hole=new HoleView(this);
+    frame.addView(hole, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
     LinearLayout root=new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
     int p=(int)(18*dp);
-    root.setPadding(p, (int)(20*dp), p, (int)(8*dp));
-    GradientDrawable bg=new GradientDrawable(); bg.setColor(light ? 0xFFF2F2F7 : 0xFF000000); bg.setCornerRadius(26*dp);
-    root.setBackground(bg);
+    root.setPadding(p, sysDim("status_bar_height")+(int)(18*dp), p, sysDim("navigation_bar_height")+(int)(8*dp));
 
-    TextView t=text("تنظیمات ویجت", 17, true, fg());
-    t.setGravity(Gravity.CENTER); t.setPadding(0, 0, 0, (int)(14*dp));
+    TextView t=text("حساب‌کتاب", 26, true, fg());
+    t.setGravity(Gravity.START); t.setPadding((int)(6*dp), 0, 0, (int)(16*dp));
     root.addView(t, mw());
 
-    /* ۱.۴.۱۵: پیش‌نمایش زنده: با هر انتخابِ رنگ و شفافیت همین‌جا دیده می‌شود (روی پس‌زمینهٔ رنگی تا شفافیت پیدا باشد) */
     preview=new PreviewView(this);
-    LinearLayout.LayoutParams plp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int)(120*dp)); plp.bottomMargin=(int)(14*dp);
+    int ph=(int)(getResources().getDisplayMetrics().heightPixels*0.36f);
+    LinearLayout.LayoutParams plp=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ph); plp.bottomMargin=(int)(14*dp);
     root.addView(preview, plp);
+    preview.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){ public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob){ hole.setHole(l, tp, r, b); } });
 
-    root.addView(label("رنگ پس‌زمینه"), mw());
+    ScrollView sv=new ScrollView(this); sv.setVerticalScrollBarEnabled(false);
+    LinearLayout opts=new LinearLayout(this); opts.setOrientation(LinearLayout.VERTICAL); opts.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+    opts.addView(label("رنگ پس‌زمینه"), mw());
     LinearLayout box=section();
     String[] names={ "مطابق تنظیمات گوشی", "روشن", "تیره" };
     for(int i=0;i<3;i++) box.addView(radioRow(i, names[i]));
-    root.addView(box, mwGap());
+    opts.addView(box, mwGap());
 
     LinearLayout box2=section();
     LinearLayout hd=new LinearLayout(this); hd.setOrientation(LinearLayout.HORIZONTAL); hd.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); hd.setGravity(Gravity.CENTER_VERTICAL);
@@ -87,7 +98,9 @@ public class HkWidgetStyle extends Activity {
     box2.addView(hd, mw());
     slider=new DotSlider(this);
     box2.addView(slider, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int)(44*dp)));
-    root.addView(box2, mwGap());
+    opts.addView(box2, mwGap());
+    sv.addView(opts, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+    root.addView(sv, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
     showPct();
 
     LinearLayout acts=new LinearLayout(this); acts.setOrientation(LinearLayout.HORIZONTAL); acts.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -100,8 +113,8 @@ public class HkWidgetStyle extends Activity {
     LinearLayout.LayoutParams alp=mw(); alp.topMargin=(int)(4*dp);
     root.addView(acts, alp);
 
-    setContentView(root);
-    try{ getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*0.92f), ViewGroup.LayoutParams.WRAP_CONTENT); getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0)); }catch(Exception ignored){}
+    frame.addView(root, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+    setContentView(frame);
     paintRadios();
   }
   int fg(){ return light ? 0xFF1C1C1E : 0xFFF2F2F7; }
@@ -199,30 +212,65 @@ public class HkWidgetStyle extends Activity {
     }
   }
 
-  /** پیش‌نمایش ویجت: پس‌زمینهٔ رنگی + کارت ویجت با رنگ (روشن/تیره/مطابق گوشی) و شفافیتِ انتخاب‌شده و چند خط نمونه */
-  class PreviewView extends View {
+  /** زمینهٔ صفحه: سیاه (روشن در تم روشن) با یک «سوراخ» گرد به اندازهٔ پنجرهٔ پیش‌نمایش؛ از سوراخ تصویر زمینهٔ گوشی دیده می‌شود */
+  class HoleView extends View {
     final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
+    final android.graphics.RectF r=new android.graphics.RectF();
+    HoleView(Context c){ super(c); p.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)); }
+    void setHole(int l, int t, int rr, int b){ r.set(l, t, rr, b); invalidate(); }
+    @Override protected void onDraw(Canvas cv){
+      int sc=cv.saveLayer(0, 0, getWidth(), getHeight(), null);
+      cv.drawColor(light ? 0xFFF2F2F7 : 0xFF000000);
+      if(r.width()>0) cv.drawRoundRect(r, 30*dp, 30*dp, p);
+      cv.restoreToCount(sc);
+    }
+  }
+
+  /** پنجرهٔ پیش‌نمایش: خودِ همین ویجت (با اندازهٔ واقعی‌اش) با رنگ و شفافیت انتخاب‌شده، وسط پنجره با حاشیهٔ ۱۵٪ از چپ و راست */
+  class PreviewView extends View {
+    final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
     PreviewView(Context c){ super(c); }
     @Override protected void onDraw(Canvas cv){
-      float w=getWidth(), h=getHeight(), r=18*dp;
-      boolean lt="light".equals(mode) || ("auto".equals(mode) && !HkWidgetDraw.phoneDark(getContext()));
-      int alpha=100-transp*10;
-      /* پس‌زمینهٔ نمونه (مثل تصویر زمینهٔ گوشی) */
-      p.setShader(new android.graphics.LinearGradient(0, 0, w, h, 0xFF5B6EE1, 0xFF30D5C8, android.graphics.Shader.TileMode.CLAMP));
-      cv.drawRoundRect(new android.graphics.RectF(0, 0, w, h), r, r, p); p.setShader(null);
-      /* کارت ویجت */
-      float in=14*dp; android.graphics.RectF box=new android.graphics.RectF(in, in*0.8f, w-in, h-in*0.8f);
-      p.setStyle(Paint.Style.FILL); p.setColor(HkWidgetDraw.withAlpha(lt ? 0xFFFFFFFF : 0xFF1B1B1B, alpha));
-      cv.drawRoundRect(box, 16*dp, 16*dp, p);
-      Typeface fb=hkFB!=null ? hkFB : Typeface.DEFAULT_BOLD, fr=hkFR!=null ? hkFR : Typeface.DEFAULT;
-      int tc=lt ? 0xFF1C1C1E : 0xFFFFFFFF, mc=lt ? 0xFF6E6E76 : 0xFF98989F;
-      p.setTextAlign(Paint.Align.RIGHT);
-      float x=box.right-14*dp, y=box.top+26*dp;
-      p.setTypeface(fb); p.setColor(tc); p.setTextSize(16*dp); cv.drawText("حساب‌کتاب", x, y, p);
-      p.setTypeface(fr); p.setColor(mc); p.setTextSize(12*dp); cv.drawText("موجودی", x, y+24*dp, p);
-      p.setTypeface(fb); p.setColor(HkWidgetDraw.incC(lt)); p.setTextSize(15*dp); p.setTextAlign(Paint.Align.LEFT); cv.drawText("۱۲٬۵۰۰٬۰۰۰", box.left+14*dp, y+24*dp, p);
-      p.setTypeface(fr); p.setColor(mc); p.setTextSize(12*dp); p.setTextAlign(Paint.Align.RIGHT); cv.drawText("خرج امروز", x, y+46*dp, p);
-      p.setTypeface(fb); p.setColor(HkWidgetDraw.expC(lt)); p.setTextSize(15*dp); p.setTextAlign(Paint.Align.LEFT); cv.drawText("۳۸۰٬۰۰۰", box.left+14*dp, y+46*dp, p);
+      try{
+        Context c=getContext();
+        boolean lt="light".equals(mode) || ("auto".equals(mode) && !HkWidgetDraw.phoneDark(c));
+        int alpha=100-transp*10;
+        AppWidgetManager mgr=AppWidgetManager.getInstance(c);
+        HkWidgetDraw.Data d=HkWidgetDraw.load(c, wid); d.light=lt; d.alpha=alpha;
+        boolean line=cls.endsWith("HkWidgetLineProvider"), acc=cls.endsWith("HkWidgetAccountsProvider"), tx=cls.endsWith("HkWidgetTxProvider");
+        float[] sz=HkWidgetDraw.size(c, mgr, wid, 250, line ? 56 : (acc ? 200 : 180));
+        int W=(int)sz[0], H=(int)sz[1]; float k=sz[2];
+        Bitmap bm;
+        if(line) bm=HkWidgetDraw.line(c, W, H, k, d);
+        else if(acc) bm=HkWidgetDraw.accounts(c, W, H, k, d);
+        else if(tx) bm=txBitmap(c, mgr, W, H, d);
+        else bm=HkWidgetDraw.full(c, W, H, k, d);
+        float s=Math.min(getWidth()*0.70f/bm.getWidth(), getHeight()*0.70f/bm.getHeight());
+        float dw=bm.getWidth()*s, dh=bm.getHeight()*s, x=(getWidth()-dw)/2f, y=(getHeight()-dh)/2f;
+        android.graphics.RectF dst=new android.graphics.RectF(x, y, x+dw, y+dh);
+        if(!line){
+          android.graphics.drawable.Drawable bg=c.getResources().getDrawable(HkWidgetDraw.bgRes(c, lt, alpha));
+          bg.setBounds(Math.round(dst.left), Math.round(dst.top), Math.round(dst.right), Math.round(dst.bottom)); bg.draw(cv);
+        }
+        cv.drawBitmap(bm, null, dst, p);
+      }catch(Exception ignored){}
+    }
+    /** ویجت ردیف‌ها: سرستون + چند ردیف نمونهٔ ساختگی (فقط برای پیش‌نمایش) */
+    Bitmap txBitmap(Context c, AppWidgetManager mgr, int W, int H, HkWidgetDraw.Data d){
+      float[] tz=HkWidgetTxDraw.dims(c, mgr, wid);
+      int W2=(int)tz[0], H2=Math.max(40, Math.round(H*tz[0]/Math.max(1f, (float)W))); float k2=tz[1];
+      boolean inc=HkWidgetTxProvider.isIncome(c, wid), all=HkWidgetTxProvider.isAll(c, wid);
+      Bitmap out=Bitmap.createBitmap(W2, H2, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(out);
+      Bitmap h=HkWidgetTxDraw.header(c, W2, k2, inc, all, d.light, d.alpha); cv.drawBitmap(h, 0, 0, null);
+      float y=h.getHeight();
+      String[][] S={ {"۱۹ آبان","خرید نمونه","ملی ۲۰۰۲","۱۶۸,۰۰۰","e",""}, {"۱۹ آبان","اینترنت","ملت ۳۱۰۶","۴۰,۰۰۰","e",""}, {"۲۰ آبان","واریز نمونه","ملی ۲۰۰۲","۹,۰۰۰,۰۰۰","i",""}, {"۲۰ آبان","پروژهٔ نمونه","ملت ۳۱۰۶","۵,۰۰۰,۰۰۰","e","#8E24AA"}, {"۲۱ آبان","قسط نمونه","ملی ۲۰۰۲","۵۹۰,۷۹۱","e",""}, {"۲۱ آبان","خرید نمونه","ملت ۳۱۰۶","۸۸۸,۲۰۰","e",""} };
+      for(String[] r: S){
+        boolean ri=all ? "i".equals(r[4]) : inc;
+        Bitmap rb=HkWidgetTxDraw.row(c, W2, k2, r[0], r[1], r[2], (ri ? "+" : "-")+r[3], ri, d.light, false, r[5]);
+        if(y>=H2) break;
+        cv.drawBitmap(rb, 0, y, null); y+=rb.getHeight();
+      }
+      return out;
     }
   }
 }

@@ -299,12 +299,15 @@ final class HkWidgetDraw {
     if(pct<50) return light ? 0xFFE0B800 : 0xFFFFEC0A;
     return incC(light);
   }
+  static final float LINE_H=154f/180f;
   static Bitmap line(Context c, int W, int H, float k, Data d){
     fonts(c);
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
     Canvas cv=new Canvas(bm);
-    float in=1.5f*k, r=(H-2*in)/2f;
-    android.graphics.RectF box=new android.graphics.RectF(in, in, W-in, H-in);
+    /* ۱.۴.۱۶: ارتفاع کپسول = ۱۵۴/۱۸۰ ارتفاع قبلی (هم‌اندازهٔ ویجت موزیک سامسونگ روی گوشی)، وسط‌چین در همان جا */
+    float hb=H*LINE_H, oy=(H-hb)/2f;
+    float in=1.5f*k, r=(hb-2*in)/2f;
+    android.graphics.RectF box=new android.graphics.RectF(in, oy+in, W-in, oy+hb-in);
     Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG); bg.setColor(withAlpha(d.light ? 0xFFFFFFFF : 0xFF1B1B1B, d.alpha));
     cv.drawRoundRect(box, r, r, bg);
     boolean show=!d.mask && d.pct>=0;
@@ -318,7 +321,7 @@ final class HkWidgetDraw {
     }
     Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(Math.max(1f, 1.2f*k)); st.setColor(d.light ? 0x38000000 : 0x47FFFFFF);
     cv.drawRoundRect(box, r, r, st);
-    float padX=r*0.9f, cy=H/2f, size=Math.min(H*0.44f, 21*k);
+    float padX=r*0.9f, cy=H/2f, size=Math.min(hb*0.44f, 21*k);
     int tc=d.light ? 0xFF1C1C1E : Color.WHITE, sh=d.light ? 0xCCFFFFFF : 0xE6000000;
     if(show){
       String ps=faDigits(d.pct)+"٪";

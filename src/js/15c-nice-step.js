@@ -375,6 +375,18 @@
         try { if (sel._fancyRender) sel._fancyRender(); } catch (e) {}
       }
     }
+    /* ۱.۴.۱۶: فیلد «پروژه»: پیش‌فرض «ندارد» (بی‌فیلتر)؛ با انتخاب پروژه، فقط ردیف‌های همان پروژه (واریزی و مخارج) */
+    function bsFillProjects() {
+      var sel = document.getElementById('balanceSearchProj');
+      if (!sel) return;
+      var keep = sel.value, html = '<option value="">ندارد</option>';
+      (loadFinancialSubjects() || []).forEach(function (s) { if (s && s.id && s.id !== 'personal') html += '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.name) + '</option>'; });
+      if (sel._bsHtml !== html) {
+        sel.innerHTML = html; sel._bsHtml = html;
+        sel.value = [].some.call(sel.options, function (o) { return o.value === keep; }) ? keep : '';
+        try { if (sel._fancyRender) sel._fancyRender(); } catch (e) {}
+      }
+    }
     function renderBalanceSearch() {
       var inp = document.getElementById('balanceSearchInput');
       var boxR = document.getElementById('searchResultBox');
@@ -384,6 +396,8 @@
       var norm = (typeof HKCategorizer !== 'undefined') ? HKCategorizer.normalize : function (x) { return String(x || '').trim(); };
       var q = norm(inp.value);
       try { bsFillCategories(); } catch (eBs) {}
+      try { bsFillProjects(); } catch (eBp) {}
+      var projF = (document.getElementById('balanceSearchProj') || {}).value || '';
       var typeF = (document.getElementById('balanceSearchType') || {}).value || '';
       var catF = typeF === 'income' ? '' : ((document.getElementById('balanceSearchCat') || {}).value || '');
       var rangeF = (document.getElementById('balanceSearchRange') || {}).value || 'all';
@@ -404,7 +418,7 @@
       var amtMin = 0, amtMax = 0;
       try { amtMin = parseAmount((document.getElementById('balanceSearchAmtMin') || {}).value || '') || 0; amtMax = parseAmount((document.getElementById('balanceSearchAmtMax') || {}).value || '') || 0; } catch (eAm) {}
       /* بدون فیلتر و کلمه (عوض کردن «بخش» به‌تنهایی فیلتر حساب نمی‌شود): فقط چارچوب جدول، منتظر جستجو */
-      var noFilter = !q && !catF && !typeF && rangeF === 'all' && !dayF && !accF && !amtMin && !amtMax;
+      var noFilter = !q && !catF && !projF && !typeF && rangeF === 'all' && !dayF && !accF && !amtMin && !amtMax;
       var sel = (typeof balanceSelectedTitles !== 'undefined' && balanceSelectedTitles) ? balanceSelectedTitles : [];
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};
@@ -425,6 +439,7 @@
               if (amtMin && Number(r.amount) < amtMin) return;
               if (amtMax && Number(r.amount) > amtMax) return;
               if (dayF && dayNum(r) !== dayF) return;
+              if (projF && ((r.financialContext || {}).subjectId || '') !== projF) return;
               if (catF) { var ids = bsCatOf(r); if (catF === '__none__' ? ids.length : ids.indexOf(catF) < 0) return; }
               titles[t] = 1;
               list.push({ y: y, m: m, d: dayNum(r) || 0, desc: r.desc || '—', amount: Number(r.amount) || 0, tab: tab, title: t, bank: (r.account || '').trim(), row: r });
@@ -527,7 +542,7 @@
           a.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); try { a.blur(); } catch (e2) {} } });
         });
         try { renderBalanceDayFilter(); } catch (eDf) {}
-        ['balanceSearchType', 'balanceSearchRange', 'balanceSearchDay', 'balanceSearchCat'].forEach(function (id) {
+        ['balanceSearchType', 'balanceSearchRange', 'balanceSearchDay', 'balanceSearchCat', 'balanceSearchProj'].forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
           el.addEventListener('change', function () {
@@ -541,6 +556,7 @@
           try { enhanceSelectFont(el); } catch (eF) {}
         });
         try { bsFillCategories(); } catch (eB) {}
+        try { bsFillProjects(); } catch (eP) {}
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
     })();

@@ -695,7 +695,7 @@
           return toPersianDigits(out);
         }
 
-        function txTable(list, caption) {
+        function txTable(list, caption, cls) {
           var h = '<div class="proj-table-wrap">';
           h += '<div class="proj-table-caption">' + escapeHtml(caption) + '</div>';
           h += '<div class="proj-table-scroll">';
@@ -708,7 +708,7 @@
               '<td class="proj-td-date">' + formatRowDate(r.key, r.day) + '</td>' +
               '<td class="proj-td-desc" data-full-desc="' + escapeHtml(fullDesc).replace(/"/g, '&quot;') + '">' +
                 '<span class="proj-desc-text">' + escapeHtml(fullDesc) + '</span></td>' +
-              '<td class="proj-td-amt" data-full-amt="' + escapeHtml(String(formatNum(r.amt))).replace(/"/g, '&quot;') + '">' + formatNum(r.amt) + '</td>' +
+              '<td class="proj-td-amt ' + (cls || '') + '" data-full-amt="' + escapeHtml(String(formatNum(r.amt))).replace(/"/g, '&quot;') + '">' + formatNum(r.amt) + '</td>' +
               '<td class="proj-td-bank">' + escapeHtml(r.bank || '—') + '</td>' +
               '</tr>';
           });
@@ -722,12 +722,12 @@
 
         body.innerHTML =
           '<div class="proj-summary">' +
-            '<div class="proj-report-row"><span>جمع واریزی</span><span class="val">' + formatNum(deposits) + ' تومان</span></div>' +
-            '<div class="proj-report-row"><span>جمع مخارج</span><span class="val">' + formatNum(expenses) + ' تومان</span></div>' +
+            '<div class="proj-report-row"><span>جمع واریزی</span><span class="val proj-amt-in">' + formatNum(deposits) + ' تومان</span></div>' +
+            '<div class="proj-report-row"><span>جمع مخارج</span><span class="val proj-amt-out">' + formatNum(expenses) + ' تومان</span></div>' +
             statusHtml +
           '</div>' +
-          txTable(inRows, 'واریزی‌ها') +
-          txTable(outRows, 'مخارج');
+          txTable(inRows, 'واریزی‌ها', 'proj-amt-in') +
+          txTable(outRows, 'مخارج', 'proj-amt-out');
 
         try {
           body.querySelectorAll('.proj-td-desc').forEach(function(td) {

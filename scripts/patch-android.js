@@ -206,7 +206,7 @@ if(fs.existsSync(manifest)){
     '        </activity>\n    </application>');
   // ۱.۴.۲: تنظیمات ظاهر ویجت‌ها (رنگ پس‌زمینه و شفافیت)
   if(!s.includes('.HkWidgetStyle')) s=s.replace('</application>',
-    '        <activity android:name=".HkWidgetStyle" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">\n' +
+    '        <activity android:name=".HkWidgetStyle" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.Wallpaper.NoTitleBar">\n' +
     '            <intent-filter>\n' +
     '                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>\n' +
     '            </intent-filter>\n' +
