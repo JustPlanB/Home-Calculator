@@ -748,8 +748,32 @@
       if (m) {
         m.dataset.subjectId = sub.id;
         m.style.display = 'flex';
+        try { hkProjFit(); setTimeout(hkProjFit, 120); setTimeout(hkProjFit, 450); } catch (eFit) {}
       }
     }
+    /* ۱.۴.۸: فضای باقیمانده زیر باکس خلاصه (تا پایین صفحه، بی‌رسیدن به دکمهٔ بک/میانی) بین جدول واریزی‌ها و مخارج تقسیم می‌شود؛
+       جدولِ کوتاه‌تر هرچه لازم دارد می‌گیرد و باقی به دیگری می‌رسد؛ بیشتر از جا شد، فقط داخل همان جدول اسکرول می‌شود */
+    function hkProjFit() {
+      var m = document.getElementById('projectReportModal');
+      if (!m || m.style.display === 'none') return;
+      var wraps = Array.prototype.slice.call(m.querySelectorAll('.proj-table-wrap'));
+      if (wraps.length < 2) return;
+      var sc = wraps.map(function (w) { return w.querySelector('.proj-table-scroll'); });
+      if (!sc[0] || !sc[1]) return;
+      sc.forEach(function (e) { e.style.setProperty('max-height', 'none', 'important'); });
+      var sb = 0; try { sb = homeSafeBottom(); } catch (e) {}
+      var c = sc.map(function (e) { return e.scrollHeight; });
+      var o = wraps.map(function (w, i) { return w.offsetHeight - sc[i].offsetHeight; });
+      var gap = parseFloat(getComputedStyle(wraps[1]).marginTop) || 12;
+      var top = wraps[0].getBoundingClientRect().top - m.querySelector('.modal-box').scrollTop;
+      var total = Math.floor(innerHeight - sb - 30 - top - gap - o[0] - o[1]), half = total / 2, h0, h1;
+      if (c[0] <= half) { h0 = c[0]; h1 = Math.min(c[1], total - c[0]); }
+      else if (c[1] <= half) { h1 = c[1]; h0 = Math.min(c[0], total - c[1]); }
+      else { h0 = h1 = half; }
+      sc[0].style.setProperty('max-height', Math.max(80, Math.floor(h0)) + 'px', 'important');
+      sc[1].style.setProperty('max-height', Math.max(80, Math.floor(h1)) + 'px', 'important');
+    }
+    try { window.addEventListener('resize', function () { try { hkProjFit(); } catch (e) {} }); window.hkProjFit = hkProjFit; } catch (eRz) {}
     function closeProjectReportModal(opts) {
       opts = opts || {};
       try { if (typeof closeAllAppMenus === 'function') closeAllAppMenus(); } catch (eM) {}

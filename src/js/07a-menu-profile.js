@@ -519,6 +519,12 @@
               });
             };
             b.appendChild(x);
+            /* ۱.۴.۸: دستهٔ ساخت کاربر: روبه‌روی × مداد ویرایش (همان صفحهٔ آیکون/عکس گالری و رنگ) */
+            if (cat.custom) {
+              var pe = document.createElement('span'); pe.className = 'sp-pick-e'; pe.setAttribute('role', 'button'); pe.setAttribute('aria-label', 'ویرایش دسته'); pe.innerHTML = HK_EDIT_SVG;
+              pe.onclick = function (ev) { ev.stopPropagation(); ev.preventDefault(); hkCatStyleSheet(cat, function () { var t2 = grid.querySelector('[data-id="' + cat.id + '"]'); if (t2) { t2.style.setProperty('--cc', hkCatColor(cat.id)); var ic = t2.querySelector('i'); if (ic) ic.innerHTML = hkCatIco(cat.id); } }); };
+              b.appendChild(pe);
+            }
             b.addEventListener('pointerdown', function () { lpFired = false; clearTimeout(lpT); lpT = setTimeout(function () { lpFired = true; jiggleOn(); }, 520); });
             ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(lpT); }); });
             b.addEventListener('contextmenu', function (e) { e.preventDefault(); });

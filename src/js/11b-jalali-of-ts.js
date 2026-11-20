@@ -489,9 +489,13 @@
           var nm = fo.personal ? ('پیامک شخصی ' + toPersianDigits(String(fo.sender || ''))) : (fo.bank + (fo.acc4 ? ' ' + toPersianDigits(fo.acc4) : ''));
           /* ۱.۴.۱: پیامک شخصی: همهٔ پوشه‌های همان فرستنده (هر حساب یک مسدود جدا) با هم */
           /* ۱.۴.۷: هر پوشه (هر بانک/حساب، حتی از یک شمارهٔ مشترک) جدا مسدود و آزاد می‌شود */
+          /* ۱.۴.۸: مسدود کردن یک شماره = کل شماره (همهٔ پوشه‌های بی‌شمارهٔ حساب و شخصیِ همان فرستنده)؛ در «حساب‌های مسدود شده» هر بانک جدا نشان داده می‌شود.
+             پوشهٔ دارای شمارهٔ حساب (۴ رقم) فقط همان حساب را می‌بندد */
+          var snk = function (f) { return (f.senders || [f.sender]).filter(Boolean).map(function (q) { return hkSenderNorm(q); }); };
           var grpF = [fo];
+          if (!fo.acc4 || fo.personal) { var sn0 = snk(fo); grpF = (_hkBulk.folders || []).filter(function (f) { return f === fo || ((!f.acc4 || f.personal) && snk(f).some(function (q) { return sn0.indexOf(q) >= 0; })); }); }
           if (fo._blocked) {
-            hkUnblockAccount(blkEntry());
+            grpF.forEach(function (f) { hkUnblockAccount(blkEntry(f)); });
             grpF.forEach(function (f) { f._blocked = false; });
             showToast('«' + nm + '» دوباره فعال شد');
           } else {

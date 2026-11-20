@@ -138,30 +138,7 @@ const SMS = 'بانك ملي ايران\nانتقال:6,511,000-\nحساب:62002
   ok(kp.expired === 0, 'رسیدِ در انتظارِ بیش از ۲۴ ساعت پاک می‌شود');
 
   }
-  console.log('• باکس‌های قرض');
-  const ld = await p.evaluate(async () => {
-    const w = ms => new Promise(r => setTimeout(r, ms));
-    const led = ensureLedger();
-    led.sections = ['الف', 'ب', 'ج'].map((n, k) => ({ id: 'L' + k, title: n, collapsed: false, rows: Array.from({ length: 3 }, (_, i) => Object.assign(emptyLedgerRow(), { day: String(i + 1), desc: 'قرض ' + i, amount: 100000 * (i + 1) })) }));
-    persistCurrent(); switchTabFromMenu('ledger'); await w(600);
-    const secs = () => [...document.querySelectorAll('#sections-ledger .section')];
-    const hit = () => { const s = secs(); let bad = 0; for (let i = 0; i < s.length - 1; i++) { const a = s[i].getBoundingClientRect(); s[i].querySelectorAll('*').forEach(el => { const r = el.getBoundingClientRect(); if (r.height && getComputedStyle(el).visibility !== 'hidden' && r.top < a.bottom - 1 === false && r.top < s[i + 1].getBoundingClientRect().bottom && r.bottom > s[i + 1].getBoundingClientRect().top && r.bottom > a.bottom + 1) { /* بیرون از باکس خودش و روی باکس بعدی */ const cs = getComputedStyle(s[i]); if (cs.overflow !== 'hidden') bad++; } }); } return bad; };
-    const out = {};
-    const s0 = secs()[0];
-    /* ۱.۳.۷۳: باز/بسته شدن بازنویسی شد: بُرش محتوا در قاب بدنه (.hk-lw-in) است، نه روی خود باکس.
-       شرط همان است: در طول حرکت هیچ چیزِ دیدنی از باکس بیرون نمی‌زند و روی باکس بعدی نمی‌افتد */
-    const spill = () => { const s = secs(); let bad = 0; for (let i = 0; i < s.length - 1; i++) { const clip = s[i].querySelector('.hk-lw-in'), cr = clip.getBoundingClientRect(), nx = s[i + 1].getBoundingClientRect(); if (getComputedStyle(clip).overflow !== 'hidden') bad++; if (cr.bottom > nx.top + 0.5) bad++; if (s[i].querySelector('.section-header').getBoundingClientRect().bottom > nx.top + 0.5) bad++; } return bad; };
-    s0.querySelector('.section-header').click(); await w(150);
-    out.ovMid = 'hidden'; out.hitMid = spill();
-    await w(600);
-    out.ovEnd = ''; out.hitEnd = spill();
-    s0.querySelector('.section-header').click(); await w(150);
-    out.ovMid2 = 'hidden'; out.hitMid += spill();
-    await w(600);
-    return out;
-  });
-  ok(ld.ovMid === 'hidden' && ld.ovMid2 === 'hidden' && ld.hitMid === 0, 'در حین باز/بسته شدن، محتوای باکس قرض داخل خود باکس می‌ماند و روی باکس بعدی نمی‌افتد');
-  ok(ld.ovEnd === '' && ld.hitEnd === 0, 'بعد از انیمیشن، حالت عادی باکس برمی‌گردد');
+  /* ۱.۴.۸: باکس‌های قرض دیگر کشویی باز نمی‌شوند؛ رفتارشان در batch-1408 است */
 
   ok(errors.length === 0, 'بدون خطای JS' + (errors.length ? ': ' + errors.join(' | ') : ''));
   console.log(`\n${passed} passed, ${failed} failed`);

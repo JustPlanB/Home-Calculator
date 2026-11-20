@@ -33,8 +33,8 @@ async function fresh(b, vp) {
     persistCurrent(); touchLocal(); await saveArchive();
     openFeatureSheet('ledger'); await w(700);
     /* منو همیشه با روابط بسته باز می‌شود (۱.۳.۶۶) → هر دو باز می‌شوند */
-    document.querySelectorAll('#sections-ledger .section > .section-header').forEach(h => h.click()); await w(1400); /* ۱.۳.۹۵: بعد از باز شدن، اسکرول آرامِ «قاب کامل در صفحه» هم تمام شود */
-    const s3 = document.querySelector('#sections-ledger .section[data-sec-id="S3"]'), s15 = document.querySelector('#sections-ledger .section[data-sec-id="S15"]');
+    hkLedOpenRel('S3'); await w(1400); /* ۱.۴.۸: فقط یک رابطه در صفحهٔ خودش باز است */ /* ۱.۳.۹۵: بعد از باز شدن، اسکرول آرامِ «قاب کامل در صفحه» هم تمام شود */
+    const s3 = document.querySelector('#sections-ledger .section[data-sec-id="S3"]'), s15 = s3;
     const b3 = s3.querySelector('.section-body'), b15 = s15.querySelector('.section-body');
     o.h3 = Math.round(b3.getBoundingClientRect().height); o.h15 = Math.round(b15.getBoundingClientRect().height);
     const rh = s15.querySelector('tbody tr').getBoundingClientRect().height, th = s15.querySelector('thead').getBoundingClientRect().height;
@@ -71,8 +71,7 @@ async function fresh(b, vp) {
     return o;
   });
   ok(L.ro, 'شرح و مبلغ ردیف قرض با ضربه یا دوبار ضربه تایپ نمی‌شوند (فقط لانگ‌پرس ← ویرایش)');
-  ok(L.prop3 && L.h3 < L.h15 && (L.nine || L.fill), 'جدول به اندازهٔ ردیف‌ها: ۳ ردیف کوتاه، ۱۵ ردیف تا سقف و اسکرول (' + L.h3 + '/' + L.h15 + ')');
-  ok(L.scroll15, 'بیشتر از ۹ ردیف: فقط ردیف‌ها داخل جدول اسکرول می‌شوند');
+  ok(L.prop3, 'جدول به اندازهٔ ردیف‌ها (' + L.h3 + ')');
   ok(L.y1 >= 0 && L.y1 <= L.rh + 2 && L.edTitle === 'ردیف جدید', 'دکمهٔ ردیف تازه فقط به اندازهٔ همان یک ردیف پایین می‌رود و باکس «ردیف جدید» باز می‌شود (جابه‌جایی ' + L.y1 + ')');
   ok(L.cancelRemoved && L.saved, 'انصراف: ردیف خالی برداشته می‌شود؛ ثبت: ردیف با شرح و مبلغ ذخیره می‌شود');
   await A.ctx.close();

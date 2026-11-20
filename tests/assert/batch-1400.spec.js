@@ -172,11 +172,11 @@ async function fresh(b) {
     led.sections = [mk(1, 'A', 'علی'), mk(2, 'B', 'رضا'), mk(2, 'C', 'مینا'), mk(2, 'D', 'نرگس'), mk(2, 'E', 'حسن'), mk(2, 'F', 'حسین')];
     persistCurrent();
     openFeatureSheet('ledger'); await w(800);
-    document.querySelector('#sections-ledger .section[data-sec-id="A"] > .section-header').click(); await w(1400);
     const list = document.getElementById('sections-ledger');
-    /* ۱.۴.۱: روابط و خلاصه با هم در یک اسکرول (صفحه ثابت) */
+    /* ۱.۴.۱: روابط در یک اسکرول (صفحه ثابت) — ۱.۴.۸: پیش از باز کردن صفحهٔ رابطه */
     const plp = document.getElementById('panel-ledger');
-    out.ledList = getComputedStyle(plp).overflowY === 'auto' && plp.scrollHeight > plp.clientHeight && !document.querySelector('#featureSheet.hk-led-page .feature-sheet-body').scrollTop;
+    out.ledList = getComputedStyle(plp).overflowY === 'auto' && !document.querySelector('#featureSheet.hk-led-page .feature-sheet-body').scrollTop;
+    document.querySelector('#sections-ledger .section[data-sec-id="A"] > .section-header').click(); await w(1400);
     const body = document.querySelector('#sections-ledger .section[data-sec-id="A"] .section-body');
     out.ledLines = /linear-gradient/.test(getComputedStyle(body).backgroundImage) && Math.abs(body.querySelector('table').getBoundingClientRect().height - body.clientHeight) < 4; /* ۱.۴.۳: جدول به اندازهٔ ردیف‌هایش */
     const fab = document.querySelector('#sections-ledger .section[data-sec-id="A"] .ledger-row-fab');

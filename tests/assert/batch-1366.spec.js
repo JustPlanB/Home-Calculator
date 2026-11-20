@@ -115,11 +115,13 @@ async function fresh(b, theme) {
       hdr.click();
       const clickMs = performance.now() - t0;
       await w(700);
-      const opened = !sec.classList.contains('collapsed'), built = sec.querySelectorAll('tbody tr').length;
-      const capped = !!sec.querySelector('.section-body').style.getPropertyValue('max-height');
-      hdr.click(); await w(700);
+      /* ۱.۴.۸: کلیک = صفحهٔ رابطه (کارت دوباره ساخته می‌شود) */
+      const sec2 = document.querySelector('#sections-ledger .section[data-sec-id="S1"]');
+      const opened = !sec2.classList.contains('collapsed'), built = sec2.querySelectorAll('tbody tr').length;
+      const capped = !!sec2.querySelector('.section-body').style.getPropertyValue('max-height');
+      hkLedRelClose(); await w(700);
       run = false;
-      return { clickMs: Math.round(clickMs), maxGap: Math.round(Math.max.apply(null, gaps.slice(1))), opened, built, capped, closed: sec.classList.contains('collapsed') };
+      return { clickMs: Math.round(clickMs), maxGap: Math.round(Math.max.apply(null, gaps.slice(1))), opened, built, capped, closed: document.querySelector('#sections-ledger .section[data-sec-id="S1"]').classList.contains('collapsed') };
     });
     if (!best || fr.maxGap < best.maxGap) best = fr;
     if (fr.maxGap < 120) break;
