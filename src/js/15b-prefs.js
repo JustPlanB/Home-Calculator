@@ -831,8 +831,9 @@
     function hkLedOpenRel(id) {
       var sec = (ensureLedger().sections || []).find(function (s) { return s.id === id; }); if (!sec) return;
       var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle');
-      _hkLedRel = id; if (t) { _hkLedTitle = _hkLedTitle || t.textContent; t.textContent = ''; } /* ۱.۴.۹: نام رابطه فقط بالای جدول است، نه بالای صفحه */
+      _hkLedRel = id; if (t) { _hkLedTitle = _hkLedTitle || t.textContent; t.textContent = ledgerSectionTitle(sec); } /* ۱.۴.۱۲: نام رابطه کنار فلش بک */
       if (fs) fs.classList.add('hk-led-rel');
+      try { if (fs) hkPageDecorate(fs); } catch (eD) {}
       renderLedgerTab();
       try { var a = hkMenuSlide(document.getElementById('featureSheetBody'), true); } catch (e) {}
       hkLedRelFit(); setTimeout(hkLedRelFit, 450);
@@ -843,6 +844,7 @@
       var fs = document.getElementById('featureSheet'), t = document.getElementById('featureSheetTitle'), fs0 = quiet ? null : fs;
       _hkLedRel = ''; if (fs) fs.classList.remove('hk-led-rel');
       if (t && _hkLedTitle) { t.textContent = _hkLedTitle; } _hkLedTitle = '';
+      try { if (fs) hkPageDecorate(fs); } catch (eD2) {}
       if (quiet) return true;
       /* ۱.۴.۹: برگشت به فهرست: خودِ فهرست نرم از چپ می‌آید (بی کپیِ سنگین، و هیچ لحظه‌ای صفحه خالی نیست؛ کنار رفتنِ صفحه همان چند صدم ثانیه خالی را می‌ساخت) */
       renderLedgerTab();

@@ -46,7 +46,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const s = document.querySelector('#sections-ledger .section.hk-lrel'), cs = getComputedStyle(s), fab = document.getElementById('hkScrollFab');
     return { sub, ex, title: document.getElementById('featureSheetTitle').textContent, frame: cs.boxShadow + '|' + cs.backgroundColor, fab: !!fab && fab.classList.contains('show') };
   });
-  ok(E.title === '' && /none/.test(E.frame.split('|')[0]), 'صفحهٔ رابطه: بی نام بالای صفحه و بی سایهٔ قاب قدیمی');
+  ok(E.title !== '' && /علی/.test(E.title) /* ۱.۴.۱۲: نام رابطه کنار فلش بک */ && /none/.test(E.frame.split('|')[0]), 'صفحهٔ رابطه: بی نام بالای صفحه و بی سایهٔ قاب قدیمی');
   ok(E.fab, 'اتواسکرول همان دکمهٔ جدول درآمد/مخارج، در صفحهٔ رابطه');
   /* پیوست: آیکون اشتراک‌گذاری */
   const A = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 20; c.height = 20; const bl = await new Promise(r => c.toBlob(r)); hkViewImage(URL.createObjectURL(bl)); await new Promise(r => setTimeout(r, 300)); const s = document.querySelector('#hkImgView .hk-img-shr'), r = s && s.getBoundingClientRect(); return r && Math.abs((r.left + r.right) / 2 - innerWidth / 2) < 2 && r.top > innerHeight / 2; });
