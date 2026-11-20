@@ -344,7 +344,7 @@
        یک ضربه در حالت عادی یا دکمهٔ × = بستن */
     function hkViewImage(url) {
       var v = document.createElement('div'); v.id = 'hkImgView'; v.className = 'hk-img-view';
-      v.innerHTML = '<img alt="" draggable="false"><button type="button" class="hk-img-x" aria-label="بستن">×</button>';
+      v.innerHTML = '<img alt="" draggable="false"><button type="button" class="hk-img-x" aria-label="بستن">×</button><button type="button" class="hk-img-shr" aria-label="اشتراک‌گذاری">' + HK_SHARE_SVG + '</button>';
       var img = v.querySelector('img'); img.src = url;
       document.body.appendChild(v);
       var sc = 1, tx = 0, ty = 0, pts = {}, start = null, lastTap = 0, moved = false;
@@ -357,8 +357,16 @@
       };
       var close = function () { v.remove(); };
       v.querySelector('.hk-img-x').onclick = function (e) { e.stopPropagation(); close(); };
+      /* ۱.۴.۹: اشتراک‌گذاری همان فایل پیوست (پایین، وسط) */
+      v.querySelector('.hk-img-shr').onclick = function (e) {
+        e.stopPropagation();
+        fetch(url).then(function (r) { return r.blob(); }).then(function (bl) {
+          var ext = /png/.test(bl.type) ? 'png' : (/webp/.test(bl.type) ? 'webp' : 'jpg');
+          return hkDongShareBlob(bl, 'attachment.' + ext, bl.type || 'image/jpeg', 'پیوست');
+        }).catch(function () { showToast('اشتراک‌گذاری ممکن نشد', 'warn'); });
+      };
       v.addEventListener('pointerdown', function (e) {
-        if (e.target.classList.contains('hk-img-x')) return;
+        if (e.target.classList.contains('hk-img-x') || e.target.closest('.hk-img-shr')) return;
         try { v.setPointerCapture(e.pointerId); } catch (eC) {}
         pts[e.pointerId] = { x: e.clientX, y: e.clientY }; moved = false;
         var ids = Object.keys(pts);

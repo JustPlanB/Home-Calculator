@@ -85,10 +85,13 @@
       var dLbl = function (d, t) { return toPersianDigits(String(d)) + ' ' + (MONTHS[(snap.m || currentMonth) - 1] || '') + (t ? ' ساعت ' + toPersianDigits(String(t)) : ''); };
       var from = prev && prev.day ? prev.day : (sd ? Math.max(1, sd - 0) : 0);
       snap._gapDay = from || sd || 0; snap._gapPrev = prev;
-      var pickH = '';
-      if (sd && from && from < sd) {
-        var opts = ''; for (var d = from; d <= sd; d++) opts += '<option value="' + d + '"' + (d === from ? ' selected' : '') + '>' + dLbl(d) + '</option>';
-        pickH = '<div class="hk-recon-when"><span>روز ثبت ردیف اختلاف</span><select class="hk-recon-day">' + opts + '</select></div>';
+      /* ۱.۴.۹: روز ردیف اختلاف: امروز (روز همین تراکنش) و روزهای قبلِ همین ماه؛ با منوی خودِ نرم‌افزار (نه انتخاب‌گر گوشی).
+         امروز → یکی مانده به همین تراکنش؛ روز قبل → آخرین ردیف همان روز (hkInsertReconGapRow) */
+      var pickH = '', dayOpts = [];
+      if (sd > 1 || (sd && from && from < sd)) {
+        var todayP = getTodayPersian(), isNow = todayP && todayP.y === snap.y && todayP.m === snap.m;
+        for (var d = sd; d >= 1; d--) dayOpts.push({ value: String(d), label: ((isNow && d === todayP.d) ? 'امروز · ' : (isNow && d === todayP.d - 1 ? 'دیروز · ' : '')) + dLbl(d) });
+        pickH = '<div class="hk-recon-when"><span>روز ثبت ردیف اختلاف</span><span class="hk-recon-daywrap"></span></div>';
       }
       var miss = diff < 0 ? 'خرج' : 'درآمد', amt = Math.abs(diff);
       var sg = function (v) { return (v < 0 ? '−' : '') + formatNum(Math.abs(v)); };
@@ -112,7 +115,14 @@
           (onChoice ? '<button type="button" class="hk-recon-back">بازگشت</button>' : '') + '</div>' +
       '</div>';
       document.body.appendChild(ov);
-      try { var dsel = ov.querySelector('.hk-recon-day'); if (dsel) dsel.onchange = function () { snap._gapDay = parseInt(dsel.value, 10) || snap._gapDay; }; } catch (eDs) {}
+      try {
+        var dw = ov.querySelector('.hk-recon-daywrap');
+        if (dw && dayOpts.length) {
+          var pick0 = String(snap._gapDay || sd);
+          var ds = createDarkSelect({ options: dayOpts, value: pick0, listClassName: 'hk-recon-dl', onChange: function (v) { snap._gapDay = parseInt(v, 10) || snap._gapDay; } });
+          dw.appendChild(ds);
+        }
+      } catch (eDs) {}
       var close = function () { try { ov.remove(); } catch (e) {} };
       if (onChoice) {
         /* پیش از ثبت: سه گزینه */

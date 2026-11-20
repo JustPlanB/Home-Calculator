@@ -200,6 +200,10 @@
         return hkStorageSet(TODO_KEY, JSON.stringify(m));
       } catch (e) { hkPersistFailed(TODO_KEY, e); return false; }
     }
+    /* ۱.۴.۹: دکمهٔ کناریِ قلم (S Pen) یا سرِ پاک‌کن: بسته به گوشی buttons=2 یا ۳۲، یا button=2/5، و گاهی نوعِ نشانگر mouse است */
+    function hkInkPenBtn(e) { return (e.pointerType === 'pen' || e.pointerType === 'mouse') && ((e.buttons & 34) > 0 || e.button === 2 || e.button === 5) && !(e.pointerType === 'mouse' && e.button === 0 && e.buttons === 1); }
+    /* ضخامت: پایه = اندازهٔ انتخاب‌شده (مثل انگشت)؛ فقط فشارِ بیشتر از معمول کلفت‌تر می‌کند و هرگز نازک‌تر نمی‌شود */
+    function hkInkW(e, base) { if (e.pointerType !== 'pen' || !(e.pressure > 0.35)) return base; return Math.round(Math.min(base * 2.2, base * (1 + (e.pressure - 0.35) * 2.2)) * 10) / 10; }
     function openInkEditor(title, noteId) {
       var t = (title || '').trim();
       var id = noteId || ('n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
@@ -282,11 +286,11 @@
       cv.addEventListener('pointerdown', function (e) {
         e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (eC) {}
         /* ۱.۴.۸: نگه داشتن دکمهٔ کناری قلم (S Pen) یا سرِ پاک‌کنِ قلم = همان لحظه پاک‌کن (مثل نوت سامسونگ) */
-        var penBtn = e.pointerType === 'pen' && (e.buttons & 34) > 0;
+        var penBtn = hkInkPenBtn(e);
         if (erasing || penBtn) { snap(); erGest = pt(e); erAt = erGest; eraseAt(erGest); redraw(); return; }
         snap();
-        /* قلم: ضخامت با فشار؛ انگشت: ضخامت ثابت؛ هر دو بر پایهٔ اندازهٔ انتخاب‌شده */
-        var w = e.pointerType === 'pen' && e.pressure > 0 ? Math.max(2, Math.min(14, penW * (0.5 + e.pressure))) : penW;
+        /* ۱.۴.۹: ضخامتِ پیش‌فرض قلم = انگشت؛ فشار بیشتر فقط کلفت‌ترش می‌کند */
+        var w = hkInkW(e, penW);
         drawing = { c: color, w: Math.round(w * 10) / 10, p: [pt(e)] }; redraw();
       });
       cv.addEventListener('pointermove', function (e) {
@@ -295,9 +299,10 @@
           (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(function (ce) { var q = pt(ce); eraseLine(erGest, q); erGest = q; });
           erAt = erGest; redraw(); return;
         }
+        if (drawing && hkInkPenBtn(e)) { drawing = null; erGest = pt(e); erAt = erGest; snap(); eraseAt(erGest); redraw(); return; }
         if (!drawing) return; e.preventDefault();
         var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-        evs.forEach(function (ce) { var q = pt(ce), l = drawing.p[drawing.p.length - 1]; if (Math.abs(q[0] - l[0]) + Math.abs(q[1] - l[1]) >= 3) drawing.p.push(q); });
+        evs.forEach(function (ce) { var q = pt(ce), l = drawing.p[drawing.p.length - 1]; drawing.w = Math.max(drawing.w, hkInkW(ce, penW)); if (Math.abs(q[0] - l[0]) + Math.abs(q[1] - l[1]) >= 3) drawing.p.push(q); });
         redraw();
       });
       var end = function () {

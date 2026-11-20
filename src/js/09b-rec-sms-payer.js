@@ -447,7 +447,7 @@
         if (!sugBox) {
           sugBox = document.createElement('div');
           sugBox.id = 'smsPlanSuggest';
-          sugBox.style.cssText = 'display:none;margin:4px 0 10px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1c1c1e;max-height:180px;overflow:auto;position:relative;z-index:20;';
+          sugBox.style.cssText = 'display:none;margin:4px 0 10px;border-radius:10px;max-height:180px;overflow:auto;position:relative;z-index:20;';
           /* بیرون از قاب میکروفون، تا با باز شدن پیشنهادها آیکون جابه‌جا/پنهان نشود */
           var _anc = desc._micWrap || desc;
           if (_anc.parentNode) _anc.parentNode.insertBefore(sugBox, _anc.nextSibling);
@@ -500,7 +500,7 @@
                 const unpaidIdx = earliestUnpaidPlanIndex(p);
                 if (unpaidIdx < 0) return;
                 const item = document.createElement('div');
-                item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
+                item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;font-size:0.88rem;';
                 const due = dueDateForInstallment(p, unpaidIdx);
                 const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : '';
                 var unNum = unpaidIdx + 1;
@@ -523,7 +523,7 @@
                     const dueTxt = due ? (toPersianDigits(due.d) + ' ' + (MONTHS[due.m - 1] || '') + ' ' + toPersianDigits(due.y)) : '';
                     var qName = (p.name || 'قسط').trim() || 'قسط';
                     const item = document.createElement('div');
-                    item.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;text-align:right;cursor:pointer;';
+                    item.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:0.85rem;text-align:right;cursor:pointer;';
                     const cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.setAttribute('data-batch-plan', p.id);
@@ -590,7 +590,7 @@
           }
           freq.forEach(function(s) {
             const item = document.createElement('div');
-            item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;';
+            item.style.cssText = 'padding:10px 12px;cursor:pointer;text-align:right;font-size:0.88rem;';
             item.textContent = s;
             item.onmousedown = function(ev) {
               try { ev.preventDefault(); } catch (e0) {}
