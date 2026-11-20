@@ -52,6 +52,19 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     return { head: sh[2].map(c => c.v).join('|'), paid: ((sh.find(r => r[0] && r[0].v === 'اجاره' && r[2] && /۱۴۰۵/.test(r[2].v)) || [])[2] || {}).v, status: sh.slice(3, 12).map(r => r[4] && r[4].v).filter(Boolean) };
   });
   ok(/^درآمد ثابت\|بابت\|تاریخ تراکنش/.test(R.head) && /۱۴۰۵\/[۰-۹]{2}\/[۰-۹]{2} {2}· /.test(R.paid || '') && R.status.some(s => /پیدا نشد|در انتظار|دریافت/.test(s || '')), 'خروجی درآمد ثابت: ستون‌های جدول آرشیو، تاریخ کامل شمسی و میلادی، وضعیت هر ماه (' + JSON.stringify(R) + ')');
+  /* جستجو: با روز مشخص «جمع … (n مورد)»، فقط ماه بدون روز «… کل <ماه>» */
+  const Q = await page.evaluate(async () => {
+    const t = hkMainTitle(), sec = findSectionByTitle('income', t);
+    sec.rows = [1, 2, 3].map(i => Object.assign(emptyRow('income'), { status: 'paid', day: '5', desc: 'حقوق ' + i, amount: 1000 * i }));
+    persistCurrent();
+    const inp = document.getElementById('balanceSearchInput'), rg = document.getElementById('balanceSearchRange'), dd = document.getElementById('balanceDayFilter');
+    if (!inp || !rg) return null;
+    inp.value = 'حقوق'; rg.value = String(currentMonth); if (dd) dd.value = '';
+    renderBalanceSearch(); const noDay = (document.querySelector('#searchResultBox tfoot, #searchResultFoot') || document.getElementById('searchResultBox')).innerText;
+    if (dd) dd.value = '5'; renderBalanceSearch(); const withDay = (document.querySelector('#searchResultBox tfoot, #searchResultFoot') || document.getElementById('searchResultBox')).innerText;
+    return { noDay: /درآمد کل/.test(noDay), withDay: /جمع درآمد \([^)]*مورد\)/.test(withDay) && !/درآمد کل/.test(withDay) };
+  });
+  ok(Q && Q.noDay && Q.withDay, 'جستجو: ماه = «درآمد کل ماه»؛ روز مشخص = «جمع درآمد (n مورد)» (' + JSON.stringify(Q) + ')');
   ok(errs.length === 0, 'بدون خطای JS' + (errs.length ? ': ' + errs[0] : ''));
   await b.close(); console.log('batch-1412: ' + passed + ' passed, ' + failed + ' failed'); process.exit(failed ? 1 : 0);
 })();
