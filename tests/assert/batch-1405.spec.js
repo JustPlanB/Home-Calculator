@@ -133,7 +133,7 @@ const allErrors = [];
   ok(F.led.fab && !F.led.top && F.led.label === 'رابطهٔ جدید' && F.rec.fab && !F.rec.top && F.rec.label === 'درآمد ثابت جدید' && F.gone, 'قرض و درآمد ثابت: «+» بالای صفحه برداشته شد و مربع پایین آمد');
   ok(F.led.row[0] === 58 && F.led.row[1] === 58, 'قرض: «ردیف جدید» داخل رابطهٔ باز همان مربع آبی گوشهٔ صفحه (' + F.led.row.slice(0, 2).join('×') + ')');
   const icAll = ['proj', 'sav', 'rem', 'dong', 'rec'].map(k => F[k].ic);
-  ok(icAll.every(i => i && i[0][0] === 26 && i[1][0] === 62 && Math.abs(i[0][1]) <= 1 && Math.abs(i[1][1]) <= 1), 'آیکون حذف و ویرایش روی همهٔ باکس‌ها: وسط ارتفاع، ۲۶ و ۶۲ پیکسل از لبهٔ چپ (' + JSON.stringify(icAll) + ')');
+  ok(icAll.every(i => i && i[0][0] === (i === F.dong.ic ? 22 : 26) && i[1][0] === (i === F.dong.ic ? 58 : 62) && Math.abs(i[0][1]) <= 1 && Math.abs(i[1][1]) <= 1), 'آیکون حذف و ویرایش روی همهٔ باکس‌ها: وسط ارتفاع، ۲۶ و ۶۲ پیکسل از لبهٔ چپ (' + JSON.stringify(icAll) + ')');
   ok(F.share === 'متن|عکس|PDF' && !F.grp.acts, 'دُنگ: اشتراک‌گذاری از روی کارت گروه؛ دکمه‌های پایین گروه نیستند');
   ok(F.grp.sticky, 'دُنگ: «خرج کل» بالا ثابت می‌ماند');
   ok(F.exp.page && F.exp.touch[0] === 26 && F.exp.touch[1] === 30, 'دُنگ: خرج در صفحهٔ کامل؛ جای لمس «+/−» فقط دور علامت (' + F.exp.touch.join('×') + ')');
