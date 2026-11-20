@@ -118,7 +118,7 @@ async function fresh(b, theme) {
       /* ۱.۴.۸: کلیک = صفحهٔ رابطه (کارت دوباره ساخته می‌شود) */
       const sec2 = document.querySelector('#sections-ledger .section[data-sec-id="S1"]');
       const opened = !sec2.classList.contains('collapsed'), built = sec2.querySelectorAll('tbody tr').length;
-      const capped = !!sec2.querySelector('.section-body').style.getPropertyValue('max-height');
+      const capped = getComputedStyle(sec2.querySelector('.section-body')).maxHeight !== 'none'; /* ۱.۴.۱۰: سقف ۱۲ ردیف با CSS */
       hkLedRelClose(); await w(700);
       run = false;
       return { clickMs: Math.round(clickMs), maxGap: Math.round(Math.max.apply(null, gaps.slice(1))), opened, built, capped, closed: document.querySelector('#sections-ledger .section[data-sec-id="S1"]').classList.contains('collapsed') };

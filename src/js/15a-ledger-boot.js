@@ -959,8 +959,8 @@
       var CHEV = '<span class="fab-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5 5 5-5"/><path d="M7 12.5l5 5 5-5"/></svg></span>';
       var curSc = function () {
         /* ۱.۴.۹: صفحهٔ رابطهٔ قرض هم همین دکمهٔ اتواسکرول را دارد */
-        var lr = document.querySelector('#featureSheet.hk-led-rel.open .section.hk-lrel .section-body');
-        if (lr && lr.offsetParent && lr.clientHeight > 0) return lr;
+        var fsx = document.getElementById('featureSheet');
+        if (fsx && fsx.classList.contains('hk-led-rel') && fsx.classList.contains('open')) { var lr = fsx.querySelector('.section.hk-lrel .section-body'); if (lr) return lr; } /* بی خواندن چیدمان: با هر تغییر DOM صدا زده می‌شود */
         if (!document.body.classList.contains('detail-open')) return null;
         var list = document.querySelectorAll('.person-detail-scroll');
         for (var i = 0; i < list.length; i++) { if (list[i].offsetParent && list[i].clientHeight > 0) return list[i]; }
@@ -1029,15 +1029,14 @@
         top += 7; /* ۱.۳.۸۰: کمی پایین‌تر */
 
         fab.style.top = Math.round(top) + 'px';
-        /* صفحهٔ رابطهٔ قرض: مربع افزودن گوشهٔ راست است، پس اتواسکرول گوشهٔ چپ */
-        fab.style.left = Math.round(sc.closest('.section.hk-lrel') ? br.left + 14 : br.right - 14 - fs) + 'px';
+        fab.style.left = Math.round(br.right - 14 - fs) + 'px';
         fab.classList.add('show');
       };
       var sched = function () { if (!raf) raf = requestAnimationFrame(update); };
       document.addEventListener('scroll', sched, true);
       window.addEventListener('resize', sched);
       /* ۱.۴.۴: جدولی که تازه باز شده همان لحظه (پیش از اولین نقاشی) اندازه شود، نه یک فریم بعد (راهنمای زیر جدول و خود جدول می‌پریدند) */
-      var fitNew = function () { try { var sc0 = curSc(); if (sc0 && !sc0._hkFitKey) fit(sc0); } catch (eFn) {} sched(); };
+      var fitNew = function () { try { var sc0 = curSc(); if (sc0 && !sc0._hkFitKey && !sc0.closest('.section.hk-lrel')) fit(sc0); } catch (eFn) {} sched(); };
       try { new MutationObserver(fitNew).observe(document.body, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true }); } catch (eM) {}
       setTimeout(sched, 600);
     })();

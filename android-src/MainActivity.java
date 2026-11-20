@@ -4,6 +4,7 @@ import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
 import android.content.pm.PackageManager;
+import android.view.MotionEvent;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -28,6 +29,27 @@ public class MainActivity extends BridgeActivity {
     if(!needed.isEmpty()) requestPermissions(needed.toArray(new String[0]),4201);
     try{ HkRemindersPlugin.saveTarget(this,getIntent()); }catch(Exception ignored){}
   }
+  /* ۱.۴.۱۰: دکمهٔ کناری قلم (S Pen) یا سرِ پاک‌کن: WebView وضعیت دکمه را همیشه به صفحه نمی‌رساند (S24/S26 Ultra)؛
+     وضعیتش از لمس و شناور شدنِ قلم خوانده و به صورت window.__hkPenBtn به صفحه داده می‌شود (پاک‌کنِ دست‌نویس) */
+  private boolean hkPenBtn=false;
+  private void hkPenTrack(MotionEvent ev){
+    try{
+      if(ev==null||ev.getPointerCount()<1) return;
+      int tt=ev.getToolType(0);
+      boolean stylus=(tt==MotionEvent.TOOL_TYPE_STYLUS||tt==MotionEvent.TOOL_TYPE_ERASER);
+      int act=ev.getActionMasked();
+      boolean end=(act==MotionEvent.ACTION_UP||act==MotionEvent.ACTION_CANCEL||act==MotionEvent.ACTION_HOVER_EXIT);
+      boolean b=!end && stylus && (tt==MotionEvent.TOOL_TYPE_ERASER || (ev.getButtonState()&(MotionEvent.BUTTON_STYLUS_PRIMARY|MotionEvent.BUTTON_STYLUS_SECONDARY))!=0);
+      if(b!=hkPenBtn){
+        hkPenBtn=b;
+        if(getBridge()!=null && getBridge().getWebView()!=null){
+          getBridge().getWebView().evaluateJavascript("window.__hkPenBtn="+(b?"true":"false")+";",null);
+        }
+      }
+    }catch(Exception ignored){}
+  }
+  @Override public boolean dispatchTouchEvent(MotionEvent ev){ hkPenTrack(ev); return super.dispatchTouchEvent(ev); }
+  @Override public boolean dispatchGenericMotionEvent(MotionEvent ev){ hkPenTrack(ev); return super.dispatchGenericMotionEvent(ev); }
   @Override public void onNewIntent(android.content.Intent intent){
     super.onNewIntent(intent);
     try{ HkRemindersPlugin.saveTarget(this,intent); }catch(Exception ignored){}

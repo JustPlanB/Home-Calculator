@@ -31,7 +31,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     const t = hkMainTitle(), exp = findSectionByTitle('expense', t);
     exp.rows = []; for (let i = 0; i < 30; i++) exp.rows.push(Object.assign(emptyRow('expense'), { day: String(1 + (i % 28)), desc: 'خرج ' + i, amount: (i + 1) * 10000, status: 'paid' }));
     persistCurrent(); renderAll(); openPersonDetail(t, 'expense'); await w(1200);
-    const detailHidden = getComputedStyle(ln).display === 'none';
+    const detailHidden = getComputedStyle(ln).display !== 'none'; /* ۱.۴.۱۰: در جدول درآمد/مخارج هم دیده می‌شود */
     const box = document.querySelector('.person-detail-box'), hint = box.querySelector('.person-detail-hint'), sc = box.querySelector('.person-detail-scroll'), fab = document.getElementById('hkScrollFab');
     const rg = document.createRange(); rg.selectNodeContents(hint); const q = rg.getBoundingClientRect(), br = box.getBoundingClientRect(), fr = fab.getBoundingClientRect();
     const fcs = getComputedStyle(fab);
@@ -55,7 +55,7 @@ const REM = JSON.stringify([{ id: 'r1', title: 'اجارهٔ خانه', y: 1405,
     out.fastHide = sw.classList.contains('hk-ms-hide');
     return out;
   });
-  ok(a.homeVis && a.detailHidden, 'تاریخ روز فقط در صفحهٔ اصلی (در جدول درآمد/مخارج پنهان)');
+  ok(a.homeVis && a.detailHidden, 'تاریخ روز در صفحهٔ اصلی و جدول درآمد/مخارج (۱.۴.۱۰)');
   ok(Math.abs(a.sides[0] - a.sides[1]) < 2 && a.gap < 20, 'راهنمای جدول: فضای خالی دو طرف نوشته یکی (' + a.sides.map(Math.round).join(' / ') + ')، فاصله تا جدول همان');
   ok(a.noCircle, 'فلش اسکرول بی دایره');
   ok(a.addDim && a.dockDim, 'پشت باکس «+» و انتخاب میان‌بر مات');
