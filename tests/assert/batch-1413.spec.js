@@ -30,6 +30,13 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     return { projHas: /ساختمان آسمان/.test(out.proj) && /سیمان/.test(out.proj), projOtherHas: /ساختمان آسمان/.test(out.projOther), ledHas: /رضا/.test(out.led) && !/علی/.test(out.led), recHas: /آرشیو درآمدهای ثابت/.test(out.rec) && /اجاره/.test(out.rec) && /بابت/.test(out.rec) };
   });
   ok(R.projHas && !R.projOtherHas && R.ledHas && R.recHas, 'شیرِ باکس: PDF همان خروجی منوی گزارش‌ها، فقط همان مورد (' + JSON.stringify(R) + ')');
+  /* «عکس» شیر: همان صفحه‌های همان PDF در یک PNG */
+  const I = await page.evaluate(async () => {
+    let got = null; navigator.canShare = () => true; navigator.share = (o) => { got = o.files && o.files[0] && { t: o.files[0].type, s: o.files[0].size }; return Promise.resolve(); };
+    await hkShareExportImage('recurring', null, 'rX', 'درآمد ثابت اجاره'); await new Promise(r => setTimeout(r, 400));
+    return got;
+  });
+  ok(I && I.t === 'image/png' && I.s > 20000, 'شیرِ «عکس»: همان خروجی PDF به‌صورت PNG (' + JSON.stringify(I) + ')');
   /* جدول رابطهٔ قرض با چند ردیف: وسط عمودی صفحه */
   const C = await page.evaluate(async () => {
     openFeatureSheet('ledger'); await new Promise(r => setTimeout(r, 1000)); hkLedOpenRel('A'); await new Promise(r => setTimeout(r, 1500));

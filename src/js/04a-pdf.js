@@ -795,7 +795,8 @@
         '<scr' + 'ipt>window.__PDF_PAGE_COUNT__=' + pages.length + ';</scr' + 'ipt>' + pages.join('') + '</body></html>';
     }
     /* مسیر آفلاین (مرورگر/اگر native شکست): هر صفحه جدا رندر می‌شود تا مرز صفحات دقیقاً همان باشد */
-    async function renderPdfPagesOffline() {
+    /* ۱.۴.۱۴: صفحه‌های همان PDF به‌صورت بوم (canvas)؛ هم برای PDF و هم برای «عکس» شیر باکس‌ها */
+    async function hkPdfPageCanvases() {
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
       var pages = await buildPdfPages(), css = pdfStyleCss(), SCALE = 2, out = [];
       for (var i = 0; i < pages.length; i++) {
@@ -812,13 +813,41 @@
         var c = document.createElement('canvas'); c.width = PDF_W * SCALE; c.height = PDF_PAGE_H * SCALE;
         var x = c.getContext('2d', { alpha: false }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
         x.setTransform(SCALE, 0, 0, SCALE, 0, 0); x.drawImage(img, 0, 0);
+        out.push(c);
+      }
+      return out;
+    }
+    async function renderPdfPagesOffline() {
+      var cvs = await hkPdfPageCanvases(), out = [];
+      cvs.forEach(function (c) {
         var bin = atob(c.toDataURL('image/jpeg', 0.92).split(',')[1]), jpg = new Uint8Array(bin.length);
         for (var k = 0; k < bin.length; k++) jpg[k] = bin.charCodeAt(k);
         out.push({ jpg: jpg, w: c.width, h: c.height });
-      }
+      });
       if (!out.length) throw new Error('no pages');
       return buildSimpleImagePdf(out, 595.28, 841.89);
     }
+    /* «عکس» شیر باکس‌ها: همان صفحه‌های همان خروجی، زیر هم در یک عکس (حداکثر ۹ صفحه) */
+    async function hkShareExportImage(sec, only, recId, title) {
+      var prevOpts = _hkExportOpts, prevArc = _hkRecArc;
+      try {
+        if (recId) { _hkRecArc = { ids: (function () { var o = {}; o[recId] = true; return o; })(), keys: null }; _hkExportOpts = null; }
+        else { _hkRecArc = null; _hkExportOpts = { range: 'all', user: '', sections: (function () { var o = {}; o[sec] = true; return o; })(), only: only || null }; }
+        persistCurrent();
+        showToast('در حال ساخت عکس…');
+        var cvs = (await hkPdfPageCanvases()).slice(0, 9);
+        if (!cvs.length) throw new Error('no pages');
+        var W = cvs[0].width, H = cvs.reduce(function (a, c) { return a + c.height; }, 0);
+        var big = document.createElement('canvas'); big.width = W; big.height = H;
+        var g = big.getContext('2d', { alpha: false }); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+        var y = 0; cvs.forEach(function (c) { g.drawImage(c, 0, y); y += c.height; });
+        var blob = await new Promise(function (res) { big.toBlob(res, 'image/png'); });
+        if (!blob || !blob.size) throw new Error('empty');
+        await hkDongShareBlob(blob, 'share-' + String(title || 'report').replace(/[\\/:*?"<>|\s]+/g, '-') + '.png', 'image/png', title || 'گزارش');
+      } catch (e) { try { showToast('ساخت عکس ممکن نشد', 'warn'); } catch (e2) {} }
+      finally { _hkExportOpts = prevOpts; _hkRecArc = prevArc; }
+    }
+    try { window.hkShareExportImage = hkShareExportImage; } catch (eHi) {}
 
 /* بعد از ذخیره: فهرست برنامه‌های نمایش PDF باز می‌شود و فایل با برنامهٔ انتخاب‌شده نشان داده می‌شود */
 function openPdfWithChooser(uri) {

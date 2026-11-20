@@ -869,7 +869,9 @@
     function hkLedShare(sec, kind) {
       var title = 'قرض ' + ledgerSectionTitle(sec), base = 'ledger-' + String(ledgerSectionTitle(sec)).replace(/[\\/:*?"<>|\s]+/g, '-');
       if (!kind || kind === 'text') return hkDongShareText2(hkLedShareText(sec), title);
-      if (kind === 'pdf' && hkLedViewRows(sec).some(function (x) { return x.row && !x.row.deletedAt && (x.row.amount || x.row.desc); })) return hkShareExportPdf('ledger', { ledger: [sec.id] }); /* ۱.۴.۱۴: همان خروجی منوی گزارش‌ها */
+      var hasLed = hkLedViewRows(sec).some(function (x) { return x.row && !x.row.deletedAt && (x.row.amount || x.row.desc); });
+      if (kind === 'pdf' && hasLed) return hkShareExportPdf('ledger', { ledger: [sec.id] });
+      if (kind === 'photo' && hasLed) return hkShareExportImage('ledger', { ledger: [sec.id] }, '', 'قرض ' + ledgerSectionTitle(sec)); /* ۱.۴.۱۴: همان خروجی منوی گزارش‌ها */
       showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
       return hkDongReportBlob(sec, kind, hkLedReportHtml).then(function (blob) {
         if (!blob || !blob.size) throw new Error('empty');
@@ -901,6 +903,7 @@
         if (!kind || kind === 'text') return hkDongShareText2(o.text(g), title);
         /* ۱.۴.۱۴: PDF = همان خروجی منوی گزارش‌ها برای همین مورد (کل بازه) */
         if (kind === 'pdf' && o.pdf) return o.pdf(g);
+        if (kind === 'photo' && o.img) return o.img(g);
         showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
         return hkDongReportBlob(g, kind, o.html).then(function (blob) {
           if (!blob || !blob.size) throw new Error('empty');
@@ -924,6 +927,7 @@
     function hkProjLine(s, r) { var net = r.dep - r.exp; return net > 0 ? 'پروژه ' + s.name + ' ' + formatNum(net) + ' تومان طلب دارد' : (net < 0 ? 'پروژه ' + s.name + ' ' + formatNum(-net) + ' تومان بدهکار است' : 'پروژه ' + s.name + ' تسویه است'); }
     var hkProjShare = hkMakeShareFn({
       pdf: function (s) { return hkShareExportPdf('projects', { projects: [s.id] }); },
+      img: function (s) { return hkShareExportImage('projects', { projects: [s.id] }, '', 'پروژه ' + s.name); },
       title: function (s) { return 'پروژه ' + s.name; },
       text: function (s) { var r = hkProjRows(s), L = ['پروژه ' + s.name, hkProjLine(s, r), 'جمع واریزی: ' + formatNum(r.dep) + ' تومان', 'جمع مخارج: ' + formatNum(r.exp) + ' تومان', '', 'واریزی‌ها:'];
         r.inn.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); L.push('', 'مخارج:'); r.out.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); return L.join('\n'); },
@@ -934,6 +938,7 @@
     function hkSavRows(G) { return G.items.map(function (it) { var d = it.y ? toPersianDigits(String(it.y)) + '/' + toPersianPad2(it.m || 1) + '/' + toPersianPad2(it.d || 1) : '—'; return [d, _savFmtQty(Number(it.qty) || 0) + ' ' + _savUnit(it), Number(it.buy) > 0 ? formatNum(Number(it.buy)) : '—', it.note || '']; }); }
     var hkSavShare = hkMakeShareFn({
       pdf: function (G) { return hkShareExportPdf('savings', { savings: [G.key] }); },
+      img: function (G) { return hkShareExportImage('savings', { savings: [G.key] }, '', 'پس‌انداز ' + G.name); },
       title: function (G) { return 'پس‌انداز ' + G.name; },
       text: function (G) { var L = ['پس‌انداز ' + G.name, 'مقدار: ' + _savFmtQty(G.qty) + ' ' + G.unit, hkSavLine(G)]; if (G.price) L.push('قیمت روز: ' + formatNum(G.price) + ' تومان · ارزش روز: ' + formatNum(Math.round(G.value)) + ' تومان'); L.push('');
         hkSavRows(G).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | خرید ' + x[2] + (x[3] ? ' | ' + x[3] : '')); }); return L.join('\n'); },
@@ -943,6 +948,7 @@
     function hkRecRows(item) { var out = []; try { recRowsOf(item).forEach(function (z) { var r = z.row; out.push([(MONTHS[(z.key % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(z.key / 100))), r.day ? toPersianDigits(String(r.day)) : '—', formatNum(Number(r.amount) || 0), recIsPaid(r) ? 'دریافت شد' : 'دریافت نشده', r.desc || '']); }); } catch (e) {} return out; }
     var hkRecShare = hkMakeShareFn({
       pdf: function (it) { return hkShareExportPdf('recurring', null, it.id); },
+      img: function (it) { return hkShareExportImage('recurring', null, it.id, 'درآمد ثابت ' + (it.name || '')); },
       title: function (it) { return 'درآمد ثابت ' + (it.name || ''); },
       text: function (it) { var L = ['درآمد ثابت ' + (it.name || ''), 'مبلغ ماهانه: ' + formatNum(it.amount || 0) + ' تومان', (Number(it.deposit) > 0 ? 'رهن: ' + formatNum(it.deposit) + ' تومان' : ''), ''].filter(function (x, i) { return x || i === 3; });
         hkRecRows(it).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2] + ' | ' + x[3] + (x[4] ? ' | ' + x[4] : '')); }); return L.join('\n'); },
