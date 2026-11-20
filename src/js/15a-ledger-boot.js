@@ -976,7 +976,11 @@
           /* ۱.۳.۵۳: جهت آیکون همان لحظه عوض می‌شود؛ تا پایان حرکت هیچ لانگ‌پرس/انتخابی در جدول نیست */
           fab.classList.toggle('up', !up); fab._lockUntil = Date.now() + 1400; fab._goal = up ? 'top' : 'end';
           document.body.classList.add('hk-autoscroll');
-          clearTimeout(fab._unl); fab._unl = setTimeout(function () { document.body.classList.remove('hk-autoscroll'); }, 1400);
+          /* ۱.۴.۱۱: قفل همان لحظه‌ای که حرکت تمام شد برداشته شود (نه ۱٫۴ ثانیهٔ ثابت) تا لانگ‌پرس بعد از اتواسکرول متن را انتخاب نکند و آیکون‌های ردیف بیایند */
+          clearTimeout(fab._unl);
+          var unl = function () { clearTimeout(fab._unl); fab._lockUntil = 0; document.body.classList.remove('hk-autoscroll'); try { sc.removeEventListener('scrollend', unl); } catch (eU) {} try { window.getSelection().removeAllRanges(); } catch (eS) {} };
+          try { sc.addEventListener('scrollend', unl, { once: true }); } catch (eE) {}
+          fab._unl = setTimeout(unl, 1400);
           try { sc.scrollTo({ top: up ? 0 : sc.scrollHeight, behavior: 'smooth' }); } catch (e2) { sc.scrollTop = up ? 0 : sc.scrollHeight; }
         });
         document.body.appendChild(fab);

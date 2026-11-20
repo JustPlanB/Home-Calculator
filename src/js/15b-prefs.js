@@ -991,7 +991,7 @@
         titleDisplay.style.cssText = 'font-family:Vazirmatn,B Nazanin,Tahoma,sans-serif;font-weight:bold;font-size:1.05rem;padding:5px 10px;border-radius:6px;border:none;background:transparent;color:var(--text);-webkit-text-fill-color:var(--text);display:block;visibility:visible;opacity:1;';
         if (!(sec.personA || '').trim() && !(sec.personB || '').trim()) titleDisplay.style.opacity = '0.5';
         titleWrap.appendChild(titleDisplay);
-        const subLine = document.createElement('div'); subLine.className = 'hk-led-sub'; subLine.textContent = hkLedSecLine(sec); titleWrap.appendChild(subLine);
+        const subLine = document.createElement('div'); subLine.className = 'hk-led-sub'; subLine.textContent = hkLedSecLine(sec); if (subLine.textContent === 'تسویه است') subLine.classList.add('hk-led-ok'); titleWrap.appendChild(subLine);
 
         const editTitleBtn = document.createElement('button');
         editTitleBtn.type = 'button';
