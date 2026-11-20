@@ -35,7 +35,7 @@ const sms = (amt, dt, to, n, tr) => `بانک مسکن\nواريز قسط به �
     openUserRemindersModal(); await w(400);
     const it = document.querySelector('#userRemindersList .ur-item');
     const ed = it.querySelector('.ur-edit svg path'), del = it.querySelector('.ur-del');
-    const remEdit = !!ed && ed.getAttribute('d') === 'M12 20h9', remDel = !!del && del.textContent.trim() === '×' && /255, 23, 68/.test(getComputedStyle(del).color);
+    const remEdit = !!ed && ed.getAttribute('d') === 'M12 20h9', remDel = !!del && del.textContent.trim() === '×' && /255, 69, 58|220, 38, 38/.test(getComputedStyle(del, '::before').backgroundColor) /* ۱.۴.۹: × توپُر با clip-path */;
     try { closeUserRemindersModal(); } catch (e) { document.getElementById('userRemindersModal').classList.remove('open'); }
     hkRenderMenuProfile();
     const pen = document.querySelector('#menuUserNameText .hk-mprof-pen svg path');

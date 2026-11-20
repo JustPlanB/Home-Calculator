@@ -21,7 +21,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     return { sub: s.querySelector('.hk-led-sub').textContent, col: getComputedStyle(s.querySelector('.hk-led-sub')).color, arrow: vis('.collapse-arrow'), body: s.querySelector('.section-body').getBoundingClientRect().height > 2, shr: vis('.hk-led-shr'), sum: !!document.querySelector('#featureSheet .ledger-summary') && getComputedStyle(document.querySelector('#featureSheet .ledger-summary')).display !== 'none' };
   });
   ok(/^علی به من مبلغ .* تومان بدهکار است$/.test(L.sub), 'زیرنویس رابطه: ' + L.sub);
-  ok(L.col === 'rgb(255, 159, 10)', 'زیرنویس نارنجی');
+  ok(L.col === 'rgb(255, 107, 74)', 'زیرنویس هم‌رنگ مبالغ مخارج (۱.۴.۹)');
   ok(!L.arrow && !L.body && L.shr && !L.sum, 'بی فلش، بی کشو، دکمهٔ اشتراک‌گذاری هست، جدول خلاصه نیست');
   await page.tap('#sections-ledger .section[data-sec-id="A"] .section-header');
   await page.waitForTimeout(1200);
