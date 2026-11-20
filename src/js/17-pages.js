@@ -520,6 +520,8 @@
         try {
           var fs = document.getElementById('featureSheet');
           if (fs && fs.classList.contains('hk-led-rel') && fs.classList.contains('open')) {
+            /* ۱.۴.۱۰: بک با آیکون‌های لانگ‌پرس باز = فقط همان‌ها بسته شوند، صفحه بماند */
+            if (document.querySelector('.hk-row-act')) { try { hkCloseRowActions(); } catch (eRa) {} return true; }
             var top = hkLayersShown().filter(function (x) { return x !== fs; });
             if (!top.length && !document.querySelector('.hk-mnav-ghost') && hkLedRelClose()) return true;
           }

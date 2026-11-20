@@ -1029,8 +1029,7 @@
         top += 7; /* ۱.۳.۸۰: کمی پایین‌تر */
 
         fab.style.top = Math.round(top) + 'px';
-        /* صفحهٔ رابطهٔ قرض: مربع افزودن گوشهٔ راست است، پس اتواسکرول گوشهٔ چپ */
-        fab.style.left = Math.round(sc.closest('.section.hk-lrel') ? br.left + 14 : br.right - 14 - fs) + 'px';
+        fab.style.left = Math.round(br.right - 14 - fs) + 'px';
         fab.classList.add('show');
       };
       var sched = function () { if (!raf) raf = requestAnimationFrame(update); };

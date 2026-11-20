@@ -611,11 +611,10 @@
         var ln = document.getElementById('hkTodayLine'), bar = document.querySelector('.top-bar'); if (!ln || !bar || !ln.offsetHeight) return;
         var card = null;
         document.querySelectorAll('#panel-home .person-card').forEach(function (c) { if (!card && c.offsetHeight && c.getBoundingClientRect().width) card = c; });
-        if (!card) return;
+        /* ۱.۴.۱۰: صفحهٔ درآمد/مخارج هم تاریخ بالا دارد؛ کارت صفحهٔ اصلی لازم نیست */
         var br = bar.getBoundingClientRect(), bot = 0;
         ['menuBtn', 'monthSelectWrap', 'yearSelectWrap'].forEach(function (id) { var e = document.getElementById(id); if (e && e.offsetHeight) bot = Math.max(bot, e.getBoundingClientRect().bottom); });
         if (!bot) bot = br.bottom;
-        var ct = card.getBoundingClientRect().top;
         var b = ln.querySelector('b'), lr = ln.getBoundingClientRect(), tr = b ? b.getBoundingClientRect() : lr;
         var glyphOff = (tr.top + tr.height / 2) - (lr.top + lr.height / 2);
         /* ۱.۴.۵: تاریخ بالای صفحه، وسط فاصلهٔ لبهٔ بالای صفحه تا ردیف همبرگری/ماه/سال (دیگر بین آن ردیف و کارت نیست) */

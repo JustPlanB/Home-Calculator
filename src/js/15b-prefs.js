@@ -827,9 +827,13 @@
       if (!_hkLedRel) return;
       var sec = document.querySelector('#sections-ledger .section.hk-lrel'), body = sec && sec.querySelector('.section-body'); if (!body) return;
       var sb = 0; try { sb = homeSafeBottom(); } catch (e) {}
-      var hint = sec.querySelector('.hk-lrel-hint'), hh = hint ? hint.offsetHeight + 8 : 44;
-      var top = body.getBoundingClientRect().top, avail = Math.floor(window.innerHeight - sb - 12 - top - hh);
-      body.style.setProperty('max-height', Math.max(150, avail) + 'px', 'important');
+      /* ۱.۴.۱۰: مثل جدول درآمد/مخارج: ۱۲ ردیف تا اسکرول (سرستون جدا از ردیف‌ها)، بی فضای خالی زیر جدول؛ زیرش جای مربع افزودن */
+      var hint = sec.querySelector('.hk-lrel-hint'), hh = hint ? hint.offsetHeight : 50;
+      var tr0 = body.querySelector('tbody tr'), rh = tr0 ? tr0.getBoundingClientRect().height : 36; if (!(rh > 10)) rh = 36;
+      var th = body.querySelector('thead'), thH = th ? th.getBoundingClientRect().height : 0;
+      var top = body.getBoundingClientRect().top, avail = Math.floor(window.innerHeight - sb - 96 - top - hh);
+      var want = Math.round(thH + 12 * rh);
+      body.style.setProperty('max-height', Math.max(Math.round(thH + 3 * rh), Math.min(want, avail)) + 'px', 'important');
     }
     function hkLedOpenRel(id) {
       var sec = (ensureLedger().sections || []).find(function (s) { return s.id === id; }); if (!sec) return;
