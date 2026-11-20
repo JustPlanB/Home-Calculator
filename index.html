@@ -13002,6 +13002,10 @@ html body #panel-ledger .section.bank-card:not(.hk-lrel) .title-wrap { text-alig
 body:has(#featureSheet.hk-led-rel.open) #hkScrollFab { z-index: 270; }
 /* ضربه روی شرح (قرض): فقط باکس شناور؛ دور خود شرح هیچ قابی نیفتد (فوکوس هم) */
 html body:not(#_):not(._) #panel-ledger #sections-ledger .section .section-body textarea.desc-input[readonly], html body:not(#_):not(._) #panel-ledger #sections-ledger .section .section-body textarea.desc-input[readonly]:focus, html body:not(#_):not(._) #panel-ledger #sections-ledger .section .section-body textarea.desc-input[readonly]:active { border: 1px solid transparent !important; outline: none !important; box-shadow: none !important; background: transparent !important; }
+
+/* ===== ۱.۴.۹: نمایش پیوست — آیکون اشتراک‌گذاری پایین، وسط ===== */
+.hk-img-shr { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); left: 50%; transform: translateX(-50%); width: 50px; height: 50px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.55); color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; }
+.hk-img-shr svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -32045,7 +32049,7 @@ async function openPdfPrintWindow(){
        یک ضربه در حالت عادی یا دکمهٔ × = بستن */
     function hkViewImage(url) {
       var v = document.createElement('div'); v.id = 'hkImgView'; v.className = 'hk-img-view';
-      v.innerHTML = '<img alt="" draggable="false"><button type="button" class="hk-img-x" aria-label="بستن">×</button>';
+      v.innerHTML = '<img alt="" draggable="false"><button type="button" class="hk-img-x" aria-label="بستن">×</button><button type="button" class="hk-img-shr" aria-label="اشتراک‌گذاری">' + HK_SHARE_SVG + '</button>';
       var img = v.querySelector('img'); img.src = url;
       document.body.appendChild(v);
       var sc = 1, tx = 0, ty = 0, pts = {}, start = null, lastTap = 0, moved = false;
@@ -32058,8 +32062,16 @@ async function openPdfPrintWindow(){
       };
       var close = function () { v.remove(); };
       v.querySelector('.hk-img-x').onclick = function (e) { e.stopPropagation(); close(); };
+      /* ۱.۴.۹: اشتراک‌گذاری همان فایل پیوست (پایین، وسط) */
+      v.querySelector('.hk-img-shr').onclick = function (e) {
+        e.stopPropagation();
+        fetch(url).then(function (r) { return r.blob(); }).then(function (bl) {
+          var ext = /png/.test(bl.type) ? 'png' : (/webp/.test(bl.type) ? 'webp' : 'jpg');
+          return hkDongShareBlob(bl, 'attachment.' + ext, bl.type || 'image/jpeg', 'پیوست');
+        }).catch(function () { showToast('اشتراک‌گذاری ممکن نشد', 'warn'); });
+      };
       v.addEventListener('pointerdown', function (e) {
-        if (e.target.classList.contains('hk-img-x')) return;
+        if (e.target.classList.contains('hk-img-x') || e.target.closest('.hk-img-shr')) return;
         try { v.setPointerCapture(e.pointerId); } catch (eC) {}
         pts[e.pointerId] = { x: e.clientX, y: e.clientY }; moved = false;
         var ids = Object.keys(pts);
