@@ -21739,6 +21739,17 @@ function askBackupUserCards(selectedParts) {
       if (r === '3m') base += '-3m'; else if (r === 'year') base = 'hesab-' + currentYear; else if (r === 'all') base = 'hesab-all';
       return base;
     }
+    /* ۱.۴.۱۴: دکمهٔ شیرِ هر باکس (پروژه، پس‌انداز، درآمد ثابت، قرض، دُنگ) = همان خروجی PDF منوی گزارش‌ها، برای همان مورد و کل بازه
+       (درآمد ثابت: همهٔ دوره‌های قرارداد). sec = کلید بخش، only = شناسه‌های همان مورد */
+    async function hkShareExportPdf(sec, only, recId) {
+      var prevOpts = _hkExportOpts, prevArc = _hkRecArc;
+      try {
+        if (recId) { _hkRecArc = { ids: (function () { var o = {}; o[recId] = true; return o; })(), keys: null }; _hkExportOpts = null; }
+        else { _hkRecArc = null; _hkExportOpts = { range: 'all', user: '', sections: (function () { var o = {}; o[sec] = true; return o; })(), only: only || null }; }
+        await exportPdf();
+      } finally { _hkExportOpts = prevOpts; _hkRecArc = prevArc; }
+    }
+    try { window.hkShareExportPdf = hkShareExportPdf; } catch (eHs) {}
     function hkOpenExportDialog(kind) {
       var old = document.getElementById('hkExportModal'); if (old) old.remove();
       var KEY = STORAGE_KEY + '_exportOpts';
@@ -21989,6 +22000,8 @@ function askBackupUserCards(selectedParts) {
       /* ---- قرض (۱.۳.۷۳): هر رابطه با همهٔ ردیف‌هایی که در نرم‌افزار دیده می‌شوند، تاریخ کامل، ساعت، وضعیت تسویه و مانده ---- */
       var pairs = []; try { pairs = ledgerPairNets() || []; } catch (e) {}
       var lgs = []; try { lgs = hkExpLedgerData(months); } catch (e) {}
+      /* ۱.۴.۱۴: دامنهٔ خروجیِ دکمهٔ شیرِ یک باکس (O.only): فقط همان رابطه/پروژه/پس‌انداز/گروه */
+      if (O.only && O.only.ledger) { lgs = lgs.filter(function (g) { return O.only.ledger.indexOf(g.id) >= 0; }); pairs = []; }
       if ((pairs.length || lgs.length) && want('ledger')) {
         var withBy = lgs.some(function (g) { return g.withBy; });
         var LC = withBy ? 9 : 8, byTd = function (v) { return withBy ? '<td class="c">' + v + '</td>' : ''; };
@@ -22038,6 +22051,7 @@ function askBackupUserCards(selectedParts) {
         return h + '<tr class="t"><td colspan="4">جمع ' + cap + '</td><td class="n">' + pdfMoney(sumT) + '</td></tr></tbody></table></div>';
       };
       if (!want('projects')) subs = [];
+      if (O.only && O.only.projects) subs = subs.filter(function (x) { return O.only.projects.indexOf(x.id) >= 0; });
       subs.forEach(function (sub, si) {
         var rep = null; try { rep = computeSubjectReport(sub.id); } catch (e) {}
         if (!rep) return;
@@ -22056,6 +22070,12 @@ function askBackupUserCards(selectedParts) {
       });
       /* ---- پس‌انداز (ارز و طلا): جدا از موجودی کل ---- */
       var sv = want('savings') ? savingsExportData() : null;
+      if (sv && O.only && O.only.savings) {
+        sv.groups = sv.groups.filter(function (G) { return O.only.savings.indexOf(G.key) >= 0; });
+        sv.tot = { cost: 0, value: 0, pnl: 0, anyP: false, missing: 0 };
+        sv.groups.forEach(function (G) { sv.tot.cost += G.cost; if (G.price) sv.tot.value += G.value; else sv.tot.missing++; if (G.pnl != null) { sv.tot.pnl += G.pnl; sv.tot.anyP = true; } });
+        if (!sv.groups.length) sv = null;
+      }
       if (sv) {
         var sh = '<div class="pb sec"><div class="st sav">پس‌انداز (ارز و طلا) <small>جدا از موجودی حساب‌ها؛ قیمت روز را کاربر وارد کرده</small></div>' +
           '<table><thead><tr><th style="width:20%">نوع</th><th style="width:15%">مقدار</th><th>قیمت خرید کل</th><th>قیمت روز هر واحد</th><th>ارزش روز</th><th style="width:15%">سود / زیان</th></tr></thead><tbody>';
@@ -22075,7 +22095,7 @@ function askBackupUserCards(selectedParts) {
         B.push({ html: dh + '</tbody></table></div>', split: true });
       }
       /* ---- ۱.۴.۶: دُنگ — هر گروه: خرج‌ها، وضعیت هر نفر و برای تسویه ---- */
-      if (want('dong')) { try { hkDongLoad().groups.forEach(function (g) { if (!g.expenses || !g.expenses.length) return; B.push({ html: '<div class="pb sec">' + hkDongExportHtml(g) + '</div>', split: true }); }); } catch (eDg) {} }
+      if (want('dong')) { try { hkDongLoad().groups.forEach(function (g) { if (!g.expenses || !g.expenses.length) return; if (O.only && O.only.dong && O.only.dong.indexOf(g.id) < 0) return; B.push({ html: '<div class="pb sec">' + hkDongExportHtml(g) + '</div>', split: true }); }); } catch (eDg) {} }
       return B;
     }
     /* اندازه‌گیری در iframe ایزوله (استایل‌های نرم‌افزار روی گزارش اثر نگذارند) */
@@ -52046,6 +52066,7 @@ function openProjectRowPicker(secId) {
     function hkLedShare(sec, kind) {
       var title = 'قرض ' + ledgerSectionTitle(sec), base = 'ledger-' + String(ledgerSectionTitle(sec)).replace(/[\\/:*?"<>|\s]+/g, '-');
       if (!kind || kind === 'text') return hkDongShareText2(hkLedShareText(sec), title);
+      if (kind === 'pdf' && hkLedViewRows(sec).some(function (x) { return x.row && !x.row.deletedAt && (x.row.amount || x.row.desc); })) return hkShareExportPdf('ledger', { ledger: [sec.id] }); /* ۱.۴.۱۴: همان خروجی منوی گزارش‌ها */
       showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
       return hkDongReportBlob(sec, kind, hkLedReportHtml).then(function (blob) {
         if (!blob || !blob.size) throw new Error('empty');
@@ -52075,6 +52096,8 @@ function openProjectRowPicker(secId) {
       return function (g, kind) {
         var title = o.title(g), base = 'share-' + String(title).replace(/[\\/:*?"<>|\s]+/g, '-');
         if (!kind || kind === 'text') return hkDongShareText2(o.text(g), title);
+        /* ۱.۴.۱۴: PDF = همان خروجی منوی گزارش‌ها برای همین مورد (کل بازه) */
+        if (kind === 'pdf' && o.pdf) return o.pdf(g);
         showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
         return hkDongReportBlob(g, kind, o.html).then(function (blob) {
           if (!blob || !blob.size) throw new Error('empty');
@@ -52097,6 +52120,7 @@ function openProjectRowPicker(secId) {
     }
     function hkProjLine(s, r) { var net = r.dep - r.exp; return net > 0 ? 'پروژه ' + s.name + ' ' + formatNum(net) + ' تومان طلب دارد' : (net < 0 ? 'پروژه ' + s.name + ' ' + formatNum(-net) + ' تومان بدهکار است' : 'پروژه ' + s.name + ' تسویه است'); }
     var hkProjShare = hkMakeShareFn({
+      pdf: function (s) { return hkShareExportPdf('projects', { projects: [s.id] }); },
       title: function (s) { return 'پروژه ' + s.name; },
       text: function (s) { var r = hkProjRows(s), L = ['پروژه ' + s.name, hkProjLine(s, r), 'جمع واریزی: ' + formatNum(r.dep) + ' تومان', 'جمع مخارج: ' + formatNum(r.exp) + ' تومان', '', 'واریزی‌ها:'];
         r.inn.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); L.push('', 'مخارج:'); r.out.forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2]); }); return L.join('\n'); },
@@ -52106,6 +52130,7 @@ function openProjectRowPicker(secId) {
     function hkSavLine(G) { if (G.pnl == null) return G.price ? 'قیمت خرید ثبت نشده' : 'قیمت روز وارد نشده'; return formatNum(Math.abs(Math.round(G.pnl))) + ' تومان ' + (G.pnl >= 0 ? 'سود' : 'زیان') + ' نسبت به قیمت خرید'; }
     function hkSavRows(G) { return G.items.map(function (it) { var d = it.y ? toPersianDigits(String(it.y)) + '/' + toPersianPad2(it.m || 1) + '/' + toPersianPad2(it.d || 1) : '—'; return [d, _savFmtQty(Number(it.qty) || 0) + ' ' + _savUnit(it), Number(it.buy) > 0 ? formatNum(Number(it.buy)) : '—', it.note || '']; }); }
     var hkSavShare = hkMakeShareFn({
+      pdf: function (G) { return hkShareExportPdf('savings', { savings: [G.key] }); },
       title: function (G) { return 'پس‌انداز ' + G.name; },
       text: function (G) { var L = ['پس‌انداز ' + G.name, 'مقدار: ' + _savFmtQty(G.qty) + ' ' + G.unit, hkSavLine(G)]; if (G.price) L.push('قیمت روز: ' + formatNum(G.price) + ' تومان · ارزش روز: ' + formatNum(Math.round(G.value)) + ' تومان'); L.push('');
         hkSavRows(G).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | خرید ' + x[2] + (x[3] ? ' | ' + x[3] : '')); }); return L.join('\n'); },
@@ -52114,6 +52139,7 @@ function openProjectRowPicker(secId) {
     /* --- درآمد ثابت (item از recurringIncomes) --- */
     function hkRecRows(item) { var out = []; try { recRowsOf(item).forEach(function (z) { var r = z.row; out.push([(MONTHS[(z.key % 100) - 1] || '') + ' ' + toPersianDigits(String(Math.floor(z.key / 100))), r.day ? toPersianDigits(String(r.day)) : '—', formatNum(Number(r.amount) || 0), recIsPaid(r) ? 'دریافت شد' : 'دریافت نشده', r.desc || '']); }); } catch (e) {} return out; }
     var hkRecShare = hkMakeShareFn({
+      pdf: function (it) { return hkShareExportPdf('recurring', null, it.id); },
       title: function (it) { return 'درآمد ثابت ' + (it.name || ''); },
       text: function (it) { var L = ['درآمد ثابت ' + (it.name || ''), 'مبلغ ماهانه: ' + formatNum(it.amount || 0) + ' تومان', (Number(it.deposit) > 0 ? 'رهن: ' + formatNum(it.deposit) + ' تومان' : ''), ''].filter(function (x, i) { return x || i === 3; });
         hkRecRows(it).forEach(function (x) { L.push(x[0] + ' | ' + x[1] + ' | ' + x[2] + ' | ' + x[3] + (x[4] ? ' | ' + x[4] : '')); }); return L.join('\n'); },
@@ -53465,6 +53491,8 @@ function openProjectRowPicker(secId) {
     function hkDongShare(g, kind) {
       var title = 'دُنگ ' + g.name, base = 'dong-' + String(g.name || 'group').replace(/[\\/:*?"<>|\s]+/g, '-');
       if (!kind || kind === 'text') return hkDongShareText2(hkDongShareText(g), title);
+      /* ۱.۴.۱۴: PDF = همان خروجی منوی گزارش‌ها برای همین گروه (گروه بی خرج: گزارش ساده) */
+      if (kind === 'pdf' && g.expenses && g.expenses.length) return hkShareExportPdf('dong', { dong: [g.id] });
       showToast(kind === 'pdf' ? 'در حال ساخت PDF…' : 'در حال ساخت عکس…');
       return hkDongReportBlob(g, kind).then(function (blob) {
         if (!blob || !blob.size) throw new Error('empty');

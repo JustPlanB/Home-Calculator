@@ -338,6 +338,17 @@
       if (r === '3m') base += '-3m'; else if (r === 'year') base = 'hesab-' + currentYear; else if (r === 'all') base = 'hesab-all';
       return base;
     }
+    /* ۱.۴.۱۴: دکمهٔ شیرِ هر باکس (پروژه، پس‌انداز، درآمد ثابت، قرض، دُنگ) = همان خروجی PDF منوی گزارش‌ها، برای همان مورد و کل بازه
+       (درآمد ثابت: همهٔ دوره‌های قرارداد). sec = کلید بخش، only = شناسه‌های همان مورد */
+    async function hkShareExportPdf(sec, only, recId) {
+      var prevOpts = _hkExportOpts, prevArc = _hkRecArc;
+      try {
+        if (recId) { _hkRecArc = { ids: (function () { var o = {}; o[recId] = true; return o; })(), keys: null }; _hkExportOpts = null; }
+        else { _hkRecArc = null; _hkExportOpts = { range: 'all', user: '', sections: (function () { var o = {}; o[sec] = true; return o; })(), only: only || null }; }
+        await exportPdf();
+      } finally { _hkExportOpts = prevOpts; _hkRecArc = prevArc; }
+    }
+    try { window.hkShareExportPdf = hkShareExportPdf; } catch (eHs) {}
     function hkOpenExportDialog(kind) {
       var old = document.getElementById('hkExportModal'); if (old) old.remove();
       var KEY = STORAGE_KEY + '_exportOpts';
@@ -588,6 +599,8 @@
       /* ---- قرض (۱.۳.۷۳): هر رابطه با همهٔ ردیف‌هایی که در نرم‌افزار دیده می‌شوند، تاریخ کامل، ساعت، وضعیت تسویه و مانده ---- */
       var pairs = []; try { pairs = ledgerPairNets() || []; } catch (e) {}
       var lgs = []; try { lgs = hkExpLedgerData(months); } catch (e) {}
+      /* ۱.۴.۱۴: دامنهٔ خروجیِ دکمهٔ شیرِ یک باکس (O.only): فقط همان رابطه/پروژه/پس‌انداز/گروه */
+      if (O.only && O.only.ledger) { lgs = lgs.filter(function (g) { return O.only.ledger.indexOf(g.id) >= 0; }); pairs = []; }
       if ((pairs.length || lgs.length) && want('ledger')) {
         var withBy = lgs.some(function (g) { return g.withBy; });
         var LC = withBy ? 9 : 8, byTd = function (v) { return withBy ? '<td class="c">' + v + '</td>' : ''; };
@@ -637,6 +650,7 @@
         return h + '<tr class="t"><td colspan="4">جمع ' + cap + '</td><td class="n">' + pdfMoney(sumT) + '</td></tr></tbody></table></div>';
       };
       if (!want('projects')) subs = [];
+      if (O.only && O.only.projects) subs = subs.filter(function (x) { return O.only.projects.indexOf(x.id) >= 0; });
       subs.forEach(function (sub, si) {
         var rep = null; try { rep = computeSubjectReport(sub.id); } catch (e) {}
         if (!rep) return;
@@ -655,6 +669,12 @@
       });
       /* ---- پس‌انداز (ارز و طلا): جدا از موجودی کل ---- */
       var sv = want('savings') ? savingsExportData() : null;
+      if (sv && O.only && O.only.savings) {
+        sv.groups = sv.groups.filter(function (G) { return O.only.savings.indexOf(G.key) >= 0; });
+        sv.tot = { cost: 0, value: 0, pnl: 0, anyP: false, missing: 0 };
+        sv.groups.forEach(function (G) { sv.tot.cost += G.cost; if (G.price) sv.tot.value += G.value; else sv.tot.missing++; if (G.pnl != null) { sv.tot.pnl += G.pnl; sv.tot.anyP = true; } });
+        if (!sv.groups.length) sv = null;
+      }
       if (sv) {
         var sh = '<div class="pb sec"><div class="st sav">پس‌انداز (ارز و طلا) <small>جدا از موجودی حساب‌ها؛ قیمت روز را کاربر وارد کرده</small></div>' +
           '<table><thead><tr><th style="width:20%">نوع</th><th style="width:15%">مقدار</th><th>قیمت خرید کل</th><th>قیمت روز هر واحد</th><th>ارزش روز</th><th style="width:15%">سود / زیان</th></tr></thead><tbody>';
@@ -674,7 +694,7 @@
         B.push({ html: dh + '</tbody></table></div>', split: true });
       }
       /* ---- ۱.۴.۶: دُنگ — هر گروه: خرج‌ها، وضعیت هر نفر و برای تسویه ---- */
-      if (want('dong')) { try { hkDongLoad().groups.forEach(function (g) { if (!g.expenses || !g.expenses.length) return; B.push({ html: '<div class="pb sec">' + hkDongExportHtml(g) + '</div>', split: true }); }); } catch (eDg) {} }
+      if (want('dong')) { try { hkDongLoad().groups.forEach(function (g) { if (!g.expenses || !g.expenses.length) return; if (O.only && O.only.dong && O.only.dong.indexOf(g.id) < 0) return; B.push({ html: '<div class="pb sec">' + hkDongExportHtml(g) + '</div>', split: true }); }); } catch (eDg) {} }
       return B;
     }
     /* اندازه‌گیری در iframe ایزوله (استایل‌های نرم‌افزار روی گزارش اثر نگذارند) */
