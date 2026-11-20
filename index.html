@@ -13040,6 +13040,20 @@ html body .rec-tools > .btn-edit-title { order: 3 !important; }
 html body .rec-tools > .btn-del-row { order: 4 !important; }
 .hk-gen-shr { width: 36px; height: 36px; padding: 0; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; color: var(--muted, #98989f); }
 .hk-gen-shr svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ===== ۱.۴.۱۱: پس‌انداز — باکس فهرست (نوع و مقدار سفیدِ بولد، خط سود/زیان، آیکون‌ها بالا-چپ) و صفحهٔ جزئیات ===== */
+#savingsModal .hk-sv-card { cursor: pointer; padding: 14px 14px 12px; position: relative; }
+#savingsModal .hk-sv-t { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-left: 116px; }
+#savingsModal .hk-sv-n, #savingsModal .hk-sv-q { color: var(--text, #fff); font-weight: 800; font-size: var(--hk-fs-control); }
+#savingsModal .hk-sv-l { margin-top: 10px; font-size: var(--hk-fs-small); font-weight: 600; text-align: right; }
+#savingsModal .hk-sv-l.sv-up { color: var(--hk-income, #9ee858); }
+#savingsModal .hk-sv-l.sv-down { color: var(--hk-expense, #ff6b4a); }
+#savingsModal .hk-sv-l.hk-sv-m { color: var(--muted, #98989f); }
+#savingsModal .sv-g-acts { position: absolute; left: 8px; top: 6px; display: flex; flex-direction: row; direction: rtl; gap: 0; }
+#savingsModal .sv-g-acts > button { width: 36px; height: 36px; padding: 0; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; }
+#savingsModal .sv-g-acts > .hk-gen-shr { order: 1; } #savingsModal .sv-g-acts > .btn-edit-title { order: 2; } #savingsModal .sv-g-acts > .btn-del-row { order: 3; }
+#savingsModal .sv-g-acts > .btn-edit-title svg { width: 16px; height: 16px; }
+#savingsModal.hk-sv-det #savingsSummary { display: none; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -43809,6 +43823,24 @@ if (item.type === 'recurring') {
       var cls = v > 0 ? 'sv-up' : (v < 0 ? 'sv-down' : '');
       return '<span class="sv-pnl ' + cls + '">' + (v > 0 ? 'سود ' : (v < 0 ? 'زیان ' : '')) + formatNum(Math.abs(Math.round(v))) + '</span>';
     }
+    /* ۱.۴.۱۱: صفحهٔ جزئیاتِ یک پس‌انداز داخل همان صفحه (مثل صفحهٔ رابطهٔ قرض) */
+    var _hkSvDet = '';
+    function hkSvOpen(key) {
+      _hkSvDet = key; renderSavings();
+      try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) hkMenuSlide(fb, true); } catch (e) {}
+    }
+    function hkSvClose(quiet) {
+      if (!_hkSvDet) return false;
+      _hkSvDet = ''; renderSavings();
+      if (!quiet) { try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) fb.animate([{ transform: 'translateX(-28px)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); } catch (e) {} }
+      return true;
+    }
+    /* پیش‌فرضِ «خرید جدید» در صفحهٔ جزئیات: همان نوع */
+    function hkSvDetPre() {
+      var G = _savGroups().filter(function (g) { return g.key === _hkSvDet; })[0]; if (!G) return {};
+      return _hkSvDet.indexOf('other:') === 0 ? { asset: 'other', label: G.name, unit: G.unit } : { asset: _hkSvDet };
+    }
+    try { Object.assign(window, { hkSvOpen: hkSvOpen, hkSvClose: hkSvClose, hkSvDetPre: hkSvDetPre }); } catch (eSv) {}
     function renderSavings() {
       var list = document.getElementById('savingsList'), sum = document.getElementById('savingsSummary');
       if (!list || !sum) return;
@@ -43827,6 +43859,41 @@ if (item.type === 'recurring') {
         (missing ? '<div class="sv-sum-hint">قیمت روز ' + toPersianDigits(String(missing)) + ' مورد وارد نشده؛ ارزش آن‌ها در جمع نیامده است.</div>' : '') +
         '</div>';
       list.innerHTML = '';
+      /* ۱.۴.۱۱: فهرست = باکس کوچکِ هر پس‌انداز؛ ضربه روی باکس = صفحهٔ جزئیات خریدها (_hkSvDet) */
+      var modal = document.getElementById('savingsModal');
+      if (_hkSvDet && !groups.some(function (g) { return g.key === _hkSvDet; })) _hkSvDet = '';
+      if (modal) modal.classList.toggle('hk-sv-det', !!_hkSvDet);
+      if (!_hkSvDet) {
+        groups.forEach(function (G) {
+          var card = document.createElement('div');
+          card.className = 'sv-group sv-' + G.g + ' hk-sv-card';
+          var up = G.pnl != null && G.pnl >= 0;
+          card.innerHTML = '<div class="hk-sv-t"><b class="hk-sv-n">' + escapeHtml(G.name) + '</b><b class="hk-sv-q">' + _savFmtQty(G.qty) + ' ' + escapeHtml(G.unit) + '</b></div>' +
+            (G.pnl != null ? '<div class="hk-sv-l ' + (up ? 'sv-up' : 'sv-down') + '">' + formatNum(Math.abs(Math.round(G.pnl))) + ' تومان ' + (up ? 'سود' : 'زیان') + ' نسبت به قیمت خرید</div>'
+              : '<div class="hk-sv-l hk-sv-m">' + (G.price ? 'قیمت خرید ثبت نشده' : 'قیمت روز وارد نشده') + '</div>');
+          var acts = document.createElement('div'); acts.className = 'sv-g-acts';
+          var bShr = hkShareIconBtn(); bShr.onclick = function (e) { e.stopPropagation(); hkDongShareMenu(bShr, G, hkSavShare); };
+          var bEd = document.createElement('button'); bEd.type = 'button'; bEd.className = 'btn-edit-title'; bEd.title = 'قیمت روز'; bEd.setAttribute('aria-label', 'ویرایش قیمت روز'); bEd.innerHTML = HK_EDIT_SVG;
+          bEd.onclick = function (e) { e.stopPropagation(); openSavingsPriceEditor(G); };
+          var bDel = document.createElement('button'); bDel.type = 'button'; bDel.className = 'btn btn-del-row hk-del-x'; bDel.title = 'حذف'; bDel.setAttribute('aria-label', 'حذف'); bDel.textContent = HK_DEL_X;
+          bDel.onclick = function (e) {
+            e.stopPropagation();
+            askConfirm('همهٔ خریدهای «' + G.name + '» از پس‌انداز حذف شود؟', function () {
+              var sv = loadSavings();
+              G.items.forEach(function (it) { try { pushToTrash('savings_item', (it.label || it.asset || 'پس‌انداز') + (it.qty ? ' · ' + toPersianDigits(String(it.qty)) : ''), { sourceLabel: 'پس‌انداز', item: JSON.parse(JSON.stringify(it)) }); } catch (eT) {} });
+              var ids = {}; G.items.forEach(function (it) { ids[it.id] = 1; });
+              sv.items = sv.items.filter(function (x) { return !ids[x.id]; });
+              saveSavings(); renderSavings();
+            });
+          };
+          acts.appendChild(bDel); acts.appendChild(bEd); acts.appendChild(bShr);
+          card.appendChild(acts);
+          card.onclick = function () { hkSvOpen(G.key); };
+          list.appendChild(card);
+        });
+        return;
+      }
+      groups = groups.filter(function (g) { return g.key === _hkSvDet; });
       groups.forEach(function (G) {
         var box = document.createElement('div');
         box.className = 'sv-group sv-' + G.g;
@@ -43884,13 +43951,14 @@ if (item.type === 'recurring') {
     try { window.spPageSavings = spPageSavings; } catch (eSp) {}
     function openSavingsModal() {
       try { closeSideMenu(); } catch (e) {}
+      _hkSvDet = '';
       loadSavings();
       renderSavings();
       var m = document.getElementById('savingsModal');
       if (m) m.classList.add('open');
     }
     function closeSavingsModal() {
-      closeSavingsEditor();
+      closeSavingsEditor(); _hkSvDet = '';
       var m = document.getElementById('savingsModal');
       if (m) m.classList.remove('open');
     }
@@ -54261,6 +54329,20 @@ function openProjectRowPicker(secId) {
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
     })();
+    /* ۱.۴.۱۱: بک در صفحهٔ جزئیاتِ یک پس‌انداز → فهرست پس‌اندازها (ویرایشگر و پنجره‌های روی آن اول بسته می‌شوند) */
+    (function () {
+      var b1 = onBackGuard;
+      onBackGuard = function () {
+        try {
+          var sm = document.getElementById('savingsModal');
+          if (sm && typeof _hkSvDet !== 'undefined' && _hkSvDet && sm.classList.contains('open') && !document.getElementById('svEditor')) {
+            var top = hkLayersShown().filter(function (x) { return x !== sm; });
+            if (!top.length && !document.querySelector('.hk-mnav-ghost') && hkSvClose()) return true;
+          }
+        } catch (e) {}
+        return b1.apply(this, arguments);
+      };
+    })();
     /* ۱.۴.۸: بک در صفحهٔ یک رابطهٔ قرض → فهرست روابط (وقتی پنجرهٔ دیگری روی آن نیست) */
     (function () {
       var b0 = onBackGuard;
@@ -54310,7 +54392,7 @@ function openProjectRowPicker(secId) {
     function hkFabAction(page) {
       var id = page.id;
       if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', _hkFabHint('#subjectNewName', 'پروژه جدید'), '#subjectNewName', function () { addSubjectFromModal(); }); } };
-      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
+      if (id === 'savingsModal') return (typeof _hkSvDet !== 'undefined' && _hkSvDet) ? { l: 'خرید جدید', f: function () { openSavingsEditor(null, hkSvDetPre()); } } : { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
       if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { hkUrNewFromField(); } };
       if (id === 'hkDong') {
         var add = page.querySelector('.hk-dg-add');

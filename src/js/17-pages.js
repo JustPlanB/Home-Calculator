@@ -540,6 +540,20 @@
       try { var si = document.getElementById('menuSearchInput'); if (si) si.addEventListener('input', function () { exit(true); }); } catch (eS) {}
       try { Object.assign(window, { hkMenuGroupEnter: function (k) { var g = dd.querySelector('.hk-mg[data-g="' + k + '"]'); if (g) { build(); enter(g); } }, hkMenuGroupExit: exit }); } catch (eX) {}
     })();
+    /* ۱.۴.۱۱: بک در صفحهٔ جزئیاتِ یک پس‌انداز → فهرست پس‌اندازها (ویرایشگر و پنجره‌های روی آن اول بسته می‌شوند) */
+    (function () {
+      var b1 = onBackGuard;
+      onBackGuard = function () {
+        try {
+          var sm = document.getElementById('savingsModal');
+          if (sm && typeof _hkSvDet !== 'undefined' && _hkSvDet && sm.classList.contains('open') && !document.getElementById('svEditor')) {
+            var top = hkLayersShown().filter(function (x) { return x !== sm; });
+            if (!top.length && !document.querySelector('.hk-mnav-ghost') && hkSvClose()) return true;
+          }
+        } catch (e) {}
+        return b1.apply(this, arguments);
+      };
+    })();
     /* ۱.۴.۸: بک در صفحهٔ یک رابطهٔ قرض → فهرست روابط (وقتی پنجرهٔ دیگری روی آن نیست) */
     (function () {
       var b0 = onBackGuard;
@@ -589,7 +603,7 @@
     function hkFabAction(page) {
       var id = page.id;
       if (id === 'subjectsModal') return { l: 'پروژه جدید', f: function () { hkFabAsk('پروژه جدید', _hkFabHint('#subjectNewName', 'پروژه جدید'), '#subjectNewName', function () { addSubjectFromModal(); }); } };
-      if (id === 'savingsModal') return { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
+      if (id === 'savingsModal') return (typeof _hkSvDet !== 'undefined' && _hkSvDet) ? { l: 'خرید جدید', f: function () { openSavingsEditor(null, hkSvDetPre()); } } : { l: 'پس‌انداز جدید', f: function () { hkSavNewFromField(); } };
       if (id === 'userRemindersModal') return { l: 'یادآور جدید', f: function () { hkUrNewFromField(); } };
       if (id === 'hkDong') {
         var add = page.querySelector('.hk-dg-add');
