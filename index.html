@@ -13063,7 +13063,7 @@ html body .hk-pg-fs > .feature-sheet-bar .hk-info-btn { margin-inline-start: 2px
 html body .recurring-row .rec-tools, html body .project-card .project-card-actions, html body .ur-item .ur-actions, html body .sv-group .sv-g-acts { top: 8px !important; transform: none !important; }
 html body #hkDong .hk-dg-card .hk-dg-cacts { top: 8px !important; transform: none !important; }
 html body .project-card .btn-edit-title, html body .ur-item .ur-edit, html body .rec-tools .btn-edit-title, html body .sv-g-acts .btn-edit-title, html body .hk-dg-cacts .hk-dg-edit { color: var(--muted, #98989f) !important; }
-html body .project-card .btn-edit-title svg, html body .ur-item .ur-edit svg, html body .rec-tools .btn-edit-title svg, html body .sv-g-acts .btn-edit-title svg { width: 16px !important; height: 16px !important; stroke: currentColor !important; }
+html body:not(#_):not(._):not(.__) #subjectsList .project-card .btn-edit-title svg, html body .project-card .btn-edit-title svg, html body .ur-item .ur-edit svg, html body .rec-tools .btn-edit-title svg, html body .sv-g-acts .btn-edit-title svg { width: 16px !important; height: 16px !important; color: var(--muted, #98989f) !important; stroke: currentColor !important; }
 html body .hk-dg-cacts .hk-dg-edit svg { width: 19px; height: 19px; }
 html body .sv-lot-actions .sv-edit { color: var(--muted, #98989f) !important; }
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel .section-body { border-radius: 15px 15px 0 0 !important; }
@@ -52835,11 +52835,12 @@ function openProjectRowPicker(secId) {
         };
         var _lt = document.documentElement.getAttribute('data-theme') === 'light';
         /* یک ماه انتخاب شده: جمع درآمد و مخارج همان ماه؛ وگرنه اگر چند مورد پیدا شد، جمع کل آن‌ها */
-        if (rangeF !== 'all') {
+        /* ۱.۴.۱۳: یک روز مشخص انتخاب شده: «کل ماه» درست نیست؛ مثل بقیهٔ نتیجه‌ها «جمع … (n مورد)» */
+        if (rangeF !== 'all' && !dayF) {
           var mName = MONTHS[parseInt(rangeF, 10) - 1] || '';
           if (typeF !== 'expense' && !catF) addF('درآمد کل ' + mName, sumI, _lt ? '#17834a' : '#9ee858');
           if (typeF !== 'income') addF('مخارج کل ' + mName, sumE, _lt ? '#dc2626' : '#ff6b4a');
-        } else if (list.length > 1) {
+        } else if (list.length > 1 || dayF) {
           if (sumI > 0) addF('جمع درآمد (' + toPersianDigits(String(list.filter(function (x) { return x.tab === 'income'; }).length)) + ' مورد)', sumI, _lt ? '#17834a' : '#9ee858');
           if (sumE > 0) addF('جمع مخارج (' + toPersianDigits(String(list.filter(function (x) { return x.tab !== 'income'; }).length)) + ' مورد)', sumE, _lt ? '#dc2626' : '#ff6b4a');
         }
