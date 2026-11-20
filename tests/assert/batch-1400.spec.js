@@ -56,7 +56,7 @@ async function fresh(b) {
     onBackGuard(); await w(400);
     return out;
   });
-  const names = { openPrefsModal: 'شخصی‌سازی', openSubjectsModal: 'پروژه‌ها', openTrashModal: 'سطل زباله', openSavingsModal: 'پس‌انداز (ارز و طلا)', openUserRemindersModal: 'یادآور', openBankAccountsModal: 'انتخاب حساب بانکی', openStatsSheet: 'آمار', openRecurringFromMenu: 'درآمدهای ثابت', askBackupParts: 'پشتیبان‌گیری', /* ۱.۴.۳: نام صفحه همان نام منو */ openSmsLaterModal: 'پیامک‌های ثبت‌نشده' };
+  const names = { openPrefsModal: 'شخصی‌سازی', openSubjectsModal: 'پروژه‌ها', openTrashModal: 'سطل زباله', openSavingsModal: 'پس‌انداز', openUserRemindersModal: 'یادآور', openBankAccountsModal: 'انتخاب حساب بانکی', openStatsSheet: 'آمار', openRecurringFromMenu: 'درآمدهای ثابت', askBackupParts: 'پشتیبان‌گیری', /* ۱.۴.۳: نام صفحه همان نام منو */ openSmsLaterModal: 'پیامک‌های ثبت‌نشده' };
   const bad = Object.keys(names).filter(n => !(H[n] && H[n].title === names[n] && H[n].right && H[n].order && H[n].top && H[n + '_closed']));
   ok(!bad.length, 'بالای هر صفحه سمت راست: اول آیکون بک، جلویش نام صفحه؛ زدنش صفحه را می‌بندد' + (bad.length ? ' — ' + bad.map(n => n + ':' + JSON.stringify(H[n])).join(' ') : ''));
   ok(H.noGhostHome, 'بازگشت به صفحهٔ اصلی بی ورق خوردن (مثل قبل)');

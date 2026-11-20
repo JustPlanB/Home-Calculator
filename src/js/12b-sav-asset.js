@@ -84,13 +84,17 @@
     }
     /* ۱.۴.۱۱: صفحهٔ جزئیاتِ یک پس‌انداز داخل همان صفحه (مثل صفحهٔ رابطهٔ قرض) */
     var _hkSvDet = '';
+    /* عنوان بالای صفحه (کنار فلش بک) = نام همان پس‌انداز؛ ورق خوردنِ زیرصفحه را خودِ hkPageDecorate می‌کند */
+    function hkSvTitleEl() { return document.querySelector('#savingsModal .modal-box > div[style*="font-weight:800"]'); }
+    function hkSvSetTitle(t) { try { var el = hkSvTitleEl(); if (el) { el.textContent = t; hkPageDecorate(document.getElementById('savingsModal')); } } catch (e) {} }
     function hkSvOpen(key) {
+      var G = _savGroups().filter(function (g) { return g.key === key; })[0];
       _hkSvDet = key; renderSavings();
-      try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) hkMenuSlide(fb, true); } catch (e) {}
+      hkSvSetTitle(G ? G.name : 'پس‌انداز');
     }
     function hkSvClose(quiet) {
       if (!_hkSvDet) return false;
-      _hkSvDet = ''; renderSavings();
+      _hkSvDet = ''; renderSavings(); hkSvSetTitle('پس‌انداز');
       if (!quiet) { try { var fb = document.querySelector('#savingsModal > .modal-box'); if (fb) fb.animate([{ transform: 'translateX(-28px)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); } catch (e) {} }
       return true;
     }
@@ -127,7 +131,7 @@
           var card = document.createElement('div');
           card.className = 'sv-group sv-' + G.g + ' hk-sv-card';
           var up = G.pnl != null && G.pnl >= 0;
-          card.innerHTML = '<div class="hk-sv-t"><b class="hk-sv-n">' + escapeHtml(G.name) + '</b><b class="hk-sv-q">' + _savFmtQty(G.qty) + ' ' + escapeHtml(G.unit) + '</b></div>' +
+          card.innerHTML = '<div class="hk-sv-t"><b class="hk-sv-n">' + escapeHtml(G.name) + ': ' + _savFmtQty(G.qty) + ' ' + escapeHtml(G.unit) + '</b></div>' +
             (G.pnl != null ? '<div class="hk-sv-l ' + (up ? 'sv-up' : 'sv-down') + '">' + formatNum(Math.abs(Math.round(G.pnl))) + ' تومان ' + (up ? 'سود' : 'زیان') + ' نسبت به قیمت خرید</div>'
               : '<div class="hk-sv-l hk-sv-m">' + (G.price ? 'قیمت خرید ثبت نشده' : 'قیمت روز وارد نشده') + '</div>');
           var acts = document.createElement('div'); acts.className = 'sv-g-acts';
@@ -210,14 +214,14 @@
     try { window.spPageSavings = spPageSavings; } catch (eSp) {}
     function openSavingsModal() {
       try { closeSideMenu(); } catch (e) {}
-      _hkSvDet = '';
+      _hkSvDet = ''; try { var te0 = hkSvTitleEl(); if (te0) te0.textContent = 'پس‌انداز'; } catch (eT0) {}
       loadSavings();
       renderSavings();
       var m = document.getElementById('savingsModal');
       if (m) m.classList.add('open');
     }
     function closeSavingsModal() {
-      closeSavingsEditor(); _hkSvDet = '';
+      closeSavingsEditor(); _hkSvDet = ''; try { var te = hkSvTitleEl(); if (te) te.textContent = 'پس‌انداز'; } catch (eT) {}
       var m = document.getElementById('savingsModal');
       if (m) m.classList.remove('open');
     }

@@ -36,7 +36,7 @@
         var id = page.id;
         if (id === 'subjectsModal') return 'هر پروژه یک حساب جدا برای واریزی‌ها و مخارجش دارد. هنگام ثبت ردیف می‌توانید پروژه را انتخاب کنید؛ با زدن روی هر پروژه گزارش واریز و مخارجش باز می‌شود.';
         if (id === 'backupPickOverlay') return 'از بخش‌هایی که می‌خواهید در فایل پشتیبان باشند تیک بگذارید. فایل را جایی امن نگه دارید؛ با آن می‌توانید داده‌ها را روی همین گوشی یا گوشی دیگر برگردانید.';
-        if (id === 'featureSheet' && typeof _featureActive !== 'undefined') {
+        if (id === 'featureSheet' && typeof _featureActive !== 'undefined' && !page.classList.contains('hk-led-rel')) {
           if (_featureActive === 'recurring') return 'درآمدهای ثابتِ تکراری (مثل اجاره یا حقوق). برای هر ماه خودکار یک ردیف «دریافت‌نشده» ساخته می‌شود و با واریز، به همان وصل می‌شود. پوشه: آرشیو دوره‌های قبلی.';
           if (_featureActive === 'ledger') return 'برای هر دو نفر یک رابطه بسازید. روی رابطه بزنید تا جدولش باز شود؛ روی هر ردیف انگشت را نگه دارید تا ویرایش، تسویه یا حذف بیاید. زیر نام هر رابطه می‌نویسد چه کسی چقدر بدهکار است.';
         }
@@ -240,7 +240,11 @@
       var on = fs.classList.contains('open') && pl.getClientRects().length > 0;
       fs.classList.toggle('hk-led-page', on);
       if (!on) return;
-      if (fs.classList.contains('hk-led-rel')) { try { hkLedRelFit(); var rb0 = list.querySelector('.section.hk-lrel .section-body'); if (rb0) hkLedLines(rb0); } catch (eRf) {} return; }
+      if (fs.classList.contains('hk-led-rel')) {
+        /* ۱.۴.۱۲: خط‌های ستون فقط یک بار برای هر پهنا (خواندن چیدمان هر بار سنگین است) */
+        try { var rb0 = list.querySelector('.section.hk-lrel .section-body'); if (rb0 && !(rb0._hkLinesOn && rb0._hkLinesN === rb0.querySelectorAll('tbody tr').length)) { hkLedLines(rb0); rb0._hkLinesOn = true; rb0._hkLinesN = rb0.querySelectorAll('tbody tr').length; } } catch (eRf) {}
+        return;
+      }
       var fb = document.getElementById('featureSheetBody'); if (!fb) return;
       var secs = Array.prototype.filter.call(list.children, function (x) { return x.classList && x.classList.contains('section'); });
       /* ۱.۴.۱: روابط و خلاصه در یک اسکرول (خلاصه هم کامل، نه چند ردیف)؛ صفحه ثابت. جدولِ رابطهٔ باز تقریباً کل جای صفحه را می‌گیرد */

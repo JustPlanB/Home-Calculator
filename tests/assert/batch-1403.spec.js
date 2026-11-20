@@ -110,7 +110,7 @@ const allErrors = [];
     onBackGuard(); await w(700);
     return o;
   });
-  ok(B.titles.askBackupParts === 'پشتیبان‌گیری' && B.titles.openBankAccountsModal === 'انتخاب حساب بانکی' && B.titles.openSavingsModal === 'پس‌انداز (ارز و طلا)' && B.titles.openHelpModal === 'راهنما', 'نام بالای صفحه‌ها همان نام گزینه در منو (' + Object.values(B.titles).join('، ') + ')');
+  ok(B.titles.askBackupParts === 'پشتیبان‌گیری' && B.titles.openBankAccountsModal === 'انتخاب حساب بانکی' && B.titles.openSavingsModal === 'پس‌انداز' && B.titles.openHelpModal === 'راهنما', 'نام بالای صفحه‌ها همان نام گزینه در منو (' + Object.values(B.titles).join('، ') + ')');
   ok(!B.bankBottom, 'بانک دلخواهِ ساخته‌شده در فهرست بانک‌های پایین نیست');
   ok(B.askFirst && B.askOutside, 'پرسش «با/بدون پیوست‌ها»: برگشت و لمس بیرون اول همان را می‌بندد');
   ok(B.sec.noSw && B.sec.btn, 'امنیت (۱.۴.۴): مثل قبل با دکمهٔ «فعال کردن قفل برنامه»، بی کلید روشن/خاموش');
