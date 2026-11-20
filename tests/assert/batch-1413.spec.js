@@ -45,6 +45,17 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     return { top: Math.round(top), bottom: Math.round(bottom) };
   });
   ok(C.top > 40 && Math.abs(C.top - (C.bottom - 80)) < 90 && C.bottom > C.top - 10, 'جدول رابطه با چند ردیف: وسط عمودی (فاصله بالا ' + C.top + '، پایین ' + C.bottom + ')');
+  /* عرض: خالیِ چپ و راست برابر؛ خط ردیف آخر فقط در ته جدول */
+  const H = await page.evaluate(async () => {
+    const led = ensureLedger(); led.sections = [{ id: 'Z', personA: 'من', personB: 'ملی', collapsed: true, rows: Array.from({ length: 30 }, (_, i) => Object.assign(emptyLedgerRow(), { day: String(1 + i % 28), desc: 'ردیف ' + i, amount: 1000 * (i + 1), ly: currentYear, lm: currentMonth })) }]; persistCurrent();
+    renderLedgerTab(); hkLedOpenRel('Z'); await new Promise(r => setTimeout(r, 1600));
+    const sec = document.querySelector('.section.hk-lrel'), s = sec.getBoundingClientRect(), body = sec.querySelector('.section-body'), hint = sec.querySelector('.hk-lrel-hint');
+    const out = { L: Math.round(s.left), R: Math.round(innerWidth - s.right), top: getComputedStyle(hint).borderTopColor, endBefore: sec.classList.contains('hk-at-end'), bottom: Math.round(s.bottom) };
+    body.scrollTop = body.scrollHeight; await new Promise(r => setTimeout(r, 300));
+    out.endAfter = sec.classList.contains('hk-at-end'); out.topAfter = getComputedStyle(hint).borderTopColor;
+    return out;
+  });
+  ok(H.L === H.R && !H.endBefore && H.endAfter && H.top !== H.topAfter && H.bottom < 750 - 60, 'جدول رابطه: خالیِ چپ و راست برابر (' + H.L + '/' + H.R + ')؛ خط ردیف آخر فقط در ته جدول؛ پایین تا نزدیک مربع افزودن (' + H.bottom + ')');
   ok(errs.length === 0, 'بدون خطای JS' + (errs.length ? ': ' + errs[0] : ''));
   await b.close(); console.log('batch-1413: ' + passed + ' passed, ' + failed + ' failed'); process.exit(failed ? 1 : 0);
 })();

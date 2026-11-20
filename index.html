@@ -13023,7 +13023,7 @@ html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel .section-body 
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel tbody tr { height: 36px; }
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel tbody td { height: 36px; padding: 2px !important; }
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel tbody textarea.cell, html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel tbody input.cell { height: 32px !important; min-height: 0 !important; padding-top: 5px !important; padding-bottom: 5px !important; line-height: 20px !important; box-sizing: border-box !important; overflow: hidden; }
-html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel .section-body { max-height: min(calc(90px + 12 * 37px), calc(100vh - 216px - env(safe-area-inset-bottom, 0px))) !important; overflow-y: auto; }
+html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel .section-body { max-height: calc(100vh - 196px - env(safe-area-inset-bottom, 0px)) !important; overflow-y: auto; }
 
 /* ===== ۱.۴.۱۱: باکس‌های درآمد ثابت، پروژه‌ها، پس‌انداز و یادآور هم‌ارتفاع قرض/دُنگ (۹۰)؛ آیکون‌ها همان جا و اندازهٔ دُنگ (وسط ارتفاع، چپ) ===== */
 html body #subjectsList .project-card, html body #recurringBox .recurring-row, html body #userRemindersList .ur-item, html body #savingsList .sv-group.hk-sv-card { min-height: 90px !important; box-sizing: border-box !important; }
@@ -13072,7 +13072,16 @@ html body #featureSheet.hk-led-rel > .feature-sheet-bar .hk-info-btn { display: 
 /* ===== ۱.۴.۱۴: صفحهٔ رابطهٔ قرض — جدول از نظر عمودی وسط صفحه (زیر نوار بالا)؛ هینت و اتواسکرول چسبیده‌تر به ته جدول ===== */
 html body #featureSheet.hk-led-rel #panel-ledger { display: flex !important; flex-direction: column; min-height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px)); max-height: none !important; }
 html body #featureSheet.hk-led-rel #panel-ledger #sections-ledger { margin-block: auto !important; }
-.hk-lrel-hint { padding: 9px 54px 6px !important; min-height: 38px !important; }
+.hk-lrel-hint { padding: 6px 54px 2px !important; min-height: 32px !important; }
+
+/* ===== ۱.۴.۱۵: جدول رابطهٔ قرض — عرض خالیِ چپ و راست برابر (وسط عرضی)؛ خط ردیف آخر فقط وقتی به ته جدول رسیدیم ===== */
+html body #featureSheet.hk-led-rel > .feature-sheet-body { padding-left: 14px !important; padding-right: 14px !important; }
+html body #featureSheet.hk-led-rel #panel-ledger { margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; width: 100% !important; box-sizing: border-box; }
+html body #featureSheet.hk-led-rel #panel-ledger #sections-ledger { margin-left: 0 !important; margin-right: 0 !important; padding: 0 !important; width: 100% !important; }
+html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel { width: 100% !important; box-sizing: border-box; }
+.hk-lrel-hint { border-top: 1px solid transparent !important; }
+.section.hk-lrel.hk-at-end .hk-lrel-hint { border-top-color: #3a3a3c !important; }
+html[data-theme="light"] .section.hk-lrel.hk-at-end .hk-lrel-hint { border-top-color: #c9d1dc !important; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -52356,6 +52365,11 @@ function openProjectRowPicker(secId) {
           const hint = document.createElement('div'); hint.className = 'person-detail-hint hk-lrel-hint';
           hint.textContent = 'برای ویرایش یا حذف، انگشت را روی ردیف نگه دارید';
           div.appendChild(hint);
+          /* ۱.۴.۱۵: خط بین ردیف آخر و هینت فقط وقتی دیده شود که ته جدول رسیده باشیم (یا همهٔ ردیف‌ها بی اسکرول دیده شوند) */
+          const atEnd = () => { div.classList.toggle('hk-at-end', body.scrollTop + body.clientHeight >= body.scrollHeight - 2); };
+          body.addEventListener('scroll', atEnd, { passive: true });
+          requestAnimationFrame(() => { atEnd(); requestAnimationFrame(atEnd); });
+          setTimeout(atEnd, 400);
         }
         div.classList.add('hk-lv2');
         try { requestAnimationFrame(function() { ensureShapeFrame(div); }); } catch (e) {}

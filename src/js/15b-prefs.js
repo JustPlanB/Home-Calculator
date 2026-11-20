@@ -1125,6 +1125,11 @@
           const hint = document.createElement('div'); hint.className = 'person-detail-hint hk-lrel-hint';
           hint.textContent = 'برای ویرایش یا حذف، انگشت را روی ردیف نگه دارید';
           div.appendChild(hint);
+          /* ۱.۴.۱۵: خط بین ردیف آخر و هینت فقط وقتی دیده شود که ته جدول رسیده باشیم (یا همهٔ ردیف‌ها بی اسکرول دیده شوند) */
+          const atEnd = () => { div.classList.toggle('hk-at-end', body.scrollTop + body.clientHeight >= body.scrollHeight - 2); };
+          body.addEventListener('scroll', atEnd, { passive: true });
+          requestAnimationFrame(() => { atEnd(); requestAnimationFrame(atEnd); });
+          setTimeout(atEnd, 400);
         }
         div.classList.add('hk-lv2');
         try { requestAnimationFrame(function() { ensureShapeFrame(div); }); } catch (e) {}
