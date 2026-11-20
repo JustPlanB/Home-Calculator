@@ -175,7 +175,9 @@
           sc.forEach(function (s) { try { s[0].scrollTop = s[1]; s[0].scrollLeft = s[2]; } catch (eS) {} });
         }
         var o = el.style.opacity; el.style.opacity = '0.999'; void el.offsetHeight;
-        requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; });
+        /* ۱.۴.۱۱: «نصفه‌باز»: بالای صفحه نو و بقیه هنوز تصویر قدیمی (کاشی‌های ناقص لایهٔ بزرگ در WebView). یک لحظه لایهٔ جدا (will-change) تا کاشی‌ها از نو نقاشی شوند؛ بی پلک زدن */
+        var wc = el.style.willChange; el.style.willChange = 'transform, opacity';
+        requestAnimationFrame(function () { el.style.opacity = o; el.style.transform = ''; void el.offsetHeight; requestAnimationFrame(function () { el.style.willChange = wc; }); });
       } catch (e) {}
     }
     (function () {
@@ -191,6 +193,7 @@
             var done = 0, fin = function () { if (done++) return; hkPageRepaint(el, false); };
             a.addEventListener('finish', fin); a.addEventListener('cancel', fin);
             setTimeout(fin, ((opt && opt.duration) || 400) + 250);
+            setTimeout(function () { try { hkPageRepaint(el, false); } catch (eN) {} }, ((opt && opt.duration) || 400) + 900);
           }
         } catch (eG) {}
         return a;

@@ -204,3 +204,13 @@
 - **پاک‌کن S Pen:** `MainActivity.hkPenTrack` وضعیت دکمهٔ قلم را از `dispatchTouchEvent/GenericMotionEvent` می‌خواند و `window.__hkPenBtn` را می‌گذارد؛ `hkInkPenBtn` آن را می‌خواند. **حتماً روی S24/S26 Ultra امتحان شود** (`docs/android-device-checklist-fa.md`).
 - **مانده:** بخش ۵ (چنددسته، جیب‌به‌جیب، انتخاب‌نشدن متن) و ۶ (ویجت‌ها).
 
+## ۲۰. ۱.۴.۱۱
+- **پس‌انداز:** `renderSavings` دو حالت دارد: فهرست (`.hk-sv-card` + `.sv-g-acts`) و جزئیات (`_hkSvDet`، `hkSvOpen/hkSvClose`؛ بک در `17-pages.js` به شرط نبودن `#svEditor`). مربع افزودن در جزئیات = «خرید جدید» با `hkSvDetPre`. ویرایش روی کارت = ویرایش قیمت روز، حذف = همهٔ خریدهای آن نوع.
+- **اشتراک‌گذاری:** `hkMakeShareFn` / `hkRepHtml` / `hkShareIconBtn` در `15b-prefs.js` برای پروژه (`hkProjShare`)، پس‌انداز (`hkSavShare`)، درآمد ثابت (`hkRecShare`) با `hkDongShareMenu`.
+- **آیکون اطلاعات کنار نام صفحه:** `hkPgTipFor` در `17-pages.js` (پروژه‌ها، پشتیبان‌گیری، درآمد ثابت، قرض).
+- **معوقه:** `recMarkLateDesc` (۱۳a) شرح خودکارِ ردیف دریافت‌نشدهٔ گذشته را «اسم _ معوقه …» می‌کند؛ پیش‌پرداخت هنگام وصل واریز (`recDueDesc`) از قبل بود.
+- **اتواسکرول:** قفل `hk-autoscroll` با `scrollend` برداشته می‌شود و `user-select:none` دارد.
+- **پاک‌کن S Pen:** `MainActivity.hkPenEraserCopy` لمس قلمِ دکمه‌دار را به `TOOL_TYPE_ERASER` تبدیل می‌کند (صفحه buttons=32 می‌گیرد). **روی گوشی تأیید نشده.**
+- **نیمه‌باز شدن منو (عکس کاربر، پس‌انداز):** علت قطعی نیست (احتمال: کاشی‌های ناقص لایهٔ بزرگ در WebView)؛ `hkPageRepaint` یک لحظه `will-change` می‌گذارد و ۹۰۰ms بعد از ورق خوردن دوباره اجرا می‌شود. **اگر دوباره دیده شد، فیلم/لاگ لازم است.**
+- **مانده:** بخش ۵ (چنددسته، جیب‌به‌جیب، انتخاب‌نشدن متن) و ۶ (ویجت‌ها).
+
