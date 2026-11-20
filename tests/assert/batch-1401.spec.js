@@ -149,8 +149,10 @@ const allErrors = [];
     hkSmsReconcile(snap); await w(300);
     const dlg = document.getElementById('hkReconDlg');
     out.range = !!dlg && /بین ۳ .* ساعت ۱۰:۰۰ و ۵ /.test(dlg.textContent) && /زیر ۳۰ هزار/.test(dlg.textContent);
-    const sel = dlg.querySelector('.hk-recon-day'); out.pickDef = sel && sel.value === '3' && sel.options.length === 3;
-    sel.value = '4'; sel.dispatchEvent(new Event('change'));
+    /* ۱.۴.۹: منوی خودِ نرم‌افزار؛ گزینه‌ها = روز همین تراکنش و همهٔ روزهای قبلِ ماه (۵ تا ۱) */
+    const sel = dlg.querySelector('.hk-recon-daywrap .dark-select'), items = document.querySelectorAll('.dark-select-list.hk-recon-dl .dark-select-item');
+    out.pickDef = !!sel && sel.dataset.value === '3' && items.length === 5;
+    document.querySelector('.dark-select-list.hk-recon-dl .dark-select-item[data-value="4"]').click();
     dlg.querySelector('.hk-recon-add').click(); await w(300);
     const g = ex.rows.find(r => r.reconGap);
     out.gap = !!g && g.day === '4' && g.amount === 20000 && /خرید بی‌پیامک/.test(g.desc);
