@@ -316,7 +316,7 @@ final class HkWidgetDraw {
       cv.save(); cv.clipPath(clip);
       float fw=Math.max(2*r, box.width()*d.pct/100f);
       Paint fp=new Paint(Paint.ANTI_ALIAS_FLAG); fp.setColor(capColor(d.pct, d.light));
-      cv.drawRoundRect(new android.graphics.RectF(box.right-fw, box.top, box.right, box.bottom), r, r, fp);
+      cv.drawRoundRect(new android.graphics.RectF(box.left, box.top, box.left+fw, box.bottom), r, r, fp); /* ۱.۴.۱۹: درصد چپ است، پس پُر از چپ و خالی سمت راست */
       cv.restore();
     }
     Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(Math.max(1f, 1.2f*k)); st.setColor(d.light ? 0x38000000 : 0x47FFFFFF);

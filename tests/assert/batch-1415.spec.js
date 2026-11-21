@@ -24,7 +24,8 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
       openFeatureSheet('ledger'); await w(700);
       document.querySelector('#sections-ledger .section > .section-header').click(); await w(1200);
       const sec = document.querySelector('#sections-ledger .section.hk-lrel'); const r = sec.getBoundingClientRect();
-      const out = { top: Math.round(r.top * 10) / 10, bottom: Math.round(r.bottom * 10) / 10 };
+      const fab = document.getElementById('hkScrollFab'), sv = fab && fab.querySelector('svg');
+      const out = { top: Math.round(r.top * 10) / 10, bottom: Math.round(r.bottom * 10) / 10, fabGap: sv ? Math.round((r.bottom - sv.getBoundingClientRect().bottom) * 10) / 10 : 99 };
       document.querySelector('#featureSheet .hk-pg-back, #featureSheet .feature-sheet-close')?.click(); await w(500);
       return out;
     };
@@ -32,11 +33,13 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     return o;
   });
   ok(Math.abs(T.t3.top - T.t30.top) <= 1, 'جدول با ۳ ردیف و با ۳۰ ردیف از یک نقطهٔ بالا شروع می‌شود (' + T.t3.top + ' و ' + T.t30.top + ')');
+  ok(T.t30.fabGap >= 5, 'دکمهٔ اتواسکرول (با حرکت بالا/پایین‌اش) وارد فریم پایینی جدول نمی‌شود (فاصله ' + T.t30.fabGap + 'px)');
   console.log('• ویجت');
   const rd = f => fs.readFileSync(path.join(__dirname, '../../' + f), 'utf8');
   const tx = rd('android-src/HkWidgetTxProvider.java'), st = rd('android-src/HkWidgetStyle.java');
-  ok(/cv\.translate\(0, ti\);/.test(tx) && !/clipP/.test(tx) && !/drawRect\(c\[4\], th, c\[0\]/.test(tx), 'سرستون ویجت تراکنش: بی باکس جدا روی باکس اصلی (۱.۴.۱۸)');
+  ok(/cv\.translate\(0, ti\);/.test(tx) && !/clipP/.test(tx) && /drawRect\(c\[4\], th, c\[0\], th\+hh, band\)/.test(tx), 'سرستون ویجت تراکنش: بی باکس جدا روی باکس اصلی (۱.۴.۱۸)');
   const dr = rd('android-src/HkWidgetDraw.java');
+  ok(/RectF\(box\.left, box\.top, box\.left\+fw, box\.bottom\)/.test(dr), 'ویجت تک‌خطی: رنگ درصد از چپ پُر می‌شود (همراه جای درصد)');
   ok(/cv\.drawText\(ps, padX, cy/.test(dr) && /cv\.drawText\(v, W-padX, cy/.test(dr), 'ویجت تک‌خطی: درصد چپ، مانده راست (جابه‌جا شد)');
   ok(/heightPixels\*0\.29f/.test(st), 'پنجرهٔ پیش‌نمایش ۲۹٪ ارتفاع صفحه (هم‌اندازهٔ موزیک)');
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join('|').slice(0, 100));
