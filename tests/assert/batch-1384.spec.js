@@ -78,7 +78,10 @@ const allErrors = [];
     /* ویرایش ردیف: انتخاب دسته روی خود ردیف می‌ماند */
     hkOpenRowEdit({ row: cur, tab: 'expense', title: t, sec: periodData.expense.sections.find(q => q.title === t), num: 1, onSaved: function () {} }); await w(400);
     [...document.querySelectorAll('#hkRowEdit .hk-re-sel')].find(x => /دسته/.test(x.textContent)).click(); await w(250);
+    /* ۱.۴.۲۰: انتخاب چندتایی: دستهٔ قبلی برداشته، «دیجیتال» زده و «تأیید» */
+    document.querySelectorAll('#hkCatPick .sms-cat.on').forEach(x => { if (x.dataset.cat) x.click(); });
     document.querySelector('#hkCatPick .sms-cat[data-cat="tech"]').click(); await w(100);
+    document.querySelector('#hkCatPick .hk-cp-ok').click(); await w(100);
     document.querySelector('#hkRowEdit .hk-re-ok').click(); await w(400);
     const cur2 = periodData.expense.sections.find(q => q.title === t).rows[0];
     o.edit = JSON.stringify(cur2.cats);

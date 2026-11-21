@@ -1138,7 +1138,7 @@
         '<div class="hk-p2p-cards">' + card('برداشت', pr.exp, pr.inc, 'expense') + card('واریز', pr.inc, pr.exp, 'income') + '</div>' +
         '<label class="hk-p2p-alw"><input type="checkbox" class="hk-p2p-always">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
-      ov.querySelector('.hk-p2p-msg').textContent = 'این دو تراکنش در یک روز، بین دو کارت خودتان است' + (pr.fee > 0 ? ' (اختلاف ' + formatNum(pr.fee) + ' تومان کارمزد)' : '') + '. پول فقط از یک کارت به کارت دیگرتان رفته؟' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ در همین روز بود؛ نزدیک‌ترین ساعت انتخاب شد)' : '');
+      ov.querySelector('.hk-p2p-msg').textContent = 'این دو تراکنش در یک روز، بین دو کارت خودتان است' + (pr.fee > 0 ? ' (اختلافِ ' + formatNum(pr.fee) + ' کارمزد بانک است)' : '') + '. پول فقط از یک کارت به کارت دیگرتان رفته؟' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ در همین روز بود؛ نزدیک‌ترین ساعت انتخاب شد)' : '');
       var done = function (yes) {
         var alw = ov.querySelector('.hk-p2p-always').checked;
         ov.remove();

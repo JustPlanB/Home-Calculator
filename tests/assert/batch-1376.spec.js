@@ -66,7 +66,7 @@ async function fresh(b, vh) {
     catB.click(); await w(200);
     const sh = document.getElementById('hkCatPick'), sg = sh && sh.querySelector('.sms-cat-grid');
     const same = !!sg && sg.classList.contains('hk-cat-colored') && getComputedStyle(sg).gridTemplateColumns.split(' ').length === 5;
-    const food = sh.querySelector('[data-cat="food"]'); food.click(); await w(100);
+    const food = sh.querySelector('[data-cat="food"]'); food.click(); await w(100); sh.querySelector('.hk-cp-ok').click(); await w(100); /* ۱.۴.۲۰: انتخاب چندتایی با «تأیید» */
     const chosen = catB.textContent;
     return { n: tiles.length, rows: tops.length, cols, colors: colors.size, same, chosen };
   });
