@@ -13091,6 +13091,49 @@ html[data-theme="light"] body:not(#_):not(._):not(.__) #projectReportModal .proj
    که جدول با بیش از ۱۲ ردیف (بیشترین اندازه) شروع می‌شود، فارغ از تعداد ردیف‌ها (جای قاعدهٔ وسط‌چین عمودی قبلی) */
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel { padding-bottom: 2.5px !important; } /* ۱.۴.۱۸: ۱٫۵ (۱.۴.۱۷) + ۱ */
 html body #featureSheet.hk-led-rel #panel-ledger #sections-ledger { margin-block: calc((100vh - 150px - env(safe-area-inset-bottom, 0px) - (min(calc(90px + 12 * 37px), calc(100vh - 216px - env(safe-area-inset-bottom, 0px))) + 38.5px)) / 2 - 1.5px) 0 !important; } /* ۱.۴.۱۸: فریم ۱٫۵px بالاتر شروع می‌شود (ردیف‌ها/هینت هم با آن)؛ پایین فریم ۰٫۵px کوتاه‌تر */
+
+/* ۱.۴.۲۰: باکس «جیب به جیب بود؟» مثل باکس مقایسهٔ تراکنش تکراری (دو کارت .hk-dc-card زیر هم) */
+.hk-p2p-cmp .hk-p2p-msg { line-height: 1.8; font-size: var(--hk-fs-small); color: var(--muted, #98989f); }
+.hk-p2p-cmp .hk-p2p-cards { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 52vh; overflow-y: auto; }
+.hk-p2p-cmp .hk-p2p-alw { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--hk-fs-small); color: var(--muted, #98989f); }
+.hk-p2p-cmp .hk-p2p-alw input { width: 18px; height: 18px; accent-color: #ff453a; }
+
+/* ۱.۴.۲۰: ویرایش ردیف: چند دسته = اسم دستهٔ اول + دایرهٔ کوچک «+N» (آبی کمی تیره‌تر، نوشتهٔ آبی نرم‌افزار) بین اسم و فلش */
+html body .hk-re-sel .hk-re-cnt, html body .hk-re-pair .hk-re-sel span.hk-re-cnt { flex: 0 0 auto; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: rgba(8, 181, 245, 0.22); color: #08b5f5; font-size: 11.5px; font-weight: 800; line-height: 1; overflow: visible; text-overflow: clip; direction: ltr; unicode-bidi: isolate; }
+html[data-theme="light"] body .hk-re-sel .hk-re-cnt { background: rgba(8, 181, 245, 0.16); }
+.hk-re-sel .hk-re-cnt + .hk-re-chev { margin-inline-start: 0; }
+#hkCatPick .hk-cp-ok { display: block; width: 100%; margin-top: 12px; }
+
+/* ۱.۴.۲۰: متن ردیف‌های جدول‌ها با لانگ‌پرس انتخاب نشود (خانه‌های فقط‌خواندنی هم) */
+tbody tr input[readonly], tbody tr textarea[readonly], tbody tr td { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+tbody tr input[readonly], tbody tr textarea[readonly] { caret-color: transparent; }
+
+/* ۱.۴.۲۰: دستهٔ انتخاب‌شده (واریزی، برداشت، جیب به جیب — هر جای نرم‌افزار): دورش نوار چرخان به رنگ همان دسته (جیب به جیب قرمز)،
+   مثل باکس یادآورِ موعدرسیده. فقط کاشی‌های انتخاب‌شده می‌چرخند (چند عدد)؛ زاویه با @property و بی تغییر چیدمان */
+@property --hk-cat-spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes hkCatSpin { to { --hk-cat-spin: 360deg; } }
+.sms-cat.on i { position: relative; }
+.sms-cat.on i:has(.hk-cat-img) { overflow: visible; }
+.sms-cat.on i::after { content: ''; position: absolute; inset: -4px; border-radius: 16px; padding: 2px; box-sizing: border-box; pointer-events: none;
+  background: conic-gradient(from var(--hk-cat-spin, 0deg), transparent 0deg, transparent 200deg, color-mix(in srgb, var(--cc, #08b5f5) 25%, transparent) 250deg, var(--cc, #08b5f5) 315deg, color-mix(in srgb, var(--cc, #08b5f5) 55%, #fff) 340deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude;
+  animation: hkCatSpin 2.4s linear infinite; }
+.sms-cat-row .sms-cat.on i::after, .sms-cat-strip .sms-cat.on i::after { border-radius: 14px; }
+@media (prefers-reduced-motion: reduce) { .sms-cat.on i::after { animation: none; } }
+
+/* ۱.۴.۲۰: جدول تراکنش‌های یک دسته (آمار، اسلاید دسته‌بندی، جیب به جیب): خط‌کشی و سرستون مثل جدول درآمد/مخارج، همه وسط‌چین */
+.hk-stcat-tw { padding: 0 !important; overflow-x: hidden; }
+.hk-stcat-t { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; direction: rtl; }
+.hk-stcat-t col.cd { width: 25%; } .hk-stcat-t col.ca { width: 25%; } .hk-stcat-t col.cb { width: 21%; }
+.hk-stcat-t th, .hk-stcat-t td { text-align: center; vertical-align: middle; padding: 8px 3px; border-bottom: 1px solid #3a3a3c; border-left: 1px solid #3a3a3c; white-space: nowrap; overflow: hidden; font-size: var(--hk-fs-small); }
+.hk-stcat-t th:last-child, .hk-stcat-t td:last-child { border-left: 0; }
+.hk-stcat-t tbody tr:last-child td { border-bottom: 0; }
+.hk-stcat-t thead th { position: sticky; top: 0; z-index: 2; background: #0a1628; color: #fff; font-weight: 700; }
+.hk-stcat-t td.hk-stcat-d { text-overflow: ellipsis; cursor: pointer; }
+.hk-stcat-t td.a { font-weight: 700; direction: ltr; unicode-bidi: plaintext; }
+html body #hkStCatTx .hk-stcat-t td.a.exp { color: var(--hk-expense) !important; } html body #hkStCatTx .hk-stcat-t td.a.inc { color: var(--hk-income) !important; }
+html[data-theme="light"] .hk-stcat-t th, html[data-theme="light"] .hk-stcat-t td { border-color: #c9d1dc; }
+html[data-theme="light"] .hk-stcat-t thead th { background: #eef0f4; color: #2c3644; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -23126,23 +23169,42 @@ async function openPdfPrintWindow(){
         var ka = a.x.y * 1e6 + a.x.m * 1e4 + (a.x.d || 0) * 100, kb = b.x.y * 1e6 + b.x.m * 1e4 + (b.x.d || 0) * 100;
         return (kb - ka) || ((Number(b.x.row.createdAt) || 0) - (Number(a.x.row.createdAt) || 0));
       });
-      var tot = rows.reduce(function (s, o) { return s + o.a; }, 0);
+      /* جیب به جیب: جمعِ جابه‌جاشده (طرف برداشت) */
+      var tot = rows.reduce(function (s, o) { return s + (o.inc ? 0 : o.a); }, 0) || rows.reduce(function (s, o) { return s + o.a; }, 0);
       var ov = document.createElement('div'); ov.id = 'hkStCatTx'; ov.className = 'hk-bulk-ov hk-bulk-center'; ov.setAttribute('data-hk-back', '1');
       ov.innerHTML = '<div class="hk-bulk-box hk-acctx-box hk-stcat-box"><div class="hk-bulk-title">' + escapeHtml(label) + '</div>' +
         '<div class="hk-acctx-src hk-stcat-sum"><span>' + escapeHtml(d.period) + (d.card ? ' · ' + escapeHtml(d.card) : '') + '</span><b class="hk-stcat-tot">' + formatNum(Math.round(tot)) + ' <small>تومان</small></b></div>' +
-        '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span><span class="b">کارت</span></div>' +
+        /* ۱.۴.۲۰: جدول خط‌کشی‌شده با سرستونِ هم‌رنگ جدول‌های درآمد/مخارج؛ ستون آخر «حساب» (بانکِ همان تراکنش)؛ همه وسط‌چین؛
+           نوشته‌ها کامل در عرض ستون (ریزتر در صورت نیاز) جز شرح که با یک ضربه در باکس شناور تک‌خطی کامل دیده می‌شود */
+        '<div class="hk-acctx-list hk-stcat-tw">' + (rows.length ? '<table class="hk-stcat-t"><colgroup><col class="cd"><col><col class="ca"><col class="cb"></colgroup>' +
+        '<thead><tr><th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>حساب</th></tr></thead><tbody>' +
         rows.map(function (o) {
-          var x = o.x, part = Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);
-          return '<div class="hk-acctx-r"><span class="d">' + toPersianDigits(String(x.y)) + '/' + p2(x.m) + (x.d ? '/' + p2(x.d) : '') + (x.row.time ? '<small> ' + toPersianDigits(x.row.time) + '</small>' : '') + '</span>' +
-            '<span class="t">' + escapeHtml(x.desc || 'برداشت') + (part ? '<small> (سهم این دسته)</small>' : '') + '</span>' +
-            '<span class="a exp">−' + formatNum(Math.round(o.a)) + '</span><span class="b">' + escapeHtml(x.title || '') + '</span></div>';
-        }).join('') : '<div class="hk-acctx-empty">تراکنشی در این دسته نیست</div>') + '</div>' +
+          var x = o.x, part = !o.inc && Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);
+          var full = (x.desc || (o.inc ? 'واریز' : 'برداشت')) + (part ? ' (سهم این دسته)' : '');
+          return '<tr><td class="hk-fit">' + toPersianDigits(String(x.y)) + '/' + p2(x.m) + (x.d ? '/' + p2(x.d) : '') + '</td>' +
+            '<td class="hk-stcat-d" data-full="' + escapeHtml(full).replace(/"/g, '&quot;') + '">' + escapeHtml(full) + '</td>' +
+            '<td class="hk-fit a ' + (o.inc ? 'inc' : 'exp') + '">' + (o.inc ? '+' : '−') + formatNum(Math.round(o.a)) + '</td>' +
+            '<td class="hk-fit">' + escapeHtml(String((x.row && x.row.account) || '').trim() || '—') + '</td></tr>';
+        }).join('') + '</tbody></table>' : '<div class="hk-acctx-empty">تراکنشی در این دسته نیست</div>') + '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
       document.body.appendChild(ov);
       var close = function () { ov.remove(); };
       ov._hkCancel = close;
       ov.querySelector('.hk-bulk-close').onclick = close;
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelectorAll('td.hk-stcat-d').forEach(function (td) { td.onclick = function (e) { e.stopPropagation(); try { var pp = showCellTextPopup(td, td.getAttribute('data-full') || td.textContent); if (pp) pp.style.zIndex = '100800'; } catch (eP) {} }; });
+      hkStCatFit(ov);
+      requestAnimationFrame(function () { hkStCatFit(ov); });
+    }
+    /* نوشتهٔ خانه‌ها (جز شرح) کامل در عرض ستون: اگر جا نشد، فقط همان خانه ریزتر می‌شود */
+    function hkStCatFit(root) {
+      try {
+        root.querySelectorAll('.hk-stcat-t td.hk-fit').forEach(function (td) {
+          td.style.fontSize = '';
+          var fs = parseFloat(getComputedStyle(td).fontSize) || 13, g = 0;
+          while (td.scrollWidth > td.clientWidth + 0.5 && fs > 8 && g++ < 24) { fs -= 0.5; td.style.fontSize = fs + 'px'; }
+        });
+      } catch (e) {}
     }
 
     function closeSideMenu() {
@@ -26373,12 +26435,12 @@ async function openPdfPrintWindow(){
     function hkP2PAllRows(fn) {
       try {
         ['income', 'expense'].forEach(function (tab) {
-          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur', sec); }); });
+          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur', sec, currentYear, currentMonth); }); });
         });
         var py = currentYear, pm = currentMonth - 1; if (pm < 1) { pm = 12; py--; }
         var pd = archive && archive[periodKey(py, pm)];
         if (pd) ['income', 'expense'].forEach(function (tab) {
-          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev', sec); }); });
+          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev', sec, py, pm); }); });
         });
       } catch (e) {}
     }
@@ -26416,33 +26478,39 @@ async function openPdfPrintWindow(){
     }
     function hkP2PAutoPairs() { try { return JSON.parse(localStorage.getItem(HK_P2P_AUTO_KEY) || '[]') || []; } catch (e) { return []; } }
     function hkP2PPairKey(a, b) { return [String(a || '').trim(), String(b || '').trim()].sort().join('|'); }
-    /* جفت: برداشت از یک کارت خودم + واریز هم‌مبلغ به کارت دیگر خودم، تا ۳ روز فاصله (پایا/ساتنا دیرتر می‌نشیند) */
+    /* جفت: برداشت از یک کارت خودم + واریز هم‌مبلغ به کارت دیگر خودم.
+       ۱.۴.۲۰: فقط «همان روز» تراکنش (سال/ماه/روزِ خود ردیف؛ ساعت فرقی نمی‌کند، تا پایان همان روز، چون پایا/ساتنا یا پیامکِ دیر).
+       قبلاً زمان ساخت ردیف (createdAt) مقایسه می‌شد و در ثبت گروهی همهٔ ردیف‌ها یک زمان ساخت داشتند ← جفت‌های دو هفته فاصله.
+       واریز از کارت دیگران به کارت من و برداشت همان مبلغ از «همان» کارت = جیب به جیب نیست (کارت‌ها باید دو کارت متفاوتِ خودم باشند). */
+    function hkP2PMin(t) { var m = /^(\d{1,2}):(\d{2})/.exec(toEnglishDigits(String(t || '').trim())); return m ? (+m[1]) * 60 + (+m[2]) : -1; }
     function hkP2PFindPairs() {
       var since = hkP2PSince(), own = {};
       try { selectedAccountLabels().forEach(function (l) { own[l] = 1; }); } catch (e) {}
-      var inc = [], exp = [], secOf = new Map(), wOf = new Map();
-      hkP2PAllRows(function (r, tab, w, sec) {
+      var inc = [], exp = [], secOf = new Map(), wOf = new Map(), dk = new Map();
+      hkP2PAllRows(function (r, tab, w, sec, y, m) {
         /* ۱.۴.۰: ردیفی که دستی (یک‌طرفه) جیب به جیب شده هم دنبال طرف دیگرش می‌گردد */
         if (r.deletedAt || r.p2pPaired || r.p2pNo || r.p2pAsked || r.p2pFeeFor) return;
         if ((r.status || 'paid') !== 'paid' || !(Number(r.amount) > 0)) return;
         var acc = String(r.account || '').trim(); if (!acc || !own[acc]) return;
         if (!(Number(r.createdAt) >= since)) return;
-        (tab === 'income' ? inc : exp).push(r); secOf.set(r, sec); wOf.set(r, w);
+        var d = parseInt(toEnglishDigits(String(r.day || '')).replace(/[^0-9]/g, ''), 10) || 0; if (!d) return;
+        (tab === 'income' ? inc : exp).push(r); secOf.set(r, sec); wOf.set(r, w); dk.set(r, (y * 100 + m) * 100 + d);
       });
       var out = [], used = new Set();
       inc.forEach(function (i) {
         var ia = Number(i.amount) || 0;
         var cands = exp.filter(function (e) {
-          if (used.has(e) || (i.p2p && e.p2p) || String(e.account).trim() === String(i.account).trim()) return false;
-          if (Math.abs((Number(e.createdAt) || 0) - (Number(i.createdAt) || 0)) > 3 * 86400000) return false;
+          if (used.has(e) || String(e.account).trim() === String(i.account).trim()) return false;
+          if (dk.get(e) !== dk.get(i)) return false;
           var d = (Number(e.amount) || 0) - ia;
           return d >= 0 && d <= hkP2PFeeCap(ia);
         });
         if (!cands.length) return;
         /* اول هم‌مبلغ، بعد کمترین کارمزد، بعد نزدیک‌ترین زمان */
-        cands.sort(function (a, b) { return ((Number(a.amount) - ia) - (Number(b.amount) - ia)) || (Math.abs(a.createdAt - i.createdAt) - Math.abs(b.createdAt - i.createdAt)); });
+        var ti = hkP2PMin(i.time), gap = function (x) { var t = hkP2PMin(x.time); return (t < 0 || ti < 0) ? 1e4 : Math.abs(t - ti); };
+        cands.sort(function (a, b) { return ((Number(a.amount) - ia) - (Number(b.amount) - ia)) || (gap(a) - gap(b)); });
         used.add(cands[0]);
-        out.push({ inc: i, exp: cands[0], alts: cands.filter(function (c) { return Number(c.amount) === Number(cands[0].amount); }).length, expSec: secOf.get(cands[0]), expW: wOf.get(cands[0]), fee: Math.round(Number(cands[0].amount) - ia) });
+        out.push({ inc: i, exp: cands[0], dk: dk.get(i), alts: cands.filter(function (c) { return Number(c.amount) === Number(cands[0].amount); }).length, expSec: secOf.get(cands[0]), expW: wOf.get(cands[0]), fee: Math.round(Number(cands[0].amount) - ia) });
       });
       return out;
     }
@@ -26455,7 +26523,8 @@ async function openPdfPrintWindow(){
       var pairs = hkP2PFindPairs(); if (!pairs.length) return;
       var auto = hkP2PAutoPairs(), changed = false;
       pairs = pairs.filter(function (pr) {
-        if (auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { hkP2PApply(pr); changed = true; return false; }
+        /* ۱.۴.۲۰: هر دو طرف را خود کاربر «جیب به جیب» زده (مثلاً در باکس ثبت پیامک که پیش‌انتخاب بود) ← بی‌سؤال جفت می‌شوند */
+        if ((pr.inc.p2p && pr.exp.p2p) || auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { hkP2PApply(pr); changed = true; return false; }
         return true;
       });
       if (changed) { try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); showToast('جابه‌جایی بین کارت‌های خودتان «جیب به جیب» شد'); } catch (e) {} finally { _hkP2PBusy = false; } }
@@ -26465,13 +26534,27 @@ async function openPdfPrintWindow(){
       pr.inc.p2pAsked = pr.exp.p2pAsked = true;
       var ov = document.createElement('div'); ov.id = 'hkP2PAsk'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100690;display:flex;align-items:center;justify-content:center;';
-      var tm = function (r) { var t = String(r.time || '').trim(); return t ? ' ساعت ' + toPersianDigits(t) : ''; };
-      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:350px;">' +
+      /* ۱.۴.۲۰: مثل باکس مقایسهٔ تراکنش تکراری: دو تراکنش زیر هم با جزئیات (مبلغ، روز، ساعت، حساب، شرح، متن پیامک) و همان سؤال */
+      var y = Math.floor((pr.dk || 0) / 10000), m = Math.floor((pr.dk || 0) / 100) % 100;
+      var f = function (lbl, val, diff) { return '<span class="hk-dc-f' + (diff ? ' hk-dc-diff' : '') + '"><i>' + lbl + '</i> ' + escapeHtml(val || '—') + '</span>'; };
+      var card = function (title, r, o, tab) {
+        var d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0, sms = null;
+        try { sms = hkDupFindPrevSms({ type: tab, raw: '', y: y, m: m }, r); } catch (eS) {}
+        return '<div class="hk-dc-card"><div class="hk-dc-h">' + title + '</div><div class="hk-dc-meta">' +
+          f('مبلغ', formatNum(Number(r.amount) || 0), Number(r.amount) !== Number(o.amount)) +
+          f('روز', d ? toPersianDigits(String(d)) + ' ' + (MONTHS[m - 1] || '') : '', false) +
+          f('ساعت', r.time ? toPersianDigits(String(r.time)) : '', false) +
+          f('حساب', String(r.account || '').trim(), false) + '</div>' +
+          (String(r.desc || '').trim() ? '<div class="hk-dc-desc">' + escapeHtml(String(r.desc).trim()) + '</div>' : '') +
+          (sms && sms.raw ? '<div class="hk-dc-sms">' + escapeHtml(String(sms.raw).trim()) + '</div>' : '') + '</div>';
+      };
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box hk-p2p-cmp" style="max-width:360px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +
-        '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
-        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#ff453a;">همیشه برای این دو کارت</label>' +
+        '<div class="hk-p2p-msg"></div>' +
+        '<div class="hk-p2p-cards">' + card('برداشت', pr.exp, pr.inc, 'expense') + card('واریز', pr.inc, pr.exp, 'income') + '</div>' +
+        '<label class="hk-p2p-alw"><input type="checkbox" class="hk-p2p-always">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
-      ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت ' + (pr.fee > 0 ? formatNum(pr.exp.amount) : 'همین مبلغ') + ' از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است' + (pr.fee > 0 ? ' (' + formatNum(pr.fee) + ' کارمزد بانک)' : '') + '. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.fee > 0 ? ' کارمزد به‌عنوان یک خرج جدا («کارمزد انتقال») ثبت می‌شود.' : '') + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
+      ov.querySelector('.hk-p2p-msg').textContent = 'این دو تراکنش در یک روز، بین دو کارت خودتان است' + (pr.fee > 0 ? ' (اختلاف ' + formatNum(pr.fee) + ' تومان کارمزد)' : '') + '. پول فقط از یک کارت به کارت دیگرتان رفته؟' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ در همین روز بود؛ نزدیک‌ترین ساعت انتخاب شد)' : '');
       var done = function (yes) {
         var alw = ov.querySelector('.hk-p2p-always').checked;
         ov.remove();
@@ -26489,6 +26572,8 @@ async function openPdfPrintWindow(){
     }
     (function () {
       try { hkP2PSince(); } catch (e) {}
+      /* ۱.۴.۲۰: ردیف‌هایی که بیرون از نرم‌افزار (ثبت سریع) آمده‌اند: اولین ورود بعدی سؤال جیب به جیب */
+      try { setTimeout(hkP2PScheduleScan, 2500); } catch (eB) {}
       if (typeof persistCurrent === 'function' && !persistCurrent._hkP2P) {
         var _pc = persistCurrent;
         var w = function () { var r = _pc.apply(this, arguments); if (!_hkP2PBusy) hkP2PScheduleScan(); return r; };
@@ -26496,7 +26581,36 @@ async function openPdfPrintWindow(){
         persistCurrent = w; try { window.persistCurrent = w; } catch (e2) {}
       }
     })();
-    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan, hkP2PApply: hkP2PApply }); } catch (eP2) {}
+        /* ۱.۴.۲۰: جفتِ پیامکی که همین الان در باکس ثبت باز است: تراکنشِ مخالف (واریز/برداشت)، همان روز، کارت دیگرِ خودم، هم‌مبلغ (برداشت تا کارمزد بیشتر)؛
+       یا ثبت‌شده، یا پیامکی که آمده و در صف ثبت است. پیدا شد ← در باکس ثبت «جیب به جیب» پیش‌انتخاب می‌شود */
+    function hkP2PPeerFor(pe, acc) {
+      try {
+        if (!pe || !(Number(pe.amount) > 0)) return null;
+        var own = {}; selectedAccountLabels().forEach(function (l) { own[String(l).trim()] = 1; });
+        acc = String(acc || pe.bank || '').trim(); if (!acc || !own[acc]) return null;
+        var t = getTodayPersian(), y = parseInt(pe.year, 10) || t.y, m = parseInt(pe.month, 10) || t.m, d = parseInt(String(pe.day || '').replace(/[^0-9]/g, ''), 10) || t.d;
+        var amt = Number(pe.amount) || 0, isInc = pe.type === 'income';
+        var okAmt = function (o) { var inc = isInc ? amt : o, exp = isInc ? o : amt, df = exp - inc; return inc > 0 && df >= 0 && df <= hkP2PFeeCap(inc); };
+        var hit = null;
+        hkP2PAllRows(function (r, tab, w, sec, ry, rm) {
+          if (hit || r.deletedAt || r.p2pPaired || r.p2pNo || r.p2pFeeFor || (tab === 'income') === isInc || (r.status || 'paid') !== 'paid') return;
+          var a2 = String(r.account || '').trim(); if (!a2 || !own[a2] || a2 === acc || ry !== y || rm !== m) return;
+          if ((parseInt(toEnglishDigits(String(r.day || '')), 10) || 0) !== d || !okAmt(Number(r.amount) || 0)) return;
+          hit = { row: r };
+        });
+        if (hit) return hit;
+        (typeof smsPendingQueue !== 'undefined' && smsPendingQueue || []).some(function (q) {
+          if (!q || q === pe || (q.type === 'income') === isInc) return false;
+          var qa = ''; try { qa = String(matchSelectedBank(q.bank) || q.bank || '').trim(); } catch (eM) { qa = String(q.bank || '').trim(); }
+          if (!qa || !own[qa] || qa === acc) return false;
+          if ((parseInt(q.year, 10) || t.y) !== y || (parseInt(q.month, 10) || t.m) !== m || (parseInt(String(q.day || '').replace(/[^0-9]/g, ''), 10) || t.d) !== d) return false;
+          if (!okAmt(Number(q.amount) || 0)) return false;
+          hit = { pending: q }; return true;
+        });
+        return hit;
+      } catch (e) { return null; }
+    }
+    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan, hkP2PApply: hkP2PApply, hkP2PPeerFor: hkP2PPeerFor }); } catch (eP2) {}
     /* ===== نسخهٔ iOS: پیامک‌هایی که اکشن «ثبت پیامک بانکی» برنامهٔ میان‌برها در صف گذاشته، یا لینک hesabketab://sms?text=…
        با همان مسیر اندروید (enqueueBankSms: رد رمز یک‌بارمصرف، جلوگیری از تکرار، باکس تأیید) ثبت می‌شوند. چیزی از گوشی بیرون نمی‌رود. ===== */
     function hkIsIos() { try { return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform() === 'ios'); } catch (e) { return false; } }
@@ -29981,7 +30095,22 @@ async function openPdfPrintWindow(){
           row.onclick = function () { showPicker(d, c && !c.p2p ? c.ids.slice() : []); };
           /* ۱.۴.۵: زدن روی خودِ شرح = همهٔ خرج‌های همین ماه در دستهٔ آن (مثل آمار)؛ زدن روی نام دسته = انتخاب/عوض کردن دسته مثل قبل */
           lab.onclick = function (e) {
-            if (!c || c.p2p || !c.ids || !c.ids.length) return;
+            /* ۱.۴.۲۰: شرحِ «جیب به جیب»: همهٔ جیب به جیب‌های همین ماه (واریز و برداشت) در همان جدول */
+            if (c && c.p2p) {
+              e.stopPropagation();
+              var rp = [], tt = sec && sec.title;
+              ['expense', 'income'].forEach(function (tab) {
+                var s2 = null; try { s2 = findSectionByTitle(tab, tt); } catch (eF) {}
+                ((s2 && s2.rows) || []).forEach(function (r) {
+                  if (!r || r.deletedAt || !r.p2p) return;
+                  var a = Number(r.amount) || 0; if (!(a > 0)) return;
+                  rp.push({ x: { y: currentYear, m: currentMonth, d: dayNum(r), desc: r.desc, title: tt, row: r, paid: a, unpaid: 0 }, a: a, inc: tab === 'income' });
+                });
+              });
+              hkOpenStatsCatTx(['p2p'], 'جیب به جیب', '', { rows: rp, period: MONTHS[currentMonth - 1] + ' ' + toPersianDigits(String(currentYear)), card: '' });
+              return;
+            }
+            if (!c || !c.ids || !c.ids.length) return;
             e.stopPropagation();
             var rs = [];
             ((sec && sec.rows) || []).forEach(function (r) {
@@ -31094,17 +31223,24 @@ async function openPdfPrintWindow(){
       var hkInCatOf = function (r) { if (r.inCat && HK_INCOME_CATS.some(function (c) { return c.id === r.inCat; })) return r.inCat; var dd = String(r.desc || '').trim(); var m0 = HK_INCOME_CATS.find(function (c) { return c.label === dd; }); return m0 ? m0.id : ''; };
       if (isInc && !row.p2p) st.cat = hkInCatOf(row);
       if (!fromPlan) {
-        if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids[0]) st.cat = c0.ids[0]; } catch (eC0) {} }
-        st.cat0 = st.cat;
+        /* ۱.۴.۲۰: مخارج چند دسته دارد (مثل اسلاید دسته‌بندی): همهٔ دسته‌های ردیف نگه داشته و نشان داده می‌شوند */
+        st.cats = [];
+        if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids.length) { st.cats = c0.ids.filter(function (id) { return HKCategorizer.byId[id]; }); st.cat = st.cats[0] || ''; } } catch (eC0) {} }
+        st.cat0 = st.cat; st.cats0 = st.cats.join(',');
         var fC = field('دسته');
         var catB = document.createElement('button'); catB.type = 'button'; catB.className = 'hk-re-in hk-re-sel';
-        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (/^in_/.test(st.cat) ? HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }) : (st.cat && HKCategorizer.byId[st.cat])); catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
+        /* اسم دستهٔ اول + دایرهٔ کوچک «+N» (بقیهٔ دسته‌ها) بین اسم و فلش */
+        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (/^in_/.test(st.cat) ? HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }) : (st.cat && HKCategorizer.byId[st.cat])); var more = (!isInc && st.cat !== 'p2p' && st.cats.length > 1) ? st.cats.length - 1 : 0; catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + (more ? '<span class="hk-re-cnt">+' + toPersianDigits(String(more)) + '</span>' : '') + HK_RE_CHEV; };
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
           var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
-          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); }, isInc ? 'in' : 'out');
+          /* ۱.۴.۲۰: مخارج: انتخاب چندتایی (همهٔ دسته‌های ردیف انتخاب‌شده دیده می‌شوند)؛ جیب به جیب و «نامشخص» تکی */
+          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) {
+            if (Array.isArray(v)) { st.cats = v.slice(); st.cat = v[0] || ''; } else { st.cat = v; st.cats = (v && v !== 'p2p') ? [v] : []; }
+            catTxt();
+          }, isInc ? 'in' : 'out', isInc ? null : (st.cat === 'p2p' ? [] : st.cats.slice()));
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';
@@ -31240,7 +31376,7 @@ async function openPdfPrintWindow(){
           row.amount = parseAmount(amt.value) || 0;
           row.desc = ds.value || '';
         }
-        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) { HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); row.cats = st.cat ? [st.cat] : []; row.catKey = HKCategorizer.normalize(String(row.desc || '').trim()); } } catch (eL) {}
+        try { if (!isInc && !fromPlan && (st.cat !== st.cat0 || st.cats.join(',') !== st.cats0) && st.cat !== 'p2p' && String(row.desc || '').trim()) { HKCategorizer.learn(row.desc, st.cats.slice()); row.cats = st.cats.slice(); row.catKey = HKCategorizer.normalize(String(row.desc || '').trim()); } } catch (eL) {}
         /* ۱.۳.۸۲: جیب به جیب روی خود ردیف ذخیره می‌شود */
         if (!fromPlan) { if (st.cat === 'p2p') { row.p2p = true; delete row.p2pNo; } else if (row.p2p) { delete row.p2p; row.p2pNo = true; } }
         if (!fromPlan && isInc) {
@@ -38304,7 +38440,9 @@ function confirmSmsEntry() {
     var HK_INST_DOLLAR_SVG = '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.5-2 3.5-4.5 3.5-4.5-1.3-4.5-3"/>';
     function hkCatColor(id) { return HK_CAT_COLORS[id] || (id && hkCatUserMap('Color')[id]) || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
-    function hkCatPickSheet(cats, cur, onPick, kind) {
+    /* ۱.۴.۲۰: multi (آرایه) = انتخاب چندتایی دسته‌های مخارج (مثل اسلاید دسته‌بندی)؛ «تأیید»، بیرون باکس یا برگشت = ثبت همان انتخاب‌ها.
+       «جیب به جیب» و «نامشخص» تکی‌اند و همان لحظه ثبت می‌شوند */
+    function hkCatPickSheet(cats, cur, onPick, kind, multi) {
       var old = document.getElementById('hkCatPick'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkCatPick'; ov.className = 'modal-overlay open sms-cat-more-ov'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
@@ -38312,14 +38450,20 @@ function confirmSmsEntry() {
       bx.innerHTML = '<div class="sms-cat-more-t">دسته</div>';
       var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
       var close = function () { ov.remove(); };
-      ov._hkCancel = close;
+      var sel = Array.isArray(multi) ? multi.slice() : null;
+      var commit = function () { ov.remove(); onPick(sel.slice()); };
+      ov._hkCancel = sel ? commit : close;
+      var paintM = function () { gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { var id = x.dataset.cat; x.classList.toggle('on', id && id !== 'p2p' ? sel.indexOf(id) >= 0 : (id === '' ? !sel.length && cur !== 'p2p' : cur === 'p2p' && !sel.length)); }); };
       /* ۱.۳.۸۰: «نامشخص» آخرین دسته */
       cats.concat([{ id: '', label: 'نامشخص' }]).forEach(function (c) {
-        var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + ((sel ? (c.id && c.id !== 'p2p' ? sel.indexOf(c.id) >= 0 : (c.id === 'p2p' ? cur === 'p2p' : !sel.length && cur !== 'p2p')) : c.id === cur) ? ' on' : ''); b.dataset.cat = c.id;
         b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
         b.innerHTML = '<i>' + hkCatIco(c.id) + '</i><span>' + escapeHtml(c.label) + '</span>';
         if (c.id === 'p2p') hkP2PDecorate(b);
-        b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
+        b.onclick = function () {
+          if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
+          close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false);
+        };
         gg.appendChild(b);
       });
       /* ۱.۳.۸۷: «دستهٔ جدید» همین‌جا (مخارج یا درآمد): اسم ← آیکون/گالری و رنگ ← انتخاب روی همین ردیف */
@@ -38337,7 +38481,7 @@ function confirmSmsEntry() {
             var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
             if (!cat) { try { inp.focus(); } catch (e) {} return; }
             close();
-            hkCatStyleSheet(cat, function () { onPick(cat.id); });
+            hkCatStyleSheet(cat, function () { onPick(sel ? sel.concat([cat.id]) : cat.id); });
           };
           okb.onclick = save;
           inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
@@ -38349,8 +38493,10 @@ function confirmSmsEntry() {
         };
         gg.appendChild(plus);
       }
-      bx.appendChild(gg); ov.appendChild(bx);
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      bx.appendChild(gg);
+      if (sel) { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = commit; bx.appendChild(okB); }
+      ov.appendChild(bx);
+      ov.addEventListener('click', function (e) { if (e.target === ov) (sel ? commit : close)(); });
       document.body.appendChild(ov);
     }
     /* ۱.۳.۹۶: «دستهٔ جدید» از هر جا: نام (با بررسی تکراری) ← آیکون و رنگ ← done(cat). باکس از اول بالای صفحه (بی‌پرش با صفحه‌کلید) */
@@ -38449,6 +38595,24 @@ function confirmSmsEntry() {
       var sug = document.getElementById('smsPlanSuggest');
       var anc = sug || desc._micWrap || desc;
       if (anc.parentNode) anc.parentNode.insertBefore(g, anc.nextSibling);
+      /* ۱.۴.۲۰: جفتِ این تراکنش (واریز/برداشتِ همان روز، کارت دیگرِ خودم) ثبت شده یا در صف است ← «جیب به جیب» پیش‌انتخاب و شرح «جیب به جیب»؛
+         یک لمس روی شرح = کل «جیب به جیب» انتخاب شود (با یک پاک کردن، اسم دلخواه)؛ دسته هم قابل تغییر است */
+      window._hkP2PPeer = null;
+      try {
+        var bankSel = document.getElementById('smsConfirmBank');
+        var peer = window.hkP2PPeerFor ? hkP2PPeerFor(parsed, bankSel && bankSel.value) : null;
+        if (peer) {
+          window._hkP2PPeer = peer;
+          pick(HK_P2P_CAT);
+          desc.value = HK_P2P_CAT.label;
+          try { desc.dispatchEvent(new Event('input', { bubbles: true })); } catch (eIn) {}
+        }
+      } catch (eP) {}
+      if (!desc._hkP2PSel) {
+        desc._hkP2PSel = true;
+        var selAll = function () { if (String(desc.value || '') === HK_P2P_CAT.label) setTimeout(function () { try { desc.setSelectionRange(0, desc.value.length); } catch (eS) {} }, 0); };
+        desc.addEventListener('click', selAll); desc.addEventListener('focus', selAll);
+      }
       /* ۱.۳.۸۸: نام دسته یک‌خطی و کامل (بی «…»): اگر جا نشد، فقط همان نام کمی ریزتر می‌شود */
       /* ۱.۳.۸۹: نام دسته با فونت عادی، در صورت نیاز دوخطی (بدون ریز شدن) */
     }
@@ -38482,6 +38646,14 @@ function confirmSmsEntry() {
             try {
               var mdl0 = document.getElementById('smsConfirmModal');
               if (!(mdl0 && mdl0.classList.contains('open'))) {
+                /* ۱.۴.۲۰: جفتِ ثبت‌شده هم «جیب به جیب» می‌شود تا دو طرف بی‌سؤال جفت شوند (کاربر خودش دسته را نگه داشت) */
+                /* ثبت ممکن است دادهٔ ماه را از نو بسازد؛ جفت با مشخصاتش (زمان ساخت، مبلغ، حساب، روز) دوباره پیدا می‌شود */
+                try {
+                  var _pr = window._hkP2PPeer && window._hkP2PPeer.row; window._hkP2PPeer = null;
+                  if (_pr) hkP2PAllRows(function (r) {
+                    if (r === _pr || (Number(r.createdAt) === Number(_pr.createdAt) && Number(r.amount) === Number(_pr.amount) && String(r.account || '') === String(_pr.account || '') && String(r.day || '') === String(_pr.day || ''))) { r.p2p = true; delete r.p2pNo; }
+                  });
+                } catch (ePr) {}
                 if (!window._hkSmsP2PHit) hkP2PMarkRecent(_t0, _amt0);
                 else { try { persistCurrent(); scheduleSave(); renderAll(); } catch (eR0) {} }
                 window._hkSmsCat = '';
@@ -54622,6 +54794,26 @@ function openProjectRowPicker(secId) {
       setInterval(function () { sweep(false); }, 600);
       document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') sweep(true); });
       try { window.hkGhostSweep = sweep; } catch (eW) {}
+    })();
+    /* ۱.۴.۲۰: ردیف‌های جدول‌ها (درآمد/مخارج، قرض، جستجو، …) دیگر هرگز با لانگ‌پرس متنشان انتخاب نمی‌شود؛
+       لانگ‌پرس فقط باکس ویرایش را باز می‌کند. خانه‌های فقط‌خواندنیِ ردیف (input/textarea readonly) در WebView با وجود user-select:none
+       باز هم انتخاب می‌شدند؛ پس شروع انتخاب، منوی متن و هر انتخابی که باز هم پیش بیاید، همان لحظه برداشته می‌شود. */
+    (function () {
+      var inRow = function (t) {
+        if (t && t.nodeType === 3) t = t.parentNode;
+        if (!t || !t.closest || !t.closest('tbody tr')) return false;
+        return !(t.matches && t.matches('input:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled]), [contenteditable="true"]'));
+      };
+      document.addEventListener('selectstart', function (e) { if (inRow(e.target)) e.preventDefault(); }, true);
+      document.addEventListener('contextmenu', function (e) { if (inRow(e.target)) e.preventDefault(); }, true);
+      document.addEventListener('selectionchange', function () {
+        try {
+          var a = document.activeElement;
+          if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.readOnly && inRow(a) && a.selectionStart !== a.selectionEnd) a.setSelectionRange(a.selectionEnd, a.selectionEnd);
+          var s = window.getSelection();
+          if (s && !s.isCollapsed && inRow(s.anchorNode)) s.removeAllRanges();
+        } catch (e) {}
+      });
     })();
   </script>
 

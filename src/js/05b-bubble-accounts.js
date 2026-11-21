@@ -1019,12 +1019,12 @@
     function hkP2PAllRows(fn) {
       try {
         ['income', 'expense'].forEach(function (tab) {
-          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur', sec); }); });
+          (((periodData && periodData[tab] && periodData[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'cur', sec, currentYear, currentMonth); }); });
         });
         var py = currentYear, pm = currentMonth - 1; if (pm < 1) { pm = 12; py--; }
         var pd = archive && archive[periodKey(py, pm)];
         if (pd) ['income', 'expense'].forEach(function (tab) {
-          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev', sec); }); });
+          (((pd[tab] && pd[tab].sections) || [])).forEach(function (sec) { (sec.rows || []).forEach(function (r) { if (r) fn(r, tab, 'prev', sec, py, pm); }); });
         });
       } catch (e) {}
     }
@@ -1062,33 +1062,39 @@
     }
     function hkP2PAutoPairs() { try { return JSON.parse(localStorage.getItem(HK_P2P_AUTO_KEY) || '[]') || []; } catch (e) { return []; } }
     function hkP2PPairKey(a, b) { return [String(a || '').trim(), String(b || '').trim()].sort().join('|'); }
-    /* جفت: برداشت از یک کارت خودم + واریز هم‌مبلغ به کارت دیگر خودم، تا ۳ روز فاصله (پایا/ساتنا دیرتر می‌نشیند) */
+    /* جفت: برداشت از یک کارت خودم + واریز هم‌مبلغ به کارت دیگر خودم.
+       ۱.۴.۲۰: فقط «همان روز» تراکنش (سال/ماه/روزِ خود ردیف؛ ساعت فرقی نمی‌کند، تا پایان همان روز، چون پایا/ساتنا یا پیامکِ دیر).
+       قبلاً زمان ساخت ردیف (createdAt) مقایسه می‌شد و در ثبت گروهی همهٔ ردیف‌ها یک زمان ساخت داشتند ← جفت‌های دو هفته فاصله.
+       واریز از کارت دیگران به کارت من و برداشت همان مبلغ از «همان» کارت = جیب به جیب نیست (کارت‌ها باید دو کارت متفاوتِ خودم باشند). */
+    function hkP2PMin(t) { var m = /^(\d{1,2}):(\d{2})/.exec(toEnglishDigits(String(t || '').trim())); return m ? (+m[1]) * 60 + (+m[2]) : -1; }
     function hkP2PFindPairs() {
       var since = hkP2PSince(), own = {};
       try { selectedAccountLabels().forEach(function (l) { own[l] = 1; }); } catch (e) {}
-      var inc = [], exp = [], secOf = new Map(), wOf = new Map();
-      hkP2PAllRows(function (r, tab, w, sec) {
+      var inc = [], exp = [], secOf = new Map(), wOf = new Map(), dk = new Map();
+      hkP2PAllRows(function (r, tab, w, sec, y, m) {
         /* ۱.۴.۰: ردیفی که دستی (یک‌طرفه) جیب به جیب شده هم دنبال طرف دیگرش می‌گردد */
         if (r.deletedAt || r.p2pPaired || r.p2pNo || r.p2pAsked || r.p2pFeeFor) return;
         if ((r.status || 'paid') !== 'paid' || !(Number(r.amount) > 0)) return;
         var acc = String(r.account || '').trim(); if (!acc || !own[acc]) return;
         if (!(Number(r.createdAt) >= since)) return;
-        (tab === 'income' ? inc : exp).push(r); secOf.set(r, sec); wOf.set(r, w);
+        var d = parseInt(toEnglishDigits(String(r.day || '')).replace(/[^0-9]/g, ''), 10) || 0; if (!d) return;
+        (tab === 'income' ? inc : exp).push(r); secOf.set(r, sec); wOf.set(r, w); dk.set(r, (y * 100 + m) * 100 + d);
       });
       var out = [], used = new Set();
       inc.forEach(function (i) {
         var ia = Number(i.amount) || 0;
         var cands = exp.filter(function (e) {
-          if (used.has(e) || (i.p2p && e.p2p) || String(e.account).trim() === String(i.account).trim()) return false;
-          if (Math.abs((Number(e.createdAt) || 0) - (Number(i.createdAt) || 0)) > 3 * 86400000) return false;
+          if (used.has(e) || String(e.account).trim() === String(i.account).trim()) return false;
+          if (dk.get(e) !== dk.get(i)) return false;
           var d = (Number(e.amount) || 0) - ia;
           return d >= 0 && d <= hkP2PFeeCap(ia);
         });
         if (!cands.length) return;
         /* اول هم‌مبلغ، بعد کمترین کارمزد، بعد نزدیک‌ترین زمان */
-        cands.sort(function (a, b) { return ((Number(a.amount) - ia) - (Number(b.amount) - ia)) || (Math.abs(a.createdAt - i.createdAt) - Math.abs(b.createdAt - i.createdAt)); });
+        var ti = hkP2PMin(i.time), gap = function (x) { var t = hkP2PMin(x.time); return (t < 0 || ti < 0) ? 1e4 : Math.abs(t - ti); };
+        cands.sort(function (a, b) { return ((Number(a.amount) - ia) - (Number(b.amount) - ia)) || (gap(a) - gap(b)); });
         used.add(cands[0]);
-        out.push({ inc: i, exp: cands[0], alts: cands.filter(function (c) { return Number(c.amount) === Number(cands[0].amount); }).length, expSec: secOf.get(cands[0]), expW: wOf.get(cands[0]), fee: Math.round(Number(cands[0].amount) - ia) });
+        out.push({ inc: i, exp: cands[0], dk: dk.get(i), alts: cands.filter(function (c) { return Number(c.amount) === Number(cands[0].amount); }).length, expSec: secOf.get(cands[0]), expW: wOf.get(cands[0]), fee: Math.round(Number(cands[0].amount) - ia) });
       });
       return out;
     }
@@ -1101,7 +1107,8 @@
       var pairs = hkP2PFindPairs(); if (!pairs.length) return;
       var auto = hkP2PAutoPairs(), changed = false;
       pairs = pairs.filter(function (pr) {
-        if (auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { hkP2PApply(pr); changed = true; return false; }
+        /* ۱.۴.۲۰: هر دو طرف را خود کاربر «جیب به جیب» زده (مثلاً در باکس ثبت پیامک که پیش‌انتخاب بود) ← بی‌سؤال جفت می‌شوند */
+        if ((pr.inc.p2p && pr.exp.p2p) || auto.indexOf(hkP2PPairKey(pr.inc.account, pr.exp.account)) >= 0) { hkP2PApply(pr); changed = true; return false; }
         return true;
       });
       if (changed) { try { _hkP2PBusy = true; persistCurrent(); scheduleSave(); renderAll(); showToast('جابه‌جایی بین کارت‌های خودتان «جیب به جیب» شد'); } catch (e) {} finally { _hkP2PBusy = false; } }
@@ -1111,13 +1118,27 @@
       pr.inc.p2pAsked = pr.exp.p2pAsked = true;
       var ov = document.createElement('div'); ov.id = 'hkP2PAsk'; ov.className = 'modal-overlay open'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100690;display:flex;align-items:center;justify-content:center;';
-      var tm = function (r) { var t = String(r.time || '').trim(); return t ? ' ساعت ' + toPersianDigits(t) : ''; };
-      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box" style="max-width:350px;">' +
+      /* ۱.۴.۲۰: مثل باکس مقایسهٔ تراکنش تکراری: دو تراکنش زیر هم با جزئیات (مبلغ، روز، ساعت، حساب، شرح، متن پیامک) و همان سؤال */
+      var y = Math.floor((pr.dk || 0) / 10000), m = Math.floor((pr.dk || 0) / 100) % 100;
+      var f = function (lbl, val, diff) { return '<span class="hk-dc-f' + (diff ? ' hk-dc-diff' : '') + '"><i>' + lbl + '</i> ' + escapeHtml(val || '—') + '</span>'; };
+      var card = function (title, r, o, tab) {
+        var d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0, sms = null;
+        try { sms = hkDupFindPrevSms({ type: tab, raw: '', y: y, m: m }, r); } catch (eS) {}
+        return '<div class="hk-dc-card"><div class="hk-dc-h">' + title + '</div><div class="hk-dc-meta">' +
+          f('مبلغ', formatNum(Number(r.amount) || 0), Number(r.amount) !== Number(o.amount)) +
+          f('روز', d ? toPersianDigits(String(d)) + ' ' + (MONTHS[m - 1] || '') : '', false) +
+          f('ساعت', r.time ? toPersianDigits(String(r.time)) : '', false) +
+          f('حساب', String(r.account || '').trim(), false) + '</div>' +
+          (String(r.desc || '').trim() ? '<div class="hk-dc-desc">' + escapeHtml(String(r.desc).trim()) + '</div>' : '') +
+          (sms && sms.raw ? '<div class="hk-dc-sms">' + escapeHtml(String(sms.raw).trim()) + '</div>' : '') + '</div>';
+      };
+      ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box hk-p2p-cmp" style="max-width:360px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +
-        '<div class="hk-p2p-msg" style="line-height:1.9;font-size:var(--hk-fs-body);"></div>' +
-        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--hk-fs-small);color:var(--muted,#98989f);"><input type="checkbox" class="hk-p2p-always" style="width:18px;height:18px;accent-color:#ff453a;">همیشه برای این دو کارت</label>' +
+        '<div class="hk-p2p-msg"></div>' +
+        '<div class="hk-p2p-cards">' + card('برداشت', pr.exp, pr.inc, 'expense') + card('واریز', pr.inc, pr.exp, 'income') + '</div>' +
+        '<label class="hk-p2p-alw"><input type="checkbox" class="hk-p2p-always">همیشه برای این دو کارت</label>' +
         '<div class="hk-rax-acts" style="padding:12px 0 0;"><button type="button" class="modal-btn hk-p2p-yes">بله، جیب به جیب</button><button type="button" class="modal-btn hk-p2p-no">نه، خرج و درآمد است</button></div></div>';
-      ov.querySelector('.hk-p2p-msg').textContent = 'واریز ' + formatNum(pr.inc.amount) + ' به کارت «' + String(pr.inc.account).trim() + '»' + tm(pr.inc) + '، با برداشت ' + (pr.fee > 0 ? formatNum(pr.exp.amount) : 'همین مبلغ') + ' از کارت «' + String(pr.exp.account).trim() + '»' + tm(pr.exp) + ' جور است' + (pr.fee > 0 ? ' (' + formatNum(pr.fee) + ' کارمزد بانک)' : '') + '. اگر بین کارت‌های خودتان جابه‌جا کرده‌اید، در جمع درآمد و مخارج حساب نمی‌شود (موجودی کارت‌ها درست می‌ماند).' + (pr.fee > 0 ? ' کارمزد به‌عنوان یک خرج جدا («کارمزد انتقال») ثبت می‌شود.' : '') + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ بود؛ نزدیک‌ترین در نظر گرفته شد.)' : '');
+      ov.querySelector('.hk-p2p-msg').textContent = 'این دو تراکنش در یک روز، بین دو کارت خودتان است' + (pr.fee > 0 ? ' (اختلاف ' + formatNum(pr.fee) + ' تومان کارمزد)' : '') + '. پول فقط از یک کارت به کارت دیگرتان رفته؟' + (pr.alts > 1 ? ' (چند برداشت هم‌مبلغ در همین روز بود؛ نزدیک‌ترین ساعت انتخاب شد)' : '');
       var done = function (yes) {
         var alw = ov.querySelector('.hk-p2p-always').checked;
         ov.remove();
@@ -1135,6 +1156,8 @@
     }
     (function () {
       try { hkP2PSince(); } catch (e) {}
+      /* ۱.۴.۲۰: ردیف‌هایی که بیرون از نرم‌افزار (ثبت سریع) آمده‌اند: اولین ورود بعدی سؤال جیب به جیب */
+      try { setTimeout(hkP2PScheduleScan, 2500); } catch (eB) {}
       if (typeof persistCurrent === 'function' && !persistCurrent._hkP2P) {
         var _pc = persistCurrent;
         var w = function () { var r = _pc.apply(this, arguments); if (!_hkP2PBusy) hkP2PScheduleScan(); return r; };
@@ -1142,4 +1165,33 @@
         persistCurrent = w; try { window.persistCurrent = w; } catch (e2) {}
       }
     })();
-    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan, hkP2PApply: hkP2PApply }); } catch (eP2) {}
+        /* ۱.۴.۲۰: جفتِ پیامکی که همین الان در باکس ثبت باز است: تراکنشِ مخالف (واریز/برداشت)، همان روز، کارت دیگرِ خودم، هم‌مبلغ (برداشت تا کارمزد بیشتر)؛
+       یا ثبت‌شده، یا پیامکی که آمده و در صف ثبت است. پیدا شد ← در باکس ثبت «جیب به جیب» پیش‌انتخاب می‌شود */
+    function hkP2PPeerFor(pe, acc) {
+      try {
+        if (!pe || !(Number(pe.amount) > 0)) return null;
+        var own = {}; selectedAccountLabels().forEach(function (l) { own[String(l).trim()] = 1; });
+        acc = String(acc || pe.bank || '').trim(); if (!acc || !own[acc]) return null;
+        var t = getTodayPersian(), y = parseInt(pe.year, 10) || t.y, m = parseInt(pe.month, 10) || t.m, d = parseInt(String(pe.day || '').replace(/[^0-9]/g, ''), 10) || t.d;
+        var amt = Number(pe.amount) || 0, isInc = pe.type === 'income';
+        var okAmt = function (o) { var inc = isInc ? amt : o, exp = isInc ? o : amt, df = exp - inc; return inc > 0 && df >= 0 && df <= hkP2PFeeCap(inc); };
+        var hit = null;
+        hkP2PAllRows(function (r, tab, w, sec, ry, rm) {
+          if (hit || r.deletedAt || r.p2pPaired || r.p2pNo || r.p2pFeeFor || (tab === 'income') === isInc || (r.status || 'paid') !== 'paid') return;
+          var a2 = String(r.account || '').trim(); if (!a2 || !own[a2] || a2 === acc || ry !== y || rm !== m) return;
+          if ((parseInt(toEnglishDigits(String(r.day || '')), 10) || 0) !== d || !okAmt(Number(r.amount) || 0)) return;
+          hit = { row: r };
+        });
+        if (hit) return hit;
+        (typeof smsPendingQueue !== 'undefined' && smsPendingQueue || []).some(function (q) {
+          if (!q || q === pe || (q.type === 'income') === isInc) return false;
+          var qa = ''; try { qa = String(matchSelectedBank(q.bank) || q.bank || '').trim(); } catch (eM) { qa = String(q.bank || '').trim(); }
+          if (!qa || !own[qa] || qa === acc) return false;
+          if ((parseInt(q.year, 10) || t.y) !== y || (parseInt(q.month, 10) || t.m) !== m || (parseInt(String(q.day || '').replace(/[^0-9]/g, ''), 10) || t.d) !== d) return false;
+          if (!okAmt(Number(q.amount) || 0)) return false;
+          hit = { pending: q }; return true;
+        });
+        return hit;
+      } catch (e) { return null; }
+    }
+    try { Object.assign(window, { hkP2PIntro: hkP2PIntro, hkP2PFindPairs: hkP2PFindPairs, hkP2PScan: hkP2PScan, hkP2PApply: hkP2PApply, hkP2PPeerFor: hkP2PPeerFor }); } catch (eP2) {}

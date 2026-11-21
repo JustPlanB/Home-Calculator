@@ -120,11 +120,12 @@ const allErrors = [];
       pendingSmsEntry = pe; openSmsConfirmModal(pe); await w(300);
       let t = document.querySelector('#smsCatGrid .sms-cat[data-cat="p2p"]');
       if (!t) { document.querySelector('#smsCatGrid .sms-cat-more').click(); await w(200); t = document.querySelector('.sms-cat-more-ov .sms-cat[data-cat="p2p"]'); }
-      t.click(); document.querySelectorAll('#hkP2PIntro').forEach(x => x.remove());
+      /* ۱.۴.۲۰: جفتِ ثبت‌شده هست ← «جیب به جیب» از قبل انتخاب شده؛ زدن دوباره یعنی برداشتن انتخاب */
+      const pre = t.classList.contains('on'); if (!pre) t.click(); document.querySelectorAll('#hkP2PIntro').forEach(x => x.remove());
       confirmSmsEntry(); await w(700);
       document.querySelectorAll('#hkP2PAsk').forEach(x => x.remove());
       const rows = []; periodData[type].sections.forEach(s => s.rows.forEach(x => { if (x && Number(x.amount) === 250000) rows.push(x); }));
-      out.push({ n: rows.length, p2p: rows.length === 1 && !!rows[0].p2p, ts: rows.length === 1 && rows[0].createdAt > 0 });
+      out.push({ n: rows.length, p2p: rows.length === 1 && !!rows[0].p2p, ts: rows.length === 1 && rows[0].createdAt > 0, pre });
     }
     hkP2PIntro(true); await w(100);
     const txt = document.querySelector('#hkP2PIntro').textContent; document.getElementById('hkP2PIntro').remove();

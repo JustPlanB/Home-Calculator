@@ -659,3 +659,23 @@
       document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') sweep(true); });
       try { window.hkGhostSweep = sweep; } catch (eW) {}
     })();
+    /* ۱.۴.۲۰: ردیف‌های جدول‌ها (درآمد/مخارج، قرض، جستجو، …) دیگر هرگز با لانگ‌پرس متنشان انتخاب نمی‌شود؛
+       لانگ‌پرس فقط باکس ویرایش را باز می‌کند. خانه‌های فقط‌خواندنیِ ردیف (input/textarea readonly) در WebView با وجود user-select:none
+       باز هم انتخاب می‌شدند؛ پس شروع انتخاب، منوی متن و هر انتخابی که باز هم پیش بیاید، همان لحظه برداشته می‌شود. */
+    (function () {
+      var inRow = function (t) {
+        if (t && t.nodeType === 3) t = t.parentNode;
+        if (!t || !t.closest || !t.closest('tbody tr')) return false;
+        return !(t.matches && t.matches('input:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled]), [contenteditable="true"]'));
+      };
+      document.addEventListener('selectstart', function (e) { if (inRow(e.target)) e.preventDefault(); }, true);
+      document.addEventListener('contextmenu', function (e) { if (inRow(e.target)) e.preventDefault(); }, true);
+      document.addEventListener('selectionchange', function () {
+        try {
+          var a = document.activeElement;
+          if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.readOnly && inRow(a) && a.selectionStart !== a.selectionEnd) a.setSelectionRange(a.selectionEnd, a.selectionEnd);
+          var s = window.getSelection();
+          if (s && !s.isCollapsed && inRow(s.anchorNode)) s.removeAllRanges();
+        } catch (e) {}
+      });
+    })();

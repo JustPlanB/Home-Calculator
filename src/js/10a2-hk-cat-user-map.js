@@ -177,7 +177,9 @@
     var HK_INST_DOLLAR_SVG = '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.5-2 3.5-4.5 3.5-4.5-1.3-4.5-3"/>';
     function hkCatColor(id) { return HK_CAT_COLORS[id] || (id && hkCatUserMap('Color')[id]) || '#08b5f5'; }
     /* پنجرهٔ انتخاب دسته با همان چیدمان ۵ستونی رنگی (برای ویرایش ردیف) */
-    function hkCatPickSheet(cats, cur, onPick, kind) {
+    /* ۱.۴.۲۰: multi (آرایه) = انتخاب چندتایی دسته‌های مخارج (مثل اسلاید دسته‌بندی)؛ «تأیید»، بیرون باکس یا برگشت = ثبت همان انتخاب‌ها.
+       «جیب به جیب» و «نامشخص» تکی‌اند و همان لحظه ثبت می‌شوند */
+    function hkCatPickSheet(cats, cur, onPick, kind, multi) {
       var old = document.getElementById('hkCatPick'); if (old) old.remove();
       var ov = document.createElement('div'); ov.id = 'hkCatPick'; ov.className = 'modal-overlay open sms-cat-more-ov'; ov.setAttribute('data-hk-back', '1');
       ov.style.cssText = 'z-index:100650;display:flex;align-items:center;justify-content:center;';
@@ -185,14 +187,20 @@
       bx.innerHTML = '<div class="sms-cat-more-t">دسته</div>';
       var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
       var close = function () { ov.remove(); };
-      ov._hkCancel = close;
+      var sel = Array.isArray(multi) ? multi.slice() : null;
+      var commit = function () { ov.remove(); onPick(sel.slice()); };
+      ov._hkCancel = sel ? commit : close;
+      var paintM = function () { gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { var id = x.dataset.cat; x.classList.toggle('on', id && id !== 'p2p' ? sel.indexOf(id) >= 0 : (id === '' ? !sel.length && cur !== 'p2p' : cur === 'p2p' && !sel.length)); }); };
       /* ۱.۳.۸۰: «نامشخص» آخرین دسته */
       cats.concat([{ id: '', label: 'نامشخص' }]).forEach(function (c) {
-        var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + (c.id === cur ? ' on' : ''); b.dataset.cat = c.id;
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sms-cat' + ((sel ? (c.id && c.id !== 'p2p' ? sel.indexOf(c.id) >= 0 : (c.id === 'p2p' ? cur === 'p2p' : !sel.length && cur !== 'p2p')) : c.id === cur) ? ' on' : ''); b.dataset.cat = c.id;
         b.style.setProperty('--cc', c.id ? hkCatColor(c.id) : '#8e8e93');
         b.innerHTML = '<i>' + hkCatIco(c.id) + '</i><span>' + escapeHtml(c.label) + '</span>';
         if (c.id === 'p2p') hkP2PDecorate(b);
-        b.onclick = function () { close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false); };
+        b.onclick = function () {
+          if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
+          close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false);
+        };
         gg.appendChild(b);
       });
       /* ۱.۳.۸۷: «دستهٔ جدید» همین‌جا (مخارج یا درآمد): اسم ← آیکون/گالری و رنگ ← انتخاب روی همین ردیف */
@@ -210,7 +218,7 @@
             var cat = kind === 'in' ? hkAddIncomeCat(inp.value) : HKCategorizer.addCustom(inp.value);
             if (!cat) { try { inp.focus(); } catch (e) {} return; }
             close();
-            hkCatStyleSheet(cat, function () { onPick(cat.id); });
+            hkCatStyleSheet(cat, function () { onPick(sel ? sel.concat([cat.id]) : cat.id); });
           };
           okb.onclick = save;
           inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
@@ -222,8 +230,10 @@
         };
         gg.appendChild(plus);
       }
-      bx.appendChild(gg); ov.appendChild(bx);
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      bx.appendChild(gg);
+      if (sel) { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = commit; bx.appendChild(okB); }
+      ov.appendChild(bx);
+      ov.addEventListener('click', function (e) { if (e.target === ov) (sel ? commit : close)(); });
       document.body.appendChild(ov);
     }
     /* ۱.۳.۹۶: «دستهٔ جدید» از هر جا: نام (با بررسی تکراری) ← آیکون و رنگ ← done(cat). باکس از اول بالای صفحه (بی‌پرش با صفحه‌کلید) */
@@ -322,6 +332,24 @@
       var sug = document.getElementById('smsPlanSuggest');
       var anc = sug || desc._micWrap || desc;
       if (anc.parentNode) anc.parentNode.insertBefore(g, anc.nextSibling);
+      /* ۱.۴.۲۰: جفتِ این تراکنش (واریز/برداشتِ همان روز، کارت دیگرِ خودم) ثبت شده یا در صف است ← «جیب به جیب» پیش‌انتخاب و شرح «جیب به جیب»؛
+         یک لمس روی شرح = کل «جیب به جیب» انتخاب شود (با یک پاک کردن، اسم دلخواه)؛ دسته هم قابل تغییر است */
+      window._hkP2PPeer = null;
+      try {
+        var bankSel = document.getElementById('smsConfirmBank');
+        var peer = window.hkP2PPeerFor ? hkP2PPeerFor(parsed, bankSel && bankSel.value) : null;
+        if (peer) {
+          window._hkP2PPeer = peer;
+          pick(HK_P2P_CAT);
+          desc.value = HK_P2P_CAT.label;
+          try { desc.dispatchEvent(new Event('input', { bubbles: true })); } catch (eIn) {}
+        }
+      } catch (eP) {}
+      if (!desc._hkP2PSel) {
+        desc._hkP2PSel = true;
+        var selAll = function () { if (String(desc.value || '') === HK_P2P_CAT.label) setTimeout(function () { try { desc.setSelectionRange(0, desc.value.length); } catch (eS) {} }, 0); };
+        desc.addEventListener('click', selAll); desc.addEventListener('focus', selAll);
+      }
       /* ۱.۳.۸۸: نام دسته یک‌خطی و کامل (بی «…»): اگر جا نشد، فقط همان نام کمی ریزتر می‌شود */
       /* ۱.۳.۸۹: نام دسته با فونت عادی، در صورت نیاز دوخطی (بدون ریز شدن) */
     }
@@ -355,6 +383,14 @@
             try {
               var mdl0 = document.getElementById('smsConfirmModal');
               if (!(mdl0 && mdl0.classList.contains('open'))) {
+                /* ۱.۴.۲۰: جفتِ ثبت‌شده هم «جیب به جیب» می‌شود تا دو طرف بی‌سؤال جفت شوند (کاربر خودش دسته را نگه داشت) */
+                /* ثبت ممکن است دادهٔ ماه را از نو بسازد؛ جفت با مشخصاتش (زمان ساخت، مبلغ، حساب، روز) دوباره پیدا می‌شود */
+                try {
+                  var _pr = window._hkP2PPeer && window._hkP2PPeer.row; window._hkP2PPeer = null;
+                  if (_pr) hkP2PAllRows(function (r) {
+                    if (r === _pr || (Number(r.createdAt) === Number(_pr.createdAt) && Number(r.amount) === Number(_pr.amount) && String(r.account || '') === String(_pr.account || '') && String(r.day || '') === String(_pr.day || ''))) { r.p2p = true; delete r.p2pNo; }
+                  });
+                } catch (ePr) {}
                 if (!window._hkSmsP2PHit) hkP2PMarkRecent(_t0, _amt0);
                 else { try { persistCurrent(); scheduleSave(); renderAll(); } catch (eR0) {} }
                 window._hkSmsCat = '';

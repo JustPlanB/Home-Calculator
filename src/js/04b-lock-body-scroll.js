@@ -688,23 +688,42 @@
         var ka = a.x.y * 1e6 + a.x.m * 1e4 + (a.x.d || 0) * 100, kb = b.x.y * 1e6 + b.x.m * 1e4 + (b.x.d || 0) * 100;
         return (kb - ka) || ((Number(b.x.row.createdAt) || 0) - (Number(a.x.row.createdAt) || 0));
       });
-      var tot = rows.reduce(function (s, o) { return s + o.a; }, 0);
+      /* جیب به جیب: جمعِ جابه‌جاشده (طرف برداشت) */
+      var tot = rows.reduce(function (s, o) { return s + (o.inc ? 0 : o.a); }, 0) || rows.reduce(function (s, o) { return s + o.a; }, 0);
       var ov = document.createElement('div'); ov.id = 'hkStCatTx'; ov.className = 'hk-bulk-ov hk-bulk-center'; ov.setAttribute('data-hk-back', '1');
       ov.innerHTML = '<div class="hk-bulk-box hk-acctx-box hk-stcat-box"><div class="hk-bulk-title">' + escapeHtml(label) + '</div>' +
         '<div class="hk-acctx-src hk-stcat-sum"><span>' + escapeHtml(d.period) + (d.card ? ' · ' + escapeHtml(d.card) : '') + '</span><b class="hk-stcat-tot">' + formatNum(Math.round(tot)) + ' <small>تومان</small></b></div>' +
-        '<div class="hk-acctx-list">' + (rows.length ? '<div class="hk-acctx-r hk-acctx-h"><span class="d">تاریخ</span><span class="t">شرح</span><span class="a">مبلغ</span><span class="b">کارت</span></div>' +
+        /* ۱.۴.۲۰: جدول خط‌کشی‌شده با سرستونِ هم‌رنگ جدول‌های درآمد/مخارج؛ ستون آخر «حساب» (بانکِ همان تراکنش)؛ همه وسط‌چین؛
+           نوشته‌ها کامل در عرض ستون (ریزتر در صورت نیاز) جز شرح که با یک ضربه در باکس شناور تک‌خطی کامل دیده می‌شود */
+        '<div class="hk-acctx-list hk-stcat-tw">' + (rows.length ? '<table class="hk-stcat-t"><colgroup><col class="cd"><col><col class="ca"><col class="cb"></colgroup>' +
+        '<thead><tr><th>تاریخ</th><th>شرح</th><th>مبلغ</th><th>حساب</th></tr></thead><tbody>' +
         rows.map(function (o) {
-          var x = o.x, part = Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);
-          return '<div class="hk-acctx-r"><span class="d">' + toPersianDigits(String(x.y)) + '/' + p2(x.m) + (x.d ? '/' + p2(x.d) : '') + (x.row.time ? '<small> ' + toPersianDigits(x.row.time) + '</small>' : '') + '</span>' +
-            '<span class="t">' + escapeHtml(x.desc || 'برداشت') + (part ? '<small> (سهم این دسته)</small>' : '') + '</span>' +
-            '<span class="a exp">−' + formatNum(Math.round(o.a)) + '</span><span class="b">' + escapeHtml(x.title || '') + '</span></div>';
-        }).join('') : '<div class="hk-acctx-empty">تراکنشی در این دسته نیست</div>') + '</div>' +
+          var x = o.x, part = !o.inc && Math.round(o.a) !== Math.round((x.paid || 0) + (x.unpaid || 0)) && o.a < (x.paid || 0) + (x.unpaid || 0);
+          var full = (x.desc || (o.inc ? 'واریز' : 'برداشت')) + (part ? ' (سهم این دسته)' : '');
+          return '<tr><td class="hk-fit">' + toPersianDigits(String(x.y)) + '/' + p2(x.m) + (x.d ? '/' + p2(x.d) : '') + '</td>' +
+            '<td class="hk-stcat-d" data-full="' + escapeHtml(full).replace(/"/g, '&quot;') + '">' + escapeHtml(full) + '</td>' +
+            '<td class="hk-fit a ' + (o.inc ? 'inc' : 'exp') + '">' + (o.inc ? '+' : '−') + formatNum(Math.round(o.a)) + '</td>' +
+            '<td class="hk-fit">' + escapeHtml(String((x.row && x.row.account) || '').trim() || '—') + '</td></tr>';
+        }).join('') + '</tbody></table>' : '<div class="hk-acctx-empty">تراکنشی در این دسته نیست</div>') + '</div>' +
         '<div class="hk-bulk-btns"><button type="button" class="hk-bulk-close">بستن</button></div></div>';
       document.body.appendChild(ov);
       var close = function () { ov.remove(); };
       ov._hkCancel = close;
       ov.querySelector('.hk-bulk-close').onclick = close;
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelectorAll('td.hk-stcat-d').forEach(function (td) { td.onclick = function (e) { e.stopPropagation(); try { var pp = showCellTextPopup(td, td.getAttribute('data-full') || td.textContent); if (pp) pp.style.zIndex = '100800'; } catch (eP) {} }; });
+      hkStCatFit(ov);
+      requestAnimationFrame(function () { hkStCatFit(ov); });
+    }
+    /* نوشتهٔ خانه‌ها (جز شرح) کامل در عرض ستون: اگر جا نشد، فقط همان خانه ریزتر می‌شود */
+    function hkStCatFit(root) {
+      try {
+        root.querySelectorAll('.hk-stcat-t td.hk-fit').forEach(function (td) {
+          td.style.fontSize = '';
+          var fs = parseFloat(getComputedStyle(td).fontSize) || 13, g = 0;
+          while (td.scrollWidth > td.clientWidth + 0.5 && fs > 8 && g++ < 24) { fs -= 0.5; td.style.fontSize = fs + 'px'; }
+        });
+      } catch (e) {}
     }
 
     function closeSideMenu() {

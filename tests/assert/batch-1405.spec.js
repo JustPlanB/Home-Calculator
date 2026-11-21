@@ -146,7 +146,7 @@ const allErrors = [];
     const row = [...document.querySelectorAll('.sp-cat-sheet .sp-cat-row')].find(x => /بنزین/.test(x.textContent));
     row.querySelector('.sp-cat-desc').click(); await w(1200);
     const tx = document.getElementById('hkStCatTx');
-    o.tx = tx ? [...tx.querySelectorAll('.hk-acctx-r:not(.hk-acctx-h) .t')].map(x => x.textContent.trim()).sort().join('|') : '';
+    o.tx = tx ? [...tx.querySelectorAll('.hk-stcat-t tbody td.hk-stcat-d') /* ۱.۴.۲۰: جدول */].map(x => x.textContent.trim()).sort().join('|') : '';
     o.tot = tx ? getComputedStyle(tx.querySelector('.hk-stcat-tot')).color : '';
     onBackGuard(); await w(800);
     row.querySelector('.sp-cat-chips').click(); await w(700);

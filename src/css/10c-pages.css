@@ -475,3 +475,46 @@ html[data-theme="light"] body:not(#_):not(._):not(.__) #projectReportModal .proj
    که جدول با بیش از ۱۲ ردیف (بیشترین اندازه) شروع می‌شود، فارغ از تعداد ردیف‌ها (جای قاعدهٔ وسط‌چین عمودی قبلی) */
 html body #featureSheet.hk-led-rel #panel-ledger .section.hk-lrel { padding-bottom: 2.5px !important; } /* ۱.۴.۱۸: ۱٫۵ (۱.۴.۱۷) + ۱ */
 html body #featureSheet.hk-led-rel #panel-ledger #sections-ledger { margin-block: calc((100vh - 150px - env(safe-area-inset-bottom, 0px) - (min(calc(90px + 12 * 37px), calc(100vh - 216px - env(safe-area-inset-bottom, 0px))) + 38.5px)) / 2 - 1.5px) 0 !important; } /* ۱.۴.۱۸: فریم ۱٫۵px بالاتر شروع می‌شود (ردیف‌ها/هینت هم با آن)؛ پایین فریم ۰٫۵px کوتاه‌تر */
+
+/* ۱.۴.۲۰: باکس «جیب به جیب بود؟» مثل باکس مقایسهٔ تراکنش تکراری (دو کارت .hk-dc-card زیر هم) */
+.hk-p2p-cmp .hk-p2p-msg { line-height: 1.8; font-size: var(--hk-fs-small); color: var(--muted, #98989f); }
+.hk-p2p-cmp .hk-p2p-cards { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 52vh; overflow-y: auto; }
+.hk-p2p-cmp .hk-p2p-alw { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--hk-fs-small); color: var(--muted, #98989f); }
+.hk-p2p-cmp .hk-p2p-alw input { width: 18px; height: 18px; accent-color: #ff453a; }
+
+/* ۱.۴.۲۰: ویرایش ردیف: چند دسته = اسم دستهٔ اول + دایرهٔ کوچک «+N» (آبی کمی تیره‌تر، نوشتهٔ آبی نرم‌افزار) بین اسم و فلش */
+html body .hk-re-sel .hk-re-cnt, html body .hk-re-pair .hk-re-sel span.hk-re-cnt { flex: 0 0 auto; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: rgba(8, 181, 245, 0.22); color: #08b5f5; font-size: 11.5px; font-weight: 800; line-height: 1; overflow: visible; text-overflow: clip; direction: ltr; unicode-bidi: isolate; }
+html[data-theme="light"] body .hk-re-sel .hk-re-cnt { background: rgba(8, 181, 245, 0.16); }
+.hk-re-sel .hk-re-cnt + .hk-re-chev { margin-inline-start: 0; }
+#hkCatPick .hk-cp-ok { display: block; width: 100%; margin-top: 12px; }
+
+/* ۱.۴.۲۰: متن ردیف‌های جدول‌ها با لانگ‌پرس انتخاب نشود (خانه‌های فقط‌خواندنی هم) */
+tbody tr input[readonly], tbody tr textarea[readonly], tbody tr td { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+tbody tr input[readonly], tbody tr textarea[readonly] { caret-color: transparent; }
+
+/* ۱.۴.۲۰: دستهٔ انتخاب‌شده (واریزی، برداشت، جیب به جیب — هر جای نرم‌افزار): دورش نوار چرخان به رنگ همان دسته (جیب به جیب قرمز)،
+   مثل باکس یادآورِ موعدرسیده. فقط کاشی‌های انتخاب‌شده می‌چرخند (چند عدد)؛ زاویه با @property و بی تغییر چیدمان */
+@property --hk-cat-spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes hkCatSpin { to { --hk-cat-spin: 360deg; } }
+.sms-cat.on i { position: relative; }
+.sms-cat.on i:has(.hk-cat-img) { overflow: visible; }
+.sms-cat.on i::after { content: ''; position: absolute; inset: -4px; border-radius: 16px; padding: 2px; box-sizing: border-box; pointer-events: none;
+  background: conic-gradient(from var(--hk-cat-spin, 0deg), transparent 0deg, transparent 200deg, color-mix(in srgb, var(--cc, #08b5f5) 25%, transparent) 250deg, var(--cc, #08b5f5) 315deg, color-mix(in srgb, var(--cc, #08b5f5) 55%, #fff) 340deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude;
+  animation: hkCatSpin 2.4s linear infinite; }
+.sms-cat-row .sms-cat.on i::after, .sms-cat-strip .sms-cat.on i::after { border-radius: 14px; }
+@media (prefers-reduced-motion: reduce) { .sms-cat.on i::after { animation: none; } }
+
+/* ۱.۴.۲۰: جدول تراکنش‌های یک دسته (آمار، اسلاید دسته‌بندی، جیب به جیب): خط‌کشی و سرستون مثل جدول درآمد/مخارج، همه وسط‌چین */
+.hk-stcat-tw { padding: 0 !important; overflow-x: hidden; }
+.hk-stcat-t { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; direction: rtl; }
+.hk-stcat-t col.cd { width: 25%; } .hk-stcat-t col.ca { width: 25%; } .hk-stcat-t col.cb { width: 21%; }
+.hk-stcat-t th, .hk-stcat-t td { text-align: center; vertical-align: middle; padding: 8px 3px; border-bottom: 1px solid #3a3a3c; border-left: 1px solid #3a3a3c; white-space: nowrap; overflow: hidden; font-size: var(--hk-fs-small); }
+.hk-stcat-t th:last-child, .hk-stcat-t td:last-child { border-left: 0; }
+.hk-stcat-t tbody tr:last-child td { border-bottom: 0; }
+.hk-stcat-t thead th { position: sticky; top: 0; z-index: 2; background: #0a1628; color: #fff; font-weight: 700; }
+.hk-stcat-t td.hk-stcat-d { text-overflow: ellipsis; cursor: pointer; }
+.hk-stcat-t td.a { font-weight: 700; direction: ltr; unicode-bidi: plaintext; }
+html body #hkStCatTx .hk-stcat-t td.a.exp { color: var(--hk-expense) !important; } html body #hkStCatTx .hk-stcat-t td.a.inc { color: var(--hk-income) !important; }
+html[data-theme="light"] .hk-stcat-t th, html[data-theme="light"] .hk-stcat-t td { border-color: #c9d1dc; }
+html[data-theme="light"] .hk-stcat-t thead th { background: #eef0f4; color: #2c3644; }

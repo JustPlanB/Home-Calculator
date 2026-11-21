@@ -410,17 +410,24 @@
       var hkInCatOf = function (r) { if (r.inCat && HK_INCOME_CATS.some(function (c) { return c.id === r.inCat; })) return r.inCat; var dd = String(r.desc || '').trim(); var m0 = HK_INCOME_CATS.find(function (c) { return c.label === dd; }); return m0 ? m0.id : ''; };
       if (isInc && !row.p2p) st.cat = hkInCatOf(row);
       if (!fromPlan) {
-        if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids[0]) st.cat = c0.ids[0]; } catch (eC0) {} }
-        st.cat0 = st.cat;
+        /* ۱.۴.۲۰: مخارج چند دسته دارد (مثل اسلاید دسته‌بندی): همهٔ دسته‌های ردیف نگه داشته و نشان داده می‌شوند */
+        st.cats = [];
+        if (!isInc && !row.p2p) { try { var c0 = HKCategorizer.classify(row.desc, row); if (c0 && c0.ids && c0.ids.length) { st.cats = c0.ids.filter(function (id) { return HKCategorizer.byId[id]; }); st.cat = st.cats[0] || ''; } } catch (eC0) {} }
+        st.cat0 = st.cat; st.cats0 = st.cats.join(',');
         var fC = field('دسته');
         var catB = document.createElement('button'); catB.type = 'button'; catB.className = 'hk-re-in hk-re-sel';
-        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (/^in_/.test(st.cat) ? HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }) : (st.cat && HKCategorizer.byId[st.cat])); catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + HK_RE_CHEV; };
+        /* اسم دستهٔ اول + دایرهٔ کوچک «+N» (بقیهٔ دسته‌ها) بین اسم و فلش */
+        var catTxt = function () { var c = st.cat === 'p2p' ? HK_P2P_CAT : (/^in_/.test(st.cat) ? HK_INCOME_CATS.find(function (x) { return x.id === st.cat; }) : (st.cat && HKCategorizer.byId[st.cat])); var more = (!isInc && st.cat !== 'p2p' && st.cats.length > 1) ? st.cats.length - 1 : 0; catB.innerHTML = '<span class="hk-re-rl">دسته</span><span class="hk-re-rv' + (c ? '' : ' mute') + '">' + escapeHtml(c ? c.label : 'نامشخص') + '</span>' + (more ? '<span class="hk-re-cnt">+' + toPersianDigits(String(more)) + '</span>' : '') + HK_RE_CHEV; };
         catTxt();
         catB.onclick = function (e) {
           e.stopPropagation();
           var opts = HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); }).map(function (c) { return { v: c.id, l: c.label }; }).concat([{ v: '', l: 'نامشخص' }]);
           /* ۱.۳.۷۶: همان شبکهٔ رنگی دسته‌های باکس پیامک */
-          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) { st.cat = v; catTxt(); }, isInc ? 'in' : 'out');
+          /* ۱.۴.۲۰: مخارج: انتخاب چندتایی (همهٔ دسته‌های ردیف انتخاب‌شده دیده می‌شوند)؛ جیب به جیب و «نامشخص» تکی */
+          hkCatPickSheet((isInc ? HK_INCOME_CATS.slice() : HKCategorizer.categories.filter(function (c) { return c && c.id && (typeof HK_INSTALLMENTS_ON === 'undefined' || HK_INSTALLMENTS_ON || c.id !== 'debt'); })).concat([HK_P2P_CAT]), st.cat, function (v) {
+            if (Array.isArray(v)) { st.cats = v.slice(); st.cat = v[0] || ''; } else { st.cat = v; st.cats = (v && v !== 'p2p') ? [v] : []; }
+            catTxt();
+          }, isInc ? 'in' : 'out', isInc ? null : (st.cat === 'p2p' ? [] : st.cats.slice()));
         };
         fC.appendChild(catB);
         var pair = document.createElement('div'); pair.className = 'hk-re-pair';
@@ -556,7 +563,7 @@
           row.amount = parseAmount(amt.value) || 0;
           row.desc = ds.value || '';
         }
-        try { if (!isInc && !fromPlan && st.cat !== st.cat0 && st.cat !== 'p2p' && String(row.desc || '').trim()) { HKCategorizer.learn(row.desc, st.cat ? [st.cat] : []); row.cats = st.cat ? [st.cat] : []; row.catKey = HKCategorizer.normalize(String(row.desc || '').trim()); } } catch (eL) {}
+        try { if (!isInc && !fromPlan && (st.cat !== st.cat0 || st.cats.join(',') !== st.cats0) && st.cat !== 'p2p' && String(row.desc || '').trim()) { HKCategorizer.learn(row.desc, st.cats.slice()); row.cats = st.cats.slice(); row.catKey = HKCategorizer.normalize(String(row.desc || '').trim()); } } catch (eL) {}
         /* ۱.۳.۸۲: جیب به جیب روی خود ردیف ذخیره می‌شود */
         if (!fromPlan) { if (st.cat === 'p2p') { row.p2p = true; delete row.p2pNo; } else if (row.p2p) { delete row.p2p; row.p2pNo = true; } }
         if (!fromPlan && isInc) {
