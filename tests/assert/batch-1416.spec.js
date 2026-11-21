@@ -33,7 +33,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     o.n2 = hkP2PFindPairs().length;
     persistCurrent(); await w(1500);
     const ask = document.getElementById('hkP2PAsk');
-    o.cards = ask ? ask.querySelectorAll('.hk-dc-card').length : 0;
+    o.cards = ask ? ask.querySelectorAll('.hk-p2p-card').length : 0;
     o.txt = ask ? ask.textContent : '';
     if (ask) ask.querySelector('.hk-p2p-no').click();
     await w(300);
@@ -41,7 +41,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   });
   ok(A.n1 === 0, 'دو هفته فاصله (حتی با زمان ثبت یکسان) و واریز/برداشتِ همان کارت: جیب به جیب پیشنهاد نمی‌شود');
   ok(A.n2 === 1, 'همان روز، دو کارت خودم: جفت پیدا می‌شود (ساعت فرقی نمی‌کند)');
-  ok(A.cards === 2 && /ملت نمونه/.test(A.txt) && /ملی نمونه/.test(A.txt) && /۵۳۰/.test(A.txt), 'باکس سؤال مثل مقایسهٔ تکراری: دو تراکنش با جزئیات');
+  ok(A.cards === 2 && /ملت نمونه/.test(A.txt) && /ملی نمونه/.test(A.txt) && /۵۳۰/.test(A.txt) && /برداشت/.test(A.txt) && /واریز/.test(A.txt), 'باکس سؤال: دو کارت (برداشت و واریز)، هر کارت مبلغ، روز، ساعت و بانک (۱.۴.۲۱) ');
 
   console.log('• پیش‌انتخاب در باکس ثبت پیامک');
   const B = await page.evaluate(async () => {
@@ -60,7 +60,6 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     confirmSmsEntry(); await w(1600);
     const r1 = findSectionByTitle('expense', t).rows.find(r => r.desc === 'برداشت د'), r2 = [];
     findSectionByTitle('income', t).rows.forEach(r => { if (Number(r.amount) === 260000) r2.push(r); });
-    o.dbg = JSON.stringify({ r1: r1 && { p2p: r1.p2p, pd: r1.p2pPaired, ask: r1.p2pAsked, no: r1.p2pNo }, r2: r2.map(r => ({ p2p: r.p2p, pd: r.p2pPaired, d: r.day, acc: r.account, ca: r.createdAt })), pairs: hkP2PFindPairs().length, busy: [...document.querySelectorAll('.modal-overlay.open, [data-hk-back]')].filter(x => x.getClientRects().length).map(x => x.id || x.className).join(',') });
     o.paired = !!(r1 && r1.p2pPaired && r2[0] && r2[0].p2pPaired);
     o.ask = !!document.getElementById('hkP2PAsk');
     return o;

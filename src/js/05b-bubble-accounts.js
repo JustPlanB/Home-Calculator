@@ -1121,16 +1121,15 @@
       /* ۱.۴.۲۰: مثل باکس مقایسهٔ تراکنش تکراری: دو تراکنش زیر هم با جزئیات (مبلغ، روز، ساعت، حساب، شرح، متن پیامک) و همان سؤال */
       var y = Math.floor((pr.dk || 0) / 10000), m = Math.floor((pr.dk || 0) / 100) % 100;
       var f = function (lbl, val, diff) { return '<span class="hk-dc-f' + (diff ? ' hk-dc-diff' : '') + '"><i>' + lbl + '</i> ' + escapeHtml(val || '—') + '</span>'; };
+      /* ۱.۴.۲۱: هر تراکنش سه خط: ۱) برداشت/واریز (رنگ همان نوع) ۲) مبلغ (رنگ همان نوع)، روز و ساعت ۳) بانک؛ باکس با هایلایت همان رنگ */
       var card = function (title, r, o, tab) {
-        var d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0, sms = null;
-        try { sms = hkDupFindPrevSms({ type: tab, raw: '', y: y, m: m }, r); } catch (eS) {}
-        return '<div class="hk-dc-card"><div class="hk-dc-h">' + title + '</div><div class="hk-dc-meta">' +
-          f('مبلغ', formatNum(Number(r.amount) || 0), Number(r.amount) !== Number(o.amount)) +
-          f('روز', d ? toPersianDigits(String(d)) + ' ' + (MONTHS[m - 1] || '') : '', false) +
-          f('ساعت', r.time ? toPersianDigits(String(r.time)) : '', false) +
-          f('حساب', String(r.account || '').trim(), false) + '</div>' +
-          (String(r.desc || '').trim() ? '<div class="hk-dc-desc">' + escapeHtml(String(r.desc).trim()) + '</div>' : '') +
-          (sms && sms.raw ? '<div class="hk-dc-sms">' + escapeHtml(String(sms.raw).trim()) + '</div>' : '') + '</div>';
+        var d = parseInt(toEnglishDigits(String(r.day || '')), 10) || 0, k = tab === 'income' ? 'inc' : 'exp';
+        var lb = function (l, v) { return '<span class="hk-dc-f"><i>' + l + '</i> ' + escapeHtml(v || '—') + '</span>'; };
+        return '<div class="hk-p2p-card ' + k + '"><div class="hk-dc-h">' + title + '</div>' +
+          '<div class="hk-dc-meta"><span class="hk-dc-f"><i>مبلغ</i> <b class="hk-p2p-amt">' + formatNum(Number(r.amount) || 0) + '</b></span>' +
+          lb('روز', d ? toPersianDigits(String(d)) + ' ' + (MONTHS[m - 1] || '') : '') +
+          lb('ساعت', r.time ? toPersianDigits(String(r.time)) : '') + '</div>' +
+          '<div class="hk-dc-meta">' + lb('بانک', String(r.account || '').trim()) + '</div></div>';
       };
       ov.innerHTML = '<div class="modal-box hk-prefs hk-pf hk-p2p-box hk-p2p-cmp" style="max-width:360px;">' +
         '<div class="hk-prefs-t" style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><i class="hk-p2p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HK_CAT_ICONS.p2p + '</svg></i>جیب به جیب بود؟</div>' +

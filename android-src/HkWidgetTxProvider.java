@@ -159,7 +159,7 @@ final class HkWidgetTxDraw {
     cv.translate(0, ti);
     /* ۱.۴.۱۹: فقط ردیف عنوان ستون‌ها همان زمینهٔ آبی تیره (headBg) را دارد، هم‌عرض جدول؛ بقیهٔ سرستون روی باکس اصلی */
     Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(HkWidgetDraw.withAlpha(headBg(light), alpha));
-    cv.drawRect(c[4], th, c[0], th+hh, band);
+    cv.drawRect(0, th, W, th+hh, band); /* ۱.۴.۲۱: ردیف عنوان ستون‌ها از چپ و راست تا لبهٔ باکس (به جدول چسبیده) */
     /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
     Paint t=paint(BOLD, 17f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
@@ -185,7 +185,7 @@ final class HkWidgetTxDraw {
     /* ۱.۴.۴: نوار سرستون‌ها از دو طرف تا لبهٔ کادر ویجت (کنار «تاریخ» و «مبلغ» خالی نمی‌ماند) */
     Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(headLine(light)); ln.setStrokeWidth(Math.max(1f, k*0.6f));
     for(int i=1;i<=3;i++) cv.drawLine(c[i], th, c[i], th+hh, ln);
-    cv.drawLine(c[4], th+hh, c[0], th+hh, ln);
+    cv.drawLine(0, th+hh, W, th+hh, ln);
     String[] lb={"تاریخ","شرح","حساب","مبلغ"};
     for(int i=0;i<4;i++){
       Paint p=paint(BOLD, 12.5f*k, headFg(light), Paint.Align.CENTER);
