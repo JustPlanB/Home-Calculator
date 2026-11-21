@@ -316,7 +316,8 @@ final class HkWidgetDraw {
       cv.save(); cv.clipPath(clip);
       float fw=Math.max(2*r, box.width()*d.pct/100f);
       Paint fp=new Paint(Paint.ANTI_ALIAS_FLAG); fp.setColor(capColor(d.pct, d.light));
-      cv.drawRoundRect(new android.graphics.RectF(box.left, box.top, box.left+fw, box.bottom), r, r, fp); /* ۱.۴.۱۹: درصد چپ است، پس پُر از چپ و خالی سمت راست */
+      /* ۱.۴.۲۱: مرز بخش رنگی و خالی خط صاف است (نه گرد): فقط لبهٔ چپ از گوشهٔ کپسول (clip) گرد می‌ماند */
+      cv.drawRect(box.left, box.top, box.left+fw, box.bottom, fp);
       cv.restore();
     }
     Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(Math.max(1f, 1.2f*k)); st.setColor(d.light ? 0x38000000 : 0x47FFFFFF);
@@ -328,9 +329,14 @@ final class HkWidgetDraw {
       Paint pp=paint(BOLD, size, tc, Paint.Align.LEFT); pp.setShadowLayer(2.5f*k, 0, 0, sh);
       cv.drawText(ps, padX, cy+size*0.36f, pp);
       String v=d.balance==null?"—":d.balance;
-      float vs=fit(BOLD, size, v, W-2*padX-pp.measureText(ps)-12*k);
+      /* ۱.۴.۲۱: زیر عدد «موجودی کل» (ریزتر، خاکستری) */
+      float ns=Math.min(hb*0.36f, 19*k), ls=Math.min(hb*0.2f, 11*k), blockH=ns+ls+3*k, top=cy-blockH/2f;
+      float vs=fit(BOLD, ns, v, W-2*padX-pp.measureText(ps)-12*k);
       Paint vp=paint(BOLD, vs, tc, Paint.Align.RIGHT); vp.setShadowLayer(2.5f*k, 0, 0, sh);
-      cv.drawText(v, W-padX, cy+vs*0.36f, vp);
+      float nb=top+ns*0.82f;
+      cv.drawText(v, W-padX, nb, vp);
+      Paint lp=paint(REG, ls, d.light ? 0xFF6E6E76 : 0xFF98989F, Paint.Align.RIGHT);
+      cv.drawText("موجودی کل", W-padX, nb+3*k+ls*0.95f, lp);
     }else if(d.mask){
       Paint mp=paint(BOLD, size, tc, Paint.Align.CENTER);
       cv.drawText("••••••", W/2f, cy+size*0.36f, mp);

@@ -37,10 +37,10 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   console.log('• ویجت');
   const rd = f => fs.readFileSync(path.join(__dirname, '../../' + f), 'utf8');
   const tx = rd('android-src/HkWidgetTxProvider.java'), st = rd('android-src/HkWidgetStyle.java');
-  ok(/cv\.translate\(0, ti\);/.test(tx) && !/clipP/.test(tx) && /drawRect\(c\[4\], th, c\[0\], th\+hh, band\)/.test(tx), 'سرستون ویجت تراکنش: بی باکس جدا روی باکس اصلی (۱.۴.۱۸)');
+  ok(/cv\.translate\(0, ti\);/.test(tx) && !/clipP/.test(tx) && /drawRect\(0, th, W, th\+hh, band\)/.test(tx), 'سرستون ویجت تراکنش: بی باکس جدا روی باکس اصلی (۱.۴.۱۸)');
   const dr = rd('android-src/HkWidgetDraw.java');
-  ok(/RectF\(box\.left, box\.top, box\.left\+fw, box\.bottom\)/.test(dr), 'ویجت تک‌خطی: رنگ درصد از چپ پُر می‌شود (همراه جای درصد)');
-  ok(/cv\.drawText\(ps, padX, cy/.test(dr) && /cv\.drawText\(v, W-padX, cy/.test(dr), 'ویجت تک‌خطی: درصد چپ، مانده راست (جابه‌جا شد)');
+  ok(/cv\.drawRect\(box\.left, box\.top, box\.left\+fw, box\.bottom, fp\)/.test(dr) && /\"موجودی کل\"/.test(dr), 'ویجت تک‌خطی: پُر از چپ با مرز صاف، و «موجودی کل» زیر عدد (۱.۴.۲۱)');
+  ok(/cv\.drawText\(ps, padX, cy/.test(dr) && /cv\.drawText\(v, W-padX, nb/.test(dr), 'ویجت تک‌خطی: درصد چپ، مانده راست (جابه‌جا شد)');
   ok(/heightPixels\*0\.29f/.test(st), 'پنجرهٔ پیش‌نمایش ۲۹٪ ارتفاع صفحه (هم‌اندازهٔ موزیک)');
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join('|').slice(0, 100));
   console.log('batch-1415: ' + passed + ' passed, ' + failed + ' failed');
