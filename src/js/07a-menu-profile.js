@@ -434,7 +434,22 @@
           row.onclick = function () { showPicker(d, c && !c.p2p ? c.ids.slice() : []); };
           /* ۱.۴.۵: زدن روی خودِ شرح = همهٔ خرج‌های همین ماه در دستهٔ آن (مثل آمار)؛ زدن روی نام دسته = انتخاب/عوض کردن دسته مثل قبل */
           lab.onclick = function (e) {
-            if (!c || c.p2p || !c.ids || !c.ids.length) return;
+            /* ۱.۴.۲۰: شرحِ «جیب به جیب»: همهٔ جیب به جیب‌های همین ماه (واریز و برداشت) در همان جدول */
+            if (c && c.p2p) {
+              e.stopPropagation();
+              var rp = [], tt = sec && sec.title;
+              ['expense', 'income'].forEach(function (tab) {
+                var s2 = null; try { s2 = findSectionByTitle(tab, tt); } catch (eF) {}
+                ((s2 && s2.rows) || []).forEach(function (r) {
+                  if (!r || r.deletedAt || !r.p2p) return;
+                  var a = Number(r.amount) || 0; if (!(a > 0)) return;
+                  rp.push({ x: { y: currentYear, m: currentMonth, d: dayNum(r), desc: r.desc, title: tt, row: r, paid: a, unpaid: 0 }, a: a, inc: tab === 'income' });
+                });
+              });
+              hkOpenStatsCatTx(['p2p'], 'جیب به جیب', '', { rows: rp, period: MONTHS[currentMonth - 1] + ' ' + toPersianDigits(String(currentYear)), card: '' });
+              return;
+            }
+            if (!c || !c.ids || !c.ids.length) return;
             e.stopPropagation();
             var rs = [];
             ((sec && sec.rows) || []).forEach(function (r) {

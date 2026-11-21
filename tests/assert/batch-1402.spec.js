@@ -120,7 +120,7 @@ const allErrors = [];
     [...document.querySelectorAll('#stCats .st-leg')].find(x => /خوراکی/.test(x.textContent)).click(); await w(1100);
     const pg = document.getElementById('hkStCatTx');
     o.page = !!pg && pg.classList.contains('hk-page') && (pg.querySelector('.hk-pg-t') || {}).textContent === 'خوراکی';
-    o.rows = pg ? [...pg.querySelectorAll('.hk-acctx-r:not(.hk-acctx-h) .t')].map(x => x.textContent).join('|') : '';
+    o.rows = pg ? [...pg.querySelectorAll('.hk-stcat-t tbody td.hk-stcat-d') /* ۱.۴.۲۰: جدول */].map(x => x.textContent).join('|') : '';
     o.total = pg ? pg.querySelector('.hk-stcat-sum b').textContent : '';
     onBackGuard(); await w(800);
     o.back = !document.getElementById('hkStCatTx') && document.getElementById('statsSheet').classList.contains('open');

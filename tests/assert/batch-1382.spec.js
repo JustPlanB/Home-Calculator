@@ -99,7 +99,7 @@ const allErrors = [];
     inc.rows.push(Object.assign(emptyRow('income'), { day: '12', desc: 'واریز', amount: 300000, status: 'paid', account: 'ملی', time: '10:05', createdAt: now + 60000 }));
     persistCurrent(); await w(1400);
     const ask = document.getElementById('hkP2PAsk');
-    const msg = ask && ask.querySelector('.hk-p2p-msg').textContent;
+    const msg = ask && ask.textContent; /* ۱.۴.۲۰: جزئیات در دو کارت مقایسه */
     if (ask) { ask.querySelector('.hk-p2p-always').checked = true; ask.querySelector('.hk-p2p-yes').click(); }
     await w(300);
     const a = ex.rows[ex.rows.length - 1], c = inc.rows[inc.rows.length - 1];
