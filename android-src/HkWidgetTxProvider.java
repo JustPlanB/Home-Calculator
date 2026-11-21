@@ -157,6 +157,9 @@ final class HkWidgetTxDraw {
     /* ۱.۴.۱۷: نوار عنوان و سرستون‌ها دقیقاً هم‌عرض جدول (ستون‌ها: از c[4] تا c[0]) و هر چهار گوشه گرد؛ فاصلهٔ بالا هم‌اندازهٔ کنار */
     /* ۱.۴.۱۸: سرستون باکس جدا نیست: همان ارتفاع (ti+th+hh) روی خود باکس اصلی خطکشی می‌شود؛ نوشته‌ها، آیکون‌ها و ردیف عنوان ستون‌ها بی زمینهٔ جدا */
     cv.translate(0, ti);
+    /* ۱.۴.۱۹: فقط ردیف عنوان ستون‌ها همان زمینهٔ آبی تیره (headBg) را دارد، هم‌عرض جدول؛ بقیهٔ سرستون روی باکس اصلی */
+    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(HkWidgetDraw.withAlpha(headBg(light), alpha));
+    cv.drawRect(c[4], th, c[0], th+hh, band);
     /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
     Paint t=paint(BOLD, 17f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);

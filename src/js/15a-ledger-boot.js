@@ -1030,7 +1030,8 @@
         var hrT = null; try { if (hint && hint.firstChild) { var rg = document.createRange(); rg.selectNodeContents(hint); var rr = rg.getClientRects(); if (rr.length) hrT = rr[0]; } } catch (eRg) {}
         var hc = hrT ? hrT.top + hrT.height / 2 : (hr && hr.height ? hr.top + hr.height / 2 : 0);
         var top = hc ? hc - fs / 2 : Math.min(br.bottom - 57, window.innerHeight - 62);
-        top += 7; /* ۱.۳.۸۰: کمی پایین‌تر */
+        /* ۱.۳.۸۰: کمی پایین‌تر؛ ۱.۴.۱۹: در صفحهٔ رابطهٔ قرض (هینت ۳۵px، فریم ۳٫۵px زیرش) نه: دکمه با حرکت بالا/پایین‌اش وارد فریم پایینی می‌شد */
+        top += sc.closest && sc.closest('.section.hk-lrel') ? -2 : 7;
 
         fab.style.top = Math.round(top) + 'px';
         fab.style.left = Math.round(br.right - 14 - fs) + 'px';
