@@ -19,7 +19,7 @@ const allErrors = [];
   ok(/hk_widget_bg_d'\+st\+'\.xml'/.test(pa) && /hk_widget_bg_l'\+st\+'\.xml'/.test(pa), 'پس‌زمینه‌های شفاف ۱۰ پله (تیره و روشن) ساخته می‌شوند');
   ok((pa.match(/android:configure="ir\.hesabketab\.app\.HkWidgetStyle"/g) || []).length === 3 /* ۱.۴.۳: + ویجت یک‌خطی موجودی */ && /reconfigurable\|configuration_optional/.test(pa) && /android:name="\.HkWidgetStyle"/.test(pa), 'ویجت موجودی و حساب‌ها: «تنظیمات» از نگه داشتن ویجت (نه هنگام افزودن)');
   ok(/if\(!repick && exists\)/.test(pa) && /new Intent\(this, HkWidgetStyle\.class\)/.test(pa), 'ویجت تراکنش‌ها: هنگام افزودن نوع ردیف‌ها، بعد از آن «تنظیمات» = ظاهر');
-  ok(/withAlpha\(titleBg\(light\), alpha\)/.test(pa) && /withAlpha\(headBg\(light\), alpha\)/.test(pa), 'نوار عنوان ویجت تراکنش‌ها هم با همان شفافیت');
+  ok(!/withAlpha\(titleBg\(light\), alpha\)/.test(pa) && !/withAlpha\(headBg\(light\), alpha\)/.test(pa), 'سرستون ویجت تراکنش‌ها زمینهٔ جدا ندارد؛ شفافیت همان باکس اصلی (۱.۴.۱۸)');
 
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Tehran', hasTouch: true });
