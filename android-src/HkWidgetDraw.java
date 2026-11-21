@@ -325,12 +325,12 @@ final class HkWidgetDraw {
     int tc=d.light ? 0xFF1C1C1E : Color.WHITE, sh=d.light ? 0xCCFFFFFF : 0xE6000000;
     if(show){
       String ps=faDigits(d.pct)+"٪";
-      Paint pp=paint(BOLD, size, tc, Paint.Align.RIGHT); pp.setShadowLayer(2.5f*k, 0, 0, sh);
-      cv.drawText(ps, W-padX, cy+size*0.36f, pp);
+      Paint pp=paint(BOLD, size, tc, Paint.Align.LEFT); pp.setShadowLayer(2.5f*k, 0, 0, sh);
+      cv.drawText(ps, padX, cy+size*0.36f, pp);
       String v=d.balance==null?"—":d.balance;
       float vs=fit(BOLD, size, v, W-2*padX-pp.measureText(ps)-12*k);
-      Paint vp=paint(BOLD, vs, tc, Paint.Align.LEFT); vp.setShadowLayer(2.5f*k, 0, 0, sh);
-      cv.drawText(v, padX, cy+vs*0.36f, vp);
+      Paint vp=paint(BOLD, vs, tc, Paint.Align.RIGHT); vp.setShadowLayer(2.5f*k, 0, 0, sh);
+      cv.drawText(v, W-padX, cy+vs*0.36f, vp);
     }else if(d.mask){
       Paint mp=paint(BOLD, size, tc, Paint.Align.CENTER);
       cv.drawText("••••••", W/2f, cy+size*0.36f, mp);

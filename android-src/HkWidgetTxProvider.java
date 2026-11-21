@@ -153,14 +153,10 @@ final class HkWidgetTxDraw {
     Bitmap bm=Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888); Canvas cv=new Canvas(bm);
     float[] c=cols(W, k);
     /* نوار عنوان سرتاسری با گوشه‌های گرد بالا (هم‌اندازهٔ گوشهٔ ویجت) */
-    Paint tb=new Paint(Paint.ANTI_ALIAS_FLAG); tb.setColor(HkWidgetDraw.withAlpha(titleBg(light), alpha));
     /* ۱.۴.۳: نوار عنوان تا دو لبهٔ ویجت؛ از اندروید ۱۲ خود ویجت گوشه‌ها را گرد می‌بُرد، پس گوشهٔ نوار صاف است */
     /* ۱.۴.۱۷: نوار عنوان و سرستون‌ها دقیقاً هم‌عرض جدول (ستون‌ها: از c[4] تا c[0]) و هر چهار گوشه گرد؛ فاصلهٔ بالا هم‌اندازهٔ کنار */
+    /* ۱.۴.۱۸: سرستون باکس جدا نیست: همان ارتفاع (ti+th+hh) روی خود باکس اصلی خطکشی می‌شود؛ نوشته‌ها، آیکون‌ها و ردیف عنوان ستون‌ها بی زمینهٔ جدا */
     cv.translate(0, ti);
-    android.graphics.Path clipP=new android.graphics.Path();
-    clipP.addRoundRect(new android.graphics.RectF(c[4], 0, c[0], th+hh), 14*k, 14*k, android.graphics.Path.Direction.CW);
-    cv.clipPath(clipP);
-    cv.drawRect(c[4], 0, c[0], th, tb);
     /* ۱.۳.۸۸: مثل بقیهٔ ویجت‌ها: «حساب‌کتاب» سمت راست، تاریخ امروز سمت چپ (کنار آیکون چشم)، نوع ردیف‌ها وسط */
     String ttl=all ? "همه" : (inc ? "درآمدها" : "مخارج");
     Paint t=paint(BOLD, 17f*k, all ? ALL_C : amt(inc, light), Paint.Align.CENTER);
@@ -183,9 +179,7 @@ final class HkWidgetTxDraw {
       cv.drawText(td[0], c[4]+34*k, base(0, th, 14.5f*k), dp);
     }
     /* ردیف سرستون‌ها مثل سرستون جدول‌های نرم‌افزار */
-    Paint band=new Paint(Paint.ANTI_ALIAS_FLAG); band.setColor(HkWidgetDraw.withAlpha(headBg(light), alpha));
     /* ۱.۴.۴: نوار سرستون‌ها از دو طرف تا لبهٔ کادر ویجت (کنار «تاریخ» و «مبلغ» خالی نمی‌ماند) */
-    cv.drawRect(c[4], th, c[0], th+hh, band);
     Paint ln=new Paint(Paint.ANTI_ALIAS_FLAG); ln.setColor(headLine(light)); ln.setStrokeWidth(Math.max(1f, k*0.6f));
     for(int i=1;i<=3;i++) cv.drawLine(c[i], th, c[i], th+hh, ln);
     cv.drawLine(c[4], th+hh, c[0], th+hh, ln);
