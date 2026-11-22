@@ -510,7 +510,7 @@
         '<input type="hidden" id="urMonth" value="' + String(init.m || 1) + '">' +
         '<input type="hidden" id="urRepeat" value="' + escapeHtml(init.repeat || 'yearly') + '">' +
         '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">یادآوری چند روز قبل</div>' +
-        '<input id="urAdvance" type="text" inputmode="numeric" value="' + escapeHtml(toPersianDigits(String(init.advanceDays != null ? init.advanceDays : 7))) + '" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:#1b1b1b;color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;font-weight:700;margin-bottom:8px;text-align:center;">' +
+        '<input id="urAdvance" type="text" inputmode="numeric" value="' + escapeHtml(toPersianDigits(String(init.advanceDays != null ? init.advanceDays : 7))) + '" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;font-weight:700;margin-bottom:8px;text-align:center;">' + /* ۱.۴.۲۲: رنگ تم (قبلاً #1b1b1b ثابت: در تم روز تیره می‌ماند) */
         '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">یادداشت (اختیاری)</div>' +
         '<input id="urNote" type="text" value="' + escapeHtml(init.note || '') + '" placeholder="توضیح کوتاه" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:12px;">' +
         '<div style="display:flex;gap:8px;">' +

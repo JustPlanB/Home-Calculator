@@ -40,7 +40,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(/cv\.translate\(0, ti\);/.test(tx) && !/clipP/.test(tx) && /drawRect\(0, th, W, th\+hh, band\)/.test(tx), 'سرستون ویجت تراکنش: بی باکس جدا روی باکس اصلی (۱.۴.۱۸)');
   const dr = rd('android-src/HkWidgetDraw.java');
   ok(/cv\.drawRect\(box\.left, box\.top, box\.left\+fw, box\.bottom, fp\)/.test(dr) && /\"موجودی کل\"/.test(dr), 'ویجت تک‌خطی: پُر از چپ با مرز صاف، و «موجودی کل» زیر عدد (۱.۴.۲۱)');
-  ok(/cv\.drawText\(ps, padX, cy/.test(dr) && /cv\.drawText\(v, W-padX, nb/.test(dr), 'ویجت تک‌خطی: درصد چپ، مانده راست (جابه‌جا شد)');
+  ok(/cv\.drawText\(ps, padX, cy/.test(dr) && /cv\.drawText\(v, cx, nb, vp\)/.test(dr) /* ۱.۴.۲۲: مبلغ وسط‌چین روی مرکز مشترک؛ لبهٔ راست با padX */, 'ویجت تک‌خطی: درصد چپ، مانده راست (جابه‌جا شد)');
   ok(/heightPixels\*0\.29f/.test(st), 'پنجرهٔ پیش‌نمایش ۲۹٪ ارتفاع صفحه (هم‌اندازهٔ موزیک)');
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join('|').slice(0, 100));
   console.log('batch-1415: ' + passed + ' passed, ' + failed + ' failed');

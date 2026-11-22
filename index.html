@@ -33640,6 +33640,12 @@ container.innerHTML = '';
       if (/https?:\/\/|www\.|\b[a-z0-9-]+\.(?:ir|com|me|ly)\/|لغو\s*[0-9]+|انصراف\s*[0-9]+/i.test(t)) return 'promo';
       if (/تخفیف|جایزه|قرعه\s*کشی|جشنواره|هدیه|کمپین|باشگاه\s*مشتریان|امتیاز|ثبت\s*نام|عضویت|دانلود|نصب\s*(?:اپ|برنامه|همراه)|اپلیکیشن|فرصت|پیشنهاد\s*ویژه|شگفت\s*انگیز|بسته\s*اینترنت|مشترک\s*گرامی/.test(t)) return 'promo';
       if (/یادآوری|سررسید|اطلاعیه|به\s*اطلاع\s*می\s*رساند|مهلت|معوق|دعوت|تبریک|تسلیت/.test(t)) return 'notice';
+      /* ۱.۴.۲۲: کیف پول/درگاه‌های غیربانکی (دیجی‌پی، دیجی‌کالا، اسنپ‌پی، …) و «بازگشت به اعتبار»: جابه‌جایی پول داخل آن سرویس است، نه تراکنش حساب بانکی */
+      if (/دیجی\s*[‌]?\s*پی|دیجی\s*[‌]?\s*کالا|digi\s*pay|digikala|اسنپ\s*[‌]?\s*پی|snapp\s*pay|تپسی\s*[‌]?\s*پی|بازگشت\s*به\s*اعتبار|کیف\s*(?:پول|اعتبار)/i.test(t)) return 'wallet';
+      /* ۱.۴.۲۲: فرستندهٔ ناشناخته: نه اسم بانک (خودِ متن)، نه مانده/موجودی، نه شمارهٔ کارت/حساب ← پیامک بانکی نیست (این فیلتر فقط وقتی کاری می‌کند که بقیه نشانه‌ها نبود) */
+      try {
+        if (!detectBankFromSms(t, true) && !/مانده|موجودی/.test(t) && !/(?:کارت|حساب|سپرده|شماره)\s*[:：]?\s*(?:[*.…xX•]+\s*)?[0-9]{3,}|[*.…•]{2,}\s*[0-9]{3,4}/.test(t)) return 'unknown-sender';
+      } catch (eUs) {}
       return false;
     }
 
@@ -44549,7 +44555,7 @@ if (item.type === 'recurring') {
         '<input type="hidden" id="urMonth" value="' + String(init.m || 1) + '">' +
         '<input type="hidden" id="urRepeat" value="' + escapeHtml(init.repeat || 'yearly') + '">' +
         '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">یادآوری چند روز قبل</div>' +
-        '<input id="urAdvance" type="text" inputmode="numeric" value="' + escapeHtml(toPersianDigits(String(init.advanceDays != null ? init.advanceDays : 7))) + '" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:#1b1b1b;color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;font-weight:700;margin-bottom:8px;text-align:center;">' +
+        '<input id="urAdvance" type="text" inputmode="numeric" value="' + escapeHtml(toPersianDigits(String(init.advanceDays != null ? init.advanceDays : 7))) + '" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;font-weight:700;margin-bottom:8px;text-align:center;">' + /* ۱.۴.۲۲: رنگ تم (قبلاً #1b1b1b ثابت: در تم روز تیره می‌ماند) */
         '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">یادداشت (اختیاری)</div>' +
         '<input id="urNote" type="text" value="' + escapeHtml(init.note || '') + '" placeholder="توضیح کوتاه" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:inherit;font-weight:600;margin-bottom:12px;">' +
         '<div style="display:flex;gap:8px;">' +
