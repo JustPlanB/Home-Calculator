@@ -323,20 +323,22 @@ final class HkWidgetDraw {
     Paint st=new Paint(Paint.ANTI_ALIAS_FLAG); st.setStyle(Paint.Style.STROKE); st.setStrokeWidth(Math.max(1f, 1.2f*k)); st.setColor(d.light ? 0x38000000 : 0x47FFFFFF);
     cv.drawRoundRect(box, r, r, st);
     float padX=r*0.9f, cy=H/2f, size=Math.min(hb*0.44f, 21*k);
-    int tc=d.light ? 0xFF1C1C1E : Color.WHITE, sh=d.light ? 0xCCFFFFFF : 0xE6000000;
+    int tc=d.light ? 0xFF1C1C1E : Color.WHITE;
+    /* ۱.۴.۲۲: بی هالهٔ نور: پشت هیچ عدد یا نوشته‌ای سایه/هاله نیست؛ هر کدام یک رنگ سالید مخصوص تم خودش */
     if(show){
       String ps=faDigits(d.pct)+"٪";
-      Paint pp=paint(BOLD, size, tc, Paint.Align.LEFT); pp.setShadowLayer(2.5f*k, 0, 0, sh);
+      Paint pp=paint(BOLD, size, tc, Paint.Align.LEFT);
       cv.drawText(ps, padX, cy+size*0.36f, pp);
       String v=d.balance==null?"—":d.balance;
-      /* ۱.۴.۲۱: زیر عدد «موجودی کل» (ریزتر، خاکستری) */
-      float ns=Math.min(hb*0.36f, 19*k), ls=Math.min(hb*0.2f, 11*k), blockH=ns+ls+3*k, top=cy-blockH/2f;
+      /* مبلغ و «موجودی کل» کمی بزرگ‌تر از قبل و هر دو دقیقاً وسط‌چین نسبت به هم (مرکز مشترک؛ مبلغ لبهٔ راست را نگه می‌دارد) */
+      float ns=Math.min(hb*0.40f, 21*k), ls=Math.min(hb*0.24f, 13*k), blockH=ns+ls+3*k, top=cy-blockH/2f;
       float vs=fit(BOLD, ns, v, W-2*padX-pp.measureText(ps)-12*k);
-      Paint vp=paint(BOLD, vs, tc, Paint.Align.RIGHT); vp.setShadowLayer(2.5f*k, 0, 0, sh);
-      float nb=top+ns*0.82f;
-      cv.drawText(v, W-padX, nb, vp);
-      Paint lp=paint(REG, ls, d.light ? 0xFF6E6E76 : 0xFF98989F, Paint.Align.RIGHT);
-      cv.drawText("موجودی کل", W-padX, nb+3*k+ls*0.95f, lp);
+      Paint vp=paint(BOLD, vs, tc, Paint.Align.CENTER);
+      float cx=W-padX-vp.measureText(v)/2f;
+      float nb=top+vs*0.82f;
+      cv.drawText(v, cx, nb, vp);
+      Paint lp=paint(REG, ls, d.light ? 0xFF6E6E76 : 0xFF98989F, Paint.Align.CENTER);
+      cv.drawText("موجودی کل", cx, nb+3*k+ls*0.95f, lp);
     }else if(d.mask){
       Paint mp=paint(BOLD, size, tc, Paint.Align.CENTER);
       cv.drawText("••••••", W/2f, cy+size*0.36f, mp);
