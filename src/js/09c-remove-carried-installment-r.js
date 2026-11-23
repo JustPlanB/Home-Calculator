@@ -21,14 +21,10 @@
         });
       }
       try {
-        if (afterY == null || periodAfter(currentYear, currentMonth)) scrub(periodData);
-      } catch (e0) {}
-      try {
-        Object.keys(archive || {}).forEach(function(k) {
-          if (!archive[k]) return;
+        iterAllPeriodData(function (pd, k) {
           var parts = String(k).split('-');
           var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-          if (afterY == null || periodAfter(y, m)) scrub(archive[k]);
+          if (afterY == null || periodAfter(y, m)) scrub(pd);
         });
       } catch (e1) {}
     }

@@ -313,8 +313,37 @@
       { v: 3, name: 'پاک کردن فرستنده→بانکِ یادگرفته با روش قدیمی (تکه‌ای از کلمه مثل «سامانه»/«جدید»)', run: function () {
         try { localStorage.removeItem(STORAGE_KEY + '_senderBank'); } catch (e) {}
         return 0;
+      } },
+      { v: 4, name: 'شناسهٔ ردیف‌های قدیمی (ردیف‌های مخارج و درآمد بدون شناسه)', run: function (arc) {
+        return hkBackfillRowIds(arc);
       } }
     ];
+    /* ۱.۴.۲۳: یک قاعدهٔ واحد برای شناسهٔ ردیف‌ها. فقط ردیفی که id ندارد شناسه می‌گیرد؛ بقیهٔ فیلدها دست‌نخورده.
+       همان را هم تبدیل شمارهٔ ۴ اجرا می‌کند و هم هر بار پیش از ذخیره (getBundle) — تا ردیف بی‌شناسه‌ای از بکاپ یا از جای دیگر نماند. */
+    function hkBackfillRowIds(arc) {
+      var ch = 0;
+      function fixSide(side) {
+        ((side && side.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (r && typeof r === 'object' && !r.id) { r.id = newRecordId(); ch++; }
+          });
+        });
+      }
+      Object.keys(arc || {}).forEach(function (k) {
+        var pd = arc[k];
+        if (!pd || typeof pd !== 'object') return;
+        if (pd.expense || pd.income) { fixSide(pd.expense); fixSide(pd.income); }
+        else if (pd.sections) fixSide(pd);
+      });
+      return ch;
+    }
+    /* ماه جاری از periodData خوانده می‌شود (نه نسخهٔ کپی‌شدهٔ آرشیو) تا شناسه‌ها پایدار بمانند */
+    function hkBackfillAll() {
+      var view = Object.assign({}, archive || {});
+      view[periodKey(currentYear, currentMonth)] = periodData;
+      return hkBackfillRowIds(view);
+    }
+    try { window.hkBackfillAll = hkBackfillAll; } catch (eBf) {}
     function hkDataVer() { try { return Number(localStorage.getItem(HK_DATA_VER_KEY)) || 0; } catch (e) { return 0; } }
     function hkRunMigrations() {
       var cur = hkDataVer();

@@ -399,8 +399,8 @@
       try {
         var main = hkMainTitle();
         try { if (persist && localStorage.getItem(STORAGE_KEY + '_mainCard') !== main && (allPersonTitlesRaw().length || Object.keys(archive || {}).length)) localStorage.setItem(STORAGE_KEY + '_mainCard', main); } catch (eS) {}
-        var ch = hkSingleCardMergePd(periodData, main);
-        Object.keys(archive || {}).forEach(function (k) { if (hkSingleCardMergePd(archive[k], main)) ch = true; });
+        var ch = false;
+        iterAllPeriodData(function (pd) { if (hkSingleCardMergePd(pd, main)) ch = true; });
         var curInc = ((periodData.income && periodData.income.sections) || [])[0];
         (recurringIncomes || []).forEach(function (r) {
           if (!r || r.deletedAt) return;

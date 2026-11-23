@@ -30,8 +30,7 @@
           labels[lb] = true; entries++;
         });
       };
-      try { walk(periodData, periodKey(currentYear, currentMonth)); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k], k); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd, k) { walk(pd, k); }); } catch (e1) {}
       if (entries) {
         var stashed = false;
         try {
@@ -72,8 +71,7 @@
           });
         });
       };
-      try { fix(periodData); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { fix(archive[k]); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd) { fix(pd); }); } catch (e1) {}
       try { (recurringIncomes || []).forEach(function (r) { if (r && (r.account || '').trim() === oldLb) r.account = newLb; }); if (typeof saveRecurring === 'function') saveRecurring(); } catch (e2) {}
       try {
         var ch = false;
@@ -253,8 +251,7 @@
           });
         });
       }
-      walk(periodData);
-      Object.keys(archive || {}).forEach(k => walk(archive[k]));
+      iterAllPeriodData(function (pd) { walk(pd); });
       (recurringIncomes || []).forEach(r => {
         if (r.account) r.account = migrateBankName(r.account);
       });
@@ -793,7 +790,6 @@ if (item.type === 'recurring') {
           });
           var un = {}; (item.data.unlinked || []).forEach(function (u) { (un[u.sig] = un[u.sig] || []).push(u); });
           if (Object.keys(un).length) iterAllPeriodData(function (pd, key) {
-            if (key === curK && pd !== periodData) return;
             ['income', 'expense'].forEach(function (tab) {
               ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
                 (sec.rows || []).forEach(function (r) {

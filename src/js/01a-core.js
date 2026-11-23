@@ -720,10 +720,7 @@
             if (!s.rows.length) s.rows = [emptyRow()];
           });
         }
-        scrubEarly(periodData);
-        Object.keys(archive || {}).forEach(function(k) {
-          try { scrubEarly(archive[k]); } catch (eA) {}
-        });
+        iterAllPeriodData(function (pd) { try { scrubEarly(pd); } catch (eA) {} });
       } catch (eScrub) {}
     }
 

@@ -490,7 +490,6 @@
       var out = [], seen = {}, cur = periodKey(currentYear, currentMonth);
       try {
         iterAllPeriodData(function (pd, key) {
-          if (key === cur && pd !== periodData) return;
           ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
             (Array.isArray(r && r.att) ? r.att : []).forEach(function (a) { if (a && a.id && !seen[a.id]) { seen[a.id] = 1; out.push(a); } });
           }); }); });
@@ -1116,9 +1115,7 @@ function askBackupUserCards(selectedParts) {
         });
       }
       try {
-        Object.keys(archive || {}).forEach(k => {
-          const pd = archive[k];
-          if (!pd) return;
+        iterAllPeriodData(function (pd) {
           claimSide(pd.income);
           claimSide(pd.expense);
           if (pd.ledger && Array.isArray(pd.ledger.sections)) {
@@ -1130,14 +1127,5 @@ function askBackupUserCards(selectedParts) {
         });
         (plans || []).forEach(claim);
         (recurringIncomes || []).forEach(claim);
-        // periodData جاری
-        claimSide(periodData && periodData.income);
-        claimSide(periodData && periodData.expense);
-        if (periodData && periodData.ledger && Array.isArray(periodData.ledger.sections)) {
-          periodData.ledger.sections.forEach(sec => {
-            claim(sec);
-            (sec.rows || []).forEach(claim);
-          });
-        }
       } catch (e) {}
     }

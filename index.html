@@ -14543,10 +14543,7 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
             if (!s.rows.length) s.rows = [emptyRow()];
           });
         }
-        scrubEarly(periodData);
-        Object.keys(archive || {}).forEach(function(k) {
-          try { scrubEarly(archive[k]); } catch (eA) {}
-        });
+        iterAllPeriodData(function (pd) { try { scrubEarly(pd); } catch (eA) {} });
       } catch (eScrub) {}
     }
 
@@ -17063,8 +17060,7 @@ function onPeriodChange() {
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       // اقساط و درآمد ثابت دیگران
       try {
         const beforeP = (plans || []).length;
@@ -17358,6 +17354,7 @@ function onPeriodChange() {
 
     function getBundle() {
       registerSelfInFamily();
+      try { hkBackfillAll(); } catch (eBf) {}
       try { persistCurrent(); } catch (e) {}
       return {
         archive: archive,
@@ -17759,8 +17756,7 @@ function onPeriodChange() {
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       (plans || []).forEach(touchRow);
       try { (recurringIncomes || []).forEach(touchRow); } catch (e) {}
       return n;
@@ -19964,7 +19960,6 @@ function onPeriodChange() {
       var out = [], seen = {}, cur = periodKey(currentYear, currentMonth);
       try {
         iterAllPeriodData(function (pd, key) {
-          if (key === cur && pd !== periodData) return;
           ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
             (Array.isArray(r && r.att) ? r.att : []).forEach(function (a) { if (a && a.id && !seen[a.id]) { seen[a.id] = 1; out.push(a); } });
           }); }); });
@@ -20590,9 +20585,7 @@ function askBackupUserCards(selectedParts) {
         });
       }
       try {
-        Object.keys(archive || {}).forEach(k => {
-          const pd = archive[k];
-          if (!pd) return;
+        iterAllPeriodData(function (pd) {
           claimSide(pd.income);
           claimSide(pd.expense);
           if (pd.ledger && Array.isArray(pd.ledger.sections)) {
@@ -20604,15 +20597,6 @@ function askBackupUserCards(selectedParts) {
         });
         (plans || []).forEach(claim);
         (recurringIncomes || []).forEach(claim);
-        // periodData جاری
-        claimSide(periodData && periodData.income);
-        claimSide(periodData && periodData.expense);
-        if (periodData && periodData.ledger && Array.isArray(periodData.ledger.sections)) {
-          periodData.ledger.sections.forEach(sec => {
-            claim(sec);
-            (sec.rows || []).forEach(claim);
-          });
-        }
       } catch (e) {}
     }
     /* ===== بازیابی امن: عکس از وضعیت قبل، ثبت هر شکست نوشتن، و در صورت شکست بازگشت کامل و بررسی‌شده =====
@@ -25016,8 +25000,8 @@ async function openPdfPrintWindow(){
       try {
         var main = hkMainTitle();
         try { if (persist && localStorage.getItem(STORAGE_KEY + '_mainCard') !== main && (allPersonTitlesRaw().length || Object.keys(archive || {}).length)) localStorage.setItem(STORAGE_KEY + '_mainCard', main); } catch (eS) {}
-        var ch = hkSingleCardMergePd(periodData, main);
-        Object.keys(archive || {}).forEach(function (k) { if (hkSingleCardMergePd(archive[k], main)) ch = true; });
+        var ch = false;
+        iterAllPeriodData(function (pd) { if (hkSingleCardMergePd(pd, main)) ch = true; });
         var curInc = ((periodData.income && periodData.income.sections) || [])[0];
         (recurringIncomes || []).forEach(function (r) {
           if (!r || r.deletedAt) return;
@@ -27930,8 +27914,37 @@ async function openPdfPrintWindow(){
       { v: 3, name: 'پاک کردن فرستنده→بانکِ یادگرفته با روش قدیمی (تکه‌ای از کلمه مثل «سامانه»/«جدید»)', run: function () {
         try { localStorage.removeItem(STORAGE_KEY + '_senderBank'); } catch (e) {}
         return 0;
+      } },
+      { v: 4, name: 'شناسهٔ ردیف‌های قدیمی (ردیف‌های مخارج و درآمد بدون شناسه)', run: function (arc) {
+        return hkBackfillRowIds(arc);
       } }
     ];
+    /* ۱.۴.۲۳: یک قاعدهٔ واحد برای شناسهٔ ردیف‌ها. فقط ردیفی که id ندارد شناسه می‌گیرد؛ بقیهٔ فیلدها دست‌نخورده.
+       همان را هم تبدیل شمارهٔ ۴ اجرا می‌کند و هم هر بار پیش از ذخیره (getBundle) — تا ردیف بی‌شناسه‌ای از بکاپ یا از جای دیگر نماند. */
+    function hkBackfillRowIds(arc) {
+      var ch = 0;
+      function fixSide(side) {
+        ((side && side.sections) || []).forEach(function (sec) {
+          (sec.rows || []).forEach(function (r) {
+            if (r && typeof r === 'object' && !r.id) { r.id = newRecordId(); ch++; }
+          });
+        });
+      }
+      Object.keys(arc || {}).forEach(function (k) {
+        var pd = arc[k];
+        if (!pd || typeof pd !== 'object') return;
+        if (pd.expense || pd.income) { fixSide(pd.expense); fixSide(pd.income); }
+        else if (pd.sections) fixSide(pd);
+      });
+      return ch;
+    }
+    /* ماه جاری از periodData خوانده می‌شود (نه نسخهٔ کپی‌شدهٔ آرشیو) تا شناسه‌ها پایدار بمانند */
+    function hkBackfillAll() {
+      var view = Object.assign({}, archive || {});
+      view[periodKey(currentYear, currentMonth)] = periodData;
+      return hkBackfillRowIds(view);
+    }
+    try { window.hkBackfillAll = hkBackfillAll; } catch (eBf) {}
     function hkDataVer() { try { return Number(localStorage.getItem(HK_DATA_VER_KEY)) || 0; } catch (e) { return 0; } }
     function hkRunMigrations() {
       var cur = hkDataVer();
@@ -35136,7 +35149,6 @@ container.innerHTML = '';
     function hkProjectRows(id) {
       var out = [], curK = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function (pd, key) {
-        if (key === curK && pd !== periodData) return; /* نسخهٔ آرشیوِ ماه جاری تکراری است */
         ['income', 'expense'].forEach(function (tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
             (sec.rows || []).forEach(function (r) {
@@ -35319,15 +35331,38 @@ container.innerHTML = '';
 
     
     
+    /* هر ماه فقط یک بار پیمایش می‌شود. منبع ماه جاری periodData است (اگر معتبر باشد) و نسخهٔ آرشیوِ ماه جاری هرگز دوباره پیمایش نمی‌شود.
+       کلید معادل (مثل 1405-6 و 1405-06) یکی حساب می‌شود؛ کلید کانونی (همان قالب periodKey) اولویت دارد؛ ماه نامعتبر و داده غیرشیء رد می‌شود.
+       ردیف‌های حذف‌شده، حمل‌شده و اقساط فیلتر نمی‌شوند؛ این کار با مصرف‌کننده است. */
+    function hkPeriodIsObject(pd) { return !!pd && typeof pd === 'object' && !Array.isArray(pd); }
+    function hkNormPeriodKey(k) {
+      var m = /^(\d{3,4})-(\d{1,2})$/.exec(String(k));
+      if (!m) return null;
+      var y = parseInt(m[1], 10), mo = parseInt(m[2], 10);
+      if (mo < 1 || mo > 12 || y < 1300 || y > 1500) return null;
+      return y + '-' + mo;
+    }
     function iterAllPeriodData(cb) {
+      var curKey = periodKey(currentYear, currentMonth), seen = {};
       try {
-        if (periodData) cb(periodData, periodKey(currentYear, currentMonth));
+        var src = hkPeriodIsObject(periodData) ? periodData : (hkPeriodIsObject(archive && archive[curKey]) ? archive[curKey] : null);
+        if (src) { seen[curKey] = 1; cb(src, curKey); }
       } catch (e0) {}
       try {
-        Object.keys(archive || {}).forEach(function(k) {
-          var pd = archive[k];
-          if (pd && pd !== periodData) cb(pd, k);
-        });
+        var keys = Object.keys(archive || {});
+        for (var pass = 0; pass < 2; pass++) {
+          keys.forEach(function (k) {
+            var norm = hkNormPeriodKey(k);
+            if (!norm) return;
+            var canonical = (norm === k);
+            if ((pass === 0) !== canonical) return;
+            if (seen[norm]) return;
+            var pd = archive[k];
+            if (!hkPeriodIsObject(pd)) return;
+            seen[norm] = 1;
+            cb(pd, norm);
+          });
+        }
       } catch (e1) {}
     }
     function computeSubjectReport(subjectId) {
@@ -35341,7 +35376,6 @@ container.innerHTML = '';
       var curKey = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function(pd, key) {
         // از شمارش دوبارهٔ ماه جاری (آرشیو + periodData) جلوگیری کن
-        if (key === curKey && pd !== periodData) return;
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {
@@ -35854,7 +35888,6 @@ container.innerHTML = '';
       try {
         iterAllPeriodData(function(pd, key) {
           if (seen) return;
-          if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ['income', 'expense'].forEach(function(tab) {
             if (seen) return;
@@ -35886,7 +35919,6 @@ function projectMoneyOnAccounts(subjectId, accountSet, onlyKey) {
         ? periodKey(currentYear, currentMonth) : '';
       if (typeof iterAllPeriodData !== 'function') return 0;
       iterAllPeriodData(function(pd, key) {
-        if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
@@ -35944,7 +35976,6 @@ function getProjectBalance(subjectId) {
       if (typeof iterAllPeriodData !== 'function') return 0;
       try {
         iterAllPeriodData(function(pd, key) {
-          if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ((pd.expense && pd.expense.sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {
@@ -36727,14 +36758,10 @@ function getProjectBalance(subjectId) {
         });
       }
       try {
-        if (afterY == null || periodAfter(currentYear, currentMonth)) scrub(periodData);
-      } catch (e0) {}
-      try {
-        Object.keys(archive || {}).forEach(function(k) {
-          if (!archive[k]) return;
+        iterAllPeriodData(function (pd, k) {
           var parts = String(k).split('-');
           var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-          if (afterY == null || periodAfter(y, m)) scrub(archive[k]);
+          if (afterY == null || periodAfter(y, m)) scrub(pd);
         });
       } catch (e1) {}
     }
@@ -40673,8 +40700,7 @@ function confirmSmsEntry() {
           labels[lb] = true; entries++;
         });
       };
-      try { walk(periodData, periodKey(currentYear, currentMonth)); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k], k); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd, k) { walk(pd, k); }); } catch (e1) {}
       if (entries) {
         var stashed = false;
         try {
@@ -40715,8 +40741,7 @@ function confirmSmsEntry() {
           });
         });
       };
-      try { fix(periodData); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { fix(archive[k]); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd) { fix(pd); }); } catch (e1) {}
       try { (recurringIncomes || []).forEach(function (r) { if (r && (r.account || '').trim() === oldLb) r.account = newLb; }); if (typeof saveRecurring === 'function') saveRecurring(); } catch (e2) {}
       try {
         var ch = false;
@@ -40896,8 +40921,7 @@ function confirmSmsEntry() {
           });
         });
       }
-      walk(periodData);
-      Object.keys(archive || {}).forEach(k => walk(archive[k]));
+      iterAllPeriodData(function (pd) { walk(pd); });
       (recurringIncomes || []).forEach(r => {
         if (r.account) r.account = migrateBankName(r.account);
       });
@@ -41436,7 +41460,6 @@ if (item.type === 'recurring') {
           });
           var un = {}; (item.data.unlinked || []).forEach(function (u) { (un[u.sig] = un[u.sig] || []).push(u); });
           if (Object.keys(un).length) iterAllPeriodData(function (pd, key) {
-            if (key === curK && pd !== periodData) return;
             ['income', 'expense'].forEach(function (tab) {
               ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
                 (sec.rows || []).forEach(function (r) {
@@ -53014,7 +53037,6 @@ function openProjectRowPicker(secId) {
       var range = (document.getElementById('balanceSearchRange') || {}).value || 'all';
       var curKey = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function (pd, key) {
-        if (key === curKey && pd !== periodData) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         if (!bsInRange(range, y, m)) return;
         ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
@@ -53086,7 +53108,6 @@ function openProjectRowPicker(secId) {
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};
       iterAllPeriodData(function (pd, key) {
-        if (key === curKey && pd !== periodData) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         if (!bsInRange(rangeF, y, m)) return;
         /* با انتخاب دسته فقط مخارج (دسته‌بندی مال مخارج است) */
