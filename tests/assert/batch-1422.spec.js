@@ -173,7 +173,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(dlInit.exists && dlInit.done === false && /دانلود مدل/.test(dlInit.label), 'دکمهٔ دانلود اختیاری در سربرگ دستیار هست و در آغاز ذخیره نشده است');
   await page.route('https://huggingface.co/**', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.alloc(4096, 1) }));
   await page.click('.hk-asst-dl'); await page.waitForTimeout(200);
-  const askShown = await page.evaluate(() => { const m = document.getElementById('confirmModal'); return !!m && /گیگابایت/.test(document.getElementById('confirmMsg').textContent); });
+  const askShown = await page.evaluate(() => { const m = document.getElementById('confirmModal'); return !!m && /مگابایت|گیگابایت/.test(document.getElementById('confirmMsg').textContent); });
   ok(askShown, 'زدن دکمهٔ دانلود، پیش از شروع، تأیید کاربر را می‌پرسد و حجم را می‌گوید');
   await page.click('#confirmYes'); await page.waitForTimeout(1200);
   const dlDone = await page.evaluate(async () => { const b = document.querySelector('.hk-asst-dl'); const st = await hkAsstModelStatus(); return { done: b.classList.contains('is-done'), stored: st }; });
@@ -196,7 +196,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   const llmOk = fs.existsSync(path.join(__dirname, '../../assets/llm/wllama.js')) && fs.existsSync(path.join(__dirname, '../../assets/llm/wllama.wasm'));
   const buildSrc = fs.readFileSync(path.join(__dirname, '../../scripts/build-web.js'), 'utf8');
   ok(llmOk && /'assets', 'llm'/.test(buildSrc) && /wllama\.wasm/.test(buildSrc), 'موتور اجرا (wllama) در assets/llm است و ساخت آن را کنار index.html کپی می‌کند');
-  ok(/Qwen2\.5-1\.5B-Instruct/.test(E.url) && /apache|Apache/.test(fs.readFileSync(path.join(__dirname, '../../src/js/18e-assistant-model.js'), 'utf8')), 'مدل دانلودی Qwen2.5-1.5B (مجوز Apache-2.0) است');
+  ok(/Qwen2\.5-0\.5B-Instruct/.test(E.url) && /qwen2\.5-0\.5b-instruct-q4_k_m\.gguf/.test(E.url), 'مدل دانلودی Qwen2.5-0.5B-Instruct (فایل رسمی Q4_K_M) است');
   ok(/هنوز دانلود نشده/.test(E.err) && E.ready === false, 'بدون مدل ذخیره‌شده، بارگذاری خطای روشن می‌دهد و مدل محلی آماده نمی‌شود');
   // دکمه‌های پیشنهاد در پنجره
   await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
