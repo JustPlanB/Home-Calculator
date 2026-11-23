@@ -421,6 +421,7 @@
 
     function getBundle() {
       registerSelfInFamily();
+      try { hkBackfillAll(); } catch (eBf) {}
       try { persistCurrent(); } catch (e) {}
       return {
         archive: archive,

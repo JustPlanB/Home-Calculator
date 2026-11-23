@@ -145,9 +145,9 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/02a-sync.js` (832 خط)
 - خط 1: Supabase Shared Account (Offline-first)
 
-## `js/02b-persist-sb-session.js` (941 خط)
-- خط 489: لایهٔ ذخیره‌سازی: شکست نوشتن بی‌صدا رد نمی‌شود
-- خط 551: ۱.۳.۶۳: نسخهٔ دوم آرشیو در IndexedDB
+## `js/02b-persist-sb-session.js` (942 خط)
+- خط 490: لایهٔ ذخیره‌سازی: شکست نوشتن بی‌صدا رد نمی‌شود
+- خط 552: ۱.۳.۶۳: نسخهٔ دوم آرشیو در IndexedDB
 
 ## `js/02c-render-family-modal-body.js` (907 خط)
 - خط 513: Installment reminders
@@ -202,7 +202,7 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/06a3-cat-kw-bank.js` (16 خط)
 - (سرفصل ندارد)
 
-## `js/06b-cat-stamp-row.js` (1108 خط)
+## `js/06b-cat-stamp-row.js` (1119 خط)
 - خط 269: ۱.۳.۸۴: دستهٔ هر ردیف مخارج روی خود ردیف (cats + catKey = شرح نرمال‌شدهٔ همان لحظه)
 - خط 298: ۱.۳.۸۴: نسخهٔ ساختار داده + تبدیل‌های مرتب‌شده
 
