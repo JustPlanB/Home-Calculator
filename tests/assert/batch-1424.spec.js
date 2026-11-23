@@ -43,6 +43,35 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   });
   ok(B.interrupted === true && /لمس/.test(B.status), 'پیام راه تلاش دوباره (لمس وضعیت) را می‌گوید');
 
+  console.log('• تنظیم‌های بارگذاری (فقط CPU و پلهٔ ملایم‌تر)');
+  const E = await page.evaluate(() => {
+    const o = {};
+    const last = HK_ASST_PROFILES.length - 1;
+    o.n = HK_ASST_PROFILES.length;
+    o.allCpu = HK_ASST_PROFILES.every(p => p.n_gpu_layers === 0 && p.token_embd_on_gpu === false);
+    o.gentler = HK_ASST_PROFILES[1].warmup === false && HK_ASST_PROFILES[last].n_batch < HK_ASST_PROFILES[0].n_batch;
+    hkAsstBootClear(); localStorage.removeItem('hkAsstGoodProf');
+    o.fresh = hkAsstProfileFor();
+    localStorage.setItem('hkAsstBoot', JSON.stringify({ stage: 'x', done: 0, at: 1 }));            // ثبت قدیمی بی تنظیم
+    o.legacyNext = hkAsstProfileFor(); o.legacyRetry = hkAsstBootCanRetry();
+    localStorage.setItem('hkAsstBoot', JSON.stringify({ stage: 'x', done: 0, at: 1, prof: 0 }));
+    o.after0 = hkAsstProfileFor(); o.retry0 = hkAsstBootCanRetry();
+    localStorage.setItem('hkAsstBoot', JSON.stringify({ stage: 'x', done: 0, at: 1, prof: last }));
+    o.afterLast = hkAsstProfileFor(); o.retryLast = hkAsstBootCanRetry();
+    HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+    o.lastStatus = hkAsstEngineStatus();
+    hkAsstBootClear(); localStorage.setItem('hkAsstGoodProf', '1');
+    o.good = hkAsstProfileFor();
+    hkAsstBootClear(); localStorage.removeItem('hkAsstGoodProf');
+    return o;
+  });
+  ok(E.n >= 3 && E.allCpu, 'همهٔ تنظیم‌ها فقط CPU هستند (n_gpu_layers صفر)');
+  ok(E.gentler, 'تنظیم‌های بعدی ملایم‌ترند (بدون warmup و دستهٔ کوچک‌تر)');
+  ok(E.fresh === 0 && E.legacyNext === 0 && E.legacyRetry === true, 'بارگذاری تازه و ثبت قدیمی: از تنظیم اول');
+  ok(E.after0 === 1 && E.retry0 === true, 'اگر تنظیم اول قطع شد، لمس بعدی تنظیم دوم را می‌زند');
+  ok(E.afterLast === E.n - 1 && E.retryLast === false && /همهٔ تنظیم‌ها امتحان شد/.test(E.lastStatus), 'بعد از ملایم‌ترین تنظیم دیگر تلاش خودکار نیست و وضعیت می‌گوید');
+  ok(E.good === 1, 'تنظیمی که جواب داده، برای بارگذاری‌های بعدی نگه داشته می‌شود');
+
   console.log('• «درباره»: زیرنویس');
   const C = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));

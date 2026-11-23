@@ -259,8 +259,8 @@
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
       mode.addEventListener('click', function () {
-        if (!hkAsstBootInterrupted() || HK_ASST_ENGINE.loading) return;
-        hkAsstBootClear(); hkAsstSetMode();
+        if (!hkAsstBootCanRetry() || HK_ASST_ENGINE.loading) return;
+        hkAsstSetMode();
         hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
       });
       if (titleBox) titleBox.appendChild(mode);
