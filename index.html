@@ -13240,6 +13240,17 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
     .hk-asst-ring circle { fill: none; stroke-width: 2.6; }
     .hk-asst-ring .bg { stroke: var(--hk-line); }
     .hk-asst-ring .fg { stroke: #08b5f5; stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
+
+    .hk-about-links { display: flex; align-items: center; gap: 2px; padding: 2px 12px 6px; font-size: 13px; color: var(--hk-muted); }
+    .hk-about-link { color: var(--hk-muted); cursor: pointer; padding: 4px 2px; }
+    .hk-about-sep { color: var(--hk-muted); }
+    .hk-asst-mgr { position: absolute; inset: 0; display: none; flex-direction: column; background: var(--hk-bg); z-index: 4; }
+    .hk-asst-mgr.open { display: flex; }
+    .hk-asst-mgr-list { flex: 1; overflow-y: auto; padding: 14px; }
+    .hk-asst-mrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--hk-line); border-radius: 12px; background: var(--hk-surface); margin-bottom: 8px; }
+    .hk-asst-mname { font-size: 14px; color: var(--hk-text); }
+    .hk-asst-msize { font-size: 12px; color: var(--hk-muted); margin-top: 2px; }
+    .hk-asst-mdel { font-size: 22px; line-height: 1; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -13378,7 +13389,7 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
         <div class="hk-mg" data-g="about">
         <div class="menu-section-label">درباره</div>
         <div class="hk-mg-box">
-        <button class="menu-item" onclick="openHelpModal()"><i class="hk-mi" style="--c:#64d2ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9.8 9.6a2.3 2.3 0 1 1 3 2.2c-.6.2-.8.7-.8 1.4M12 16.3v.2"/></svg></i>راهنما</button>
+        <div class="hk-about-links"><span class="hk-about-link" role="button" tabindex="0" onclick="openHelpModal()">راهنما</span><span class="hk-about-sep"> · </span><span class="hk-about-link" role="button" tabindex="0" onclick="event.stopPropagation(); checkAppUpdate(false);">بروزرسانی</span></div>
         <div class="menu-version-row">
           <span class="menu-version-label"><i class="hk-mi" style="--c:#aeaeb2"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 0 1 13-5M19.5 12a7.5 7.5 0 0 1-13 5M17.8 3.5v3.8H14M6.2 20.5v-3.8H10"/></svg></i>نسخه <span id="appVersionLabel">۱.۲.۰</span></span>
           <button type="button" class="menu-update-btn" onclick="event.stopPropagation(); checkAppUpdate(false);">بروزرسانی</button>
@@ -49445,12 +49456,6 @@ function openProjectRowPicker(secId) {
     }
     try { document.addEventListener('visibilitychange', function () { if (!document.hidden) syncNativeChrome(); }); } catch (eV) {}
 
-    /* بخش بروزرسانی در راهنما (زیر بخش‌های قبلی) */
-    var HK_HELP_UPDATE_HTML = '<div class="help-section"><h4>بروزرسانی</h4><ul>' +
-      '<li>از منوی همبرگری، بخش <strong>درباره</strong> را باز کنید و دکمهٔ <strong>بروزرسانی</strong> را بزنید. برنامه نسخهٔ تازه را بررسی می‌کند و در صورت وجود، دانلود و نصب را پیشنهاد می‌دهد.</li>' +
-      '<li>نسخهٔ فعلی برنامه همان‌جا، کنار دکمهٔ بروزرسانی نوشته شده است.</li>' +
-      '<li>نسخهٔ تازه را روی همین برنامه نصب کنید؛ داده‌ها و مدل دستیار پاک نمی‌شوند.</li>' +
-      '</ul></div>';
     function openHelpModal() {
       closeSideMenu();
       const body = document.getElementById('helpModalBody');
@@ -49490,7 +49495,6 @@ function openProjectRowPicker(secId) {
 </ul></div>
 <button type="button" class="modal-btn yes help-tour-btn" onclick="closeHelpModal(); setTimeout(function(){ startAppTour(true); }, 250);">نمایش دوبارهٔ تور آموزشی</button>
 `;
-        body.insertAdjacentHTML('beforeend', HK_HELP_UPDATE_HTML);
       }
       document.getElementById('helpModal').classList.add('open');
       try { syncModalOverlaysToViewport(); } catch (e) {}
@@ -55628,13 +55632,13 @@ function openProjectRowPicker(secId) {
       if (!m) return null;
       try { var o = JSON.parse(m[0]); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
     }
-    /* مدل Qwen2.5-1.5B-Instruct (کوانتیزهٔ Q4_K_M، مجوز Apache-2.0) از مخزن رسمی Qwen روی Hugging Face.
-       دانلود فقط با تأیید کاربر انجام می‌شود. (نسخهٔ ۳B مجوز غیرتجاری دارد و استفاده نشد.) */
+    /* مدل Qwen2.5-0.5B-Instruct (کوانتیزهٔ Q4_K_M، حدود ۴۹۱ مگابایت) از مخزن رسمی Qwen روی Hugging Face.
+       دانلود فقط با تأیید کاربر انجام می‌شود. (مدل‌های ۱٫۵B و ۳B در این نسخه استفاده نشدند.) */
     var HK_ASST_MODEL = {
-      key: 'hk_asst_model_qwen25_15b_q4km',
-      name: 'Qwen2.5-1.5B-Instruct (Q4_K_M)',
-      url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
-      approxGB: 1.1
+      key: 'hk_asst_model_qwen25_05b_q4km',
+      name: 'Qwen2.5-0.5B-Instruct (Q4_K_M)',
+      url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
+      approxGB: 0.5
     };
     /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
     var HK_ASST_ENGINE = { loading: null, ok: false, error: '' };
@@ -55672,6 +55676,31 @@ function openProjectRowPicker(secId) {
         if (ok) return true;
         return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; });
       }, function () { return false; });
+    }
+    /* مدل نصب‌شده (فایل روی دیسک + نام از نشانه): برای فهرست و حذف */
+    function hkAsstInstalled() {
+      return hkAsstModelOpfsFile().then(function (f) {
+        if (!f || f.size <= 0) return null;
+        return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) {
+          if (m && m.name) return { name: m.name, size: f.size };
+          return HKStore.get('hk_asst_model_qwen25_15b_q4km_meta').then(function (old) {
+            return { name: (old && old.name) || 'مدل ذخیره‌شده', size: f.size };
+          });
+        }).catch(function () { return { name: 'مدل ذخیره‌شده', size: f.size }; });
+      }, function () { return null; });
+    }
+    /* حذف کامل یک مدل: فایل روی دیسک، نشانه‌ها، و هر بقایای IndexedDB؛ موتور هم از حافظه خارج می‌شود */
+    function hkAsstModelDelete() {
+      var dir = null;
+      return hkAsstOpfs().then(function (d) { dir = d; return dir.removeEntry(hkAsstFileName()); }).catch(function () {})
+        .then(function () { return HKStore.del(HK_ASST_MODEL.key + '_meta'); }).catch(function () {})
+        .then(function () { return HKStore.del('hk_asst_model_qwen25_15b_q4km_meta'); }).catch(function () {})
+        .then(function () { return HKStore.del('hk_asst_model_qwen25_15b_q4km'); }).catch(function () {})
+        .then(function () { return HKStore.del(HK_ASST_MODEL.key); }).catch(function () {})
+        .then(function () {
+          HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+          hkAsstLocalAttach(null, '');
+        });
     }
     /* دانلود با گزارش پیشرفت؛ هر تکه همان لحظه روی دیسک نوشته می‌شود */
     function hkAsstModelDownload(onProgress) {
@@ -56100,6 +56129,7 @@ function openProjectRowPicker(secId) {
     }
     /* بازگشت سیستم یا ‹: اول گفتگوی صوتی، و اگر باز نبود پنجرهٔ دستیار بسته می‌شود؛ یک مرحله، همیشه */
     function hkAsstBack() {
+      if (_hkMgrOpen) { hkAsstMgrClose(); return true; }
       if (_hkVoice.on) { hkAsstVoiceClose(); return true; }
       if (hkAsstIsOpen()) { hkAsstClose(); return true; }
       return false;
@@ -56130,7 +56160,7 @@ function openProjectRowPicker(secId) {
       mode.id = 'hkAsstMode';
       if (titleBox) titleBox.appendChild(mode);
       var dl = hkAsstEl('button', 'hk-asst-dl');
-      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۱٫۱ گیگابایت)';
+      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۵۰۰ مگابایت)';
       hkAsstDlPaint(dl, 'empty');
       dl.addEventListener('click', function () { hkAsstModelClick(dl); });
       head.insertBefore(dl, head.querySelector('.hk-asst-clear'));
@@ -56154,6 +56184,18 @@ function openProjectRowPicker(secId) {
       vend.addEventListener('click', hkAsstVoiceClose);
       voice.appendChild(vend);
       sheet.appendChild(voice);
+      /* فهرست مدل‌های ذخیره‌شده با دکمهٔ حذف برای هر مدل */
+      var mgr = hkAsstEl('div', 'hk-asst-mgr');
+      var mhead = hkAsstEl('div', 'hk-asst-head');
+      var mtitle = hkAsstEl('div', 'hk-asst-title', 'مدل‌های ذخیره‌شده');
+      mhead.appendChild(mtitle);
+      var mclose = hkAsstEl('button', 'hk-asst-clear', 'بستن');
+      mclose.type = 'button';
+      mclose.addEventListener('click', hkAsstMgrClose);
+      mhead.appendChild(mclose);
+      mgr.appendChild(mhead);
+      mgr.appendChild(hkAsstEl('div', 'hk-asst-mgr-list'));
+      sheet.appendChild(mgr);
       sheet.appendChild(hkAsstEl('div', 'hk-asst-log'));
 
       var form = hkAsstEl('form', 'hk-asst-form');
@@ -56214,8 +56256,8 @@ function openProjectRowPicker(secId) {
     function hkAsstModelClick(dl) {
       if (dl._busy) return;
       hkAsstModelStatus().then(function (done) {
-        if (done) { try { showToast('مدل از قبل دانلود و ذخیره شده است.'); } catch (e0) {} return; }
-        askConfirm('مدل Qwen2.5-1.5B (حدود ۱٫۱ گیگابایت) از Hugging Face دانلود و روی گوشی ذخیره می‌شود. ادامه می‌دهی؟', function () { hkAsstModelStart(dl); });
+        if (done) { hkAsstMgrOpen(); return; }
+        askConfirm('مدل Qwen2.5-0.5B (حدود ۵۰۰ مگابایت) از Hugging Face دانلود و روی گوشی ذخیره می‌شود. ادامه می‌دهی؟', function () { hkAsstModelStart(dl); });
       });
     }
     function hkAsstModelStart(dl) {
@@ -56236,6 +56278,43 @@ function openProjectRowPicker(secId) {
         try { showToast('دانلود انجام نشد: ' + (err && err.message ? err.message : 'خطا')); } catch (e2) {}
         hkAsstModelRefresh(dl);
       });
+    }
+    var _hkMgrOpen = false;
+    function hkAsstMgrClose() {
+      _hkMgrOpen = false;
+      try { var m = _hkAsstEl.querySelector('.hk-asst-mgr'); if (m) m.classList.remove('open'); } catch (e) {}
+    }
+    function hkAsstMgrRender() {
+      var list = _hkAsstEl.querySelector('.hk-asst-mgr-list');
+      list.textContent = '';
+      hkAsstInstalled().then(function (m) {
+        if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده است.')); return; }
+        var row = hkAsstEl('div', 'hk-asst-mrow');
+        var info = hkAsstEl('div', 'hk-asst-minfo');
+        info.appendChild(hkAsstEl('div', 'hk-asst-mname', m.name));
+        info.appendChild(hkAsstEl('div', 'hk-asst-msize', toPersianDigits(String(Math.round(m.size / 1e6))) + ' مگابایت'));
+        row.appendChild(info);
+        var del = hkAsstEl('button', 'hk-del-x hk-asst-mdel', HK_DEL_X);
+        del.type = 'button';
+        del.setAttribute('aria-label', 'حذف مدل');
+        del.addEventListener('click', function () {
+          askConfirm('مدل «' + m.name + '» حذف شود؟ حجمش از فضای گوشی آزاد می‌شود.', function () {
+            hkAsstModelDelete().then(function () {
+              try { showToast('مدل حذف شد و فضایش آزاد شد.'); } catch (e) {}
+              hkAsstMgrRender();
+              hkAsstModelRefresh();
+              hkAsstSetMode();
+            });
+          });
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }
+    function hkAsstMgrOpen() {
+      _hkMgrOpen = true;
+      hkAsstMgrRender();
+      var m = _hkAsstEl.querySelector('.hk-asst-mgr'); if (m) m.classList.add('open');
     }
     /* برچسب زیر عنوان را با وضعیت زندهٔ موتور به‌روز می‌کند */
     function hkAsstSetMode() {

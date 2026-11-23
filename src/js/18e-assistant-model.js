@@ -47,13 +47,13 @@
       if (!m) return null;
       try { var o = JSON.parse(m[0]); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
     }
-    /* مدل Qwen2.5-1.5B-Instruct (کوانتیزهٔ Q4_K_M، مجوز Apache-2.0) از مخزن رسمی Qwen روی Hugging Face.
-       دانلود فقط با تأیید کاربر انجام می‌شود. (نسخهٔ ۳B مجوز غیرتجاری دارد و استفاده نشد.) */
+    /* مدل Qwen2.5-0.5B-Instruct (کوانتیزهٔ Q4_K_M، حدود ۴۹۱ مگابایت) از مخزن رسمی Qwen روی Hugging Face.
+       دانلود فقط با تأیید کاربر انجام می‌شود. (مدل‌های ۱٫۵B و ۳B در این نسخه استفاده نشدند.) */
     var HK_ASST_MODEL = {
-      key: 'hk_asst_model_qwen25_15b_q4km',
-      name: 'Qwen2.5-1.5B-Instruct (Q4_K_M)',
-      url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
-      approxGB: 1.1
+      key: 'hk_asst_model_qwen25_05b_q4km',
+      name: 'Qwen2.5-0.5B-Instruct (Q4_K_M)',
+      url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
+      approxGB: 0.5
     };
     /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
     var HK_ASST_ENGINE = { loading: null, ok: false, error: '' };
@@ -91,6 +91,31 @@
         if (ok) return true;
         return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; });
       }, function () { return false; });
+    }
+    /* مدل نصب‌شده (فایل روی دیسک + نام از نشانه): برای فهرست و حذف */
+    function hkAsstInstalled() {
+      return hkAsstModelOpfsFile().then(function (f) {
+        if (!f || f.size <= 0) return null;
+        return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) {
+          if (m && m.name) return { name: m.name, size: f.size };
+          return HKStore.get('hk_asst_model_qwen25_15b_q4km_meta').then(function (old) {
+            return { name: (old && old.name) || 'مدل ذخیره‌شده', size: f.size };
+          });
+        }).catch(function () { return { name: 'مدل ذخیره‌شده', size: f.size }; });
+      }, function () { return null; });
+    }
+    /* حذف کامل یک مدل: فایل روی دیسک، نشانه‌ها، و هر بقایای IndexedDB؛ موتور هم از حافظه خارج می‌شود */
+    function hkAsstModelDelete() {
+      var dir = null;
+      return hkAsstOpfs().then(function (d) { dir = d; return dir.removeEntry(hkAsstFileName()); }).catch(function () {})
+        .then(function () { return HKStore.del(HK_ASST_MODEL.key + '_meta'); }).catch(function () {})
+        .then(function () { return HKStore.del('hk_asst_model_qwen25_15b_q4km_meta'); }).catch(function () {})
+        .then(function () { return HKStore.del('hk_asst_model_qwen25_15b_q4km'); }).catch(function () {})
+        .then(function () { return HKStore.del(HK_ASST_MODEL.key); }).catch(function () {})
+        .then(function () {
+          HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+          hkAsstLocalAttach(null, '');
+        });
     }
     /* دانلود با گزارش پیشرفت؛ هر تکه همان لحظه روی دیسک نوشته می‌شود */
     function hkAsstModelDownload(onProgress) {
