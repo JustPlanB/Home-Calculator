@@ -53,6 +53,16 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   });
   ok(C.sub === 'راهنما، بروزرسانی', 'زیر «درباره»: «راهنما، بروزرسانی» (' + C.sub + ')');
   ok(!C.extraLine && C.items.join('|') === 'راهنما', 'نوشتهٔ اضافه‌ای زیر کارت نیست و فقط یک گزینهٔ راهنما در گروه است');
+  console.log('• گزارش موتور و وضعیت مرورگر در ثبت قطع‌شده');
+  const D = await page.evaluate(() => {
+    hkAsstBootWrite('بارگذاری مدل در موتور', false);
+    hkAsstBootNote('llama_model_loader: loaded meta data with 26 key-value pairs');
+    const b = hkAsstBootRead(); b.env = hkAsstEnvInfo(); localStorage.setItem('hkAsstBoot', JSON.stringify(b));
+    HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+    return { note: hkAsstBootRead().note, env: hkAsstEnvInfo(), status: hkAsstEngineStatus() };
+  });
+  ok(/llama_model_loader/.test(D.note) && /آخرین گزارش موتور/.test(D.status), 'آخرین گزارش موتور در متن وضعیت می‌آید');
+  ok(/JSPI/.test(D.env) && /WebView/.test(D.env) && D.status.indexOf(D.env) >= 0, 'وضعیت مرورگر (WebView و JSPI) در متن وضعیت می‌آید');
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join(' | '));
   await b.close();
   console.log('batch-1424: ' + passed + ' passed, ' + failed + ' failed');

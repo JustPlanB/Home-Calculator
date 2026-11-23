@@ -63,7 +63,24 @@
        نوشته می‌شود؛ پایان درست یا خطای گرفته‌شده «تمام‌شده» علامت می‌خورد. «تمام‌نشده» یعنی همان مرحله برنامه را بسته است. */
     var HK_ASST_BOOT_KEY = 'hkAsstBoot';
     function hkAsstBootWrite(stage, done) {
-      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now() })); } catch (eB) {}
+      var prev = hkAsstBootRead() || {};
+      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now(), note: done ? '' : (prev.note || ''), env: prev.env || '' })); } catch (eB) {}
+    }
+    /* آخرین خط گزارش خودِ موتور (برای وقتی که برنامه وسط کار بسته می‌شود) */
+    function hkAsstBootNote(line) {
+      var b = hkAsstBootRead(); if (!b || b.done) return;
+      b.note = String(line || '').replace(/\s+/g, ' ').slice(0, 110);
+      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify(b)); } catch (eN) {}
+    }
+    /* وضعیت مرورگر داخل برنامه: نسخهٔ WebView، پشتیبانی از JSPI و SIMD، رم و هستهٔ پردازنده */
+    function hkAsstEnvInfo() {
+      var parts = [];
+      try { var m = /Chrome\/(\d+)/.exec(navigator.userAgent || ''); parts.push('WebView ' + (m ? m[1] : '؟')); } catch (e1) {}
+      try { parts.push('JSPI ' + (typeof WebAssembly !== 'undefined' && WebAssembly.Suspending ? 'بله' : 'خیر')); } catch (e2) {}
+      try { if (navigator.deviceMemory) parts.push('رم ' + toPersianDigits(String(navigator.deviceMemory))); } catch (e3) {}
+      try { if (navigator.hardwareConcurrency) parts.push('هستهٔ ' + toPersianDigits(String(navigator.hardwareConcurrency))); } catch (e4) {}
+      try { parts.push(window.isSecureContext ? 'امن' : 'ناامن'); } catch (e5) {}
+      return parts.join('، ');
     }
     function hkAsstBootRead() {
       try { var v = JSON.parse(localStorage.getItem(HK_ASST_BOOT_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (eR) { return null; }
@@ -74,7 +91,7 @@
       if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
       if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
       var bi = hkAsstBootRead();
-      if (bi && !bi.done && !HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری قبلی مدل در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد، احتمالاً کمبود حافظه؛ برای تلاش دوباره همین‌جا را لمس کن)';
+      if (bi && !bi.done && !HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری قبلی مدل در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد' + (bi.note ? ' | آخرین گزارش موتور: ' + bi.note : '') + (bi.env ? ' | ' + bi.env : '') + '؛ برای تلاش دوباره همین‌جا را لمس کن)';
       if (HK_ASST_ENGINE.error) return 'قاعده‌ای (خطا در مرحلهٔ «' + (HK_ASST_ENGINE.stage || '?') + '»: ' + HK_ASST_ENGINE.error + (HK_ASST_ENGINE.probe ? ' | ' + HK_ASST_ENGINE.probe : '') + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
@@ -185,6 +202,7 @@
     function hkAsstLocalLoad() {
       if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
       HK_ASST_ENGINE.error = ''; HK_ASST_ENGINE.probe = ''; hkAsstStep('خواندن فایل مدل');
+      try { var bw = hkAsstBootRead() || {}; bw.env = hkAsstEnvInfo(); bw.note = ''; localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify(bw)); } catch (eE) {}
       HK_ASST_ENGINE.loading = hkAsstModelOpfsFile().then(function (f) { return f || hkAsstMigrateFromIdb(); }).then(function (file) {
         if (!file) throw new Error('مدل هنوز دانلود نشده است');
         hkAsstStep('بررسی فایل موتور و Worker');
@@ -193,9 +211,11 @@
           return import('./llm/wllama.js');
         }).then(function (mod) {
           hkAsstStep('ساخت موتور');
-          var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' });
+          var lg = function () { try { hkAsstBootNote(Array.prototype.join.call(arguments, ' ')); } catch (eL) {} };
+          var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' }, { logger: { debug: lg, log: lg, warn: lg, error: lg } });
           hkAsstStep('بارگذاری مدل در موتور');
-          return w.loadModel([file], { n_ctx: 512, n_threads: 1 }).then(function () {
+          /* ۱.۴.۳۴: حافظهٔ اوج کم: دستهٔ ۱۲۸ (به‌جای ۵۱۲) و یک توالی (به‌جای چهار) */
+          return w.loadModel([file], { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1 }).then(function () {
             hkAsstLocalAttach(function (prompt) {
               return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
