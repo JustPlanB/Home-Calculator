@@ -16,7 +16,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * گفتار به متن با سه تلاش پشت‌سرهم (هر کدام بعد از مکث کوتاه، چون ساختن فوری recognizer جدید داخل onError
@@ -192,6 +195,61 @@ public class HkSpeechPlugin extends Plugin {
       }
     });
   }
+
+  /* ===== خواندن پاسخ با صدای فارسی (موتور گفتار خود اندروید؛ WebView صدای فارسی را معمولاً ندارد) ===== */
+  private TextToSpeech tts;
+  private boolean ttsOk=false, ttsInit=false;
+  private PluginCall ttsCall;
+  private void ttsEnsure(final Runnable ok, final Runnable fail){
+    if(tts!=null && ttsOk){ ok.run(); return; }
+    if(ttsInit){ fail.run(); return; }
+    ttsInit=true;
+    try{
+      tts=new TextToSpeech(getContext(), new TextToSpeech.OnInitListener(){
+        @Override public void onInit(int st){
+          ttsInit=false;
+          if(st!=TextToSpeech.SUCCESS){ ttsOk=false; ui.post(fail); return; }
+          int r=tts.setLanguage(new Locale("fa","IR"));
+          if(r<0) r=tts.setLanguage(new Locale("fa"));
+          if(r<0){ ttsOk=false; ui.post(fail); return; }
+          tts.setOnUtteranceProgressListener(new UtteranceProgressListener(){
+            @Override public void onStart(String id){ notifyListeners("tts",new JSObject().put("state","start")); }
+            @Override public void onDone(String id){ ttsFinish(true,null); }
+            @Override public void onError(String id){ ttsFinish(false,"tts_error"); }
+          });
+          ttsOk=true; ui.post(ok);
+        }
+      });
+    }catch(Throwable t){ ttsInit=false; ui.post(fail); }
+  }
+  private void ttsFinish(boolean spoken,String err){
+    PluginCall c=ttsCall; ttsCall=null;
+    if(c==null) return;
+    if(spoken) c.resolve(new JSObject().put("spoken",true)); else c.reject(err==null?"tts_error":err);
+  }
+  @com.getcapacitor.PluginMethod public void speak(final PluginCall call){
+    final String text=call.getString("text","");
+    ui.post(new Runnable(){ @Override public void run(){
+      if(text==null||text.trim().isEmpty()){ call.resolve(new JSObject().put("spoken",false)); return; }
+      ttsFinish(false,"interrupted");
+      ttsEnsure(new Runnable(){ @Override public void run(){
+        ttsCall=call;
+        String t=text.length()>3500?text.substring(0,3500):text;
+        int r=tts.speak(t,TextToSpeech.QUEUE_FLUSH,null,"hk"+System.currentTimeMillis());
+        if(r!=TextToSpeech.SUCCESS) ttsFinish(false,"tts_error");
+      }}, new Runnable(){ @Override public void run(){ call.reject("no_voice"); }});
+    }});
+  }
+  @com.getcapacitor.PluginMethod public void stopSpeak(PluginCall call){
+    ui.post(new Runnable(){ @Override public void run(){ try{ if(tts!=null) tts.stop(); }catch(Exception ignored){} ttsFinish(false,"interrupted"); }});
+    call.resolve();
+  }
+  /* نصب صدای فارسی: صفحهٔ نصب دادهٔ گفتار، وگرنه تنظیمات تبدیل متن به گفتار */
+  @com.getcapacitor.PluginMethod public void installVoice(PluginCall call){
+    if(startAct(new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))){ call.resolve(new JSObject().put("status","install")); return; }
+    if(startAct(new Intent("com.android.settings.TTS_SETTINGS"))){ call.resolve(new JSObject().put("status","settings")); return; }
+    call.reject("unavailable");
+  }
   private boolean startAct(Intent s){
     try{ s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(s); return true; }catch(Throwable t){ return false; }
   }
@@ -203,5 +261,5 @@ public class HkSpeechPlugin extends Plugin {
     call.reject("unavailable");
   }
   private void destroyRec(){ try{ if(rec!=null){ rec.cancel(); rec.destroy(); } }catch(Exception ignored){} rec=null; }
-  @Override protected void handleOnDestroy(){ destroyRec(); }
+  @Override protected void handleOnDestroy(){ destroyRec(); try{ if(tts!=null){ tts.stop(); tts.shutdown(); } }catch(Exception ignored){} }
 }

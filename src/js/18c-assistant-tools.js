@@ -60,6 +60,8 @@
         if (from != null && r.dateKey < from) return false;
         if (to != null && r.dateKey > to) return false;
         if (f.tab && r.tab !== f.tab) return false;
+        if (f.status === 'unpaid' && r.status !== 'unpaid') return false;
+        if (f.transferOnly && !r.transfer) return false;
         if (f.context && r.context !== f.context) return false;
         if (f.cats && f.cats.length && !f.cats.some(function (c) { return hkAsstCatHit(r, c); })) return false;
         if (f.project && !hkAsstRowIsProject(r, f.project)) return false;
@@ -140,11 +142,12 @@
     /* ابزارهای ثبت‌شده. هر ابزار: کلیدهای مجاز ورودی، و تابع اجرا که فقط داده برمی‌گرداند. */
     var HK_ASST_TOOLS = {
       'transactions.search': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'sort', 'limit'],
+        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), a);
           if (a.sort === 'amountDesc') rows.sort(function (x, y) { return y.amount - x.amount; });
           else if (a.sort === 'amountAsc') rows.sort(function (x, y) { return x.amount - y.amount; });
+          else if (a.sort === 'dateAsc') rows.sort(function (x, y) { return x.dateKey - y.dateKey; });
           else rows.sort(function (x, y) { return y.dateKey - x.dateKey; });
           var lim = Math.min(Math.max(parseInt(a.limit, 10) || 50, 1), 200);
           return { count: rows.length, total: hkAsstSum(rows), items: rows.slice(0, lim).map(hkAsstPublic) };
@@ -160,11 +163,11 @@
         }
       },
       'transactions.aggregate': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
+        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) { return hkAsstStats(hkAsstFilter(hkAsstRows(), a)); }
       },
       'transactions.group': {
-        readOnly: true, args: ['by', 'text', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
+        readOnly: true, args: ['by', 'text', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var by = a.by;
           if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');

@@ -164,7 +164,7 @@
       _hkAsstEl.setAttribute('aria-hidden', 'true');
     }
     /* ----- صدا: ضبط به متن و گفتگوی صوتی (فقط در اندروید، با موتور تشخیص گفتار گوشی) ----- */
-    var HK_ASST_MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+    var HK_ASST_MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5v3"/></svg>';
     var HK_ASST_WAVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 12v0M8 8v8M12 4v16M16 8v8M20 12v0"/></svg>';
     var _hkVoice = { on: false, state: 'idle', run: 0, fails: 0, handles: [], tts: null };
     function hkAsstVoiceOk() {
@@ -194,24 +194,38 @@
     function hkAsstListen() {
       return hkAsstSpeechPlugin().start({ lang: 'fa-IR' }).then(function (res) { return String((res && res.text) || '').trim(); });
     }
-    /* ضبط از نوار ورودی: موج متحرک و متن زنده در کادر؛ لمس دوباره = پایان گفتن */
+    /* ضبط از نوار ورودی (۱.۴.۳۸): کادر دو ردیف می‌شود؛ بالا متن زنده (تا چیزی شنیده نشده، نام کاربر)، پایین ✕ لغو، موج صدا، ■ پایان، ↑ پایان و ارسال */
     function hkAsstRecStart(form, input) {
       if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
       if (form.classList.contains('recording')) { try { hkAsstSpeechPlugin().stop(); } catch (eS) {} return; }
       var base = input.value.trim();
+      var txt = form.querySelector('.hk-asst-rc-t'), dots = form.querySelectorAll('.hk-asst-rc-dots i'), lv = [];
+      var nm = ''; try { nm = String(hkMainTitle() || '').trim(); } catch (eN) {}
+      if (txt) { txt.textContent = nm; txt.classList.add('is-ph'); }
+      var paintDots = function () { for (var i = 0; i < dots.length; i++) { var v = lv[lv.length - dots.length + i] || 0; dots[i].style.height = (4 + Math.round(v * 18)) + 'px'; dots[i].style.opacity = String(0.45 + v * 0.55); } };
+      paintDots();
+      form._autoSend = false;
       form.classList.add('recording');
       var hp = hkAsstSpeechOn('partial', function (d) {
         var t = String((d && d.text) || '').trim();
-        if (t) { input.value = (base ? base + ' ' : '') + t; form.classList.add('typing'); }
+        if (t) { input.value = (base ? base + ' ' : '') + t; if (txt) { txt.textContent = t; txt.classList.remove('is-ph'); } }
       });
+      var hl = hkAsstSpeechOn('level', function (d) {
+        lv.push(Math.max(0, Math.min(1, (((d && d.rms) || 0) + 2) / 12)));
+        if (lv.length > 60) lv.splice(0, lv.length - 60);
+        paintDots();
+      });
+      var end = function () { hkAsstSpeechOff(hp); hkAsstSpeechOff(hl); form.classList.remove('recording'); };
       hkAsstListen().then(function (t) {
-        hkAsstSpeechOff(hp); form.classList.remove('recording');
+        end();
+        var auto = form._autoSend; form._autoSend = false;
         if (!t) { input.value = base; form.classList.toggle('typing', !!base); try { showToast('صدایی تشخیص داده نشد.'); } catch (e1) {} return; }
         input.value = base ? base + ' ' + t : t;
         form.classList.add('typing');
         input.dispatchEvent(new Event('input'));
+        if (auto) hkAsstSend(input.value);
       }, function (err) {
-        hkAsstSpeechOff(hp); form.classList.remove('recording');
+        end(); form._autoSend = false;
         input.value = base; form.classList.toggle('typing', !!base);
         var e = hkAsstSpeechErr(err);
         if (!e.cancelled) { try { showToast(e.text); } catch (e2) {} }
@@ -219,7 +233,9 @@
     }
     /* متن مناسب خواندن با صدا: بدون خط «فهمیدم»، علامت‌های فهرست و عدد بی‌ریخت */
     function hkAsstSpeechText(reply) {
-      var lines = String((reply && reply.text) || '').split('\n').filter(function (l) { return l && !/^(فهمیدم:|«.+» را «.+» در نظر گرفتم)/.test(l.trim()); });
+      var body = String((reply && reply.text) || ''), hd = String((reply && reply.head) || '');
+      if (hd && body.indexOf(hd) === 0) body = body.slice(hd.length);
+      var lines = body.split('\n').filter(function (l) { return l && !/^«.+» را «.+» در نظر گرفتم/.test(l.trim()); });
       return lines.join('. ').replace(/[•\-–—]+\s*/g, '').replace(/\.\s*\./g, '.').replace(/\s+/g, ' ').trim().slice(0, 600);
     }
     /* صدای فارسی گوشی: اگر نباشد، پاسخ روی صفحه نوشته می‌شود و گفتگو ادامه می‌یابد */
@@ -227,7 +243,21 @@
       try { var vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; for (var i = 0; i < vs.length; i++) if (/^fa/i.test(vs[i].lang)) return vs[i]; } catch (e) {}
       return null;
     }
+    /* ۱.۴.۳۸: اول صدای خود اندروید (افزونهٔ بومی)، اگر فارسی نداشت صدای WebView */
     function hkAsstSpeak(text) {
+      var pl = null; try { pl = hkAsstSpeechPlugin(); } catch (e0) { pl = null; }
+      if (!text || !pl || !pl.speak || _hkVoice.nativeTts === false) return hkAsstSpeakWeb(text);
+      return Promise.resolve(pl.speak({ text: String(text) })).then(function () { return true; }, function (err) {
+        var m = String((err && (err.message || err.code)) || err || '');
+        if (/no_voice/.test(m)) { _hkVoice.nativeTts = false; _hkVoice.needVoice = true; return hkAsstSpeakWeb(text); }
+        return false;
+      });
+    }
+    function hkAsstSpeakStop() {
+      try { speechSynthesis.cancel(); } catch (e) {}
+      try { var pl = hkAsstSpeechPlugin(); if (pl && pl.stopSpeak) pl.stopSpeak(); } catch (e1) {}
+    }
+    function hkAsstSpeakWeb(text) {
       return new Promise(function (resolve) {
         try {
           if (!('speechSynthesis' in window) || _hkVoice.tts === false || !text) return resolve(false);
@@ -279,6 +309,7 @@
             /* صدا در دسترس نیست: پاسخ نوشته می‌شود، چند ثانیه می‌ماند و گفتگو ادامه دارد */
             var cap = hkAsstSpeechText(reply).slice(0, 220);
             hkAsstVoiceSet('speaking', 'صدای فارسی روی این گوشی نصب نیست؛ پاسخ نوشته شد.', cap);
+            try { var fx = hkAsstVoiceEl('.hk-asst-vfix'); if (fx) fx.style.display = _hkVoice.needVoice ? 'block' : 'none'; } catch (eF) {}
             setTimeout(function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceLoop(); }, Math.min(9000, 2500 + cap.length * 40));
           });
         }, function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceSet('idle', 'خطایی پیش آمد. برای شروع دوباره روی گوی بزن.'); });
@@ -293,14 +324,14 @@
     /* لمس گوی: وسط حرف زدنِ دستیار = قطع و گوش دادن؛ وسط گوش دادن = پایان گفتن؛ ساکن = شروع دوباره */
     function hkAsstVoiceOrbTap() {
       if (!_hkVoice.on) return;
-      if (_hkVoice.state === 'speaking') { _hkVoice.run++; try { speechSynthesis.cancel(); } catch (e) {} hkAsstVoiceLoop(); }
+      if (_hkVoice.state === 'speaking') { _hkVoice.run++; hkAsstSpeakStop(); hkAsstVoiceLoop(); }
       else if (_hkVoice.state === 'listening') { try { hkAsstSpeechPlugin().stop(); } catch (e2) {} }
       else if (_hkVoice.state === 'idle') { _hkVoice.fails = 0; hkAsstVoiceLoop(); }
     }
     function hkAsstVoiceOpen() {
       if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
       try { document.activeElement && document.activeElement.blur(); } catch (eB) {}
-      _hkVoice.on = true; _hkVoice.fails = 0; _hkVoice.tts = null;
+      _hkVoice.on = true; _hkVoice.fails = 0; _hkVoice.tts = null; _hkVoice.nativeTts = null; _hkVoice.needVoice = false;
       _hkVoice.handles.forEach(hkAsstSpeechOff); _hkVoice.handles = [];
       _hkVoice.handles.push(hkAsstSpeechOn('level', function (d) {
         if (_hkVoice.state !== 'listening') return;
@@ -311,7 +342,7 @@
     }
     function hkAsstVoiceClose() {
       _hkVoice.on = false; _hkVoice.run++;
-      try { speechSynthesis.cancel(); } catch (e) {}
+      hkAsstSpeakStop();
       try { hkAsstSpeechPlugin().cancel(); } catch (e1) {}
       _hkVoice.handles.forEach(hkAsstSpeechOff); _hkVoice.handles = [];
       try { var v = hkAsstVoiceEl('.hk-asst-voice'); if (v) v.classList.remove('open'); } catch (e2) {}
@@ -346,24 +377,12 @@
       head.appendChild(back);
       head.appendChild(hkAsstEl('div', 'hk-asst-title', 'دستیار هوشمند'));
       var titleBox = head.querySelector('.hk-asst-title');
-      var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
-      mode.id = 'hkAsstMode';
-      mode.addEventListener('click', function () {
-        if (!hkAsstBootCanRetry() || HK_ASST_ENGINE.loading) return;
-        hkAsstSetMode();
-        hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
-      });
-      if (titleBox) titleBox.appendChild(mode);
-      var dl = hkAsstEl('button', 'hk-asst-dl');
-      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۵۰۰ مگابایت)';
-      hkAsstDlPaint(dl, 'empty');
-      dl.addEventListener('click', function () { hkAsstModelClick(dl); });
-      head.insertBefore(dl, head.querySelector('.hk-asst-clear'));
-      hkAsstModelRefresh(dl);
-      var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
-      clr.type = 'button';
-      clr.addEventListener('click', hkAsstClear);
-      head.appendChild(clr);
+      /* نگه داشتن عنوان: فهرست «سؤال‌هایی که نفهمیدم» (و مدل‌های ذخیره‌شده) */
+      if (titleBox) {
+        var lpT = 0, lpStop = function () { clearTimeout(lpT); };
+        ['touchstart', 'mousedown'].forEach(function (ev) { titleBox.addEventListener(ev, function () { lpStop(); lpT = setTimeout(hkAsstMgrOpen, 650); }, { passive: true }); });
+        ['touchend', 'touchmove', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (ev) { titleBox.addEventListener(ev, lpStop, { passive: true }); });
+      }
       sheet.appendChild(head);
 
       /* گفتگوی صوتی (۱.۴.۳۷): تمام‌صفحه؛ فقط گوی بزرگ (همان گوی دستیار)، یک خط وضعیت و دکمهٔ بازگشت */
@@ -381,17 +400,40 @@
       voice.appendChild(vorb);
       voice.appendChild(hkAsstEl('div', 'hk-asst-vstat', ''));
       voice.appendChild(hkAsstEl('div', 'hk-asst-vcap', ''));
+      var vfix = hkAsstEl('button', 'hk-asst-vfix', 'نصب صدای فارسی'); vfix.type = 'button'; vfix.style.display = 'none';
+      vfix.onclick = function () { try { hkAsstSpeechPlugin().installVoice(); } catch (e) {} };
+      voice.appendChild(vfix);
       sheet.appendChild(voice);
       /* فهرست مدل‌های ذخیره‌شده با دکمهٔ حذف برای هر مدل */
       var mgr = hkAsstEl('div', 'hk-asst-mgr');
       var mhead = hkAsstEl('div', 'hk-asst-head');
-      var mtitle = hkAsstEl('div', 'hk-asst-title', 'مدل‌های ذخیره‌شده');
+      var mtitle = hkAsstEl('div', 'hk-asst-title', 'ابزارهای دستیار');
       mhead.appendChild(mtitle);
       var mclose = hkAsstEl('button', 'hk-asst-clear', 'بستن');
       mclose.type = 'button';
       mclose.addEventListener('click', hkAsstMgrClose);
       mhead.appendChild(mclose);
       mgr.appendChild(mhead);
+      var tools = hkAsstEl('div', 'hk-asst-tools');
+      var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
+      mode.id = 'hkAsstMode';
+      mode.addEventListener('click', function () {
+        if (!hkAsstBootCanRetry() || HK_ASST_ENGINE.loading) return;
+        hkAsstSetMode();
+        hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
+      });
+      var dl = hkAsstEl('button', 'hk-asst-dl');
+      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۵۰۰ مگابایت)';
+      hkAsstDlPaint(dl, 'empty');
+      dl.addEventListener('click', function () { hkAsstModelClick(dl); });
+      tools.appendChild(dl);
+      hkAsstModelRefresh(dl);
+      var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
+      clr.type = 'button';
+      clr.addEventListener('click', function () { hkAsstClear(); hkAsstMgrClose(); });
+      tools.appendChild(mode);
+      tools.appendChild(clr);
+      mgr.appendChild(tools);
       mgr.appendChild(hkAsstEl('div', 'hk-asst-mgr-list'));
       sheet.appendChild(mgr);
       sheet.appendChild(hkAsstEl('div', 'hk-asst-log'));
@@ -401,30 +443,44 @@
       input.rows = 1; input.placeholder = 'درخواستت را بنویس…'; input.setAttribute('aria-label', 'درخواست');
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true })); } });
       input.addEventListener('input', function () { form.classList.toggle('typing', !!input.value.trim()); });
-      /* نوار ضبط: موج متحرک بالای کادر تا وقتی گوشی گوش می‌دهد */
-      var recbar = hkAsstEl('div', 'hk-asst-recbar');
-      var bars = hkAsstEl('div', 'hk-asst-bars');
-      for (var bi = 0; bi < 9; bi++) bars.appendChild(hkAsstEl('i'));
-      recbar.appendChild(bars);
-      recbar.appendChild(hkAsstEl('span', 'hk-asst-rectxt', 'در حال ضبط… حرف بزن'));
-      form.appendChild(recbar);
-      /* ۱.۴.۳۶: کادر بزرگ‌تر؛ ضبط و گفتگوی صوتی داخل کادرند و با شروع تایپ، جایشان را دکمهٔ ارسال می‌گیرد */
+      /* ۱.۴.۳۸: دکمه‌ها سمت راست کادر (آبی‌ها کنار هم، میکروفون ساده)؛ هنگام ضبط، کادر دو ردیف می‌شود: متن، و زیرش ✕ / موج / ■ / ارسال */
       var field = hkAsstEl('div', 'hk-asst-field');
-      field.appendChild(input);
-      var rec = hkAsstEl('button', 'hk-asst-rec');
-      rec.type = 'button'; rec.setAttribute('aria-label', 'ضبط صدا و تبدیل به متن');
-      rec.innerHTML = HK_ASST_MIC_SVG;
-      rec.addEventListener('click', function () { hkAsstRecStart(form, input); });
-      field.appendChild(rec);
+      var send = hkAsstEl('button', 'hk-asst-send');
+      send.type = 'submit'; send.setAttribute('aria-label', 'ارسال');
+      send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+      field.appendChild(send);
       var vc = hkAsstEl('button', 'hk-asst-vc');
       vc.type = 'button'; vc.setAttribute('aria-label', 'گفتگوی صوتی دوطرفه');
       vc.innerHTML = HK_ASST_WAVE_SVG;
       vc.addEventListener('click', hkAsstVoiceOpen);
       field.appendChild(vc);
-      var send = hkAsstEl('button', 'hk-asst-send');
-      send.type = 'submit'; send.setAttribute('aria-label', 'ارسال');
-      send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
-      field.appendChild(send);
+      var rec = hkAsstEl('button', 'hk-asst-rec');
+      rec.type = 'button'; rec.setAttribute('aria-label', 'ضبط صدا و تبدیل به متن');
+      rec.innerHTML = HK_ASST_MIC_SVG;
+      rec.addEventListener('click', function () { hkAsstRecStart(form, input); });
+      field.appendChild(rec);
+      field.appendChild(input);
+      /* حالت ضبط */
+      var rc = hkAsstEl('div', 'hk-asst-rc');
+      rc.appendChild(hkAsstEl('div', 'hk-asst-rc-t'));
+      var rr = hkAsstEl('div', 'hk-asst-rc-r');
+      var rcx = hkAsstEl('button', 'hk-asst-rc-b hk-asst-rc-x'); rcx.type = 'button'; rcx.setAttribute('aria-label', 'لغو ضبط');
+      rcx.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      rcx.addEventListener('click', function () { try { hkAsstSpeechPlugin().cancel(); } catch (e) {} });
+      rr.appendChild(rcx);
+      var dots = hkAsstEl('div', 'hk-asst-rc-dots');
+      for (var di = 0; di < 30; di++) dots.appendChild(hkAsstEl('i'));
+      rr.appendChild(dots);
+      var rcs = hkAsstEl('button', 'hk-asst-rc-b hk-asst-rc-stop'); rcs.type = 'button'; rcs.setAttribute('aria-label', 'پایان ضبط');
+      rcs.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>';
+      rcs.addEventListener('click', function () { try { hkAsstSpeechPlugin().stop(); } catch (e) {} });
+      rr.appendChild(rcs);
+      var rcg = hkAsstEl('button', 'hk-asst-rc-b hk-asst-rc-go'); rcg.type = 'button'; rcg.setAttribute('aria-label', 'پایان ضبط و ارسال');
+      rcg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+      rcg.addEventListener('click', function () { form._autoSend = true; try { hkAsstSpeechPlugin().stop(); } catch (e) {} });
+      rr.appendChild(rcg);
+      rc.appendChild(rr);
+      field.appendChild(rc);
       form.appendChild(field);
       form.addEventListener('submit', function (e) { e.preventDefault(); hkAsstSend(input.value); });
       sheet.appendChild(form);
@@ -490,6 +546,22 @@
     function hkAsstMgrRender() {
       var list = _hkAsstEl.querySelector('.hk-asst-mgr-list');
       list.textContent = '';
+      var missed = hkAsstMissedList();
+      var mrow = hkAsstEl('div', 'hk-asst-mrow');
+      var minfo = hkAsstEl('div', 'hk-asst-minfo');
+      minfo.appendChild(hkAsstEl('div', 'hk-asst-mname', 'سؤال‌هایی که نفهمیدم'));
+      minfo.appendChild(hkAsstEl('div', 'hk-asst-msize', toPersianDigits(String(missed.length)) + ' مورد؛ فقط روی همین گوشی. کپی کن و بفرست تا دستیار یاد بگیره.'));
+      mrow.appendChild(minfo);
+      var mcopy = hkAsstEl('button', 'hk-asst-clear', 'کپی'); mcopy.type = 'button';
+      mcopy.addEventListener('click', function () {
+        var txt = hkAsstMissedList().join('\n');
+        try { navigator.clipboard.writeText(txt).then(function () { showToast('کپی شد.'); }, function () { showToast('کپی نشد.'); }); } catch (e) { try { showToast('کپی نشد.'); } catch (e2) {} }
+      });
+      mrow.appendChild(mcopy);
+      var mclr = hkAsstEl('button', 'hk-asst-clear', 'پاک'); mclr.type = 'button';
+      mclr.addEventListener('click', function () { hkAsstMissedClear(); hkAsstMgrRender(); });
+      mrow.appendChild(mclr);
+      list.appendChild(mrow);
       hkAsstInstalled().then(function (m) {
         if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده است.')); return; }
         var row = hkAsstEl('div', 'hk-asst-mrow');

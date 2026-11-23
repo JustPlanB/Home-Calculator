@@ -103,7 +103,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     o.noBorder = getComputedStyle(inp).borderTopWidth === '0px';
     /* پاسخ دیر می‌رسد: نشانگر سه نقطه هست و بعد از رسیدن پاسخ برداشته می‌شود */
     let release; hkAsstLocalAttach(function () { return new Promise(function (r) { release = r; }); }, 'کند');
-    inp.value = 'اون قضیه چی شد؟'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.value = 'اون چی شد؟'; inp.dispatchEvent(new Event('input', { bubbles: true }));
     hkAsstSend(inp.value); await w(150);
     const dots = document.querySelectorAll('.hk-asst-wait .hk-loading-dots i');
     o.dots = dots.length;

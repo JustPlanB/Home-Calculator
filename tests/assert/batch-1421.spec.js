@@ -149,7 +149,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
       ok(!st.open && st.flashed, 'زدن روی نتیجه، پنجره را می‌بندد و ردیف را در صفحهٔ خودش هایلایت می‌کند');
       await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
     }
-    await page.click('.hk-asst-clear'); await page.waitForTimeout(100);
+    await page.evaluate(() => hkAsstMgrOpen()); await page.click('.hk-asst-tools .hk-asst-clear'); await page.waitForTimeout(100);
     ok(await page.evaluate(() => !!document.querySelector('.hk-asst-empty')), 'پاک‌کردن گفتگو، صفحهٔ خالی را برمی‌گرداند');
     await page.click('.hk-asst-back'); await page.waitForTimeout(200);
     ok(await page.evaluate(() => !document.getElementById('hkAsstSheet').classList.contains('open')), 'دکمهٔ بازگشت پنجره را می‌بندد');
