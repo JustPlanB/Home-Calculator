@@ -149,21 +149,33 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     let seen = '';
     hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"tool":"transactions.aggregate","args":{"tab":"expense","cats":["debt"]}}'); }, 'تست');
     out.readyAfter = HK_ASST_ADAPTERS.local.ready();
-    out.good = await hkAsstAskAsync('اقساط ماهانه چقدر شده؟');
-    out.goodPromptSent = seen.indexOf('اقساط ماهانه') >= 0;
+    /* ۱.۴.۳۶: اول قاعده‌ای؛ سؤال روشن مدل را صدا نمی‌زند، سؤال نامفهوم برای قاعده‌ای به مدل می‌رود */
+    out.clearAsked = await hkAsstAskAsync('اقساط ماهانه چقدر شده؟');
+    out.clearCalledModel = seen !== '';
+    /* قاعده‌ای کلمهٔ ناشناخته را جست‌وجو می‌کند و چیزی پیدا نمی‌کند: مدل کمک می‌کند */
+    hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"ask":"فقط درباره حساب‌کتاب می‌توانم کمک کنم."}'); }, 'تست');
+    seen = '';
+    out.emptyAsked = await hkAsstAskAsync('هوا امروز چطوره؟');
+    out.emptyCalledModel = seen.indexOf('هوا امروز') >= 0;
+    hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"tool":"transactions.aggregate","args":{"tab":"expense","cats":["debt"]}}'); }, 'تست');
+    seen = '';
+    out.good = await hkAsstAskAsync('سلام خوبی؟');
+    out.goodPromptSent = seen.indexOf('سلام خوبی') >= 0;
     hkAsstLocalAttach(function () { return Promise.resolve('مطمئن نیستم، شاید هم نه'); }, 'تست');
     out.bad = await hkAsstAskAsync('بیمه تویوتا را پیدا کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"tool":"transactions.delete","args":{"id":"d1"}}'); }, 'تست');
     out.forbidden = await hkAsstAskAsync('یک ردیف را پاک کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"ask":"کدام بخش؟"}'); }, 'تست');
-    out.askFromModel = await hkAsstAskAsync('یک چیزی');
+    out.askFromModel = await hkAsstAskAsync('سلام خوبی؟');
     hkAsstLocalAttach(null, '');
     out.readyOff = HK_ASST_ADAPTERS.local.ready();
     return out;
   });
   ok(L.readyBefore === false && L.readyAfter === true && L.readyOff === false, 'مدل محلی فقط وقتی اجراکننده وصل باشد آماده است');
   ok(L.promptHasTools && L.promptHasNoRows, 'درخواست به مدل فقط فهرست ابزارها و پرسش کاربر را دارد، نه داده‌های مالی');
-  ok(L.good.kind === 'result' && L.good.tool === 'transactions.aggregate' && L.goodPromptSent, 'خروجی درست مدل اجرا و نمایش داده می‌شود');
+  ok(L.emptyCalledModel && L.emptyAsked.kind === 'text' && /حساب‌کتاب/.test(L.emptyAsked.text), 'اگر قاعده‌ای چیزی پیدا نکند (کلمهٔ ناشناخته)، مدل صدا زده می‌شود و پاسخ مدل نشان داده می‌شود');
+  ok(L.clearAsked.kind === 'result' && L.clearCalledModel === false, 'سؤال روشن را قاعده‌ای فوری جواب می‌دهد و منتظر مدل نمی‌ماند');
+  ok(L.good.kind === 'result' && L.good.tool === 'transactions.aggregate' && L.goodPromptSent, 'سؤالی که قاعده‌ای نفهمد به مدل می‌رود و خروجی درست مدل اجرا و نمایش داده می‌شود');
   ok(L.bad.kind === 'result' || L.bad.kind === 'text', 'خروجی نامعتبر مدل، به قاعده‌ای برمی‌گردد و پاسخ داده می‌شود');
   ok(!(L.forbidden.tool === 'transactions.delete'), 'ابزار تغییردهنده از طرف مدل اجرا نمی‌شود');
   ok(L.askFromModel.kind === 'text' && /کدام/.test(L.askFromModel.text), 'پرسش تکمیلی مدل نمایش داده می‌شود');

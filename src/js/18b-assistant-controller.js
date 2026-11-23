@@ -85,17 +85,28 @@
       catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
       return hkAsstFinish(cmd);
     }
-    /* حالت مدل محلی: اگر مدل آماده باشد از آن استفاده می‌شود؛ خروجی نامعتبر یا خطا، به قاعده‌ای برمی‌گردد */
+    /* حالت مدل محلی (۱.۴.۳۶): اول قاعده‌ای، همگام و فوری. اگر قاعده‌ای فهمید و چیزی پیدا کرد، همان پاسخ داده می‌شود و منتظر مدل
+       نمی‌مانیم (مدل کوچک روی گوشی چند ثانیه طول می‌کشد). فقط وقتی قاعده‌ای نفهمید («دقیق‌تر بگو») یا چیزی پیدا نکرد
+       (مثلاً کلمهٔ ناشناخته را جست‌وجوی متنی کرده) از مدل کمک گرفته می‌شود؛ اگر مدل هم نتوانست یا نتیجه‌اش خالی بود،
+       همان پاسخ قاعده‌ای می‌ماند. */
+    function hkAsstNeedsModel(r) {
+      if (!r) return false;
+      if (r.kind === 'text') return true;
+      return r.kind === 'result' && /^transactions\.(search|aggregate)$/.test(r.tool || '') && !!r.data && r.data.count === 0;
+    }
     function hkAsstAskAsync(text) {
       var q = String(text || '').trim();
-      if (!q) return Promise.resolve(hkAsstAsk(q));
+      var first = hkAsstAsk(q);
       var ad = HK_ASST_ADAPTERS.local;
-      if (!ad.ready()) return Promise.resolve(hkAsstAsk(q));
+      if (!q || !ad.ready() || !hkAsstNeedsModel(first)) return Promise.resolve(first);
       return ad.parseAsync(q).then(function (cmd) {
         var v = hkAsstValidateCommand(cmd);
         if (v.tool && !v.understood) v.understood = 'مدل محلی: ' + (v.explain || v.tool);
-        return hkAsstFinish(v);
-      }, function () { return hkAsstAsk(q); });
+        var m = hkAsstFinish(v);
+        /* مدل هم چیزی پیدا نکرد: پاسخ قاعده‌ای (که کلمه‌ها را فهمیده) بهتر است */
+        if (first.kind === 'result' && m.kind === 'result' && m.data && m.data.count === 0) return first;
+        return m;
+      }, function () { return first; });
     }
     /* برای کلمه‌ای که نتیجه نداد، کلمه‌های نزدیک از داده را پیشنهاد می‌کند */
     function hkAsstSuggest(text) {
