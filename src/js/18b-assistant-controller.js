@@ -4,16 +4,17 @@
     function hkAsstMoney(n) { return toPersianDigits(formatNum(Math.round(Number(n) || 0))) + ' تومان'; }
     function hkAsstNum(n) { return toPersianDigits(String(Math.round(Number(n) || 0))); }
     function hkAsstSummary(tool, res, cmd) {
+      if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
         if (cmd.explain === 'count') return 'تعداد تراکنش‌ها: ' + hkAsstNum(res.count) + '.';
         if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنش: ' + hkAsstMoney(res.avg) + ' (از ' + hkAsstNum(res.count) + ' تراکنش).' : 'تراکنشی پیدا نشد.';
-        if (!res.count) return 'تراکنشی پیدا نشد.';
+        if (!res.count) return hkAsstPick(['تراکنشی پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'تراکنشی پیدا نشد، دست‌کم با این شرایط.']);
         var t = 'تعداد: ' + hkAsstNum(res.count) + ' تراکنش\nجمع: ' + hkAsstMoney(res.sum);
         if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
         return t;
       }
       if (tool === 'transactions.search') {
-        if (!res.count) return 'تراکنشی با این مشخصات پیدا نشد.';
+        if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نشد.']);
         if (cmd.explain) return (cmd.explain === 'بیشترین' ? 'بیشترین' : 'کمترین') + ' تراکنش:';
         return hkAsstNum(res.count) + ' تراکنش پیدا شد. جمع مبلغ: ' + hkAsstMoney(res.total) + '.';
       }
@@ -64,12 +65,14 @@
     }
     /* ساخت پیام نهایی از یک فرمان اعتبارسنجی‌شده (مشترک بین قاعده‌ای و مدل محلی) */
     function hkAsstFinish(cmd) {
-      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [] };
+      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [], final: !!cmd.final };
       var out = hkAsstExec(cmd.tool, cmd.args);
       if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
       var head = hkAsstHeader(cmd);
       var msg = { role: 'bot', kind: 'result', tool: cmd.tool, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
+      /* پیشنهاد گام بعدی برای پاسخ‌های تحلیلی؛ کلیک روی آن‌ها همان متن را می‌فرستد */
+      if (cmd.followUps && cmd.followUps.length) { msg.suggestions = cmd.followUps; msg.chipRaw = true; }
       var empty = (cmd.tool === 'transactions.search' && out.result.count === 0) || (cmd.tool === 'transactions.aggregate' && out.result.count === 0);
       if (empty && cmd.args && cmd.args.text) {
         try { msg.suggestions = hkAsstSuggest(cmd.args.text); } catch (eS) { msg.suggestions = []; }
@@ -90,7 +93,7 @@
        (مثلاً کلمهٔ ناشناخته را جست‌وجوی متنی کرده) از مدل کمک گرفته می‌شود؛ اگر مدل هم نتوانست یا نتیجه‌اش خالی بود،
        همان پاسخ قاعده‌ای می‌ماند. */
     function hkAsstNeedsModel(r) {
-      if (!r) return false;
+      if (!r || r.final) return false;                /* گفتگوی عادی و درخواست تغییر: مدل لازم نیست */
       if (r.kind === 'text') return true;
       return r.kind === 'result' && /^transactions\.(search|aggregate)$/.test(r.tool || '') && !!r.data && r.data.count === 0;
     }

@@ -68,10 +68,14 @@
       });
     }
     /* آیا ردیف به دسته تعلق دارد؟ برچسب ذخیره‌شده روی ردیف، یا یکی از مترادف‌های دسته در شرح/بخش */
+    var HK_ASST_CATKEYS = {};
     function hkAsstCatHit(r, catId) {
       if (r.cats && r.cats.indexOf(catId) >= 0) return true;
-      var hay = hkAsstKey(r.desc + ' ' + r.section), list = HK_ASST_PHRASES['CAT_' + catId] || [];
-      for (var i = 0; i < list.length; i++) { var k = hkAsstKey(list[i]); if (k.length >= 3 && hay.indexOf(k) >= 0) return true; }
+      /* کلیدهای مترادف‌ها یک بار ساخته می‌شود (تحلیل‌ها این تابع را برای هزاران ردیف صدا می‌زنند) */
+      var keys = HK_ASST_CATKEYS[catId];
+      if (!keys) { keys = HK_ASST_CATKEYS[catId] = (HK_ASST_PHRASES['CAT_' + catId] || []).map(hkAsstKey).filter(function (k) { return k.length >= 3; }); }
+      var hay = hkAsstKey(r.desc + ' ' + r.section);
+      for (var i = 0; i < keys.length; i++) if (hay.indexOf(keys[i]) >= 0) return true;
       return false;
     }
     /* پروژه‌های برنامه: [{id, name, key}] */

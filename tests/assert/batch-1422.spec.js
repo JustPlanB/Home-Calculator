@@ -159,14 +159,14 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     out.emptyCalledModel = seen.indexOf('هوا امروز') >= 0;
     hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"tool":"transactions.aggregate","args":{"tab":"expense","cats":["debt"]}}'); }, 'تست');
     seen = '';
-    out.good = await hkAsstAskAsync('سلام خوبی؟');
-    out.goodPromptSent = seen.indexOf('سلام خوبی') >= 0;
+    out.good = await hkAsstAskAsync('اون قضیه چی شد؟');
+    out.goodPromptSent = seen.indexOf('اون قضیه') >= 0;
     hkAsstLocalAttach(function () { return Promise.resolve('مطمئن نیستم، شاید هم نه'); }, 'تست');
     out.bad = await hkAsstAskAsync('بیمه تویوتا را پیدا کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"tool":"transactions.delete","args":{"id":"d1"}}'); }, 'تست');
     out.forbidden = await hkAsstAskAsync('یک ردیف را پاک کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"ask":"کدام بخش؟"}'); }, 'تست');
-    out.askFromModel = await hkAsstAskAsync('سلام خوبی؟');
+    out.askFromModel = await hkAsstAskAsync('اون قضیه چی شد؟');
     hkAsstLocalAttach(null, '');
     out.readyOff = HK_ASST_ADAPTERS.local.ready();
     return out;

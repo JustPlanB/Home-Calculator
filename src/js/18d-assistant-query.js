@@ -51,17 +51,22 @@
     function hkAsstParse(raw) {
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT() };
-      if (/^(سلام|درود|صبح بخیر|عصر بخیر|خوبی|ممنون|مرسی|تشکر)[\s!؟?.]*$/.test(text)) {
-        return { ask: 'سلام! دربارهٔ تراکنش‌ها و مبالغ حساب‌کتاب بپرس؛ مثلاً «جمع هزینه‌های این ماه».', suggestions: HK_ASST_EXAMPLES_TEXT() };
-      }
+      if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
+      /* ۱.۴.۳۷: «سال ۴۰۳» و «آذر ۰۳» را «۱۴۰۳» می‌کند */
+      text = hkAsstNormYears(text);
+      /* ۱.۴.۳۷: «ثبت شده/ثبت‌شده/ثبت شد…» فعلِ همان تراکنش است نه کلمهٔ جست‌وجو (مثلاً «چند تراکنش براش ثبت شده؟») */
+      text = text.replace(/ثبت[ \u200c]*(شده|شدن|شد|کردم|کردیم|کرده|داره|دارد)/g, ' ').replace(/\s+/g, ' ').trim();
       var cy = currentYear, cm = currentMonth;
       /* سؤال دربارهٔ خود داده‌ها (نه تراکنش): دسته‌ها، حساب‌ها، ماه‌ها، پروژه‌ها */
+      var preCodes = hkAsstPreCodes(text), special = hkAsstSpecialKind(preCodes, text);
       var asksCount = /چند|تعداد|چندتا|چن تا|چنتا|چند تا/.test(text), asksHave = /داری|داریم|دارم|دارید|دارن|چی|کدوم|کدام|لیست|فهرست|اسم/.test(text);
-      if (/دسته/.test(text) && (asksCount || asksHave)) return { tool: 'categories.summary', args: {}, explain: 'categories' };
-      if (/حساب/.test(text) && (asksCount || asksHave) && !/آبان|آذر|دی|بهمن|اسفند|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر/.test(text)) return { tool: 'accounts.list', args: {}, explain: 'accounts' };
-      if (/ماه/.test(text) && asksCount && /ثبت|داده|اطلاعات|دارم|داریم|داری|داره/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
-      if (/پروژه/.test(text) && asksCount && !/هزینه|مخارج|خرج|درآمد|تراکنش|ردیف/.test(text)) return { tool: 'projects.list', args: {}, explain: 'projlist' };
+      /* «دستهٔ حمل‌ونقل چند تراکنش دارد؟» دربارهٔ تراکنش‌های همان دسته است، نه فهرست دسته‌ها */
+      var listish = /نشون|نشان|لیست|فهرست|کدوم|اسم|هام|هایم|های من/.test(text);
+      if (!special && /دسته/.test(text) && (asksCount || asksHave || listish) && !/تراکنش|ردیف|هزینه|مخارج|خرج|درآمد|واریز|برداشت|گروه|تفکیک|بر اساس/.test(text)) return { tool: 'categories.summary', args: {}, explain: 'categories' };
+      if (!special && /حساب/.test(text) && (asksCount || asksHave) && !/آبان|آذر|دی|بهمن|اسفند|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر/.test(text)) return { tool: 'accounts.list', args: {}, explain: 'accounts' };
+      if (!special && /ماه/.test(text) && asksCount && /ثبت|داده|اطلاعات|دارم|داریم|داری|داره/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
+      if (!special && /پروژه/.test(text) && (asksCount || listish) && !/هزینه|مخارج|خرج|درآمد|تراکنش|ردیف/.test(text)) return { tool: 'projects.list', args: {}, explain: 'projlist' };
+      if (!special && /اطلاعات|داده/.test(text) && /از کی|کی تا کی|چه ماه|کدوم ماه|چند ماه/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
       var codes = [], words = [], corrections = [];
       /* مرحلهٔ ۱: عبارت‌های چندکلمه‌ای و کلمه‌های شناخته‌شده (طولانی‌ترین تطبیق اول) */
       var toks = text.split(' ');
@@ -96,7 +101,8 @@
         else textWords.push(w);
       });
       /* مرحلهٔ ۳: مبلغ و عملگر آن */
-      var amts = hkAsstAmountAt(text);
+      /* سال کامل (۱۳xx/۱۴xx بی‌واحد) مبلغ نیست */
+      var amts = hkAsstAmountAt(text.replace(/(^|\s)(13|14)\d\d(?=\s|$)(?!\s*(میلیون|هزار|میلیارد|ملیارد|تومان|تومن|ریال))/g, ' '));
       var args = {};
       if (amts.length) {
         var a0 = amts[0], before = text.slice(Math.max(0, a0.at - 22), a0.at);
@@ -116,6 +122,8 @@
         args.month = mk;
         args.year = explicitY || (mk > cm ? cy - 1 : cy);
       }
+      var yy = hkAsstPersianDate(text);
+      if (yy && !mk && !args.year) args.year = yy;                 /* «سال ۱۴۰۳ چقدر خرج کردم؟» */
       if (codes.indexOf('THIS_Y') >= 0) args.year = cy;
       if (codes.indexOf('PREV_Y') >= 0) args.year = cy - 1;
       var span = codes.indexOf('SPAN3') >= 0 ? 3 : codes.indexOf('SPAN6') >= 0 ? 6 : codes.indexOf('SPAN12') >= 0 ? 12 : 0;
@@ -136,6 +144,14 @@
       if (textWords.length) args.text = textWords.join(' ');
       if (subj) args.project = subj.name;
 
+      /* ۱.۴.۳۷: گفتگوی عادی و قصدهای تحلیلی (وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه، هدف…) */
+      if (!special) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
+      var chatK = hkAsstChatKind(codes, textWords, amts);
+      if (chatK) return { ask: hkAsstChatReply(chatK), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
+      if (special) {
+        var sc = hkAsstSpecialCmd(special, codes, args, text, amts);
+        if (sc) { sc.corrections = corrections; return sc; }
+      }
       /* مرحلهٔ ۶: قصد (intent) */
       var intent = null;
       if (codes.indexOf('CMP') >= 0) intent = 'compare';
@@ -155,7 +171,7 @@
         else if (args.text || args.amountEq != null || args.amountMin != null || args.amountMax != null) intent = 'search';
         else if (hasFilter) intent = 'sum';
       }
-      if (!intent) return { ask: 'منظورت را کمی دقیق‌تر بگو؛ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', suggestions: HK_ASST_EXAMPLES_TEXT() };
+      if (!intent) return { ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
 
       var cmd = hkAsstBuildCommand(intent, args, codes, text);
       cmd.corrections = corrections;
@@ -212,5 +228,5 @@
     }
     /* نمونه‌پرسش‌ها برای راهنمایی وقتی متوجه نمی‌شود */
     function HK_ASST_EXAMPLES_TEXT() {
-      return ['جمع هزینه‌های این ماه', 'بیمه تویوتا را پیدا کن', 'تراکنش‌های بالای ده میلیون', 'بنزین چند تا؟', 'درآمد و هزینه این ماه را با ماه قبل مقایسه کن'];
+      return ['این ماه چقدر خرج کردم؟', 'بیمه تویوتا را پیدا کن', 'وضعیت مالی‌ام چطوره؟', 'چطور کمتر خرج کنم؟', 'درآمد و هزینه این ماه را با ماه قبل مقایسه کن'];
     }
