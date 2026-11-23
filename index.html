@@ -55647,7 +55647,7 @@ function openProjectRowPicker(secId) {
     var HK_ASST_BOOT_KEY = 'hkAsstBoot';
     function hkAsstBootWrite(stage, done) {
       var prev = hkAsstBootRead() || {};
-      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now(), note: done ? '' : (prev.note || ''), env: prev.env || '' })); } catch (eB) {}
+      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now(), note: done ? '' : (prev.note || ''), env: prev.env || '', prof: prev.prof })); } catch (eB) {}
     }
     /* آخرین خط گزارش خودِ موتور (برای وقتی که برنامه وسط کار بسته می‌شود) */
     function hkAsstBootNote(line) {
@@ -55670,11 +55670,33 @@ function openProjectRowPicker(secId) {
     }
     function hkAsstBootClear() { try { localStorage.removeItem(HK_ASST_BOOT_KEY); } catch (eC) {} }
     function hkAsstBootInterrupted() { var b = hkAsstBootRead(); return !!(b && !b.done); }
+    /* ----- تنظیم‌های بارگذاری، از پیش‌فرض تا ملایم‌ترین (۱.۴.۳۵) -----
+       موتور در حالت پیش‌فرض اگر مرورگر WebGPU داشته باشد وزن‌های مدل را روی GPU گوشی می‌گذارد؛ روی گوشی‌ها این کل برنامه را می‌بندد.
+       پس پیش‌فرض فقط CPU است (n_gpu_layers: 0). اگر باز هم برنامه وسط بارگذاری بسته شد، لمس بعدیِ کاربر سراغ تنظیم ملایم‌تر می‌رود. */
+    var HK_ASST_PROFILES = [
+      { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false },
+      { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false },
+      { n_ctx: 512, n_threads: 1, n_batch: 64, n_ubatch: 64, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false, no_kv_offload: true, offload_kqv: false }
+    ];
+    var HK_ASST_GOOD_KEY = 'hkAsstGoodProf';
+    /* ثبتِ قدیمی (بی «prof») یعنی با هیچ‌کدام از این تنظیم‌ها قطع نشده؛ شمارش از اولین تنظیم شروع می‌شود */
+    function hkAsstBootProf(b) { return b && typeof b.prof === 'number' ? b.prof : -1; }
+    function hkAsstProfileFor() {
+      var last = HK_ASST_PROFILES.length - 1, b = hkAsstBootRead();
+      if (b && !b.done) return Math.max(0, Math.min(hkAsstBootProf(b) + 1, last));
+      try { var g = parseInt(localStorage.getItem(HK_ASST_GOOD_KEY), 10); if (g >= 0 && g <= last) return g; } catch (eG) {}
+      return 0;
+    }
+    function hkAsstBootCanRetry() { var b = hkAsstBootRead(); return !!(b && !b.done) && hkAsstBootProf(b) < HK_ASST_PROFILES.length - 1; }
     function hkAsstEngineStatus() {
       if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
       if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
       var bi = hkAsstBootRead();
-      if (bi && !bi.done && !HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری قبلی مدل در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد' + (bi.note ? ' | آخرین گزارش موتور: ' + bi.note : '') + (bi.env ? ' | ' + bi.env : '') + '؛ برای تلاش دوباره همین‌جا را لمس کن)';
+      if (bi && !bi.done && !HK_ASST_ENGINE.error) {
+        var pf = hkAsstBootProf(bi), tail = (bi.note ? ' | آخرین گزارش موتور: ' + bi.note : '') + (bi.env ? ' | ' + bi.env : '');
+        var head = 'بارگذاری قبلی مدل' + (pf >= 0 ? ' (تنظیم ' + toPersianDigits(String(pf + 1)) + ' از ' + toPersianDigits(String(HK_ASST_PROFILES.length)) + ')' : '') + ' در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد';
+        return 'قاعده‌ای (' + head + tail + (pf < HK_ASST_PROFILES.length - 1 ? '؛ برای تلاش با تنظیم ملایم‌تر همین‌جا را لمس کن)' : '؛ همهٔ تنظیم‌ها امتحان شد و دستیار قاعده‌ای کار می‌کند)');
+      }
       if (HK_ASST_ENGINE.error) return 'قاعده‌ای (خطا در مرحلهٔ «' + (HK_ASST_ENGINE.stage || '?') + '»: ' + HK_ASST_ENGINE.error + (HK_ASST_ENGINE.probe ? ' | ' + HK_ASST_ENGINE.probe : '') + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
@@ -55785,7 +55807,8 @@ function openProjectRowPicker(secId) {
     function hkAsstLocalLoad() {
       if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
       HK_ASST_ENGINE.error = ''; HK_ASST_ENGINE.probe = ''; hkAsstStep('خواندن فایل مدل');
-      try { var bw = hkAsstBootRead() || {}; bw.env = hkAsstEnvInfo(); bw.note = ''; localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify(bw)); } catch (eE) {}
+      var prof = hkAsstProfileFor();
+      try { var bw = hkAsstBootRead() || {}; bw.env = hkAsstEnvInfo(); bw.note = ''; bw.prof = prof; localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify(bw)); } catch (eE) {}
       HK_ASST_ENGINE.loading = hkAsstModelOpfsFile().then(function (f) { return f || hkAsstMigrateFromIdb(); }).then(function (file) {
         if (!file) throw new Error('مدل هنوز دانلود نشده است');
         hkAsstStep('بررسی فایل موتور و Worker');
@@ -55797,14 +55820,14 @@ function openProjectRowPicker(secId) {
           var lg = function () { try { hkAsstBootNote(Array.prototype.join.call(arguments, ' ')); } catch (eL) {} };
           var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' }, { logger: { debug: lg, log: lg, warn: lg, error: lg } });
           hkAsstStep('بارگذاری مدل در موتور');
-          /* ۱.۴.۳۴: حافظهٔ اوج کم: دستهٔ ۱۲۸ (به‌جای ۵۱۲) و یک توالی (به‌جای چهار) */
-          return w.loadModel([file], { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1 }).then(function () {
+          return w.loadModel([file], HK_ASST_PROFILES[prof]).then(function () {
             hkAsstLocalAttach(function (prompt) {
               return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
             }, HK_ASST_MODEL.name);
             HK_ASST_ENGINE.ok = true;
             hkAsstBootWrite(HK_ASST_ENGINE.stage, true);
+            try { localStorage.setItem(HK_ASST_GOOD_KEY, String(prof)); } catch (eGd) {}
           });
         });
       });
@@ -56193,8 +56216,8 @@ function openProjectRowPicker(secId) {
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
       mode.addEventListener('click', function () {
-        if (!hkAsstBootInterrupted() || HK_ASST_ENGINE.loading) return;
-        hkAsstBootClear(); hkAsstSetMode();
+        if (!hkAsstBootCanRetry() || HK_ASST_ENGINE.loading) return;
+        hkAsstSetMode();
         hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
       });
       if (titleBox) titleBox.appendChild(mode);
