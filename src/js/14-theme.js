@@ -760,6 +760,8 @@
       if(_backHandling) return;
       /* دستیار هوشمند باز است: بازگشت فقط آن را می‌بندد و به صفحهٔ اصلی برمی‌گردد */
       try { if (window.hkAsstBack && window.hkAsstBack()) return; } catch (eAs) {}
+      /* ۱.۴.۳۹: از دستیار آمده بودی؟ همین‌که صفحه بسته شد و چیزی روی هم نماند، به گفتگو برمی‌گردد */
+      try { if (window.hkAsstReturnPending && window.hkAsstReturnPending()) { setTimeout(function () { try { window.hkAsstReturnCheck(true); } catch (e1) {} }, 330); setTimeout(function () { try { window.hkAsstReturnCheck(true); } catch (e2) {} }, 700); } } catch (eAr0) {}
       _backHandling=true;
       setTimeout(function () { try { hkResetEditIcons(); if (document.activeElement && document.activeElement.blur && /BUTTON/.test(document.activeElement.tagName)) document.activeElement.blur(); } catch (eRi) {} }, 30);
       setTimeout(()=>{_backHandling=false;},250);
@@ -864,11 +866,13 @@
       } catch (eSb) {}
       /* ۱.۴.۳: پنجره‌ای که دکمهٔ «بستن/انصراف» پنهانش تنها راه بستن بود */
       try { if (typeof window.hkBackHiddenCancel === 'function' && window.hkBackHiddenCancel()) return; } catch (eHc) {}
+      try { if (window.hkAsstReturnCheck && window.hkAsstReturnCheck()) return; } catch (eAr) {}
       if(closeTopOverlayOrMenu()) return;
       // از صفحه درآمد/مخارج/مانده کارت به خانه
       try {
         if (typeof _detailContext !== 'undefined' && _detailContext) {
           closePersonDetail();
+          try { if (window.hkAsstReturnCheck && window.hkAsstReturnCheck(true)) return; } catch (eAr2) {}
           return;
         }
       } catch (e) {}

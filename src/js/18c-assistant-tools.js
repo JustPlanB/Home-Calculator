@@ -202,7 +202,7 @@
           var sub = subs.filter(function (s) { return s.id === p || s.key === hkAsstKey(p); })[0];
           if (!sub) throw new Error('پروژه‌ای با این نام پیدا نشد');
           var rows = hkAsstFilter(hkAsstRows(), { project: sub.name });
-          return Object.assign({ name: sub.name }, hkAsstStats(rows));
+          return Object.assign({ id: sub.id, name: sub.name }, hkAsstStats(rows));
         }
       },
       'categories.summary': {

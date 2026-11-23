@@ -9,7 +9,7 @@
       });
       return out;
     }
-    function hkAsstYearFor(m) { return m > currentMonth ? currentYear - 1 : currentYear; }
+    function hkAsstYearFor(m) { return m > hkAsstCM() ? hkAsstCY() - 1 : hkAsstCY(); }
     function hkAsstTabIn(text) {
       if (/مخارج|هزینه|خرج|برداشت|پرداخت/.test(text)) return 'expense';
       if (/درآمد|درامد|واریز|دریافت/.test(text)) return 'income';
@@ -53,7 +53,7 @@
           var bal = {}; try { bal = hkDongBalances(g); } catch (e) { bal = {}; }
           var name = {}; g.members.forEach(function (m) { name[m.id] = m.name; });
           var tr = []; try { tr = hkDongTransfers(bal); } catch (e) { tr = []; }
-          return { name: g.name || '', members: g.members.length, spent: g.expenses.reduce(function (t, x) { return t + (Number(x.amount) || 0); }, 0),
+          return { id: g.id, name: g.name || '', members: g.members.length, spent: g.expenses.reduce(function (t, x) { return t + (Number(x.amount) || 0); }, 0),
             transfers: tr.map(function (t) { return { from: name[t.from] || '؟', to: name[t.to] || '؟', amount: t.amount }; }) };
         });
         return { groups: groups };
@@ -70,7 +70,7 @@
       readOnly: true, args: [],
       run: function () {
         var list = (typeof userReminders !== 'undefined' && Array.isArray(userReminders) ? userReminders : []);
-        return { items: list.filter(function (r) { return r && r.title; }).map(function (r) { return { title: String(r.title), y: r.y, m: r.m, d: r.d, repeat: r.repeat || '' }; })
+        return { items: list.filter(function (r) { return r && r.title; }).map(function (r) { return { id: r.id, title: String(r.title), y: r.y, m: r.m, d: r.d, repeat: r.repeat || '' }; })
           .sort(function (x, y) { return ((x.y || 0) * 10000 + (x.m || 0) * 100 + (x.d || 0)) - ((y.y || 0) * 10000 + (y.m || 0) * 100 + (y.d || 0)); }) };
       }
     };
@@ -78,10 +78,10 @@
     HK_ASST_TOOLS['insights.row'] = {
       readOnly: true, args: ['n', 'tab', 'year', 'month'],
       run: function (a) {
-        var y = a.year || currentYear, m = a.month || currentMonth;
+        var y = a.year || hkAsstCY(), m = a.month || hkAsstCM();
         var rows = hkAsstRows().filter(function (r) { return r.y === y && r.m === m && (!a.tab || r.tab === a.tab) && (r.desc || r.amount); });
         var n = Math.max(1, parseInt(a.n, 10) || 1);
-        return { n: n, total: rows.length, y: y, m: m, tab: a.tab || '', row: rows[n - 1] ? hkAsstCompactRow(rows[n - 1]) : null };
+        return { n: n, total: rows.length, y: y, m: m, tab: a.tab || '', row: rows[n - 1] ? hkAsstPublic(rows[n - 1]) : null };
       }
     };
     function hkAsstCompactRow(r) { return { desc: r.desc, amount: r.amount, d: r.d, section: r.section, tab: r.tab }; }
@@ -132,6 +132,9 @@
       var fin = function (ask) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: HK_ASST_EXAMPLES_TEXT() }; };
       var tool = function (name, args, follow) { return { tool: name, args: args || {}, explain: name.slice(9), understood: '', followUps: follow || [], chipRaw: true, corrections: [] }; };
       var money = /هزینه|خرج|مخارج|درآمد|درامد|واریز|برداشت|تراکنش|قبض|اسنپ|ماه|ردیف/.test(T);
+      var nv = hkAsstNavIntent(T); if (nv) return nv;
+      var th = hkAsstThemeIntent(T); if (th) return th;
+      var ch = hkAsstChartIntent(T); if (ch) return ch;
       /* خودِ دستیار: اینترنت و امنیت داده */
       if (/(^| )(تو|شما|دستیار)( |$)/.test(T) && /اینترنت|آنلاین|آفلاین|وای ?فای|وصل/.test(T) && !/قبض|هزینه|خرج|پرداخت|ثبت/.test(T)) return fin(hkAsstPick(HK_ASST_NET));
       if (/(داده|اطلاعات)(ها|هام|م|های من)?( |$)/.test(T) && /امن|می ?فرست|فرستاده|ارسال|سرور|جایی|لو می|میره/.test(T) && !money) return fin(hkAsstPick(HK_ASST_NET));
@@ -185,7 +188,7 @@
 
     /* ===== پرسش‌های روزانه و ترتیبی (۱.۴.۳۸): امروز/دیروز/این هفته، آخرین/اولین، کدوم ماه/دسته، میانگین ماهانه، سهم ===== */
     function hkAsstYMD(offsetDays) {
-      var d = new Date(Date.now() + (offsetDays || 0) * 86400000), o = { y: currentYear, m: currentMonth, d: 1, wd: (d.getDay() + 1) % 7 };
+      var d = new Date(Date.now() + (offsetDays || 0) * 86400000), o = { y: hkAsstCY(), m: hkAsstCM(), d: 1, wd: (d.getDay() + 1) % 7 };
       try {
         new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(d).forEach(function (p) {
           if (p.type === 'year') o.y = parseInt(p.value, 10); else if (p.type === 'month') o.m = parseInt(p.value, 10); else if (p.type === 'day') o.d = parseInt(p.value, 10);
@@ -269,8 +272,8 @@
       }
       /* این ماه با ماه قبل: «خرج این ماهم از ماه قبل بیشتره؟» */
       if (/(این|همین) ماه|ماه جاری/.test(T) && /(ماه (قبل|پیش|گذشته))/.test(T) && /بیشتر|کمتر|یا |بهتر|بدتر/.test(T)) {
-        var cm0 = currentMonth, pm0 = cm0 === 1 ? 12 : cm0 - 1, py0 = cm0 === 1 ? currentYear - 1 : currentYear;
-        var c5 = tool('reports.compare', { a: { year: currentYear, month: cm0 }, b: { year: py0, month: pm0 }, tab: tb }, 'which');
+        var cm0 = hkAsstCM(), pm0 = cm0 === 1 ? 12 : cm0 - 1, py0 = cm0 === 1 ? hkAsstCY() - 1 : hkAsstCY();
+        var c5 = tool('reports.compare', { a: { year: hkAsstCY(), month: cm0 }, b: { year: py0, month: pm0 }, tab: tb }, 'which');
         return c5;
       }
       /* قسط‌ها: بعدی و مانده */
@@ -290,11 +293,11 @@
         text: 'برای ثبت درآمد دستی، وارد صفحهٔ درآمد بشو و یه ردیف تازه اضافه کن؛ شرح، مبلغ، روز و حساب رو پر می‌کنی و همون‌جا ذخیره می‌شه.' },
       { id: 'expense', re: /هزینه|خرج|مخارج|برداشت|پرداخت|خرید/, name: 'ثبت هزینه', go: hkAsstGoPerson('expense'),
         text: 'برای ثبت هزینه، وارد صفحهٔ مخارج بشو و یه ردیف تازه اضافه کن؛ شرح، مبلغ، روز و حساب رو می‌نویسی. دسته‌اش هم خودش از روی شرح تشخیص داده می‌شه.' },
-      { id: 'ledger', re: /قرض|بدهی|بدهکار|طلب/, name: 'قرض', go: function () { switchTabFromMenu('ledger'); },
+      { id: 'ledger', re: /(^| )(قرض|بدهی|بدهکار|طلب|طلبکار)(ها|هام|ام|م)?( |$)/, name: 'قرض', go: function () { switchTabFromMenu('ledger'); },
         text: 'قرض و طلب‌ها توی بخش «قرض» ثبت می‌شن؛ یه ردیف با اسم فرد، مبلغ و جهتش (بدهکاری یا طلب) اضافه می‌کنی و بعد از تسویه علامتش می‌زنی.' },
       { id: 'dong', re: /دنگ/, name: 'دنگ', go: function () { openDongModal(); },
         text: 'برای تقسیم خرج مشترک، توی بخش «دنگ» یه گروه می‌سازی، نفرات رو اضافه می‌کنی و هر خرج رو با پرداخت‌کننده‌اش می‌نویسی؛ حساب هر نفر خودش درمیاد.' },
-      { id: 'savings', re: /پس ?انداز|دارایی|طلا|سکه|سرمایه/, name: 'دارایی و پس‌انداز', go: function () { openSavingsModal(); },
+      { id: 'savings', re: /پس ?انداز|(^| )(دارایی|طلا|سکه|سرمایه)( |$)/, name: 'دارایی و پس‌انداز', go: function () { openSavingsModal(); },
         text: 'دارایی‌هات (مثل طلا یا سکه) رو توی بخش پس‌انداز با مقدار و قیمت خرید ثبت می‌کنی تا ارزش روزشون رو ببینی.' },
       { id: 'reminder', re: /یادآور|یاداور|یادآوری/, name: 'یادآور', go: function () { openUserRemindersModal(); },
         text: 'یادآورها توی بخش «یادآورها» ساخته می‌شن؛ عنوان و تاریخ رو می‌نویسی و می‌تونی تکرارش رو هم تنظیم کنی.' },
@@ -302,7 +305,7 @@
         text: 'پروژه‌ها از بخش «پروژه‌ها» ساخته می‌شن؛ بعدش می‌تونی هزینه و درآمد هر ردیف رو به یک پروژه وصل کنی.' },
       { id: 'sms', re: /پیامک|اس ?ام ?اس/, name: 'پیامک بانکی', go: function () { openSmsImportModal(); },
         text: 'پیامک‌های بانکی رو از بخش «خواندن پیامک» می‌خونی تا تراکنش‌هاشون پیشنهاد بشه؛ هر کدوم رو خودت تأیید می‌کنی.' },
-      { id: 'accounts', re: /کارت|حساب بانکی|بانک|حساب‌ها|حسابها/, name: 'حساب‌های بانکی', go: function () { openBankAccountsModal(); },
+      { id: 'accounts', re: /(^| )(کارت|بانک)( |$)|حساب بانکی|حساب ?ها/, name: 'حساب‌های بانکی', go: function () { openBankAccountsModal(); },
         text: 'حساب‌ها و کارت‌ها توی بخش «حساب‌های بانکی» اضافه و ویرایش می‌شن.' },
       { id: 'backup', re: /پشتیبان|بکاپ|بازیابی|ذخیره/, name: 'پشتیبان', go: function () { askBackupParts(); },
         text: 'برای پشتیبان‌گیری از داده‌ها از «پشتیبان‌گیری» توی منو استفاده کن؛ فایلش رو نگه دار و هر وقت خواستی با «بازیابی» برش گردون.' },
@@ -310,11 +313,11 @@
         text: 'خروجی گرفتن (اکسل یا PDF) از «خروجی» توی منوئه؛ بازه و نوع داده رو انتخاب می‌کنی.' },
       { id: 'stats', re: /آمار|نمودار|گزارش/, name: 'آمار', go: function () { openStatsSheet(); },
         text: 'نمودارها و آمار هزینه و درآمد توی بخش «آمار» هستن.' },
-      { id: 'security', re: /رمز|قفل|پین|اثر انگشت|امنیت/, name: 'امنیت', go: function () { openSecurityModal(); },
+      { id: 'security', re: /(^| )(رمز|قفل|پین|امنیت)( |$)|اثر انگشت/, name: 'امنیت', go: function () { openSecurityModal(); },
         text: 'رمز و قفل برنامه رو از بخش «امنیت» تنظیم می‌کنی.' },
-      { id: 'trash', re: /سطل|حذف شده|پاک شده/, name: 'سطل بازیافت', go: function () { openTrashModal(); },
+      { id: 'trash', re: /(^| )(سطل|حذف شده|پاک شده)( |$)/, name: 'سطل بازیافت', go: function () { openTrashModal(); },
         text: 'ردیف‌های حذف‌شده توی «سطل بازیافت» می‌مونن و از همون‌جا برمی‌گردن.' },
-      { id: 'prefs', re: /تنظیمات|تم|ظاهر|حالت شب/, name: 'تنظیمات', go: function () { closeSideMenu(); openPrefsModal(); },
+      { id: 'prefs', re: /(^| )(تنظیمات|تم|ظاهر|حالت شب)( |$)/, name: 'تنظیمات', go: function () { closeSideMenu(); openPrefsModal(); },
         text: 'ظاهر و رفتار برنامه رو از «تنظیمات» عوض می‌کنی.' }
     ];
     var HK_ASST_HELPGUIDE = { id: 'help', name: 'راهنما', go: function () { openHelpModal(); }, text: '' };
@@ -324,8 +327,7 @@
       return null;
     }
     function hkAsstGuideGo(g) {
-      try { if (typeof _hkVoice !== 'undefined' && _hkVoice.on) hkAsstVoiceClose(); } catch (e0) {}
-      try { hkAsstClose(); } catch (e1) {}
+      hkAsstGoAway();
       setTimeout(function () { try { g.go(); } catch (e2) { try { showToast('نتوانستم این بخش را باز کنم.'); } catch (e3) {} } }, 280);
     }
     var HK_ASST_YES = /^(آره|اره|بله|آری|اوکی|اوکیه|اوکی|باشه|باش|حتما|حتماً|حتمن|برو|ببر|ببرم|ببرش|بریم|برو دیگه|بزن|بله ببر|آره ببر|اره ببر|خب|خوبه|اوکی ببر|باشه ببر|ok|yes|بفرما|لطفا|لطفاً|لطفا ببر|آره لطفا)( .*)?$/i;

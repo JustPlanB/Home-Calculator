@@ -5,6 +5,7 @@
     function hkAsstNum(n) { return toPersianDigits(String(Math.round(Number(n) || 0))); }
     function hkAsstSummary(tool, res, cmd) {
       if (/^insights\.(ledger|dong|recincome|reminders|row)$/.test(tool)) return hkAsstAppText(tool, res);
+      if (tool === 'insights.chart') return hkAsstChartText(res);
       if (/^insights\.(monthavg|share)$/.test(tool)) return hkAsstAppText2(tool, res);
       if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
@@ -109,9 +110,10 @@
       var gs = hkAsstGuideStep(q);
       if (gs) return gs;
       var cmd;
-      try { cmd = hkAsstValidateCommand(HK_ASST_ADAPTERS.rules.parse(q)); }
+      try { cmd = hkAsstValidateCommand(hkAsstCtxMerge(HK_ASST_ADAPTERS.rules.parse(q))); }
       catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
       var fr = hkAsstFinish(cmd);
+      hkAsstCtxSave(cmd, fr); hkAsstSetTarget(fr);
       hkAsstMissedLog(q, fr);
       return fr;
     }
