@@ -151,6 +151,88 @@
       _hkAsstEl.classList.remove('open');
       _hkAsstEl.setAttribute('aria-hidden', 'true');
     }
+    /* ----- صدا: ضبط به متن و گفتگوی صوتی (فقط در اندروید، با موتور تشخیص گفتار گوشی) ----- */
+    var HK_ASST_MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+    var HK_ASST_WAVE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 12v0M8 8v8M12 4v16M16 8v8M20 12v0"/></svg>';
+    var _hkVoice = { on: false };
+    function hkAsstVoiceOk() {
+      try { var C = window.Capacitor; if (!(C && C.isNativePlatform && C.isNativePlatform())) return false; var P = C.Plugins && C.Plugins.HkSpeech; return !!(P && typeof P.start === 'function'); } catch (e) { return false; }
+    }
+    /* یک گفتهٔ فارسی را به متن تبدیل می‌کند */
+    function hkAsstListen() {
+      var P = window.Capacitor.Plugins.HkSpeech;
+      return P.start({ lang: 'fa-IR' }).then(function (res) { return String((res && res.text) || '').trim(); });
+    }
+    /* ضبط از نوار ورودی: موج متحرک، سپس متن در کادر (و دکمه به سند آبی تبدیل می‌شود) */
+    function hkAsstRecStart(form, input) {
+      if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      form.classList.add('recording');
+      hkAsstListen().then(function (t) {
+        form.classList.remove('recording');
+        if (!t) { try { showToast('صدایی تشخیص داده نشد.'); } catch (e1) {} return; }
+        input.value = input.value.trim() ? input.value.trim() + ' ' + t : t;
+        form.classList.add('typing');
+        input.dispatchEvent(new Event('input'));
+      }, function () {
+        form.classList.remove('recording');
+        try { showToast('تبدیل گفتار انجام نشد. دوباره امتحان کنید.'); } catch (e2) {}
+      });
+    }
+    /* خواندن پاسخ با صدا؛ اگر موتور صدا در گوشی نباشد، بی‌صدا ادامه می‌دهد */
+    function hkAsstSpeak(text) {
+      return new Promise(function (resolve) {
+        try {
+          if (!('speechSynthesis' in window)) return resolve();
+          var u = new SpeechSynthesisUtterance(String(text || '').slice(0, 600));
+          u.lang = 'fa-IR';
+          u.onend = function () { resolve(); };
+          u.onerror = function () { resolve(); };
+          speechSynthesis.cancel();
+          speechSynthesis.speak(u);
+        } catch (e) { resolve(); }
+      });
+    }
+    function hkAsstVoiceStatus(t) { try { var s = _hkAsstEl.querySelector('.hk-asst-vstat'); if (s) s.textContent = t; } catch (e) {} }
+    function hkAsstVoiceLoop() {
+      if (!_hkVoice.on) return;
+      var orb = _hkAsstEl.querySelector('.hk-asst-vorb');
+      orb.classList.add('listening');
+      hkAsstVoiceStatus('در حال شنیدن…');
+      hkAsstListen().then(function (t) {
+        if (!_hkVoice.on) return;
+        orb.classList.remove('listening');
+        if (!t) { hkAsstVoiceStatus('چیزی شنیده نشد. دوباره بگو…'); setTimeout(hkAsstVoiceLoop, 600); return; }
+        hkAsstVoiceStatus('در حال فکر کردن…');
+        hkAsstAppend({ role: 'user', kind: 'text', text: t });
+        hkAsstAskAsync(t).then(function (reply) {
+          if (!_hkVoice.on) return;
+          hkAsstAppend(reply);
+          hkAsstVoiceStatus('پاسخ می‌دهم…');
+          hkAsstSpeak(reply.text).then(function () { hkAsstVoiceLoop(); });
+        });
+      }, function () {
+        orb.classList.remove('listening');
+        hkAsstVoiceStatus('صدا شنیده نشد. برای ادامه روی دایره بزن.');
+        _hkVoice.idle = true;
+      });
+    }
+    function hkAsstVoiceOpen() {
+      if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      _hkVoice.on = true; _hkVoice.idle = false;
+      _hkAsstEl.querySelector('.hk-asst-voice').classList.add('open');
+      hkAsstVoiceLoop();
+    }
+    function hkAsstVoiceClose() {
+      _hkVoice.on = false;
+      try { speechSynthesis.cancel(); } catch (e) {}
+      try { var v = _hkAsstEl && _hkAsstEl.querySelector('.hk-asst-voice'); if (v) v.classList.remove('open'); } catch (e2) {}
+    }
+    /* بازگشت سیستم یا ‹: اول گفتگوی صوتی، و اگر باز نبود پنجرهٔ دستیار بسته می‌شود؛ یک مرحله، همیشه */
+    function hkAsstBack() {
+      if (_hkVoice.on) { hkAsstVoiceClose(); return true; }
+      if (hkAsstIsOpen()) { hkAsstClose(); return true; }
+      return false;
+    }
     function hkAsstBuild() {
       var fab = hkAsstEl('button', 'hk-asst-fab');
       fab.type = 'button';
@@ -188,13 +270,44 @@
       head.appendChild(clr);
       sheet.appendChild(head);
 
+      /* گفتگوی صوتی: دایرهٔ بزرگ و وضعیت، بالای گفتگو؛ فقط وقتی باز است دیده می‌شود */
+      var voice = hkAsstEl('div', 'hk-asst-voice');
+      var vorb = hkAsstEl('button', 'hk-asst-vorb');
+      vorb.type = 'button'; vorb.setAttribute('aria-label', 'گفتگوی صوتی');
+      vorb.appendChild(hkAsstEl('i', 'hk-asst-orb'));
+      vorb.addEventListener('click', function () { if (_hkVoice.idle) { _hkVoice.idle = false; hkAsstVoiceLoop(); } });
+      voice.appendChild(vorb);
+      voice.appendChild(hkAsstEl('div', 'hk-asst-vstat', 'در حال شنیدن…'));
+      var vend = hkAsstEl('button', 'hk-asst-vend', 'پایان');
+      vend.type = 'button';
+      vend.addEventListener('click', hkAsstVoiceClose);
+      voice.appendChild(vend);
+      sheet.appendChild(voice);
       sheet.appendChild(hkAsstEl('div', 'hk-asst-log'));
 
       var form = hkAsstEl('form', 'hk-asst-form');
       var input = hkAsstEl('textarea', 'hk-asst-input');
       input.rows = 1; input.placeholder = 'درخواستت را بنویس…'; input.setAttribute('aria-label', 'درخواست');
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true })); } });
+      input.addEventListener('input', function () { form.classList.toggle('typing', !!input.value.trim()); });
+      /* نوار ضبط: موج متحرک بالای کادر تا وقتی گوشی گوش می‌دهد */
+      var recbar = hkAsstEl('div', 'hk-asst-recbar');
+      var bars = hkAsstEl('div', 'hk-asst-bars');
+      for (var bi = 0; bi < 9; bi++) bars.appendChild(hkAsstEl('i'));
+      recbar.appendChild(bars);
+      recbar.appendChild(hkAsstEl('span', 'hk-asst-rectxt', 'در حال ضبط… حرف بزن'));
+      form.appendChild(recbar);
       form.appendChild(input);
+      var rec = hkAsstEl('button', 'hk-asst-rec');
+      rec.type = 'button'; rec.setAttribute('aria-label', 'ضبط صدا و تبدیل به متن');
+      rec.innerHTML = HK_ASST_MIC_SVG;
+      rec.addEventListener('click', function () { hkAsstRecStart(form, input); });
+      form.appendChild(rec);
+      var vc = hkAsstEl('button', 'hk-asst-vc');
+      vc.type = 'button'; vc.setAttribute('aria-label', 'گفتگوی صوتی دوطرفه');
+      vc.innerHTML = HK_ASST_WAVE_SVG;
+      vc.addEventListener('click', hkAsstVoiceOpen);
+      form.appendChild(vc);
       var send = hkAsstEl('button', 'hk-asst-send');
       send.type = 'submit'; send.setAttribute('aria-label', 'ارسال');
       send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
@@ -210,7 +323,11 @@
     function hkAsstDlPaint(dl, mode, pct) {
       if (!dl) return;
       if (mode === 'done') { dl.innerHTML = HK_TICK_SVG; dl.classList.add('is-done'); dl.classList.remove('is-busy'); return; }
-      dl.innerHTML = HK_ASST_DL_ARROW + '<span class="hk-asst-dl-p">' + (mode === 'busy' ? pct : '') + '</span>';
+      if (mode === 'busy') {
+        dl.innerHTML = '<svg class="hk-asst-ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="bg" cx="18" cy="18" r="15.5"/><circle class="fg" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span class="hk-asst-dl-p">' + toPersianDigits('0') + '٪</span>';
+      } else {
+        dl.innerHTML = HK_ASST_DL_ARROW;
+      }
       dl.classList.remove('is-done');
       dl.classList.toggle('is-busy', mode === 'busy');
     }
@@ -234,7 +351,10 @@
       dl._busy = true;
       hkAsstDlPaint(dl, 'busy', '0%');
       hkAsstModelDownload(function (frac) {
-        var sp = dl.querySelector('.hk-asst-dl-p'); if (sp) sp.textContent = Math.round(frac * 100) + '%';
+        var pc = Math.max(0, Math.min(100, Math.round(frac * 100)));
+        var sp = dl.querySelector('.hk-asst-dl-p'), fg = dl.querySelector('.hk-asst-ring .fg');
+        if (sp) sp.textContent = toPersianDigits(String(pc)) + '٪';
+        if (fg) fg.style.strokeDashoffset = String(100 - pc);
       }).then(function () {
         dl._busy = false;
         try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
@@ -253,7 +373,15 @@
     function hkAsstIsOpen() { return !!(_hkAsstEl && _hkAsstEl.classList.contains('open')); }
     function hkAsstInit() {
       try { if (document.getElementById('hkAsstSheet')) return; hkAsstBuild(); } catch (eI) { try { console.error('assistant', eI); } catch (e2) {} }
+      /* منوی همبرگری باز است: دکمهٔ دستیار بالای آن دیده نشود */
+      try {
+        var menu = document.getElementById('menuDropdown');
+        if (menu && window.MutationObserver) {
+          new MutationObserver(function () { document.body.classList.toggle('hk-asst-hidden', menu.classList.contains('open')); })
+            .observe(menu, { attributes: true, attributeFilter: ['class'] });
+        }
+      } catch (eM) {}
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hkAsstInit);
     else hkAsstInit();
-    try { window.hkAsstAsk = hkAsstAsk; window.hkAsstOpen = hkAsstOpen; window.hkAsstClose = hkAsstClose; window.hkAsstIsOpen = hkAsstIsOpen; } catch (eW) {}
+    try { window.hkAsstAsk = hkAsstAsk; window.hkAsstOpen = hkAsstOpen; window.hkAsstClose = hkAsstClose; window.hkAsstIsOpen = hkAsstIsOpen; window.hkAsstBack = hkAsstBack; } catch (eW) {}
