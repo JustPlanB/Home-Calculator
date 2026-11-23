@@ -2,7 +2,7 @@
        این فایل سه کار دارد: (۱) «۴۰۳» را «۱۴۰۳» می‌کند؛ (۲) ابزارهای تحلیلی (insights.*) که فقط می‌خوانند و با
        درآمد و مخارج خود کاربر وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه و هدف پس‌انداز را حساب می‌کنند؛ (۳) متن پاسخ‌ها،
        با لحن خودمونی و چند قالب برای هر پاسخ. هیچ‌چیز را تغییر نمی‌دهد. به 18c (داده) و 18f (واژه‌نامه) وابسته است
-       و از برنامه فقط currentYear، currentMonth، getTodayPersian، daysInMonth، formatNum و toPersianDigits را می‌خواند. */
+       و از برنامه فقط hkAsstCY()، hkAsstCM()، getTodayPersian، daysInMonth، formatNum و toPersianDigits را می‌خواند. */
 
     /* ---------- سال کوتاه ---------- */
     /* ۴۰۳ ← ۱۴۰۳، ۰۳ ← ۱۴۰۳، ۹۹ ← ۱۳۹۹. عدد دورقمی تا سال جاری به‌علاوهٔ یک «چهارصدی» حساب می‌شود، بقیه «سیصدی». */
@@ -11,7 +11,7 @@
       if (!isFinite(n)) return 0;
       if (n >= 1300 && n <= 1499) return n;
       if (n >= 300 && n <= 499) return 1000 + n;
-      if (n >= 0 && n <= 99) { var cur = currentYear % 100; return n <= cur + 1 ? 1400 + n : 1300 + n; }
+      if (n >= 0 && n <= 99) { var cur = hkAsstCY() % 100; return n <= cur + 1 ? 1400 + n : 1300 + n; }
       return 0;
     }
     var HK_ASST_MONTHRE = null;
@@ -34,7 +34,7 @@
       });
       t = t.replace(hkAsstMonthRe(), function (m, pre, name, n) {
         var v = parseInt(n, 10);
-        if (String(n).length === 2 && !(v <= currentYear % 100 + 1 || v >= 90)) return m;   /* «آبان ۱۰» روز است نه سال */
+        if (String(n).length === 2 && !(v <= hkAsstCY() % 100 + 1 || v >= 90)) return m;   /* «آبان ۱۰» روز است نه سال */
         var y = hkAsstFullYear(n);
         return y ? pre + name + ' ' + y : m;
       });
@@ -60,9 +60,23 @@
     function hkAsstAddMonths(y, m, k) { var i = y * 12 + (m - 1) + k; return { y: Math.floor(i / 12), m: i % 12 + 1 }; }
     function hkAsstMonthLabel(y, m) { return HK_ASST_MONTH_NAMES[m - 1] + ' ' + toPersianDigits(String(y)); }
     /* امروز در تقویم شمسی؛ اگر ماه نمایش‌داده‌شدهٔ برنامه ماه جاری نیست، کل ماه گذشته فرض می‌شود */
+    /* ۱.۴.۳۹: «امروز» واقعی گوشی (نه سال/ماهی که کاربر در منوی انتخاب سال دیده است) */
+    var _hkAsstRealC = { k: 0, y: 0, m: 0 };
+    function hkAsstReal() {
+      var k = Math.floor(Date.now() / 600000);
+      if (_hkAsstRealC.k !== k) {
+        var y = 0, m = 0;
+        try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {}
+        if (!y) { y = currentYear; m = currentMonth; }
+        _hkAsstRealC = { k: k, y: y, m: m };
+      }
+      return _hkAsstRealC;
+    }
+    function hkAsstCY() { return hkAsstReal().y; }
+    function hkAsstCM() { return hkAsstReal().m; }
     function hkAsstToday() {
-      var t = { y: currentYear, m: currentMonth, d: 1 };
-      try { var g = getTodayPersian(); if (g && g.y === currentYear && g.m === currentMonth) t.d = g.d; else t.d = daysInMonth(currentYear, currentMonth); } catch (e) { t.d = 15; }
+      var t = { y: hkAsstCY(), m: hkAsstCM(), d: 1 };
+      try { var g = getTodayPersian(); if (g && g.y === hkAsstCY() && g.m === hkAsstCM()) t.d = g.d; else t.d = daysInMonth(hkAsstCY(), hkAsstCM()); } catch (e) { t.d = 15; }
       return t;
     }
     /* روزهای گذشتهٔ ماه جاری: امروز یا آخرین روزی که ردیف دارد (هرکدام بیشتر)، تا برآورد روزانه در اول ماه بی‌معنی نشود */
@@ -81,7 +95,7 @@
     /* n ماه آخر (کهنه‌ترین اول) تا ماه جاری */
     function hkAsstRecentMonths(n, a) {
       var out = [];
-      for (var i = n - 1; i >= 0; i--) { var ym = hkAsstAddMonths(currentYear, currentMonth, -i); out.push(hkAsstMonthTotals(ym.y, ym.m, a)); }
+      for (var i = n - 1; i >= 0; i--) { var ym = hkAsstAddMonths(hkAsstCY(), hkAsstCM(), -i); out.push(hkAsstMonthTotals(ym.y, ym.m, a)); }
       return out;
     }
     /* دسته‌های ساخت کاربر */
@@ -117,7 +131,7 @@
     /* بازهٔ پرسیده‌شده: ماه، سال، یا چند ماه اخیر؛ پیش‌فرض ماه جاری. «prev» بازهٔ هم‌اندازهٔ قبلی برای مقایسه است */
     function hkAsstPeriodOf(a) {
       a = a || {};
-      var cy = currentYear, cm = currentMonth;
+      var cy = hkAsstCY(), cm = hkAsstCM();
       if (a.dateFrom) {
         var df = String(a.dateFrom).split('-'), n = Math.max(1, (cy - (+df[0])) * 12 + (cm - (+df[1])) + 1);
         var s0 = hkAsstAddMonths(cy, cm, -(n - 1)), p1 = hkAsstAddMonths(cy, cm, -n), p0 = hkAsstAddMonths(cy, cm, -(2 * n - 1));

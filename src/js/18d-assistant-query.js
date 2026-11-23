@@ -64,7 +64,7 @@
       text = text.replace(/\s+/g, ' ').trim();
       var appCmd = hkAsstAppIntent(text);
       if (appCmd) return appCmd;
-      var cy = currentYear, cm = currentMonth;
+      var cy = hkAsstCY(), cm = hkAsstCM();
       /* سؤال دربارهٔ خود داده‌ها (نه تراکنش): دسته‌ها، حساب‌ها، ماه‌ها، پروژه‌ها */
       var preCodes = hkAsstPreCodes(text), special = (unpaidFlag || transferFlag) ? null : hkAsstSpecialKind(preCodes, text);
       var asksCount = /چند|تعداد|چندتا|چن تا|چنتا|چند تا/.test(text), asksHave = /داری|داریم|دارم|دارید|دارن|چی(?!ز)|کدوم|کدام|لیست|فهرست|اسم/.test(text);
@@ -72,10 +72,11 @@
       var listish = /نشون|نشان|لیست|فهرست|کدوم|اسم|هام|هایم|های من/.test(text);
       if (!special && /دسته/.test(text) && (asksCount || asksHave || listish) && !/تراکنش|ردیف|هزینه|مخارج|خرج|درآمد|واریز|برداشت|گروه|تفکیک|بر اساس/.test(text)) return { tool: 'categories.summary', args: {}, explain: 'categories' };
       if (!special && /حساب/.test(text) && (asksCount || asksHave) && !/آبان|آذر|دی|بهمن|اسفند|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر/.test(text)) return { tool: 'accounts.list', args: {}, explain: 'accounts' };
-      if (!special && /ماه/.test(text) && asksCount && /ثبت|داده|اطلاعات|دارم|داریم|داری|داره/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
+      if (!special && /ماه/.test(text) && !/(این|همین|جاری|قبل|پیش|گذشته|ماه) ماه|ماه (جاری|قبل|پیش|گذشته|قبلی)/.test(text) && asksCount && /ثبت|داده|اطلاعات|دارم|داریم|داری|داره/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
       if (!special && /پروژه/.test(text) && (asksCount || listish) && !/هزینه|مخارج|خرج|درآمد|تراکنش|ردیف/.test(text)) return { tool: 'projects.list', args: {}, explain: 'projlist' };
       if (!special && /اطلاعات|داده/.test(text) && /از کی|کی تا کی|چه ماه|کدوم ماه|چند ماه/.test(text) && !/ردیف|تراکنش|هزینه|درآمد|خرج|مخارج/.test(text)) return { tool: 'months.summary', args: {}, explain: 'months' };
       var codes = [], words = [], corrections = [];
+      var _plural = function (w) { var t = w.replace(/(ها|های|هام|هایم|هایی|هاش)$/, ''); return t.length >= 3 && t !== w ? t : w; };
       /* مرحلهٔ ۱: عبارت‌های چندکلمه‌ای و کلمه‌های شناخته‌شده (طولانی‌ترین تطبیق اول) */
       var toks = text.split(' ');
       var i = 0;
@@ -94,7 +95,7 @@
         if (hkAsstIsStop(key)) continue;
         var fz = hkAsstFuzzyCode(key);
         if (fz) { codes.push(fz.code); corrections.push({ from: t, to: fz.word }); continue; }
-        words.push(t);
+        words.push(_plural(t));
       }
       /* مرحلهٔ ۲: کلمه‌های متنی که در داده نیستند، اگر به یک کلمهٔ داده بسیار نزدیک باشند، اصلاح می‌شوند (مثل «تویتا» → «تویوتا») */
       var dataWords = hkAsstDataWords();
@@ -134,6 +135,7 @@
       if (yy && !mk && !args.year) args.year = yy;                 /* «سال ۱۴۰۳ چقدر خرج کردم؟» */
       if (codes.indexOf('THIS_Y') >= 0) args.year = cy;
       if (codes.indexOf('PREV_Y') >= 0) args.year = cy - 1;
+      if (codes.indexOf('NEXT_Y') >= 0) args.year = cy + 1;
       var span = codes.indexOf('SPAN3') >= 0 ? 3 : codes.indexOf('SPAN6') >= 0 ? 6 : codes.indexOf('SPAN12') >= 0 ? 12 : 0;
       if (span) {
         var fy = cy, fm = cm - (span - 1); while (fm < 1) { fm += 12; fy--; }
@@ -196,6 +198,10 @@
       var cmd = hkAsstBuildCommand(intent, args, codes, text);
       cmd.corrections = corrections;
       cmd.understood = hkAsstUnderstood(intent, args);
+      /* ۱.۴.۳۹: نشانه‌ها برای «حافظهٔ گفتگو» (آبان چطور؟ بعد از «درآمد آذرم چقدر بود؟») */
+      var _ic = ['CMP', 'GRP', 'AVG', 'MAX', 'MIN', 'CNT', 'SUM', 'SRCH', 'EXP', 'INC'].some(function (c) { return codes.indexOf(c) >= 0; });
+      cmd.intent = intent; cmd.yearExplicit = !!(typeof explicitY !== 'undefined' && explicitY) || !!yy;
+      cmd.follow = !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4;
       return cmd;
     }
     /* فرمان نهایی به ابزار؛ «فهمیدم» متن قابل‌فهم برای کاربر است */
@@ -203,7 +209,7 @@
       if (intent === 'projsum') return { tool: 'projects.summary', args: { project: args.project }, explain: 'projsum' };
       if (intent === 'projlist') return { tool: 'projects.list', args: {}, explain: 'projlist' };
       if (intent === 'compare') {
-        var cy = currentYear, cm = currentMonth, pm = cm - 1, py = cy; if (pm < 1) { pm = 12; py = cy - 1; }
+        var cy = hkAsstCY(), cm = hkAsstCM(), pm = cm - 1, py = cy; if (pm < 1) { pm = 12; py = cy - 1; }
         var a = { year: cy, month: cm }, b = { year: py, month: pm };
         if (args.month) { a = { year: args.year || cy, month: args.month }; b = { year: a.month === 1 ? a.year - 1 : a.year, month: a.month === 1 ? 12 : a.month - 1 }; }
         return { tool: 'reports.compare', args: { a: a, b: b, tab: args.tab, context: args.context, text: args.text, cats: args.cats } };
@@ -237,7 +243,7 @@
       if (args.month) parts.push('ماه ' + HK_ASST_MONTH_NAMES[args.month - 1] + ' ' + toPersianDigits(String(args.year)));
       else if (args.year && !args.dateFrom) parts.push('سال ' + toPersianDigits(String(args.year)));
       else if (args.dateFrom) {
-        var df = String(args.dateFrom).split('-'), n = (currentYear - (+df[0])) * 12 + (currentMonth - (+df[1])) + 1;
+        var df = String(args.dateFrom).split('-'), n = (hkAsstCY() - (+df[0])) * 12 + (hkAsstCM() - (+df[1])) + 1;
         parts.push(toPersianDigits(String(n)) + ' ماه گذشته');
       }
       else parts.push('از همهٔ ماه‌ها');

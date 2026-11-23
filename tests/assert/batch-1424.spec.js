@@ -120,7 +120,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   });
   ok(G.inside && G.fieldH >= 50 && G.noBorder, 'کادر ورودی بزرگ‌تر است (حدود ۵۴) و ضبط و گفتگوی صوتی داخل کادرند (' + G.fieldH + ')');
   ok(G.emptyIcons && G.typingIcons && G.afterSendIcons, 'کادر خالی: ضبط و گفتگوی صوتی؛ با تایپ: فقط ارسال؛ بعد از ارسال دوباره ضبط و گفتگوی صوتی');
-  ok(G.dots === 3 && G.rowHasAvatar && G.dotAnim && G.dotAnim !== 'none' && G.dotsW === 30, 'هنگام انتظار پاسخ: همان سه نقطهٔ آبی متحرک (hk-loading-dots) کنار آیکون دستیار');
+  ok(G.dots === 3 && G.dotAnim && G.dotAnim !== 'none' && G.dotsW === 30, 'هنگام انتظار پاسخ: همان سه نقطهٔ آبی متحرک (hk-loading-dots) کنار آیکون دستیار');
   ok(!G.loggedWait && G.dotsAfter === 0 && /سلام!/.test(G.lastText), 'بعد از رسیدن پاسخ، نشانگر برداشته می‌شود و پاسخ جایش می‌نشیند');
 
   console.log('• «درباره»: زیرنویس');

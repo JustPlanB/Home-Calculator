@@ -51,7 +51,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   await ev(() => { document.querySelector('.hk-asst-input').value = ''; document.querySelector('.hk-asst-form').classList.remove('typing'); window.__h.calls = []; window.__h.nextStart = () => new Promise(r => { window.__h.finish = r; }); });
   await page.click('.hk-asst-rec'); await page.waitForTimeout(150);
   r = await ev(() => { const t = document.querySelector('.hk-asst-rc-t'); let nm = ''; try { nm = String(hkMainTitle() || '').trim(); } catch (e) {} return { t: t.textContent, nm, ph: t.classList.contains('is-ph'), rowDir: getComputedStyle(document.querySelector('.hk-asst-rc-r')).direction, inputHidden: getComputedStyle(document.querySelector('.hk-asst-input')).display === 'none' }; });
-  ok(r.t === r.nm && r.ph && r.rowDir === 'ltr' && r.inputHidden, 'ضبط: بالای کادر نام کاربر (کم‌رنگ) است و کادر دو ردیفی می‌شود');
+  ok(r.t === '' && r.ph && r.rowDir === 'ltr' && r.inputHidden, 'ضبط: بالای کادر چیزی نوشته نمی‌شود (نه نام کاربر) و کادر دو ردیفی می‌شود');
   await page.click('.hk-asst-rc-x'); await page.waitForTimeout(100);
   r = await ev(() => window.__h.calls.filter(c => c === 'cancel').length);
   ok(r >= 1, '✕ ضبط را لغو می‌کند');
