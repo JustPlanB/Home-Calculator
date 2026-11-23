@@ -490,7 +490,6 @@
       var out = [], seen = {}, cur = periodKey(currentYear, currentMonth);
       try {
         iterAllPeriodData(function (pd, key) {
-          if (key === cur && pd !== periodData) return;
           ['income', 'expense'].forEach(function (tab) { ((pd[tab] && pd[tab].sections) || []).forEach(function (sc) { (sc.rows || []).forEach(function (r) {
             (Array.isArray(r && r.att) ? r.att : []).forEach(function (a) { if (a && a.id && !seen[a.id]) { seen[a.id] = 1; out.push(a); } });
           }); }); });

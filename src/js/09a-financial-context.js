@@ -373,7 +373,6 @@
     function hkProjectRows(id) {
       var out = [], curK = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function (pd, key) {
-        if (key === curK && pd !== periodData) return; /* نسخهٔ آرشیوِ ماه جاری تکراری است */
         ['income', 'expense'].forEach(function (tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
             (sec.rows || []).forEach(function (r) {
@@ -556,15 +555,38 @@
 
     
     
+    /* هر ماه فقط یک بار پیمایش می‌شود. منبع ماه جاری periodData است (اگر معتبر باشد) و نسخهٔ آرشیوِ ماه جاری هرگز دوباره پیمایش نمی‌شود.
+       کلید معادل (مثل 1405-6 و 1405-06) یکی حساب می‌شود؛ کلید کانونی (همان قالب periodKey) اولویت دارد؛ ماه نامعتبر و داده غیرشیء رد می‌شود.
+       ردیف‌های حذف‌شده، حمل‌شده و اقساط فیلتر نمی‌شوند؛ این کار با مصرف‌کننده است. */
+    function hkPeriodIsObject(pd) { return !!pd && typeof pd === 'object' && !Array.isArray(pd); }
+    function hkNormPeriodKey(k) {
+      var m = /^(\d{3,4})-(\d{1,2})$/.exec(String(k));
+      if (!m) return null;
+      var y = parseInt(m[1], 10), mo = parseInt(m[2], 10);
+      if (mo < 1 || mo > 12 || y < 1300 || y > 1500) return null;
+      return y + '-' + mo;
+    }
     function iterAllPeriodData(cb) {
+      var curKey = periodKey(currentYear, currentMonth), seen = {};
       try {
-        if (periodData) cb(periodData, periodKey(currentYear, currentMonth));
+        var src = hkPeriodIsObject(periodData) ? periodData : (hkPeriodIsObject(archive && archive[curKey]) ? archive[curKey] : null);
+        if (src) { seen[curKey] = 1; cb(src, curKey); }
       } catch (e0) {}
       try {
-        Object.keys(archive || {}).forEach(function(k) {
-          var pd = archive[k];
-          if (pd && pd !== periodData) cb(pd, k);
-        });
+        var keys = Object.keys(archive || {});
+        for (var pass = 0; pass < 2; pass++) {
+          keys.forEach(function (k) {
+            var norm = hkNormPeriodKey(k);
+            if (!norm) return;
+            var canonical = (norm === k);
+            if ((pass === 0) !== canonical) return;
+            if (seen[norm]) return;
+            var pd = archive[k];
+            if (!hkPeriodIsObject(pd)) return;
+            seen[norm] = 1;
+            cb(pd, norm);
+          });
+        }
       } catch (e1) {}
     }
     function computeSubjectReport(subjectId) {
@@ -578,7 +600,6 @@
       var curKey = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function(pd, key) {
         // از شمارش دوبارهٔ ماه جاری (آرشیو + periodData) جلوگیری کن
-        if (key === curKey && pd !== periodData) return;
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {
@@ -1091,7 +1112,6 @@
       try {
         iterAllPeriodData(function(pd, key) {
           if (seen) return;
-          if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ['income', 'expense'].forEach(function(tab) {
             if (seen) return;
@@ -1123,7 +1143,6 @@ function projectMoneyOnAccounts(subjectId, accountSet, onlyKey) {
         ? periodKey(currentYear, currentMonth) : '';
       if (typeof iterAllPeriodData !== 'function') return 0;
       iterAllPeriodData(function(pd, key) {
-        if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
         ['income', 'expense'].forEach(function(tab) {
           ((pd[tab] && pd[tab].sections) || []).forEach(function(sec) {
@@ -1181,7 +1200,6 @@ function getProjectBalance(subjectId) {
       if (typeof iterAllPeriodData !== 'function') return 0;
       try {
         iterAllPeriodData(function(pd, key) {
-          if (key === curKey && pd !== periodData) return;
           if (onlyKey && !hkKeyIn(key, onlyKey)) return;   /* یک ماه، یا «<=ماه» = از ابتدا تا همان ماه */
           ((pd.expense && pd.expense.sections) || []).forEach(function(sec) {
             (sec.rows || []).forEach(function(r, ri) {

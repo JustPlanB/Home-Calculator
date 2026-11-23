@@ -351,7 +351,6 @@
       var range = (document.getElementById('balanceSearchRange') || {}).value || 'all';
       var curKey = periodKey(currentYear, currentMonth);
       iterAllPeriodData(function (pd, key) {
-        if (key === curKey && pd !== periodData) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         if (!bsInRange(range, y, m)) return;
         ((pd.expense && pd.expense.sections) || []).forEach(function (sec) {
@@ -423,7 +422,6 @@
       var curKey = periodKey(currentYear, currentMonth);
       var list = [], titles = {};
       iterAllPeriodData(function (pd, key) {
-        if (key === curKey && pd !== periodData) return;
         var parts = String(key).split('-'), y = parseInt(parts[0], 10) || 0, m = parseInt(parts[1], 10) || 0;
         if (!bsInRange(rangeF, y, m)) return;
         /* با انتخاب دسته فقط مخارج (دسته‌بندی مال مخارج است) */

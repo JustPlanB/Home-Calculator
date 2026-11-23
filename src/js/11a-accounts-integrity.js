@@ -793,7 +793,6 @@ if (item.type === 'recurring') {
           });
           var un = {}; (item.data.unlinked || []).forEach(function (u) { (un[u.sig] = un[u.sig] || []).push(u); });
           if (Object.keys(un).length) iterAllPeriodData(function (pd, key) {
-            if (key === curK && pd !== periodData) return;
             ['income', 'expense'].forEach(function (tab) {
               ((pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
                 (sec.rows || []).forEach(function (r) {
