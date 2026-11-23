@@ -154,6 +154,8 @@ if(fs.existsSync(manifest)){
   if(!s.includes('android.permission.READ_SMS')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.READ_SMS"/>');
   // اندروید ۱۱+: برای پیدا کردن سرویس تشخیص گفتار باید اعلام شود
   if(!s.includes('android.speech.RecognitionService')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n    </queries>\n</manifest>');
+  // خواندن پاسخ با صدا: پیدا کردن موتور گفتار (TextToSpeech) در اندروید ۱۱+
+  if(!s.includes('android.intent.action.TTS_SERVICE')) s=s.replace('</manifest>', '    <queries>\n        <intent>\n            <action android:name="android.intent.action.TTS_SERVICE"/>\n        </intent>\n    </queries>\n</manifest>');
   // بروزرسانی داخل نرم‌افزار: باز کردن نصب‌کنندهٔ اندروید برای APK دانلودشده
   if(!s.includes('android.permission.REQUEST_INSTALL_PACKAGES')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>');
   if(!s.includes('android.permission.RECEIVE_BOOT_COMPLETED')) s=s.replace(/(<manifest\b[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>');

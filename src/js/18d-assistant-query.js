@@ -56,10 +56,18 @@
       text = hkAsstNormYears(text);
       /* ۱.۴.۳۷: «ثبت شده/ثبت‌شده/ثبت شد…» فعلِ همان تراکنش است نه کلمهٔ جست‌وجو (مثلاً «چند تراکنش براش ثبت شده؟») */
       text = text.replace(/ثبت[ \u200c]*(شده|شدن|شد|کردم|کردیم|کرده|داره|دارد)/g, ' ').replace(/\s+/g, ' ').trim();
+      /* ۱.۴.۳۸: «این ماهم»، «خرجام»: پسوند ملکی از ماه/هفته/سال جدا شود؛ «پرداخت‌نشده» و «جیب‌به‌جیب» فیلتر هستند نه کلمهٔ جست‌وجو */
+      var unpaidFlag = false, unpaidTab = '', transferFlag = false;
+      text = text.replace(/(^| )(ماه|هفته|سال|امروز|دیروز)(م|ت|ش|مون|تون)(?= |$)/g, '$1$2');
+      text = text.replace(/(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
+      text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
+      text = text.replace(/\s+/g, ' ').trim();
+      var appCmd = hkAsstAppIntent(text);
+      if (appCmd) return appCmd;
       var cy = currentYear, cm = currentMonth;
       /* سؤال دربارهٔ خود داده‌ها (نه تراکنش): دسته‌ها، حساب‌ها، ماه‌ها، پروژه‌ها */
-      var preCodes = hkAsstPreCodes(text), special = hkAsstSpecialKind(preCodes, text);
-      var asksCount = /چند|تعداد|چندتا|چن تا|چنتا|چند تا/.test(text), asksHave = /داری|داریم|دارم|دارید|دارن|چی|کدوم|کدام|لیست|فهرست|اسم/.test(text);
+      var preCodes = hkAsstPreCodes(text), special = (unpaidFlag || transferFlag) ? null : hkAsstSpecialKind(preCodes, text);
+      var asksCount = /چند|تعداد|چندتا|چن تا|چنتا|چند تا/.test(text), asksHave = /داری|داریم|دارم|دارید|دارن|چی(?!ز)|کدوم|کدام|لیست|فهرست|اسم/.test(text);
       /* «دستهٔ حمل‌ونقل چند تراکنش دارد؟» دربارهٔ تراکنش‌های همان دسته است، نه فهرست دسته‌ها */
       var listish = /نشون|نشان|لیست|فهرست|کدوم|اسم|هام|هایم|های من/.test(text);
       if (!special && /دسته/.test(text) && (asksCount || asksHave || listish) && !/تراکنش|ردیف|هزینه|مخارج|خرج|درآمد|واریز|برداشت|گروه|تفکیک|بر اساس/.test(text)) return { tool: 'categories.summary', args: {}, explain: 'categories' };
@@ -143,9 +151,20 @@
       if (codes.indexOf('PERS') >= 0 && codes.indexOf('PROJ') < 0) args.context = 'personal';
       if (textWords.length) args.text = textWords.join(' ');
       if (subj) args.project = subj.name;
+      if (unpaidFlag) { args.status = 'unpaid'; if (!args.tab && unpaidTab) args.tab = unpaidTab; }
+      if (transferFlag) { args.includeTransfers = true; args.transferOnly = true; }
+      /* «میانگین خرج ماهانه‌ام» (بدون دسته و کلمه): میانگین جمع هر ماه */
+      if (codes.indexOf('AVG') >= 0 && /ماهانه|ماهیانه|هر ماه|در ماه|ماهی/.test(text) && !args.cats && !args.text && !args.project) {
+        return { tool: 'insights.monthavg', args: { tab: args.tab === 'income' ? 'income' : 'expense' }, explain: 'monthavg', understood: '', followUps: [], corrections: corrections };
+      }
+      /* «سهم خوراکی از کل خرجم»، «چند درصد خرجم قبضه؟» */
+      if (/(^| )(سهم|درصد)( |$)/.test(text) && (args.cats || args.text || args.project || args.context)) {
+        var shA = { tab: args.tab || 'expense' }; ['cats', 'text', 'project', 'context', 'year', 'month', 'dateFrom', 'dateTo'].forEach(function (k) { if (args[k] != null) shA[k] = args[k]; });
+        return { tool: 'insights.share', args: shA, explain: 'share', understood: '', followUps: [], corrections: corrections };
+      }
 
       /* ۱.۴.۳۷: گفتگوی عادی و قصدهای تحلیلی (وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه، هدف…) */
-      if (!special) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
+      if (!special && !unpaidFlag && !transferFlag) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
       var chatK = hkAsstChatKind(codes, textWords, amts, text);
       if (chatK) return { ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
       if (special) {
@@ -165,6 +184,7 @@
       /* پروژه: اگر نام پروژه آمده باشد خلاصهٔ همان؛ اگر فقط «پروژه‌ها» آمده باشد فهرست پروژه‌ها */
       if (args.project && (!intent || intent === 'sum')) intent = 'projsum';
       if (!intent && codes.indexOf('PROJ') >= 0 && !args.project) intent = 'projlist';
+      if (args.status && /(^| )(کدوم|کدام|لیست|فهرست|نشون|نشان)/.test(text)) intent = 'search';
       var hasFilter = !!(args.tab || args.year || args.month || args.dateFrom || args.cats || args.context || args.project);
       if (!intent) {
         if (hasFilter && !args.text && args.amountEq == null && args.amountMin == null && args.amountMax == null) intent = 'sum';
@@ -189,13 +209,15 @@
         return { tool: 'reports.compare', args: { a: a, b: b, tab: args.tab, context: args.context, text: args.text, cats: args.cats } };
       }
       if (intent === 'group') {
-        var by = codes.indexOf('PROJ') >= 0 ? 'context' : /حساب|کارت|بانک/.test(text) ? 'account' : /دسته|بخش/.test(text) ? 'section' : /درآمد و هزینه|نوع/.test(text) ? 'tab' : 'month';
+        var by = codes.indexOf('PROJ') >= 0 ? 'context' : /حساب|کارت|بانک/.test(text) ? 'account' : /(^| )(دسته|بخش)/.test(text) ? 'section' : /درآمد و هزینه|نوع/.test(text) ? 'tab' : 'month';
         var g = Object.assign({}, args);
         if (by === 'context') delete g.context;
         return { tool: 'transactions.group', args: Object.assign({ by: by }, g) };
       }
       if (intent === 'max' || intent === 'min') {
-        return { tool: 'transactions.search', args: Object.assign({}, args, { sort: intent === 'max' ? 'amountDesc' : 'amountAsc', limit: 1 }), explain: intent === 'max' ? 'بیشترین' : 'کمترین' };
+        var topN = 1, nm = /(\d+)\s*تا/.exec(hkAsstFaDigits(text)) || /(?:^| )(دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|پانزده|بیست)\s*تا/.exec(text);
+        if (nm) topN = Math.min(50, Math.max(1, +nm[1] || HK_ASST_NUMWORDS[nm[1]] || ({ پانزده: 15, بیست: 20 })[nm[1]] || 1));
+        return { tool: 'transactions.search', args: Object.assign({}, args, { sort: intent === 'max' ? 'amountDesc' : 'amountAsc', limit: topN }), explain: intent === 'max' ? 'بیشترین' : 'کمترین' };
       }
       if (intent === 'avg') return { tool: 'transactions.aggregate', args: args, explain: 'avg' };
       if (intent === 'count') return { tool: 'transactions.aggregate', args: args, explain: 'count' };

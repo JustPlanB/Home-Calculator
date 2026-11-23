@@ -78,10 +78,10 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(R.t9.explain === 'avg', '«میانگین … برای نون» → میانگین');
   ok(R.t10.tool === 'transactions.search' && R.t10.args.sort === 'amountDesc' && !!R.t10.args.dateFrom, '«بیشترین خرج سه ماه اخیر» → بیشترین مورد در سه ماه');
   // پیام و فهمیدم
-  ok(/^فهمیدم:/.test(R.m1.text) && R.m1.kind === 'result', 'پاسخ با خط «فهمیدم» شروع می‌شود');
+  ok(!/^فهمیدم/.test(R.m1.text) && !!R.m1.head && R.m1.kind === 'result', 'پاسخ با تفسیر سؤال شروع می‌شود، بی کلمهٔ «فهمیدم»');
   ok(/تویوتا/.test(R.m1.text) && R.m1.kind === 'result', 'اصلاح «تویتا» → «تویوتا» در پاسخ گزارش می‌شود');
   ok(R.m2.kind === 'result' && R.m2.data.count >= 1, '«بیمه تویوتا» دو ردیف یا بیشتر دارد (ردیف حذف‌شده نیامد)');
-  ok(R.m3.kind === 'result' && /فهمیدم/.test(R.m3.text), 'جمع آبان هم خط «فهمیدم» دارد');
+  ok(R.m3.kind === 'result' && !/فهمیدم/.test(R.m3.text) && !!R.m3.head, 'جمع آبان هم خط تفسیر دارد');
   ok(String(R.m4.text || '').length > 10 && (R.m4.suggestions || []).length > 0, 'سلام: پاسخ راهنما با نمونه‌پرسش');
   ok(R.sug.indexOf('تویوتا') >= 0, 'پیشنهاد: «تویتا» → «تویوتا»');
   ok(R.sugNone.length === 0, 'پیشنهادی برای کلمهٔ بی‌ربط داده نمی‌شود');
@@ -152,28 +152,29 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     /* ۱.۴.۳۶: اول قاعده‌ای؛ سؤال روشن مدل را صدا نمی‌زند، سؤال نامفهوم برای قاعده‌ای به مدل می‌رود */
     out.clearAsked = await hkAsstAskAsync('اقساط ماهانه چقدر شده؟');
     out.clearCalledModel = seen !== '';
-    /* قاعده‌ای کلمهٔ ناشناخته را جست‌وجو می‌کند و چیزی پیدا نمی‌کند: مدل کمک می‌کند */
+    /* ۱.۴.۳۸: قاعده‌ای کلمهٔ ناشناخته را جست‌وجو می‌کند و چیزی پیدا نمی‌کند؛ مدل جواب قاعده را عوض نمی‌کند */
     hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"ask":"فقط درباره حساب‌کتاب می‌توانم کمک کنم."}'); }, 'تست');
     seen = '';
     out.emptyAsked = await hkAsstAskAsync('قضیه مرغداری رو بگرد');
     out.emptyCalledModel = seen.indexOf('قضیه مرغداری') >= 0;
+    out.emptyKind = out.emptyAsked.kind;
     hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"tool":"transactions.aggregate","args":{"tab":"expense","cats":["debt"]}}'); }, 'تست');
     seen = '';
-    out.good = await hkAsstAskAsync('اون قضیه چی شد؟');
-    out.goodPromptSent = seen.indexOf('اون قضیه') >= 0;
+    out.good = await hkAsstAskAsync('اون چی شد؟');
+    out.goodPromptSent = seen.indexOf('اون چی شد') >= 0;
     hkAsstLocalAttach(function () { return Promise.resolve('مطمئن نیستم، شاید هم نه'); }, 'تست');
     out.bad = await hkAsstAskAsync('بیمه تویوتا را پیدا کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"tool":"transactions.delete","args":{"id":"d1"}}'); }, 'تست');
     out.forbidden = await hkAsstAskAsync('یک ردیف را پاک کن');
     hkAsstLocalAttach(function () { return Promise.resolve('{"ask":"کدام بخش؟"}'); }, 'تست');
-    out.askFromModel = await hkAsstAskAsync('اون قضیه چی شد؟');
+    out.askFromModel = await hkAsstAskAsync('اون چی شد؟');
     hkAsstLocalAttach(null, '');
     out.readyOff = HK_ASST_ADAPTERS.local.ready();
     return out;
   });
   ok(L.readyBefore === false && L.readyAfter === true && L.readyOff === false, 'مدل محلی فقط وقتی اجراکننده وصل باشد آماده است');
   ok(L.promptHasTools && L.promptHasNoRows, 'درخواست به مدل فقط فهرست ابزارها و پرسش کاربر را دارد، نه داده‌های مالی');
-  ok(L.emptyCalledModel && L.emptyAsked.kind === 'text' && /حساب‌کتاب/.test(L.emptyAsked.text), 'اگر قاعده‌ای چیزی پیدا نکند (کلمهٔ ناشناخته)، مدل صدا زده می‌شود و پاسخ مدل نشان داده می‌شود');
+  ok(!L.emptyCalledModel && L.emptyKind === 'result', 'اگر قاعده‌ای چیزی پیدا نکند (کلمهٔ ناشناخته)، جواب قاعده می‌ماند و مدل آن را عوض نمی‌کند');
   ok(L.clearAsked.kind === 'result' && L.clearCalledModel === false, 'سؤال روشن را قاعده‌ای فوری جواب می‌دهد و منتظر مدل نمی‌ماند');
   ok(L.good.kind === 'result' && L.good.tool === 'transactions.aggregate' && L.goodPromptSent, 'سؤالی که قاعده‌ای نفهمد به مدل می‌رود و خروجی درست مدل اجرا و نمایش داده می‌شود');
   ok(L.bad.kind === 'result' || L.bad.kind === 'text', 'خروجی نامعتبر مدل، به قاعده‌ای برمی‌گردد و پاسخ داده می‌شود');
@@ -184,7 +185,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   const dlInit = await page.evaluate(() => { const b = document.querySelector('.hk-asst-dl'); return { exists: !!b, done: b ? b.classList.contains('is-done') : null, label: b ? b.getAttribute('aria-label') : '' }; });
   ok(dlInit.exists && dlInit.done === false && /دانلود مدل/.test(dlInit.label), 'دکمهٔ دانلود اختیاری در سربرگ دستیار هست و در آغاز ذخیره نشده است');
   await page.route('https://huggingface.co/**', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.alloc(4096, 1) }));
-  await page.click('.hk-asst-dl'); await page.waitForTimeout(200);
+  await page.evaluate(() => hkAsstMgrOpen()); await page.click('.hk-asst-dl'); await page.waitForTimeout(200); await page.evaluate(() => hkAsstMgrClose());
   const askShown = await page.evaluate(() => { const m = document.getElementById('confirmModal'); return !!m && /مگابایت|گیگابایت/.test(document.getElementById('confirmMsg').textContent); });
   ok(askShown, 'زدن دکمهٔ دانلود، پیش از شروع، تأیید کاربر را می‌پرسد و حجم را می‌گوید');
   await page.click('#confirmYes'); await page.waitForTimeout(1200);
@@ -214,7 +215,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
   await page.fill('.hk-asst-input', 'بیمه تویتا'); await page.click('.hk-asst-send'); await page.waitForTimeout(200);
   const txt = await page.evaluate(() => document.querySelector('.hk-asst-log').textContent);
-  ok(/فهمیدم/.test(txt), 'در پنجره، خط «فهمیدم» نمایش داده می‌شود');
+  ok(!/فهمیدم:/.test(txt) && /جست‌وجو/.test(txt), 'در پنجره، خط تفسیر بی «فهمیدم:» نمایش داده می‌شود');
   ok(errs.length === 0, 'خطای صفحه نداریم' + (errs.length ? ': ' + errs[0] : ''));
   await b.close();
   console.log(`\n${passed} passed, ${failed} failed`);
