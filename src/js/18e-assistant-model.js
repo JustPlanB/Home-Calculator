@@ -61,7 +61,7 @@
     function hkAsstEngineStatus() {
       if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
       if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
-      if (HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری مدل نشد: ' + HK_ASST_ENGINE.error + ')';
+      if (HK_ASST_ENGINE.error) return 'قاعده‌ای (خطا در مرحلهٔ «' + (HK_ASST_ENGINE.stage || '?') + '»: ' + HK_ASST_ENGINE.error + (HK_ASST_ENGINE.probe ? ' | ' + HK_ASST_ENGINE.probe : '') + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
     /* ----- ذخیرهٔ مدل روی دیسک (OPFS) -----
@@ -119,13 +119,42 @@
       });
     }
     /* بارگذاری موتور از فایل روی دیسک. حافظهٔ اوج کم‌تر: n_ctx کوچک (فرمان JSON کوتاه است) و یک نخ */
+    /* ----- تشخیص مرحله‌به‌مرحلهٔ بارگذاری -----
+       هر مرحله پیش از اجرا در HK_ASST_ENGINE.stage ثبت می‌شود تا اگر خطا شد، همان مرحله زیر عنوان دستیار دیده شود. */
+    function hkAsstStep(name) { HK_ASST_ENGINE.stage = name; }
+    /* بررسی فایل موتور و امکان Worker؛ نتیجه در HK_ASST_ENGINE.probe ثبت می‌شود (خطا نمی‌اندازد) */
+    function hkAsstProbe() {
+      var parts = [];
+      return fetch('./llm/wllama.wasm').then(function (r) {
+        var type = r.headers.get('content-type') || '-';
+        if (!r.ok) throw new Error('wasm HTTP ' + r.status);
+        return r.arrayBuffer().then(function (buf) { parts.push('wasm ' + buf.byteLength + ' ' + type); });
+      }).catch(function (e) { parts.push('wasm: ' + (e && e.message || 'خطا')); }).then(function () {
+        return new Promise(function (resolve) {
+          var done = false, wk = null, timer = setTimeout(function () { if (!done) { done = true; parts.push('worker: مهلت'); resolve(); } }, 2500);
+          try {
+            var url = URL.createObjectURL(new Blob(['self.onmessage=function(){self.postMessage(1)}'], { type: 'text/javascript' }));
+            wk = new Worker(url);
+            wk.onmessage = function () { if (!done) { done = true; clearTimeout(timer); parts.push('worker ok'); resolve(); } };
+            wk.onerror = function (ev) { if (!done) { done = true; clearTimeout(timer); parts.push('worker: ' + ((ev && ev.message) || 'خطا')); resolve(); } };
+            wk.postMessage(1);
+          } catch (eW) { if (!done) { done = true; clearTimeout(timer); parts.push('worker: ' + (eW && eW.message || 'ساخته نشد')); resolve(); } }
+        });
+      }).then(function () { HK_ASST_ENGINE.probe = parts.join(' | '); });
+    }
     function hkAsstLocalLoad() {
       if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
-      HK_ASST_ENGINE.error = '';
+      HK_ASST_ENGINE.error = ''; HK_ASST_ENGINE.probe = ''; hkAsstStep('خواندن فایل مدل');
       HK_ASST_ENGINE.loading = hkAsstModelOpfsFile().then(function (f) { return f || hkAsstMigrateFromIdb(); }).then(function (file) {
         if (!file) throw new Error('مدل هنوز دانلود نشده است');
-        return import('./llm/wllama.js').then(function (mod) {
+        hkAsstStep('بررسی فایل موتور و Worker');
+        return hkAsstProbe().then(function () {
+          hkAsstStep('بارگذاری ماژول موتور');
+          return import('./llm/wllama.js');
+        }).then(function (mod) {
+          hkAsstStep('ساخت موتور');
           var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' });
+          hkAsstStep('بارگذاری مدل در موتور');
           return w.loadModel([file], { n_ctx: 512, n_threads: 1 }).then(function () {
             hkAsstLocalAttach(function (prompt) {
               return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
@@ -135,7 +164,7 @@
           });
         });
       });
-      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 120); });
+      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 160); });
       HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
       return HK_ASST_ENGINE.loading;
     }
