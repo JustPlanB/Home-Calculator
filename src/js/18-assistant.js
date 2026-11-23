@@ -141,7 +141,7 @@
     }
     function hkAsstOpen() {
       if (!_hkAsstEl) return;
-      try { var md = document.getElementById('hkAsstMode'); if (md) md.textContent = HK_ASST_ADAPTERS.local.ready() ? 'مدل محلی' : 'قاعده‌ای (مدل محلی نصب نیست)'; } catch (eM) {}
+      hkAsstSetMode();
       _hkAsstEl.classList.add('open');
       _hkAsstEl.setAttribute('aria-hidden', 'false');
       if (!_hkAsstLog.length) hkAsstShowEmpty();
@@ -219,7 +219,8 @@
       if (!dl || dl._busy) return;
       hkAsstModelStatus().then(function (done) {
         hkAsstDlPaint(dl, done ? 'done' : 'empty');
-        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().catch(function () {}); }
+        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode); }
+        hkAsstSetMode();
       });
     }
     function hkAsstModelClick(dl) {
@@ -238,12 +239,16 @@
         dl._busy = false;
         try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
         hkAsstModelRefresh(dl);
-        hkAsstLocalLoad().then(function () { try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });
+        hkAsstLocalLoad().then(function () { hkAsstSetMode(); try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { hkAsstSetMode(); try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });
       }, function (err) {
         dl._busy = false;
         try { showToast('دانلود انجام نشد: ' + (err && err.message ? err.message : 'خطا')); } catch (e2) {}
         hkAsstModelRefresh(dl);
       });
+    }
+    /* برچسب زیر عنوان را با وضعیت زندهٔ موتور به‌روز می‌کند */
+    function hkAsstSetMode() {
+      try { var md = document.getElementById('hkAsstMode'); if (md) md.textContent = hkAsstEngineStatus(); } catch (eM) {}
     }
     function hkAsstIsOpen() { return !!(_hkAsstEl && _hkAsstEl.classList.contains('open')); }
     function hkAsstInit() {

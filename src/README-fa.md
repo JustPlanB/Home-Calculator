@@ -347,13 +347,13 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/18d-assistant-query.js` (217 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — تفسیر درخواست فارسی
 
-## `js/18e-assistant-model.js` (112 خط)
+## `js/18e-assistant-model.js` (121 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — اتصال مدل زبانی (Model Adapter)
 
 ## `js/18b-assistant-controller.js` (111 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — مدیریت درخواست و پاسخ
 
-## `js/18-assistant.js` (255 خط)
+## `js/18-assistant.js` (260 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — دکمهٔ صفحهٔ اصلی و پنجرهٔ گفتگو
 
 ## `html/03-tail.html` (26 خط)

@@ -56,9 +56,17 @@
       approxGB: 1.1
     };
     /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
-    var HK_ASST_ENGINE = { loading: null, ok: false };
+    var HK_ASST_ENGINE = { loading: null, ok: false, error: '' };
+    /* متن وضعیت موتور برای نمایش زیر عنوان دستیار؛ اگر بارگذاری خطا داده باشد، علتش هم نشان داده می‌شود */
+    function hkAsstEngineStatus() {
+      if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
+      if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
+      if (HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری مدل نشد: ' + HK_ASST_ENGINE.error + ')';
+      return 'قاعده‌ای (مدل محلی نصب نیست)';
+    }
     function hkAsstLocalLoad() {
       if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
+      HK_ASST_ENGINE.error = '';
       HK_ASST_ENGINE.loading = HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
         if (!blob) throw new Error('مدل هنوز دانلود نشده است');
         return import('./llm/wllama.js').then(function (mod) {
@@ -72,6 +80,7 @@
           });
         });
       });
+      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 120); });
       HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
       return HK_ASST_ENGINE.loading;
     }
