@@ -177,7 +177,9 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(askShown, 'زدن دکمهٔ دانلود، پیش از شروع، تأیید کاربر را می‌پرسد و حجم را می‌گوید');
   await page.click('#confirmYes'); await page.waitForTimeout(1200);
   const dlDone = await page.evaluate(async () => { const b = document.querySelector('.hk-asst-dl'); const st = await hkAsstModelStatus(); return { done: b.classList.contains('is-done'), stored: st }; });
-  ok(dlDone.done === true && dlDone.stored === true, 'پس از تأیید، مدل دانلود و ذخیره می‌شود و دکمه تیک می‌شود');
+  /* روی file:// مبدأ امن نیست و فضای OPFS باز نمی‌شود؛ دانلود باید با پیام روشن متوقف شود (موفقیت کامل در batch-1423 روی سرور محلی تست می‌شود) */
+  const toastTxt = await page.evaluate(() => (document.getElementById('toast') || {}).textContent || '');
+  ok(dlDone.done === false && dlDone.stored === false && /دانلود انجام نشد/.test(toastTxt), 'روی مبدأ غیرامن (file://) دانلود با پیام خطا متوقف می‌شود و مدل ذخیره نمی‌شود');
   await page.unroute('https://huggingface.co/**');
   await page.route('https://huggingface.co/**', route => route.fulfill({ status: 404, body: 'nope' }));
   const errOk = await page.evaluate(async () => { try { await hkAsstModelDownload(); return false; } catch (e) { return /404/.test(e.message); } });

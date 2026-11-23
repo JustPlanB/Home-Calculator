@@ -64,15 +64,69 @@
       if (HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری مدل نشد: ' + HK_ASST_ENGINE.error + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
+    /* ----- ذخیرهٔ مدل روی دیسک (OPFS) -----
+       دانلود مستقیم روی دیسک نوشته می‌شود تا کل فایل هیچ‌وقت در حافظهٔ گوشی جمع نشود (علت قبلی خطای abort).
+       مدل قبلی که در IndexedDB بود، یک بار با استریم به OPFS منتقل می‌شود و دوباره دانلود نمی‌شود. */
+    function hkAsstFileName() { return 'hk_asst_model.gguf'; }
+    function hkAsstOpfs() {
+      if (!navigator.storage || !navigator.storage.getDirectory) return Promise.reject(new Error('فضای ذخیرهٔ فایل در این گوشی در دسترس نیست'));
+      return navigator.storage.getDirectory();
+    }
+    function hkAsstModelOpfsFile() {
+      return hkAsstOpfs().then(function (dir) { return dir.getFileHandle(hkAsstFileName()); })
+        .then(function (fh) { return fh.getFile(); }, function () { return null; });
+    }
+    function hkAsstMigrateFromIdb() {
+      return HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
+        if (!blob || !blob.stream) return null;
+        return hkAsstOpfs().then(function (dir) { return dir.getFileHandle(hkAsstFileName(), { create: true }); })
+          .then(function (fh) { return fh.createWritable().then(function (w) { return blob.stream().pipeTo(w); }); })
+          .then(function () { return HKStore.del(HK_ASST_MODEL.key); })
+          .then(function () { return hkAsstModelOpfsFile(); });
+      });
+    }
+    /* آیا مدل آماده است؟ (فایل روی دیسک، یا نشانهٔ ذخیرهٔ قبلی که هنوز منتقل نشده) */
+    function hkAsstModelStatus() {
+      return hkAsstModelOpfsFile().then(function (f) { return !!f && f.size > 0; }).then(function (ok) {
+        if (ok) return true;
+        return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; });
+      }, function () { return false; });
+    }
+    /* دانلود با گزارش پیشرفت؛ هر تکه همان لحظه روی دیسک نوشته می‌شود */
+    function hkAsstModelDownload(onProgress) {
+      return fetch(HK_ASST_MODEL.url).then(function (res) {
+        if (!res.ok) throw new Error('پاسخ سرور: ' + res.status);
+        var total = Number(res.headers.get('content-length')) || 0;
+        return hkAsstOpfs().then(function (dir) { return dir.getFileHandle(hkAsstFileName(), { create: true }); }).then(function (fh) {
+          return fh.createWritable().then(function (w) {
+            var got = 0, reader = res.body.getReader();
+            function pump() {
+              return reader.read().then(function (r) {
+                if (r.done) return w.close();
+                got += r.value.length;
+                return w.write(r.value).then(function () {
+                  if (onProgress) { try { onProgress(total ? got / total : 0, got); } catch (eP) {} }
+                  return pump();
+                });
+              });
+            }
+            return pump().catch(function (err) { try { w.abort(); } catch (eA) {} throw err; });
+          });
+        });
+      }).then(function () { return hkAsstModelOpfsFile(); }).then(function (f) {
+        if (!f || f.size === 0) throw new Error('فایل ذخیره نشد');
+        return HKStore.put(HK_ASST_MODEL.key + '_meta', { size: f.size, at: Date.now(), name: HK_ASST_MODEL.name }).then(function () { return f.size; });
+      });
+    }
+    /* بارگذاری موتور از فایل روی دیسک. حافظهٔ اوج کم‌تر: n_ctx کوچک (فرمان JSON کوتاه است) و یک نخ */
     function hkAsstLocalLoad() {
       if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
       HK_ASST_ENGINE.error = '';
-      HK_ASST_ENGINE.loading = HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
-        if (!blob) throw new Error('مدل هنوز دانلود نشده است');
+      HK_ASST_ENGINE.loading = hkAsstModelOpfsFile().then(function (f) { return f || hkAsstMigrateFromIdb(); }).then(function (file) {
+        if (!file) throw new Error('مدل هنوز دانلود نشده است');
         return import('./llm/wllama.js').then(function (mod) {
-          /* موتور مسیر فایل wasm را از کلید default می‌خواند */
           var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' });
-          return w.loadModel([blob], { n_ctx: 2048, n_threads: 1 }).then(function () {
+          return w.loadModel([file], { n_ctx: 512, n_threads: 1 }).then(function () {
             hkAsstLocalAttach(function (prompt) {
               return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
@@ -85,31 +139,7 @@
       HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
       return HK_ASST_ENGINE.loading;
     }
-    /* آیا مدل قبلاً دانلود و ذخیره شده است؟ (فقط نشانهٔ کوچک را می‌خواند، نه کل فایل را) */
-    function hkAsstModelStatus() {
-      try { return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; }); }
-      catch (e) { return Promise.resolve(false); }
-    }
-    /* دانلود با گزارش پیشرفت؛ فایل در IndexedDB ذخیره می‌شود. خطا به تماس‌گیرنده برمی‌گردد. */
-    function hkAsstModelDownload(onProgress) {
-      return fetch(HK_ASST_MODEL.url).then(function (res) {
-        if (!res.ok) throw new Error('پاسخ سرور: ' + res.status);
-        var total = Number(res.headers.get('content-length')) || 0, got = 0, chunks = [], reader = res.body.getReader();
-        function pump() {
-          return reader.read().then(function (r) {
-            if (r.done) return;
-            chunks.push(r.value); got += r.value.length;
-            if (onProgress) { try { onProgress(total ? got / total : 0, got); } catch (eP) {} }
-            return pump();
-          });
-        }
-        return pump().then(function () { return new Blob(chunks, { type: 'application/octet-stream' }); });
-      }).then(function (blob) {
-        return HKStore.put(HK_ASST_MODEL.key, blob)
-          .then(function () { return HKStore.put(HK_ASST_MODEL.key + '_meta', { size: blob.size, at: Date.now(), name: HK_ASST_MODEL.name }); })
-          .then(function () { return blob.size; });
-      });
-    }
+
     var HK_ASST_ACTIVE = 'rules';
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
