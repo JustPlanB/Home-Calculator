@@ -100,6 +100,12 @@
     }
     try { document.addEventListener('visibilitychange', function () { if (!document.hidden) syncNativeChrome(); }); } catch (eV) {}
 
+    /* بخش بروزرسانی در راهنما (زیر بخش‌های قبلی) */
+    var HK_HELP_UPDATE_HTML = '<div class="help-section"><h4>بروزرسانی</h4><ul>' +
+      '<li>از منوی همبرگری، بخش <strong>درباره</strong> را باز کنید و دکمهٔ <strong>بروزرسانی</strong> را بزنید. برنامه نسخهٔ تازه را بررسی می‌کند و در صورت وجود، دانلود و نصب را پیشنهاد می‌دهد.</li>' +
+      '<li>نسخهٔ فعلی برنامه همان‌جا، کنار دکمهٔ بروزرسانی نوشته شده است.</li>' +
+      '<li>نسخهٔ تازه را روی همین برنامه نصب کنید؛ داده‌ها و مدل دستیار پاک نمی‌شوند.</li>' +
+      '</ul></div>';
     function openHelpModal() {
       closeSideMenu();
       const body = document.getElementById('helpModalBody');
@@ -139,6 +145,7 @@
 </ul></div>
 <button type="button" class="modal-btn yes help-tour-btn" onclick="closeHelpModal(); setTimeout(function(){ startAppTour(true); }, 250);">نمایش دوبارهٔ تور آموزشی</button>
 `;
+        body.insertAdjacentHTML('beforeend', HK_HELP_UPDATE_HTML);
       }
       document.getElementById('helpModal').classList.add('open');
       try { syncModalOverlaysToViewport(); } catch (e) {}
@@ -759,7 +766,7 @@
       try { if (window.hkDiag) window.hkDiag('back', _backHandling ? '(busy)' : ''); } catch (eDg) {}
       if(_backHandling) return;
       /* دستیار هوشمند باز است: بازگشت فقط آن را می‌بندد و به صفحهٔ اصلی برمی‌گردد */
-      try { if (window.hkAsstIsOpen && window.hkAsstIsOpen()) { window.hkAsstClose(); return; } } catch (eAs) {}
+      try { if (window.hkAsstBack && window.hkAsstBack()) return; } catch (eAs) {}
       _backHandling=true;
       setTimeout(function () { try { hkResetEditIcons(); if (document.activeElement && document.activeElement.blur && /BUTTON/.test(document.activeElement.tagName)) document.activeElement.blur(); } catch (eRi) {} }, 30);
       setTimeout(()=>{_backHandling=false;},250);

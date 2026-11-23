@@ -127,7 +127,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(!!fab, 'دکمهٔ دایره‌ای دستیار روی صفحه هست');
   if (fab) {
     const box = await fab.boundingBox();
-    ok(box && box.width === 40 && box.height === 40 && box.x > 300 && box.y < 50, 'دکمه دایره‌ای ۴۰ پیکسلی در گوشهٔ بالا-راست، بیرون از دکمه‌های صفحه');
+    ok(box && box.width === 44 && box.height === 44 && box.x > 300 && box.y < 50, 'دکمه دایره‌ای ۴۴ پیکسلی در گوشهٔ بالا-راست، بیرون از دکمه‌های صفحه');
     await fab.click();
     await page.waitForTimeout(200);
     ok(await page.evaluate(() => document.getElementById('hkAsstSheet').classList.contains('open')), 'با زدن دکمه، پنجرهٔ دستیار باز می‌شود');
