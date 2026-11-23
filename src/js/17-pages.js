@@ -508,6 +508,7 @@
           }
           var its = Array.prototype.filter.call(box.children, function (c) { return (c.classList.contains('menu-item') || c.classList.contains('menu-theme-row')) && c.style.display !== 'none'; });
           var nm = its.map(itemName).filter(Boolean);
+          if (g.getAttribute('data-sub-extra')) nm.push(g.getAttribute('data-sub-extra'));
           /* ۱.۴.۷: بی «…»: فقط همان تعداد نامی که در یک خط جا می‌شود */
           var sm = row.querySelector('small'); sm.textContent = nm.join('، ');
           if (sm.clientWidth > 0) { for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }
