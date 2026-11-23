@@ -13163,6 +13163,11 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
     .hk-asst-sheet { position: fixed; inset: 0; z-index: 250; background: var(--hk-bg); display: none; flex-direction: column; direction: rtl; }
     .hk-asst-sheet.open { display: flex; }
     .hk-asst-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--hk-line); }
+    .hk-asst-dl { position: relative; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--hk-surface-2); color: var(--hk-text); display: flex; align-items: center; justify-content: center; padding: 0; flex: none; }
+    .hk-asst-dl svg { width: 19px; height: 19px; }
+    .hk-asst-dl.is-done { color: var(--hk-income); }
+    .hk-asst-dl.is-busy svg { opacity: .35; }
+    .hk-asst-dl-p { position: absolute; font-size: 10px; font-weight: 700; color: var(--hk-text); }
     .hk-asst-title { flex: 1; font-weight: 700; color: var(--hk-text); }
     .hk-asst-back { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--hk-surface-2); color: var(--hk-text); display: flex; align-items: center; justify-content: center; padding: 0; }
     .hk-asst-back svg { width: 20px; height: 20px; }
@@ -55240,7 +55245,7 @@ function openProjectRowPicker(secId) {
       CAT_fun: ['تفریح', 'سینما', 'سفر', 'بازی', 'بازیها', 'پارک', 'کنسرت', 'تئاتر', 'ویلا', 'هتل', 'مسافرت', 'گردش', 'استخر', 'باشگاه ورزشی', 'کتاب‌خوانی', 'سرگرمی', 'اسباب بازی', 'اسباببازی'],
       CAT_gift: ['هدیه', 'هدیه ها', 'هدیه‌ها', 'کمک', 'کمک ها', 'کمک‌ها', 'نذر', 'عیدی', 'عیدیه', 'خیریه', 'صدقه', 'تولد', 'جشن', 'سوغات', 'کادو', 'حلوا'],
       CAT_debt: ['قسط', 'اقساط', 'قسطها', 'قسط‌ها', 'قسط ها', 'وام', 'وامها', 'وام‌ها', 'بدهی', 'بدهیها', 'بدهی‌ها', 'اقساط وام', 'چک', 'چکها', 'چک‌ها', 'تسویه', 'بازپرداخت'],
-      CAT_tech: ['دیجیتال', 'موبایل', 'گوشی', 'کامپیوتر', 'لپتاپ', 'لپ تاپ', 'لپ‌تاپ', 'اپ', 'اپلیکیشن', 'اشتراک', 'اشتراکها', 'اشتراک‌ها', 'اشتراک ها', 'نرم افزار', 'نرم‌افزار', 'ویندوز', 'اینترنت موبایل', 'سیم کارت', 'سیم‌کارت', 'شارژ گوشی', 'لوازم جانبی', 'هدفون', 'هندزفری', 'تبلت', 'ابزار دیجیتال'],
+      CAT_tech: ['دیجیتال', 'موبایل', 'گوشی', 'کامپیوتر', 'لپتاپ', 'لپ تاپ', 'لپ‌تاپ', 'اپلیکیشن', 'اشتراک', 'اشتراکها', 'اشتراک‌ها', 'اشتراک ها', 'نرم افزار', 'نرم‌افزار', 'ویندوز', 'اینترنت موبایل', 'سیم کارت', 'سیم‌کارت', 'شارژ گوشی', 'لوازم جانبی', 'هدفون', 'هندزفری', 'تبلت', 'ابزار دیجیتال'],
       PROJ: ['پروژه', 'پروژه ها', 'پروژه‌ها', 'پروژه‌های', 'پروژه های', 'پروژه‌ای', 'پروژه ای', 'پروژه‌ها رو'],
       PERS: ['شخصی', 'شخصیم', 'شخصی ها', 'شخصی‌ها', 'خودم', 'شخصی‌ام'],
       MONTH_1: ['فروردین', 'فروردن', 'فرودین', 'فروردینی', 'فروردین ماه', 'فروردین‌ماه', 'فروردینماه', 'فروردن ماه'],
@@ -55587,6 +55592,59 @@ function openProjectRowPicker(secId) {
       if (!m) return null;
       try { var o = JSON.parse(m[0]); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
     }
+    /* مدل Qwen2.5-1.5B-Instruct (کوانتیزهٔ Q4_K_M، مجوز Apache-2.0) از مخزن رسمی Qwen روی Hugging Face.
+       دانلود فقط با تأیید کاربر انجام می‌شود. (نسخهٔ ۳B مجوز غیرتجاری دارد و استفاده نشد.) */
+    var HK_ASST_MODEL = {
+      key: 'hk_asst_model_qwen25_15b_q4km',
+      name: 'Qwen2.5-1.5B-Instruct (Q4_K_M)',
+      url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
+      approxGB: 1.1
+    };
+    /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
+    var HK_ASST_ENGINE = { loading: null, ok: false };
+    function hkAsstLocalLoad() {
+      if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
+      HK_ASST_ENGINE.loading = HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
+        if (!blob) throw new Error('مدل هنوز دانلود نشده است');
+        return import('./llm/wllama.js').then(function (mod) {
+          var w = new mod.Wllama({ 'single-thread/wllama.wasm': './llm/wllama.wasm' });
+          return w.loadModel([blob], { n_ctx: 2048, n_threads: 1 }).then(function () {
+            hkAsstLocalAttach(function (prompt) {
+              return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
+                .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
+            }, HK_ASST_MODEL.name);
+            HK_ASST_ENGINE.ok = true;
+          });
+        });
+      });
+      HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
+      return HK_ASST_ENGINE.loading;
+    }
+    /* آیا مدل قبلاً دانلود و ذخیره شده است؟ (فقط نشانهٔ کوچک را می‌خواند، نه کل فایل را) */
+    function hkAsstModelStatus() {
+      try { return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; }); }
+      catch (e) { return Promise.resolve(false); }
+    }
+    /* دانلود با گزارش پیشرفت؛ فایل در IndexedDB ذخیره می‌شود. خطا به تماس‌گیرنده برمی‌گردد. */
+    function hkAsstModelDownload(onProgress) {
+      return fetch(HK_ASST_MODEL.url).then(function (res) {
+        if (!res.ok) throw new Error('پاسخ سرور: ' + res.status);
+        var total = Number(res.headers.get('content-length')) || 0, got = 0, chunks = [], reader = res.body.getReader();
+        function pump() {
+          return reader.read().then(function (r) {
+            if (r.done) return;
+            chunks.push(r.value); got += r.value.length;
+            if (onProgress) { try { onProgress(total ? got / total : 0, got); } catch (eP) {} }
+            return pump();
+          });
+        }
+        return pump().then(function () { return new Blob(chunks, { type: 'application/octet-stream' }); });
+      }).then(function (blob) {
+        return HKStore.put(HK_ASST_MODEL.key, blob)
+          .then(function () { return HKStore.put(HK_ASST_MODEL.key + '_meta', { size: blob.size, at: Date.now(), name: HK_ASST_MODEL.name }); })
+          .then(function () { return blob.size; });
+      });
+    }
     var HK_ASST_ACTIVE = 'rules';
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
@@ -55718,7 +55776,7 @@ function openProjectRowPicker(secId) {
       if (txt != null) e.textContent = txt;
       return e;
     }
-    /* آواتار: کاربر عکس پروفایل خودش را دارد؛ اگر نبود، حرف اول اسمش. دستیار آیکون سبز اپ را نشان می‌دهد */
+    /* آواتار: کاربر عکس پروفایل خودش را دارد؛ اگر نبود، حرف اول اسمش. دستیار آیکون سبز برنامه را نشان می‌دهد */
     function hkAsstAvatar(me) {
       var av = hkAsstEl('div', 'hk-asst-av' + (me ? '' : ' hk-asst-av-bot'));
       if (!me) { av.appendChild(hkAsstEl('i')); return av; }
@@ -55884,6 +55942,12 @@ function openProjectRowPicker(secId) {
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
       if (titleBox) titleBox.appendChild(mode);
+      var dl = hkAsstEl('button', 'hk-asst-dl');
+      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۱٫۱ گیگابایت)';
+      hkAsstDlPaint(dl, 'empty');
+      dl.addEventListener('click', function () { hkAsstModelClick(dl); });
+      head.insertBefore(dl, head.querySelector('.hk-asst-clear'));
+      hkAsstModelRefresh(dl);
       var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
       clr.type = 'button';
       clr.addEventListener('click', hkAsstClear);
@@ -55906,6 +55970,46 @@ function openProjectRowPicker(secId) {
 
       document.body.appendChild(sheet);
       _hkAsstEl = sheet;
+    }
+    /* وضعیت دکمهٔ دانلود: خالی (فلش)، در حال دانلود (درصد)، یا ذخیره‌شده (تیک). هر وضعیت دکمه را از نو می‌سازد */
+    var HK_ASST_DL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 19.5h14"/></svg>';
+    function hkAsstDlPaint(dl, mode, pct) {
+      if (!dl) return;
+      if (mode === 'done') { dl.innerHTML = HK_TICK_SVG; dl.classList.add('is-done'); dl.classList.remove('is-busy'); return; }
+      dl.innerHTML = HK_ASST_DL_ARROW + '<span class="hk-asst-dl-p">' + (mode === 'busy' ? pct : '') + '</span>';
+      dl.classList.remove('is-done');
+      dl.classList.toggle('is-busy', mode === 'busy');
+    }
+    function hkAsstModelRefresh(dl) {
+      dl = dl || document.querySelector('.hk-asst-dl');
+      if (!dl || dl._busy) return;
+      hkAsstModelStatus().then(function (done) {
+        hkAsstDlPaint(dl, done ? 'done' : 'empty');
+        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().catch(function () {}); }
+      });
+    }
+    function hkAsstModelClick(dl) {
+      if (dl._busy) return;
+      hkAsstModelStatus().then(function (done) {
+        if (done) { try { showToast('مدل از قبل دانلود و ذخیره شده است.'); } catch (e0) {} return; }
+        askConfirm('مدل Qwen2.5-1.5B (حدود ۱٫۱ گیگابایت) از Hugging Face دانلود و روی گوشی ذخیره می‌شود. ادامه می‌دهی؟', function () { hkAsstModelStart(dl); });
+      });
+    }
+    function hkAsstModelStart(dl) {
+      dl._busy = true;
+      hkAsstDlPaint(dl, 'busy', '0%');
+      hkAsstModelDownload(function (frac) {
+        var sp = dl.querySelector('.hk-asst-dl-p'); if (sp) sp.textContent = Math.round(frac * 100) + '%';
+      }).then(function () {
+        dl._busy = false;
+        try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
+        hkAsstModelRefresh(dl);
+        hkAsstLocalLoad().then(function () { try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });
+      }, function (err) {
+        dl._busy = false;
+        try { showToast('دانلود انجام نشد: ' + (err && err.message ? err.message : 'خطا')); } catch (e2) {}
+        hkAsstModelRefresh(dl);
+      });
     }
     function hkAsstIsOpen() { return !!(_hkAsstEl && _hkAsstEl.classList.contains('open')); }
     function hkAsstInit() {

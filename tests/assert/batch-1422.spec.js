@@ -167,6 +167,35 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(L.bad.kind === 'result' || L.bad.kind === 'text', 'خروجی نامعتبر مدل، به قاعده‌ای برمی‌گردد و پاسخ داده می‌شود');
   ok(!(L.forbidden.tool === 'transactions.delete'), 'ابزار تغییردهنده از طرف مدل اجرا نمی‌شود');
   ok(L.askFromModel.kind === 'text' && /کدام/.test(L.askFromModel.text), 'پرسش تکمیلی مدل نمایش داده می‌شود');
+  // دانلود اختیاری مدل
+  await page.evaluate(() => hkAsstOpen()); await page.waitForTimeout(200);
+  const dlInit = await page.evaluate(() => { const b = document.querySelector('.hk-asst-dl'); return { exists: !!b, done: b ? b.classList.contains('is-done') : null, label: b ? b.getAttribute('aria-label') : '' }; });
+  ok(dlInit.exists && dlInit.done === false && /دانلود مدل/.test(dlInit.label), 'دکمهٔ دانلود اختیاری در سربرگ دستیار هست و در آغاز ذخیره نشده است');
+  await page.route('https://huggingface.co/**', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.alloc(4096, 1) }));
+  await page.click('.hk-asst-dl'); await page.waitForTimeout(200);
+  const askShown = await page.evaluate(() => { const m = document.getElementById('confirmModal'); return !!m && /گیگابایت/.test(document.getElementById('confirmMsg').textContent); });
+  ok(askShown, 'زدن دکمهٔ دانلود، پیش از شروع، تأیید کاربر را می‌پرسد و حجم را می‌گوید');
+  await page.click('#confirmYes'); await page.waitForTimeout(1200);
+  const dlDone = await page.evaluate(async () => { const b = document.querySelector('.hk-asst-dl'); const st = await hkAsstModelStatus(); return { done: b.classList.contains('is-done'), stored: st }; });
+  ok(dlDone.done === true && dlDone.stored === true, 'پس از تأیید، مدل دانلود و ذخیره می‌شود و دکمه تیک می‌شود');
+  await page.unroute('https://huggingface.co/**');
+  await page.route('https://huggingface.co/**', route => route.fulfill({ status: 404, body: 'nope' }));
+  const errOk = await page.evaluate(async () => { try { await hkAsstModelDownload(); return false; } catch (e) { return /404/.test(e.message); } });
+  ok(errOk, 'پاسخ خطای سرور، دانلود را با پیام خطا متوقف می‌کند');
+  await page.unroute('https://huggingface.co/**');
+  await page.evaluate(() => { HKStore.del(HK_ASST_MODEL.key + '_meta'); HKStore.del(HK_ASST_MODEL.key); });
+  await page.evaluate(() => hkAsstClose()); await page.waitForTimeout(150);
+  // موتور اجرا و مدل ۱٫۵B
+  const E = await page.evaluate(async () => {
+    let err = '';
+    try { await hkAsstLocalLoad(); } catch (e) { err = e.message || ''; }
+    return { url: HK_ASST_MODEL.url, err: err, ready: HK_ASST_ADAPTERS.local.ready() };
+  });
+  const llmOk = fs.existsSync(path.join(__dirname, '../../assets/llm/wllama.js')) && fs.existsSync(path.join(__dirname, '../../assets/llm/wllama.wasm'));
+  const buildSrc = fs.readFileSync(path.join(__dirname, '../../scripts/build-web.js'), 'utf8');
+  ok(llmOk && /'assets', 'llm'/.test(buildSrc) && /wllama\.wasm/.test(buildSrc), 'موتور اجرا (wllama) در assets/llm است و ساخت آن را کنار index.html کپی می‌کند');
+  ok(/Qwen2\.5-1\.5B-Instruct/.test(E.url) && /apache|Apache/.test(fs.readFileSync(path.join(__dirname, '../../src/js/18e-assistant-model.js'), 'utf8')), 'مدل دانلودی Qwen2.5-1.5B (مجوز Apache-2.0) است');
+  ok(/هنوز دانلود نشده/.test(E.err) && E.ready === false, 'بدون مدل ذخیره‌شده، بارگذاری خطای روشن می‌دهد و مدل محلی آماده نمی‌شود');
   // دکمه‌های پیشنهاد در پنجره
   await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
   await page.fill('.hk-asst-input', 'بیمه تویتا'); await page.click('.hk-asst-send'); await page.waitForTimeout(200);

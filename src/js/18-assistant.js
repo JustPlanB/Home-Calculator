@@ -10,7 +10,7 @@
       if (txt != null) e.textContent = txt;
       return e;
     }
-    /* آواتار: کاربر عکس پروفایل خودش را دارد؛ اگر نبود، حرف اول اسمش. دستیار آیکون سبز اپ را نشان می‌دهد */
+    /* آواتار: کاربر عکس پروفایل خودش را دارد؛ اگر نبود، حرف اول اسمش. دستیار آیکون سبز برنامه را نشان می‌دهد */
     function hkAsstAvatar(me) {
       var av = hkAsstEl('div', 'hk-asst-av' + (me ? '' : ' hk-asst-av-bot'));
       if (!me) { av.appendChild(hkAsstEl('i')); return av; }
@@ -176,6 +176,12 @@
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
       if (titleBox) titleBox.appendChild(mode);
+      var dl = hkAsstEl('button', 'hk-asst-dl');
+      dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۱٫۱ گیگابایت)';
+      hkAsstDlPaint(dl, 'empty');
+      dl.addEventListener('click', function () { hkAsstModelClick(dl); });
+      head.insertBefore(dl, head.querySelector('.hk-asst-clear'));
+      hkAsstModelRefresh(dl);
       var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
       clr.type = 'button';
       clr.addEventListener('click', hkAsstClear);
@@ -198,6 +204,46 @@
 
       document.body.appendChild(sheet);
       _hkAsstEl = sheet;
+    }
+    /* وضعیت دکمهٔ دانلود: خالی (فلش)، در حال دانلود (درصد)، یا ذخیره‌شده (تیک). هر وضعیت دکمه را از نو می‌سازد */
+    var HK_ASST_DL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 19.5h14"/></svg>';
+    function hkAsstDlPaint(dl, mode, pct) {
+      if (!dl) return;
+      if (mode === 'done') { dl.innerHTML = HK_TICK_SVG; dl.classList.add('is-done'); dl.classList.remove('is-busy'); return; }
+      dl.innerHTML = HK_ASST_DL_ARROW + '<span class="hk-asst-dl-p">' + (mode === 'busy' ? pct : '') + '</span>';
+      dl.classList.remove('is-done');
+      dl.classList.toggle('is-busy', mode === 'busy');
+    }
+    function hkAsstModelRefresh(dl) {
+      dl = dl || document.querySelector('.hk-asst-dl');
+      if (!dl || dl._busy) return;
+      hkAsstModelStatus().then(function (done) {
+        hkAsstDlPaint(dl, done ? 'done' : 'empty');
+        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().catch(function () {}); }
+      });
+    }
+    function hkAsstModelClick(dl) {
+      if (dl._busy) return;
+      hkAsstModelStatus().then(function (done) {
+        if (done) { try { showToast('مدل از قبل دانلود و ذخیره شده است.'); } catch (e0) {} return; }
+        askConfirm('مدل Qwen2.5-1.5B (حدود ۱٫۱ گیگابایت) از Hugging Face دانلود و روی گوشی ذخیره می‌شود. ادامه می‌دهی؟', function () { hkAsstModelStart(dl); });
+      });
+    }
+    function hkAsstModelStart(dl) {
+      dl._busy = true;
+      hkAsstDlPaint(dl, 'busy', '0%');
+      hkAsstModelDownload(function (frac) {
+        var sp = dl.querySelector('.hk-asst-dl-p'); if (sp) sp.textContent = Math.round(frac * 100) + '%';
+      }).then(function () {
+        dl._busy = false;
+        try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
+        hkAsstModelRefresh(dl);
+        hkAsstLocalLoad().then(function () { try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });
+      }, function (err) {
+        dl._busy = false;
+        try { showToast('دانلود انجام نشد: ' + (err && err.message ? err.message : 'خطا')); } catch (e2) {}
+        hkAsstModelRefresh(dl);
+      });
     }
     function hkAsstIsOpen() { return !!(_hkAsstEl && _hkAsstEl.classList.contains('open')); }
     function hkAsstInit() {

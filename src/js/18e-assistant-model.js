@@ -47,6 +47,59 @@
       if (!m) return null;
       try { var o = JSON.parse(m[0]); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
     }
+    /* مدل Qwen2.5-1.5B-Instruct (کوانتیزهٔ Q4_K_M، مجوز Apache-2.0) از مخزن رسمی Qwen روی Hugging Face.
+       دانلود فقط با تأیید کاربر انجام می‌شود. (نسخهٔ ۳B مجوز غیرتجاری دارد و استفاده نشد.) */
+    var HK_ASST_MODEL = {
+      key: 'hk_asst_model_qwen25_15b_q4km',
+      name: 'Qwen2.5-1.5B-Instruct (Q4_K_M)',
+      url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
+      approxGB: 1.1
+    };
+    /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
+    var HK_ASST_ENGINE = { loading: null, ok: false };
+    function hkAsstLocalLoad() {
+      if (HK_ASST_ENGINE.loading) return HK_ASST_ENGINE.loading;
+      HK_ASST_ENGINE.loading = HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
+        if (!blob) throw new Error('مدل هنوز دانلود نشده است');
+        return import('./llm/wllama.js').then(function (mod) {
+          var w = new mod.Wllama({ 'single-thread/wllama.wasm': './llm/wllama.wasm' });
+          return w.loadModel([blob], { n_ctx: 2048, n_threads: 1 }).then(function () {
+            hkAsstLocalAttach(function (prompt) {
+              return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
+                .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
+            }, HK_ASST_MODEL.name);
+            HK_ASST_ENGINE.ok = true;
+          });
+        });
+      });
+      HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
+      return HK_ASST_ENGINE.loading;
+    }
+    /* آیا مدل قبلاً دانلود و ذخیره شده است؟ (فقط نشانهٔ کوچک را می‌خواند، نه کل فایل را) */
+    function hkAsstModelStatus() {
+      try { return HKStore.get(HK_ASST_MODEL.key + '_meta').then(function (m) { return !!m; }, function () { return false; }); }
+      catch (e) { return Promise.resolve(false); }
+    }
+    /* دانلود با گزارش پیشرفت؛ فایل در IndexedDB ذخیره می‌شود. خطا به تماس‌گیرنده برمی‌گردد. */
+    function hkAsstModelDownload(onProgress) {
+      return fetch(HK_ASST_MODEL.url).then(function (res) {
+        if (!res.ok) throw new Error('پاسخ سرور: ' + res.status);
+        var total = Number(res.headers.get('content-length')) || 0, got = 0, chunks = [], reader = res.body.getReader();
+        function pump() {
+          return reader.read().then(function (r) {
+            if (r.done) return;
+            chunks.push(r.value); got += r.value.length;
+            if (onProgress) { try { onProgress(total ? got / total : 0, got); } catch (eP) {} }
+            return pump();
+          });
+        }
+        return pump().then(function () { return new Blob(chunks, { type: 'application/octet-stream' }); });
+      }).then(function (blob) {
+        return HKStore.put(HK_ASST_MODEL.key, blob)
+          .then(function () { return HKStore.put(HK_ASST_MODEL.key + '_meta', { size: blob.size, at: Date.now(), name: HK_ASST_MODEL.name }); })
+          .then(function () { return blob.size; });
+      });
+    }
     var HK_ASST_ACTIVE = 'rules';
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
