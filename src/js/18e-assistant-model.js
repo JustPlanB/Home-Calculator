@@ -16,6 +16,7 @@
             var o = hkAsstLocalParse(out);
             if (!o) throw new Error('خروجی مدل نامعتبر بود');
             if (o.ask) return { ask: String(o.ask) };
+            if (!o.tool) throw new Error('مدل ابزاری انتخاب نکرد');
             return { tool: o.tool, args: o.args || {}, explain: '', corrections: [] };
           });
         }
@@ -34,12 +35,42 @@
         return '- ' + n + '(' + HK_ASST_TOOLS[n].args.join(', ') + ')';
       }).join('\n');
     }
+    /* ۱.۴.۳۶: پرامپت کوتاه و مثال‌دار (مدل کوچک با مثال خوب یاد می‌گیرد، نه با فهرست بلند)؛ بخش ثابت اول و سؤال آخر است
+       تا موتور بخش ثابت را یک بار پردازش کند و برای سؤال‌های بعدی نگه دارد (cache_prompt). هیچ دادهٔ کاربر در پرامپت نیست. */
+    var HK_ASST_TOOL_HINT = {
+      'transactions.aggregate': 'جمع و تعداد و میانگین', 'transactions.search': 'پیدا کردن تراکنش', 'transactions.group': 'گروه‌بندی',
+      'reports.compare': 'مقایسهٔ دو ماه', 'projects.list': 'فهرست پروژه‌ها', 'projects.summary': 'خلاصهٔ یک پروژه',
+      'categories.summary': 'دسته‌ها', 'accounts.list': 'حساب‌ها', 'months.summary': 'ماه‌های ثبت‌شده'
+    };
+    function hkAsstLocalReadOnlyTools() {
+      return Object.keys(HK_ASST_TOOLS).filter(function (n) { return HK_ASST_TOOLS[n].readOnly; });
+    }
     function hkAsstLocalPrompt(question) {
-      return 'تو دستیار حساب‌کتاب هستی. فقط یک فرمان JSON بساز، بدون هیچ توضیح دیگر.\n' +
-        'فرمت: {"tool":"نام ابزار","args":{...}} یا اگر متوجه نشدی: {"ask":"پرسش کوتاه"}.\n' +
-        'ابزارها:\n' + hkAsstLocalToolList() + '\n' +
-        'کلیدهای مهم: tab = "expense" (هزینه) یا "income" (درآمد)، month = عدد ماه ۱ تا ۱۲، year = سال شمسی، cats = آرایه‌ای از دسته‌ها (food, transport, bills, clothing, health, home, education, fun, gift, debt, tech)، text = متن جست‌وجو، amountMin/amountMax = مبلغ به تومان.\n' +
-        'سؤال: ' + question + '\nJSON:';
+      return 'تو دستیار حساب‌کتاب هستی. سؤال کاربر را به یک فرمان JSON تبدیل کن. فقط JSON بنویس.\n' +
+        'ابزارها: ' + hkAsstLocalReadOnlyTools().map(function (n) { return n + (HK_ASST_TOOL_HINT[n] ? ' (' + HK_ASST_TOOL_HINT[n] + ')' : ''); }).join('، ') + '.\n' +
+        'کلیدها: tab = expense یا income، month = ۱ تا ۱۲، year = سال شمسی، text = کلمهٔ جست‌وجو، cats = دسته‌ها، amountMin و amountMax = مبلغ به تومان.\n' +
+        'اگر سؤال دربارهٔ حساب‌کتاب نیست یا نفهمیدی: {"ask":"پاسخ یا پرسش کوتاه"}\n' +
+        'سؤال: جمع هزینه‌های آبان چقدر شد؟\n{"tool":"transactions.aggregate","args":{"tab":"expense","month":8}}\n' +
+        'سؤال: تراکنش‌های بیمه شخص ثالث را پیدا کن\n{"tool":"transactions.search","args":{"text":"بیمه شخص ثالث"}}\n' +
+        'سؤال: سلام خوبی؟\n{"ask":"سلام! درباره تراکنش‌ها و مبلغ‌ها بپرس."}\n' +
+        'سؤال: ' + question + '\n';
+    }
+    /* قالب خروجی برای موتور (json_schema): خروجی همیشه JSON معتبر است و نام ابزار فقط از ابزارهای خواندنی؛ مدل کوچک دیگر نمی‌تواند خراب بنویسد */
+    function hkAsstLocalSchema() {
+      return {
+        type: 'object',
+        properties: {
+          tool: { type: 'string', enum: hkAsstLocalReadOnlyTools() },
+          args: {
+            type: 'object',
+            properties: {
+              text: { type: 'string' }, tab: { type: 'string', enum: ['expense', 'income'] }, month: { type: 'integer' }, year: { type: 'integer' },
+              cats: { type: 'array', items: { type: 'string' } }, amountMin: { type: 'integer' }, amountMax: { type: 'integer' }, limit: { type: 'integer' }
+            }
+          },
+          ask: { type: 'string' }
+        }
+      };
     }
     /* از خروجی مدل فقط اولین شیء JSON را می‌خواند؛ هر چیز دیگر نامعتبر است */
     function hkAsstLocalParse(out) {
@@ -91,9 +122,9 @@
        موتور در حالت پیش‌فرض اگر مرورگر WebGPU داشته باشد وزن‌های مدل را روی GPU گوشی می‌گذارد؛ روی گوشی‌ها این کل برنامه را می‌بندد.
        پس پیش‌فرض فقط CPU است (n_gpu_layers: 0). اگر باز هم برنامه وسط بارگذاری بسته شد، لمس بعدیِ کاربر سراغ تنظیم ملایم‌تر می‌رود. */
     var HK_ASST_PROFILES = [
-      { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false },
-      { n_ctx: 512, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false },
-      { n_ctx: 512, n_threads: 1, n_batch: 64, n_ubatch: 64, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false, no_kv_offload: true, offload_kqv: false }
+      { n_ctx: 1024, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false },
+      { n_ctx: 1024, n_threads: 1, n_batch: 128, n_ubatch: 128, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false },
+      { n_ctx: 1024, n_threads: 1, n_batch: 64, n_ubatch: 64, n_parallel: 1, n_gpu_layers: 0, token_embd_on_gpu: false, warmup: false, jinja: false, no_kv_offload: true, offload_kqv: false }
     ];
     var HK_ASST_GOOD_KEY = 'hkAsstGoodProf';
     /* ثبتِ قدیمی (بی «prof») یعنی با هیچ‌کدام از این تنظیم‌ها قطع نشده؛ شمارش از اولین تنظیم شروع می‌شود */
@@ -239,7 +270,7 @@
           hkAsstStep('بارگذاری مدل در موتور');
           return w.loadModel([file], HK_ASST_PROFILES[prof]).then(function () {
             hkAsstLocalAttach(function (prompt) {
-              return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
+              return w.createCompletion({ prompt: prompt, max_tokens: 120, temperature: 0.1, json_schema: hkAsstLocalSchema(), cache_prompt: true })
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
             }, HK_ASST_MODEL.name);
             HK_ASST_ENGINE.ok = true;

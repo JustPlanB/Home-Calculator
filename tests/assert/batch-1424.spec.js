@@ -72,6 +72,57 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(E.afterLast === E.n - 1 && E.retryLast === false && /همهٔ تنظیم‌ها امتحان شد/.test(E.lastStatus), 'بعد از ملایم‌ترین تنظیم دیگر تلاش خودکار نیست و وضعیت می‌گوید');
   ok(E.good === 1, 'تنظیمی که جواب داده، برای بارگذاری‌های بعدی نگه داشته می‌شود');
 
+  console.log('• پرامپت و قالب خروجی مدل');
+  const F = await page.evaluate(() => {
+    const o = {}, pr = hkAsstLocalPrompt('سؤال آزمایشی');
+    o.len = pr.length; o.endsWithQuestion = /سؤال: سؤال آزمایشی\n$/.test(pr);
+    o.fewShot = (pr.match(/سؤال:/g) || []).length >= 4;
+    const sc = hkAsstLocalSchema();
+    o.enumOk = JSON.stringify(sc.properties.tool.enum) === JSON.stringify(Object.keys(HK_ASST_TOOLS).filter(n => HK_ASST_TOOLS[n].readOnly));
+    o.noMutating = sc.properties.tool.enum.every(n => HK_ASST_TOOLS[n].readOnly === true);
+    try { JSON.stringify(sc); o.json = true; } catch (e) { o.json = false; }
+    o.ctx = HK_ASST_PROFILES.every(p => p.n_ctx >= 1024);
+    return o;
+  });
+  ok(F.len < 1100 && F.endsWithQuestion && F.fewShot, 'پرامپت کوتاه است، چند مثال دارد و سؤال کاربر آخرِ آن است (بخش ثابت اول، قابل نگه‌داشتن)');
+  ok(F.enumOk && F.noMutating && F.json, 'قالب خروجی فقط ابزارهای خواندنی را مجاز می‌داند');
+  ok(F.ctx, 'اندازهٔ متن مدل برای پرامپت و پاسخ کافی است (۱۰۲۴)');
+
+  console.log('• دستیار: نشانگر پاسخ‌دادن و کادر ورودی');
+  const G = await page.evaluate(async () => {
+    const w = ms => new Promise(r => setTimeout(r, ms));
+    const o = {};
+    hkAsstOpen(); await w(300);
+    const form = document.querySelector('.hk-asst-form'), field = form.querySelector('.hk-asst-field'), inp = form.querySelector('.hk-asst-input');
+    o.inside = !!(field && field.contains(inp) && field.querySelector('.hk-asst-rec') && field.querySelector('.hk-asst-vc') && field.querySelector('.hk-asst-send'));
+    const fh = field.getBoundingClientRect().height; o.fieldH = Math.round(fh);
+    const vis = sel => { const e = field.querySelector(sel); return !!e && getComputedStyle(e).display !== 'none'; };
+    o.emptyIcons = vis('.hk-asst-rec') && vis('.hk-asst-vc') && !vis('.hk-asst-send');
+    inp.value = 'ن'; inp.dispatchEvent(new Event('input', { bubbles: true })); await w(50);
+    o.typingIcons = !vis('.hk-asst-rec') && !vis('.hk-asst-vc') && vis('.hk-asst-send');
+    o.noBorder = getComputedStyle(inp).borderTopWidth === '0px';
+    /* پاسخ دیر می‌رسد: نشانگر سه نقطه هست و بعد از رسیدن پاسخ برداشته می‌شود */
+    let release; hkAsstLocalAttach(function () { return new Promise(function (r) { release = r; }); }, 'کند');
+    inp.value = 'سلام خوبی؟'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    hkAsstSend(inp.value); await w(150);
+    const dots = document.querySelectorAll('.hk-asst-wait .hk-loading-dots i');
+    o.dots = dots.length;
+    const row = document.querySelector('.hk-asst-wait'); o.rowHasAvatar = !!(row && row.querySelector('.hk-asst-av'));
+    o.dotsW = row ? row.querySelector('.hk-loading-dots').offsetWidth : 0; /* offsetWidth: چرخش و کوچک‌سازی را حساب نمی‌کند */
+    o.dotAnim = dots.length ? getComputedStyle(dots[0]).animationName : '';
+    o.afterSendIcons = vis('.hk-asst-rec') && vis('.hk-asst-vc') && !vis('.hk-asst-send');
+    o.loggedWait = _hkAsstLog.some(m => m.kind === 'wait');
+    release('{"ask":"سلام! درباره تراکنش‌ها بپرس."}'); await w(300);
+    o.dotsAfter = document.querySelectorAll('.hk-asst-wait').length;
+    o.lastText = (document.querySelector('.hk-asst-log').lastElementChild || {}).textContent || '';
+    hkAsstLocalAttach(null, ''); hkAsstClose();
+    return o;
+  });
+  ok(G.inside && G.fieldH >= 50 && G.noBorder, 'کادر ورودی بزرگ‌تر است (حدود ۵۴) و ضبط و گفتگوی صوتی داخل کادرند (' + G.fieldH + ')');
+  ok(G.emptyIcons && G.typingIcons && G.afterSendIcons, 'کادر خالی: ضبط و گفتگوی صوتی؛ با تایپ: فقط ارسال؛ بعد از ارسال دوباره ضبط و گفتگوی صوتی');
+  ok(G.dots === 3 && G.rowHasAvatar && G.dotAnim && G.dotAnim !== 'none' && G.dotsW === 30, 'هنگام انتظار پاسخ: همان سه نقطهٔ آبی متحرک (hk-loading-dots) کنار آیکون دستیار');
+  ok(!G.loggedWait && G.dotsAfter === 0 && /سلام!/.test(G.lastText), 'بعد از رسیدن پاسخ، نشانگر برداشته می‌شود و پاسخ جایش می‌نشیند');
+
   console.log('• «درباره»: زیرنویس');
   const C = await page.evaluate(async () => {
     const w = ms => new Promise(r => setTimeout(r, ms));

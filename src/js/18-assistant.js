@@ -78,7 +78,7 @@
       return wrap;
     }
     function hkAsstAppend(msg) {
-      _hkAsstLog.push(msg);
+      if (msg.kind !== 'wait') _hkAsstLog.push(msg);
       if (!_hkAsstEl) return null;
       var log = _hkAsstEl.querySelector('.hk-asst-log');
       var empty = log.querySelector('.hk-asst-empty');
@@ -87,7 +87,15 @@
       var row = hkAsstEl('div', 'hk-asst-msg hk-asst-row ' + (me ? 'hk-asst-me' : 'hk-asst-bot'));
       row.appendChild(hkAsstAvatar(me));
       var bub = hkAsstEl('div', 'hk-asst-bub');
-      bub.appendChild(hkAsstEl('div', 'hk-asst-txt', msg.text));
+      if (msg.kind === 'wait') {
+        /* ۱.۴.۳۶: همان سه نقطهٔ آبیِ «در حال خواندن پیامک‌ها» (کلاس hk-loading-dots)، کوچک‌شده برای چت */
+        var dw = hkAsstEl('span', 'hk-asst-dots'), sc = hkAsstEl('span', 'hk-asst-dots-sc'), dd = hkAsstEl('span', 'hk-loading-dots');
+        dd.innerHTML = '<i></i><i></i><i></i>';
+        sc.appendChild(dd); dw.appendChild(sc); bub.appendChild(dw);
+        row.setAttribute('role', 'status'); row.setAttribute('aria-label', 'در حال پاسخ دادن');
+      } else {
+        bub.appendChild(hkAsstEl('div', 'hk-asst-txt', msg.text));
+      }
       if (msg.kind === 'result') bub.appendChild(hkAsstRenderResult(msg));
       if (msg.suggestions && msg.suggestions.length) {
         var sg = hkAsstEl('div', 'hk-asst-sugg');
@@ -101,8 +109,8 @@
       }
       row.appendChild(bub);
       log.appendChild(row);
-      return row;
       log.scrollTop = log.scrollHeight;
+      return row;
     }
     function hkAsstShowEmpty() {
       var log = _hkAsstEl.querySelector('.hk-asst-log');
@@ -124,8 +132,9 @@
       hkAsstAppend({ role: 'user', kind: 'text', text: q });
       var input = _hkAsstEl.querySelector('.hk-asst-input');
       input.value = '';
+      try { input.form.classList.remove('typing'); } catch (eT) {}
       /* نشانگر «در حال فکر کردن» تا پاسخ برسد؛ پس از آن جایش پاسخ می‌نشیند */
-      var wait = hkAsstAppend({ role: 'bot', kind: 'text', text: '…' });
+      var wait = hkAsstAppend({ role: 'bot', kind: 'wait', text: '' });
       if (wait) wait.classList.add('hk-asst-wait');
       hkAsstAskAsync(q).then(function (reply) {
         if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
@@ -315,21 +324,24 @@
       recbar.appendChild(bars);
       recbar.appendChild(hkAsstEl('span', 'hk-asst-rectxt', 'در حال ضبط… حرف بزن'));
       form.appendChild(recbar);
-      form.appendChild(input);
+      /* ۱.۴.۳۶: کادر بزرگ‌تر؛ ضبط و گفتگوی صوتی داخل کادرند و با شروع تایپ، جایشان را دکمهٔ ارسال می‌گیرد */
+      var field = hkAsstEl('div', 'hk-asst-field');
+      field.appendChild(input);
       var rec = hkAsstEl('button', 'hk-asst-rec');
       rec.type = 'button'; rec.setAttribute('aria-label', 'ضبط صدا و تبدیل به متن');
       rec.innerHTML = HK_ASST_MIC_SVG;
       rec.addEventListener('click', function () { hkAsstRecStart(form, input); });
-      form.appendChild(rec);
+      field.appendChild(rec);
       var vc = hkAsstEl('button', 'hk-asst-vc');
       vc.type = 'button'; vc.setAttribute('aria-label', 'گفتگوی صوتی دوطرفه');
       vc.innerHTML = HK_ASST_WAVE_SVG;
       vc.addEventListener('click', hkAsstVoiceOpen);
-      form.appendChild(vc);
+      field.appendChild(vc);
       var send = hkAsstEl('button', 'hk-asst-send');
       send.type = 'submit'; send.setAttribute('aria-label', 'ارسال');
       send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
-      form.appendChild(send);
+      field.appendChild(send);
+      form.appendChild(field);
       form.addEventListener('submit', function (e) { e.preventDefault(); hkAsstSend(input.value); });
       sheet.appendChild(form);
 
