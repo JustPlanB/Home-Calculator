@@ -127,8 +127,7 @@
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       // اقساط و درآمد ثابت دیگران
       try {
         const beforeP = (plans || []).length;
@@ -823,8 +822,7 @@
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       (plans || []).forEach(touchRow);
       try { (recurringIncomes || []).forEach(touchRow); } catch (e) {}
       return n;

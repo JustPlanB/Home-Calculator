@@ -127,12 +127,12 @@ node scripts/src-toc.js   # همین فهرست
 ## `html/02e-sheets-modals.html` (136 خط)
 - (سرفصل ندارد)
 
-## `js/01a-core.js` (1147 خط)
+## `js/01a-core.js` (1144 خط)
 - خط 18: فلش پروژه: نیمه بالا/پایین با دو رنگ + اینر‌شدوی تیره (شناسه یکتا برای هر فیلتر)
 - خط 28: ویبره: اول پلاگین بومی (اندروید APK)، بعد navigator.vibrate (کروم/وب)
 - خط 185: Supabase (حساب مشترک) — این مقادیر را فقط در کد قرار دهید؛ در UI نمایش داده نمی‌شوند
-- خط 1077: Confirm
-- خط 1125: Keep modals above the on-screen keyboard
+- خط 1074: Confirm
+- خط 1122: Keep modals above the on-screen keyboard
 
 ## `js/01b-place-text-input-sheet.js` (1137 خط)
 - خط 1: Text input (sheet at top — avoids keyboard covering buttons)
@@ -145,9 +145,9 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/02a-sync.js` (832 خط)
 - خط 1: Supabase Shared Account (Offline-first)
 
-## `js/02b-persist-sb-session.js` (943 خط)
-- خط 490: لایهٔ ذخیره‌سازی: شکست نوشتن بی‌صدا رد نمی‌شود
-- خط 552: ۱.۳.۶۳: نسخهٔ دوم آرشیو در IndexedDB
+## `js/02b-persist-sb-session.js` (941 خط)
+- خط 489: لایهٔ ذخیره‌سازی: شکست نوشتن بی‌صدا رد نمی‌شود
+- خط 551: ۱.۳.۶۳: نسخهٔ دوم آرشیو در IndexedDB
 
 ## `js/02c-render-family-modal-body.js` (907 خط)
 - خط 513: Installment reminders
@@ -157,7 +157,7 @@ node scripts/src-toc.js   # همین فهرست
 - خط 380: رمزنگاری فایل پشتیبان (AES-256-GCM، کلید از رمز با PBKDF2-SHA256 / ۲۱۰هزار دور)
 - خط 400: پشتیبان خودکار رمزدار (اختیاری) — قالب hk-backup-enc نسخهٔ ۱
 
-## `js/03b-auto-enc-row-html.js` (1143 خط)
+## `js/03b-auto-enc-row-html.js` (1132 خط)
 - خط 1: رابط رمزنگاری پشتیبان خودکار
 - خط 592: پشتیبان خودکار (اندروید ۱۰ به بالا)
 
@@ -242,7 +242,7 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/09b-rec-sms-payer.js` (710 خط)
 - خط 1: تطبیق پیامک واریز با ردیف «دریافت نشده» درآمد ثابت
 
-## `js/09c-remove-carried-installment-r.js` (698 خط)
+## `js/09c-remove-carried-installment-r.js` (694 خط)
 - (سرفصل ندارد)
 
 ## `js/10a-sms-reconcile.js` (881 خط)
@@ -263,8 +263,8 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/10c-get-app-lock-plugin.js` (1087 خط)
 - خط 1: App Lock / Security
 
-## `js/11a-accounts-integrity.js` (975 خط)
-- خط 943: کلیدهای دسترسی در منوی همبرگری
+## `js/11a-accounts-integrity.js` (972 خط)
+- خط 940: کلیدهای دسترسی در منوی همبرگری
 
 ## `js/11b-jalali-of-ts.js` (821 خط)
 - خط 1: ثبت گروهی پیامک‌های بانکی (حسابداری پیامک)

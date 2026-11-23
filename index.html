@@ -14543,10 +14543,7 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
             if (!s.rows.length) s.rows = [emptyRow()];
           });
         }
-        scrubEarly(periodData);
-        Object.keys(archive || {}).forEach(function(k) {
-          try { scrubEarly(archive[k]); } catch (eA) {}
-        });
+        iterAllPeriodData(function (pd) { try { scrubEarly(pd); } catch (eA) {} });
       } catch (eScrub) {}
     }
 
@@ -17063,8 +17060,7 @@ function onPeriodChange() {
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       // اقساط و درآمد ثابت دیگران
       try {
         const beforeP = (plans || []).length;
@@ -17759,8 +17755,7 @@ function onPeriodChange() {
           });
         }
       };
-      walkPeriod(periodData);
-      Object.keys(archive || {}).forEach(k => walkPeriod(archive[k]));
+      iterAllPeriodData(function (pd) { walkPeriod(pd); });
       (plans || []).forEach(touchRow);
       try { (recurringIncomes || []).forEach(touchRow); } catch (e) {}
       return n;
@@ -20589,9 +20584,7 @@ function askBackupUserCards(selectedParts) {
         });
       }
       try {
-        Object.keys(archive || {}).forEach(k => {
-          const pd = archive[k];
-          if (!pd) return;
+        iterAllPeriodData(function (pd) {
           claimSide(pd.income);
           claimSide(pd.expense);
           if (pd.ledger && Array.isArray(pd.ledger.sections)) {
@@ -20603,15 +20596,6 @@ function askBackupUserCards(selectedParts) {
         });
         (plans || []).forEach(claim);
         (recurringIncomes || []).forEach(claim);
-        // periodData جاری
-        claimSide(periodData && periodData.income);
-        claimSide(periodData && periodData.expense);
-        if (periodData && periodData.ledger && Array.isArray(periodData.ledger.sections)) {
-          periodData.ledger.sections.forEach(sec => {
-            claim(sec);
-            (sec.rows || []).forEach(claim);
-          });
-        }
       } catch (e) {}
     }
     /* ===== بازیابی امن: عکس از وضعیت قبل، ثبت هر شکست نوشتن، و در صورت شکست بازگشت کامل و بررسی‌شده =====
@@ -25015,8 +24999,8 @@ async function openPdfPrintWindow(){
       try {
         var main = hkMainTitle();
         try { if (persist && localStorage.getItem(STORAGE_KEY + '_mainCard') !== main && (allPersonTitlesRaw().length || Object.keys(archive || {}).length)) localStorage.setItem(STORAGE_KEY + '_mainCard', main); } catch (eS) {}
-        var ch = hkSingleCardMergePd(periodData, main);
-        Object.keys(archive || {}).forEach(function (k) { if (hkSingleCardMergePd(archive[k], main)) ch = true; });
+        var ch = false;
+        iterAllPeriodData(function (pd) { if (hkSingleCardMergePd(pd, main)) ch = true; });
         var curInc = ((periodData.income && periodData.income.sections) || [])[0];
         (recurringIncomes || []).forEach(function (r) {
           if (!r || r.deletedAt) return;
@@ -36762,14 +36746,10 @@ function getProjectBalance(subjectId) {
         });
       }
       try {
-        if (afterY == null || periodAfter(currentYear, currentMonth)) scrub(periodData);
-      } catch (e0) {}
-      try {
-        Object.keys(archive || {}).forEach(function(k) {
-          if (!archive[k]) return;
+        iterAllPeriodData(function (pd, k) {
           var parts = String(k).split('-');
           var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-          if (afterY == null || periodAfter(y, m)) scrub(archive[k]);
+          if (afterY == null || periodAfter(y, m)) scrub(pd);
         });
       } catch (e1) {}
     }
@@ -40708,8 +40688,7 @@ function confirmSmsEntry() {
           labels[lb] = true; entries++;
         });
       };
-      try { walk(periodData, periodKey(currentYear, currentMonth)); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { walk(archive[k], k); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd, k) { walk(pd, k); }); } catch (e1) {}
       if (entries) {
         var stashed = false;
         try {
@@ -40750,8 +40729,7 @@ function confirmSmsEntry() {
           });
         });
       };
-      try { fix(periodData); } catch (e0) {}
-      try { Object.keys(archive || {}).forEach(function (k) { fix(archive[k]); }); } catch (e1) {}
+      try { iterAllPeriodData(function (pd) { fix(pd); }); } catch (e1) {}
       try { (recurringIncomes || []).forEach(function (r) { if (r && (r.account || '').trim() === oldLb) r.account = newLb; }); if (typeof saveRecurring === 'function') saveRecurring(); } catch (e2) {}
       try {
         var ch = false;
@@ -40931,8 +40909,7 @@ function confirmSmsEntry() {
           });
         });
       }
-      walk(periodData);
-      Object.keys(archive || {}).forEach(k => walk(archive[k]));
+      iterAllPeriodData(function (pd) { walk(pd); });
       (recurringIncomes || []).forEach(r => {
         if (r.account) r.account = migrateBankName(r.account);
       });
