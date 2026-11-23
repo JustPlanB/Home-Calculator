@@ -58,9 +58,23 @@
     /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
     var HK_ASST_ENGINE = { loading: null, ok: false, error: '' };
     /* متن وضعیت موتور برای نمایش زیر عنوان دستیار؛ اگر بارگذاری خطا داده باشد، علتش هم نشان داده می‌شود */
+    /* ----- ثبت مرحلهٔ بارگذاری روی دستگاه (۱.۴.۳۳) -----
+       اگر اندروید وسط بارگذاری برنامه را ببندد (کمبود حافظه)، هیچ خطایی ثبت نمی‌شود. پس هر مرحله پیش از اجرا در localStorage
+       نوشته می‌شود؛ پایان درست یا خطای گرفته‌شده «تمام‌شده» علامت می‌خورد. «تمام‌نشده» یعنی همان مرحله برنامه را بسته است. */
+    var HK_ASST_BOOT_KEY = 'hkAsstBoot';
+    function hkAsstBootWrite(stage, done) {
+      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now() })); } catch (eB) {}
+    }
+    function hkAsstBootRead() {
+      try { var v = JSON.parse(localStorage.getItem(HK_ASST_BOOT_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (eR) { return null; }
+    }
+    function hkAsstBootClear() { try { localStorage.removeItem(HK_ASST_BOOT_KEY); } catch (eC) {} }
+    function hkAsstBootInterrupted() { var b = hkAsstBootRead(); return !!(b && !b.done); }
     function hkAsstEngineStatus() {
       if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
       if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
+      var bi = hkAsstBootRead();
+      if (bi && !bi.done && !HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری قبلی مدل در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد، احتمالاً کمبود حافظه؛ برای تلاش دوباره همین‌جا را لمس کن)';
       if (HK_ASST_ENGINE.error) return 'قاعده‌ای (خطا در مرحلهٔ «' + (HK_ASST_ENGINE.stage || '?') + '»: ' + HK_ASST_ENGINE.error + (HK_ASST_ENGINE.probe ? ' | ' + HK_ASST_ENGINE.probe : '') + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
@@ -114,6 +128,7 @@
         .then(function () { return HKStore.del(HK_ASST_MODEL.key); }).catch(function () {})
         .then(function () {
           HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+          hkAsstBootClear();
           hkAsstLocalAttach(null, '');
         });
     }
@@ -146,7 +161,7 @@
     /* بارگذاری موتور از فایل روی دیسک. حافظهٔ اوج کم‌تر: n_ctx کوچک (فرمان JSON کوتاه است) و یک نخ */
     /* ----- تشخیص مرحله‌به‌مرحلهٔ بارگذاری -----
        هر مرحله پیش از اجرا در HK_ASST_ENGINE.stage ثبت می‌شود تا اگر خطا شد، همان مرحله زیر عنوان دستیار دیده شود. */
-    function hkAsstStep(name) { HK_ASST_ENGINE.stage = name; }
+    function hkAsstStep(name) { HK_ASST_ENGINE.stage = name; hkAsstBootWrite(name, false); }
     /* بررسی فایل موتور و امکان Worker؛ نتیجه در HK_ASST_ENGINE.probe ثبت می‌شود (خطا نمی‌اندازد) */
     function hkAsstProbe() {
       var parts = [];
@@ -186,10 +201,11 @@
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
             }, HK_ASST_MODEL.name);
             HK_ASST_ENGINE.ok = true;
+            hkAsstBootWrite(HK_ASST_ENGINE.stage, true);
           });
         });
       });
-      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 160); });
+      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 160); hkAsstBootWrite(HK_ASST_ENGINE.stage, true); });
       HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
       return HK_ASST_ENGINE.loading;
     }

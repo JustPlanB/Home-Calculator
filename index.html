@@ -13241,7 +13241,6 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
     .hk-asst-ring .bg { stroke: var(--hk-line); }
     .hk-asst-ring .fg { stroke: #08b5f5; stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
 
-    .hk-about-sub { padding: 0 16px 6px; font-size: 13px; color: var(--hk-muted); pointer-events: none; }
     .hk-asst-mgr { position: absolute; inset: 0; display: none; flex-direction: column; background: var(--hk-bg); z-index: 4; }
     .hk-asst-mgr.open { display: flex; }
     .hk-asst-mgr-list { flex: 1; overflow-y: auto; padding: 14px; }
@@ -13384,9 +13383,8 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
           <span><i class="hk-mi" style="--c:#e6b12c"><svg viewBox="0 0 24 24"><path d="M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.8 2H4.7zM10 20.5h4"/></svg></i>اعلان‌ها</span><span class="perm-sw" aria-hidden="true"><i></i></span>
         </button>
         </div></div>
-        <div class="hk-mg" data-g="about">
+        <div class="hk-mg" data-g="about" data-sub-extra="بروزرسانی">
         <div class="menu-section-label">درباره</div>
-        <div class="hk-about-sub">راهنما · بروزرسانی</div>
         <div class="hk-mg-box">
         <button class="menu-item" onclick="openHelpModal()"><i class="hk-mi" style="--c:#64d2ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9.8 9.6a2.3 2.3 0 1 1 3 2.2c-.6.2-.8.7-.8 1.4M12 16.3v.2"/></svg></i>راهنما</button>
         <div class="menu-version-row">
@@ -54788,6 +54786,7 @@ function openProjectRowPicker(secId) {
           }
           var its = Array.prototype.filter.call(box.children, function (c) { return (c.classList.contains('menu-item') || c.classList.contains('menu-theme-row')) && c.style.display !== 'none'; });
           var nm = its.map(itemName).filter(Boolean);
+          if (g.getAttribute('data-sub-extra')) nm.push(g.getAttribute('data-sub-extra'));
           /* ۱.۴.۷: بی «…»: فقط همان تعداد نامی که در یک خط جا می‌شود */
           var sm = row.querySelector('small'); sm.textContent = nm.join('، ');
           if (sm.clientWidth > 0) { for (var n = nm.length; n > 1 && sm.scrollWidth > sm.clientWidth + 1; n--) sm.textContent = nm.slice(0, n - 1).join('، '); }
@@ -55642,9 +55641,23 @@ function openProjectRowPicker(secId) {
     /* موتور اجرا: wllama (MIT) از کنار برنامه؛ مدل از IndexedDB خوانده می‌شود. اگر نصب نباشد یا بارگذاری خطا بدهد، تفسیرگر قاعده‌ای می‌ماند. */
     var HK_ASST_ENGINE = { loading: null, ok: false, error: '' };
     /* متن وضعیت موتور برای نمایش زیر عنوان دستیار؛ اگر بارگذاری خطا داده باشد، علتش هم نشان داده می‌شود */
+    /* ----- ثبت مرحلهٔ بارگذاری روی دستگاه (۱.۴.۳۳) -----
+       اگر اندروید وسط بارگذاری برنامه را ببندد (کمبود حافظه)، هیچ خطایی ثبت نمی‌شود. پس هر مرحله پیش از اجرا در localStorage
+       نوشته می‌شود؛ پایان درست یا خطای گرفته‌شده «تمام‌شده» علامت می‌خورد. «تمام‌نشده» یعنی همان مرحله برنامه را بسته است. */
+    var HK_ASST_BOOT_KEY = 'hkAsstBoot';
+    function hkAsstBootWrite(stage, done) {
+      try { localStorage.setItem(HK_ASST_BOOT_KEY, JSON.stringify({ stage: stage || '', done: done ? 1 : 0, at: Date.now() })); } catch (eB) {}
+    }
+    function hkAsstBootRead() {
+      try { var v = JSON.parse(localStorage.getItem(HK_ASST_BOOT_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (eR) { return null; }
+    }
+    function hkAsstBootClear() { try { localStorage.removeItem(HK_ASST_BOOT_KEY); } catch (eC) {} }
+    function hkAsstBootInterrupted() { var b = hkAsstBootRead(); return !!(b && !b.done); }
     function hkAsstEngineStatus() {
       if (HK_ASST_ENGINE.ok && HK_ASST_LOCAL.runner) return 'مدل محلی';
       if (HK_ASST_ENGINE.loading) return 'قاعده‌ای (مدل در حال بارگذاری…)';
+      var bi = hkAsstBootRead();
+      if (bi && !bi.done && !HK_ASST_ENGINE.error) return 'قاعده‌ای (بارگذاری قبلی مدل در مرحلهٔ «' + (bi.stage || '?') + '» ناگهان قطع شد، احتمالاً کمبود حافظه؛ برای تلاش دوباره همین‌جا را لمس کن)';
       if (HK_ASST_ENGINE.error) return 'قاعده‌ای (خطا در مرحلهٔ «' + (HK_ASST_ENGINE.stage || '?') + '»: ' + HK_ASST_ENGINE.error + (HK_ASST_ENGINE.probe ? ' | ' + HK_ASST_ENGINE.probe : '') + ')';
       return 'قاعده‌ای (مدل محلی نصب نیست)';
     }
@@ -55698,6 +55711,7 @@ function openProjectRowPicker(secId) {
         .then(function () { return HKStore.del(HK_ASST_MODEL.key); }).catch(function () {})
         .then(function () {
           HK_ASST_ENGINE.ok = false; HK_ASST_ENGINE.loading = null; HK_ASST_ENGINE.error = '';
+          hkAsstBootClear();
           hkAsstLocalAttach(null, '');
         });
     }
@@ -55730,7 +55744,7 @@ function openProjectRowPicker(secId) {
     /* بارگذاری موتور از فایل روی دیسک. حافظهٔ اوج کم‌تر: n_ctx کوچک (فرمان JSON کوتاه است) و یک نخ */
     /* ----- تشخیص مرحله‌به‌مرحلهٔ بارگذاری -----
        هر مرحله پیش از اجرا در HK_ASST_ENGINE.stage ثبت می‌شود تا اگر خطا شد، همان مرحله زیر عنوان دستیار دیده شود. */
-    function hkAsstStep(name) { HK_ASST_ENGINE.stage = name; }
+    function hkAsstStep(name) { HK_ASST_ENGINE.stage = name; hkAsstBootWrite(name, false); }
     /* بررسی فایل موتور و امکان Worker؛ نتیجه در HK_ASST_ENGINE.probe ثبت می‌شود (خطا نمی‌اندازد) */
     function hkAsstProbe() {
       var parts = [];
@@ -55770,10 +55784,11 @@ function openProjectRowPicker(secId) {
                 .then(function (r) { return String((r && r.choices && r.choices[0] && r.choices[0].text) || ''); });
             }, HK_ASST_MODEL.name);
             HK_ASST_ENGINE.ok = true;
+            hkAsstBootWrite(HK_ASST_ENGINE.stage, true);
           });
         });
       });
-      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 160); });
+      HK_ASST_ENGINE.loading.then(null, function (e) { HK_ASST_ENGINE.error = String(e && e.message || e || 'خطا').slice(0, 160); hkAsstBootWrite(HK_ASST_ENGINE.stage, true); });
       HK_ASST_ENGINE.loading.catch(function () { HK_ASST_ENGINE.loading = null; });
       return HK_ASST_ENGINE.loading;
     }
@@ -56157,6 +56172,11 @@ function openProjectRowPicker(secId) {
       var titleBox = head.querySelector('.hk-asst-title');
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
+      mode.addEventListener('click', function () {
+        if (!hkAsstBootInterrupted() || HK_ASST_ENGINE.loading) return;
+        hkAsstBootClear(); hkAsstSetMode();
+        hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
+      });
       if (titleBox) titleBox.appendChild(mode);
       var dl = hkAsstEl('button', 'hk-asst-dl');
       dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۵۰۰ مگابایت)';
@@ -56248,7 +56268,8 @@ function openProjectRowPicker(secId) {
       if (!dl || dl._busy) return;
       hkAsstModelStatus().then(function (done) {
         hkAsstDlPaint(dl, done ? 'done' : 'empty');
-        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode); }
+        /* بارگذاری قبلی برنامه را بسته کرده؟ خودکار دوباره تلاش نشود؛ کاربر با لمس وضعیت تصمیم می‌گیرد */
+        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading && !hkAsstBootInterrupted()) { hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode); }
         hkAsstSetMode();
       });
     }
@@ -56269,6 +56290,7 @@ function openProjectRowPicker(secId) {
         if (fg) fg.style.strokeDashoffset = String(100 - pc);
       }).then(function () {
         dl._busy = false;
+        hkAsstBootClear();
         try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
         hkAsstModelRefresh(dl);
         hkAsstLocalLoad().then(function () { hkAsstSetMode(); try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { hkAsstSetMode(); try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });

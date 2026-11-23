@@ -258,6 +258,11 @@
       var titleBox = head.querySelector('.hk-asst-title');
       var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
       mode.id = 'hkAsstMode';
+      mode.addEventListener('click', function () {
+        if (!hkAsstBootInterrupted() || HK_ASST_ENGINE.loading) return;
+        hkAsstBootClear(); hkAsstSetMode();
+        hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode);
+      });
       if (titleBox) titleBox.appendChild(mode);
       var dl = hkAsstEl('button', 'hk-asst-dl');
       dl.type = 'button'; dl.setAttribute('aria-label', 'دانلود مدل محلی (اختیاری)'); dl.title = 'دانلود مدل محلی (اختیاری، حدود ۵۰۰ مگابایت)';
@@ -349,7 +354,8 @@
       if (!dl || dl._busy) return;
       hkAsstModelStatus().then(function (done) {
         hkAsstDlPaint(dl, done ? 'done' : 'empty');
-        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading) { hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode); }
+        /* بارگذاری قبلی برنامه را بسته کرده؟ خودکار دوباره تلاش نشود؛ کاربر با لمس وضعیت تصمیم می‌گیرد */
+        if (done && !HK_ASST_ENGINE.ok && !HK_ASST_ENGINE.loading && !hkAsstBootInterrupted()) { hkAsstLocalLoad().then(hkAsstSetMode, hkAsstSetMode); }
         hkAsstSetMode();
       });
     }
@@ -370,6 +376,7 @@
         if (fg) fg.style.strokeDashoffset = String(100 - pc);
       }).then(function () {
         dl._busy = false;
+        hkAsstBootClear();
         try { showToast('مدل ذخیره شد؛ در حال آماده‌سازی…'); } catch (e1) {}
         hkAsstModelRefresh(dl);
         hkAsstLocalLoad().then(function () { hkAsstSetMode(); try { showToast('مدل محلی آماده است.'); } catch (e3) {} }, function (e4) { hkAsstSetMode(); try { showToast('مدل آماده نشد: ' + (e4 && e4.message ? e4.message : 'خطا')); } catch (e5) {} });
