@@ -18,6 +18,30 @@
         return hkAsstNum(res.count) + ' تراکنش پیدا شد. جمع مبلغ: ' + hkAsstMoney(res.total) + '.';
       }
       if (tool === 'transactions.get') return res.found ? 'جزئیات تراکنش:' : 'این تراکنش پیدا نشد.';
+      if (tool === 'projects.list') {
+        if (!res.projects.length) return 'هنوز پروژه‌ای ثبت نشده است.';
+        return 'پروژه‌ها (' + hkAsstNum(res.projects.length) + '):\n' + res.projects.map(function (p) {
+          return '• ' + p.name + ': ' + hkAsstNum(p.count) + ' تراکنش، هزینه ' + hkAsstMoney(p.expenseSum) + '، درآمد ' + hkAsstMoney(p.incomeSum);
+        }).join('\n');
+      }
+      if (tool === 'categories.summary') {
+        var t = 'دسته‌های خرج: ' + hkAsstNum(res.total) + ' دسته';
+        t += '\nپیش‌فرض: ' + res.builtIn.join('، ');
+        if (res.custom.length) t += '\nدلخواه: ' + res.custom.join('، ');
+        return t;
+      }
+      if (tool === 'accounts.list') {
+        if (!res.accounts.length) return 'هنوز حسابی در ردیف‌ها ثبت نشده است.';
+        return 'حساب‌ها (' + hkAsstNum(res.accounts.length) + '):\n' + res.accounts.map(function (a) { return '• ' + a.name + ' (' + hkAsstNum(a.count) + ' ردیف)'; }).join('\n');
+      }
+      if (tool === 'months.summary') {
+        if (!res.count) return 'هنوز ماهی با ردیف ثبت نشده است.';
+        return 'ردیف‌ها در ' + hkAsstNum(res.count) + ' ماه ثبت شده‌اند، از ' + toPersianDigits(res.first[1] + '/' + res.first[0]) + ' تا ' + toPersianDigits(res.last[1] + '/' + res.last[0]) + '.';
+      }
+      if (tool === 'projects.summary') {
+        if (!res.count) return 'برای پروژهٔ «' + res.name + '» تراکنشی ثبت نشده است.';
+        return 'پروژهٔ «' + res.name + '»\nتعداد: ' + hkAsstNum(res.count) + ' تراکنش\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nمانده: ' + hkAsstMoney(res.balance);
+      }
       if (tool === 'transactions.group') {
         if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نشد.';
         return 'گروه‌بندی بر اساس ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
@@ -29,6 +53,15 @@
       }
       return '';
     }
+    /* متن «فهمیدم» و غلط‌تایپی‌هایی که اصلاح شد */
+    function hkAsstHeader(cmd) {
+      var lines = [];
+      if (cmd.understood) lines.push('فهمیدم: ' + cmd.understood + '.');
+      if (cmd.corrections && cmd.corrections.length) {
+        lines.push(cmd.corrections.map(function (c) { return '«' + c.from + '» را «' + c.to + '» در نظر گرفتم'; }).join('، ') + '.');
+      }
+      return lines.join('\n');
+    }
     /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده) */
     function hkAsstAsk(text) {
       var q = String(text || '').trim();
@@ -36,9 +69,27 @@
       var cmd, out;
       try { cmd = hkAsstValidateCommand(hkAsstAdapter().parse(q)); }
       catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
-      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask };
+      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [] };
       out = hkAsstExec(cmd.tool, cmd.args);
       if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
-      return { role: 'bot', kind: 'result', tool: cmd.tool, text: summary, data: out.result, cmd: cmd };
+      var head = hkAsstHeader(cmd);
+      var msg = { role: 'bot', kind: 'result', tool: cmd.tool, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
+      /* نتیجهٔ خالی: پیشنهاد کلمه‌های نزدیک از داده */
+      var empty = (cmd.tool === 'transactions.search' && out.result.count === 0) || (cmd.tool === 'transactions.aggregate' && out.result.count === 0);
+      if (empty && cmd.args && cmd.args.text) {
+        try { msg.suggestions = hkAsstSuggest(cmd.args.text); } catch (eS) { msg.suggestions = []; }
+      }
+      return msg;
+    }
+    /* برای کلمه‌ای که نتیجه نداد، کلمه‌های نزدیک از داده را پیشنهاد می‌کند */
+    function hkAsstSuggest(text) {
+      var data = hkAsstDataWords(), out = [];
+      String(text).split(' ').forEach(function (w) {
+        var k = hkAsstKey(w);
+        if (k.length < 3) return;
+        var n = hkAsstNearest(k, data, 3);
+        if (n && out.indexOf(n.word) < 0) out.push(n.word);
+      });
+      return out.slice(0, 3);
     }

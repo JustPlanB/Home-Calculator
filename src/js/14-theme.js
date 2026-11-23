@@ -758,6 +758,8 @@
     function onBackGuard(){
       try { if (window.hkDiag) window.hkDiag('back', _backHandling ? '(busy)' : ''); } catch (eDg) {}
       if(_backHandling) return;
+      /* دستیار هوشمند باز است: بازگشت فقط آن را می‌بندد و به صفحهٔ اصلی برمی‌گردد */
+      try { if (window.hkAsstIsOpen && window.hkAsstIsOpen()) { window.hkAsstClose(); return; } } catch (eAs) {}
       _backHandling=true;
       setTimeout(function () { try { hkResetEditIcons(); if (document.activeElement && document.activeElement.blur && /BUTTON/.test(document.activeElement.tagName)) document.activeElement.blur(); } catch (eRi) {} }, 30);
       setTimeout(()=>{_backHandling=false;},250);

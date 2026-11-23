@@ -1,4 +1,7 @@
     /* ===== ۱.۴.۲۴: دستیار هوشمند — ابزارها (فقط خواندنی) =====
+       مرز جداسازی: این فایل تنها بخشی از دستیار است که به داده‌های برنامه وصل است. آنچه از برنامه می‌خواند:
+       archive، periodData، currentYear، currentMonth، periodKey، iterAllPeriodData، rowFinancialContext، loadFinancialSubjects، formatNum، toPersianDigits. (برای آواتار: hkAvatarGet، hkMainTitle در 18.)
+       اگر دستیار جدا شود، همین فهرست باید از راه یک «درگاه داده» (شیء با تابع‌های rows و format) تأمین شود. 18f مستقل است.
        هر ابزار فقط می‌خواند؛ هیچ داده‌ای تغییر نمی‌کند. ردیف‌ها از iterAllPeriodData می‌آیند
        (ماه جاری یک بار، از periodData؛ ردیف‌های حذف‌شده کنار گذاشته می‌شوند).
        ورودی‌ها بر اساس HK_ASST_TOOLS اعتبارسنجی می‌شوند؛ ابزار ناشناس یا تغییردهنده اجرا نمی‌شود. */
@@ -19,15 +22,15 @@
           var side = pd && pd[tab];
           if (!side || !Array.isArray(side.sections)) return;
           side.sections.forEach(function (sec) {
-            (sec && sec.rows || []).forEach(function (r) {
+            (sec && sec.rows || []).forEach(function (r, ri) {
               if (!r || typeof r !== 'object' || r.deletedAt) return;
-              var d = parseInt(r.day, 10) || 0, ctx = null;
+              var d = parseInt(r.day, 10) || 0, ctx = null, ri = arguments[1];
               try { ctx = rowFinancialContext(r); } catch (eC) { ctx = null; }
               out.push({
                 id: String(r.id || ''), key: key, y: y, m: m, d: d, dateKey: y * 10000 + m * 100 + d,
-                tab: tab, section: String(sec.title || ''), desc: String(r.desc || ''),
+                tab: tab, section: String(sec.title || ''), secId: String(sec.id || ''), idx: ri, desc: String(r.desc || ''),
                 amount: Number(r.amount) || 0, account: String(r.account || ''), status: String(r.status || ''),
-                transfer: !!r.p2p, context: ctx && ctx.accountType === 'project' ? 'project' : 'personal',
+                transfer: !!r.p2p, cats: Array.isArray(r.cats) ? r.cats.slice() : [], context: ctx && ctx.accountType === 'project' ? 'project' : 'personal', subjectId: ctx ? String(ctx.subjectId || 'personal') : 'personal',
                 subject: ctx ? String(ctx.subjectName || '') : '', current: key === curKey
               });
             });
@@ -58,9 +61,53 @@
         if (to != null && r.dateKey > to) return false;
         if (f.tab && r.tab !== f.tab) return false;
         if (f.context && r.context !== f.context) return false;
+        if (f.cats && f.cats.length && !f.cats.some(function (c) { return hkAsstCatHit(r, c); })) return false;
+        if (f.project && !hkAsstRowIsProject(r, f.project)) return false;
         if (acct && hkAsstNorm(r.account).indexOf(acct) < 0) return false;
         return true;
       });
+    }
+    /* آیا ردیف به دسته تعلق دارد؟ برچسب ذخیره‌شده روی ردیف، یا یکی از مترادف‌های دسته در شرح/بخش */
+    function hkAsstCatHit(r, catId) {
+      if (r.cats && r.cats.indexOf(catId) >= 0) return true;
+      var hay = hkAsstKey(r.desc + ' ' + r.section), list = HK_ASST_PHRASES['CAT_' + catId] || [];
+      for (var i = 0; i < list.length; i++) { var k = hkAsstKey(list[i]); if (k.length >= 3 && hay.indexOf(k) >= 0) return true; }
+      return false;
+    }
+    /* پروژه‌های برنامه: [{id, name, key}] */
+    function hkAsstSubjects() {
+      var list = [];
+      try { (loadFinancialSubjects() || []).forEach(function (s) { if (s && s.name) list.push({ id: String(s.id), name: String(s.name), key: hkAsstKey(s.name) }); }); } catch (e) {}
+      return list;
+    }
+    /* آیا یک کلمه به نام یک پروژه اشاره دارد؟ (تطبیق کامل نام، یا یکی از کلمه‌های نام با طول کافی) */
+    function hkAsstFindSubject(word) {
+      var k = hkAsstKey(word); if (k.length < 3) return null;
+      var subs = hkAsstSubjects(), hit = null;
+      subs.forEach(function (s) {
+        if (hit) return;
+        if (s.key === k) hit = s;
+        else if (s.name.split(/\s+/).some(function (x) { return hkAsstKey(x) === k && k.length >= 3; })) hit = s;
+      });
+      return hit;
+    }
+    /* ردیف به پروژهٔ داده‌شده (شناسه یا نام) تعلق دارد؟ */
+    function hkAsstRowIsProject(r, project) {
+      var pk = hkAsstKey(project);
+      if (r.subjectId && r.subjectId !== 'personal' && (r.subjectId === project || hkAsstKey(r.subject) === pk)) return true;
+      return hkAsstKey(r.subject) === pk && r.context === 'project';
+    }
+    /* واژه‌های یکتای شرح و بخش ردیف‌ها (برای اصلاح غلط‌تایپی جست‌وجو) */
+    function hkAsstDataWords() {
+      var seen = {}, out = [];
+      hkAsstRows().forEach(function (r) {
+        String(r.desc + ' ' + r.section).split(/[\s،,.؟?!()\-]+/).forEach(function (w) {
+          var k = hkAsstKey(w);
+          if (k.length < 3 || /\d/.test(k) || seen[k]) return;
+          seen[k] = 1; out.push({ key: k, word: w });
+        });
+      });
+      return out;
     }
     function hkAsstDateKey(v) {
       if (v && typeof v === 'object') return (+v.y) * 10000 + (+v.m) * 100 + (+v.d);
@@ -68,7 +115,7 @@
       return (parseInt(p[0], 10) || 0) * 10000 + (parseInt(p[1], 10) || 0) * 100 + (parseInt(p[2], 10) || 0);
     }
     function hkAsstPublic(r) {
-      return { id: r.id, month: r.y + '-' + r.m, day: r.d, tab: r.tab, section: r.section, desc: r.desc,
+      return { id: r.id, month: r.y + '-' + r.m, y: r.y, m: r.m, day: r.d, tab: r.tab, section: r.section, secId: r.secId, idx: r.idx, desc: r.desc,
         amount: r.amount, account: r.account, context: r.context, subject: r.subject, transfer: r.transfer, status: r.status };
     }
     function hkAsstSum(rows) {
@@ -89,10 +136,11 @@
     /* ابزارهای ثبت‌شده. هر ابزار: کلیدهای مجاز ورودی، و تابع اجرا که فقط داده برمی‌گرداند. */
     var HK_ASST_TOOLS = {
       'transactions.search': {
-        readOnly: true, args: ['text', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'sort', 'limit'],
+        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'sort', 'limit'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), a);
           if (a.sort === 'amountDesc') rows.sort(function (x, y) { return y.amount - x.amount; });
+          else if (a.sort === 'amountAsc') rows.sort(function (x, y) { return x.amount - y.amount; });
           else rows.sort(function (x, y) { return y.dateKey - x.dateKey; });
           var lim = Math.min(Math.max(parseInt(a.limit, 10) || 50, 1), 200);
           return { count: rows.length, total: hkAsstSum(rows), items: rows.slice(0, lim).map(hkAsstPublic) };
@@ -108,18 +156,18 @@
         }
       },
       'transactions.aggregate': {
-        readOnly: true, args: ['text', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
+        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
         run: function (a) { return hkAsstStats(hkAsstFilter(hkAsstRows(), a)); }
       },
       'transactions.group': {
-        readOnly: true, args: ['by', 'text', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
+        readOnly: true, args: ['by', 'text', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers'],
         run: function (a) {
           var by = a.by;
           if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');
           var groups = {};
           hkAsstFilter(hkAsstRows(), a).forEach(function (r) {
             var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : (r[by] || '—'));
-            var g = groups[k] || (groups[k] = { key: k, count: 0, sum: 0, rows: [] });
+            var g = groups[k] || (groups[k] = { key: k, count: 0, sum: 0 });
             g.count++; g.sum += r.amount;
           });
           var list = Object.keys(groups).map(function (k) { return { key: groups[k].key, count: groups[k].count, sum: groups[k].sum }; });
@@ -127,11 +175,65 @@
           return { by: by, groups: list.slice(0, 50) };
         }
       },
+      'projects.list': {
+        readOnly: true, args: [],
+        run: function () {
+          var rows = hkAsstRows().filter(function (r) { return !r.transfer && r.subjectId !== 'personal'; });
+          return { projects: hkAsstSubjects().map(function (s) {
+            var mine = rows.filter(function (r) { return r.subjectId === s.id; });
+            var st = hkAsstStats(mine);
+            return { id: s.id, name: s.name, count: st.count, expenseSum: st.expenseSum, incomeSum: st.incomeSum, balance: st.balance };
+          }) };
+        }
+      },
+      'projects.summary': {
+        readOnly: true, args: ['project'],
+        run: function (a) {
+          var p = String(a.project || '').trim();
+          if (!p) throw new Error('نام پروژه داده نشده است');
+          var subs = hkAsstSubjects();
+          var sub = subs.filter(function (s) { return s.id === p || s.key === hkAsstKey(p); })[0];
+          if (!sub) throw new Error('پروژه‌ای با این نام پیدا نشد');
+          var rows = hkAsstFilter(hkAsstRows(), { project: sub.name });
+          return Object.assign({ name: sub.name }, hkAsstStats(rows));
+        }
+      },
+      'categories.summary': {
+        readOnly: true, args: [],
+        run: function () {
+          var cats = [], hidden = [], custom = [];
+          try { hidden = JSON.parse(localStorage.getItem(STORAGE_KEY + '_catHidden') || '[]') || []; } catch (e1) {}
+          try { custom = (JSON.parse(localStorage.getItem(STORAGE_KEY + '_catCustom') || '[]') || []).map(function (c) { return String(c.label || ''); }).filter(Boolean); } catch (e2) {}
+          Object.keys(HK_ASST_CAT_LABELS).forEach(function (id) { if (hidden.indexOf(id) < 0) cats.push(HK_ASST_CAT_LABELS[id]); });
+          var used = {};
+          hkAsstRows().forEach(function (r) { if (!r.transfer) Object.keys(HK_ASST_CAT_LABELS).forEach(function (id) { if (hkAsstCatHit(r, id)) used[id] = (used[id] || 0) + 1; }); });
+          return { builtIn: cats, custom: custom, total: cats.length + custom.length, usedBuiltIn: Object.keys(used).length };
+        }
+      },
+      'accounts.list': {
+        readOnly: true, args: [],
+        run: function () {
+          var m = {};
+          hkAsstRows().forEach(function (r) { if (!r.transfer && r.account) { var k = r.account.trim(); m[k] = (m[k] || 0) + 1; } });
+          var list = Object.keys(m).map(function (k) { return { name: k, count: m[k] }; });
+          list.sort(function (a, b) { return b.count - a.count; });
+          return { accounts: list };
+        }
+      },
+      'months.summary': {
+        readOnly: true, args: [],
+        run: function () {
+          var months = {};
+          hkAsstRows().forEach(function (r) { var k = r.y * 100 + r.m; months[k] = (months[k] || 0) + 1; });
+          var keys = Object.keys(months).map(Number).sort(function (a, b) { return a - b; });
+          return { count: keys.length, first: keys.length ? [Math.floor(keys[0] / 100), keys[0] % 100] : null, last: keys.length ? [Math.floor(keys[keys.length - 1] / 100), keys[keys.length - 1] % 100] : null };
+        }
+      },
       'reports.compare': {
-        readOnly: true, args: ['a', 'b', 'tab', 'context', 'text'],
+        readOnly: true, args: ['a', 'b', 'tab', 'context', 'text', 'cats'],
         run: function (a) {
           function one(p) {
-            var f = { year: p.year, month: p.month, tab: a.tab, context: a.context, text: a.text };
+            var f = { year: p.year, month: p.month, tab: a.tab, context: a.context, text: a.text, cats: a.cats };
             var s = hkAsstStats(hkAsstFilter(hkAsstRows(), f));
             return { label: p.year + '-' + p.month, count: s.count, incomeSum: s.incomeSum, expenseSum: s.expenseSum, balance: s.balance };
           }

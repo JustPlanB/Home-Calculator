@@ -1,7 +1,7 @@
     /* ===== ۱.۴.۲۴: دستیار هوشمند — دکمهٔ صفحهٔ اصلی و پنجرهٔ گفتگو =====
        دکمهٔ دایره‌ای (آیکون حباب درخشان) پایین-چپ صفحهٔ اصلی؛ با زدن، پنجرهٔ دستیار باز می‌شود.
        این بخش فقط نمایش و ورودی را انجام می‌دهد؛ منطق در 18b و ابزارها در 18c است. */
-    var HK_ASST_EXAMPLES = ['بیمه تویوتا را پیدا کن', 'تراکنش‌های بالای ده میلیون را پیدا کن', 'جمع هزینه‌های این ماه چقدر شده؟', 'درآمد و هزینه این ماه را با ماه قبل مقایسه کن'];
+    var HK_ASST_EXAMPLES = ['بیمه تویوتا را پیدا کن', 'تراکنش‌های بالای ده میلیون را پیدا کن', 'جمع هزینه‌های آبان', 'بنزین چند تا؟', 'درآمد و هزینه این ماه را با ماه قبل مقایسه کن'];
     var _hkAsstLog = [];
     var _hkAsstEl = null;
     function hkAsstEl(tag, cls, txt) {
@@ -10,13 +10,40 @@
       if (txt != null) e.textContent = txt;
       return e;
     }
+    /* آواتار: کاربر عکس پروفایل خودش را دارد؛ اگر نبود، حرف اول اسمش. دستیار آیکون سبز اپ را نشان می‌دهد */
+    function hkAsstAvatar(me) {
+      var av = hkAsstEl('div', 'hk-asst-av' + (me ? '' : ' hk-asst-av-bot'));
+      if (!me) { av.appendChild(hkAsstEl('i')); return av; }
+      var src = '', name = '';
+      try { src = hkAvatarGet() || ''; } catch (e1) {}
+      try { name = String(hkMainTitle() || '').trim(); } catch (e2) {}
+      if (src) { var img = document.createElement('img'); img.alt = ''; img.src = src; av.appendChild(img); }
+      else av.appendChild(hkAsstEl('span', '', name ? name.charAt(0) : '؟'));
+      return av;
+    }
     function hkAsstFmtDate(r) {
       return toPersianDigits(r.y + '/' + r.m + '/' + r.d);
+    }
+    /* باز کردن ردیف در صفحهٔ خودش: همان ماه و بخش، اسکرول آرام و هایلایت همان روشی که برنامه دارد (sp-flash) */
+    function hkAsstJump(it) {
+      try { hkAsstClose(); } catch (e0) {}
+      var cur = periodKey(currentYear, currentMonth), want = periodKey(it.y, it.m);
+      if (want !== cur) { try { navigateToPeriod(it.y, it.m); } catch (e1) {} }
+      /* هر بخش (کارت) جدول ردیف‌های خودش را دارد؛ همان را باز می‌کنیم و ردیف را پیدا می‌کنیم */
+      try { if (typeof openPersonDetail === 'function') openPersonDetail(it.section, it.tab); } catch (e2) {}
+      var tries = 0;
+      (function wait() {
+        var rows = document.querySelectorAll('.person-detail-box tbody tr');
+        var tr = rows[it.idx];
+        if (!tr && tries++ < 30) { setTimeout(wait, 80); return; }
+        if (!tr) return;
+        var dur = 0; try { dur = hkSlowScrollTo(tr, 1000); } catch (e3) {}
+        setTimeout(function () { tr.classList.add('sp-flash'); setTimeout(function () { tr.classList.remove('sp-flash'); }, 3600); }, dur + 80);
+      })();
     }
     function hkAsstRenderItem(it) {
       var card = hkAsstEl('button', 'hk-asst-item');
       card.type = 'button';
-      card.setAttribute('aria-expanded', 'false');
       var top = hkAsstEl('div', 'hk-asst-item-top');
       var left = hkAsstEl('div', 'hk-asst-item-l');
       left.appendChild(hkAsstEl('div', 'hk-asst-item-d', it.desc || '—'));
@@ -26,21 +53,10 @@
       amt.style.color = it.tab === 'income' ? 'var(--hk-income)' : 'var(--hk-expense)';
       top.appendChild(amt);
       card.appendChild(top);
-      var det = hkAsstEl('div', 'hk-asst-item-x');
-      det.hidden = true;
-      [['نوع', it.tab === 'income' ? 'درآمد' : 'هزینه'], ['حساب', it.account || '—'], ['بخش', it.section || '—'],
-        ['موضوع', it.context === 'project' ? (it.subject || 'پروژه') : 'شخصی'], ['شناسه', it.id || '—']].forEach(function (kv) {
-        var row = hkAsstEl('div', 'hk-asst-kv');
-        row.appendChild(hkAsstEl('span', 'hk-asst-k', kv[0]));
-        row.appendChild(hkAsstEl('span', 'hk-asst-v', kv[1]));
-        det.appendChild(row);
-      });
-      card.appendChild(det);
-      card.addEventListener('click', function () {
-        var open = card.getAttribute('aria-expanded') !== 'true';
-        card.setAttribute('aria-expanded', open ? 'true' : 'false');
-        det.hidden = !open;
-      });
+      var meta = [it.account, it.context === 'project' ? (it.subject || 'پروژه') : ''].filter(Boolean).join(' · ');
+      if (meta) card.appendChild(hkAsstEl('div', 'hk-asst-item-x', meta));
+      card.setAttribute('aria-label', 'باز کردن این ردیف در برنامه');
+      card.addEventListener('click', function () { hkAsstJump(it); });
       return card;
     }
     function hkAsstRenderResult(msg) {
@@ -67,10 +83,24 @@
       var log = _hkAsstEl.querySelector('.hk-asst-log');
       var empty = log.querySelector('.hk-asst-empty');
       if (empty) empty.remove();
-      var bub = hkAsstEl('div', 'hk-asst-msg hk-asst-' + (msg.role === 'user' ? 'me' : 'bot'));
+      var me = msg.role === 'user';
+      var row = hkAsstEl('div', 'hk-asst-msg hk-asst-row ' + (me ? 'hk-asst-me' : 'hk-asst-bot'));
+      row.appendChild(hkAsstAvatar(me));
+      var bub = hkAsstEl('div', 'hk-asst-bub');
       bub.appendChild(hkAsstEl('div', 'hk-asst-txt', msg.text));
       if (msg.kind === 'result') bub.appendChild(hkAsstRenderResult(msg));
-      log.appendChild(bub);
+      if (msg.suggestions && msg.suggestions.length) {
+        var sg = hkAsstEl('div', 'hk-asst-sugg');
+        msg.suggestions.forEach(function (w) {
+          var c = hkAsstEl('button', 'hk-asst-chip', w);
+          c.type = 'button';
+          c.addEventListener('click', function () { hkAsstSend(msg.tool ? 'پیدا کن ' + w : w); });
+          sg.appendChild(c);
+        });
+        bub.appendChild(sg);
+      }
+      row.appendChild(bub);
+      log.appendChild(row);
       log.scrollTop = log.scrollHeight;
     }
     function hkAsstShowEmpty() {
@@ -157,9 +187,10 @@
       document.body.appendChild(sheet);
       _hkAsstEl = sheet;
     }
+    function hkAsstIsOpen() { return !!(_hkAsstEl && _hkAsstEl.classList.contains('open')); }
     function hkAsstInit() {
       try { if (document.getElementById('hkAsstSheet')) return; hkAsstBuild(); } catch (eI) { try { console.error('assistant', eI); } catch (e2) {} }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hkAsstInit);
     else hkAsstInit();
-    try { window.hkAsstAsk = hkAsstAsk; window.hkAsstOpen = hkAsstOpen; window.hkAsstClose = hkAsstClose; } catch (eW) {}
+    try { window.hkAsstAsk = hkAsstAsk; window.hkAsstOpen = hkAsstOpen; window.hkAsstClose = hkAsstClose; window.hkAsstIsOpen = hkAsstIsOpen; } catch (eW) {}

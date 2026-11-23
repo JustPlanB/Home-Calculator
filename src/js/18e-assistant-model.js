@@ -12,8 +12,8 @@
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
       if (!cmd || typeof cmd !== 'object') return { ask: 'متوجه نشدم.' };
-      if (cmd.ask) return { ask: String(cmd.ask) };
-      if (!cmd.tool || !Object.prototype.hasOwnProperty.call(HK_ASST_TOOLS, cmd.tool)) return { ask: 'این کار را هنوز نمی‌توانم انجام دهم.' };
-      return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '' };
+      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [] };
+      if (!cmd.tool || !Object.prototype.hasOwnProperty.call(HK_ASST_TOOLS, cmd.tool)) return { ask: 'این کار را هنوز نمی‌توانم انجام دهم.', suggestions: [] };
+      return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '', corrections: cmd.corrections || [], understood: cmd.understood || '' };
     }
     function hkAsstAdapter() { return HK_ASST_ADAPTERS[HK_ASST_ACTIVE] || HK_ASST_ADAPTERS.rules; }
