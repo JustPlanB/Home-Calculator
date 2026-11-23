@@ -99,11 +99,11 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(R.p_big.tool === 'transactions.search' && R.p_big.args.amountMin === 1e7, 'تفسیر: «بالای ده میلیون» → حداقل ۱۰ میلیون');
   ok(R.p_sumThisMonth.tool === 'transactions.aggregate' && R.p_sumThisMonth.args.tab === 'expense' && R.p_sumThisMonth.args.month === CM, 'تفسیر: جمع هزینهٔ این ماه');
   ok(R.p_prevMonth.tool === 'transactions.aggregate' && R.p_prevMonth.args.month === ((CM + 10) % 12) + 1, 'تفسیر: ماه قبل');
-  ok(R.p_span.tool === 'transactions.aggregate' && R.p_span.args.text === 'خوراکی' && !!R.p_span.args.dateFrom, 'تفسیر: شش ماه گذشته + شرح');
+  ok(R.p_span.tool === 'transactions.aggregate' && (R.p_span.args.cats || []).indexOf('food') >= 0 && !!R.p_span.args.dateFrom, 'تفسیر: شش ماه گذشته + دستهٔ خوراکی');
   ok(R.p_groupProj.tool === 'transactions.group' && R.p_groupProj.args.by === 'context', 'تفسیر: مخارج پروژه‌ها جداگانه → گروه پروژه/شخصی');
   ok(R.p_maxSpan.tool === 'transactions.search' && R.p_maxSpan.args.sort === 'amountDesc' && R.p_maxSpan.args.limit === 1, 'تفسیر: بیشترین هزینه → مرتب نزولی، یک مورد');
   ok(R.p_compare.tool === 'reports.compare', 'تفسیر: مقایسه با ماه قبل');
-  ok(R.p_avg.tool === 'transactions.aggregate' && R.p_avg.explain === 'avg' && R.p_avg.args.text === 'خوراکی', 'تفسیر: میانگین خوراکی');
+  ok(R.p_avg.tool === 'transactions.aggregate' && R.p_avg.explain === 'avg' && (R.p_avg.args.cats || []).indexOf('food') >= 0, 'تفسیر: میانگین خوراکی');
   ok(R.p_persianDigits.args.amountMin === 1e7, 'تفسیر: عدد فارسی ۱۰ میلیون');
   ok(R.p_range.args.amountMin === 1e7 && R.p_range.args.amountMax === 2e7, 'تفسیر: بازهٔ مبلغ «بین ۱۰ و ۲۰ میلیون»');
   ok(!!R.p_empty.ask && !R.p_empty.tool, 'ورودی خالی: سؤال تکمیلی، بدون اجرای ابزار');
@@ -141,7 +141,14 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const txt = await page.evaluate(() => document.querySelector('.hk-asst-log').textContent);
     ok(/بیمه تویوتا/.test(txt) && /تراکنش/.test(txt), 'جست‌وجو از کادر ورودی نتیجه می‌دهد');
     const item = await page.$('.hk-asst-item');
-    if (item) { await item.click(); const exp = await page.evaluate(() => document.querySelector('.hk-asst-item').getAttribute('aria-expanded')); ok(exp === 'true', 'زدن روی نتیجه، جزئیات را باز می‌کند'); }
+    const idShown = await page.evaluate(() => /r_[a-z0-9]+_[a-z0-9]+|شناسه/.test(document.querySelector('.hk-asst-log').textContent));
+    ok(!idShown, 'شناسهٔ ردیف در پنجرهٔ دستیار نشان داده نمی‌شود');
+    if (item) {
+      await item.click(); await page.waitForTimeout(1600);
+      const st = await page.evaluate(() => ({ open: document.getElementById('hkAsstSheet').classList.contains('open'), flashed: !!document.querySelector('.sp-flash') }));
+      ok(!st.open && st.flashed, 'زدن روی نتیجه، پنجره را می‌بندد و ردیف را در صفحهٔ خودش هایلایت می‌کند');
+      await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
+    }
     await page.click('.hk-asst-clear'); await page.waitForTimeout(100);
     ok(await page.evaluate(() => !!document.querySelector('.hk-asst-empty')), 'پاک‌کردن گفتگو، صفحهٔ خالی را برمی‌گرداند');
     await page.click('.hk-asst-back'); await page.waitForTimeout(200);

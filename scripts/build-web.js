@@ -102,6 +102,12 @@ async function main() {
   built = parts.join('');
   fs.mkdirSync(path.dirname(dst), { recursive: true });
   fs.writeFileSync(dst, built);
+  /* ۱.۴.۲۴: موتور اجرای مدل محلی (assets/llm، بیرون از بخش‌های src) کنار index.html خروجی کپی می‌شود تا در APK باشد */
+  var llmSrc = path.join(root, 'assets', 'llm'), llmDst = path.join(path.dirname(dst), 'llm');
+  if (fs.existsSync(llmSrc)) {
+    fs.mkdirSync(llmDst, { recursive: true });
+    ['wllama.js', 'wllama.wasm'].forEach(function (f) { fs.copyFileSync(path.join(llmSrc, f), path.join(llmDst, f)); });
+  }
   const a = Buffer.byteLength(html), b = Buffer.byteLength(built);
   console.log('build-web: ' + path.relative(root, src) + ' ' + a + ' bytes -> ' + path.relative(root, dst) + ' ' + b + ' bytes (' + Math.round((1 - b / a) * 100) + '% smaller)');
 }
