@@ -313,6 +313,24 @@
       { v: 3, name: 'پاک کردن فرستنده→بانکِ یادگرفته با روش قدیمی (تکه‌ای از کلمه مثل «سامانه»/«جدید»)', run: function () {
         try { localStorage.removeItem(STORAGE_KEY + '_senderBank'); } catch (e) {}
         return 0;
+      } },
+      { v: 4, name: 'شناسهٔ ردیف‌های قدیمی (ردیف‌های مخارج و درآمد بدون شناسه)', run: function (arc) {
+        /* فقط ردیف‌هایی که id ندارند؛ بقیهٔ فیلدها دست‌نخورده. شکل id همان newRecordId است. */
+        var ch = 0;
+        function fixSide(side) {
+          ((side && side.sections) || []).forEach(function (sec) {
+            (sec.rows || []).forEach(function (r) {
+              if (r && typeof r === 'object' && !r.id) { r.id = newRecordId(); ch++; }
+            });
+          });
+        }
+        Object.keys(arc || {}).forEach(function (k) {
+          var pd = arc[k];
+          if (!pd || typeof pd !== 'object') return;
+          if (pd.expense || pd.income) { fixSide(pd.expense); fixSide(pd.income); }
+          else if (pd.sections) fixSide(pd);
+        });
+        return ch;
       } }
     ];
     function hkDataVer() { try { return Number(localStorage.getItem(HK_DATA_VER_KEY)) || 0; } catch (e) { return 0; } }
