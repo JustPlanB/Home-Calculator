@@ -55615,7 +55615,8 @@ function openProjectRowPicker(secId) {
       HK_ASST_ENGINE.loading = HKStore.get(HK_ASST_MODEL.key).then(function (blob) {
         if (!blob) throw new Error('مدل هنوز دانلود نشده است');
         return import('./llm/wllama.js').then(function (mod) {
-          var w = new mod.Wllama({ 'single-thread/wllama.wasm': './llm/wllama.wasm' });
+          /* موتور مسیر فایل wasm را از کلید default می‌خواند */
+          var w = new mod.Wllama({ 'default': './llm/wllama.wasm', 'single-thread/wllama.wasm': './llm/wllama.wasm' });
           return w.loadModel([blob], { n_ctx: 2048, n_threads: 1 }).then(function () {
             hkAsstLocalAttach(function (prompt) {
               return w.createCompletion({ prompt: prompt, max_tokens: 160, temperature: 0.1, stop: ['\n\n'] })
