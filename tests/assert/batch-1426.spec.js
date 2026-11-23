@@ -25,7 +25,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const fails = [];
     items.forEach(it => {
       let c; try { c = hkAsstParse(it.q); } catch (e) { fails.push({ q: it.q, kind: it.kind, why: 'throw ' + e.message }); return; }
-      if (it.tool === 'ask') { if (!(c.ask && c.final)) fails.push({ q: it.q, kind: it.kind, why: 'got ' + (c.tool || 'ask-nonfinal') }); return; }
+      if (it.tool === 'ask') { if (!(c.ask && c.final)) fails.push({ q: it.q, kind: it.kind, why: 'got ' + (c.tool || 'ask-nonfinal') }); else if (it.re && !new RegExp(it.re).test(c.ask)) fails.push({ q: it.q, kind: it.kind, why: 'reply ' + c.ask.slice(0, 60) }); return; }
       if (c.tool !== it.tool) { fails.push({ q: it.q, kind: it.kind, why: 'tool ' + (c.tool || 'ask') }); return; }
       for (const k of Object.keys(it.a)) {
         const want = R(it.a[k]), got = (c.args || {})[k];
@@ -79,15 +79,35 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(/•/.test(T('tr')) && /(ماه آخرت|روند)/.test(T('tr')), 'روند: چند ماه با مبلغ و مقایسهٔ ماه آخر');
   ok(/۵۰\/۳۰\/۲۰/.test(T('bud')) && /پس‌انداز/.test(T('bud')) && /سقف/.test(T('bud')), 'بودجه: قاعدهٔ ۵۰/۳۰/۲۰ و سقف پیشنهادی دسته‌ها');
   ok(/ماه/.test(T('goal')) && /۲۰۰ میلیون/.test(T('goal')) && /طول می‌کشه/.test(T('goal')), 'هدف بی‌مدت: چند ماه طول می‌کشد');
-  ok(/ماهی/.test(T('goal2')) && /(شدنیه|نمی‌رسی)/.test(T('goal2')) && /۱۲ ماه/.test(T('goal2')), 'هدف با مدت: چقدر ماهانه لازم است و شدنی هست یا نه');
+  ok(/ماهی/.test(T('goal2')) && /(شدنیه|می‌رسی)/.test(T('goal2')) && /۱۲ ماه/.test(T('goal2')), 'هدف با مدت: چقدر ماهانه لازم است و شدنی هست یا نه');
   ok(/(مونده|نمونده)/.test(T('day')) && /خرج/.test(T('day')), 'امروز چقدر می‌تونم خرج کنم: مانده و سهم روزانه');
   ok(/خرید گوشی موبایل/.test(T('an')), 'خرج غیرعادی: خرج بسیار بزرگ را پیدا می‌کند');
   ok(/(قسط وام|اشتراک ماهانه)/.test(T('rec')) && /ثابت/.test(T('rec')), 'خرج‌های ثابت: قسط و اشتراکِ هر ماه را پیدا می‌کند');
-  ok(A.hi.kind === 'text' && /سلام/.test(T('hi')) && A.hi.final === true, 'سلام: پاسخ خودمونی بی‌نیاز از مدل');
-  ok(/(فقط می‌تونم بخونم|دست من نیست)/.test(T('chg')) && A.chg.final === true, 'درخواست حذف/ثبت: مؤدبانه رد می‌شود');
+  ok(A.hi.kind === 'text' && T('hi').length > 15 && A.hi.final === true, 'سلام و احوال‌پرسی: پاسخ خودمونی بی‌نیاز از مدل');
+  ok(/(بخونم|می‌خونم|دست من نیست|اجازهٔ تغییر|نگاه می‌کنم)/.test(T('chg')) && A.chg.final === true, 'درخواست حذف/ثبت: مؤدبانه رد می‌شود (با قالب‌های متنوع)');
   ok(/می‌تونم این کارها رو/.test(T('help')) && /تحلیل/.test(T('help')), 'چه کارایی بلدی: فهرست قابلیت‌ها');
   ok(A.yr.kind === 'result' && /۱۴۰۳/.test(T('yr')), '«سال ۴۰۳» یعنی ۱۴۰۳');
   ok(/پیدا نشد/.test(T('empty')) || A.empty.kind === 'result', 'سؤال بی‌نتیجه جواب انسانی می‌دهد');
+  console.log('• احوال‌پرسی: جواب زنده و متنوع');
+  const V = await page.evaluate(() => {
+    const uniq = (kind, codes, text, n) => { const s = {}; for (let i = 0; i < n; i++) s[hkAsstChatReply(kind, codes, text)] = 1; return Object.keys(s).length; };
+    const now = hkAsstNow();
+    const fmt = (o, k) => new Intl.DateTimeFormat('fa-IR-u-ca-persian', o).formatToParts(new Date()).filter(p => p.type === k)[0].value;
+    let streak = 0, last = '', repeats = 0;
+    for (let i = 0; i < 60; i++) { const r = hkAsstChatReply('HRU', ['HI', 'HRU'], ''); if (r === last) repeats++; last = r; }
+    return {
+      hru: uniq('HRU', ['HI', 'HRU'], 'سلام چطوری', 120), hruNoHi: uniq('HRU', ['HRU'], 'چطوری', 120), hi: uniq('HI', ['HI'], 'سلام', 60), thx: uniq('THX', [], '', 40), joke: uniq('JOKE', [], '', 60),
+      repeats, timeReply: hkAsstChatReply('TIME', [], 'ساعت چنده'), now, date: hkAsstChatReply('DATE', [], 'تاریخ امروز'), year: fmt({ year: 'numeric' }, 'year'), wd: fmt({ weekday: 'long' }, 'weekday'),
+      tomorrow: hkAsstChatReply('DATE', [], 'فردا چه روزیه'), dleft: hkAsstChatReply('DLEFT', [], 'چند روز تا آخر ماه')
+    };
+  });
+  ok(V.hru >= 25, '«سلام چطوری؟» هر بار جواب تازه می‌دهد: ' + V.hru + ' جوابِ متفاوت در ۱۲۰ بار');
+  ok(V.hruNoHi >= 20 && V.hi >= 15 && V.thx >= 6 && V.joke >= 10, 'جواب‌های احوال‌پرسی، سلام، تشکر و جوک متنوع‌اند (' + [V.hruNoHi, V.hi, V.thx, V.joke].join('، ') + ')');
+  ok(V.repeats === 0, 'هرگز دو بار پشت‌سرهم یک جواب تکراری نمی‌دهد');
+  ok(V.timeReply.indexOf(V.now.time) >= 0, 'ساعت از خود گوشی می‌آید: ' + V.timeReply);
+  ok(V.date.indexOf(V.year) >= 0 && V.date.indexOf(V.wd) >= 0, 'تاریخ امروز: روز هفته و سال درست: ' + V.date);
+  ok(/فردا/.test(V.tomorrow) && V.tomorrow.indexOf(V.year) >= 0, '«فردا چه روزیه؟» تاریخ فردا را می‌گوید: ' + V.tomorrow);
+  ok(/روز|تموم|ماهه/.test(V.dleft), 'چند روز تا آخر ماه: ' + V.dleft);
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join(' | '));
   await b.close();
   console.log('batch-1426: ' + passed + ' passed, ' + failed + ' failed');

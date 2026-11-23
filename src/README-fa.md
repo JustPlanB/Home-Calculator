@@ -342,10 +342,10 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/18c-assistant-tools.js` (258 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — ابزارها (فقط خواندنی)
 
-## `js/18f-assistant-lexicon.js` (179 خط)
+## `js/18f-assistant-lexicon.js` (192 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — واژه‌نامه و غلط‌یاب (مستقل)
 
-## `js/18g-assistant-insights.js` (539 خط)
+## `js/18g-assistant-insights.js` (651 خط)
 - خط 1: ۱.۴.۳۷: دستیار هوشمند — تحلیل مالی، سال کوتاه و لحن خودمونی
 
 ## `js/18d-assistant-query.js` (233 خط)

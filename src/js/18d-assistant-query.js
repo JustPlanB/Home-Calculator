@@ -146,8 +146,8 @@
 
       /* ۱.۴.۳۷: گفتگوی عادی و قصدهای تحلیلی (وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه، هدف…) */
       if (!special) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
-      var chatK = hkAsstChatKind(codes, textWords, amts);
-      if (chatK) return { ask: hkAsstChatReply(chatK), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
+      var chatK = hkAsstChatKind(codes, textWords, amts, text);
+      if (chatK) return { ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
       if (special) {
         var sc = hkAsstSpecialCmd(special, codes, args, text, amts);
         if (sc) { sc.corrections = corrections; return sc; }
