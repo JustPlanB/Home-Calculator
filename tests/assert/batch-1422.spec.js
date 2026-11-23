@@ -128,6 +128,45 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   // دکمهٔ بازگشت
   const back = await page.evaluate(() => { hkAsstOpen(); const before = hkAsstIsOpen(); try { onBackGuard(); } catch (e) {} return { before: before, after: hkAsstIsOpen() }; });
   ok(back.before === true && back.after === false, 'دکمهٔ بازگشت سیستم، اول پنجرهٔ دستیار را می‌بندد');
+  // قسط و وام: نتیجهٔ دستیار (نه منو)
+  const D = await page.evaluate(() => {
+    const row = (o) => Object.assign({ id: '', day: '1', desc: '', amount: 0, status: 'paid', account: '', deletedAt: null, createdAt: 1, updatedAt: 1 }, o);
+    const pd = emptyPeriodData();
+    pd.expense.sections = [{ id: 'D', title: 'متفرقه', rows: [row({ id: 'd1', day: '4', desc: 'قسط ماشین', amount: 4000000 }), row({ id: 'd2', day: '5', desc: 'وام بانک', amount: 9000000 }), row({ id: 'd3', day: '6', desc: 'نان', amount: 20000 })] }];
+    periodData = pd; archive = {};
+    const P1 = (q) => hkAsstValidateCommand(hkAsstParse(q));
+    return { q1: P1('اقساط'), q2: P1('قسط'), q3: P1('وام'), r1: hkAsstExec('transactions.aggregate', { cats: ['debt'] }).result, r2: hkAsstAsk('اقساط چقدره؟') };
+  });
+  ok(D.q1.args.cats && D.q1.args.cats.indexOf('debt') >= 0 && D.q2.args.cats.indexOf('debt') >= 0 && D.q3.args.cats.indexOf('debt') >= 0, '«قسط»، «اقساط» و «وام» به دستهٔ اقساط و وام نگاشت می‌شوند');
+  ok(D.r1.count === 2 && D.r1.sum === 13000000, 'دستهٔ اقساط و وام: قسط و وام را پیدا می‌کند، نان را نه');
+  ok(D.r2.kind === 'result', '«اقساط چقدره؟» پاسخ نتیجه‌ای می‌دهد');
+  // مدل محلی: با اجراکنندهٔ ساختگی
+  const L = await page.evaluate(async () => {
+    const out = {};
+    out.readyBefore = HK_ASST_ADAPTERS.local.ready();
+    out.promptHasTools = /transactions\.aggregate/.test(hkAsstLocalPrompt('x')) && /reports\.compare/.test(hkAsstLocalPrompt('x'));
+    out.promptHasNoRows = !/بیمه تویوتا|بنزین پراید/.test(hkAsstLocalPrompt('x'));
+    let seen = '';
+    hkAsstLocalAttach(function (prompt) { seen = prompt; return Promise.resolve('{"tool":"transactions.aggregate","args":{"tab":"expense","cats":["debt"]}}'); }, 'تست');
+    out.readyAfter = HK_ASST_ADAPTERS.local.ready();
+    out.good = await hkAsstAskAsync('اقساط ماهانه چقدر شده؟');
+    out.goodPromptSent = seen.indexOf('اقساط ماهانه') >= 0;
+    hkAsstLocalAttach(function () { return Promise.resolve('مطمئن نیستم، شاید هم نه'); }, 'تست');
+    out.bad = await hkAsstAskAsync('بیمه تویوتا را پیدا کن');
+    hkAsstLocalAttach(function () { return Promise.resolve('{"tool":"transactions.delete","args":{"id":"d1"}}'); }, 'تست');
+    out.forbidden = await hkAsstAskAsync('یک ردیف را پاک کن');
+    hkAsstLocalAttach(function () { return Promise.resolve('{"ask":"کدام بخش؟"}'); }, 'تست');
+    out.askFromModel = await hkAsstAskAsync('یک چیزی');
+    hkAsstLocalAttach(null, '');
+    out.readyOff = HK_ASST_ADAPTERS.local.ready();
+    return out;
+  });
+  ok(L.readyBefore === false && L.readyAfter === true && L.readyOff === false, 'مدل محلی فقط وقتی اجراکننده وصل باشد آماده است');
+  ok(L.promptHasTools && L.promptHasNoRows, 'درخواست به مدل فقط فهرست ابزارها و پرسش کاربر را دارد، نه داده‌های مالی');
+  ok(L.good.kind === 'result' && L.good.tool === 'transactions.aggregate' && L.goodPromptSent, 'خروجی درست مدل اجرا و نمایش داده می‌شود');
+  ok(L.bad.kind === 'result' || L.bad.kind === 'text', 'خروجی نامعتبر مدل، به قاعده‌ای برمی‌گردد و پاسخ داده می‌شود');
+  ok(!(L.forbidden.tool === 'transactions.delete'), 'ابزار تغییردهنده از طرف مدل اجرا نمی‌شود');
+  ok(L.askFromModel.kind === 'text' && /کدام/.test(L.askFromModel.text), 'پرسش تکمیلی مدل نمایش داده می‌شود');
   // دکمه‌های پیشنهاد در پنجره
   await page.click('.hk-asst-fab'); await page.waitForTimeout(200);
   await page.fill('.hk-asst-input', 'بیمه تویتا'); await page.click('.hk-asst-send'); await page.waitForTimeout(200);

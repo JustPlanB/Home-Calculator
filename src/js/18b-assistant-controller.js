@@ -62,25 +62,40 @@
       }
       return lines.join('\n');
     }
-    /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده) */
-    function hkAsstAsk(text) {
-      var q = String(text || '').trim();
-      if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
-      var cmd, out;
-      try { cmd = hkAsstValidateCommand(hkAsstAdapter().parse(q)); }
-      catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
+    /* ساخت پیام نهایی از یک فرمان اعتبارسنجی‌شده (مشترک بین قاعده‌ای و مدل محلی) */
+    function hkAsstFinish(cmd) {
       if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [] };
-      out = hkAsstExec(cmd.tool, cmd.args);
+      var out = hkAsstExec(cmd.tool, cmd.args);
       if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
       var head = hkAsstHeader(cmd);
       var msg = { role: 'bot', kind: 'result', tool: cmd.tool, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
-      /* نتیجهٔ خالی: پیشنهاد کلمه‌های نزدیک از داده */
       var empty = (cmd.tool === 'transactions.search' && out.result.count === 0) || (cmd.tool === 'transactions.aggregate' && out.result.count === 0);
       if (empty && cmd.args && cmd.args.text) {
         try { msg.suggestions = hkAsstSuggest(cmd.args.text); } catch (eS) { msg.suggestions = []; }
       }
       return msg;
+    }
+    /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */
+    function hkAsstAsk(text) {
+      var q = String(text || '').trim();
+      if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
+      var cmd;
+      try { cmd = hkAsstValidateCommand(HK_ASST_ADAPTERS.rules.parse(q)); }
+      catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
+      return hkAsstFinish(cmd);
+    }
+    /* حالت مدل محلی: اگر مدل آماده باشد از آن استفاده می‌شود؛ خروجی نامعتبر یا خطا، به قاعده‌ای برمی‌گردد */
+    function hkAsstAskAsync(text) {
+      var q = String(text || '').trim();
+      if (!q) return Promise.resolve(hkAsstAsk(q));
+      var ad = HK_ASST_ADAPTERS.local;
+      if (!ad.ready()) return Promise.resolve(hkAsstAsk(q));
+      return ad.parseAsync(q).then(function (cmd) {
+        var v = hkAsstValidateCommand(cmd);
+        if (v.tool && !v.understood) v.understood = 'مدل محلی: ' + (v.explain || v.tool);
+        return hkAsstFinish(v);
+      }, function () { return hkAsstAsk(q); });
     }
     /* برای کلمه‌ای که نتیجه نداد، کلمه‌های نزدیک از داده را پیشنهاد می‌کند */
     function hkAsstSuggest(text) {

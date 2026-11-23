@@ -79,7 +79,7 @@
     }
     function hkAsstAppend(msg) {
       _hkAsstLog.push(msg);
-      if (!_hkAsstEl) return;
+      if (!_hkAsstEl) return null;
       var log = _hkAsstEl.querySelector('.hk-asst-log');
       var empty = log.querySelector('.hk-asst-empty');
       if (empty) empty.remove();
@@ -101,6 +101,7 @@
       }
       row.appendChild(bub);
       log.appendChild(row);
+      return row;
       log.scrollTop = log.scrollHeight;
     }
     function hkAsstShowEmpty() {
@@ -123,10 +124,16 @@
       hkAsstAppend({ role: 'user', kind: 'text', text: q });
       var input = _hkAsstEl.querySelector('.hk-asst-input');
       input.value = '';
-      var reply;
-      try { reply = hkAsstAsk(q); }
-      catch (e) { reply = { role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' }; }
-      hkAsstAppend(reply);
+      /* نشانگر «در حال فکر کردن» تا پاسخ برسد؛ پس از آن جایش پاسخ می‌نشیند */
+      var wait = hkAsstAppend({ role: 'bot', kind: 'text', text: '…' });
+      if (wait) wait.classList.add('hk-asst-wait');
+      hkAsstAskAsync(q).then(function (reply) {
+        if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
+        hkAsstAppend(reply);
+      }, function () {
+        if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
+        hkAsstAppend({ role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' });
+      });
     }
     function hkAsstClear() {
       _hkAsstLog = [];
@@ -134,6 +141,7 @@
     }
     function hkAsstOpen() {
       if (!_hkAsstEl) return;
+      try { var md = document.getElementById('hkAsstMode'); if (md) md.textContent = HK_ASST_ADAPTERS.local.ready() ? 'مدل محلی' : 'قاعده‌ای (مدل محلی نصب نیست)'; } catch (eM) {}
       _hkAsstEl.classList.add('open');
       _hkAsstEl.setAttribute('aria-hidden', 'false');
       if (!_hkAsstLog.length) hkAsstShowEmpty();
@@ -164,6 +172,10 @@
       back.addEventListener('click', hkAsstClose);
       head.appendChild(back);
       head.appendChild(hkAsstEl('div', 'hk-asst-title', 'دستیار هوشمند'));
+      var titleBox = head.querySelector('.hk-asst-title');
+      var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
+      mode.id = 'hkAsstMode';
+      if (titleBox) titleBox.appendChild(mode);
       var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
       clr.type = 'button';
       clr.addEventListener('click', hkAsstClear);

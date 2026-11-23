@@ -13201,6 +13201,9 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
     .hk-asst-input { flex: 1; resize: none; min-height: 40px; max-height: 120px; border-radius: 12px; border: 1px solid var(--hk-line); background: var(--hk-surface); color: var(--hk-text); padding: 9px 12px; font: inherit; font-size: 15px; direction: rtl; }
     .hk-asst-input:focus { outline: none; border-color: var(--hk-primary); }
     .hk-asst-send { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--hk-primary); color: var(--hk-on-primary); display: flex; align-items: center; justify-content: center; padding: 0; flex: none; }
+    .hk-asst-title { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .hk-asst-mode { font-size: 11px; font-weight: 400; color: var(--hk-muted); }
+    .hk-asst-wait .hk-asst-bub { color: var(--hk-muted); }
     .hk-asst-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .hk-asst-send svg { width: 20px; height: 20px; }
 </style>
@@ -55541,10 +55544,49 @@ function openProjectRowPicker(secId) {
        نسخهٔ فعلی: Parser قاعده‌ای (hkAsstParse). مدل محلی در آینده همین رابط را پیاده‌سازی می‌کند. */
     var HK_ASST_ADAPTERS = {
       'rules': {
-        name: 'قاعده‌ای (آزمایشی)',
+        name: 'قاعده‌ای',
         parse: function (text) { return hkAsstParse(text); }
+      },
+      'local': {
+        name: 'مدل محلی',
+        async: true,
+        ready: function () { return !!HK_ASST_LOCAL.runner; },
+        parseAsync: function (text) {
+          return Promise.resolve(HK_ASST_LOCAL.runner(hkAsstLocalPrompt(text))).then(function (out) {
+            var o = hkAsstLocalParse(out);
+            if (!o) throw new Error('خروجی مدل نامعتبر بود');
+            if (o.ask) return { ask: String(o.ask) };
+            return { tool: o.tool, args: o.args || {}, explain: '', corrections: [] };
+          });
+        }
       }
     };
+    /* مدل محلی: یک «اجراکنندهٔ» قابل‌تعویض دارد (runner). اجراکنندهٔ واقعی (مثلاً یک مدل GGUF روی گوشی) با
+       hkAsstLocalAttach تعریف می‌شود؛ تا آن زمان ready() نادرست است و پیام‌ها با قاعده‌ای پاسخ داده می‌شوند. */
+    var HK_ASST_LOCAL = { runner: null, label: '' };
+    function hkAsstLocalAttach(runner, label) {
+      HK_ASST_LOCAL.runner = typeof runner === 'function' ? runner : null;
+      HK_ASST_LOCAL.label = String(label || '');
+    }
+    /* فهرست ابزارها و ورودی‌هایشان برای مدل؛ فقط همین‌ها مجازند */
+    function hkAsstLocalToolList() {
+      return Object.keys(HK_ASST_TOOLS).filter(function (n) { return HK_ASST_TOOLS[n].readOnly; }).map(function (n) {
+        return '- ' + n + '(' + HK_ASST_TOOLS[n].args.join(', ') + ')';
+      }).join('\n');
+    }
+    function hkAsstLocalPrompt(question) {
+      return 'تو دستیار حساب‌کتاب هستی. فقط یک فرمان JSON بساز، بدون هیچ توضیح دیگر.\n' +
+        'فرمت: {"tool":"نام ابزار","args":{...}} یا اگر متوجه نشدی: {"ask":"پرسش کوتاه"}.\n' +
+        'ابزارها:\n' + hkAsstLocalToolList() + '\n' +
+        'کلیدهای مهم: tab = "expense" (هزینه) یا "income" (درآمد)، month = عدد ماه ۱ تا ۱۲، year = سال شمسی، cats = آرایه‌ای از دسته‌ها (food, transport, bills, clothing, health, home, education, fun, gift, debt, tech)، text = متن جست‌وجو، amountMin/amountMax = مبلغ به تومان.\n' +
+        'سؤال: ' + question + '\nJSON:';
+    }
+    /* از خروجی مدل فقط اولین شیء JSON را می‌خواند؛ هر چیز دیگر نامعتبر است */
+    function hkAsstLocalParse(out) {
+      var m = /\{[\s\S]*\}/.exec(String(out || ''));
+      if (!m) return null;
+      try { var o = JSON.parse(m[0]); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
+    }
     var HK_ASST_ACTIVE = 'rules';
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
@@ -55618,25 +55660,40 @@ function openProjectRowPicker(secId) {
       }
       return lines.join('\n');
     }
-    /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده) */
-    function hkAsstAsk(text) {
-      var q = String(text || '').trim();
-      if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
-      var cmd, out;
-      try { cmd = hkAsstValidateCommand(hkAsstAdapter().parse(q)); }
-      catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
+    /* ساخت پیام نهایی از یک فرمان اعتبارسنجی‌شده (مشترک بین قاعده‌ای و مدل محلی) */
+    function hkAsstFinish(cmd) {
       if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [] };
-      out = hkAsstExec(cmd.tool, cmd.args);
+      var out = hkAsstExec(cmd.tool, cmd.args);
       if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
       var head = hkAsstHeader(cmd);
       var msg = { role: 'bot', kind: 'result', tool: cmd.tool, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
-      /* نتیجهٔ خالی: پیشنهاد کلمه‌های نزدیک از داده */
       var empty = (cmd.tool === 'transactions.search' && out.result.count === 0) || (cmd.tool === 'transactions.aggregate' && out.result.count === 0);
       if (empty && cmd.args && cmd.args.text) {
         try { msg.suggestions = hkAsstSuggest(cmd.args.text); } catch (eS) { msg.suggestions = []; }
       }
       return msg;
+    }
+    /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */
+    function hkAsstAsk(text) {
+      var q = String(text || '').trim();
+      if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
+      var cmd;
+      try { cmd = hkAsstValidateCommand(HK_ASST_ADAPTERS.rules.parse(q)); }
+      catch (eP) { return { role: 'bot', kind: 'text', text: 'در خواندن درخواست خطایی پیش آمد.' }; }
+      return hkAsstFinish(cmd);
+    }
+    /* حالت مدل محلی: اگر مدل آماده باشد از آن استفاده می‌شود؛ خروجی نامعتبر یا خطا، به قاعده‌ای برمی‌گردد */
+    function hkAsstAskAsync(text) {
+      var q = String(text || '').trim();
+      if (!q) return Promise.resolve(hkAsstAsk(q));
+      var ad = HK_ASST_ADAPTERS.local;
+      if (!ad.ready()) return Promise.resolve(hkAsstAsk(q));
+      return ad.parseAsync(q).then(function (cmd) {
+        var v = hkAsstValidateCommand(cmd);
+        if (v.tool && !v.understood) v.understood = 'مدل محلی: ' + (v.explain || v.tool);
+        return hkAsstFinish(v);
+      }, function () { return hkAsstAsk(q); });
     }
     /* برای کلمه‌ای که نتیجه نداد، کلمه‌های نزدیک از داده را پیشنهاد می‌کند */
     function hkAsstSuggest(text) {
@@ -55730,7 +55787,7 @@ function openProjectRowPicker(secId) {
     }
     function hkAsstAppend(msg) {
       _hkAsstLog.push(msg);
-      if (!_hkAsstEl) return;
+      if (!_hkAsstEl) return null;
       var log = _hkAsstEl.querySelector('.hk-asst-log');
       var empty = log.querySelector('.hk-asst-empty');
       if (empty) empty.remove();
@@ -55752,6 +55809,7 @@ function openProjectRowPicker(secId) {
       }
       row.appendChild(bub);
       log.appendChild(row);
+      return row;
       log.scrollTop = log.scrollHeight;
     }
     function hkAsstShowEmpty() {
@@ -55774,10 +55832,16 @@ function openProjectRowPicker(secId) {
       hkAsstAppend({ role: 'user', kind: 'text', text: q });
       var input = _hkAsstEl.querySelector('.hk-asst-input');
       input.value = '';
-      var reply;
-      try { reply = hkAsstAsk(q); }
-      catch (e) { reply = { role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' }; }
-      hkAsstAppend(reply);
+      /* نشانگر «در حال فکر کردن» تا پاسخ برسد؛ پس از آن جایش پاسخ می‌نشیند */
+      var wait = hkAsstAppend({ role: 'bot', kind: 'text', text: '…' });
+      if (wait) wait.classList.add('hk-asst-wait');
+      hkAsstAskAsync(q).then(function (reply) {
+        if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
+        hkAsstAppend(reply);
+      }, function () {
+        if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
+        hkAsstAppend({ role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' });
+      });
     }
     function hkAsstClear() {
       _hkAsstLog = [];
@@ -55785,6 +55849,7 @@ function openProjectRowPicker(secId) {
     }
     function hkAsstOpen() {
       if (!_hkAsstEl) return;
+      try { var md = document.getElementById('hkAsstMode'); if (md) md.textContent = HK_ASST_ADAPTERS.local.ready() ? 'مدل محلی' : 'قاعده‌ای (مدل محلی نصب نیست)'; } catch (eM) {}
       _hkAsstEl.classList.add('open');
       _hkAsstEl.setAttribute('aria-hidden', 'false');
       if (!_hkAsstLog.length) hkAsstShowEmpty();
@@ -55815,6 +55880,10 @@ function openProjectRowPicker(secId) {
       back.addEventListener('click', hkAsstClose);
       head.appendChild(back);
       head.appendChild(hkAsstEl('div', 'hk-asst-title', 'دستیار هوشمند'));
+      var titleBox = head.querySelector('.hk-asst-title');
+      var mode = hkAsstEl('div', 'hk-asst-mode', 'قاعده‌ای');
+      mode.id = 'hkAsstMode';
+      if (titleBox) titleBox.appendChild(mode);
       var clr = hkAsstEl('button', 'hk-asst-clear', 'پاک کردن');
       clr.type = 'button';
       clr.addEventListener('click', hkAsstClear);
