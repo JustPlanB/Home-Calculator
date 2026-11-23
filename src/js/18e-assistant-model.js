@@ -43,7 +43,8 @@
       'categories.summary': 'دسته‌ها', 'accounts.list': 'حساب‌ها', 'months.summary': 'ماه‌های ثبت‌شده'
     };
     function hkAsstLocalReadOnlyTools() {
-      return Object.keys(HK_ASST_TOOLS).filter(function (n) { return HK_ASST_TOOLS[n].readOnly; });
+      /* ابزارهای تحلیلی (insights.*) را قاعده‌ها صدا می‌زنند؛ مدل کوچک فقط ابزارهای دادهٔ ساده را می‌بیند (پرامپت کوتاه می‌ماند) */
+      return Object.keys(HK_ASST_TOOLS).filter(function (n) { return HK_ASST_TOOLS[n].readOnly && n.indexOf('insights.') !== 0; });
     }
     function hkAsstLocalPrompt(question) {
       return 'تو دستیار حساب‌کتاب هستی. سؤال کاربر را به یک فرمان JSON تبدیل کن. فقط JSON بنویس.\n' +
@@ -288,8 +289,8 @@
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
       if (!cmd || typeof cmd !== 'object') return { ask: 'متوجه نشدم.' };
-      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [] };
+      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [], final: !!cmd.final };
       if (!cmd.tool || !Object.prototype.hasOwnProperty.call(HK_ASST_TOOLS, cmd.tool)) return { ask: 'این کار را هنوز نمی‌توانم انجام دهم.', suggestions: [] };
-      return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '', corrections: cmd.corrections || [], understood: cmd.understood || '' };
+      return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '', corrections: cmd.corrections || [], understood: cmd.understood || '', followUps: Array.isArray(cmd.followUps) ? cmd.followUps.slice(0, 4) : [] };
     }
     function hkAsstAdapter() { return HK_ASST_ADAPTERS[HK_ASST_ACTIVE] || HK_ASST_ADAPTERS.rules; }

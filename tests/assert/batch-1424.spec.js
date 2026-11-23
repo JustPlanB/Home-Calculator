@@ -78,7 +78,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     o.len = pr.length; o.endsWithQuestion = /سؤال: سؤال آزمایشی\n$/.test(pr);
     o.fewShot = (pr.match(/سؤال:/g) || []).length >= 4;
     const sc = hkAsstLocalSchema();
-    o.enumOk = JSON.stringify(sc.properties.tool.enum) === JSON.stringify(Object.keys(HK_ASST_TOOLS).filter(n => HK_ASST_TOOLS[n].readOnly));
+    o.enumOk = JSON.stringify(sc.properties.tool.enum) === JSON.stringify(Object.keys(HK_ASST_TOOLS).filter(n => HK_ASST_TOOLS[n].readOnly && n.indexOf('insights.') !== 0));
     o.noMutating = sc.properties.tool.enum.every(n => HK_ASST_TOOLS[n].readOnly === true);
     try { JSON.stringify(sc); o.json = true; } catch (e) { o.json = false; }
     o.ctx = HK_ASST_PROFILES.every(p => p.n_ctx >= 1024);
@@ -103,7 +103,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     o.noBorder = getComputedStyle(inp).borderTopWidth === '0px';
     /* پاسخ دیر می‌رسد: نشانگر سه نقطه هست و بعد از رسیدن پاسخ برداشته می‌شود */
     let release; hkAsstLocalAttach(function () { return new Promise(function (r) { release = r; }); }, 'کند');
-    inp.value = 'سلام خوبی؟'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.value = 'اون قضیه چی شد؟'; inp.dispatchEvent(new Event('input', { bubbles: true }));
     hkAsstSend(inp.value); await w(150);
     const dots = document.querySelectorAll('.hk-asst-wait .hk-loading-dots i');
     o.dots = dots.length;

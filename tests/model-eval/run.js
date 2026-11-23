@@ -48,8 +48,10 @@ const CASES = [
   });
   await new Promise(r => srv.listen(0, '127.0.0.1', r));
   const base = 'http://127.0.0.1:' + srv.address().port;
-  const b = await chromium.launch(), errs = [];
-  const ctx = await b.newContext({ viewport: { width: 384, height: 750 }, timezoneId: 'Asia/Tehran' });
+  /* پروفایل دائمی (نه حالت موقت): سهمیهٔ ذخیره‌سازی حالت موقت برای مدل‌های بزرگ‌تر از چند صد مگابایت کافی نیست */
+  const errs = [];
+  const ctx = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), 'hk-prof-')), { viewport: { width: 384, height: 750 }, timezoneId: 'Asia/Tehran' });
+  const b = { close: () => ctx.close() };
   await ctx.addInitScript(o => { if (!sessionStorage.getItem('__seeded')) { for (const k in o) localStorage.setItem(k, o[k]); sessionStorage.setItem('__seeded', '1'); } }, BASE_LS);
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
   await page.goto(base + '/index.html'); await page.waitForTimeout(1500);
