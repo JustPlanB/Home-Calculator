@@ -14,6 +14,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
   await page.goto('file://' + (process.env.HK_INDEX ? path.resolve(process.env.HK_INDEX) : path.join(ROOT, 'index.html')));
   await page.waitForTimeout(1500);
+  await page.evaluate(() => { const t = hkMainTitle() || 'من'; if (!periodData.expense.sections.length) periodData.expense.sections = [{ id: 'E', title: t, rows: [] }]; periodData.expense.sections[0].rows.push({ id: 'sd0', day: '2', desc: 'اسنپ', amount: 1000, status: 'paid', account: '', deletedAt: null, createdAt: 1, updatedAt: 1 }); });  /* ۱.۴.۴۳: «اسنپ» باید در داده باشد تا ناشناخته نباشد؛ انتظارها بدون تغییر */
   const R = await page.evaluate(async () => {
     const o = {}, ask = (q) => hkAsstAsk(q), ar = (q) => hkAsstParse(q);
     /* حافظه */

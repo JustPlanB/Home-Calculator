@@ -110,7 +110,7 @@
     function hkAsstCtxSave(cmd, reply) {
       try {
         if (!reply || reply.kind !== 'result' || !cmd || !cmd.tool || !HK_ASST_CTX_TOOLS.test(cmd.tool)) return;
-        _hkAsstCtx = { tool: cmd.tool, args: Object.assign({}, cmd.args || {}), explain: cmd.explain || '', intent: cmd.intent || '', yearExplicit: !!cmd.yearExplicit, at: Date.now() };
+        _hkAsstCtx = { tool: cmd.tool, args: Object.assign({}, cmd.args || {}), explain: cmd.explain || '', intent: cmd.intent || '', yearExplicit: !!cmd.yearExplicit, catAmb: cmd.catAmb || null, at: Date.now() };
       } catch (e) {}
     }
     function hkAsstCtxMerge(raw) {
@@ -121,23 +121,37 @@
           if (!L || Date.now() - L.at > 900000) return { ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
           if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
           var Mn = Object.assign({}, L.args), Nn = raw.args || {};
+          /* «بدون بنزین» روی «فقط ردیف‌های بنزین»: دو شرط متناقض؛ بی‌صدا نتیجهٔ صفر نمی‌دهیم */
+          var posW = String((Mn.text || '') + ' ' + (Mn.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
+          var clash = (Nn.excludeText || []).filter(function (x) { return posW.indexOf(hkAsstKey(x)) >= 0; })[0] || (Nn.excludeCats || []).filter(function (x) { return (Mn.cats || []).indexOf(x) >= 0; }).map(function (x) { return HK_ASST_CAT_LABELS[x] || x; })[0];
+          if (clash) return { ask: 'قبلاً فقط «' + clash + '» را خواستی و الان می‌گویی «بدون ' + clash + '»؛ این دو با هم جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
           ['excludeText', 'excludeCats'].forEach(function (k) { if (Nn[k] && Nn[k].length) { var u = (Mn[k] || []).slice(); Nn[k].forEach(function (x) { if (u.indexOf(x) < 0) u.push(x); }); Mn[k] = u; } });
           if (Nn.tab && !Mn.tab) Mn.tab = Nn.tab;
-          var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true };
+          var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true, catAmb: L.catAmb || null };
           on.understood = L.intent ? hkAsstUnderstood(L.intent, Mn) : '';
           return on;
         }
         if (!L || Date.now() - L.at > 900000 || !raw || !raw.tool || !raw.follow || !/^transactions\.(aggregate|search)$/.test(raw.tool)) return raw;
-        var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'cats', 'project', 'context'];
+        var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'textAny', 'unionCats', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });
-        if (!hasT && !hasE) return raw;
+        /* ۱.۴.۴۲: «جمعش»، «تعدادش»، «درآمدشم»، «همونو»: فقط نوع/عملیات عوض می‌شود و بقیهٔ شرط‌های سؤال قبلی (ماه، دسته، کلمه) می‌ماند */
+        var anaph = !!raw.anaphora && !hasE && (L.tool === 'transactions.aggregate' || L.tool === 'transactions.search');
+        if (!hasT && !hasE && !anaph) return raw;
         var spec = HK_ASST_INTENT_SPEC[L.intent];
         if (spec && !spec.carry.length) return raw;          /* قصدهایی که چیزی منتقل نمی‌کنند (مثل خلاصهٔ پروژه) */
         if (spec && hasE && spec.carry.indexOf('entity') < 0) return raw;
         if (spec && hasT && spec.carry.indexOf('time') < 0) return raw;
         if (hasT) { TK.forEach(function (k) { delete M[k]; }); TK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); if (N.month && !raw.yearExplicit && L.args.year && L.yearExplicit) M.year = L.args.year; }
-        if (hasE) { EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); }
-        var out = { tool: L.tool, args: M, explain: L.explain, corrections: raw.corrections || [], intent: L.intent, yearExplicit: raw.yearExplicit || L.yearExplicit, follow: false, memory: true };
+        if (hasE) {
+          /* موجودیت تازه با شرط حذفِ قبلی تناقض ندارد؟ */
+          var newW = String((N.text || '') + ' ' + (N.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
+          if ((M.excludeText || []).some(function (x) { return newW.indexOf(hkAsstKey(x)) >= 0; }) || (M.excludeCats || []).some(function (x) { return (N.cats || []).indexOf(x) >= 0; })) return { ask: 'این با شرط «بدون …»ی که قبلاً گفتی جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
+          EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; });
+        }
+        if (anaph && N.tab) M.tab = N.tab;
+        var swapTool = anaph && /^(count|sum|avg)$/.test(raw.explain || '') && raw.tool === 'transactions.aggregate';
+        var out = { tool: swapTool ? 'transactions.aggregate' : L.tool, args: M, explain: swapTool ? raw.explain : L.explain, corrections: raw.corrections || [], intent: swapTool ? (raw.intent || L.intent) : L.intent, yearExplicit: raw.yearExplicit || L.yearExplicit, follow: false, memory: true };
+        if (!hasE && L.catAmb && (M.cats || []).indexOf(L.catAmb.id) >= 0) out.catAmb = L.catAmb;
         out.understood = L.intent ? hkAsstUnderstood(L.intent, M) : '';
         return out;
       } catch (e) { return raw; }

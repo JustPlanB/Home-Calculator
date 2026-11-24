@@ -12,7 +12,7 @@ async function run(page, set) {
   return page.evaluate((set) => {
     const rows = [];
     set.forEach(([q, e, ctx, alias]) => {
-      _hkAsstCtx = null; _hkAsstLastTarget = null; localStorage.removeItem(STORAGE_KEY + '_asstAlias');
+      _hkAsstCtx = null; _hkAsstLastTarget = null; _hkAsstPending = null; localStorage.removeItem(STORAGE_KEY + '_asstAlias');
       if (alias) hkAsstAliasAdd(alias[0], alias[1]);
       (ctx || []).forEach(c => hkAsstAsk(c));
       const r = hkAsstAsk(q);
@@ -54,6 +54,9 @@ function score(rows) {
   const page = await ctx.newPage(); page.on('pageerror', e => errs.push(e.message));
   await page.goto('file://' + (process.env.HK_INDEX ? path.resolve(process.env.HK_INDEX) : path.join(ROOT, 'index.html')));
   await page.waitForTimeout(1500);
+  const seedWords = []; DEV.concat(HOLDOUT).forEach(it => { const e = it[1] || {}; if (e.args && e.args.text) seedWords.push(String(e.args.text)); if (e.textHas) seedWords.push(String(e.textHas)); if (it[3]) seedWords.push(String(it[3][1])); });
+  /* ۱.۴.۴۳: واژه‌ای که در هیچ ردیف/دسته/پروژه/حسابی نیست «ناشناخته» است و پرسیده می‌شود؛ برای سنجش فهمِ جمله، واژه‌های موجودیتِ مورد پرسش را در داده می‌گذاریم (انتظارها بدون تغییر) */
+  await page.evaluate((words) => { const t = hkMainTitle() || 'من'; if (!periodData.expense.sections.length) periodData.expense.sections = [{ id: 'E', title: t, rows: [] }]; words.filter((w, i, a) => a.indexOf(w) === i).forEach((w, i) => periodData.expense.sections[0].rows.push({ id: 'sd' + i, day: '2', desc: w, amount: 1000, status: 'paid', account: '', deletedAt: null, createdAt: 1, updatedAt: 1 })); }, seedWords);
   const D = score(await run(page, DEV)), H = score(await run(page, HOLDOUT));
   [['DEV', D], ['HOLDOUT', H]].forEach(([nm, s]) => console.log(`  ${nm} (${s.n}): تصمیم ${s.decision}٪ | ابزار ${s.tool}٪ | اسلات ${s.slot}٪ | دقیق ${s.exact}٪ | پرسش ${s.clarify}٪ | اجرای اشتباه ${s.falseExec}٪`));
   if (process.env.SHOW_BAD) { console.log('--DEV'); D.bad.forEach(x => console.log('   ' + x)); console.log('--HOLDOUT'); H.bad.forEach(x => console.log('   ' + x)); }

@@ -81,7 +81,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(!/^فهمیدم/.test(R.m1.text) && !!R.m1.head && R.m1.kind === 'result', 'پاسخ با تفسیر سؤال شروع می‌شود، بی کلمهٔ «فهمیدم»');
   ok(/تویوتا/.test(R.m1.text) && R.m1.kind === 'result', 'اصلاح «تویتا» → «تویوتا» در پاسخ گزارش می‌شود');
   ok(R.m2.kind === 'result' && R.m2.data.count >= 1, '«بیمه تویوتا» دو ردیف یا بیشتر دارد (ردیف حذف‌شده نیامد)');
-  ok(R.m3.kind === 'result' && !/فهمیدم/.test(R.m3.text) && !!R.m3.head, 'جمع آبان هم خط تفسیر دارد');
+  ok(R.m3.kind === 'result' && !/فهمیدم/.test(R.m3.text) && /آبان/.test(R.m3.text) && /هزینه/.test(R.m3.text) && !R.m3.head, 'جمع آبان: تفسیر (نوع و ماه) در همان جملهٔ اصلی گفته می‌شود، نه خط جدا (۱.۴.۴۲)');
   ok(String(R.m4.text || '').length > 10 && (R.m4.suggestions || []).length > 0, 'سلام: پاسخ راهنما با نمونه‌پرسش');
   ok(R.sug.indexOf('تویوتا') >= 0, 'پیشنهاد: «تویتا» → «تویوتا»');
   ok(R.sugNone.length === 0, 'پیشنهادی برای کلمهٔ بی‌ربط داده نمی‌شود');
