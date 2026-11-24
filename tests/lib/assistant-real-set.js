@@ -19,7 +19,7 @@ const DEV = [
   ['درآمد دی بیشتر بوده یا بهمن', R('reports.compare', { tab: 'income' })],
   ['کل پولی که بابت قبض دادم', R('transactions.aggregate', { cats: ['bills'] })],
   ['میانگین خرج هر ماهم', R('insights.monthavg')],
-  ['چقدر پول دارم', R('insights.overview')],
+  ['چقدر پول دارم', R('insights.balance')],
   ['وضعیت مالیم چطوره', R('insights.overview')],
   ['پارسال چقدر درآمد داشتم', R('transactions.aggregate', { tab: 'income' })],
   ['مخارج سه ماه اخیر', R('transactions.aggregate', { tab: 'expense' })],

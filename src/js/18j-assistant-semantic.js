@@ -98,8 +98,9 @@
     function hkAsstFrameToCommand(f) {
       var cmd = hkAsstBuildCommand(f.intent, f.args, f.codes, f.text);
       cmd.corrections = f.corrections;
+      if (f.catAmb) cmd.catAmb = f.catAmb;
       cmd.understood = hkAsstUnderstood(f.intent, f.args);
-      cmd.intent = f.intent; cmd.yearExplicit = f.yearExplicit; cmd.follow = f.follow;
+      cmd.intent = f.intent; cmd.yearExplicit = f.yearExplicit; cmd.follow = f.follow; cmd.anaphora = !!f.anaphora;
       cmd.frame = hkAsstFrameView(f);
       /* پیشنهادهای جایگزین برای حالت‌هایی که یک برداشت دیگر هم ممکن است */
       var alts = [];

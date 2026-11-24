@@ -199,7 +199,9 @@ function build() {
   ['چند تا قسط مونده؟', 'چند تا قسط باقی مونده؟'].forEach((q) => add(out, 'unpaid', q, 'transactions.aggregate', { status: 'unpaid' }));
   ['قسط بعدی کی هست؟', 'قسط بعدیم کدومه؟'].forEach((q) => add(out, 'unpaid', q, 'transactions.search', { status: 'unpaid', sort: 'dateAsc', limit: 1 }));
   ['جیب به جیب ها چقدره؟', 'مجموع جیب‌به‌جیب‌هام چقدره', 'جیب به جیب چقدر شده'].forEach((q) => add(out, 'transfer', q, 'transactions.aggregate', { transferOnly: true }));
-  ['تراز مالی من چطوره؟', 'موجودی حسابم چقدره؟', 'چقدر پول دارم؟'].forEach((q) => add(out, 'balance', q, 'insights.overview', {}));
+  ['تراز مالی من چطوره؟'].forEach((q) => add(out, 'balance', q, 'insights.overview', {}));
+  /* ۱.۴.۴۲: «موجودی» فقط عدد موجودی حساب‌ها را می‌خواهد، نه گزارش ماهانه */
+  ['موجودی حسابم چقدره؟', 'چقدر پول دارم؟'].forEach((q) => add(out, 'balance', q, 'insights.balance', {}));
   ['برو به قسمت دنگ', 'دنگ رو باز کن', 'قرض رو باز کن', 'یادآورها رو باز کن'].forEach((q) => add(out, 'nav', q, 'ask', { final: true }, 'باز|می‌کنم|حله'));
   // ---- ۱۵) سؤال‌های نفهمیدهٔ واقعی + گسترش (۱.۴.۳۹): فعل‌های «گرفتم/داشتم/خریدم»، امسال/پارسال، نمودار، رفتن به بخش‌ها ----
   const E2 = ['اسنپ', 'تپسی', 'تویوتا', 'مرغداری', 'ایرانسل', 'همراه اول'];

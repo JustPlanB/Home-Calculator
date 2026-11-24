@@ -45,6 +45,8 @@
       f = f || {};
       var text = hkAsstNorm(f.text).split(' ').filter(Boolean);
       var acct = hkAsstNorm(f.account);
+      /* هر عضو اجتماع مثل text است: همهٔ کلمه‌های همان عضو باید در ردیف باشند؛ ردیف با هر عضو بخواند عبور می‌کند */
+      var anyT = (f.textAny || []).map(function (x) { return hkAsstNorm(x).split(' ').filter(Boolean); }).filter(function (ws) { return ws.length; });
       var exT = (f.excludeText || []).map(function (x) { return hkAsstKey(x); }).filter(Boolean), exC = f.excludeCats || [];
       var from = f.dateFrom ? hkAsstDateKey(f.dateFrom) : null, to = f.dateTo ? hkAsstDateKey(f.dateTo) : null;
       return rows.filter(function (r) {
@@ -73,7 +75,15 @@
         if (f.status === 'unpaid' && r.status !== 'unpaid') return false;
         if (f.transferOnly && !r.transfer) return false;
         if (f.context && r.context !== f.context) return false;
-        if (f.cats && f.cats.length && !f.cats.some(function (c) { return hkAsstCatHit(r, c); })) return false;
+        /* ۱.۴.۴۵: «برنج و نان / برنج یا نان»: اجتماع (OR)؛ ردیفی که با هر دو می‌خواند فقط یک بار شمرده می‌شود. با unionCats دسته‌ها هم عضو همین اجتماع‌اند (نه اشتراک) */
+        var anyHit = true;
+        if (anyT.length) {
+          var hayA = hkAsstNorm(r.desc + ' ' + r.section);
+          anyHit = anyT.some(function (ws) { return ws.every(function (w) { return hayA.indexOf(w) >= 0; }); });
+          if (!anyHit && f.unionCats && f.cats && f.cats.length) anyHit = f.cats.some(function (c) { return hkAsstCatHit(r, c); });
+          if (!anyHit) return false;
+        }
+        if (f.cats && f.cats.length && !(anyT.length && f.unionCats) && !f.cats.some(function (c) { return hkAsstCatHit(r, c); })) return false;
         if (f.project && !hkAsstRowIsProject(r, f.project)) return false;
         if (acct && hkAsstNorm(r.account).indexOf(acct) < 0) return false;
         return true;
@@ -158,7 +168,7 @@
     function hkAsstCardInfo(a, stats, rows) {
       try {
         if (!a || (a.tab !== 'expense' && a.tab !== 'income')) return null;
-        if (a.text || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.includeTransfers ||
+        if (a.text || (a.textAny && a.textAny.length) || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.includeTransfers ||
             a.amountEq != null || a.amountMin != null || a.amountMax != null || a.amountGt != null || a.amountLt != null || a.dateFrom || a.dateTo) return null;
         if (!a.year || !a.month || +a.year !== currentYear || +a.month !== currentMonth) return null;
         if (typeof personTotals !== 'function' || typeof hkMainTitle !== 'function') return null;
@@ -171,9 +181,34 @@
         return { total: total, unpaid: unpaid, allTotal: all, projectRows: proj, otherSectionRows: other };
       } catch (e) { return null; }
     }
+    /* ۱.۴.۴۳: «واژهٔ ناشناخته» = واژه‌ای که نه کد واژه‌نامه (دسته/نوع/ماه…) است، نه نام پروژه، نه در هیچ شرح/بخش/حساب/پروژهٔ هیچ ردیفی هست.
+       نبودِ نتیجه به‌تنهایی ناشناخته بودن نیست: دسته‌ای مثل «بهداشت» یا واژه‌ای مثل «اسنپ» که فقط در ماه‌های دیگر آمده، معتبر است. */
+    function hkAsstHayAll() {
+      var parts = [];
+      try { hkAsstRows().forEach(function (r) { parts.push(r.desc + ' ' + r.section + ' ' + r.account + ' ' + r.subject); }); } catch (e) {}
+      return hkAsstKey(parts.join(' | ').replace(/\s+/g, ' '));
+    }
+    function hkAsstTermKnown(w, hay) {
+      var k = hkAsstKey(w); if (k.length < 2 || /\d/.test(w)) return true;
+      try { var lk = hkAsstLookup(k); if (lk && !(lk === 'MAX' && hkAsstIsDegree(k))) return true; } catch (e) {}
+      try { if (hkAsstFindSubject(w)) return true; } catch (e2) {}
+      return hay.indexOf(k) >= 0;
+    }
+    /* فهرست واژه‌های ناشناختهٔ شرط متنی و شرط «بدون/به‌جز»؛ در جست‌وجوی صریح («پیدا کن/سرچ») شرط متنیِ مثبت ناشناخته مجاز است و «چیزی پیدا نکردم» درست است */
+    function hkAsstUnknownTerms(cmd, explicitSearch) {
+      if (!cmd || !cmd.args || !/^transactions\.(aggregate|search|group)$/.test(cmd.tool || '')) return [];
+      var a = cmd.args, words = [], hay = null, out = [];
+      if (a.text && !explicitSearch) String(a.text).split(/\s+/).forEach(function (w) { if (w) words.push(w); });
+      (a.excludeText || []).forEach(function (t) { String(t).split(/\s+/).forEach(function (w) { if (w) words.push(w); }); });
+      if (!explicitSearch) (a.textAny || []).forEach(function (t) { String(t).split(/\s+/).forEach(function (w) { if (w) words.push(w); }); });
+      if (!words.length) return [];
+      hay = hkAsstHayAll();
+      words.forEach(function (w) { if (!hkAsstTermKnown(w, hay) && out.indexOf(w) < 0) out.push(w); });
+      return out;
+    }
     var HK_ASST_TOOLS = {
       'transactions.search': {
-        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
+        readOnly: true, args: ['text', 'textAny', 'unionCats', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), a);
           if (a.sort === 'amountDesc') rows.sort(function (x, y) { return y.amount - x.amount; });
@@ -195,7 +230,7 @@
         }
       },
       'transactions.aggregate': {
-        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        readOnly: true, args: ['text', 'textAny', 'unionCats', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), Object.assign({}, a, { keepDrafts: true }));
           var st = hkAsstStats(rows);
@@ -204,7 +239,7 @@
         }
       },
       'transactions.group': {
-        readOnly: true, args: ['by', 'text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        readOnly: true, args: ['by', 'text', 'textAny', 'unionCats', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var by = a.by;
           if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');

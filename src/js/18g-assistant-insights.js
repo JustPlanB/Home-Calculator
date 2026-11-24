@@ -61,14 +61,17 @@
     function hkAsstMonthLabel(y, m) { return HK_ASST_MONTH_NAMES[m - 1] + ' ' + toPersianDigits(String(y)); }
     /* امروز در تقویم شمسی؛ اگر ماه نمایش‌داده‌شدهٔ برنامه ماه جاری نیست، کل ماه گذشته فرض می‌شود */
     /* ۱.۴.۳۹: «امروز» واقعی گوشی (نه سال/ماهی که کاربر در منوی انتخاب سال دیده است) */
+    /* ۱.۴.۴۲: آیا تقویم شمسی دستگاه (Intl) واقعاً کار می‌کند؟ وگرنه «امروز» نامعتبر است و پاسخ‌های وابسته به ماه جاری عدد نمی‌دهند */
+    function hkAsstIntlOk() {
+      try { var pp = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' }).formatToParts(new Date()); return parseInt(toEnglishDigits((pp.find(function (q) { return q.type === 'year'; }) || {}).value || '0'), 10) > 1300; } catch (e) { return false; }
+    }
     var _hkAsstRealC = { k: 0, y: 0, m: 0 };
     function hkAsstReal() {
       var k = Math.floor(Date.now() / 600000);
       if (_hkAsstRealC.k !== k) {
         var y = 0, m = 0;
         /* ۱.۴.۴۱: اگر تقویم شمسی دستگاه (Intl) کار نکند، تاریخ ساختگیِ جایگزین به‌عنوان «امروز» داده نمی‌شود؛ ماه باز در برنامه می‌ماند */
-        var okI = false;
-        try { var pp = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' }).formatToParts(new Date()); okI = parseInt(toEnglishDigits((pp.find(function (q) { return q.type === 'year'; }) || {}).value || '0'), 10) > 1300; } catch (eI) {}
+        var okI = hkAsstIntlOk();
         if (okI) { try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {} }
         if (!y) { y = currentYear; m = currentMonth; }
         _hkAsstRealC = { k: k, y: y, m: m };
@@ -165,8 +168,9 @@
     /* ---------- ابزارهای تحلیلی (فقط خواندنی) ---------- */
     var HK_ASST_INS_ARGS = ['year', 'month', 'dateFrom', 'context', 'cats', 'project'];
     HK_ASST_TOOLS['insights.overview'] = {
-      readOnly: true, args: HK_ASST_INS_ARGS,
+      readOnly: true, args: HK_ASST_INS_ARGS.concat(['short']),
       run: function (a) {
+        if (a.short) { var sn = hkAsstMonthNet(a, 'status'); return Object.assign({ empty: !!sn.empty, short: sn, label: sn.label }, {}); }
         var p = hkAsstPeriodOf(a), rows = hkAsstRowsIn(p.from, p.to, a), prow = hkAsstRowsIn(p.prev.from, p.prev.to, a);
         var st = hkAsstStats(rows), ps = hkAsstStats(prow), ct = hkAsstCatTotals(rows);
         var exp = rows.filter(function (r) { return r.tab === 'expense'; }).sort(function (x, y) { return y.amount - x.amount; })[0];
@@ -180,6 +184,110 @@
           days: days, dailyAvg: days > 0 ? Math.round(st.expenseSum / days) : null };
       }
     };
+    /* ===== ۱.۴.۴۲: موجودی، پس‌انداز و وضعیت مالی: اول دقیقاً جواب همان سؤال، از منبع معتبر خود برنامه ===== */
+    /* موجودی: همان عددی که کارت «موجودی آنی» نشان می‌دهد (globalAccountBalances / sumGlobalAccountBalances)؛ فقط وقتی ماه باز برنامه ماه جاری واقعی است */
+    /* درآمد و خرج و مانده (درآمد منهای خرج) یک بازه: برای ماهِ بازِ برنامه همان عدد کارت اصلی، وگرنه جمع همهٔ ردیف‌ها (با برچسب مبنا) */
+    function hkAsstMonthNet(a, mode) {
+    var explicit = !!(a.year || a.month || a.dateFrom);
+        if (!explicit && !hkAsstIntlOk()) return { mode: mode, unavailable: 'nodate' };
+        var p = hkAsstPeriodOf(a), out = { mode: mode, label: p.label, kind: p.kind }, useCard = p.kind === 'month' && p.y === currentYear && p.m === currentMonth;
+        if (useCard) {
+          try { var t = personTotals(hkMainTitle()); out.basis = 'card'; out.income = Number(t.incomeTotal) || 0; out.expense = Number(t.expenseTotal) || 0; out.incUnpaid = Number(t.incomeUnpaid) || 0; out.expUnpaid = Number(t.expenseUnpaid) || 0; }
+          catch (e2) { useCard = false; }
+        }
+        if (!useCard) {
+          var rows = hkAsstRowsIn(p.from, p.to, {}), st = hkAsstStats(rows), ct = hkAsstCatTotals(rows);
+          out.basis = 'all'; out.income = st.incomeSum; out.expense = st.expenseSum; out.incUnpaid = st.unpaidIncome; out.expUnpaid = st.unpaidExpense;
+          out.top = ct.list[0] || null;
+        }
+        out.net = out.income - out.expense; out.rate = out.income > 0 ? out.net / out.income : null; out.empty = !out.income && !out.expense;
+      return out;
+    }
+    HK_ASST_TOOLS['insights.balance'] = {
+      readOnly: true, args: ['past'],
+      run: function (a) {
+        if (a && a.past) return { ok: false, reason: 'past' };
+        if (!hkAsstIntlOk()) return { ok: false, reason: 'nodate' };
+        var real = hkAsstReal();
+        if (currentYear !== real.y || currentMonth !== real.m) return { ok: false, reason: 'othermonth', open: hkAsstMonthLabel(currentYear, currentMonth), now: hkAsstMonthLabel(real.y, real.m) };
+        if (typeof globalAccountBalances !== 'function' || typeof sumGlobalAccountBalances !== 'function') return { ok: false, reason: 'unsupported' };
+        var map = globalAccountBalances(), total = sumGlobalAccountBalances(), keys = Object.keys(map);
+        if (!keys.length) return { ok: false, reason: 'noaccounts' };
+        var accts = keys.map(function (k) { return { name: k, value: Math.round(Number(map[k]) || 0) }; }).sort(function (x, y) { return Math.abs(y.value) - Math.abs(x.value); });
+        return { ok: true, total: Math.round(total), accounts: accts, label: hkAsstMonthLabel(real.y, real.m) };
+      }
+    };
+    /* پس‌انداز: «ماهانه» = درآمد منهای خرج (تعریف خود کارت «پس‌انداز این ماه»)؛ «ارز و طلا» = بخش پس‌اندازِ برنامه؛ «وضعیت» = خلاصهٔ کوتاه همان ماه */
+    HK_ASST_TOOLS['insights.savings'] = {
+      readOnly: true, args: ['mode', 'year', 'month', 'dateFrom', 'alt'],
+      run: function (a) {
+        var mode = a.mode === 'stock' ? 'stock' : a.mode === 'status' ? 'status' : 'flow';
+        if (mode === 'stock') {
+          var G = []; try { G = typeof _savGroups === 'function' ? _savGroups() : []; } catch (e) { G = []; }
+          var priced = G.filter(function (g) { return g.price; }), tv = 0; priced.forEach(function (g) { tv += g.value; });
+          return { mode: 'stock', empty: !G.length, groups: G.slice(0, 6).map(function (g) { return { name: g.name, qty: g.qty, unit: g.unit, priced: !!g.price }; }),
+            count: G.length, pricedCount: priced.length, totalValue: Math.round(tv), unpriced: G.filter(function (g) { return !g.price; }).map(function (g) { return g.name; }).slice(0, 3) };
+        }
+        var flowRes = hkAsstMonthNet(a, mode);
+        if (a.alt && mode === 'flow') {
+          try {
+            var G2 = typeof _savGroups === 'function' ? _savGroups() : [], pr2 = G2.filter(function (g) { return g.price; }), tv2 = 0; pr2.forEach(function (g) { tv2 += g.value; });
+            if (G2.length) flowRes.alt = { count: G2.length, pricedCount: pr2.length, totalValue: Math.round(tv2) };
+          } catch (e3) {}
+        }
+        return flowRes;
+      }
+    };
+    function hkAsstFinText(name, res) {
+      var m = hkAsstMoney, L = [];
+      if (name === 'balance') {
+        if (!res.ok) {
+          if (res.reason === 'past') return 'موجودیِ گذشته (مثلاً آخر ماه قبل) رو هنوز نمی‌تونم بگم؛ فقط موجودیِ الان رو می‌گم.';
+          if (res.reason === 'nodate') return 'تقویم شمسی این گوشی در دسترس نیست و نمی‌تونم مطمئن بشم ماه جاری باز است؛ برای همین عدد موجودی نمی‌گم.';
+          if (res.reason === 'othermonth') return 'الان ماه ' + res.open + ' باز است، نه ماه جاری (' + res.now + ')؛ موجودیِ الان فقط وقتی ماه جاری باز باشد قابل‌اتکاست. ماه جاری رو باز کن و دوباره بپرس.';
+          if (res.reason === 'noaccounts') return 'هنوز حساب یا موجودی‌ای ثبت نشده که بشه جمعش کرد.';
+          return 'موجودی رو از این نسخه نتونستم حساب کنم.';
+        }
+        L.push('موجودی حساب‌هات الان روی هم ' + m(res.total) + ' است (موجودی‌های ثبت‌شده + ردیف‌های پرداخت‌شدهٔ ' + res.label + ').');
+        var shown = res.accounts.filter(function (x) { return x.name !== 'بدون حساب' || x.value !== 0; });
+        if (shown.length > 1) {
+          var top = shown.slice(0, 3).map(function (x) { return x.name + ': ' + m(x.value); }).join('، ');
+          L.push(top + (shown.length > 3 ? ' و ' + hkAsstNum(shown.length - 3) + ' حساب دیگر.' : '.'));
+        }
+        return L.join('\n');
+      }
+      /* savings */
+      if (res.unavailable === 'nodate') return 'تقویم شمسی این گوشی در دسترس نیست و نمی‌تونم «این ماه» رو مطمئن تشخیص بدم؛ ماه رو بنویس (مثلاً «پس‌انداز آذر»).';
+      if (res.mode === 'stock') {
+        if (res.empty) return 'توی بخش پس‌انداز (ارز و طلا) هنوز چیزی ثبت نشده.';
+        if (res.pricedCount) {
+          L.push('پس‌اندازِ ارز و طلات روی هم ' + m(res.totalValue) + ' ارزش داره (طبق قیمت‌هایی که خودت وارد کرده‌ای).');
+          if (res.unpriced.length) L.push('برای ' + res.unpriced.map(function (x) { return '«' + x + '»'; }).join('، ') + ' قیمت وارد نشده و تو این جمع نیست.');
+        } else {
+          L.push('پس‌اندازت: ' + res.groups.slice(0, 3).map(function (g) { return g.name + ' ' + toPersianDigits(String(Math.round(g.qty * 1000) / 1000)) + ' ' + g.unit; }).join('، ') + (res.count > 3 ? ' و ' + hkAsstNum(res.count - 3) + ' مورد دیگه' : '') + '.');
+          L.push('قیمت روز وارد نشده، برای همین ارزش تومانی نمی‌گم.');
+        }
+        return L.join('\n');
+      }
+      var basis = res.basis === 'card' ? 'طبق کارت اصلی' : 'طبق همهٔ ردیف‌ها';
+      if (res.empty) return 'برای ' + res.label + ' هنوز درآمد یا هزینه‌ای ثبت نشده.';
+      var un = [];
+      if (res.incUnpaid > 0) un.push('دریافت‌نشده ' + m(res.incUnpaid));
+      if (res.expUnpaid > 0) un.push('پرداخت‌نشده ' + m(res.expUnpaid));
+      var unLine = un.length ? un.join(' و ') + ' هم توی این حساب هست.' : '';
+      if (res.mode === 'status') {
+        L.push(res.label + ': درآمد ' + m(res.income) + '، خرج ' + m(res.expense) + (res.net >= 0 ? '؛ ' + m(res.net) + ' بیشتر درآمد داشتی' : '؛ خرجت ' + m(-res.net) + ' از درآمدت بیشتره') + ' (' + basis + ').');
+        if (res.rate != null) L.push('نرخ پس‌انداز: ' + (res.rate < 0 ? 'منفی ' : '') + hkAsstPctText(res.rate * 100) + ' — ' + hkAsstRateComment(res.rate));
+        if (unLine) L.push(unLine);
+        else if (res.top) L.push('بیشترین خرجت: ' + res.top.label + ' (' + m(res.top.sum) + ').');
+        return L.join('\n');
+      }
+      if (res.net >= 0) L.push('پس‌اندازِ ' + res.label + ' (درآمد منهای خرج): ' + m(res.net) + '.');
+      else L.push('توی ' + res.label + ' خرجت ' + m(-res.net) + ' از درآمدت بیشتر شده؛ پس‌اندازی نموند (کسری).');
+      L.push('درآمد ' + m(res.income) + '، خرج ' + m(res.expense) + ' (' + basis + ').' + (unLine ? ' ' + unLine : ''));
+      if (res.alt) L.push(res.alt.pricedCount ? 'پس‌اندازِ ارز و طلات هم جداست: ' + m(res.alt.totalValue) + ' (طبق قیمت‌هایی که خودت وارد کرده‌ای).' : 'پس‌اندازِ ارز و طلات هم جداست: ' + hkAsstNum(res.alt.count) + ' مورد ثبت شده ولی قیمت وارد نشده.');
+      return L.join('\n');
+    }
     HK_ASST_TOOLS['insights.top'] = {
       readOnly: true, args: HK_ASST_INS_ARGS,
       run: function (a) {
@@ -352,6 +460,8 @@
     }
     function hkAsstInsightText(tool, res, cmd) {
       var L = [], name = tool.slice(9), money = hkAsstCompact;
+      if (name === 'balance' || name === 'savings') return hkAsstFinText(name, res);
+      if (name === 'overview' && res.short) return hkAsstFinText('savings', res.short);
       if (res.empty && name !== 'trend') {
         if (name === 'forecast' || name === 'daily') return hkAsstPick(['هنوز داده‌ای برای این ماه و ماه‌های قبلش ندارم؛ چند تا ردیف ثبت کن تا بتونم پیش‌بینی کنم.', 'برای پیش‌بینی کردن باید چند تا تراکنش ثبت شده باشه؛ هنوز چیزی ندارم.']);
         if (name === 'anomaly') return hkAsstPick(['هنوز تراکنش کافی ندارم تا بگم کدوم خرج غیرعادیه.', 'داده‌ات کمه؛ با چند ماه ثبت، می‌تونم خرج‌های غیرعادی رو نشونت بدم.']);
@@ -608,10 +718,52 @@
     }
     /* «تا یک سال دیگه ۱۰۰ میلیون می‌خوام / داشته باشم»: هدف پس‌انداز، حتی بدون واژهٔ «پس‌انداز» */
     var HK_ASST_GOAL_RE = /(تا|طی)\s*(\d+|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|دوازده)\s*(ماه|سال)\s*(دیگه|دیگر|آینده|بعد)|(می‌?خوام|میخوام|لازم دارم|نیاز دارم|داشته باشم)/;
+    /* ۱.۴.۴۲: تشخیص «موجودی / پس‌انداز / وضعیت مالی» (با تحمل غلط تایپی)؛ هر کدام فقط همان سؤال را می‌پرسد */
+    function hkAsstFinFix(T) {
+      var tg = [['موجودی', hkAsstKey('موجودی')], ['پس‌انداز', hkAsstKey('پس‌انداز')], ['وضعیت', hkAsstKey('وضعیت')]];
+      return T.split(' ').map(function (t) {
+        var k = hkAsstKey(t); if (k.length < 5) return t;
+        var base = k.replace(/(هام|ام|م)$/, '');
+        for (var i = 0; i < tg.length; i++) if (k !== tg[i][1] && (hkAsstDist(k, tg[i][1], 1) <= 1 || hkAsstDist(base, tg[i][1], 1) <= 1) && base !== tg[i][1]) return tg[i][0];
+        return t;
+      }).join(' ');
+    }
+    var HK_ASST_FIN_PAST = /(^| )(آخر ماه|پایان ماه|ماه قبل|ماه پیش|ماه گذشته|پارسال|سال قبل|دیروز|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|ابان|اذر|اسفند|بهمن|دی)( |$)/;
+    function hkAsstFinKind(text) {
+      var T = hkAsstFinFix(String(text || '').replace(/\u200c/g, ' ').replace(/\s+/g, ' ').trim());
+      if (!T) return null;
+      var PS = /(^| )پس ?انداز/, how = /(چطور(?!ه|ی|م| بود| گذشت| دارم| پیش|$)|چجوری|چگونه|چه جوری|پیشنهاد|راه |ایده|نکته|توصیه|بهتر|کمتر|بیشتر|هدف|نرخ|روند|مقایسه|گزارش|تحلیل|بودجه|برنامه|کنم|بکنم|بکنیم|کنیم|باید|لازمه|لازم|بهتره|بتونم|میتونم|می تونم)/;
+      if (PS.test(T) && /(\d|میلیون|میلیارد|ملیارد|هزار)/.test(T)) return null;                  /* «برای ۲۰۰ میلیون پس‌انداز…» = هدف */
+      if (how.test(T)) return null;
+      var ACC = '(حساب|کارت|بانک)(م|ام|ها|هام| هام| من)?ه?';
+      if (new RegExp('بیلانس|(^| )ته ?حساب|مانده( ?ی)? ?(حساب|کارت)|(^| )موجودی(م|ام)?(مو|و)( |$)').test(T) ||
+          new RegExp('(^| )(تو|توی|داخل|در) ' + ACC + '( [^ ]+)* (چقد|چقدر|چقدره|چقده|چنده|چند تومن|هست|مونده|پوله|پول)( |$)').test(T) ||
+          new RegExp('(^| )' + ACC + '( [^ ]+)* (چقد|چقدر|چقدره|چقده|چنده|چند تومن)( [^ ]+)* (پول|مونده|موجود|دارم|داره|هست)( |$)').test(T) ||
+          new RegExp('(چقد|چقدر|چند تومن) پول( [^ ]+)* (تو|توی|داخل) ' + ACC).test(T) ||
+          new RegExp('(چقد|چقدر|چقدره|چند تومن)( [^ ]+)? (تو|توی|داخل) ' + ACC + '( [^ ]+)? (دارم|داریم|هست|مونده|داره)( |$)').test(T) ||
+          new RegExp('(چقد|چقدر) پول( [^ ]+)* ' + ACC + '( |$)').test(T)) return 'BAL';
+      if (/(^| )موجودی(م|ام| من)?( |$)/.test(T) || /(پول(م| من)? (دارم|موجوده|هست)|چقدر پول دارم|چقد پول دارم|حساب(ها|هام|ام|های من| هام)? (چقدر|چقد|چنده|چقدره|چقده))/.test(T)) return 'BAL';
+      if (/(^| )(ارز و طلا|طلا و ارز)/.test(T) && /(چقدر|چقد|چنده|چیه|چیا|دارم)/.test(T)) return 'SAVS';
+      if (/(^| )(ارز و طلا|طلا و ارز)( ?(م|ام|ها|هام|هامو))?$/.test(T)) return 'SAVS';
+      /* دلار/سکه/طلا… به‌عنوان دارایی («چقد دلار دارم»، «ارزش دلارام»)؛ نه وقتی خرید/خرج/فروش گفته شده */
+      if (/(^| )(دلار|یورو|سکه|طلا|ارز|درهم|پوند|تتر)( ?(م|ام|ها|هام|هامو|ام))?( |$)/.test(T) && /(دارم|داریم|چقد|چقدر|چندتا|چند تا|چنده|چندتاست|ارزش|می ?ارزه)/.test(T) && !/(خرج|خرید|هزینه|پرداخت|فروش|فروختم|پول دادم|درآمد|واریز|برداشت)/.test(T)) return 'SAVS';
+      if (PS.test(T) && /(^| )(دلار|یورو|سکه|طلا|ارز|درهم|پوند|تتر)/.test(T)) return 'SAVS';
+      if (PS.test(T)) {
+        if (/پس ?انداز(م| ام| من| هام| های من| هامو)?( چقدر| چقد| چنده| چیه| چیا| چی)|(چقدر|چقد) پس ?انداز (دارم|داریم)|پس ?انداز دارم|ارز و طلا|طلا و ارز|پس ?اندازهام|پس ?اندازهای من/.test(T)) return 'SAVS';
+        return 'SAVF';
+      }
+      if (/کنار (گذاشتم|بذارم|بزارم|گذاشتی|بذاری)|(تونستم|تونستی) .*کنار|(ذخیره|سیو) (کردم|کردیم|شد)|(پول|چقد|چقدر) .*(ذخیره|سیو) |(چقد|چقدر) پول .*جمع کردم/.test(T + ' ')) return 'SAVF';
+      if (!/(گزارش|تحلیل|کامل|جزئیات|بررسی|نمای کلی|مقایسه|روند)/.test(T) && T.split(' ').length <= 7 &&
+          (/(^| )(وضعیت|وضع) ?(مالی|پولی)?( ?(م|ام|من))?( |$)/.test(T) || /از نظر (مالی|پولی|پول)|وضعی دارم|(^| )مالیم( [^ ]+){0,3} (چطور|چیه|چه)|مالی م چطور|حال مالی/.test(T))) return 'STAT';
+      if (/(^| )دخل و? ?خرج/.test(T) && /(چطور|چیه|چه)/.test(T) && !/(گزارش|تحلیل|خلاصه|کامل|جزئیات|مقایسه|روند)/.test(T) && T.split(' ').length <= 6) return 'STAT';
+      if (/(^| )مالی( |$)/.test(T) && /(خوب|بد|چطور|چیه|چه |پیش|وضع|اوضاع)/.test(T) && !/(تراکنش|هزینه|درآمد|خرج|مخارج|واریز|برداشت|پرداخت|اشتباه|مشکل|ایراد|غلط|بدهی|قرض|وام|کمبود|نصیحت|توصیه|راهنمایی|کمک|بکن)/.test(T) && T.split(' ').length <= 7) return 'STAT';
+      return null;
+    }
     function hkAsstSpecialKind(codes, text) {
       if (codes.indexOf('DLEFT') >= 0) codes = codes.filter(function (c) { return c !== 'DAY' && c !== 'FCS'; });   /* «چند روز تا آخر ماه مونده؟» گفتگوست، نه بودجه */
       if (codes.indexOf('CHG') >= 0) return 'CHG';
       if (text && HK_ASST_GOAL_RE.test(text) && /(\d+\s*(میلیون|میلیارد|ملیارد|هزار))|((یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|بیست|سی|پنجاه|صد)\s*(میلیون|میلیارد|ملیارد))/.test(text) && codes.indexOf('SRCH') < 0) return 'GOL';
+      var fk = hkAsstFinKind(text); if (fk) return fk;
       var hasCmpGrp = codes.indexOf('CMP') >= 0 || codes.indexOf('GRP') >= 0;
       var money = !text || /(\d+\s*(میلیون|میلیارد|ملیارد|هزار))|((یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|بیست|سی|پنجاه|صد)\s*(میلیون|میلیارد|ملیارد|هزار))|\d{6,}/.test(text);
       for (var i = 0; i < HK_ASST_SPECIAL_ORDER.length; i++) {
@@ -623,7 +775,7 @@
       }
       return null;
     }
-    var HK_ASST_SPECIAL_TOOL = { ADV: 'insights.advice', FCS: 'insights.forecast', BUD: 'insights.budget', GOL: 'insights.goal', DAY: 'insights.daily', ANOM: 'insights.anomaly', REC: 'insights.recurring', TOP: 'insights.top', TRD: 'insights.trend', OVW: 'insights.overview' };
+    var HK_ASST_SPECIAL_TOOL = { ADV: 'insights.advice', FCS: 'insights.forecast', BUD: 'insights.budget', GOL: 'insights.goal', DAY: 'insights.daily', ANOM: 'insights.anomaly', REC: 'insights.recurring', TOP: 'insights.top', TRD: 'insights.trend', OVW: 'insights.overview', BAL: 'insights.balance', SAVF: 'insights.savings', SAVS: 'insights.savings', STAT: 'insights.overview' };
     var HK_ASST_FOLLOW = {
       OVW: ['پیشنهاد برای بهتر شدن وضعیتم', 'پولم کجا میره؟', 'آخر ماه چقدر خرج می‌کنم؟'],
       TOP: ['چطور کمتر خرج کنم؟', 'روند هزینه‌هام چطوره؟'],
@@ -649,6 +801,19 @@
         if (mm && !(+mm[1] >= 1300)) months = (+mm[1]) * (mm[2] === 'سال' ? 12 : 1);
         else { var nm = /(یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|دوازده)\s*(ماه|سال)/.exec(text); if (nm) months = (HK_ASST_NUMWORDS[nm[1]] || (nm[1] === 'دوازده' ? 12 : 0)) * (nm[2] === 'سال' ? 12 : 1); }
         return { tool: 'insights.goal', args: { target: big.value, months: months || 0 }, explain: 'goal', understood: '', followUps: HK_ASST_FOLLOW.GOL, chipRaw: true };
+      }
+      if (kind === 'BAL') {
+        var cyr = hkAsstCY(), cmo = hkAsstCM();
+        var past = !!(a.dateFrom) || !!(a.year && a.month && !(a.year === cyr && a.month === cmo)) || !!(a.year && !a.month && a.year !== cyr) || HK_ASST_FIN_PAST.test(String(text || '').replace(/\u200c/g, ' ')) && !/(این ماه|ماه جاری|همین ماه)/.test(text || '');
+        return { tool: 'insights.balance', args: past ? { past: true } : {}, explain: 'balance', understood: '', followUps: [], chipRaw: true };
+      }
+      if (kind === 'SAVF' || kind === 'SAVS' || kind === 'STAT') {
+        var sa = {}; ['year', 'month', 'dateFrom'].forEach(function (k) { if (a[k] != null) sa[k] = a[k]; });
+        /* «پس‌انداز» بی‌هیچ نشانه (ماهانه یا ارز و طلا؟): ماهانه می‌گوییم و اگر چیزی در بخش ارز و طلا ثبت شده، همان را جدا و کوتاه هم می‌آوریم */
+        if (kind === 'SAVF' && !/(کردم|کردیم|کرده|شد|شده|بود|داشتم|کنار|ماه|امسال|پارسال|سال|هفته|روز|دارم|ارز|طلا|دلار|سکه|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|ابان|آذر|اذر|دی|بهمن|اسفند)/.test(String(text || '').replace(/\u200c/g, ' ')) && a.month == null && a.year == null && a.dateFrom == null) sa.alt = true;
+        if (kind === 'STAT') { sa.short = true; return { tool: 'insights.overview', args: sa, explain: 'ovw', understood: '', followUps: [], chipRaw: true }; }
+        sa.mode = kind === 'SAVS' ? 'stock' : 'flow';
+        return { tool: 'insights.savings', args: sa, explain: kind.toLowerCase(), understood: '', followUps: [], chipRaw: true };
       }
       var cmd = { tool: HK_ASST_SPECIAL_TOOL[kind], args: a, explain: kind.toLowerCase(), understood: '', followUps: HK_ASST_FOLLOW[kind] || [], chipRaw: true };
       return cmd;
