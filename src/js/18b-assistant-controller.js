@@ -9,50 +9,50 @@
       if (/^insights\.(monthavg|share)$/.test(tool)) return hkAsstAppText2(tool, res);
       if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
-        if (cmd.explain === 'count') return 'تعداد تراکنش‌ها: ' + hkAsstNum(res.count) + '.';
-        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنش: ' + hkAsstMoney(res.avg) + ' (از ' + hkAsstNum(res.count) + ' تراکنش).' : 'تراکنشی پیدا نشد.';
-        if (!res.count) return hkAsstPick(['تراکنشی پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'تراکنشی پیدا نشد، دست‌کم با این شرایط.']);
-        var t = 'تعداد: ' + hkAsstNum(res.count) + ' تراکنش\nجمع: ' + hkAsstMoney(res.sum);
+        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']);
+        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.';
+        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']);
+        var t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
         if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
         return t;
       }
       if (tool === 'transactions.search') {
-        if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نشد.']);
-        if (cmd.explain) return (cmd.explain === 'بیشترین' ? 'بیشترین' : 'کمترین') + ' تراکنش:';
-        return hkAsstNum(res.count) + ' تراکنش پیدا شد. جمع مبلغ: ' + hkAsstMoney(res.total) + '.';
+        if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نکردم.', 'چیزی پیدا نکردم؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نکردم.']);
+        if (cmd.explain) return cmd.explain === 'بیشترین' ? hkAsstPick(['اینم بیشترین‌ها:', 'بیشترین‌ها اینان:']) : hkAsstPick(['اینم کمترین‌ها:', 'کمترین‌ها اینان:']);
+        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.';
       }
-      if (tool === 'transactions.get') return res.found ? 'جزئیات تراکنش:' : 'این تراکنش پیدا نشد.';
+      if (tool === 'transactions.get') return res.found ? 'اینم جزئیاتش:' : 'این تراکنش رو پیدا نکردم.';
       if (tool === 'projects.list') {
-        if (!res.projects.length) return 'هنوز پروژه‌ای ثبت نشده است.';
-        return 'پروژه‌ها (' + hkAsstNum(res.projects.length) + '):\n' + res.projects.map(function (p) {
+        if (!res.projects.length) return 'هنوز پروژه‌ای ثبت نشده.';
+        return hkAsstNum(res.projects.length) + ' تا پروژه داری:\n' + res.projects.map(function (p) {
           return '• ' + p.name + ': ' + hkAsstNum(p.count) + ' تراکنش، هزینه ' + hkAsstMoney(p.expenseSum) + '، درآمد ' + hkAsstMoney(p.incomeSum);
         }).join('\n');
       }
       if (tool === 'categories.summary') {
-        var t = 'دسته‌های خرج: ' + hkAsstNum(res.total) + ' دسته';
+        var t = hkAsstNum(res.total) + ' تا دستهٔ خرج داری.';
         t += '\nپیش‌فرض: ' + res.builtIn.join('، ');
         if (res.custom.length) t += '\nدلخواه: ' + res.custom.join('، ');
         return t;
       }
       if (tool === 'accounts.list') {
-        if (!res.accounts.length) return 'هنوز حسابی در ردیف‌ها ثبت نشده است.';
-        return 'حساب‌ها (' + hkAsstNum(res.accounts.length) + '):\n' + res.accounts.map(function (a) { return '• ' + a.name + ' (' + hkAsstNum(a.count) + ' ردیف)'; }).join('\n');
+        if (!res.accounts.length) return 'هنوز حسابی توی ردیف‌ها ثبت نشده.';
+        return hkAsstNum(res.accounts.length) + ' تا حساب داری:\n' + res.accounts.map(function (a) { return '• ' + a.name + ' (' + hkAsstNum(a.count) + ' ردیف)'; }).join('\n');
       }
       if (tool === 'months.summary') {
-        if (!res.count) return 'هنوز ماهی با ردیف ثبت نشده است.';
-        return 'ردیف‌ها در ' + hkAsstNum(res.count) + ' ماه ثبت شده‌اند، از ' + toPersianDigits(res.first[1] + '/' + res.first[0]) + ' تا ' + toPersianDigits(res.last[1] + '/' + res.last[0]) + '.';
+        if (!res.count) return 'هنوز ماهی با ردیف ثبت نشده.';
+        return 'ردیف‌ها توی ' + hkAsstNum(res.count) + ' ماه ثبت شده، از ' + toPersianDigits(res.first[1] + '/' + res.first[0]) + ' تا ' + toPersianDigits(res.last[1] + '/' + res.last[0]) + '.';
       }
       if (tool === 'projects.summary') {
-        if (!res.count) return 'برای پروژهٔ «' + res.name + '» تراکنشی ثبت نشده است.';
-        return 'پروژهٔ «' + res.name + '»\nتعداد: ' + hkAsstNum(res.count) + ' تراکنش\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nمانده: ' + hkAsstMoney(res.balance);
+        if (!res.count) return 'برای پروژهٔ «' + res.name + '» هنوز تراکنشی ثبت نشده.';
+        return 'پروژهٔ «' + res.name + '»: ' + hkAsstNum(res.count) + ' تا تراکنش\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nمانده: ' + hkAsstMoney(res.balance);
       }
       if (tool === 'transactions.group') {
-        if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نشد.';
-        var gtxt = 'گروه‌بندی بر اساس ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
+        if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نکردم.';
+        var gtxt = 'اینم به تفکیک ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
         if (cmd && /^(top|low)group$/.test(cmd.explain || '')) {
           var gl = res.groups.slice().sort(function (x, y) { return cmd.explain === 'topgroup' ? y.sum - x.sum : x.sum - y.sum; })[0];
           var gk = res.by === 'month' ? (function (k) { var q = String(k).split('-'); return HK_ASST_MONTH_NAMES[(+q[1]) - 1] + ' ' + hkAsstNum(+q[0]); })(gl.key) : gl.key;
-          return (cmd.explain === 'topgroup' ? 'بیشترین: «' : 'کمترین: «') + gk + '» با ' + hkAsstMoney(gl.sum) + ' (' + hkAsstNum(gl.count) + ' ردیف).\n' + gtxt;
+          return (cmd.explain === 'topgroup' ? 'بیشترینش «' : 'کمترینش «') + gk + '» بوده، با ' + hkAsstMoney(gl.sum) + ' (' + hkAsstNum(gl.count) + ' ردیف).\n' + gtxt;
         }
         return gtxt;
       }
@@ -75,9 +75,9 @@
     }
     /* ساخت پیام نهایی از یک فرمان اعتبارسنجی‌شده (مشترک بین قاعده‌ای و مدل محلی) */
     function hkAsstFinish(cmd) {
-      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [], final: !!cmd.final, chipRaw: !!cmd.chipRaw };
+      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [], final: !!cmd.final, chipRaw: !!cmd.chipRaw, decision: cmd.decision || '' };
       var out = hkAsstExec(cmd.tool, cmd.args);
-      if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
+      if (!out.ok) return { role: 'bot', kind: 'text', text: 'نشد انجامش بدم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
       var head = hkAsstHeader(cmd);
       var msg = { role: 'bot', kind: 'result', tool: cmd.tool, head: head, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
@@ -101,6 +101,9 @@
         var a = hkAsstMissedList().filter(function (x) { return x !== t; }); a.push(t);
         localStorage.setItem(HK_ASST_MISSED_KEY, JSON.stringify(a.slice(-100)));
       } catch (e) {}
+    }
+    function hkAsstMissedAdd(t) {
+      try { t = String(t || '').replace(/\d{4,}/g, '#').trim().slice(0, 140); if (!t) return; var a = hkAsstMissedList().filter(function (x) { return x !== t; }); a.push(t); localStorage.setItem(HK_ASST_MISSED_KEY, JSON.stringify(a.slice(-100))); } catch (e) {}
     }
     function hkAsstMissedClear() { try { localStorage.removeItem(HK_ASST_MISSED_KEY); } catch (e) {} }
     /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */

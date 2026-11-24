@@ -92,7 +92,7 @@
       if (tool === 'insights.ledger') {
         if (!res.list.length) return res.person ? hkAsstPick(['با «' + res.person + '» قرض یا طلب تسویه‌نشده‌ای نمی‌بینم.', 'حساب «' + res.person + '» صافه؛ چیزی ازش نیست.']) : hkAsstPick(HK_ASST_NOLEDGER);
         L.push(hkAsstPick(['اینم قرض‌وطلب‌هات:', 'طبق دفتر قرض‌وطلب:']));
-        res.list.forEach(function (n) { L.push('• ' + n.debtor + ' به ' + n.creditor + ' ' + money(n.amount) + ' بدهکار است'); });
+        res.list.forEach(function (n) { L.push('• ' + n.debtor + ' به ' + n.creditor + ' ' + money(n.amount) + ' بدهکاره'); });
         return L.join('\n');
       }
       if (tool === 'insights.dong') {
@@ -121,7 +121,7 @@
         var lab = (res.tab === 'income' ? 'درآمد ' : res.tab === 'expense' ? 'مخارج ' : '') + HK_ASST_MONTH_NAMES[res.m - 1] + ' ' + hkAsstNum(res.y);
         if (!res.row) return res.total ? 'توی ' + lab + ' فقط ' + hkAsstNum(res.total) + ' ردیف داری؛ ردیف ' + hkAsstNum(res.n) + ' وجود نداره.' : 'برای ' + lab + ' ردیفی ثبت نشده.';
         var r = res.row;
-        return 'ردیف ' + hkAsstNum(res.n) + ' ' + lab + ': «' + (r.desc || 'بدون شرح') + '» به مبلغ ' + money(r.amount) + (r.d ? '، روز ' + hkAsstNum(r.d) : '') + (r.section ? '، بخش «' + r.section + '»' : '') + '.';
+        return 'ردیف ' + hkAsstNum(res.n) + ' ' + lab + ' «' + (r.desc || 'بدون شرح') + '» بوده، ' + money(r.amount) + (r.d ? '، روز ' + hkAsstNum(r.d) : '') + (r.section ? '، توی بخش «' + r.section + '»' : '') + '.';
       }
       return '';
     }
@@ -220,10 +220,10 @@
     function hkAsstAppText2(tool, res) {
       if (tool === 'insights.monthavg') {
         if (!res.months) return 'برای محاسبهٔ میانگین هنوز ماهی با ' + (res.tab === 'income' ? 'درآمد' : 'هزینه') + ' ثبت نشده.';
-        return 'میانگین ' + (res.tab === 'income' ? 'درآمد' : 'هزینهٔ') + ' ماهانه‌ات ' + hkAsstMoney(res.avg) + ' است (از ' + hkAsstNum(res.months) + ' ماه).';
+        return 'میانگین ' + (res.tab === 'income' ? 'درآمد' : 'هزینهٔ') + ' ماهانه‌ات ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.months) + ' ماه).';
       }
       if (tool === 'insights.share') {
-        if (!res.total) return 'برای این بازه هنوز چیزی ثبت نشده تا سهمی حساب کنم.';
+        if (!res.total) return 'برای این بازه هنوز چیزی ثبت نشده که سهمی حساب کنم.';
         var pc = Math.round(res.share * 1000) / 10;
         return 'سهمش ' + hkAsstPctText(pc) + ' از کل ' + (res.tab === 'income' ? 'درآمد' : 'هزینه') + 'هاست (' + hkAsstMoney(res.part) + ' از ' + hkAsstMoney(res.total) + ').';
       }
@@ -261,6 +261,10 @@
         return tool('transactions.search', a3, '');
       }
       if (/از کی (دارم )?(استفاده|ثبت)|اولین (بار|ثبت)|کی شروع کردم/.test(T)) return tool('transactions.search', { sort: 'dateAsc', limit: 1 }, '');
+      /* «کدوم دسته بیشترین خرج رو داره»: دسته‌های پرهزینه */
+      if (/(کدوم|چه|کدام) دسته/.test(T) && /بیشتر|بیشترین|زیاد|گرون|کمتر|کمترین/.test(T)) return tool('insights.top', { tab: tb || 'expense' }, '');
+      /* «فردا هوا چطوره»: دربارهٔ هوا، نه پیش‌بینی مالی */
+      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
       /* کدوم ماه/دسته/حساب/پروژه بیشتر/کمتر */
       var gm = /(کدوم|چه|کدام) (ماه|حساب|کارت|پروژه)/.exec(T);
       if (gm && /بیشتر|کمتر|زیاد|کم|گرون|بیشترین|کمترین|بهتر|بدتر/.test(T)) {

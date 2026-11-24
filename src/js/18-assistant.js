@@ -26,7 +26,7 @@
     }
     /* باز کردن ردیف در صفحهٔ خودش: همان ماه و بخش، اسکرول آرام و هایلایت همان روشی که برنامه دارد (sp-flash) */
     /* ۱.۴.۳۹: از دستیار وارد صفحه‌ای شدی؟ بازگشت (بک) تا وقتی روی همان صفحه‌ها هست آن‌ها را می‌بندد و آخرش به ادامهٔ گفتگو برمی‌گردد */
-    var _hkAsstRet = 0;
+    var _hkAsstRet = 0, _hkAsstLastQ = '';
     function hkAsstGoAway() { _hkAsstRet = Date.now(); try { if (typeof _hkVoice !== 'undefined' && _hkVoice.on) hkAsstVoiceClose(); } catch (e0) {} try { hkAsstClose(); } catch (e1) {} }
     window.hkAsstReturnPending = function () { return !!_hkAsstRet && Date.now() - _hkAsstRet < 1800000; };
     window.hkAsstReturnCheck = function (afterDetail) {
@@ -197,6 +197,18 @@
         });
         bub.appendChild(sg);
       }
+      /* ۱.۴.۴۰: بازخورد زیر پاسخ دادهٔ مالی: ✓ درست بود / × اشتباه بود */
+      if (msg.kind === 'result' && msg.role !== 'user') {
+        var fb = hkAsstEl('div', 'hk-asst-fb'), q = _hkAsstLastQ;
+        var fg = hkAsstEl('button', 'hk-asst-fb-b'); fg.type = 'button'; fg.setAttribute('aria-label', 'پاسخ درست بود'); fg.innerHTML = HK_TICK_SVG;
+        var fx = hkAsstEl('button', 'hk-asst-fb-b hk-del-x'); fx.type = 'button'; fx.setAttribute('aria-label', 'پاسخ اشتباه بود'); fx.innerHTML = HK_DEL_X;
+        var fdone = function (good) {
+          hkAsstFeedback(q, good); fb.textContent = '';
+          fb.appendChild(hkAsstEl('span', 'hk-asst-fb-t', good ? 'ممنون.' : 'ببخشید. سؤالت رو ثبت کردم تا بهتر بشم. اگه یه کلمه رو اشتباه گرفتم بنویس «X یعنی Y» تا یاد بگیرم.'));
+        };
+        fg.addEventListener('click', function () { fdone(true); }); fx.addEventListener('click', function () { fdone(false); });
+        fb.appendChild(fg); fb.appendChild(fx); bub.appendChild(fb);
+      }
       row.appendChild(bub);
       log.appendChild(row);
       log.scrollTop = log.scrollHeight;
@@ -207,7 +219,7 @@
       log.textContent = '';
       var e = hkAsstEl('div', 'hk-asst-empty');
       e.appendChild(hkAsstEl('div', 'hk-asst-hello', 'سلام! دربارهٔ تراکنش‌ها و مبالغ حساب‌کتاب بپرس.'));
-      e.appendChild(hkAsstEl('div', 'hk-asst-hint', 'فقط خواندن: چیزی را تغییر نمی‌دهم.'));
+      e.appendChild(hkAsstEl('div', 'hk-asst-hint', 'فقط می‌خونم؛ چیزی رو تغییر نمی‌دم.'));
       HK_ASST_EXAMPLES.forEach(function (ex) {
         var b = hkAsstEl('button', 'hk-asst-chip', ex);
         b.type = 'button';
@@ -219,6 +231,7 @@
     function hkAsstSend(text) {
       var q = String(text || '').trim();
       if (!q) return;
+      _hkAsstLastQ = q;
       hkAsstAppend({ role: 'user', kind: 'text', text: q });
       var input = _hkAsstEl.querySelector('.hk-asst-input');
       input.value = '';
@@ -231,7 +244,7 @@
         hkAsstAppend(reply);
       }, function () {
         if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
-        hkAsstAppend({ role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' });
+        hkAsstAppend({ role: 'bot', kind: 'text', text: 'یه مشکلی پیش اومد. دوباره امتحان کن.' });
       });
     }
     function hkAsstClear() {
@@ -287,7 +300,7 @@
     }
     /* ضبط از نوار ورودی (۱.۴.۳۸): کادر دو ردیف می‌شود؛ بالا متن زنده (تا چیزی شنیده نشده، نام کاربر)، پایین ✕ لغو، موج صدا، ■ پایان، ↑ پایان و ارسال */
     function hkAsstRecStart(form, input) {
-      if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط توی نسخهٔ اندروید کار می‌کنه.'); } catch (e) {} return; }
       if (form.classList.contains('recording')) { try { hkAsstSpeechPlugin().stop(); } catch (eS) {} return; }
       var base = input.value.trim();
       var txt = form.querySelector('.hk-asst-rc-t'), dots = form.querySelectorAll('.hk-asst-rc-dots i'), lv = [];
@@ -398,7 +411,7 @@
             if (spoke) { hkAsstVoiceLoop(); return; }
             /* صدا در دسترس نیست: پاسخ نوشته می‌شود، چند ثانیه می‌ماند و گفتگو ادامه دارد */
             var cap = hkAsstSpeechText(reply).slice(0, 220);
-            hkAsstVoiceSet('speaking', 'گوشی صدای فارسی ندارد؛ پاسخ نوشته شد.', cap);
+            hkAsstVoiceSet('speaking', 'گوشی صدای فارسی نداره؛ جواب رو نوشتم.', cap);
             setTimeout(function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceLoop(); }, Math.min(9000, 2500 + cap.length * 40));
           });
         }, function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceSet('idle', 'خطایی پیش آمد. برای شروع دوباره روی گوی بزن.'); });
@@ -418,7 +431,7 @@
       else if (_hkVoice.state === 'idle') { _hkVoice.fails = 0; hkAsstVoiceLoop(); }
     }
     function hkAsstVoiceOpen() {
-      if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط توی نسخهٔ اندروید کار می‌کنه.'); } catch (e) {} return; }
       try { document.activeElement && document.activeElement.blur(); } catch (eB) {}
       _hkVoice.on = true; _hkVoice.fails = 0; _hkVoice.tts = null; _hkVoice.nativeTts = null; _hkVoice.needVoice = false;
       _hkVoice.handles.forEach(hkAsstSpeechOff); _hkVoice.handles = [];
@@ -648,8 +661,22 @@
       mclr.addEventListener('click', function () { hkAsstMissedClear(); hkAsstMgrRender(); });
       mrow.appendChild(mclr);
       list.appendChild(mrow);
+      /* واژه‌های من: اصطلاح‌هایی که خودت یاد دادی (X یعنی Y) */
+      var al = hkAsstAliasList();
+      var arow = hkAsstEl('div', 'hk-asst-mrow hk-asst-arow');
+      var ainfo = hkAsstEl('div', 'hk-asst-minfo');
+      ainfo.appendChild(hkAsstEl('div', 'hk-asst-mname', 'واژه‌های من'));
+      ainfo.appendChild(hkAsstEl('div', 'hk-asst-msize', al.length ? '' : 'هنوز چیزی یاد نداده‌ای. در چت بنویس: «دایی سعید یعنی سعید».'));
+      arow.appendChild(ainfo); list.appendChild(arow);
+      al.forEach(function (x) {
+        var r = hkAsstEl('div', 'hk-asst-mrow');
+        r.appendChild(hkAsstEl('div', 'hk-asst-mname', x.from + '  ←  ' + x.to));
+        var d = hkAsstEl('button', 'hk-del-x hk-asst-mdel', HK_DEL_X); d.type = 'button'; d.setAttribute('aria-label', 'حذف');
+        d.addEventListener('click', function () { hkAsstAliasRemove(x.from); hkAsstMgrRender(); });
+        r.appendChild(d); list.appendChild(r);
+      });
       hkAsstInstalled().then(function (m) {
-        if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده است.')); return; }
+        if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده.')); return; }
         var row = hkAsstEl('div', 'hk-asst-mrow');
         var info = hkAsstEl('div', 'hk-asst-minfo');
         info.appendChild(hkAsstEl('div', 'hk-asst-mname', m.name));

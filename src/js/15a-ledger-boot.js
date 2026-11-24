@@ -932,8 +932,10 @@
     }
     (function () {
       var editing = function (t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) && !t.readOnly && document.activeElement === t; };
-      document.addEventListener('selectstart', function (e) { var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement); if (!editing(t)) e.preventDefault(); }, true);
-      document.addEventListener('contextmenu', function (e) { if (!editing(e.target)) e.preventDefault(); }, true);
+      /* ۱.۴.۴۰: متن حباب‌های چت دستیار (نه دکمه و کارت‌ها) مثل اندروید انتخاب و کپی می‌شود */
+      var chatText = function (t) { try { if (t && t.nodeType === 3) t = t.parentElement; return !!(t && t.closest && t.closest('.hk-asst-bub') && !t.closest('button')); } catch (e) { return false; } };
+      document.addEventListener('selectstart', function (e) { var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement); if (!editing(t) && !chatText(t)) e.preventDefault(); }, true);
+      document.addEventListener('contextmenu', function (e) { if (!editing(e.target) && !chatText(e.target)) e.preventDefault(); }, true);
       /* ۱.۴.۴: اگر گوشی با نگه داشتن انگشت باز هم نوشته‌ای را انتخاب کرد (گاهی پیش از لانگ‌پرس خود نرم‌افزار)، همان لحظه انتخاب برداشته می‌شود؛ فقط خانهٔ در حال ویرایش انتخاب‌پذیر است */
       var dropSel = function (el) {
         try { if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !editing(el) && el.selectionStart !== el.selectionEnd) { el.setSelectionRange(0, 0); if (document.activeElement === el) el.blur(); } } catch (eD) {}
@@ -945,7 +947,7 @@
           if (editing(ae)) return;
           dropSel(ae);
           var sel = window.getSelection && window.getSelection();
-          if (sel && !sel.isCollapsed) sel.removeAllRanges();
+          if (sel && !sel.isCollapsed && !chatText(sel.anchorNode)) sel.removeAllRanges();
         } catch (eSel) {}
       }, true);
       /* انتخاب داخل خانهٔ فقط‌خواندنی (ردیف‌های جدول) رویداد select خودش را دارد */

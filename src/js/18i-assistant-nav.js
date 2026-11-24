@@ -80,17 +80,17 @@
       var navRe = /(^| )(برو|ببر|بریم|ببرم|ببرمت|باز کن|بازکن|بازش کن|بازش|هدایت کن|هدایتم کن|منو ببر|نشونم بده|بیا|بیار)( |$)/;
       if (!navRe.test(T)) return null;
       var words = T.split(' ').filter(function (w) { return w && !HK_ASST_NAV_FILL[w]; }), P = words.join(' ');
-      var fin = function (ask) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [] }; };
+      var fin = function (ask, dec) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
       /* «نشونم بده/بیار» همراه اسم یک چیز دادهٔ مالی، پرسش است نه رفتن؛ فقط وقتی بخش شناخته‌شده باشد می‌رویم */
       if (!P || /^(اونجا|همونجا|اینجا|ردیف|تراکنش|ردیفش|اونو|اینو|مورد|اولی|اول)$/.test(P)) {
         if (/^(بیار|بیا|نشونم بده)$/.test(T)) return null;
         if (_hkAsstLastTarget) { var t = _hkAsstLastTarget; hkAsstOpenTarget(t); return fin(hkAsstPick(['باشه، بازش می‌کنم.', 'حله، می‌برمت اونجا.'])); }
-        return fin('هنوز چیزی نشونت ندادم که ببرمت سراغش. اسم بخش رو بگو، مثلاً «برو به شخصی‌سازی» یا «برو به قرض».');
+        return fin('هنوز چیزی نشونت ندادم که ببرمت سراغش. اسم بخش رو بگو، مثلاً «برو به شخصی‌سازی» یا «برو به قرض».', 'ask');
       }
       var nav = hkAsstFindNav(P);
       if (!nav) {
         if (/^(بیار|بیا|نشونم بده)$/.test((navRe.exec(T) || [])[2] || '')) return null;
-        return fin('این بخش رو نشناختم. بگو کدوم قسمت؟ مثلاً شخصی‌سازی، قرض، دنگ، یادآورها، پس‌انداز یا آمار.');
+        return fin('این بخش رو نشناختم. بگو کدوم قسمت؟ مثلاً شخصی‌سازی، قرض، دنگ، یادآورها، پس‌انداز یا آمار.', 'ask');
       }
       hkAsstNavGo(nav);
       return fin(hkAsstPick(['باشه، «' + nav.name + '» رو باز می‌کنم.', 'حله، می‌برمت به «' + nav.name + '».']));
@@ -120,6 +120,10 @@
         var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });
         if (!hasT && !hasE) return raw;
+        var spec = HK_ASST_INTENT_SPEC[L.intent];
+        if (spec && !spec.carry.length) return raw;          /* قصدهایی که چیزی منتقل نمی‌کنند (مثل خلاصهٔ پروژه) */
+        if (spec && hasE && spec.carry.indexOf('entity') < 0) return raw;
+        if (spec && hasT && spec.carry.indexOf('time') < 0) return raw;
         if (hasT) { TK.forEach(function (k) { delete M[k]; }); TK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); if (N.month && !raw.yearExplicit && L.args.year && L.yearExplicit) M.year = L.args.year; }
         if (hasE) { EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); }
         var out = { tool: L.tool, args: M, explain: L.explain, corrections: raw.corrections || [], intent: L.intent, yearExplicit: raw.yearExplicit || L.yearExplicit, follow: false, memory: true };
