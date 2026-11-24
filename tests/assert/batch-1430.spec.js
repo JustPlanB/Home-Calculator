@@ -78,6 +78,12 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
     const i = document.querySelector('.hk-asst-input').getBoundingClientRect(), v = document.querySelector('.hk-asst-vc').getBoundingClientRect(), f = document.querySelector('.hk-asst-field').getBoundingClientRect();
     o.align = [Math.round(i.top + i.height / 2), Math.round(v.top + v.height / 2), Math.round(f.top + f.height / 2)];
     o.title = document.querySelector('.hk-asst-head .hk-asst-title').textContent.trim();
+    /* انتخاب و کپی: اسکریپت‌های سراسری نباید جلوی انتخاب متن حباب را بگیرند */
+    const txt = document.querySelector('.hk-asst-bot .hk-asst-txt'), btn = document.querySelector('.hk-asst-card');
+    const ev = (t, type) => { const e = new Event(type, { bubbles: true, cancelable: true }); t.dispatchEvent(e); return e.defaultPrevented; };
+    o.selPrevented = [ev(txt, 'selectstart'), ev(txt, 'contextmenu')]; o.btnPrevented = btn ? ev(btn, 'selectstart') : null;
+    const rg = document.createRange(); rg.selectNodeContents(txt); const sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(rg);
+    await new Promise(r => setTimeout(r, 200)); o.selKept = String(window.getSelection()).length > 0; sl.removeAllRanges();
     /* کلیک کارت دنگ ← باز شدن دنگ و بازگشت با بک به گفتگو */
     window.__nav = []; window.openDongModal = (g) => window.__nav.push('dong:' + g);
     document.querySelector('.hk-asst-card').click(); /* اولین کارت: قرض */
@@ -91,7 +97,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(U.cards >= 2, 'قرض و دنگ به‌صورت کارت قابل‌کلیک نمایش داده می‌شوند (' + U.cards + ')');
   ok(U.noAv, 'عکس دو طرف چت برداشته شده');
   ok(U.sideMe && U.sideBot, 'حباب کاربر سمت راست و حباب دستیار سمت چپ');
-  ok(U.sel, 'متن حباب‌ها قابل انتخاب و کپی است');
+  ok(U.sel && U.selPrevented.join() === 'false,false' && U.btnPrevented === true && U.selKept, 'انتخاب متن حباب‌ها واقعاً کار می‌کند: selectstart و contextmenu مسدود نیست، انتخاب باقی می‌ماند؛ دکمه‌ها همچنان انتخاب‌نشدنی‌اند');
   ok(Math.abs(U.align[0] - U.align[1]) <= 1 && Math.abs(U.align[1] - U.align[2]) <= 1, 'دکمهٔ ویس هم‌مرکز کادر و خط نوشتن است ' + U.align.join('/'));
   ok(U.title === 'دستیار', 'عنوان فقط «دستیار» است');
   ok(U.closedAfterGo && U.ret === true && U.reopen && U.logKept >= 6 && U.ret2 === false, 'زدن کارت ← رفتن به بخش؛ بک ← برگشت به همان گفتگو با پیام‌های قبلی (فقط یک بار)');

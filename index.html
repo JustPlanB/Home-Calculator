@@ -13298,6 +13298,12 @@ html[data-theme="light"] .hk-p2p-cmp .hk-p2p-card.inc .hk-p2p-amt { color: #1783
     .hk-asst-leg-v { font-weight: 700; font-size: 12px; white-space: nowrap; }
     .hk-asst-bars-c { width: 100%; height: auto; direction: ltr; }
     .hk-asst-bar-t { font-size: 8px; fill: var(--hk-muted); }
+
+    /* ۱.۴.۴۰: بازخورد زیر پاسخ */
+    .hk-asst-fb { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .hk-asst-fb-b { width: 28px; height: 28px; padding: 0; border: 0; background: transparent; color: var(--hk-muted); display: flex; align-items: center; justify-content: center; }
+    .hk-asst-fb-b svg { width: 17px; height: 17px; }
+    .hk-asst-fb-t { font-size: 12px; color: var(--hk-muted); line-height: 1.7; }
 </style>
 </head>
 <body class="tabs-main-hidden">
@@ -51508,8 +51514,10 @@ function openProjectRowPicker(secId) {
     }
     (function () {
       var editing = function (t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) && !t.readOnly && document.activeElement === t; };
-      document.addEventListener('selectstart', function (e) { var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement); if (!editing(t)) e.preventDefault(); }, true);
-      document.addEventListener('contextmenu', function (e) { if (!editing(e.target)) e.preventDefault(); }, true);
+      /* ۱.۴.۴۰: متن حباب‌های چت دستیار (نه دکمه و کارت‌ها) مثل اندروید انتخاب و کپی می‌شود */
+      var chatText = function (t) { try { if (t && t.nodeType === 3) t = t.parentElement; return !!(t && t.closest && t.closest('.hk-asst-bub') && !t.closest('button')); } catch (e) { return false; } };
+      document.addEventListener('selectstart', function (e) { var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement); if (!editing(t) && !chatText(t)) e.preventDefault(); }, true);
+      document.addEventListener('contextmenu', function (e) { if (!editing(e.target) && !chatText(e.target)) e.preventDefault(); }, true);
       /* ۱.۴.۴: اگر گوشی با نگه داشتن انگشت باز هم نوشته‌ای را انتخاب کرد (گاهی پیش از لانگ‌پرس خود نرم‌افزار)، همان لحظه انتخاب برداشته می‌شود؛ فقط خانهٔ در حال ویرایش انتخاب‌پذیر است */
       var dropSel = function (el) {
         try { if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !editing(el) && el.selectionStart !== el.selectionEnd) { el.setSelectionRange(0, 0); if (document.activeElement === el) el.blur(); } } catch (eD) {}
@@ -51521,7 +51529,7 @@ function openProjectRowPicker(secId) {
           if (editing(ae)) return;
           dropSel(ae);
           var sel = window.getSelection && window.getSelection();
-          if (sel && !sel.isCollapsed) sel.removeAllRanges();
+          if (sel && !sel.isCollapsed && !chatText(sel.anchorNode)) sel.removeAllRanges();
         } catch (eSel) {}
       }, true);
       /* انتخاب داخل خانهٔ فقط‌خواندنی (ردیف‌های جدول) رویداد select خودش را دارد */
@@ -56223,7 +56231,7 @@ function openProjectRowPicker(secId) {
       if (tool === 'insights.ledger') {
         if (!res.list.length) return res.person ? hkAsstPick(['با «' + res.person + '» قرض یا طلب تسویه‌نشده‌ای نمی‌بینم.', 'حساب «' + res.person + '» صافه؛ چیزی ازش نیست.']) : hkAsstPick(HK_ASST_NOLEDGER);
         L.push(hkAsstPick(['اینم قرض‌وطلب‌هات:', 'طبق دفتر قرض‌وطلب:']));
-        res.list.forEach(function (n) { L.push('• ' + n.debtor + ' به ' + n.creditor + ' ' + money(n.amount) + ' بدهکار است'); });
+        res.list.forEach(function (n) { L.push('• ' + n.debtor + ' به ' + n.creditor + ' ' + money(n.amount) + ' بدهکاره'); });
         return L.join('\n');
       }
       if (tool === 'insights.dong') {
@@ -56252,7 +56260,7 @@ function openProjectRowPicker(secId) {
         var lab = (res.tab === 'income' ? 'درآمد ' : res.tab === 'expense' ? 'مخارج ' : '') + HK_ASST_MONTH_NAMES[res.m - 1] + ' ' + hkAsstNum(res.y);
         if (!res.row) return res.total ? 'توی ' + lab + ' فقط ' + hkAsstNum(res.total) + ' ردیف داری؛ ردیف ' + hkAsstNum(res.n) + ' وجود نداره.' : 'برای ' + lab + ' ردیفی ثبت نشده.';
         var r = res.row;
-        return 'ردیف ' + hkAsstNum(res.n) + ' ' + lab + ': «' + (r.desc || 'بدون شرح') + '» به مبلغ ' + money(r.amount) + (r.d ? '، روز ' + hkAsstNum(r.d) : '') + (r.section ? '، بخش «' + r.section + '»' : '') + '.';
+        return 'ردیف ' + hkAsstNum(res.n) + ' ' + lab + ' «' + (r.desc || 'بدون شرح') + '» بوده، ' + money(r.amount) + (r.d ? '، روز ' + hkAsstNum(r.d) : '') + (r.section ? '، توی بخش «' + r.section + '»' : '') + '.';
       }
       return '';
     }
@@ -56351,10 +56359,10 @@ function openProjectRowPicker(secId) {
     function hkAsstAppText2(tool, res) {
       if (tool === 'insights.monthavg') {
         if (!res.months) return 'برای محاسبهٔ میانگین هنوز ماهی با ' + (res.tab === 'income' ? 'درآمد' : 'هزینه') + ' ثبت نشده.';
-        return 'میانگین ' + (res.tab === 'income' ? 'درآمد' : 'هزینهٔ') + ' ماهانه‌ات ' + hkAsstMoney(res.avg) + ' است (از ' + hkAsstNum(res.months) + ' ماه).';
+        return 'میانگین ' + (res.tab === 'income' ? 'درآمد' : 'هزینهٔ') + ' ماهانه‌ات ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.months) + ' ماه).';
       }
       if (tool === 'insights.share') {
-        if (!res.total) return 'برای این بازه هنوز چیزی ثبت نشده تا سهمی حساب کنم.';
+        if (!res.total) return 'برای این بازه هنوز چیزی ثبت نشده که سهمی حساب کنم.';
         var pc = Math.round(res.share * 1000) / 10;
         return 'سهمش ' + hkAsstPctText(pc) + ' از کل ' + (res.tab === 'income' ? 'درآمد' : 'هزینه') + 'هاست (' + hkAsstMoney(res.part) + ' از ' + hkAsstMoney(res.total) + ').';
       }
@@ -56392,6 +56400,10 @@ function openProjectRowPicker(secId) {
         return tool('transactions.search', a3, '');
       }
       if (/از کی (دارم )?(استفاده|ثبت)|اولین (بار|ثبت)|کی شروع کردم/.test(T)) return tool('transactions.search', { sort: 'dateAsc', limit: 1 }, '');
+      /* «کدوم دسته بیشترین خرج رو داره»: دسته‌های پرهزینه */
+      if (/(کدوم|چه|کدام) دسته/.test(T) && /بیشتر|بیشترین|زیاد|گرون|کمتر|کمترین/.test(T)) return tool('insights.top', { tab: tb || 'expense' }, '');
+      /* «فردا هوا چطوره»: دربارهٔ هوا، نه پیش‌بینی مالی */
+      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
       /* کدوم ماه/دسته/حساب/پروژه بیشتر/کمتر */
       var gm = /(کدوم|چه|کدام) (ماه|حساب|کارت|پروژه)/.exec(T);
       if (gm && /بیشتر|کمتر|زیاد|کم|گرون|بیشترین|کمترین|بهتر|بدتر/.test(T)) {
@@ -56567,17 +56579,17 @@ function openProjectRowPicker(secId) {
       var navRe = /(^| )(برو|ببر|بریم|ببرم|ببرمت|باز کن|بازکن|بازش کن|بازش|هدایت کن|هدایتم کن|منو ببر|نشونم بده|بیا|بیار)( |$)/;
       if (!navRe.test(T)) return null;
       var words = T.split(' ').filter(function (w) { return w && !HK_ASST_NAV_FILL[w]; }), P = words.join(' ');
-      var fin = function (ask) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [] }; };
+      var fin = function (ask, dec) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
       /* «نشونم بده/بیار» همراه اسم یک چیز دادهٔ مالی، پرسش است نه رفتن؛ فقط وقتی بخش شناخته‌شده باشد می‌رویم */
       if (!P || /^(اونجا|همونجا|اینجا|ردیف|تراکنش|ردیفش|اونو|اینو|مورد|اولی|اول)$/.test(P)) {
         if (/^(بیار|بیا|نشونم بده)$/.test(T)) return null;
         if (_hkAsstLastTarget) { var t = _hkAsstLastTarget; hkAsstOpenTarget(t); return fin(hkAsstPick(['باشه، بازش می‌کنم.', 'حله، می‌برمت اونجا.'])); }
-        return fin('هنوز چیزی نشونت ندادم که ببرمت سراغش. اسم بخش رو بگو، مثلاً «برو به شخصی‌سازی» یا «برو به قرض».');
+        return fin('هنوز چیزی نشونت ندادم که ببرمت سراغش. اسم بخش رو بگو، مثلاً «برو به شخصی‌سازی» یا «برو به قرض».', 'ask');
       }
       var nav = hkAsstFindNav(P);
       if (!nav) {
         if (/^(بیار|بیا|نشونم بده)$/.test((navRe.exec(T) || [])[2] || '')) return null;
-        return fin('این بخش رو نشناختم. بگو کدوم قسمت؟ مثلاً شخصی‌سازی، قرض، دنگ، یادآورها، پس‌انداز یا آمار.');
+        return fin('این بخش رو نشناختم. بگو کدوم قسمت؟ مثلاً شخصی‌سازی، قرض، دنگ، یادآورها، پس‌انداز یا آمار.', 'ask');
       }
       hkAsstNavGo(nav);
       return fin(hkAsstPick(['باشه، «' + nav.name + '» رو باز می‌کنم.', 'حله، می‌برمت به «' + nav.name + '».']));
@@ -56607,6 +56619,10 @@ function openProjectRowPicker(secId) {
         var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });
         if (!hasT && !hasE) return raw;
+        var spec = HK_ASST_INTENT_SPEC[L.intent];
+        if (spec && !spec.carry.length) return raw;          /* قصدهایی که چیزی منتقل نمی‌کنند (مثل خلاصهٔ پروژه) */
+        if (spec && hasE && spec.carry.indexOf('entity') < 0) return raw;
+        if (spec && hasT && spec.carry.indexOf('time') < 0) return raw;
         if (hasT) { TK.forEach(function (k) { delete M[k]; }); TK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); if (N.month && !raw.yearExplicit && L.args.year && L.yearExplicit) M.year = L.args.year; }
         if (hasE) { EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; }); }
         var out = { tool: L.tool, args: M, explain: L.explain, corrections: raw.corrections || [], intent: L.intent, yearExplicit: raw.yearExplicit || L.yearExplicit, follow: false, memory: true };
@@ -56665,6 +56681,132 @@ function openProjectRowPicker(secId) {
       else if (/ماهانه|هر ماه|ماه ?به ?ماه|سالانه/.test(T) || (a.year && !a.month)) { a.by = 'month'; delete a.month; }
       return { tool: 'insights.chart', args: a, explain: 'chart', understood: '', followUps: [], corrections: [] };
     }
+    /* ===== ۱.۴.۴۰: دستیار — لایهٔ تصمیم، قاب معنایی، واژه‌نامهٔ شخصی و بازخورد =====
+       جریان: متن ← (واژه‌نامهٔ شخصی) ← hkAsstSemantic (فهم) ← hkAsstDecide (اجرا / پرسیدن / پیشنهاد جایگزین) ← hkAsstFrameToCommand (ساخت فرمان ابزار).
+       همه‌چیز آفلاین و روی گوشی است؛ هیچ مدل یا شبکه‌ای در کار نیست. */
+
+    /* ---------- مشخصات هر قصد: چه چیزی لازم است و چه چیزی در گفتگوی پیگیری منتقل می‌شود ---------- */
+    var HK_ASST_INTENT_SPEC = {
+      sum:     { req: [], opt: ['tab', 'time', 'entity', 'amount'], carry: ['tab', 'time', 'entity'] },
+      count:   { req: [], opt: ['tab', 'time', 'entity', 'amount'], carry: ['tab', 'time', 'entity'] },
+      avg:     { req: [], opt: ['tab', 'time', 'entity'], carry: ['tab', 'time', 'entity'] },
+      max:     { req: [], opt: ['tab', 'time', 'entity', 'topN'], carry: ['tab', 'time', 'entity'] },
+      min:     { req: [], opt: ['tab', 'time', 'entity', 'topN'], carry: ['tab', 'time', 'entity'] },
+      search:  { req: [], opt: ['tab', 'time', 'entity', 'amount', 'status'], carry: ['tab', 'time', 'entity'] },
+      group:   { req: ['by'], opt: ['tab', 'time', 'entity'], carry: ['tab', 'time'] },
+      compare: { req: ['periods'], opt: ['tab', 'entity'], default: 'ماه قبل', carry: ['tab', 'entity'] },
+      projsum: { req: ['project'], opt: ['time'], carry: [] },
+      projlist: { req: [], opt: [], carry: [] }
+    };
+
+    /* ---------- واژه‌نامهٔ شخصی (فقط روی همین گوشی؛ قابل حذف؛ جایگزینیِ متن، نه اجرای فرمان) ---------- */
+    var HK_ASST_ALIAS_KEY = STORAGE_KEY + '_asstAlias';
+    function hkAsstAliasList() { try { var a = JSON.parse(localStorage.getItem(HK_ASST_ALIAS_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (x) { return x && x.from && x.to; }) : []; } catch (e) { return []; } }
+    function hkAsstAliasSave(a) { try { localStorage.setItem(HK_ASST_ALIAS_KEY, JSON.stringify(a.slice(-100))); } catch (e) {} }
+    function hkAsstAliasAdd(from, to) {
+      from = String(from || '').trim(); to = String(to || '').trim();
+      if (!from || !to || from.length > 40 || to.length > 40 || hkAsstKey(from) === hkAsstKey(to)) return false;
+      var a = hkAsstAliasList().filter(function (x) { return hkAsstKey(x.from) !== hkAsstKey(from); });
+      a.push({ from: from, to: to }); hkAsstAliasSave(a); return true;
+    }
+    function hkAsstAliasRemove(from) { hkAsstAliasSave(hkAsstAliasList().filter(function (x) { return x.from !== from; })); }
+    /* «دایی سعید» ← «سعید» در متن پرسش (فقط تطبیق کامل کلمه‌ها) */
+    function hkAsstAliasApply(raw) {
+      var list = hkAsstAliasList(); if (!list.length) return raw;
+      var t = ' ' + hkAsstNorm(raw).replace(/[،,؟?!.:؛]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+      list.slice().sort(function (x, y) { return y.from.length - x.from.length; }).forEach(function (al) {
+        var f = ' ' + hkAsstNorm(al.from).replace(/\s+/g, ' ').trim() + ' ';
+        var i = t.indexOf(f);
+        while (i >= 0) { t = t.slice(0, i) + ' ' + hkAsstNorm(al.to) + ' ' + t.slice(i + f.length); i = t.indexOf(f, i + al.to.length + 2); }
+      });
+      return t.trim();
+    }
+    /* «X یعنی Y»، «منظورم از X، Y بود»، «منظورم از «X» «Y» بود»: فقط اصطلاح ذخیره می‌شود */
+    function hkAsstAliasIntent(raw) {
+      var q = String(raw || '').trim(), m = null;
+      var Q = '[«"“]?', E = '[»"”]?';
+      m = new RegExp('^' + Q + '([^«»"“”،,]{2,40}?)' + E + '\\s+یعنی\\s+' + Q + '([^«»"“”،,]{2,40}?)' + E + '$').exec(q)
+        || new RegExp('^منظور(?:م)?\\s+(?:از\\s+)?' + Q + '([^«»"“”،,]{2,40}?)' + E + '\\s*(?:،|,)\\s*' + Q + '([^«»"“”،,]{2,40}?)' + E + '\\s*(?:بود|است|هست|باشه)?$').exec(q)
+        || new RegExp('^منظور(?:م)?\\s+(?:از\\s+)?[«"“]([^«»"“”]{2,40})[»"”]\\s*[«"“]([^«»"“”]{2,40})[»"”]\\s*(?:بود|است|هست|باشه)?$').exec(q);
+      if (!m) return null;
+      if (!hkAsstAliasAdd(m[1], m[2])) return null;
+      return { ask: hkAsstPick(['باشه، از این به بعد «' + m[1].trim() + '» رو «' + m[2].trim() + '» حساب می‌کنم. (برای حذفش: نگه داشتن عنوان دستیار ← «واژه‌های من»)', 'یاد گرفتم: «' + m[1].trim() + '» یعنی «' + m[2].trim() + '». هر وقت خواستی از «واژه‌های من» پاکش کن.']), final: true, understood: '', corrections: [], suggestions: [] };
+    }
+
+    /* ---------- نمای خوانا از قاب معنایی (برای آزمون و گزارش) ---------- */
+    function hkAsstFrameView(f) {
+      var a = f.args || {};
+      return { intent: f.intent, tab: a.tab || null, period: { year: a.year || null, month: a.month || null, dateFrom: a.dateFrom || null, dateTo: a.dateTo || null },
+        entity: { text: a.text || null, cats: a.cats || null, project: a.project || null }, amount: { eq: a.amountEq, min: a.amountMin, max: a.amountMax }, status: a.status || null, unknownContent: f.textWords || [] };
+    }
+
+    /* ---------- تصمیم: آماده / پیشنهاد جایگزین / پرسش روشن‌کننده ---------- */
+    function hkAsstAsking(ask, chips) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: chips || [], chipRaw: true, decision: 'ask' }; }
+    function hkAsstPeriodLabel(a) {
+      if (a.month) return HK_ASST_MONTH_NAMES[a.month - 1] + (a.year && a.year !== hkAsstCY() ? ' ' + toPersianDigits(String(a.year)) : '');
+      if (a.year) return 'سال ' + toPersianDigits(String(a.year));
+      return '';
+    }
+    function hkAsstCtxValid() { try { return !!(_hkAsstCtx && Date.now() - _hkAsstCtx.at <= 900000); } catch (e) { return false; } }
+    function hkAsstDecide(f) {
+      var a = f.args || {}, T = f.text, words = T.split(' ').filter(Boolean);
+      var pronounOnly = a.text && a.text.split(' ').every(function (w) { return /^(اون|اونو|اینو|همون|همونو|همین|قبلی|اونجا|همونجا)$/.test(w); });
+      var hasTime = !!(a.month || a.year || a.dateFrom), hasEnt = !!((a.text && !pronounOnly) || a.cats || a.project || a.context);
+      /* ۱) نیم‌جملهٔ بدون قصد و بدون گفتگوی قبلی: «آبان چطور؟»، «اسنپ چی؟» */
+      var particle = /(^| )(چطور|چطوره|چطوری|چی|چیه|چنده|چند|چی شد|چی بود|چطور بود)( |$)/.test(T);
+      if (f.follow && !hkAsstCtxValid() && (f.intent === 'sum' || f.intent === 'search') && !a.tab && words.length <= 3 && particle && (hasTime !== hasEnt)) {
+        if (hasTime && !hasEnt) {
+          var pl = hkAsstPeriodLabel(a);
+          return hkAsstAsking('دربارهٔ ' + pl + ' چی رو می‌خوای؟', ['مخارج ' + pl, 'درآمد ' + pl, 'وضعیت مالی ' + pl]);
+        }
+        if (hasEnt && a.text && !a.cats && !a.project && particle) {
+          return hkAsstAsking('دربارهٔ «' + a.text + '» چی رو می‌خوای؟', ['هزینهٔ ' + a.text + ' این ماه چقدر شده؟', 'تعداد ' + a.text + ' چندتاست؟', 'آخرین ' + a.text + ' کی بوده؟']);
+        }
+      }
+      /* ۲) ارجاع به چیزی که معلوم نیست («اونو نشون بده»، «همونو») */
+      if (!hasTime && !hasEnt && !a.tab && (pronounOnly || /(^| )(اون|اونو|همون|همونو|قبلی)( |$)/.test(T)) && !hkAsstCtxValid() && !_hkAsstLastTarget) {
+        return hkAsstAsking('منظورت کدوم چیزه؟ اول یه سؤال بپرس تا بعدش بتونم دربارهٔ همون بگم.', ['این ماه چقدر خرج کردم؟', 'بزرگ‌ترین خرجم چی بوده؟']);
+      }
+      /* ۳) «ده تا … بزرگ» که هم دسته و هم تراکنش در آن آمده */
+      if (/(^| )(\d+|ده|پنج|سه|بیست|دو|چهار|شش|هفت|هشت|نه)\s*تا/.test(hkAsstFaDigits(T)) && /(^| )دسته/.test(T) && /تراکنش|ردیف/.test(T)) {
+        return hkAsstAsking('منظورت چند تراکنشِ بزرگه یا چند دستهٔ پرهزینه؟', ['ده تراکنش با بیشترین مبلغ', 'پولم بیشتر کجا رفته؟']);
+      }
+      return null;
+    }
+
+    /* ---------- ساخت فرمان از قاب معنایی ---------- */
+    function hkAsstFrameToCommand(f) {
+      var cmd = hkAsstBuildCommand(f.intent, f.args, f.codes, f.text);
+      cmd.corrections = f.corrections;
+      cmd.understood = hkAsstUnderstood(f.intent, f.args);
+      cmd.intent = f.intent; cmd.yearExplicit = f.yearExplicit; cmd.follow = f.follow;
+      cmd.frame = hkAsstFrameView(f);
+      /* پیشنهادهای جایگزین برای حالت‌هایی که یک برداشت دیگر هم ممکن است */
+      var alts = [];
+      if (f.intent === 'avg' && !/ماهانه|ماهیانه|هر ماه/.test(f.text)) alts.push('میانگین ماهانه‌ام چقدره؟');
+      if ((f.intent === 'max' || f.intent === 'min') && cmd.args && cmd.args.limit > 1 && !f.args.cats) alts.push('پولم بیشتر کجا رفته؟');
+      if (alts.length) { cmd.followUps = alts; cmd.chipRaw = true; }
+      return cmd;
+    }
+    /* نقطهٔ ورود تفسیر قاعده‌ای */
+    function hkAsstParse(raw) {
+      var al = hkAsstAliasIntent(raw); if (al) return al;
+      var r = hkAsstSemantic(hkAsstAliasApply(raw));
+      if (!r.__frame) return r;
+      var d = hkAsstDecide(r); if (d) return d;
+      return hkAsstFrameToCommand(r);
+    }
+
+    /* ---------- بازخورد کاربر زیر پاسخ ---------- */
+    var HK_ASST_FB_KEY = STORAGE_KEY + '_asstFeedback';
+    function hkAsstFeedback(question, good) {
+      try {
+        var o = JSON.parse(localStorage.getItem(HK_ASST_FB_KEY) || '{"good":0,"bad":0}') || { good: 0, bad: 0 };
+        if (good) o.good = (o.good || 0) + 1; else o.bad = (o.bad || 0) + 1;
+        localStorage.setItem(HK_ASST_FB_KEY, JSON.stringify(o));
+      } catch (e) {}
+      if (!good) { try { hkAsstMissedAdd('[غلط] ' + question); } catch (e2) {} }
+    }
     /* ===== ۱.۴.۲۴: دستیار هوشمند — تفسیر درخواست فارسی =====
        متن را با واژه‌نامهٔ 18f به کدهای معنایی تبدیل می‌کند، غلط‌تایپی‌ها را اصلاح می‌کند و یک فرمان ساختاریافته می‌سازد.
        خروجی: {tool, args, explain, corrections, understood} یا {ask, suggestions}.
@@ -56715,7 +56857,9 @@ function openProjectRowPicker(secId) {
       var y = /(۱۳\d\d|۱۴\d\d|13\d\d|14\d\d)/.exec(hkAsstNorm(text));
       return y ? parseInt(String(y[1]).replace(/[^\d]/g, ''), 10) : 0;
     }
-    function hkAsstParse(raw) {
+    /* ۱.۴.۴۰: لایهٔ «فهم» (hkAsstSemantic) از لایهٔ «ساخت فرمان» جداست: این تابع فقط مفهوم‌ها را درمی‌آورد (قصد، نوع، زمان، موضوع، کلمه‌های ناشناخته)
+       و یا برای قصدهای ویژه مستقیماً فرمان برمی‌گرداند؛ در حالت عادی یک «قاب معنایی» (__frame) می‌دهد که hkAsstDecide و hkAsstFrameToCommand (۱۸j) به فرمان تبدیلش می‌کنند. */
+    function hkAsstSemantic(raw) {
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
       if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
@@ -56862,14 +57006,13 @@ function openProjectRowPicker(secId) {
       }
       if (!intent) return { ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
 
-      var cmd = hkAsstBuildCommand(intent, args, codes, text);
-      cmd.corrections = corrections;
-      cmd.understood = hkAsstUnderstood(intent, args);
-      /* ۱.۴.۳۹: نشانه‌ها برای «حافظهٔ گفتگو» (آبان چطور؟ بعد از «درآمد آذرم چقدر بود؟») */
       var _ic = ['CMP', 'GRP', 'AVG', 'MAX', 'MIN', 'CNT', 'SUM', 'SRCH', 'EXP', 'INC'].some(function (c) { return codes.indexOf(c) >= 0; });
-      cmd.intent = intent; cmd.yearExplicit = !!(typeof explicitY !== 'undefined' && explicitY) || !!yy;
-      cmd.follow = !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4;
-      return cmd;
+      return {
+        __frame: true, raw: raw, text: text, intent: intent, args: args, codes: codes, corrections: corrections,
+        textWords: textWords, hasProject: !!subj, intentCode: _ic,
+        yearExplicit: !!(typeof explicitY !== 'undefined' && explicitY) || !!yy,
+        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4
+      };
     }
     /* فرمان نهایی به ابزار؛ «فهمیدم» متن قابل‌فهم برای کاربر است */
     function hkAsstBuildCommand(intent, args, codes, text) {
@@ -57216,7 +57359,7 @@ function openProjectRowPicker(secId) {
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
       if (!cmd || typeof cmd !== 'object') return { ask: 'متوجه نشدم.' };
-      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [], final: !!cmd.final, chipRaw: !!cmd.chipRaw };
+      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [], final: !!cmd.final, chipRaw: !!cmd.chipRaw, decision: cmd.decision || '' };
       if (!cmd.tool || !Object.prototype.hasOwnProperty.call(HK_ASST_TOOLS, cmd.tool)) return { ask: 'این کار را هنوز نمی‌توانم انجام دهم.', suggestions: [] };
       return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '', corrections: cmd.corrections || [], understood: cmd.understood || '', followUps: Array.isArray(cmd.followUps) ? cmd.followUps.slice(0, 4) : [], intent: cmd.intent || '', yearExplicit: !!cmd.yearExplicit, memory: !!cmd.memory, chipRaw: !!cmd.chipRaw };
     }
@@ -57232,50 +57375,50 @@ function openProjectRowPicker(secId) {
       if (/^insights\.(monthavg|share)$/.test(tool)) return hkAsstAppText2(tool, res);
       if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
-        if (cmd.explain === 'count') return 'تعداد تراکنش‌ها: ' + hkAsstNum(res.count) + '.';
-        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنش: ' + hkAsstMoney(res.avg) + ' (از ' + hkAsstNum(res.count) + ' تراکنش).' : 'تراکنشی پیدا نشد.';
-        if (!res.count) return hkAsstPick(['تراکنشی پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'تراکنشی پیدا نشد، دست‌کم با این شرایط.']);
-        var t = 'تعداد: ' + hkAsstNum(res.count) + ' تراکنش\nجمع: ' + hkAsstMoney(res.sum);
+        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']);
+        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.';
+        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']);
+        var t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
         if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
         return t;
       }
       if (tool === 'transactions.search') {
-        if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نشد.', 'چیزی با این مشخصات پیدا نشد؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نشد.']);
-        if (cmd.explain) return (cmd.explain === 'بیشترین' ? 'بیشترین' : 'کمترین') + ' تراکنش:';
-        return hkAsstNum(res.count) + ' تراکنش پیدا شد. جمع مبلغ: ' + hkAsstMoney(res.total) + '.';
+        if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نکردم.', 'چیزی پیدا نکردم؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نکردم.']);
+        if (cmd.explain) return cmd.explain === 'بیشترین' ? hkAsstPick(['اینم بیشترین‌ها:', 'بیشترین‌ها اینان:']) : hkAsstPick(['اینم کمترین‌ها:', 'کمترین‌ها اینان:']);
+        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.';
       }
-      if (tool === 'transactions.get') return res.found ? 'جزئیات تراکنش:' : 'این تراکنش پیدا نشد.';
+      if (tool === 'transactions.get') return res.found ? 'اینم جزئیاتش:' : 'این تراکنش رو پیدا نکردم.';
       if (tool === 'projects.list') {
-        if (!res.projects.length) return 'هنوز پروژه‌ای ثبت نشده است.';
-        return 'پروژه‌ها (' + hkAsstNum(res.projects.length) + '):\n' + res.projects.map(function (p) {
+        if (!res.projects.length) return 'هنوز پروژه‌ای ثبت نشده.';
+        return hkAsstNum(res.projects.length) + ' تا پروژه داری:\n' + res.projects.map(function (p) {
           return '• ' + p.name + ': ' + hkAsstNum(p.count) + ' تراکنش، هزینه ' + hkAsstMoney(p.expenseSum) + '، درآمد ' + hkAsstMoney(p.incomeSum);
         }).join('\n');
       }
       if (tool === 'categories.summary') {
-        var t = 'دسته‌های خرج: ' + hkAsstNum(res.total) + ' دسته';
+        var t = hkAsstNum(res.total) + ' تا دستهٔ خرج داری.';
         t += '\nپیش‌فرض: ' + res.builtIn.join('، ');
         if (res.custom.length) t += '\nدلخواه: ' + res.custom.join('، ');
         return t;
       }
       if (tool === 'accounts.list') {
-        if (!res.accounts.length) return 'هنوز حسابی در ردیف‌ها ثبت نشده است.';
-        return 'حساب‌ها (' + hkAsstNum(res.accounts.length) + '):\n' + res.accounts.map(function (a) { return '• ' + a.name + ' (' + hkAsstNum(a.count) + ' ردیف)'; }).join('\n');
+        if (!res.accounts.length) return 'هنوز حسابی توی ردیف‌ها ثبت نشده.';
+        return hkAsstNum(res.accounts.length) + ' تا حساب داری:\n' + res.accounts.map(function (a) { return '• ' + a.name + ' (' + hkAsstNum(a.count) + ' ردیف)'; }).join('\n');
       }
       if (tool === 'months.summary') {
-        if (!res.count) return 'هنوز ماهی با ردیف ثبت نشده است.';
-        return 'ردیف‌ها در ' + hkAsstNum(res.count) + ' ماه ثبت شده‌اند، از ' + toPersianDigits(res.first[1] + '/' + res.first[0]) + ' تا ' + toPersianDigits(res.last[1] + '/' + res.last[0]) + '.';
+        if (!res.count) return 'هنوز ماهی با ردیف ثبت نشده.';
+        return 'ردیف‌ها توی ' + hkAsstNum(res.count) + ' ماه ثبت شده، از ' + toPersianDigits(res.first[1] + '/' + res.first[0]) + ' تا ' + toPersianDigits(res.last[1] + '/' + res.last[0]) + '.';
       }
       if (tool === 'projects.summary') {
-        if (!res.count) return 'برای پروژهٔ «' + res.name + '» تراکنشی ثبت نشده است.';
-        return 'پروژهٔ «' + res.name + '»\nتعداد: ' + hkAsstNum(res.count) + ' تراکنش\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nمانده: ' + hkAsstMoney(res.balance);
+        if (!res.count) return 'برای پروژهٔ «' + res.name + '» هنوز تراکنشی ثبت نشده.';
+        return 'پروژهٔ «' + res.name + '»: ' + hkAsstNum(res.count) + ' تا تراکنش\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nمانده: ' + hkAsstMoney(res.balance);
       }
       if (tool === 'transactions.group') {
-        if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نشد.';
-        var gtxt = 'گروه‌بندی بر اساس ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
+        if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نکردم.';
+        var gtxt = 'اینم به تفکیک ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
         if (cmd && /^(top|low)group$/.test(cmd.explain || '')) {
           var gl = res.groups.slice().sort(function (x, y) { return cmd.explain === 'topgroup' ? y.sum - x.sum : x.sum - y.sum; })[0];
           var gk = res.by === 'month' ? (function (k) { var q = String(k).split('-'); return HK_ASST_MONTH_NAMES[(+q[1]) - 1] + ' ' + hkAsstNum(+q[0]); })(gl.key) : gl.key;
-          return (cmd.explain === 'topgroup' ? 'بیشترین: «' : 'کمترین: «') + gk + '» با ' + hkAsstMoney(gl.sum) + ' (' + hkAsstNum(gl.count) + ' ردیف).\n' + gtxt;
+          return (cmd.explain === 'topgroup' ? 'بیشترینش «' : 'کمترینش «') + gk + '» بوده، با ' + hkAsstMoney(gl.sum) + ' (' + hkAsstNum(gl.count) + ' ردیف).\n' + gtxt;
         }
         return gtxt;
       }
@@ -57298,9 +57441,9 @@ function openProjectRowPicker(secId) {
     }
     /* ساخت پیام نهایی از یک فرمان اعتبارسنجی‌شده (مشترک بین قاعده‌ای و مدل محلی) */
     function hkAsstFinish(cmd) {
-      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [], final: !!cmd.final, chipRaw: !!cmd.chipRaw };
+      if (cmd.ask) return { role: 'bot', kind: 'text', text: cmd.ask, suggestions: cmd.suggestions || [], final: !!cmd.final, chipRaw: !!cmd.chipRaw, decision: cmd.decision || '' };
       var out = hkAsstExec(cmd.tool, cmd.args);
-      if (!out.ok) return { role: 'bot', kind: 'text', text: 'نتوانستم انجام دهم: ' + out.error };
+      if (!out.ok) return { role: 'bot', kind: 'text', text: 'نشد انجامش بدم: ' + out.error };
       var summary = hkAsstSummary(cmd.tool, out.result, cmd);
       var head = hkAsstHeader(cmd);
       var msg = { role: 'bot', kind: 'result', tool: cmd.tool, head: head, text: (head ? head + '\n' : '') + summary, data: out.result, cmd: cmd, suggestions: [] };
@@ -57324,6 +57467,9 @@ function openProjectRowPicker(secId) {
         var a = hkAsstMissedList().filter(function (x) { return x !== t; }); a.push(t);
         localStorage.setItem(HK_ASST_MISSED_KEY, JSON.stringify(a.slice(-100)));
       } catch (e) {}
+    }
+    function hkAsstMissedAdd(t) {
+      try { t = String(t || '').replace(/\d{4,}/g, '#').trim().slice(0, 140); if (!t) return; var a = hkAsstMissedList().filter(function (x) { return x !== t; }); a.push(t); localStorage.setItem(HK_ASST_MISSED_KEY, JSON.stringify(a.slice(-100))); } catch (e) {}
     }
     function hkAsstMissedClear() { try { localStorage.removeItem(HK_ASST_MISSED_KEY); } catch (e) {} }
     /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */
@@ -57401,7 +57547,7 @@ function openProjectRowPicker(secId) {
     }
     /* باز کردن ردیف در صفحهٔ خودش: همان ماه و بخش، اسکرول آرام و هایلایت همان روشی که برنامه دارد (sp-flash) */
     /* ۱.۴.۳۹: از دستیار وارد صفحه‌ای شدی؟ بازگشت (بک) تا وقتی روی همان صفحه‌ها هست آن‌ها را می‌بندد و آخرش به ادامهٔ گفتگو برمی‌گردد */
-    var _hkAsstRet = 0;
+    var _hkAsstRet = 0, _hkAsstLastQ = '';
     function hkAsstGoAway() { _hkAsstRet = Date.now(); try { if (typeof _hkVoice !== 'undefined' && _hkVoice.on) hkAsstVoiceClose(); } catch (e0) {} try { hkAsstClose(); } catch (e1) {} }
     window.hkAsstReturnPending = function () { return !!_hkAsstRet && Date.now() - _hkAsstRet < 1800000; };
     window.hkAsstReturnCheck = function (afterDetail) {
@@ -57572,6 +57718,18 @@ function openProjectRowPicker(secId) {
         });
         bub.appendChild(sg);
       }
+      /* ۱.۴.۴۰: بازخورد زیر پاسخ دادهٔ مالی: ✓ درست بود / × اشتباه بود */
+      if (msg.kind === 'result' && msg.role !== 'user') {
+        var fb = hkAsstEl('div', 'hk-asst-fb'), q = _hkAsstLastQ;
+        var fg = hkAsstEl('button', 'hk-asst-fb-b'); fg.type = 'button'; fg.setAttribute('aria-label', 'پاسخ درست بود'); fg.innerHTML = HK_TICK_SVG;
+        var fx = hkAsstEl('button', 'hk-asst-fb-b hk-del-x'); fx.type = 'button'; fx.setAttribute('aria-label', 'پاسخ اشتباه بود'); fx.innerHTML = HK_DEL_X;
+        var fdone = function (good) {
+          hkAsstFeedback(q, good); fb.textContent = '';
+          fb.appendChild(hkAsstEl('span', 'hk-asst-fb-t', good ? 'ممنون.' : 'ببخشید. سؤالت رو ثبت کردم تا بهتر بشم. اگه یه کلمه رو اشتباه گرفتم بنویس «X یعنی Y» تا یاد بگیرم.'));
+        };
+        fg.addEventListener('click', function () { fdone(true); }); fx.addEventListener('click', function () { fdone(false); });
+        fb.appendChild(fg); fb.appendChild(fx); bub.appendChild(fb);
+      }
       row.appendChild(bub);
       log.appendChild(row);
       log.scrollTop = log.scrollHeight;
@@ -57582,7 +57740,7 @@ function openProjectRowPicker(secId) {
       log.textContent = '';
       var e = hkAsstEl('div', 'hk-asst-empty');
       e.appendChild(hkAsstEl('div', 'hk-asst-hello', 'سلام! دربارهٔ تراکنش‌ها و مبالغ حساب‌کتاب بپرس.'));
-      e.appendChild(hkAsstEl('div', 'hk-asst-hint', 'فقط خواندن: چیزی را تغییر نمی‌دهم.'));
+      e.appendChild(hkAsstEl('div', 'hk-asst-hint', 'فقط می‌خونم؛ چیزی رو تغییر نمی‌دم.'));
       HK_ASST_EXAMPLES.forEach(function (ex) {
         var b = hkAsstEl('button', 'hk-asst-chip', ex);
         b.type = 'button';
@@ -57594,6 +57752,7 @@ function openProjectRowPicker(secId) {
     function hkAsstSend(text) {
       var q = String(text || '').trim();
       if (!q) return;
+      _hkAsstLastQ = q;
       hkAsstAppend({ role: 'user', kind: 'text', text: q });
       var input = _hkAsstEl.querySelector('.hk-asst-input');
       input.value = '';
@@ -57606,7 +57765,7 @@ function openProjectRowPicker(secId) {
         hkAsstAppend(reply);
       }, function () {
         if (wait && wait.parentNode) wait.parentNode.removeChild(wait);
-        hkAsstAppend({ role: 'bot', kind: 'text', text: 'خطایی پیش آمد. دوباره امتحان کن.' });
+        hkAsstAppend({ role: 'bot', kind: 'text', text: 'یه مشکلی پیش اومد. دوباره امتحان کن.' });
       });
     }
     function hkAsstClear() {
@@ -57662,7 +57821,7 @@ function openProjectRowPicker(secId) {
     }
     /* ضبط از نوار ورودی (۱.۴.۳۸): کادر دو ردیف می‌شود؛ بالا متن زنده (تا چیزی شنیده نشده، نام کاربر)، پایین ✕ لغو، موج صدا، ■ پایان، ↑ پایان و ارسال */
     function hkAsstRecStart(form, input) {
-      if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      if (!hkAsstVoiceOk()) { try { showToast('ضبط صدا فقط توی نسخهٔ اندروید کار می‌کنه.'); } catch (e) {} return; }
       if (form.classList.contains('recording')) { try { hkAsstSpeechPlugin().stop(); } catch (eS) {} return; }
       var base = input.value.trim();
       var txt = form.querySelector('.hk-asst-rc-t'), dots = form.querySelectorAll('.hk-asst-rc-dots i'), lv = [];
@@ -57773,7 +57932,7 @@ function openProjectRowPicker(secId) {
             if (spoke) { hkAsstVoiceLoop(); return; }
             /* صدا در دسترس نیست: پاسخ نوشته می‌شود، چند ثانیه می‌ماند و گفتگو ادامه دارد */
             var cap = hkAsstSpeechText(reply).slice(0, 220);
-            hkAsstVoiceSet('speaking', 'گوشی صدای فارسی ندارد؛ پاسخ نوشته شد.', cap);
+            hkAsstVoiceSet('speaking', 'گوشی صدای فارسی نداره؛ جواب رو نوشتم.', cap);
             setTimeout(function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceLoop(); }, Math.min(9000, 2500 + cap.length * 40));
           });
         }, function () { if (_hkVoice.on && run === _hkVoice.run) hkAsstVoiceSet('idle', 'خطایی پیش آمد. برای شروع دوباره روی گوی بزن.'); });
@@ -57793,7 +57952,7 @@ function openProjectRowPicker(secId) {
       else if (_hkVoice.state === 'idle') { _hkVoice.fails = 0; hkAsstVoiceLoop(); }
     }
     function hkAsstVoiceOpen() {
-      if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط در برنامهٔ اندروید کار می‌کند.'); } catch (e) {} return; }
+      if (!hkAsstVoiceOk()) { try { showToast('گفتگوی صوتی فقط توی نسخهٔ اندروید کار می‌کنه.'); } catch (e) {} return; }
       try { document.activeElement && document.activeElement.blur(); } catch (eB) {}
       _hkVoice.on = true; _hkVoice.fails = 0; _hkVoice.tts = null; _hkVoice.nativeTts = null; _hkVoice.needVoice = false;
       _hkVoice.handles.forEach(hkAsstSpeechOff); _hkVoice.handles = [];
@@ -58023,8 +58182,22 @@ function openProjectRowPicker(secId) {
       mclr.addEventListener('click', function () { hkAsstMissedClear(); hkAsstMgrRender(); });
       mrow.appendChild(mclr);
       list.appendChild(mrow);
+      /* واژه‌های من: اصطلاح‌هایی که خودت یاد دادی (X یعنی Y) */
+      var al = hkAsstAliasList();
+      var arow = hkAsstEl('div', 'hk-asst-mrow hk-asst-arow');
+      var ainfo = hkAsstEl('div', 'hk-asst-minfo');
+      ainfo.appendChild(hkAsstEl('div', 'hk-asst-mname', 'واژه‌های من'));
+      ainfo.appendChild(hkAsstEl('div', 'hk-asst-msize', al.length ? '' : 'هنوز چیزی یاد نداده‌ای. در چت بنویس: «دایی سعید یعنی سعید».'));
+      arow.appendChild(ainfo); list.appendChild(arow);
+      al.forEach(function (x) {
+        var r = hkAsstEl('div', 'hk-asst-mrow');
+        r.appendChild(hkAsstEl('div', 'hk-asst-mname', x.from + '  ←  ' + x.to));
+        var d = hkAsstEl('button', 'hk-del-x hk-asst-mdel', HK_DEL_X); d.type = 'button'; d.setAttribute('aria-label', 'حذف');
+        d.addEventListener('click', function () { hkAsstAliasRemove(x.from); hkAsstMgrRender(); });
+        r.appendChild(d); list.appendChild(r);
+      });
       hkAsstInstalled().then(function (m) {
-        if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده است.')); return; }
+        if (!m) { list.appendChild(hkAsstEl('div', 'hk-asst-hint', 'هیچ مدلی روی گوشی ذخیره نشده.')); return; }
         var row = hkAsstEl('div', 'hk-asst-mrow');
         var info = hkAsstEl('div', 'hk-asst-minfo');
         info.appendChild(hkAsstEl('div', 'hk-asst-mname', m.name));

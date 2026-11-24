@@ -289,7 +289,7 @@
     /* خروجی adapter را اعتبارسنجی می‌کند؛ فرمان ناشناس یا ناقص اجرا نمی‌شود */
     function hkAsstValidateCommand(cmd) {
       if (!cmd || typeof cmd !== 'object') return { ask: 'متوجه نشدم.' };
-      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [], final: !!cmd.final, chipRaw: !!cmd.chipRaw };
+      if (cmd.ask) return { ask: String(cmd.ask), suggestions: Array.isArray(cmd.suggestions) ? cmd.suggestions.slice(0, 5) : [], final: !!cmd.final, chipRaw: !!cmd.chipRaw, decision: cmd.decision || '' };
       if (!cmd.tool || !Object.prototype.hasOwnProperty.call(HK_ASST_TOOLS, cmd.tool)) return { ask: 'این کار را هنوز نمی‌توانم انجام دهم.', suggestions: [] };
       return { tool: cmd.tool, args: cmd.args || {}, explain: cmd.explain || '', corrections: cmd.corrections || [], understood: cmd.understood || '', followUps: Array.isArray(cmd.followUps) ? cmd.followUps.slice(0, 4) : [], intent: cmd.intent || '', yearExplicit: !!cmd.yearExplicit, memory: !!cmd.memory, chipRaw: !!cmd.chipRaw };
     }

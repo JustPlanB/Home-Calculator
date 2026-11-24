@@ -48,7 +48,9 @@
       var y = /(۱۳\d\d|۱۴\d\d|13\d\d|14\d\d)/.exec(hkAsstNorm(text));
       return y ? parseInt(String(y[1]).replace(/[^\d]/g, ''), 10) : 0;
     }
-    function hkAsstParse(raw) {
+    /* ۱.۴.۴۰: لایهٔ «فهم» (hkAsstSemantic) از لایهٔ «ساخت فرمان» جداست: این تابع فقط مفهوم‌ها را درمی‌آورد (قصد، نوع، زمان، موضوع، کلمه‌های ناشناخته)
+       و یا برای قصدهای ویژه مستقیماً فرمان برمی‌گرداند؛ در حالت عادی یک «قاب معنایی» (__frame) می‌دهد که hkAsstDecide و hkAsstFrameToCommand (۱۸j) به فرمان تبدیلش می‌کنند. */
+    function hkAsstSemantic(raw) {
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
       if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
@@ -195,14 +197,13 @@
       }
       if (!intent) return { ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
 
-      var cmd = hkAsstBuildCommand(intent, args, codes, text);
-      cmd.corrections = corrections;
-      cmd.understood = hkAsstUnderstood(intent, args);
-      /* ۱.۴.۳۹: نشانه‌ها برای «حافظهٔ گفتگو» (آبان چطور؟ بعد از «درآمد آذرم چقدر بود؟») */
       var _ic = ['CMP', 'GRP', 'AVG', 'MAX', 'MIN', 'CNT', 'SUM', 'SRCH', 'EXP', 'INC'].some(function (c) { return codes.indexOf(c) >= 0; });
-      cmd.intent = intent; cmd.yearExplicit = !!(typeof explicitY !== 'undefined' && explicitY) || !!yy;
-      cmd.follow = !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4;
-      return cmd;
+      return {
+        __frame: true, raw: raw, text: text, intent: intent, args: args, codes: codes, corrections: corrections,
+        textWords: textWords, hasProject: !!subj, intentCode: _ic,
+        yearExplicit: !!(typeof explicitY !== 'undefined' && explicitY) || !!yy,
+        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4
+      };
     }
     /* فرمان نهایی به ابزار؛ «فهمیدم» متن قابل‌فهم برای کاربر است */
     function hkAsstBuildCommand(intent, args, codes, text) {
