@@ -50,6 +50,28 @@
     }
     /* ۱.۴.۴۰: لایهٔ «فهم» (hkAsstSemantic) از لایهٔ «ساخت فرمان» جداست: این تابع فقط مفهوم‌ها را درمی‌آورد (قصد، نوع، زمان، موضوع، کلمه‌های ناشناخته)
        و یا برای قصدهای ویژه مستقیماً فرمان برمی‌گرداند؛ در حالت عادی یک «قاب معنایی» (__frame) می‌دهد که hkAsstDecide و hkAsstFrameToCommand (۱۸j) به فرمان تبدیلش می‌کنند. */
+    /* ۱.۴.۴۱: کلمه‌های «کنار گذاشته‌شده» (بعد از بدون/جز/غیر از) را به شرط «نه» تبدیل می‌کند */
+    function hkAsstNegArgs(negWords, curTab) {
+      var exT = [], exC = [], negFlow = '', dataWords = hkAsstDataWords();
+      var _plural = function (w) { var t = w.replace(/(ها|های|هام|هایم|هایی|هاش)$/, ''); return t.length >= 3 && t !== w ? t : w; };
+      negWords.forEach(function (w) {
+        var kk = hkAsstKey(w), cc = hkAsstLookup(kk);
+        if (!cc) { var fz2 = hkAsstFuzzyCode(kk); if (fz2) cc = fz2.code; }
+        /* فقط اگر خودِ نام دسته گفته شده («جز قبوض») کل دسته کنار می‌رود؛ «بجز بنزین» فقط همان کلمه را کنار می‌گذارد، نه کل حمل‌ونقل */
+        var catName = cc && cc.indexOf('CAT_') === 0 && (function (id) { var lb = HK_ASST_CAT_LABELS[id]; return !!lb && (hkAsstKey(lb) === kk || lb.split(/[\s\u200c]+/).some(function (x) { return x.length >= 3 && hkAsstKey(x) === kk; })); })(cc.slice(4));
+        if (catName) { var cid = cc.slice(4); if (exC.indexOf(cid) < 0) exC.push(cid); }
+        else if (cc === 'EXP' && curTab !== 'expense') negFlow = 'income';
+        else if (cc === 'INC' && curTab !== 'income') negFlow = 'expense';
+        /* «جز حقوق» در «درآمد این ماه»: حقوق نوعی از همان طرف است، نه خودِ طرف؛ پس کلمهٔ حذفی */
+        else if (!cc || cc.indexOf('MONTH_') !== 0) {
+          var multi = /\s/.test(w), ex2 = multi ? null : dataWords.filter(function (d) { return d.key === kk; })[0], nr2 = (ex2 || multi) ? null : hkAsstNearest(kk, dataWords, 2);
+          var wd = ex2 ? ex2.word : nr2 ? nr2.word : (multi ? w : _plural(w));
+          if (exT.indexOf(wd) < 0) exT.push(wd);
+        }
+      });
+      var out = {}; if (exT.length) out.excludeText = exT; if (exC.length) out.excludeCats = exC; if (negFlow) out.tab = negFlow;
+      return out;
+    }
     function hkAsstSemantic(raw) {
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -64,6 +86,34 @@
       text = text.replace(/(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
       text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
       text = text.replace(/\s+/g, ' ').trim();
+      /* ۱.۴.۴۱: «بدون اسنپ»، «جز قبوض»، «به‌جز هزینه‌ها»، «غیر از X»، «X رو حساب نکن»: بخش کنار گذاشته‌شده از متن جدا و بعداً به شرط «نه» تبدیل می‌شود (نه شرط مثبت) */
+      var negWords = [];
+      var negJoin = function (first, more) { negWords.push(first); String(more || '').split(/\s+و\s+/).forEach(function (x) { x = x.trim(); if (x) negWords.push(x); }); };
+      /* کلمهٔ منفی‌ساز + یک یا دو کلمهٔ بعدش (مثل «دیجی کالا») + زنجیرهٔ «و …» */
+      (function () {
+        var toks = text.split(' '), out = [], NEG = { 'بدون': 1, 'بجز': 1, 'جز': 1, 'بهجز': 1 };
+        var isNeg = function (i) { var t = hkAsstKey(toks[i] || ''); return NEG[t] || (t === 'به' && hkAsstKey(toks[i + 1] || '') === 'جز') || (t === 'غیر' && hkAsstKey(toks[i + 1] || '') === 'از') || t === 'غیراز'; };
+        var negLen = function (i) { var t = hkAsstKey(toks[i] || ''); return ((t === 'به' && hkAsstKey(toks[i + 1] || '') === 'جز') || (t === 'غیر' && hkAsstKey(toks[i + 1] || '') === 'از')) ? 2 : 1; };
+        var boundary = function (j) { var t = toks[j]; if (!t) return true; var k = hkAsstKey(t); return /\d/.test(t) || hkAsstIsStop(k) || !!hkAsstLookup(k) || isNeg(j); };
+        for (var i = 0; i < toks.length; i++) {
+          if (!isNeg(i)) { out.push(toks[i]); continue; }
+          var j = i + negLen(i);
+          if (!toks[j]) { out.push(toks[i]); continue; }
+          var phrase = toks[j]; j++;
+          if (!boundary(j)) { phrase += ' ' + toks[j]; j++; }
+          negWords.push(phrase);
+          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (!boundary(j)) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
+          i = j - 1;
+        }
+        text = out.join(' ');
+      })();
+      text = text.replace(/(^| )([^ ]+)((?:\s+و\s+[^ ]+)*)\s+(?:رو|را)?\s*(?:حساب\s+نکن|حساب\s+نکنی|نشمار|نذار|نزار|کنار\s+بذار)(?= |$)/g, function (all, pre, first, more) { negJoin(first, more); return pre; });
+      text = text.replace(/\s+/g, ' ').trim();
+      /* فقط یک استثنا گفته شده («بدون اسنپ»، «جز خوراکی»): ادامهٔ سؤال قبلی است؛ در حافظهٔ گفتگو روی همان اعمال می‌شود */
+      if (negWords.length && !text.split(' ').filter(function (t) { return t && !hkAsstIsStop(hkAsstKey(t)) && !/^(ولی|اما|پس|هم|و)$/.test(t); }).length) {
+        var ngo = hkAsstNegArgs(negWords, '');
+        return { tool: 'transactions.aggregate', args: ngo, explain: 'sum', understood: '', followUps: [], corrections: [], follow: true, negFollow: true };
+      }
       var appCmd = hkAsstAppIntent(text);
       if (appCmd) return appCmd;
       var cy = hkAsstCY(), cm = hkAsstCM();
@@ -154,6 +204,8 @@
       if (codes.indexOf('PROJ') >= 0 && codes.indexOf('PERS') < 0) args.context = 'project';
       if (codes.indexOf('PERS') >= 0 && codes.indexOf('PROJ') < 0) args.context = 'personal';
       if (textWords.length) args.text = textWords.join(' ');
+      /* شرط‌های «نه»: دسته → excludeCats؛ «درآمد/هزینه» → فقط طرف دیگر؛ هر چیز دیگر → کلمهٔ حذفی */
+      if (negWords.length) { var ng = hkAsstNegArgs(negWords, args.tab); if (ng.excludeText) args.excludeText = ng.excludeText; if (ng.excludeCats) args.excludeCats = ng.excludeCats; if (ng.tab && !args.tab) args.tab = ng.tab; }
       if (subj) args.project = subj.name;
       if (unpaidFlag) { args.status = 'unpaid'; if (!args.tab && unpaidTab) args.tab = unpaidTab; }
       if (transferFlag) { args.includeTransfers = true; args.transferOnly = true; }
@@ -202,7 +254,7 @@
         __frame: true, raw: raw, text: text, intent: intent, args: args, codes: codes, corrections: corrections,
         textWords: textWords, hasProject: !!subj, intentCode: _ic,
         yearExplicit: !!(typeof explicitY !== 'undefined' && explicitY) || !!yy,
-        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4
+        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').filter(function (t) { return t && !hkAsstIsStop(hkAsstKey(t)); }).length <= 4
       };
     }
     /* فرمان نهایی به ابزار؛ «فهمیدم» متن قابل‌فهم برای کاربر است */
@@ -249,6 +301,8 @@
       }
       else parts.push('از همهٔ ماه‌ها');
       if (args.text) parts.push('شامل «' + args.text + '»');
+      if (args.excludeText && args.excludeText.length) parts.push('بدون «' + args.excludeText.join('، ') + '»');
+      if (args.excludeCats && args.excludeCats.length) parts.push('به‌جز دستهٔ ' + args.excludeCats.map(function (c) { return HK_ASST_CAT_LABELS[c] || c; }).join('، '));
       if (args.amountEq != null) parts.push('مبلغ ' + toPersianDigits(formatNum(args.amountEq)) + ' تومان');
       if (args.amountMin != null && args.amountMax != null) parts.push('مبلغ بین ' + toPersianDigits(formatNum(args.amountMin)) + ' و ' + toPersianDigits(formatNum(args.amountMax)) + ' تومان');
       else if (args.amountMin != null) parts.push('مبلغ بیشتر از ' + toPersianDigits(formatNum(args.amountMin)) + ' تومان');

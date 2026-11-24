@@ -55046,6 +55046,8 @@ function openProjectRowPicker(secId) {
           side.sections.forEach(function (sec) {
             (sec && sec.rows || []).forEach(function (r, ri) {
               if (!r || typeof r !== 'object' || r.deletedAt) return;
+              /* ۱.۴.۴۱: ردیف کاملاً خالی (جای‌نگهدار برنامه) هرگز ردیف حساب نمی‌شود */
+              if (!String(r.desc || '').trim() && !(Number(r.amount) || 0) && !(parseInt(r.day, 10) || 0)) return;
               var d = parseInt(r.day, 10) || 0, ctx = null, ri = arguments[1];
               try { ctx = rowFinancialContext(r); } catch (eC) { ctx = null; }
               out.push({
@@ -55065,9 +55067,17 @@ function openProjectRowPicker(secId) {
       f = f || {};
       var text = hkAsstNorm(f.text).split(' ').filter(Boolean);
       var acct = hkAsstNorm(f.account);
+      var exT = (f.excludeText || []).map(function (x) { return hkAsstKey(x); }).filter(Boolean), exC = f.excludeCats || [];
       var from = f.dateFrom ? hkAsstDateKey(f.dateFrom) : null, to = f.dateTo ? hkAsstDateKey(f.dateTo) : null;
       return rows.filter(function (r) {
+        /* ۱.۴.۴۱: فقط ردیف‌های دارای مبلغ تراکنش شمرده می‌شوند؛ ردیف ناقص (بی‌مبلغ) فقط با keepDrafts برای گزارش جدا می‌آید */
+        if (!f.keepDrafts && r.amount === 0 && f.amountEq == null) return false;
         if (!f.includeTransfers && r.transfer) return false;
+        if (exT.length || exC.length) {
+          var hk = hkAsstKey(r.desc + ' ' + r.section);
+          for (var ei = 0; ei < exT.length; ei++) if (hk.indexOf(exT[ei]) >= 0) return false;
+          for (var ci = 0; ci < exC.length; ci++) if (hkAsstCatHit(r, exC[ci])) return false;
+        }
         if (text.length) {
           var hay = hkAsstNorm(r.desc + ' ' + r.section);
           for (var i = 0; i < text.length; i++) if (hay.indexOf(text[i]) < 0) return false;
@@ -55150,21 +55160,42 @@ function openProjectRowPicker(secId) {
       var s = 0; rows.forEach(function (r) { s += r.amount; }); return s;
     }
     function hkAsstStats(rows) {
-      var inc = 0, exp = 0, min = null, max = null;
+      var inc = 0, exp = 0, min = null, max = null, uI = 0, uE = 0, uN = 0, incomplete = 0, mat = [];
       rows.forEach(function (r) {
+        if (r.amount === 0) { incomplete++; return; }
+        mat.push(r);
         if (r.tab === 'income') inc += r.amount; else exp += r.amount;
+        if (r.status === 'unpaid') { uN++; if (r.tab === 'income') uI += r.amount; else uE += r.amount; }
         if (min === null || r.amount < min) min = r.amount;
         if (max === null || r.amount > max) max = r.amount;
       });
-      var n = rows.length;
-      return { count: n, sum: hkAsstSum(rows), avg: n ? Math.round(hkAsstSum(rows) / n) : 0,
-        min: min === null ? 0 : min, max: max === null ? 0 : max, incomeSum: inc, expenseSum: exp, balance: inc - exp };
+      var n = mat.length;
+      return { count: n, sum: hkAsstSum(mat), avg: n ? Math.round(hkAsstSum(mat) / n) : 0,
+        min: min === null ? 0 : min, max: max === null ? 0 : max, incomeSum: inc, expenseSum: exp, balance: inc - exp,
+        incomplete: incomplete, unpaidCount: uN, unpaidIncome: uI, unpaidExpense: uE };
     }
 
     /* ابزارهای ثبت‌شده. هر ابزار: کلیدهای مجاز ورودی، و تابع اجرا که فقط داده برمی‌گرداند. */
+    /* ۱.۴.۴۱: عدد «کارت اصلی» (همان منطق داشبورد) فقط برای ماهی که برنامه الان نشان می‌دهد و بدون هیچ فیلتر دیگر؛ وگرنه null و پاسخ طبق همهٔ ردیف‌هاست */
+    function hkAsstCardInfo(a, stats, rows) {
+      try {
+        if (!a || (a.tab !== 'expense' && a.tab !== 'income')) return null;
+        if (a.text || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.includeTransfers ||
+            a.amountEq != null || a.amountMin != null || a.amountMax != null || a.amountGt != null || a.amountLt != null || a.dateFrom || a.dateTo) return null;
+        if (!a.year || !a.month || +a.year !== currentYear || +a.month !== currentMonth) return null;
+        if (typeof personTotals !== 'function' || typeof hkMainTitle !== 'function') return null;
+        var title = hkMainTitle(); if (!title) return null;
+        var t = personTotals(title), isE = a.tab === 'expense';
+        var total = Number(isE ? t.expenseTotal : t.incomeTotal) || 0, unpaid = Number(isE ? t.expenseUnpaid : t.incomeUnpaid) || 0;
+        var all = isE ? stats.expenseSum : stats.incomeSum, nk = function (x) { return String(x || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\s\u200c]+/g, ''); };
+        var tk = nk(title), proj = 0, other = 0;
+        rows.forEach(function (r) { if (r.amount === 0) return; if (r.context === 'project') proj++; if (nk(r.section) !== tk) other++; });
+        return { total: total, unpaid: unpaid, allTotal: all, projectRows: proj, otherSectionRows: other };
+      } catch (e) { return null; }
+    }
     var HK_ASST_TOOLS = {
       'transactions.search': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
+        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), a);
           if (a.sort === 'amountDesc') rows.sort(function (x, y) { return y.amount - x.amount; });
@@ -55172,7 +55203,8 @@ function openProjectRowPicker(secId) {
           else if (a.sort === 'dateAsc') rows.sort(function (x, y) { return x.dateKey - y.dateKey; });
           else rows.sort(function (x, y) { return y.dateKey - x.dateKey; });
           var lim = Math.min(Math.max(parseInt(a.limit, 10) || 50, 1), 200);
-          return { count: rows.length, total: hkAsstSum(rows), items: rows.slice(0, lim).map(hkAsstPublic) };
+          var inc = hkAsstFilter(hkAsstRows(), Object.assign({}, a, { keepDrafts: true })).filter(function (r) { return r.amount === 0; }).length;
+          return { count: rows.length, total: hkAsstSum(rows), incomplete: inc, items: rows.slice(0, lim).map(hkAsstPublic) };
         }
       },
       'transactions.get': {
@@ -55185,11 +55217,16 @@ function openProjectRowPicker(secId) {
         }
       },
       'transactions.aggregate': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
-        run: function (a) { return hkAsstStats(hkAsstFilter(hkAsstRows(), a)); }
+        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        run: function (a) {
+          var rows = hkAsstFilter(hkAsstRows(), Object.assign({}, a, { keepDrafts: true }));
+          var st = hkAsstStats(rows);
+          st.card = hkAsstCardInfo(a, st, rows);
+          return st;
+        }
       },
       'transactions.group': {
-        readOnly: true, args: ['by', 'text', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        readOnly: true, args: ['by', 'text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var by = a.by;
           if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');
@@ -55318,7 +55355,7 @@ function openProjectRowPicker(secId) {
       EXP: ['پول دادم', 'پرداختم', 'هزینه', 'هزینه ها', 'هزینه‌ها', 'هزینه های', 'هزینه‌های', 'هزینه کردم', 'هزینه کرده', 'خرج', 'خرجی', 'خرج ها', 'خرج‌ها', 'خرج کردم', 'خرج کرده',
         'مخارج', 'مخارج', 'برداشت', 'برداشت ها', 'برداشت‌ها', 'پرداخت', 'پرداختی', 'پرداخت ها', 'پرداخت‌ها', 'پرداخت کردم', 'خرید', 'خریدها', 'خریدهای', 'خرید ها',
         'پول رفته', 'پول خرج شده', 'پول خرج‌شده', 'خروجی', 'مصرف', 'مصارف', 'پول خرج کردم', 'خرجم', 'هزینه‌هام', 'خرجام', 'مخارجم'],
-      INC: ['درآمد', 'درامد', 'درآمدها', 'درآمدهای', 'درامدها', 'دریافتی', 'دریافتی ها', 'دریافت', 'دریافت ها', 'واریزی', 'واریزی ها', 'واریزی‌ها', 'واریز', 'واریزها', 'واریزهای',
+      INC: ['پولی که گرفتم', 'پول گرفتم', 'پول اومده', 'پول اومد', 'پول ریخته', 'پول ریختن', 'درآمد', 'درامد', 'درآمدها', 'درآمدهای', 'درامدها', 'دریافتی', 'دریافتی ها', 'دریافت', 'دریافت ها', 'واریزی', 'واریزی ها', 'واریزی‌ها', 'واریز', 'واریزها', 'واریزهای',
         'حقوق', 'پول اومده', 'پول اومد', 'پول واریز شده', 'پول واریزی', 'ورودی', 'عایدی', 'دخل', 'پول گرفتم', 'پول گرفته', 'در آمد', 'درآمدم', 'واریزیم'],
       SUM: ['خلاصه', 'خلاصش', 'خلاصهٔ', 'جمع', 'جمعش', 'جمع ها', 'مجموع', 'مجموعش', 'جمع کل', 'مجموع کل', 'کل', 'کلش', 'کلا', 'کلاً', 'همه', 'همهٔ', 'همش', 'همه‌ش', 'همه ش', 'چقدر', 'چقد', 'چقدره', 'چقدرشده',
         'چقدر شده', 'چقدر شد', 'چقدر میشه', 'چقدر می‌شه', 'چقدر میشد', 'چقدر بوده', 'مبلغ کل', 'مبلغ کلش', 'تمام', 'تموم', 'حساب کن', 'حساب کنم', 'جمعشون', 'جمعشون چقدره', 'کلشون', 'کلاش', 'جمعا', 'جمعاً', 'جمع‌کل', 'مانده', 'تراز'],
@@ -55376,14 +55413,14 @@ function openProjectRowPicker(secId) {
       WHO: ['تو کی هستی', 'کی هستی', 'تو کی', 'اسمت چیه', 'اسم تو چیه', 'اسمت چی', 'چی هستی', 'تو چه کسی', 'خودتو معرفی کن', 'معرفی کن', 'هوش مصنوعی', 'ربات'],
       HELP: ['چه کارایی میتونی بکنی', 'چه کارایی می‌تونی بکنی', 'چه کارهایی می‌تونی بکنی', 'چه کارهایی میتونی بکنی', 'چه کاری میتونی بکنی', 'تو چه کارایی بلدی', 'کمک', 'کمکم کن', 'راهنما', 'راهنمایی', 'چه کارایی بلدی', 'چه کارهایی بلدی', 'چکار می‌کنی', 'چیکار میکنی', 'چه کاری بلدی', 'چی بلدی', 'چی میتونی', 'میتونی چیکار کنی', 'می‌تونی چیکار کنی', 'قابلیت', 'قابلیت‌ها', 'قابلیت ها', 'توانایی', 'توانایی‌ها', 'دستورات', 'چیکار میتونی بکنی', 'چکار میتونی بکنی', 'چه کارایی میتونی', 'چه کارهایی از دستت برمیاد', 'قابلیت هات', 'قابلیتهات', 'قابلیت‌هات', 'کارایی که بلدی', 'چی بپرسم', 'چه سوالی بپرسم', 'چه سؤالی بپرسم', 'نمونه سوال', 'نمونه سؤال', 'مثال بزن'],
       CHG: ['حذف', 'حذف کن', 'پاک کن', 'پاکش کن', 'پاک', 'ثبت کن', 'ثبتش کن', 'اضافه کن', 'اضافه', 'ویرایش', 'ویرایش کن', 'تغییر بده', 'عوض کن', 'اصلاح کن', 'ایجاد کن', 'وارد کن', 'تنظیم کن', 'کنسل کن', 'لغو کن'],
-      OVW: ['موجودی', 'موجودیم', 'موجودی حسابم', 'موجودی من', 'تراز', 'تراز مالی', 'تراز من', 'چقدر پول دارم', 'پول دارم', 'وضعیت', 'وضعیتم', 'وضع', 'وضعم', 'وضع من', 'وضعم چطوره', 'وضع مالی', 'وضعیت مالی', 'وضعیت مالیم', 'وضعیت مالی من', 'خلاصه وضعیت', 'تحلیل', 'تحلیل کن', 'تحلیلش', 'تحلیل مالی', 'بررسی', 'بررسی کن', 'بررسیش', 'گزارش', 'گزارشم', 'گزارش بده', 'ارزیابی', 'عملکرد', 'عملکردم', 'چطور بودم', 'چطور بود', 'چکار کردم', 'چه کار کردم', 'چیکار کردم', 'چی کار کردم', 'حالم چطوره', 'چطور گذشت', 'چطوری گذشت', 'نمای کلی', 'کلیات', 'نرخ پس انداز', 'نرخ پس‌انداز', 'نرخ پس اندازم', 'نرخ پس‌اندازم', 'نرخ پس انداز من', 'چند درصد پس انداز', 'چند درصد پس‌انداز', 'چند درصد کنار', 'پس اندازم چنده', 'پس‌اندازم چنده', 'حال مالی', 'حال مالیم', 'حال مالی من', 'حال و روز مالیم', 'مالیم', 'مالی‌ام', 'حساب و کتابم', 'حساب کتابم', 'حساب‌کتابم', 'چه خبر از حساب و کتابم', 'مالیه‌م', 'مالیه م'],
+      OVW: ['دخل و خرج', 'دخل و خرجم', 'دخل خرج', 'دخل و خرج من', 'دخل‌وخرج', 'موجودی', 'موجودیم', 'موجودی حسابم', 'موجودی من', 'تراز', 'تراز مالی', 'تراز من', 'چقدر پول دارم', 'پول دارم', 'وضعیت', 'وضعیتم', 'وضع', 'وضعم', 'وضع من', 'وضعم چطوره', 'وضع مالی', 'وضعیت مالی', 'وضعیت مالیم', 'وضعیت مالی من', 'خلاصه وضعیت', 'تحلیل', 'تحلیل کن', 'تحلیلش', 'تحلیل مالی', 'بررسی', 'بررسی کن', 'بررسیش', 'گزارش', 'گزارشم', 'گزارش بده', 'ارزیابی', 'عملکرد', 'عملکردم', 'چطور بودم', 'چطور بود', 'چکار کردم', 'چه کار کردم', 'چیکار کردم', 'چی کار کردم', 'حالم چطوره', 'چطور گذشت', 'چطوری گذشت', 'نمای کلی', 'کلیات', 'نرخ پس انداز', 'نرخ پس‌انداز', 'نرخ پس اندازم', 'نرخ پس‌اندازم', 'نرخ پس انداز من', 'چند درصد پس انداز', 'چند درصد پس‌انداز', 'چند درصد کنار', 'پس اندازم چنده', 'پس‌اندازم چنده', 'حال مالی', 'حال مالیم', 'حال مالی من', 'حال و روز مالیم', 'مالیم', 'مالی‌ام', 'حساب و کتابم', 'حساب کتابم', 'حساب‌کتابم', 'چه خبر از حساب و کتابم', 'مالیه‌م', 'مالیه م'],
       TRD: ['روند', 'روندش', 'روند خرج', 'روند هزینه', 'ترند', 'تغییرات', 'تغییرش', 'بیشتر شده', 'کمتر شده', 'زیاد شده', 'کم شده', 'بالا رفته', 'پایین اومده', 'پایین آمده', 'افزایش', 'کاهش', 'رشد', 'افت', 'نوسان', 'ماه به ماه', 'هر ماه', 'نمودار', 'نمودارش', 'سیر', 'صعودی', 'نزولی'],
       ADV: ['پیشنهاد', 'پیشنهادی', 'پیشنهاد بده', 'پیشنهادت', 'راهکار', 'راهکارها', 'راه حل', 'راهکار بده', 'راهنمایی کن', 'توصیه', 'نصیحت', 'نصیحتم کن', 'نظرت', 'نظرت چیه', 'چیکار کنم', 'چکار کنم', 'چه کار کنم', 'چی کار کنم', 'چه کنم', 'چطور بهتر', 'چطوری بهتر', 'بهتر بشه', 'بهتر کنم', 'بهتر مدیریت', 'کم کنم', 'کمش کنم', 'کمتر خرج کنم', 'کمتر خرج', 'کم خرج', 'صرفه جویی', 'صرفه‌جویی', 'صرفه جویی کنم', 'کاهش هزینه', 'کم کردن هزینه', 'مدیریت مالی', 'مدیریت هزینه', 'مدیریت', 'بهبود', 'بهینه', 'بهینه کنم', 'اشتباه', 'اشتباهم', 'اشتباهاتم', 'ایراد', 'نقطه ضعف', 'مشکل', 'مشکلم', 'مشکل مالی', 'چطور پس انداز کنم', 'چطوری پس انداز کنم', 'چطور پس‌انداز کنم', 'چطوری پس‌انداز کنم', 'چطور جمع کنم', 'کجا صرفه جویی', 'کجا صرفه‌جویی'],
       FCS: ['پیش بینی', 'پیش‌بینی', 'پیشبینی', 'پیش بینی کن', 'برآورد', 'برآوردش', 'تخمین', 'حدس', 'آخر ماه', 'تا آخر ماه', 'آخر این ماه', 'تا پایان ماه', 'پایان ماه', 'انتهای ماه', 'ماه آینده', 'ماه بعد', 'ماه بعدی', 'ماه دیگه', 'ماه بعدش', 'آینده', 'سال آینده', 'فردا', 'هفته بعد', 'چقدر خرج می‌کنم', 'چقدر خرج میکنم', 'چقدر خرج خواهم کرد', 'به این روند', 'با این روند', 'اگه ادامه', 'اگر ادامه بدم'],
       BUD: ['بودجه', 'بودجه‌بندی', 'بودجه بندی', 'بودجه ریزی', 'بودجه‌ریزی', 'برنامه', 'برنامه ریزی', 'برنامه‌ریزی', 'برنامه مالی', 'سقف خرج', 'سقف هزینه', 'سقف ماهانه', 'سقف مجاز', 'چقدر خرج کنم', 'چقدر باید خرج کنم', 'چقدر مجازم', 'چقدر باید کنار بذارم', 'پنجاه سی بیست', 'قانون پنجاه', 'قاعده پنجاه', 'قاعده 50', 'قانون 50', '50 30 20'],
       GOL: ['هدف', 'هدفم', 'هدف مالی', 'پس انداز', 'پس‌انداز', 'پساندازم', 'پس انداز کنم', 'پس‌انداز کنم', 'جمع کنم', 'جمع‌آوری', 'جمع آوری', 'پول جمع کنم', 'کنار بذارم', 'کنار بگذارم', 'بخرم', 'می‌خوام بخرم', 'میخوام بخرم', 'خرید ماشین', 'خرید خونه', 'خرید خانه', 'برای خرید', 'پیش پرداخت', 'پیش‌پرداخت', 'چقدر طول میکشه', 'چقدر طول می‌کشه', 'کی می‌رسم', 'کی میرسم', 'چند وقت دیگه', 'چند ماه دیگه', 'جمع شدن'],
       DAY: ['امروز چقدر', 'امروز چقدر میتونم', 'امروز چقدر می‌تونم', 'امروز چقدر مجازم', 'روزانه', 'خرج روزانه', 'هر روز', 'برای هر روز', 'سهم روزانه', 'باقی مونده', 'باقیمانده', 'باقی‌مانده', 'باقیمونده', 'مونده', 'مانده', 'چقدر مونده', 'چقدر مانده', 'چقدر باقی', 'چقدر دارم', 'چقدر پول دارم', 'موجودی', 'موجودیم', 'چقدر می‌تونم خرج کنم', 'چقدر میتونم خرج کنم', 'چقدر میتونم', 'می‌تونم خرج کنم', 'میتونم خرج کنم', 'مجازم'],
-      TOP: ['پولم کجا میره', 'پولم کجا رفت', 'پول کجا میره', 'پولم کجاست', 'خرجم کجاست', 'کجا میره', 'کجا بیشتر خرج میشه', 'کجا بیشتر خرج کردم', 'کجا بیشتر خرج', 'کجا بیشتر خرج می کنم', 'کجا بیشتر خرج میکنم', 'کجا خرج می کنم', 'کجا خرج میکنم', 'کجا خرج کردم', 'سهم هر دسته', 'سهم دسته ها', 'سهم دسته‌ها', 'کدوم دسته بیشتر', 'کدام دسته بیشتر', 'بیشتر خرجم'],
+      TOP: ['کجا زیاد خرج کردم', 'کجا زیاد', 'چیا گرون بود', 'چیا گرون', 'چی گرون بود', 'بیشتر پولم کجا خرج شد', 'پولم کجا میره', 'پولم کجا رفت', 'پول کجا میره', 'پولم کجاست', 'خرجم کجاست', 'کجا میره', 'کجا بیشتر خرج میشه', 'کجا بیشتر خرج کردم', 'کجا بیشتر خرج', 'کجا بیشتر خرج می کنم', 'کجا بیشتر خرج میکنم', 'کجا خرج می کنم', 'کجا خرج میکنم', 'کجا خرج کردم', 'سهم هر دسته', 'سهم دسته ها', 'سهم دسته‌ها', 'کدوم دسته بیشتر', 'کدام دسته بیشتر', 'بیشتر خرجم'],
       ANOM: ['غیرعادی', 'غیر عادی', 'عجیب', 'عجیب غریب', 'غیرمنتظره', 'غیر منتظره', 'ناگهانی', 'ناگهان', 'پرت', 'خرج اضافی', 'خرج اضافه', 'اضافه خرج', 'بی‌خودی', 'بیخودی', 'الکی', 'مشکوک', 'عجیب‌ترین', 'عجیب ترین'],
       REC: ['تکراری', 'تکرارشونده', 'تکرار شونده', 'هزینه ثابت', 'هزینه‌های ثابت', 'هزینه های ثابت', 'خرج ثابت', 'خرج‌های ثابت', 'خرج های ثابت', 'ثابت', 'ثابتم', 'ثابتا', 'ثابتام', 'ثابت‌ها', 'ثابتها', 'ثابت ها'],
       MONTH_1: ['فروردین', 'فروردن', 'فرودین', 'فروردینی', 'فروردین ماه', 'فروردین‌ماه', 'فروردینماه', 'فروردن ماه'],
@@ -55400,7 +55437,7 @@ function openProjectRowPicker(secId) {
       MONTH_12: ['اسفند', 'اسپند', 'اسفند ماه', 'اسفند‌ماه', 'اسفندماه', 'اسپند ماه', 'اسفندی', 'اسفن', 'اسفندم']
     };
     /* کلمه‌هایی که معنایی ندارند یا فقط واحد و حرف ربط‌اند؛ هرگز متن جست‌وجو نمی‌شوند */
-    var HK_ASST_STOP = ['را', 'رو', 'که', 'کن', 'کنم', 'کنی', 'کنین', 'کنید', 'کنن', 'کنه', 'بده', 'بدم', 'بدی', 'بده‌', 'بگو', 'بگو', 'بگین', 'بگم', 'بگی', 'بگید', 'لطفا', 'لطفاً', 'لطفاً',
+    var HK_ASST_STOP = ['شدم', 'شدی', 'شدیم', 'چقده', 'چقد', 'چقدا', 'برا', 'سوار', 'را', 'رو', 'که', 'کن', 'کنم', 'کنی', 'کنین', 'کنید', 'کنن', 'کنه', 'بده', 'بدم', 'بدی', 'بده‌', 'بگو', 'بگو', 'بگین', 'بگم', 'بگی', 'بگید', 'لطفا', 'لطفاً', 'لطفاً',
       'خواهشا', 'خواهشاً', 'راستی', 'راستش', 'میخواستم', 'می‌خواستم', 'بدونم', 'بدونیم', 'داداش', 'عزیزم', 'عزیز', 'ببخشید', 'رفیق', 'جان', 'جونم', 'چیزی', 'سوال', 'سوالی', 'سؤال', 'سؤالی', 'داشتم', 'دیگه', 'خب', 'اصلا', 'اصلاً', 'واقعا', 'واقعاً', 'یعنی', 'آخه', 'ببینم', 'میپرسم', 'می‌پرسم', 'بپرسم', 'پرسیدم', 'خدمتتون', 'شما', 'جناب', 'استاد', 'مرسی', 'ازت', 'ازتون', 'بهت', 'بهتون',
       'گرفتن', 'گرفتی', 'گرفتین', 'گرفته', 'تاست', 'تاس', 'ام', 'ات', 'اش', 'سهم', 'درصد', 'خرجش',
       'می', 'نمی', 'بابت', 'پول', 'دادم', 'دادی', 'دادیم', 'باهم', 'با هم', 'بکنی', 'بکنم', 'بکن', 'بکنید', 'بزرگم', 'کارایی', 'کارهایی',
@@ -55542,7 +55579,10 @@ function openProjectRowPicker(secId) {
       var k = Math.floor(Date.now() / 600000);
       if (_hkAsstRealC.k !== k) {
         var y = 0, m = 0;
-        try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {}
+        /* ۱.۴.۴۱: اگر تقویم شمسی دستگاه (Intl) کار نکند، تاریخ ساختگیِ جایگزین به‌عنوان «امروز» داده نمی‌شود؛ ماه باز در برنامه می‌ماند */
+        var okI = false;
+        try { var pp = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' }).formatToParts(new Date()); okI = parseInt(toEnglishDigits((pp.find(function (q) { return q.type === 'year'; }) || {}).value || '0'), 10) > 1300; } catch (eI) {}
+        if (okI) { try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {} }
         if (!y) { y = currentYear; m = currentMonth; }
         _hkAsstRealC = { k: k, y: y, m: m };
       }
@@ -56615,6 +56655,17 @@ function openProjectRowPicker(secId) {
     function hkAsstCtxMerge(raw) {
       try {
         var L = _hkAsstCtx;
+        /* ۱.۴.۴۱: «بدون اسنپ» به‌تنهایی: استثنا به سؤال قبلی اضافه می‌شود؛ فقط روی جمع/جست‌وجو/گروه تراکنش‌ها اثر دارد */
+        if (raw && raw.negFollow) {
+          if (!L || Date.now() - L.at > 900000) return { ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          var Mn = Object.assign({}, L.args), Nn = raw.args || {};
+          ['excludeText', 'excludeCats'].forEach(function (k) { if (Nn[k] && Nn[k].length) { var u = (Mn[k] || []).slice(); Nn[k].forEach(function (x) { if (u.indexOf(x) < 0) u.push(x); }); Mn[k] = u; } });
+          if (Nn.tab && !Mn.tab) Mn.tab = Nn.tab;
+          var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true };
+          on.understood = L.intent ? hkAsstUnderstood(L.intent, Mn) : '';
+          return on;
+        }
         if (!L || Date.now() - L.at > 900000 || !raw || !raw.tool || !raw.follow || !/^transactions\.(aggregate|search)$/.test(raw.tool)) return raw;
         var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });
@@ -56751,7 +56802,10 @@ function openProjectRowPicker(secId) {
     function hkAsstDecide(f) {
       var a = f.args || {}, T = f.text, words = T.split(' ').filter(Boolean);
       var pronounOnly = a.text && a.text.split(' ').every(function (w) { return /^(اون|اونو|اینو|همون|همونو|همین|قبلی|اونجا|همونجا)$/.test(w); });
-      var hasTime = !!(a.month || a.year || a.dateFrom), hasEnt = !!((a.text && !pronounOnly) || a.cats || a.project || a.context);
+      var hasTime = !!(a.month || a.year || a.dateFrom);
+      /* «همونو برا ماه قبل بگو»: ضمیر + زمان = همان سؤال قبلی با زمان تازه */
+      if (pronounOnly && hasTime && hkAsstCtxValid()) { delete a.text; pronounOnly = false; }
+      var hasEnt = !!((a.text && !pronounOnly) || a.cats || a.project || a.context);
       /* ۱) نیم‌جملهٔ بدون قصد و بدون گفتگوی قبلی: «آبان چطور؟»، «اسنپ چی؟» */
       var particle = /(^| )(چطور|چطوره|چطوری|چی|چیه|چنده|چند|چی شد|چی بود|چطور بود)( |$)/.test(T);
       if (f.follow && !hkAsstCtxValid() && (f.intent === 'sum' || f.intent === 'search') && !a.tab && words.length <= 3 && particle && (hasTime !== hasEnt)) {
@@ -56859,6 +56913,28 @@ function openProjectRowPicker(secId) {
     }
     /* ۱.۴.۴۰: لایهٔ «فهم» (hkAsstSemantic) از لایهٔ «ساخت فرمان» جداست: این تابع فقط مفهوم‌ها را درمی‌آورد (قصد، نوع، زمان، موضوع، کلمه‌های ناشناخته)
        و یا برای قصدهای ویژه مستقیماً فرمان برمی‌گرداند؛ در حالت عادی یک «قاب معنایی» (__frame) می‌دهد که hkAsstDecide و hkAsstFrameToCommand (۱۸j) به فرمان تبدیلش می‌کنند. */
+    /* ۱.۴.۴۱: کلمه‌های «کنار گذاشته‌شده» (بعد از بدون/جز/غیر از) را به شرط «نه» تبدیل می‌کند */
+    function hkAsstNegArgs(negWords, curTab) {
+      var exT = [], exC = [], negFlow = '', dataWords = hkAsstDataWords();
+      var _plural = function (w) { var t = w.replace(/(ها|های|هام|هایم|هایی|هاش)$/, ''); return t.length >= 3 && t !== w ? t : w; };
+      negWords.forEach(function (w) {
+        var kk = hkAsstKey(w), cc = hkAsstLookup(kk);
+        if (!cc) { var fz2 = hkAsstFuzzyCode(kk); if (fz2) cc = fz2.code; }
+        /* فقط اگر خودِ نام دسته گفته شده («جز قبوض») کل دسته کنار می‌رود؛ «بجز بنزین» فقط همان کلمه را کنار می‌گذارد، نه کل حمل‌ونقل */
+        var catName = cc && cc.indexOf('CAT_') === 0 && (function (id) { var lb = HK_ASST_CAT_LABELS[id]; return !!lb && (hkAsstKey(lb) === kk || lb.split(/[\s\u200c]+/).some(function (x) { return x.length >= 3 && hkAsstKey(x) === kk; })); })(cc.slice(4));
+        if (catName) { var cid = cc.slice(4); if (exC.indexOf(cid) < 0) exC.push(cid); }
+        else if (cc === 'EXP' && curTab !== 'expense') negFlow = 'income';
+        else if (cc === 'INC' && curTab !== 'income') negFlow = 'expense';
+        /* «جز حقوق» در «درآمد این ماه»: حقوق نوعی از همان طرف است، نه خودِ طرف؛ پس کلمهٔ حذفی */
+        else if (!cc || cc.indexOf('MONTH_') !== 0) {
+          var multi = /\s/.test(w), ex2 = multi ? null : dataWords.filter(function (d) { return d.key === kk; })[0], nr2 = (ex2 || multi) ? null : hkAsstNearest(kk, dataWords, 2);
+          var wd = ex2 ? ex2.word : nr2 ? nr2.word : (multi ? w : _plural(w));
+          if (exT.indexOf(wd) < 0) exT.push(wd);
+        }
+      });
+      var out = {}; if (exT.length) out.excludeText = exT; if (exC.length) out.excludeCats = exC; if (negFlow) out.tab = negFlow;
+      return out;
+    }
     function hkAsstSemantic(raw) {
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -56873,6 +56949,34 @@ function openProjectRowPicker(secId) {
       text = text.replace(/(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
       text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
       text = text.replace(/\s+/g, ' ').trim();
+      /* ۱.۴.۴۱: «بدون اسنپ»، «جز قبوض»، «به‌جز هزینه‌ها»، «غیر از X»، «X رو حساب نکن»: بخش کنار گذاشته‌شده از متن جدا و بعداً به شرط «نه» تبدیل می‌شود (نه شرط مثبت) */
+      var negWords = [];
+      var negJoin = function (first, more) { negWords.push(first); String(more || '').split(/\s+و\s+/).forEach(function (x) { x = x.trim(); if (x) negWords.push(x); }); };
+      /* کلمهٔ منفی‌ساز + یک یا دو کلمهٔ بعدش (مثل «دیجی کالا») + زنجیرهٔ «و …» */
+      (function () {
+        var toks = text.split(' '), out = [], NEG = { 'بدون': 1, 'بجز': 1, 'جز': 1, 'بهجز': 1 };
+        var isNeg = function (i) { var t = hkAsstKey(toks[i] || ''); return NEG[t] || (t === 'به' && hkAsstKey(toks[i + 1] || '') === 'جز') || (t === 'غیر' && hkAsstKey(toks[i + 1] || '') === 'از') || t === 'غیراز'; };
+        var negLen = function (i) { var t = hkAsstKey(toks[i] || ''); return ((t === 'به' && hkAsstKey(toks[i + 1] || '') === 'جز') || (t === 'غیر' && hkAsstKey(toks[i + 1] || '') === 'از')) ? 2 : 1; };
+        var boundary = function (j) { var t = toks[j]; if (!t) return true; var k = hkAsstKey(t); return /\d/.test(t) || hkAsstIsStop(k) || !!hkAsstLookup(k) || isNeg(j); };
+        for (var i = 0; i < toks.length; i++) {
+          if (!isNeg(i)) { out.push(toks[i]); continue; }
+          var j = i + negLen(i);
+          if (!toks[j]) { out.push(toks[i]); continue; }
+          var phrase = toks[j]; j++;
+          if (!boundary(j)) { phrase += ' ' + toks[j]; j++; }
+          negWords.push(phrase);
+          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (!boundary(j)) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
+          i = j - 1;
+        }
+        text = out.join(' ');
+      })();
+      text = text.replace(/(^| )([^ ]+)((?:\s+و\s+[^ ]+)*)\s+(?:رو|را)?\s*(?:حساب\s+نکن|حساب\s+نکنی|نشمار|نذار|نزار|کنار\s+بذار)(?= |$)/g, function (all, pre, first, more) { negJoin(first, more); return pre; });
+      text = text.replace(/\s+/g, ' ').trim();
+      /* فقط یک استثنا گفته شده («بدون اسنپ»، «جز خوراکی»): ادامهٔ سؤال قبلی است؛ در حافظهٔ گفتگو روی همان اعمال می‌شود */
+      if (negWords.length && !text.split(' ').filter(function (t) { return t && !hkAsstIsStop(hkAsstKey(t)) && !/^(ولی|اما|پس|هم|و)$/.test(t); }).length) {
+        var ngo = hkAsstNegArgs(negWords, '');
+        return { tool: 'transactions.aggregate', args: ngo, explain: 'sum', understood: '', followUps: [], corrections: [], follow: true, negFollow: true };
+      }
       var appCmd = hkAsstAppIntent(text);
       if (appCmd) return appCmd;
       var cy = hkAsstCY(), cm = hkAsstCM();
@@ -56963,6 +57067,8 @@ function openProjectRowPicker(secId) {
       if (codes.indexOf('PROJ') >= 0 && codes.indexOf('PERS') < 0) args.context = 'project';
       if (codes.indexOf('PERS') >= 0 && codes.indexOf('PROJ') < 0) args.context = 'personal';
       if (textWords.length) args.text = textWords.join(' ');
+      /* شرط‌های «نه»: دسته → excludeCats؛ «درآمد/هزینه» → فقط طرف دیگر؛ هر چیز دیگر → کلمهٔ حذفی */
+      if (negWords.length) { var ng = hkAsstNegArgs(negWords, args.tab); if (ng.excludeText) args.excludeText = ng.excludeText; if (ng.excludeCats) args.excludeCats = ng.excludeCats; if (ng.tab && !args.tab) args.tab = ng.tab; }
       if (subj) args.project = subj.name;
       if (unpaidFlag) { args.status = 'unpaid'; if (!args.tab && unpaidTab) args.tab = unpaidTab; }
       if (transferFlag) { args.includeTransfers = true; args.transferOnly = true; }
@@ -57011,7 +57117,7 @@ function openProjectRowPicker(secId) {
         __frame: true, raw: raw, text: text, intent: intent, args: args, codes: codes, corrections: corrections,
         textWords: textWords, hasProject: !!subj, intentCode: _ic,
         yearExplicit: !!(typeof explicitY !== 'undefined' && explicitY) || !!yy,
-        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').length <= 4
+        follow: !_ic && !args.tab && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && text.split(' ').filter(function (t) { return t && !hkAsstIsStop(hkAsstKey(t)); }).length <= 4
       };
     }
     /* فرمان نهایی به ابزار؛ «فهمیدم» متن قابل‌فهم برای کاربر است */
@@ -57058,6 +57164,8 @@ function openProjectRowPicker(secId) {
       }
       else parts.push('از همهٔ ماه‌ها');
       if (args.text) parts.push('شامل «' + args.text + '»');
+      if (args.excludeText && args.excludeText.length) parts.push('بدون «' + args.excludeText.join('، ') + '»');
+      if (args.excludeCats && args.excludeCats.length) parts.push('به‌جز دستهٔ ' + args.excludeCats.map(function (c) { return HK_ASST_CAT_LABELS[c] || c; }).join('، '));
       if (args.amountEq != null) parts.push('مبلغ ' + toPersianDigits(formatNum(args.amountEq)) + ' تومان');
       if (args.amountMin != null && args.amountMax != null) parts.push('مبلغ بین ' + toPersianDigits(formatNum(args.amountMin)) + ' و ' + toPersianDigits(formatNum(args.amountMax)) + ' تومان');
       else if (args.amountMin != null) parts.push('مبلغ بیشتر از ' + toPersianDigits(formatNum(args.amountMin)) + ' تومان');
@@ -57369,23 +57477,49 @@ function openProjectRowPicker(secId) {
        تاریخچهٔ مکالمه فقط در حافظهٔ همین نشست است؛ هیچ‌جا ذخیره نمی‌شود. */
     function hkAsstMoney(n) { return toPersianDigits(formatNum(Math.round(Number(n) || 0))) + ' تومان'; }
     function hkAsstNum(n) { return toPersianDigits(String(Math.round(Number(n) || 0))); }
+    /* ۱.۴.۴۱: خطوط تکمیلی فقط وقتی مرتبط‌اند (ردیف ناقص، مبنای عدد) */
+    function hkAsstAggExtra(res, cmd) {
+      var a = (cmd && cmd.args) || {}, out = { inc: '', basis: '' };
+      if (res.incomplete > 0) out.inc = '\n' + hkAsstNum(res.incomplete) + ' ردیف ناقص (بدون مبلغ) هم هست که نشمردم.';
+      var plain = !(a.text || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.amountEq != null || a.amountMin != null || a.amountMax != null || a.dateFrom);
+      if (!res.card && (a.tab === 'expense' || a.tab === 'income') && a.year && a.month && plain) out.basis = 'این جمع همهٔ ردیف‌های ثبت‌شدهٔ آن ماه است؛ عدد کارت اصلی فقط برای ماهی است که الان باز است.';
+      return out;
+    }
     function hkAsstSummary(tool, res, cmd) {
       if (/^insights\.(ledger|dong|recincome|reminders|row)$/.test(tool)) return hkAsstAppText(tool, res);
       if (tool === 'insights.chart') return hkAsstChartText(res);
       if (/^insights\.(monthavg|share)$/.test(tool)) return hkAsstAppText2(tool, res);
       if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
-        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']);
-        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.';
-        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']);
-        var t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
-        if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
-        return t;
+        var ex = hkAsstAggExtra(res, cmd);
+        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']) + ex.inc;
+        if (cmd.explain === 'avg') return (res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.') + ex.inc;
+        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']) + ex.inc;
+        var t;
+        if (res.card) {
+          /* ۱.۴.۴۱: «خرج/درآمد من» = عدد کارت اصلی (پرداخت‌شده + پرداخت‌نشده)؛ پرداخت‌نشده جدا؛ تفاوت با همهٔ ردیف‌ها با شواهدش */
+          var isE = cmd.args.tab === 'expense';
+          t = (isE ? 'خرجت' : 'درآمدت') + ' طبق کارت اصلی ' + hkAsstMoney(res.card.total) + ' شده (' + hkAsstNum(res.count) + ' تا تراکنش).';
+          if (res.card.unpaid > 0) t += '\nاز این ' + hkAsstMoney(res.card.unpaid) + ' ' + (isE ? 'پرداخت‌نشده' : 'دریافت‌نشده') + ' است.';
+          if (res.card.allTotal !== res.card.total) {
+            var why = [];
+            if (res.card.projectRows) why.push(hkAsstNum(res.card.projectRows) + ' ردیف پروژه‌ای');
+            if (res.card.otherSectionRows) why.push(hkAsstNum(res.card.otherSectionRows) + ' ردیف در بخش‌های دیگر');
+            t += '\nجمع همهٔ ردیف‌ها ' + hkAsstMoney(res.card.allTotal) + ' است و با کارت فرق دارد' + (why.length ? ' (' + why.join(' و ') + ' داری)' : '') + '.';
+          }
+        } else {
+          t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
+          if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
+          var up = cmd.args && cmd.args.tab === 'expense' ? res.unpaidExpense : cmd.args && cmd.args.tab === 'income' ? res.unpaidIncome : 0;
+          if (up > 0) t += '\nاز این ' + hkAsstMoney(up) + ' ' + (cmd.args.tab === 'expense' ? 'پرداخت‌نشده' : 'دریافت‌نشده') + ' است.';
+          if (ex.basis) t += '\n' + ex.basis;
+        }
+        return t + ex.inc;
       }
       if (tool === 'transactions.search') {
         if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نکردم.', 'چیزی پیدا نکردم؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نکردم.']);
         if (cmd.explain) return cmd.explain === 'بیشترین' ? hkAsstPick(['اینم بیشترین‌ها:', 'بیشترین‌ها اینان:']) : hkAsstPick(['اینم کمترین‌ها:', 'کمترین‌ها اینان:']);
-        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.';
+        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.' + (res.incomplete > 0 ? '\n' + hkAsstNum(res.incomplete) + ' ردیف ناقص (بدون مبلغ) هم هست که نشمردم.' : '');
       }
       if (tool === 'transactions.get') return res.found ? 'اینم جزئیاتش:' : 'این تراکنش رو پیدا نکردم.';
       if (tool === 'projects.list') {

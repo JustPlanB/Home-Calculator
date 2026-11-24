@@ -3,23 +3,49 @@
        تاریخچهٔ مکالمه فقط در حافظهٔ همین نشست است؛ هیچ‌جا ذخیره نمی‌شود. */
     function hkAsstMoney(n) { return toPersianDigits(formatNum(Math.round(Number(n) || 0))) + ' تومان'; }
     function hkAsstNum(n) { return toPersianDigits(String(Math.round(Number(n) || 0))); }
+    /* ۱.۴.۴۱: خطوط تکمیلی فقط وقتی مرتبط‌اند (ردیف ناقص، مبنای عدد) */
+    function hkAsstAggExtra(res, cmd) {
+      var a = (cmd && cmd.args) || {}, out = { inc: '', basis: '' };
+      if (res.incomplete > 0) out.inc = '\n' + hkAsstNum(res.incomplete) + ' ردیف ناقص (بدون مبلغ) هم هست که نشمردم.';
+      var plain = !(a.text || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.amountEq != null || a.amountMin != null || a.amountMax != null || a.dateFrom);
+      if (!res.card && (a.tab === 'expense' || a.tab === 'income') && a.year && a.month && plain) out.basis = 'این جمع همهٔ ردیف‌های ثبت‌شدهٔ آن ماه است؛ عدد کارت اصلی فقط برای ماهی است که الان باز است.';
+      return out;
+    }
     function hkAsstSummary(tool, res, cmd) {
       if (/^insights\.(ledger|dong|recincome|reminders|row)$/.test(tool)) return hkAsstAppText(tool, res);
       if (tool === 'insights.chart') return hkAsstChartText(res);
       if (/^insights\.(monthavg|share)$/.test(tool)) return hkAsstAppText2(tool, res);
       if (/^insights\./.test(tool)) return hkAsstInsightText(tool, res, cmd);
       if (tool === 'transactions.aggregate') {
-        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']);
-        if (cmd.explain === 'avg') return res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.';
-        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']);
-        var t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
-        if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
-        return t;
+        var ex = hkAsstAggExtra(res, cmd);
+        if (cmd.explain === 'count') return hkAsstPick(['روی هم ' + hkAsstNum(res.count) + ' تا تراکنش داری.', hkAsstNum(res.count) + ' تا تراکنش پیدا کردم.', 'تعداد تراکنش‌ها ' + hkAsstNum(res.count) + ' تاست.']) + ex.inc;
+        if (cmd.explain === 'avg') return (res.count ? 'میانگین هر تراکنشت ' + hkAsstMoney(res.avg) + ' شده (از ' + hkAsstNum(res.count) + ' تا تراکنش).' : 'تراکنشی پیدا نکردم.') + ex.inc;
+        if (!res.count) return hkAsstPick(['تراکنشی پیدا نکردم.', 'با این مشخصات چیزی پیدا نکردم؛ شاید بشه ماه یا کلمه رو عوض کرد.', 'دست‌کم با این شرایط تراکنشی پیدا نکردم.']) + ex.inc;
+        var t;
+        if (res.card) {
+          /* ۱.۴.۴۱: «خرج/درآمد من» = عدد کارت اصلی (پرداخت‌شده + پرداخت‌نشده)؛ پرداخت‌نشده جدا؛ تفاوت با همهٔ ردیف‌ها با شواهدش */
+          var isE = cmd.args.tab === 'expense';
+          t = (isE ? 'خرجت' : 'درآمدت') + ' طبق کارت اصلی ' + hkAsstMoney(res.card.total) + ' شده (' + hkAsstNum(res.count) + ' تا تراکنش).';
+          if (res.card.unpaid > 0) t += '\nاز این ' + hkAsstMoney(res.card.unpaid) + ' ' + (isE ? 'پرداخت‌نشده' : 'دریافت‌نشده') + ' است.';
+          if (res.card.allTotal !== res.card.total) {
+            var why = [];
+            if (res.card.projectRows) why.push(hkAsstNum(res.card.projectRows) + ' ردیف پروژه‌ای');
+            if (res.card.otherSectionRows) why.push(hkAsstNum(res.card.otherSectionRows) + ' ردیف در بخش‌های دیگر');
+            t += '\nجمع همهٔ ردیف‌ها ' + hkAsstMoney(res.card.allTotal) + ' است و با کارت فرق دارد' + (why.length ? ' (' + why.join(' و ') + ' داری)' : '') + '.';
+          }
+        } else {
+          t = hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمعشون ' + hkAsstMoney(res.sum) + ' شده.';
+          if (cmd.args && !cmd.args.tab) t += '\nدرآمد: ' + hkAsstMoney(res.incomeSum) + '\nهزینه: ' + hkAsstMoney(res.expenseSum) + '\nمانده: ' + hkAsstMoney(res.balance);
+          var up = cmd.args && cmd.args.tab === 'expense' ? res.unpaidExpense : cmd.args && cmd.args.tab === 'income' ? res.unpaidIncome : 0;
+          if (up > 0) t += '\nاز این ' + hkAsstMoney(up) + ' ' + (cmd.args.tab === 'expense' ? 'پرداخت‌نشده' : 'دریافت‌نشده') + ' است.';
+          if (ex.basis) t += '\n' + ex.basis;
+        }
+        return t + ex.inc;
       }
       if (tool === 'transactions.search') {
         if (!res.count) return hkAsstPick(['تراکنشی با این مشخصات پیدا نکردم.', 'چیزی پیدا نکردم؛ شاید املای کلمه یا ماه فرق داره.', 'هیچ تراکنشی با این شرایط پیدا نکردم.']);
         if (cmd.explain) return cmd.explain === 'بیشترین' ? hkAsstPick(['اینم بیشترین‌ها:', 'بیشترین‌ها اینان:']) : hkAsstPick(['اینم کمترین‌ها:', 'کمترین‌ها اینان:']);
-        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.';
+        return hkAsstNum(res.count) + ' تا تراکنش پیدا کردم؛ جمع مبلغشون ' + hkAsstMoney(res.total) + ' شده.' + (res.incomplete > 0 ? '\n' + hkAsstNum(res.incomplete) + ' ردیف ناقص (بدون مبلغ) هم هست که نشمردم.' : '');
       }
       if (tool === 'transactions.get') return res.found ? 'اینم جزئیاتش:' : 'این تراکنش رو پیدا نکردم.';
       if (tool === 'projects.list') {

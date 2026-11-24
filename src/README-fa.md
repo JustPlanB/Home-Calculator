@@ -339,13 +339,13 @@ node scripts/src-toc.js   # همین فهرست
 - خط 581: ۱.۴.۵: مربع آبی «افزودن» گوشهٔ پایین راست صفحه‌ها
 - خط 645: ۱.۴.۶: پاک‌کنِ تصویرهای ورق خوردن
 
-## `js/18c-assistant-tools.js` (261 خط)
+## `js/18c-assistant-tools.js` (298 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — ابزارها (فقط خواندنی)
 
 ## `js/18f-assistant-lexicon.js` (195 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — واژه‌نامه و غلط‌یاب (مستقل)
 
-## `js/18g-assistant-insights.js` (664 خط)
+## `js/18g-assistant-insights.js` (667 خط)
 - خط 1: ۱.۴.۳۷: دستیار هوشمند — تحلیل مالی، سال کوتاه و لحن خودمونی
 
 ## `js/18h-assistant-app.js` (361 خط)
@@ -359,13 +359,13 @@ node scripts/src-toc.js   # همین فهرست
 ## `js/18j-assistant-semantic.js` (127 خط)
 - خط 1: ۱.۴.۴۰: دستیار — لایهٔ تصمیم، قاب معنایی، واژه‌نامهٔ شخصی و بازخورد
 
-## `js/18d-assistant-query.js` (262 خط)
+## `js/18d-assistant-query.js` (309 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — تفسیر درخواست فارسی
 
 ## `js/18e-assistant-model.js` (297 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — اتصال مدل زبانی (Model Adapter)
 
-## `js/18b-assistant-controller.js` (156 خط)
+## `js/18b-assistant-controller.js` (182 خط)
 - خط 1: ۱.۴.۲۴: دستیار هوشمند — مدیریت درخواست و پاسخ
 
 ## `js/18-assistant.js` (726 خط)
