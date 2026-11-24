@@ -24,6 +24,8 @@
           side.sections.forEach(function (sec) {
             (sec && sec.rows || []).forEach(function (r, ri) {
               if (!r || typeof r !== 'object' || r.deletedAt) return;
+              /* ۱.۴.۴۱: ردیف کاملاً خالی (جای‌نگهدار برنامه) هرگز ردیف حساب نمی‌شود */
+              if (!String(r.desc || '').trim() && !(Number(r.amount) || 0) && !(parseInt(r.day, 10) || 0)) return;
               var d = parseInt(r.day, 10) || 0, ctx = null, ri = arguments[1];
               try { ctx = rowFinancialContext(r); } catch (eC) { ctx = null; }
               out.push({
@@ -43,9 +45,17 @@
       f = f || {};
       var text = hkAsstNorm(f.text).split(' ').filter(Boolean);
       var acct = hkAsstNorm(f.account);
+      var exT = (f.excludeText || []).map(function (x) { return hkAsstKey(x); }).filter(Boolean), exC = f.excludeCats || [];
       var from = f.dateFrom ? hkAsstDateKey(f.dateFrom) : null, to = f.dateTo ? hkAsstDateKey(f.dateTo) : null;
       return rows.filter(function (r) {
+        /* ۱.۴.۴۱: فقط ردیف‌های دارای مبلغ تراکنش شمرده می‌شوند؛ ردیف ناقص (بی‌مبلغ) فقط با keepDrafts برای گزارش جدا می‌آید */
+        if (!f.keepDrafts && r.amount === 0 && f.amountEq == null) return false;
         if (!f.includeTransfers && r.transfer) return false;
+        if (exT.length || exC.length) {
+          var hk = hkAsstKey(r.desc + ' ' + r.section);
+          for (var ei = 0; ei < exT.length; ei++) if (hk.indexOf(exT[ei]) >= 0) return false;
+          for (var ci = 0; ci < exC.length; ci++) if (hkAsstCatHit(r, exC[ci])) return false;
+        }
         if (text.length) {
           var hay = hkAsstNorm(r.desc + ' ' + r.section);
           for (var i = 0; i < text.length; i++) if (hay.indexOf(text[i]) < 0) return false;
@@ -128,21 +138,42 @@
       var s = 0; rows.forEach(function (r) { s += r.amount; }); return s;
     }
     function hkAsstStats(rows) {
-      var inc = 0, exp = 0, min = null, max = null;
+      var inc = 0, exp = 0, min = null, max = null, uI = 0, uE = 0, uN = 0, incomplete = 0, mat = [];
       rows.forEach(function (r) {
+        if (r.amount === 0) { incomplete++; return; }
+        mat.push(r);
         if (r.tab === 'income') inc += r.amount; else exp += r.amount;
+        if (r.status === 'unpaid') { uN++; if (r.tab === 'income') uI += r.amount; else uE += r.amount; }
         if (min === null || r.amount < min) min = r.amount;
         if (max === null || r.amount > max) max = r.amount;
       });
-      var n = rows.length;
-      return { count: n, sum: hkAsstSum(rows), avg: n ? Math.round(hkAsstSum(rows) / n) : 0,
-        min: min === null ? 0 : min, max: max === null ? 0 : max, incomeSum: inc, expenseSum: exp, balance: inc - exp };
+      var n = mat.length;
+      return { count: n, sum: hkAsstSum(mat), avg: n ? Math.round(hkAsstSum(mat) / n) : 0,
+        min: min === null ? 0 : min, max: max === null ? 0 : max, incomeSum: inc, expenseSum: exp, balance: inc - exp,
+        incomplete: incomplete, unpaidCount: uN, unpaidIncome: uI, unpaidExpense: uE };
     }
 
     /* ابزارهای ثبت‌شده. هر ابزار: کلیدهای مجاز ورودی، و تابع اجرا که فقط داده برمی‌گرداند. */
+    /* ۱.۴.۴۱: عدد «کارت اصلی» (همان منطق داشبورد) فقط برای ماهی که برنامه الان نشان می‌دهد و بدون هیچ فیلتر دیگر؛ وگرنه null و پاسخ طبق همهٔ ردیف‌هاست */
+    function hkAsstCardInfo(a, stats, rows) {
+      try {
+        if (!a || (a.tab !== 'expense' && a.tab !== 'income')) return null;
+        if (a.text || (a.excludeText && a.excludeText.length) || (a.excludeCats && a.excludeCats.length) || (a.cats && a.cats.length) || a.project || a.account || a.context || a.status || a.transferOnly || a.includeTransfers ||
+            a.amountEq != null || a.amountMin != null || a.amountMax != null || a.amountGt != null || a.amountLt != null || a.dateFrom || a.dateTo) return null;
+        if (!a.year || !a.month || +a.year !== currentYear || +a.month !== currentMonth) return null;
+        if (typeof personTotals !== 'function' || typeof hkMainTitle !== 'function') return null;
+        var title = hkMainTitle(); if (!title) return null;
+        var t = personTotals(title), isE = a.tab === 'expense';
+        var total = Number(isE ? t.expenseTotal : t.incomeTotal) || 0, unpaid = Number(isE ? t.expenseUnpaid : t.incomeUnpaid) || 0;
+        var all = isE ? stats.expenseSum : stats.incomeSum, nk = function (x) { return String(x || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\s\u200c]+/g, ''); };
+        var tk = nk(title), proj = 0, other = 0;
+        rows.forEach(function (r) { if (r.amount === 0) return; if (r.context === 'project') proj++; if (nk(r.section) !== tk) other++; });
+        return { total: total, unpaid: unpaid, allTotal: all, projectRows: proj, otherSectionRows: other };
+      } catch (e) { return null; }
+    }
     var HK_ASST_TOOLS = {
       'transactions.search': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
+        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly', 'sort', 'limit'],
         run: function (a) {
           var rows = hkAsstFilter(hkAsstRows(), a);
           if (a.sort === 'amountDesc') rows.sort(function (x, y) { return y.amount - x.amount; });
@@ -150,7 +181,8 @@
           else if (a.sort === 'dateAsc') rows.sort(function (x, y) { return x.dateKey - y.dateKey; });
           else rows.sort(function (x, y) { return y.dateKey - x.dateKey; });
           var lim = Math.min(Math.max(parseInt(a.limit, 10) || 50, 1), 200);
-          return { count: rows.length, total: hkAsstSum(rows), items: rows.slice(0, lim).map(hkAsstPublic) };
+          var inc = hkAsstFilter(hkAsstRows(), Object.assign({}, a, { keepDrafts: true })).filter(function (r) { return r.amount === 0; }).length;
+          return { count: rows.length, total: hkAsstSum(rows), incomplete: inc, items: rows.slice(0, lim).map(hkAsstPublic) };
         }
       },
       'transactions.get': {
@@ -163,11 +195,16 @@
         }
       },
       'transactions.aggregate': {
-        readOnly: true, args: ['text', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
-        run: function (a) { return hkAsstStats(hkAsstFilter(hkAsstRows(), a)); }
+        readOnly: true, args: ['text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        run: function (a) {
+          var rows = hkAsstFilter(hkAsstRows(), Object.assign({}, a, { keepDrafts: true }));
+          var st = hkAsstStats(rows);
+          st.card = hkAsstCardInfo(a, st, rows);
+          return st;
+        }
       },
       'transactions.group': {
-        readOnly: true, args: ['by', 'text', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
+        readOnly: true, args: ['by', 'text', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var by = a.by;
           if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');

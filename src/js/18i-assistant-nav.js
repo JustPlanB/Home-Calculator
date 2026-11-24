@@ -116,6 +116,17 @@
     function hkAsstCtxMerge(raw) {
       try {
         var L = _hkAsstCtx;
+        /* ۱.۴.۴۱: «بدون اسنپ» به‌تنهایی: استثنا به سؤال قبلی اضافه می‌شود؛ فقط روی جمع/جست‌وجو/گروه تراکنش‌ها اثر دارد */
+        if (raw && raw.negFollow) {
+          if (!L || Date.now() - L.at > 900000) return { ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          var Mn = Object.assign({}, L.args), Nn = raw.args || {};
+          ['excludeText', 'excludeCats'].forEach(function (k) { if (Nn[k] && Nn[k].length) { var u = (Mn[k] || []).slice(); Nn[k].forEach(function (x) { if (u.indexOf(x) < 0) u.push(x); }); Mn[k] = u; } });
+          if (Nn.tab && !Mn.tab) Mn.tab = Nn.tab;
+          var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true };
+          on.understood = L.intent ? hkAsstUnderstood(L.intent, Mn) : '';
+          return on;
+        }
         if (!L || Date.now() - L.at > 900000 || !raw || !raw.tool || !raw.follow || !/^transactions\.(aggregate|search)$/.test(raw.tool)) return raw;
         var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });

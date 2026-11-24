@@ -68,7 +68,10 @@
     function hkAsstDecide(f) {
       var a = f.args || {}, T = f.text, words = T.split(' ').filter(Boolean);
       var pronounOnly = a.text && a.text.split(' ').every(function (w) { return /^(اون|اونو|اینو|همون|همونو|همین|قبلی|اونجا|همونجا)$/.test(w); });
-      var hasTime = !!(a.month || a.year || a.dateFrom), hasEnt = !!((a.text && !pronounOnly) || a.cats || a.project || a.context);
+      var hasTime = !!(a.month || a.year || a.dateFrom);
+      /* «همونو برا ماه قبل بگو»: ضمیر + زمان = همان سؤال قبلی با زمان تازه */
+      if (pronounOnly && hasTime && hkAsstCtxValid()) { delete a.text; pronounOnly = false; }
+      var hasEnt = !!((a.text && !pronounOnly) || a.cats || a.project || a.context);
       /* ۱) نیم‌جملهٔ بدون قصد و بدون گفتگوی قبلی: «آبان چطور؟»، «اسنپ چی؟» */
       var particle = /(^| )(چطور|چطوره|چطوری|چی|چیه|چنده|چند|چی شد|چی بود|چطور بود)( |$)/.test(T);
       if (f.follow && !hkAsstCtxValid() && (f.intent === 'sum' || f.intent === 'search') && !a.tab && words.length <= 3 && particle && (hasTime !== hasEnt)) {

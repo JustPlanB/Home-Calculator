@@ -66,7 +66,10 @@
       var k = Math.floor(Date.now() / 600000);
       if (_hkAsstRealC.k !== k) {
         var y = 0, m = 0;
-        try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {}
+        /* ۱.۴.۴۱: اگر تقویم شمسی دستگاه (Intl) کار نکند، تاریخ ساختگیِ جایگزین به‌عنوان «امروز» داده نمی‌شود؛ ماه باز در برنامه می‌ماند */
+        var okI = false;
+        try { var pp = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' }).formatToParts(new Date()); okI = parseInt(toEnglishDigits((pp.find(function (q) { return q.type === 'year'; }) || {}).value || '0'), 10) > 1300; } catch (eI) {}
+        if (okI) { try { var g = getTodayPersian(); if (g && g.y) { y = g.y; m = g.m; } } catch (e) {} }
         if (!y) { y = currentYear; m = currentMonth; }
         _hkAsstRealC = { k: k, y: y, m: m };
       }
