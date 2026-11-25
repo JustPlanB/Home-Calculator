@@ -518,6 +518,7 @@
         اول کلید خانواده (که بوت اول همان را می‌خواند)؛ اگر نشد، بقیه هم نوشته نمی‌شوند تا ذخیره‌ها ناهمسان نشوند. */
     function saveArchive() {
       var ok = false;
+      try { if (typeof hkOpeningResyncLive === 'function') hkOpeningResyncLive(); } catch (eOR) {}
       try {
         if (!localUpdatedAt) localUpdatedAt = Date.now();
         const bundle = getBundle();

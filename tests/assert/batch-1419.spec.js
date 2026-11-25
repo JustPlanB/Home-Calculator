@@ -58,7 +58,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   ok(R.keptId, 'ردیف دارای شناسه دست‌نخورده ماند');
   ok(R.newIdFormat === 6 && R.uniq, 'شکل شناسه r_… و یکتا');
   ok(R.untouchedFields, 'فیلدهای دیگر ردیف تغییر نکرد');
-  ok(R.ranTo === 4 && R.verAfter === 4, 'مسیر کامل: تا نسخهٔ ۴ اجرا و ذخیره شد');
+  ok(R.ranTo >= 4 && R.verAfter >= 4, 'مسیر کامل: تا آخرین نسخهٔ تبدیل (≥۴؛ از ۱.۴.۴۵ شمارهٔ ۵ هم هست) اجرا و ذخیره شد');
   ok(R.curNoId === 0 && R.curKept, 'ماه جاری (periodData) شناسه گرفت و ردیف‌های دارای شناسه حفظ شد');
   ok(R.oldNoId === 0, 'ماه قبل در آرشیو شناسه گرفت');
   ok(R.again === 0, 'اجرای دوباره هیچ تبدیلی نمی‌کند');

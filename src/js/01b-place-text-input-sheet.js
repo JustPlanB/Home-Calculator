@@ -1017,6 +1017,9 @@ function onPeriodChange() {
           if (raw.personOpeningInstant && typeof raw.personOpeningInstant === 'object') {
             periodData.personOpeningInstant = JSON.parse(JSON.stringify(raw.personOpeningInstant));
           }
+          if (raw.accountOpeningBase && typeof raw.accountOpeningBase === 'object') {
+            periodData.accountOpeningBase = JSON.parse(JSON.stringify(raw.accountOpeningBase));
+          }
         } catch (eRest) {}
       } else {
         // ماه جدید: فقط هدرها از ماه‌های قبل، بدون ردیف

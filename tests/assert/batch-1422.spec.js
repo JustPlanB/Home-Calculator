@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const INDEX = require('../lib/index-url');
 const P = 'hesabKetabArchive_v5';
-const BASE_LS = { [P + '_tourDone']: '1', [P + '_bankSetupDone']: '1', [P + '_cardSwipeHintDone']: '1', [P + '_recCleanupAsked']: '1' };
+const BASE_LS = { [P + '_tourDone']: '1', [P + '_bankSetupDone']: '1', [P + '_cardSwipeHintDone']: '1', [P + '_recCleanupAsked']: '1', [P + '_asstEngine']: 'legacy' }; // ۱.۴.۴۵: این آزمون عبارت‌بندی موتور قبلی را می‌سنجد؛ موتور قبلی تا تأیید نهایی حفظ و با همین کلید آزموده می‌شود
 let failed = 0, passed = 0;
 function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { failed++; console.log('  ✗ ' + m); } }
 (async () => {

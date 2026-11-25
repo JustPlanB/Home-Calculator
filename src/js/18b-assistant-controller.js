@@ -249,11 +249,18 @@
       return out && out !== P.q ? out : '';
     }
     /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */
-    function hkAsstAsk(text) {
+    function hkAsstAsk(text, engine) {
       var q = String(text || '').trim();
       if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
       var gs = hkAsstGuideStep(q);
       if (gs) return gs;
+      /* ۱.۴.۴۵: موتور چهارمرحله‌ای (تحلیل ← تطبیق ← محاسبه ← پاسخ) پیش‌فرض است؛ جز در سؤال‌های گفتگو/ناوبری/عملیات که همان مسیر قبلی اجرایشان می‌کند.
+         بازگشت به موتور قبلی: hkAsstSetEngine('legacy') (کلید داخلی، در رابط دیده نمی‌شود). */
+      if ((engine || hkAsstEngine()) === 'chain') { var cr = hkAsstAskChain(q); if (cr) return cr; }
+      return hkAsstAskLegacy(q);
+    }
+    /* مسیر قبلی دستیار (بی‌تغییر): پس از مرحلهٔ راهنمای گام‌به‌گام */
+    function hkAsstAskLegacy(q) {
       /* پاسخ کوتاهِ کاربر به یک پرسش روشن‌کننده («بنزین»، «منظورم قبض بود»): واژهٔ ناشناخته با همین پاسخ عوض می‌شود و سؤال اصلی دوباره اجرا می‌شود */
       var rep = hkAsstPendingRewrite(q); if (rep) q = rep;
       var cmd;

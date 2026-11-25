@@ -1,10 +1,13 @@
     /* ===== ۱.۴.۳۹: دستیار — رفتن به بخش‌های نرم‌افزار، حافظهٔ گفتگو، نمودار، تم ===== */
+    /* حالت خشک (۱.۴.۴۴): تحلیل‌گر درخواست را فقط تفسیر می‌کند؛ رفتن به بخش، تغییر تم و ذخیرهٔ اصطلاح اجرا نمی‌شود و در _hkAsstDryLog ثبت می‌شود */
+    var _hkAsstDry = false, _hkAsstDryLog = [];
     var _hkAsstLastTarget = null;   /* آخرین چیزی که نشان داده شد و «ببر» به آن می‌رود */
     var _hkAsstCtx = null;          /* آخرین پرسش داده‌ای (برای «آبان چطور؟») */
 
     /* ---------- هدف‌های قابل‌کلیک ---------- */
     function hkAsstOpenTarget(t) {
       if (!t) return false;
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'open_target', type: t.type || '' }); return true; }
       if (t.type === 'row') { hkAsstJump(t.item); return true; }
       var go = null;
       if (t.type === 'dong') go = function () { openDongModal(t.gid); };
@@ -68,6 +71,7 @@
       return false;
     }
     function hkAsstNavGo(nav) {
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'navigate', target: (nav && (nav.id || nav.name)) || '' }); return; }
       hkAsstGoAway();
       setTimeout(function () {
         try { nav.go(); } catch (e) { try { showToast('نتوانستم این بخش را باز کنم.'); } catch (e2) {} return; }
@@ -80,7 +84,7 @@
       var navRe = /(^| )(برو|ببر|بریم|ببرم|ببرمت|باز کن|بازکن|بازش کن|بازش|هدایت کن|هدایتم کن|منو ببر|نشونم بده|بیا|بیار)( |$)/;
       if (!navRe.test(T)) return null;
       var words = T.split(' ').filter(function (w) { return w && !HK_ASST_NAV_FILL[w]; }), P = words.join(' ');
-      var fin = function (ask, dec) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
+      var fin = function (ask, dec) { return { why: dec === 'ask' ? 'nav_unknown' : 'navigate', ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
       /* «نشونم بده/بیار» همراه اسم یک چیز دادهٔ مالی، پرسش است نه رفتن؛ فقط وقتی بخش شناخته‌شده باشد می‌رویم */
       if (!P || /^(اونجا|همونجا|اینجا|ردیف|تراکنش|ردیفش|اونو|اینو|مورد|اولی|اول)$/.test(P)) {
         if (/^(بیار|بیا|نشونم بده)$/.test(T)) return null;
@@ -101,8 +105,8 @@
       if (/(چطور|چجوری|کجا)/.test(T)) return null;
       var light = /روز|روشن|سفید|لایت/.test(T), dark = /شب|تاریک|مشکی|دارک/.test(T), cur = document.documentElement.getAttribute('data-theme');
       var want = light && !dark ? 'light' : dark && !light ? 'dark' : (cur === 'dark' ? 'light' : 'dark');
-      try { applyTheme(want); } catch (e) { return { ask: 'نتوانستم تم را عوض کنم.', final: true, understood: '', corrections: [], suggestions: [] }; }
-      return { ask: want === 'light' ? hkAsstPick(['تم روز فعال شد.', 'حله، تم روشن شد.']) : hkAsstPick(['تم شب فعال شد.', 'حله، تم تاریک شد.']), final: true, understood: '', corrections: [], suggestions: [] };
+      try { if (_hkAsstDry) _hkAsstDryLog.push({ kind: 'theme', want: want }); else applyTheme(want); } catch (e) { return { ask: 'نتوانستم تم را عوض کنم.', final: true, understood: '', corrections: [], suggestions: [] }; }
+      return { why: 'app_action:theme', ask: want === 'light' ? hkAsstPick(['تم روز فعال شد.', 'حله، تم روشن شد.']) : hkAsstPick(['تم شب فعال شد.', 'حله، تم تاریک شد.']), final: true, understood: '', corrections: [], suggestions: [] };
     }
 
     /* ---------- حافظهٔ گفتگو ---------- */
@@ -118,13 +122,13 @@
         var L = _hkAsstCtx;
         /* ۱.۴.۴۱: «بدون اسنپ» به‌تنهایی: استثنا به سؤال قبلی اضافه می‌شود؛ فقط روی جمع/جست‌وجو/گروه تراکنش‌ها اثر دارد */
         if (raw && raw.negFollow) {
-          if (!L || Date.now() - L.at > 900000) return { ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
-          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!L || Date.now() - L.at > 900000) return { why: 'missing_context', ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { why: 'unsupported_followup', ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
           var Mn = Object.assign({}, L.args), Nn = raw.args || {};
           /* «بدون بنزین» روی «فقط ردیف‌های بنزین»: دو شرط متناقض؛ بی‌صدا نتیجهٔ صفر نمی‌دهیم */
           var posW = String((Mn.text || '') + ' ' + (Mn.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
           var clash = (Nn.excludeText || []).filter(function (x) { return posW.indexOf(hkAsstKey(x)) >= 0; })[0] || (Nn.excludeCats || []).filter(function (x) { return (Mn.cats || []).indexOf(x) >= 0; }).map(function (x) { return HK_ASST_CAT_LABELS[x] || x; })[0];
-          if (clash) return { ask: 'قبلاً فقط «' + clash + '» را خواستی و الان می‌گویی «بدون ' + clash + '»؛ این دو با هم جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
+          if (clash) return { why: 'contradiction', ask: 'قبلاً فقط «' + clash + '» را خواستی و الان می‌گویی «بدون ' + clash + '»؛ این دو با هم جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
           ['excludeText', 'excludeCats'].forEach(function (k) { if (Nn[k] && Nn[k].length) { var u = (Mn[k] || []).slice(); Nn[k].forEach(function (x) { if (u.indexOf(x) < 0) u.push(x); }); Mn[k] = u; } });
           if (Nn.tab && !Mn.tab) Mn.tab = Nn.tab;
           var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true, catAmb: L.catAmb || null };
@@ -145,7 +149,7 @@
         if (hasE) {
           /* موجودیت تازه با شرط حذفِ قبلی تناقض ندارد؟ */
           var newW = String((N.text || '') + ' ' + (N.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
-          if ((M.excludeText || []).some(function (x) { return newW.indexOf(hkAsstKey(x)) >= 0; }) || (M.excludeCats || []).some(function (x) { return (N.cats || []).indexOf(x) >= 0; })) return { ask: 'این با شرط «بدون …»ی که قبلاً گفتی جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
+          if ((M.excludeText || []).some(function (x) { return newW.indexOf(hkAsstKey(x)) >= 0; }) || (M.excludeCats || []).some(function (x) { return (N.cats || []).indexOf(x) >= 0; })) return { why: 'contradiction', ask: 'این با شرط «بدون …»ی که قبلاً گفتی جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
           EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; });
         }
         if (anaph && N.tab) M.tab = N.tab;

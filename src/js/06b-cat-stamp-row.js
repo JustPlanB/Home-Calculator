@@ -316,6 +316,12 @@
       } },
       { v: 4, name: 'شناسهٔ ردیف‌های قدیمی (ردیف‌های مخارج و درآمد بدون شناسه)', run: function (arc) {
         return hkBackfillRowIds(arc);
+      } },
+      { v: 5, name: 'زنجیرهٔ موجودی اول ماه کارت‌ها (اصلاح موجودی اولِ ماه‌هایی که بعد از ساخته شدنشان ماه قبل تغییر کرده)', run: function () {
+        /* periodData در hkRunMigrations همان ماه باز است و archive همهٔ ماه‌ها؛ اصلاح در جا و گزارش یک‌باره */
+        var r = hkOpeningResync(true, true);
+        try { if (r.changes.length) localStorage.setItem(STORAGE_KEY + '_openingFixNotice', hkOpeningNoticeText(r)); } catch (e) {}
+        return r.changes.length;
       } }
     ];
     /* ۱.۴.۲۳: یک قاعدهٔ واحد برای شناسهٔ ردیف‌ها. فقط ردیفی که id ندارد شناسه می‌گیرد؛ بقیهٔ فیلدها دست‌نخورده.
@@ -366,6 +372,7 @@
         try { saveArchive(); } catch (e2) {}
         try { localStorage.setItem(HK_DATA_VER_KEY, String(done)); } catch (e3) {}
         try { renderAll(); } catch (e4) {}
+        try { var _n = localStorage.getItem(STORAGE_KEY + '_openingFixNotice'); if (_n) { localStorage.removeItem(STORAGE_KEY + '_openingFixNotice'); setTimeout(function () { try { askConfirm(_n, null); } catch (eT) {} }, 1200); } } catch (e5) {}
         return done;
       });
     }

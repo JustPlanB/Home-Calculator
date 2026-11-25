@@ -642,6 +642,8 @@
               if (periodData.accountOpeningInstant[k] == null || _ck < _arrK) periodData.accountOpeningInstant[k] = accEnding[k];
             });
           }
+          /* ۱.۴.۴۵: «پایان ماه قبل» همین لحظه کنار موجودی اول ثبت می‌شود تا اگر ماه قبل بعداً عوض شد، موجودی اول این ماه به‌اندازهٔ همان تغییر جابه‌جا شود */
+          try { periodData.accountOpeningBase = Object.assign({}, accEnding); } catch (eBs) {}
           /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
           try { persistCurrent(); } catch (eP2) {}
           advanced = true;

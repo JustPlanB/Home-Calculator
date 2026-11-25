@@ -16138,6 +16138,9 @@ function onPeriodChange() {
           if (raw.personOpeningInstant && typeof raw.personOpeningInstant === 'object') {
             periodData.personOpeningInstant = JSON.parse(JSON.stringify(raw.personOpeningInstant));
           }
+          if (raw.accountOpeningBase && typeof raw.accountOpeningBase === 'object') {
+            periodData.accountOpeningBase = JSON.parse(JSON.stringify(raw.accountOpeningBase));
+          }
         } catch (eRest) {}
       } else {
         // ماه جدید: فقط هدرها از ماه‌های قبل، بدون ردیف
@@ -17606,6 +17609,7 @@ function onPeriodChange() {
         اول کلید خانواده (که بوت اول همان را می‌خواند)؛ اگر نشد، بقیه هم نوشته نمی‌شوند تا ذخیره‌ها ناهمسان نشوند. */
     function saveArchive() {
       var ok = false;
+      try { if (typeof hkOpeningResyncLive === 'function') hkOpeningResyncLive(); } catch (eOR) {}
       try {
         if (!localUpdatedAt) localUpdatedAt = Date.now();
         const bundle = getBundle();
@@ -18671,6 +18675,8 @@ function onPeriodChange() {
               if (periodData.accountOpeningInstant[k] == null || _ck < _arrK) periodData.accountOpeningInstant[k] = accEnding[k];
             });
           }
+          /* ۱.۴.۴۵: «پایان ماه قبل» همین لحظه کنار موجودی اول ثبت می‌شود تا اگر ماه قبل بعداً عوض شد، موجودی اول این ماه به‌اندازهٔ همان تغییر جابه‌جا شود */
+          try { periodData.accountOpeningBase = Object.assign({}, accEnding); } catch (eBs) {}
           /* موجودی زمان ایجاد کارت قفل است — با پایان ماه عوض نشود */
           try { persistCurrent(); } catch (eP2) {}
           advanced = true;
@@ -20635,7 +20641,7 @@ function askBackupUserCards(selectedParts) {
         dst.ledger = mergeLedgerBlocks(dst.ledger, src.ledger);
         /* موجودی‌های اول ماه، موجودی کارت‌ها و تنظیمات کارت‌های فایل ورودی هم بیایند (فقط کلیدهایی که اینجا نیست؛ داده‌های محلی دست نمی‌خورد).
            قبلاً این‌ها برای ماه‌های مشترک دور ریخته می‌شد و موجودی حساب‌های کاربر دوم ناقص حساب می‌شد. */
-        ['accountOpeningInstant', 'personOpeningInstant', 'cardMeta'].forEach(function (f) {
+        ['accountOpeningInstant', 'accountOpeningBase', 'personOpeningInstant', 'cardMeta'].forEach(function (f) {
           const sm = src[f];
           if (!sm || typeof sm !== 'object') return;
           if (!dst[f] || typeof dst[f] !== 'object') dst[f] = {};
@@ -25568,6 +25574,149 @@ async function openPdfPrintWindow(){
       return '<span class="ib-proj-dots" aria-label="پروژه">' + cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>';
     }
 
+
+    /* ===== ۱.۴.۴۵: زنجیرهٔ موجودی اول ماه کارت‌ها =====
+       موجودی اول هر ماه یک بار (وقتی ماه ساخته می‌شود) ذخیره می‌شد. اگر بعداً ردیفی در ماه قبل ثبت یا ویرایش می‌شد (مثلاً پیامک ساعت ۱۱ شب
+       آخر ماه که بعد از نیمه‌شب تأیید شد)، موجودی اول ماه‌های بعد کهنه می‌ماند و مغایرتِ ساختگی («ردیف اختلاف») می‌ساخت.
+       راه‌حل بی‌خطر برای عددهای دستیِ کاربر: کنار هر موجودی اول ماه، «پایان ماه قبلِ همان لحظه» (accountOpeningBase) نگه داشته می‌شود؛
+       هر بار پایان ماه قبل عوض شد، موجودی اول ماه بعد فقط به‌اندازهٔ همان تغییر جابه‌جا می‌شود (اختلافِ دستیِ قبلی حفظ می‌شود).
+       ماه ایجاد کارت دست نمی‌خورد. موجودی کل از جمع همین موجودی‌ها می‌آید، پس با آن درست می‌شود.
+       legacy=true (فقط تبدیل شمارهٔ ۵، برای دادهٔ قدیمی بی‌نشانه): موجودی اول فقط وقتی اصلاح می‌شود که اختلافش با پایان ماه قبل دقیقاً برابر
+       جمع علامت‌دار یک تا سه ردیف پرداخت‌شدهٔ همان کارت در ماه قبل باشد (یعنی آن ردیف‌ها بعد از ذخیرهٔ موجودی ثبت شده‌اند)؛ وگرنه دست نمی‌خورد.
+       apply=false فقط گزارش می‌دهد. خروجی: { changes:[{k,y,m,label,from,to}], gaps:[...] } (gaps: ردیف اختلاف دقیقاً هم‌اندازهٔ اصلاح). */
+    function hkOpeningMonthRows(pd, lb, list) {
+      var sum = 0;
+      ['income', 'expense'].forEach(function (tab) {
+        var sign = tab === 'income' ? 1 : -1;
+        var side = pd && (pd[tab] || (tab === 'expense' && pd.sections ? { sections: pd.sections } : null));
+        ((side && side.sections) || []).forEach(function (sec) {
+          ((sec && sec.rows) || []).forEach(function (r) {
+            if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+            if ((r.account || '').trim() !== lb) return;
+            var v = sign * (Number(r.amount) || 0);
+            sum += v;
+            if (list && v) list.push(v);
+          });
+        });
+      });
+      return sum;
+    }
+    function hkOpeningExplained(vals, target) {
+      /* آیا جمع یک تا سه مقدار از vals دقیقاً target است؟ */
+      var n = Math.min(vals.length, 40), i, j, k;
+      for (i = 0; i < n; i++) {
+        if (vals[i] === target) return true;
+        for (j = i + 1; j < n; j++) {
+          if (vals[i] + vals[j] === target) return true;
+          for (k = j + 1; k < n; k++) if (vals[i] + vals[j] + vals[k] === target) return true;
+        }
+      }
+      return false;
+    }
+    function hkOpeningResync(apply, legacy) {
+      var res = { changes: [], gaps: [] };
+      try {
+        var curK = periodKey(currentYear, currentMonth);
+        var keys = Object.keys(archive || {}); if (keys.indexOf(curK) < 0) keys.push(curK);
+        var items = keys.map(function (k) { var p = String(k).split('-'); return { k: k, y: parseInt(p[0], 10), m: parseInt(p[1], 10) }; })
+          .filter(function (x) { return x.y > 1300 && x.m >= 1 && x.m <= 12; })
+          .sort(function (a, b) { return (a.y * 100 + a.m) - (b.y * 100 + b.m); });
+        var labels = [];
+        (selectedBankAccounts || []).forEach(function (a) {
+          if (!a) return;
+          var lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+          if (lb && labels.indexOf(lb) < 0) labels.push(lb);
+        });
+        var setVal = function (it, field, lb, v) {
+          var pd = it.k === curK ? periodData : archive[it.k], arc = archive[it.k];
+          [pd, it.k === curK ? arc : null].forEach(function (o) {
+            if (!o || typeof o !== 'object') return;
+            if (!o[field] || typeof o[field] !== 'object') o[field] = {};
+            o[field][lb] = v;
+          });
+        };
+        labels.forEach(function (lb) {
+          var ck = _hkAccCreationKey(lb), carry = null, prevItem = null;
+          items.forEach(function (it) {
+            if (it.y * 100 + it.m < ck) return;
+            var pd = it.k === curK ? periodData : archive[it.k];
+            if (!pd || typeof pd !== 'object') return;
+            var map = (pd.accountOpeningInstant && typeof pd.accountOpeningInstant === 'object') ? pd.accountOpeningInstant : null;
+            var bmap = (pd.accountOpeningBase && typeof pd.accountOpeningBase === 'object') ? pd.accountOpeningBase : null;
+            var stored = (map && map[lb] != null && map[lb] !== '') ? (Number(map[lb]) || 0) : null;
+            var base = (bmap && bmap[lb] != null && bmap[lb] !== '') ? (Number(bmap[lb]) || 0) : null;
+            var open;
+            if (carry === null) {
+              open = stored;
+              if (open == null) { open = 0; (selectedBankAccounts || []).forEach(function (a) { if (a && ((typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '')) === lb) open += Number(a.openingBalance) || 0; }); }
+            } else if (stored == null) {
+              open = carry;
+            } else if (base != null) {
+              open = stored;
+              if (base !== carry) {
+                open = stored + (carry - base);
+                res.changes.push({ k: it.k, y: it.y, m: it.m, label: lb, from: stored, to: open });
+                if (apply) { setVal(it, 'accountOpeningInstant', lb, open); setVal(it, 'accountOpeningBase', lb, carry); }
+              }
+            } else {
+              open = stored;
+              if (stored === carry) { if (apply) setVal(it, 'accountOpeningBase', lb, carry); }
+              else if (legacy) {
+                var vals = []; hkOpeningMonthRows(prevItem.k === curK ? periodData : archive[prevItem.k], lb, vals);
+                if (hkOpeningExplained(vals, carry - stored)) {
+                  open = carry;
+                  res.changes.push({ k: it.k, y: it.y, m: it.m, label: lb, from: stored, to: open });
+                  if (apply) { setVal(it, 'accountOpeningInstant', lb, open); setVal(it, 'accountOpeningBase', lb, carry); }
+                } else if (apply) setVal(it, 'accountOpeningBase', lb, carry);   /* اختلاف دستی/ناشناخته: همان‌طور می‌ماند و از این به بعد فقط جابه‌جایی‌ها اعمال می‌شود */
+              } else if (apply) setVal(it, 'accountOpeningBase', lb, carry);
+            }
+            carry = open + hkOpeningMonthRows(pd, lb);
+            prevItem = it;
+          });
+        });
+        /* ردیف اختلافی که دقیقاً همین اصلاح را جبران کرده بود (مبلغ علامت‌دار ردیف = تغییر موجودی اول) */
+        var firstOf = {};
+        res.changes.forEach(function (c) { if (!firstOf[c.label]) firstOf[c.label] = c; });
+        Object.keys(firstOf).forEach(function (lb) {
+          var c = firstOf[lb], pd = c.k === curK ? periodData : archive[c.k], d = c.to - c.from, hit = null;
+          ['income', 'expense'].forEach(function (tab) {
+            var sign = tab === 'income' ? 1 : -1;
+            ((pd && pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+              ((sec && sec.rows) || []).forEach(function (r) {
+                if (hit || !r || r.deletedAt || !r.reconGap || (r.status || 'paid') !== 'paid' || (r.account || '').trim() !== lb) return;
+                if (sign * (Number(r.amount) || 0) === d) hit = { k: c.k, label: lb, desc: r.desc || '', amount: Number(r.amount) || 0, day: r.day || '', tab: tab };
+              });
+            });
+          });
+          if (hit) res.gaps.push(hit);
+        });
+      } catch (e) {}
+      return res;
+    }
+    /* هر ذخیره: اگر ماه قبل عوض شده، موجودی اول ماه‌های بعد (و ماه بازِ فعلی) هم‌زمان به‌روز می‌شود. فقط بعد از تبدیل شمارهٔ ۵ */
+    var _hkOpeningBusy = false;
+    function hkOpeningResyncLive() {
+      if (_hkOpeningBusy) return 0;
+      _hkOpeningBusy = true;
+      try {
+        if (typeof hkDataVer === 'function' && hkDataVer() < 5) return 0;
+        var r = hkOpeningResync(true);
+        if (!r.changes.length) return 0;
+        var curK = periodKey(currentYear, currentMonth);
+        if (r.changes.some(function (c) { return c.k === curK; })) { setTimeout(function () { try { renderAll(); } catch (e) {} }, 0); }
+        return r.changes.length;
+      } catch (e) { return 0; } finally { _hkOpeningBusy = false; }
+    }
+    /* پیام یک‌باره بعد از اصلاح قدیمی‌ها */
+    function hkOpeningNoticeText(res) {
+      var by = {}; res.changes.forEach(function (c) { (by[c.label] = by[c.label] || []).push(c); });
+      var lines = Object.keys(by).map(function (lb) {
+        var a = by[lb], first = a[0], tot = a[a.length - 1].to - a[a.length - 1].from;
+        return '«' + lb + '»: موجودی اول ' + toPersianDigits(String(a.length)) + ' ماه از ' + (MONTHS[first.m - 1] || '') + ' ' + toPersianDigits(String(first.y)) + ' اصلاح شد (' + (tot > 0 ? '+' : '−') + toPersianDigits(formatNum(Math.abs(tot))) + ' تومان).';
+      });
+      res.gaps.forEach(function (g) { lines.push('ردیف اختلاف «' + g.desc + '» (' + toPersianDigits(formatNum(g.amount)) + ' تومان، روز ' + toPersianDigits(String(g.day)) + ') در «' + g.label + '» برای جبران همین اختلاف ثبت شده بود؛ اگر درست است حذفش کن تا دوبار حساب نشود.'); });
+      return lines.join('\n');
+    }
     /* ===== ۱.۳.۷۸: نگه‌داشتن دایرهٔ موجودی = حباب‌های حساب‌ها — به تعداد حساب‌ها حباب از دایره پخش می‌شود و آرام و نامنظم در صفحه شناور است؛
        داخل هر حباب اسم و موجودی آن حساب (سبز مثبت، نارنجی منفی) و نقطه‌های پروژه؛ با رها کردن آرام محو می‌شوند.
        بیش از ۱۰ ثانیه نگه‌داشتن: حباب‌ها به هم می‌خورند، می‌ترکند و نگه‌داشتن تمام می‌شود ===== */
@@ -28072,6 +28221,12 @@ async function openPdfPrintWindow(){
       } },
       { v: 4, name: 'شناسهٔ ردیف‌های قدیمی (ردیف‌های مخارج و درآمد بدون شناسه)', run: function (arc) {
         return hkBackfillRowIds(arc);
+      } },
+      { v: 5, name: 'زنجیرهٔ موجودی اول ماه کارت‌ها (اصلاح موجودی اولِ ماه‌هایی که بعد از ساخته شدنشان ماه قبل تغییر کرده)', run: function () {
+        /* periodData در hkRunMigrations همان ماه باز است و archive همهٔ ماه‌ها؛ اصلاح در جا و گزارش یک‌باره */
+        var r = hkOpeningResync(true, true);
+        try { if (r.changes.length) localStorage.setItem(STORAGE_KEY + '_openingFixNotice', hkOpeningNoticeText(r)); } catch (e) {}
+        return r.changes.length;
       } }
     ];
     /* ۱.۴.۲۳: یک قاعدهٔ واحد برای شناسهٔ ردیف‌ها. فقط ردیفی که id ندارد شناسه می‌گیرد؛ بقیهٔ فیلدها دست‌نخورده.
@@ -28122,6 +28277,7 @@ async function openPdfPrintWindow(){
         try { saveArchive(); } catch (e2) {}
         try { localStorage.setItem(HK_DATA_VER_KEY, String(done)); } catch (e3) {}
         try { renderAll(); } catch (e4) {}
+        try { var _n = localStorage.getItem(STORAGE_KEY + '_openingFixNotice'); if (_n) { localStorage.removeItem(STORAGE_KEY + '_openingFixNotice'); setTimeout(function () { try { askConfirm(_n, null); } catch (eT) {} }, 1200); } } catch (e5) {}
         return done;
       });
     }
@@ -55063,26 +55219,41 @@ function openProjectRowPicker(secId) {
       });
       return out;
     }
+    /* ۱.۴.۴۳: تطبیق «واژهٔ کامل» (نه زیررشته): «نان» با «دانانو» نمی‌خواند. شرح و بخش ردیف به واژه شکسته می‌شود و هر واژه با جمع/عامیانهٔ ساده (ها، های، ا، ای) پذیرفته می‌شود */
+    function hkAsstRowTokens(r) {
+      if (r._hkTok) return r._hkTok;
+      var t = hkAsstNorm(String(r.desc || '') + ' ' + String(r.section || '')).replace(/[،,.؛:!؟?()\[\]\-_\/\\]/g, ' ').split(' ').map(hkAsstKey).filter(Boolean);
+      try { r._hkTok = t; } catch (e) {}
+      return t;
+    }
+    function hkAsstTokEq(tok, w) { return tok === w || (w.length >= 2 && (tok === w + 'ها' || tok === w + 'های' || tok === w + 'ا' || tok === w + 'ای')); }
+    function hkAsstHasWord(tokens, w) { for (var i = 0; i < tokens.length; i++) if (hkAsstTokEq(tokens[i], w)) return true; return false; }
+    /* عبارت چندواژه‌ای به‌صورت پشت‌سرهم (برای «بدون قبض آب») */
+    function hkAsstHasPhrase(tokens, words) {
+      if (!words.length) return false;
+      for (var i = 0; i + words.length <= tokens.length; i++) { var ok = true; for (var j = 0; j < words.length; j++) if (!hkAsstTokEq(tokens[i + j], words[j])) { ok = false; break; } if (ok) return true; }
+      return false;
+    }
     function hkAsstFilter(rows, f) {
       f = f || {};
       var text = hkAsstNorm(f.text).split(' ').filter(Boolean);
       var acct = hkAsstNorm(f.account);
       /* هر عضو اجتماع مثل text است: همهٔ کلمه‌های همان عضو باید در ردیف باشند؛ ردیف با هر عضو بخواند عبور می‌کند */
-      var anyT = (f.textAny || []).map(function (x) { return hkAsstNorm(x).split(' ').filter(Boolean); }).filter(function (ws) { return ws.length; });
-      var exT = (f.excludeText || []).map(function (x) { return hkAsstKey(x); }).filter(Boolean), exC = f.excludeCats || [];
+      var anyT = (f.textAny || []).map(function (x) { return hkAsstNorm(x).split(' ').filter(Boolean).map(hkAsstKey); }).filter(function (ws) { return ws.length; });
+      var exT = (f.excludeText || []).map(function (x) { return hkAsstNorm(x).split(' ').map(hkAsstKey).filter(Boolean); }).filter(function (w) { return w.length; }), exC = f.excludeCats || [];
       var from = f.dateFrom ? hkAsstDateKey(f.dateFrom) : null, to = f.dateTo ? hkAsstDateKey(f.dateTo) : null;
       return rows.filter(function (r) {
         /* ۱.۴.۴۱: فقط ردیف‌های دارای مبلغ تراکنش شمرده می‌شوند؛ ردیف ناقص (بی‌مبلغ) فقط با keepDrafts برای گزارش جدا می‌آید */
         if (!f.keepDrafts && r.amount === 0 && f.amountEq == null) return false;
         if (!f.includeTransfers && r.transfer) return false;
         if (exT.length || exC.length) {
-          var hk = hkAsstKey(r.desc + ' ' + r.section);
-          for (var ei = 0; ei < exT.length; ei++) if (hk.indexOf(exT[ei]) >= 0) return false;
+          var rt = hkAsstRowTokens(r);
+          for (var ei = 0; ei < exT.length; ei++) if (hkAsstHasPhrase(rt, exT[ei])) return false;
           for (var ci = 0; ci < exC.length; ci++) if (hkAsstCatHit(r, exC[ci])) return false;
         }
         if (text.length) {
-          var hay = hkAsstNorm(r.desc + ' ' + r.section);
-          for (var i = 0; i < text.length; i++) if (hay.indexOf(text[i]) < 0) return false;
+          var tk = hkAsstRowTokens(r);
+          for (var i = 0; i < text.length; i++) if (!hkAsstHasWord(tk, hkAsstKey(text[i]))) return false;
         }
         if (f.amountEq != null && r.amount !== Number(f.amountEq)) return false;
         if (f.amountMin != null && r.amount < Number(f.amountMin)) return false;
@@ -55100,8 +55271,8 @@ function openProjectRowPicker(secId) {
         /* ۱.۴.۴۵: «برنج و نان / برنج یا نان»: اجتماع (OR)؛ ردیفی که با هر دو می‌خواند فقط یک بار شمرده می‌شود. با unionCats دسته‌ها هم عضو همین اجتماع‌اند (نه اشتراک) */
         var anyHit = true;
         if (anyT.length) {
-          var hayA = hkAsstNorm(r.desc + ' ' + r.section);
-          anyHit = anyT.some(function (ws) { return ws.every(function (w) { return hayA.indexOf(w) >= 0; }); });
+          var tkA = hkAsstRowTokens(r);
+          anyHit = anyT.some(function (ws) { return ws.every(function (w) { return hkAsstHasWord(tkA, w); }); });
           if (!anyHit && f.unionCats && f.cats && f.cats.length) anyHit = f.cats.some(function (c) { return hkAsstCatHit(r, c); });
           if (!anyHit) return false;
         }
@@ -56529,7 +56700,7 @@ function openProjectRowPicker(secId) {
     /* ---- تشخیص قصد ---- */
     function hkAsstAppIntent(text) {
       var T = hkAsstFaDigits(text);
-      var fin = function (ask) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: HK_ASST_EXAMPLES_TEXT() }; };
+      var fin = function (ask) { return { why: 'app_info', ask: ask, final: true, understood: '', corrections: [], suggestions: HK_ASST_EXAMPLES_TEXT() }; };
       var tool = function (name, args, follow) { return { tool: name, args: args || {}, explain: name.slice(9), understood: '', followUps: follow || [], chipRaw: true, corrections: [] }; };
       var money = /هزینه|خرج|مخارج|درآمد|درامد|واریز|برداشت|تراکنش|قبض|اسنپ|ماه|ردیف/.test(T);
       var nv = hkAsstNavIntent(T); if (nv) return nv;
@@ -56664,7 +56835,7 @@ function openProjectRowPicker(secId) {
       /* «کدوم دسته بیشترین خرج رو داره»: دسته‌های پرهزینه */
       if (/(کدوم|چه|کدام) دسته/.test(T) && /بیشتر|بیشترین|زیاد|گرون|کمتر|کمترین/.test(T)) return tool('insights.top', { tab: tb || 'expense' }, '');
       /* «فردا هوا چطوره»: دربارهٔ هوا، نه پیش‌بینی مالی */
-      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
+      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { why: 'out_of_domain', ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
       /* کدوم ماه/دسته/حساب/پروژه بیشتر/کمتر */
       var gm = /(کدوم|چه|کدام) (ماه|حساب|کارت|پروژه)/.exec(T);
       if (gm && /بیشتر|کمتر|زیاد|کم|گرون|بیشترین|کمترین|بهتر|بدتر/.test(T)) {
@@ -56731,6 +56902,7 @@ function openProjectRowPicker(secId) {
       return null;
     }
     function hkAsstGuideGo(g) {
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'guide', id: (g && g.id) || '' }); return; }
       hkAsstGoAway();
       setTimeout(function () { try { g.go(); } catch (e2) { try { showToast('نتوانستم این بخش را باز کنم.'); } catch (e3) {} } }, 280);
     }
@@ -56753,18 +56925,21 @@ function openProjectRowPicker(secId) {
       var g = hkAsstGuideFor(T);
       var nav = /(^| )(برو|ببر|ببرم|باز کن|بازش کن|هدایت|منو ببر|ببرمت)( |$)/.test(T);
       if (!how && !(nav && g)) return null;
-      if (nav && g && !how) { hkAsstGuideGo(g); return { ask: hkAsstPick(['باشه، «' + g.name + '» رو باز می‌کنم.', 'حله، «' + g.name + '» باز می‌شه.']), final: true, understood: '', corrections: [], suggestions: [] }; }
-      if (!g) { _hkAsstGuide = HK_ASST_HELPGUIDE; return { ask: hkAsstPick(HK_ASST_HOWTO) + '\nمی‌خوای راهنما رو برات باز کنم؟', final: true, understood: '', corrections: [], suggestions: ['آره، باز کن', 'نه، ممنون'], chipRaw: true }; }
+      if (nav && g && !how) { hkAsstGuideGo(g); return { why: 'navigate', ask: hkAsstPick(['باشه، «' + g.name + '» رو باز می‌کنم.', 'حله، «' + g.name + '» باز می‌شه.']), final: true, understood: '', corrections: [], suggestions: [] }; }
+      if (!g) { _hkAsstGuide = HK_ASST_HELPGUIDE; return { why: 'app_help', ask: hkAsstPick(HK_ASST_HOWTO) + '\nمی‌خوای راهنما رو برات باز کنم؟', final: true, understood: '', corrections: [], suggestions: ['آره، باز کن', 'نه، ممنون'], chipRaw: true }; }
       _hkAsstGuide = g;
-      return { ask: g.text + '\nمی‌خوای ببرمت به «' + g.name + '»؟', final: true, understood: '', corrections: [], suggestions: ['آره، ببر', 'نه، ممنون'], chipRaw: true };
+      return { why: 'app_help', ask: g.text + '\nمی‌خوای ببرمت به «' + g.name + '»؟', final: true, understood: '', corrections: [], suggestions: ['آره، ببر', 'نه، ممنون'], chipRaw: true };
     }
     /* ===== ۱.۴.۳۹: دستیار — رفتن به بخش‌های نرم‌افزار، حافظهٔ گفتگو، نمودار، تم ===== */
+    /* حالت خشک (۱.۴.۴۴): تحلیل‌گر درخواست را فقط تفسیر می‌کند؛ رفتن به بخش، تغییر تم و ذخیرهٔ اصطلاح اجرا نمی‌شود و در _hkAsstDryLog ثبت می‌شود */
+    var _hkAsstDry = false, _hkAsstDryLog = [];
     var _hkAsstLastTarget = null;   /* آخرین چیزی که نشان داده شد و «ببر» به آن می‌رود */
     var _hkAsstCtx = null;          /* آخرین پرسش داده‌ای (برای «آبان چطور؟») */
 
     /* ---------- هدف‌های قابل‌کلیک ---------- */
     function hkAsstOpenTarget(t) {
       if (!t) return false;
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'open_target', type: t.type || '' }); return true; }
       if (t.type === 'row') { hkAsstJump(t.item); return true; }
       var go = null;
       if (t.type === 'dong') go = function () { openDongModal(t.gid); };
@@ -56828,6 +57003,7 @@ function openProjectRowPicker(secId) {
       return false;
     }
     function hkAsstNavGo(nav) {
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'navigate', target: (nav && (nav.id || nav.name)) || '' }); return; }
       hkAsstGoAway();
       setTimeout(function () {
         try { nav.go(); } catch (e) { try { showToast('نتوانستم این بخش را باز کنم.'); } catch (e2) {} return; }
@@ -56840,7 +57016,7 @@ function openProjectRowPicker(secId) {
       var navRe = /(^| )(برو|ببر|بریم|ببرم|ببرمت|باز کن|بازکن|بازش کن|بازش|هدایت کن|هدایتم کن|منو ببر|نشونم بده|بیا|بیار)( |$)/;
       if (!navRe.test(T)) return null;
       var words = T.split(' ').filter(function (w) { return w && !HK_ASST_NAV_FILL[w]; }), P = words.join(' ');
-      var fin = function (ask, dec) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
+      var fin = function (ask, dec) { return { why: dec === 'ask' ? 'nav_unknown' : 'navigate', ask: ask, final: true, understood: '', corrections: [], suggestions: [], decision: dec || '' }; };
       /* «نشونم بده/بیار» همراه اسم یک چیز دادهٔ مالی، پرسش است نه رفتن؛ فقط وقتی بخش شناخته‌شده باشد می‌رویم */
       if (!P || /^(اونجا|همونجا|اینجا|ردیف|تراکنش|ردیفش|اونو|اینو|مورد|اولی|اول)$/.test(P)) {
         if (/^(بیار|بیا|نشونم بده)$/.test(T)) return null;
@@ -56861,8 +57037,8 @@ function openProjectRowPicker(secId) {
       if (/(چطور|چجوری|کجا)/.test(T)) return null;
       var light = /روز|روشن|سفید|لایت/.test(T), dark = /شب|تاریک|مشکی|دارک/.test(T), cur = document.documentElement.getAttribute('data-theme');
       var want = light && !dark ? 'light' : dark && !light ? 'dark' : (cur === 'dark' ? 'light' : 'dark');
-      try { applyTheme(want); } catch (e) { return { ask: 'نتوانستم تم را عوض کنم.', final: true, understood: '', corrections: [], suggestions: [] }; }
-      return { ask: want === 'light' ? hkAsstPick(['تم روز فعال شد.', 'حله، تم روشن شد.']) : hkAsstPick(['تم شب فعال شد.', 'حله، تم تاریک شد.']), final: true, understood: '', corrections: [], suggestions: [] };
+      try { if (_hkAsstDry) _hkAsstDryLog.push({ kind: 'theme', want: want }); else applyTheme(want); } catch (e) { return { ask: 'نتوانستم تم را عوض کنم.', final: true, understood: '', corrections: [], suggestions: [] }; }
+      return { why: 'app_action:theme', ask: want === 'light' ? hkAsstPick(['تم روز فعال شد.', 'حله، تم روشن شد.']) : hkAsstPick(['تم شب فعال شد.', 'حله، تم تاریک شد.']), final: true, understood: '', corrections: [], suggestions: [] };
     }
 
     /* ---------- حافظهٔ گفتگو ---------- */
@@ -56878,13 +57054,13 @@ function openProjectRowPicker(secId) {
         var L = _hkAsstCtx;
         /* ۱.۴.۴۱: «بدون اسنپ» به‌تنهایی: استثنا به سؤال قبلی اضافه می‌شود؛ فقط روی جمع/جست‌وجو/گروه تراکنش‌ها اثر دارد */
         if (raw && raw.negFollow) {
-          if (!L || Date.now() - L.at > 900000) return { ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
-          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!L || Date.now() - L.at > 900000) return { why: 'missing_context', ask: 'بدون چی؟ اول بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟») تا همون رو بدون آن حساب کنم.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
+          if (!/^transactions\.(aggregate|search|group)$/.test(L.tool)) return { why: 'unsupported_followup', ask: 'این استثنا رو فقط روی جمع و جست‌وجوی تراکنش‌ها می‌تونم اعمال کنم؛ سؤال قبلی از نوع دیگه‌ای بود.', final: true, decision: 'ask', suggestions: ['این ماه چقدر خرج کردم؟'], chipRaw: true };
           var Mn = Object.assign({}, L.args), Nn = raw.args || {};
           /* «بدون بنزین» روی «فقط ردیف‌های بنزین»: دو شرط متناقض؛ بی‌صدا نتیجهٔ صفر نمی‌دهیم */
           var posW = String((Mn.text || '') + ' ' + (Mn.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
           var clash = (Nn.excludeText || []).filter(function (x) { return posW.indexOf(hkAsstKey(x)) >= 0; })[0] || (Nn.excludeCats || []).filter(function (x) { return (Mn.cats || []).indexOf(x) >= 0; }).map(function (x) { return HK_ASST_CAT_LABELS[x] || x; })[0];
-          if (clash) return { ask: 'قبلاً فقط «' + clash + '» را خواستی و الان می‌گویی «بدون ' + clash + '»؛ این دو با هم جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
+          if (clash) return { why: 'contradiction', ask: 'قبلاً فقط «' + clash + '» را خواستی و الان می‌گویی «بدون ' + clash + '»؛ این دو با هم جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
           ['excludeText', 'excludeCats'].forEach(function (k) { if (Nn[k] && Nn[k].length) { var u = (Mn[k] || []).slice(); Nn[k].forEach(function (x) { if (u.indexOf(x) < 0) u.push(x); }); Mn[k] = u; } });
           if (Nn.tab && !Mn.tab) Mn.tab = Nn.tab;
           var on = { tool: L.tool, args: Mn, explain: L.explain, corrections: [], intent: L.intent, yearExplicit: L.yearExplicit, follow: false, memory: true, catAmb: L.catAmb || null };
@@ -56905,7 +57081,7 @@ function openProjectRowPicker(secId) {
         if (hasE) {
           /* موجودیت تازه با شرط حذفِ قبلی تناقض ندارد؟ */
           var newW = String((N.text || '') + ' ' + (N.textAny || []).join(' ')).split(/\s+/).filter(Boolean).map(function (w) { return hkAsstKey(w); });
-          if ((M.excludeText || []).some(function (x) { return newW.indexOf(hkAsstKey(x)) >= 0; }) || (M.excludeCats || []).some(function (x) { return (N.cats || []).indexOf(x) >= 0; })) return { ask: 'این با شرط «بدون …»ی که قبلاً گفتی جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
+          if ((M.excludeText || []).some(function (x) { return newW.indexOf(hkAsstKey(x)) >= 0; }) || (M.excludeCats || []).some(function (x) { return (N.cats || []).indexOf(x) >= 0; })) return { why: 'contradiction', ask: 'این با شرط «بدون …»ی که قبلاً گفتی جور نیست. کدام را بخواهم؟', final: true, decision: 'ask', suggestions: [], chipRaw: true };
           EK.forEach(function (k) { delete M[k]; }); EK.forEach(function (k) { if (N[k] != null) M[k] = N[k]; });
         }
         if (anaph && N.tab) M.tab = N.tab;
@@ -56992,6 +57168,8 @@ function openProjectRowPicker(secId) {
     function hkAsstAliasAdd(from, to) {
       from = String(from || '').trim(); to = String(to || '').trim();
       if (!from || !to || from.length > 40 || to.length > 40 || hkAsstKey(from) === hkAsstKey(to)) return false;
+      /* تحلیل‌گر (۱.۴.۴۴): حالت خشک؛ اصطلاح ذخیره نمی‌شود و فقط ثبت می‌شود که چنین درخواستی بوده */
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'alias', from: from, to: to }); return true; }
       var a = hkAsstAliasList().filter(function (x) { return hkAsstKey(x.from) !== hkAsstKey(from); });
       a.push({ from: from, to: to }); hkAsstAliasSave(a); return true;
     }
@@ -57016,7 +57194,7 @@ function openProjectRowPicker(secId) {
         || new RegExp('^منظور(?:م)?\\s+(?:از\\s+)?[«"“]([^«»"“”]{2,40})[»"”]\\s*[«"“]([^«»"“”]{2,40})[»"”]\\s*(?:بود|است|هست|باشه)?$').exec(q);
       if (!m) return null;
       if (!hkAsstAliasAdd(m[1], m[2])) return null;
-      return { ask: hkAsstPick(['باشه، از این به بعد «' + m[1].trim() + '» رو «' + m[2].trim() + '» حساب می‌کنم. (برای حذفش: نگه داشتن عنوان دستیار ← «واژه‌های من»)', 'یاد گرفتم: «' + m[1].trim() + '» یعنی «' + m[2].trim() + '». هر وقت خواستی از «واژه‌های من» پاکش کن.']), final: true, understood: '', corrections: [], suggestions: [] };
+      return { why: 'app_action:alias', ask: hkAsstPick(['باشه، از این به بعد «' + m[1].trim() + '» رو «' + m[2].trim() + '» حساب می‌کنم. (برای حذفش: نگه داشتن عنوان دستیار ← «واژه‌های من»)', 'یاد گرفتم: «' + m[1].trim() + '» یعنی «' + m[2].trim() + '». هر وقت خواستی از «واژه‌های من» پاکش کن.']), final: true, understood: '', corrections: [], suggestions: [] };
     }
 
     /* ---------- نمای خوانا از قاب معنایی (برای آزمون و گزارش) ---------- */
@@ -57027,7 +57205,7 @@ function openProjectRowPicker(secId) {
     }
 
     /* ---------- تصمیم: آماده / پیشنهاد جایگزین / پرسش روشن‌کننده ---------- */
-    function hkAsstAsking(ask, chips) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: chips || [], chipRaw: true, decision: 'ask' }; }
+    function hkAsstAsking(ask, chips, why) { return { why: why || 'missing_scope', ask: ask, final: true, understood: '', corrections: [], suggestions: chips || [], chipRaw: true, decision: 'ask' }; }
     function hkAsstPeriodLabel(a) {
       if (a.month) return HK_ASST_MONTH_NAMES[a.month - 1] + (a.year && a.year !== hkAsstCY() ? ' ' + toPersianDigits(String(a.year)) : '');
       if (a.year) return 'سال ' + toPersianDigits(String(a.year));
@@ -57058,7 +57236,7 @@ function openProjectRowPicker(secId) {
       }
       /* ۳) «ده تا … بزرگ» که هم دسته و هم تراکنش در آن آمده */
       if (/(^| )(\d+|ده|پنج|سه|بیست|دو|چهار|شش|هفت|هشت|نه)\s*تا/.test(hkAsstFaDigits(T)) && /(^| )دسته/.test(T) && /تراکنش|ردیف/.test(T)) {
-        return hkAsstAsking('منظورت چند تراکنشِ بزرگه یا چند دستهٔ پرهزینه؟', ['ده تراکنش با بیشترین مبلغ', 'پولم بیشتر کجا رفته؟']);
+        return hkAsstAsking('منظورت چند تراکنشِ بزرگه یا چند دستهٔ پرهزینه؟', ['ده تراکنش با بیشترین مبلغ', 'پولم بیشتر کجا رفته؟'], 'ambiguous_reading');
       }
       return null;
     }
@@ -57096,6 +57274,766 @@ function openProjectRowPicker(secId) {
         localStorage.setItem(HK_ASST_FB_KEY, JSON.stringify(o));
       } catch (e) {}
       if (!good) { try { hkAsstMissedAdd('[غلط] ' + question); } catch (e2) {} }
+    }
+    /* ===== ۱.۴.۴۴ (مرحلهٔ ۲): تحلیل‌گر درخواست =====
+       متن خام فارسی کاربر ← «ساختار استاندارد» (spec) که مرحله‌های بعد (تطبیق با داده، محاسبه، پاسخ) دیگر متن خام را تفسیر نمی‌کنند.
+       اصل‌ها:
+       ۱) فقط تفسیر؛ هیچ جمع/تعداد/میانگینی حساب نمی‌شود و هیچ ردیفی انتخاب نمی‌شود (آن‌ها کار منطق قطعی ابزارهاست).
+       ۲) بدون اثر جانبی: رفتن به بخش، تغییر تم، ذخیرهٔ اصطلاح و ... در «حالت خشک» (_hkAsstDry) اجرا نمی‌شود و فقط در spec.app_actions می‌آید؛ وضعیت گفتگو دست‌نخورده برمی‌گردد.
+       ۳) هیچ شرطی بی‌صدا حذف نمی‌شود: هر فیلتر در slots می‌آید؛ آنچه ابزار پشتیبانی نمی‌کند در gaps.
+       ۴) مبهم = action:'ask' با clarification؛ بیرون از قابلیت‌ها = gaps (قابلیت تازه ساخته نمی‌شود).
+       ۵) آفلاین؛ بدون مدل و شبکه. تحلیل‌گر روی همان تفسیرگر قاعده‌ای موجود (hkAsstSemantic) سوار است و خروجی‌اش را به شکل استاندارد درمی‌آورد.
+       هر تصمیمی که به فهرست واژه‌های دادهٔ کاربر نگاه می‌کند (اصلاح املا به واژهٔ موجود در داده، عبارت دوکلمه‌ای ردیف، ابهام دسته/ردیف) در spec.data_dependent علامت می‌خورد تا مرحلهٔ ۳ مسئولش شود. */
+    var HK_ASST_SPEC_VERSION = 1;
+    var HK_ASST_SPEC_OPS = { CNT: 'count', SUM: 'sum', AVG: 'average', MAX: 'max', MIN: 'min' };
+    function hkAsstSpecIntent(cmd) {
+      var t = cmd.tool, ex = cmd.explain || '', it = cmd.intent || '', a = cmd.args || {};
+      if (t === 'transactions.aggregate') return (ex === 'count' || it === 'count') ? 'count' : (ex === 'avg' || it === 'avg') ? 'average' : 'sum';
+      if (t === 'transactions.search') return a.sort === 'amountDesc' ? 'max' : a.sort === 'amountAsc' ? 'min' : 'list_rows';
+      var M = { 'transactions.group': 'group', 'transactions.get': 'row', 'reports.compare': 'compare', 'projects.list': 'projects', 'projects.summary': 'project_summary', 'categories.summary': 'categories', 'accounts.list': 'accounts', 'months.summary': 'months',
+        'insights.overview': 'status', 'insights.balance': 'balance', 'insights.savings': 'savings', 'insights.top': 'top', 'insights.trend': 'trend', 'insights.advice': 'advice', 'insights.forecast': 'forecast', 'insights.budget': 'budget', 'insights.goal': 'goal', 'insights.daily': 'daily', 'insights.anomaly': 'anomaly', 'insights.recurring': 'recurring',
+        'insights.ledger': 'ledger', 'insights.dong': 'dong', 'insights.recincome': 'recurring_income', 'insights.reminders': 'reminders', 'insights.row': 'row', 'insights.monthavg': 'month_average', 'insights.share': 'share', 'insights.chart': 'chart' };
+      return M[t] || 'unknown';
+    }
+    function hkAsstSpecTime(a) {
+      var cy = hkAsstCY(), cm = hkAsstCM(), pm = cm - 1, py = cy; if (pm < 1) { pm = 12; py = cy - 1; }
+      a = a || {};
+      if (a.dateFrom || a.dateTo) return { kind: 'range', dateFrom: a.dateFrom || null, dateTo: a.dateTo || null, explicit: true };
+      if (a.month) { var y = a.year || cy; return { kind: 'month', year: y, month: a.month, rel: (y === cy && a.month === cm) ? 'this_month' : (y === py && a.month === pm) ? 'prev_month' : null, explicit: true }; }
+      if (a.year) return { kind: 'year', year: a.year, rel: a.year === cy ? 'this_year' : a.year === cy - 1 ? 'prev_year' : null, explicit: true };
+      return { kind: 'all', explicit: false };
+    }
+    function hkAsstSpecSlots(a, cmd) {
+      a = a || {};
+      var amount = {}; ['amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt'].forEach(function (k) { if (a[k] != null) amount[k.slice(6).toLowerCase()] = Number(a[k]); });
+      return {
+        tab: a.tab || null,
+        include: { terms: a.text ? [String(a.text)] : [], any_terms: (a.textAny || []).slice(), cats: (a.cats || []).slice(), cats_join: a.unionCats ? 'union_with_any_terms' : 'intersect', project: a.project || null, account: a.account || null, context: a.context || null, status: a.status || null },
+        exclude: { terms: (a.excludeText || []).slice(), cats: (a.excludeCats || []).slice() },
+        amount: amount,
+        transfers: { include: !!a.includeTransfers, only: !!a.transferOnly },
+        match_mode: 'whole_word'
+      };
+    }
+    /* ask → دلیل استاندارد */
+    function hkAsstSpecAskKind(r) {
+      var w = String(r.why || ''), m = /^chat:(.+)$/.exec(w);
+      if (m) { if (m[1] === 'CHG') return { action: 'refuse', reason: 'write_operation' }; return { action: 'chat', reason: 'chat:' + m[1] }; }
+      var map = { out_of_domain: ['refuse', 'out_of_domain'], navigate: ['navigate', ''], nav_unknown: ['ask', 'unknown_nav_target'], 'app_action:theme': ['app_action', 'theme'], 'app_action:alias': ['app_action', 'alias'], app_info: ['chat', 'app_info'], app_help: ['chat', 'app_help'],
+        unsupported_negation: ['ask', 'unsupported_exclusion'], unsupported_exception_cue: ['ask', 'unsupported_exception_cue'], missing_scope: ['ask', 'missing_scope'], missing_context: ['ask', 'missing_context'], unsupported_followup: ['ask', 'unsupported_followup'],
+        contradiction: ['ask', 'contradiction'], ambiguous_union: ['ask', 'ambiguous_union'], ambiguous_reading: ['ask', 'ambiguous_reading'], not_understood: ['ask', 'not_understood'], empty: ['ask', 'empty'] };
+      var x = map[w]; return x ? { action: x[0], reason: x[1] } : { action: 'ask', reason: 'not_understood' };
+    }
+    function hkAsstAnalyze(text, opts) {
+      opts = opts || {};
+      var raw = String(text == null ? '' : text).trim();
+      var spec = { v: HK_ASST_SPEC_VERSION, resume: null, warnings: [], flags: { explicit_search: /(سرچ|پیدا|بگرد|جستجو|جست‌وجو|دنبال)/.test(hkAsstNorm(String(text == null ? '' : text))) }, text: raw, normalized: hkAsstNorm(raw), action: 'ask', intent: 'clarify', operations: [], result_kind: null, tab: null, time: { kind: 'all', explicit: false }, slots: hkAsstSpecSlots({}, null),
+        order: { sort: null, limit: null }, group_by: null, compare: null, follow_up: { is_follow_up: false, uses_reference: false, inherits: [], overrides: [] }, clarification: null, gaps: [], app_actions: [], data_dependent: [], binding: null, trace: [] };
+      var S = { dry: _hkAsstDry, log: _hkAsstDryLog, ctx: _hkAsstCtx, guide: _hkAsstGuide, target: _hkAsstLastTarget, pend: _hkAsstPending };
+      try {
+        _hkAsstDry = true; _hkAsstDryLog = []; _hkAsstGuide = null; _hkAsstLastTarget = null; _hkAsstPending = null;
+        var P = opts.prev && opts.prev.binding ? opts.prev.binding : null;
+        _hkAsstCtx = P ? { tool: P.tool, args: Object.assign({}, P.args || {}), explain: P.explain || '', intent: P.intent || '', yearExplicit: !!P.yearExplicit, catAmb: P.catAmb || null, at: Date.now() } : null;
+        /* پاسخ کوتاه کاربر به یک پرسش روشن‌کننده («زیر ۵۰ هزار»، «نه منظورم اسنپ بود»): spec قبلی در resume نگه داشته است کدام واژه جایگزین شود */
+        if (opts.prev && opts.prev.resume && raw) {
+          _hkAsstPending = { q: opts.prev.resume.q, term: opts.prev.resume.term, at: Date.now() };
+          var rw = hkAsstPendingRewrite(raw);
+          if (rw) { spec.trace.push({ slot: 'follow_up', rule: 'pending_reply_rewrite', value: rw, replaced: opts.prev.resume.term }); raw = rw; spec.rewritten_from = text; spec.text = rw; spec.normalized = hkAsstNorm(rw); }
+          _hkAsstPending = null;
+        }
+        if (!raw) { spec.clarification = { needed: true, reason: 'empty', question: '', suggestions: [], term: null }; spec.trace.push({ slot: 'action', rule: 'empty_text' }); return spec; }
+        /* درخواست‌های بیرون از دامنه (قیمت بازار، توصیهٔ سرمایه‌گذاری، انجام پرداخت): قابلیت‌شان وجود ندارد؛ ابزار نامربوط انتخاب نمی‌شود */
+        var NORM = spec.normalized, personal = /(خرج|هزینه|درآمد|دخل|پس ?انداز|تراکنش|ردیف|حقوق|قسط|مخارج)/.test(NORM);
+        var oos = null;
+        if (/(قیمت|نرخ|ارزش)/.test(NORM) && /(دلار|یورو|طلا|سکه|بیت ?کوین|ارز|سهام|بورس|ماشین)/.test(NORM) && !personal && !/(دلار|یورو|طلا|سکه|ارز|سهام|بیت ?کوین)(ها)?(م|ام|مون|مان)( |$)|دارم|دارایی/.test(NORM)) oos = ['market_price', 'قیمت یا نرخ بازار'];
+        else if (/(سهام|سهم|بورس|سرمایه ?گذاری|بیت ?کوین|ارز دیجیتال)/.test(NORM) && /(بخرم|بفروشم|بخر|بفروش|بخریم|بهتره|کدوم)/.test(NORM)) oos = ['investment_advice', 'توصیهٔ سرمایه‌گذاری'];
+        else if (/(کدوم بانک|بهترین بانک|نرخ (سود|وام|بهره)|سود (سپرده|وام|بانکی))/.test(NORM) && !personal) oos = ['out_of_domain', 'مقایسهٔ بانک‌ها و نرخ بهره'];
+        else if (/(پرداخت کن|بپرداز|تسویه کن|واریز کن|انتقال بده|کارت به کارت کن)/.test(NORM)) oos = ['write_operation', 'انجام پرداخت یا تغییر دادهٔ مالی'];
+        else if (/(حذف|پاک|ثبت|ویرایش|اضافه|بساز)( |‌)?(کن|کنم|کنید|کنین|بکن|بزن)( |$)/.test(NORM) && /(تراکنش|ردیف|خرج|هزینه|درآمد|مخارج)/.test(NORM) && !/(چطور|چجوری|چگونه|کجا|چطوری)/.test(NORM)) oos = ['write_operation', 'ثبت، حذف یا ویرایش دادهٔ مالی'];
+        else if (/(تقویم|مناسبت|فال|طالع)/.test(NORM) && !personal) oos = ['out_of_domain', 'موضوع بیرون از دفتر مالی'];
+        if (oos) {
+          spec.action = 'refuse'; spec.intent = 'refuse'; spec.clarification = { needed: false, reason: oos[0], question: '', suggestions: [], term: null };
+          spec.gaps.push({ code: 'out_of_scope', detail: oos[1] + ' پشتیبانی نمی‌شود', reason: oos[0] }); spec.trace.push({ slot: 'action', rule: 'out_of_scope_pattern', detail: oos[0] }); return spec;
+        }
+        if (/(^| )(اشتباه (فهمیدی|شد|گفتی|برداشت کردی)|درست نفهمیدی|اینطور نبود|این نبود)( |$)/.test(NORM) && !P) {
+          spec.clarification = { needed: true, reason: 'correction_without_context', question: 'چه چیزی را اشتباه فهمیدم؟ اول یک سؤال بپرس.', suggestions: [], term: null };
+          spec.trace.push({ slot: 'action', rule: 'correction_without_context' }); return spec;
+        }
+        var r = hkAsstAliasIntent(raw) || hkAsstSemantic(hkAsstAliasApply(raw));
+        var frame = r && r.__frame ? r : null, cmd = frame ? (hkAsstDecide(frame) || hkAsstFrameToCommand(frame)) : r;
+        var pre = cmd && cmd.tool ? { tool: cmd.tool, args: Object.assign({}, cmd.args || {}) } : null;
+        var merged = hkAsstCtxMerge(cmd);
+        spec.app_actions = _hkAsstDryLog.slice();
+        (_hkAsstDataNotes || []).forEach(function (n) { if (spec.data_dependent.indexOf(n) < 0) spec.data_dependent.push(n); });
+        /* --- ask / چت / رد / رفتن به بخش --- */
+        if (merged && merged.ask) {
+          var k = hkAsstSpecAskKind(merged);
+          spec.action = k.action; spec.intent = k.action === 'ask' ? 'clarify' : k.action === 'refuse' ? 'refuse' : k.action === 'chat' ? 'chat' : k.action === 'navigate' ? 'navigate' : 'app_action';
+          if (k.action === 'ask' || k.action === 'refuse') spec.clarification = { needed: k.action === 'ask', reason: k.reason, question: String(merged.ask || ''), suggestions: (merged.suggestions || []).slice(0, 5), term: null };
+          else spec.trace.push({ slot: 'action', rule: 'non_data_request', detail: k.reason });
+          spec.trace.push({ slot: 'action', rule: 'ask_site', detail: String(merged.why || '') });
+          if (frame) spec.operations = []; return spec;
+        }
+        /* «دستهٔ حمل‌ونقل چنده؟» = مبلغِ همان دسته، نه فهرست دسته‌ها: واژهٔ «دسته» حذف و «چند/چنده» «چقدر» می‌شود و دوباره تحلیل می‌شود */
+        if (!opts._retry && merged && merged.tool === 'categories.summary') {
+          var tk0 = hkAsstNorm(raw).replace(/[،,.؟?!:؛]/g, ' ').split(' ').filter(Boolean), hasCat = tk0.some(function (w, i) { for (var L = 3; L >= 1; L--) { if (i + L > tk0.length) continue; var ph = tk0.slice(i, i + L).join(' '); if (/^دسته/.test(ph)) continue; var c = hkAsstLookup(hkAsstKey(ph)); if (c && c.indexOf('CAT_') === 0) return true; } return false; });
+          if (hasCat && !/(چند (تا )?دسته|چندتا دسته|کدوم دسته|لیست|فهرست|اسم)/.test(hkAsstNorm(raw))) {
+            var rw2 = tk0.filter(function (w) { return !/^دسته/.test(w); }).join(' ').replace(/(^| )(چنده|چند)( |$)/g, '$1چقدر$3');
+            var sp2 = hkAsstAnalyze(rw2, { prev: opts.prev, _retry: true });
+            sp2.rewritten_from = raw; sp2.text = raw; sp2.trace.push({ slot: 'intent', rule: 'category_amount_not_category_list', value: rw2 }); return sp2;
+          }
+        }
+        if (!merged || !merged.tool || !HK_ASST_TOOLS[merged.tool]) { spec.clarification = { needed: true, reason: 'not_understood', question: '', suggestions: [], term: null }; return spec; }
+        /* --- فرمان قابل‌اجرا --- */
+        var A = Object.assign({}, merged.args || {}), cyN = hkAsstCY(), cmN = hkAsstCM();
+        spec.action = 'run_tool'; spec.intent = hkAsstSpecIntent(merged);
+        spec.result_kind = spec.intent === 'sum' ? 'sum' : spec.intent === 'count' ? 'count' : spec.intent === 'average' ? 'avg' : /^(list_rows|max|min)$/.test(spec.intent) ? 'rows' : null;
+        spec.tab = A.tab || null; spec.time = hkAsstSpecTime(A); spec.slots = hkAsstSpecSlots(A, merged);
+        spec.order = { sort: A.sort || null, limit: A.limit != null ? A.limit : null };
+        if (merged.tool === 'transactions.group') spec.group_by = A.by || null;
+        if (merged.tool === 'reports.compare') spec.compare = { a: A.a || null, b: A.b || null };
+        spec.binding = { tool: merged.tool, args: A, explain: merged.explain || '', intent: merged.intent || '', yearExplicit: !!merged.yearExplicit, catAmb: merged.catAmb || null, followUps: Array.isArray(merged.followUps) ? merged.followUps.slice() : [] };
+        /* عملیات‌ها: همهٔ فعل‌های درخواستی در متن (بیش از یکی = سؤال چندبخشی) */
+        var codes = frame ? frame.codes : [];
+        var ops = []; codes.forEach(function (c) { var o = HK_ASST_SPEC_OPS[c]; if (o && ops.indexOf(o) < 0) ops.push(o); });
+        if (spec.intent === 'sum' || spec.intent === 'count' || spec.intent === 'average' || /^(max|min|list_rows)$/.test(spec.intent)) { if (ops.indexOf(spec.intent) < 0 && spec.intent !== 'list_rows') ops.unshift(spec.intent); }
+        spec.operations = ops.length ? ops : [spec.intent];
+        if (spec.operations.length > 1 && frame && frame.intent !== 'search') spec.gaps.push({ code: 'multi_part', detail: 'چند عملیات در یک جمله (' + spec.operations.join('، ') + '); اجرا فقط عملیات اصلی «' + spec.intent + '» است', ops: spec.operations.slice() });
+        /* شرط‌هایی که ابزار انتخاب‌شده نمی‌شناسد: بی‌صدا حذف نمی‌شوند، به‌عنوان gap می‌آیند */
+        var allowed = HK_ASST_TOOLS[merged.tool].args || [];
+        Object.keys(A).forEach(function (kk) { if (allowed.indexOf(kk) < 0) spec.gaps.push({ code: 'arg_not_supported', detail: kk + ' برای ' + merged.tool + ' پشتیبانی نمی‌شود', arg: kk }); });
+        if (merged.tool === 'transactions.group' && A.by === 'section' && /(^| )دسته/.test(spec.normalized)) spec.gaps.push({ code: 'group_by_category', detail: 'گروه‌بندی بر اساس «بخش» دفتر است نه دستهٔ مالی؛ ابزار دقیق گروه‌بندی بر اساس دسته وجود ندارد' });
+        /* صفت اندازهٔ بی‌مرز («خرجای کوچیک»): شرط داده نیست و بی مرز مبلغ نمی‌شود اجرا کرد؛ پرسش روشن‌کننده (بدون نگاه به داده) */
+        var degree = [], dropDeg = function (arr) { return arr.filter(function (t) { var w = String(t).split(' ').filter(function (x) { return hkAsstIsDegree(hkAsstKey(x)); }); if (w.length) { degree = degree.concat(w); return false; } return true; }); };
+        spec.slots.include.terms = dropDeg(spec.slots.include.terms); spec.slots.include.any_terms = dropDeg(spec.slots.include.any_terms); spec.slots.exclude.terms = dropDeg(spec.slots.exclude.terms);
+        if (degree.length && !Object.keys(spec.slots.amount).length) {
+          spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'vague_size', question: '«' + degree[0] + '» یعنی چه مبلغی؟ یک مرز بگو (مثلاً «زیر ۵۰ هزار تومن»).', suggestions: [], term: degree[0] };
+          spec.resume = { q: spec.text, term: degree[0] };
+          spec.trace.push({ slot: 'action', rule: 'size_adjective_without_bound', evidence: degree }); return spec;
+        }
+        if (degree.length) spec.trace.push({ slot: 'include.terms', rule: 'size_adjective_with_bound_ignored', evidence: degree });
+        /* «دو ماه پیش»، «۳ ماه اخیر»: عدد، تعداد ماه است نه مبلغ و نه «ماه قبل»؛ بازه از روی تقویم حساب می‌شود (نه از داده) */
+        var NUMW = { یک: 1, دو: 2, سه: 3, چهار: 4, پنج: 5, شش: 6, هفت: 7, هشت: 8, نه: 9, ده: 10, یازده: 11, دوازده: 12 };
+        var mN = /(^| )(\d+|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|یازده|دوازده) ?ماه ?(پیش|قبل|پیشتر|قبلتر|گذشته|اخیر)( |$)/.exec(hkAsstFaDigits(spec.normalized));
+        if (mN) {
+          var nM = /^\d+$/.test(mN[2]) ? +mN[2] : NUMW[mN[2]];
+          if (nM >= 1 && nM <= 36) {
+            if (A.amountEq === nM) delete A.amountEq;
+            if (mN[3] === 'اخیر' || mN[3] === 'گذشته') { /* N ماه اخیر = بازهٔ N ماه تا امروز */
+              if (A.dateFrom == null) { var fy = cyN, fm = cmN - (nM - 1); while (fm < 1) { fm += 12; fy--; } A.dateFrom = fy + '-' + fm + '-1'; A.dateTo = cyN + '-' + cmN + '-31'; delete A.year; delete A.month; }
+              spec.trace.push({ slot: 'time', rule: 'last_n_months_range', value: nM });
+            } else { /* N ماه پیش = یک ماهِ مشخص، N ماه قبل */
+              var ty = cyN, tm = cmN - nM; while (tm < 1) { tm += 12; ty--; }
+              A.year = ty; A.month = tm; delete A.dateFrom; delete A.dateTo;
+              if (A.text && /^(پیش|قبل|پیشتر|قبلتر)$/.test(String(A.text))) delete A.text;
+              spec.trace.push({ slot: 'time', rule: 'n_months_ago', value: nM });
+            }
+            spec.time = hkAsstSpecTime(A); spec.slots = hkAsstSpecSlots(A, merged); spec.binding.args = A;
+          }
+        }
+        /* تناقض درون یک جمله («فقط بنزین بدون بنزین»): شرط مثبت و منفیِ یکسان؛ بی‌صدا نتیجهٔ صفر نمی‌دهیم */
+        var nk = function (x) { return hkAsstKey(x); };
+        var posK = spec.slots.include.terms.concat(spec.slots.include.any_terms).map(nk), clash = spec.slots.exclude.terms.filter(function (x) { return posK.indexOf(nk(x)) >= 0; })[0] || spec.slots.exclude.cats.filter(function (x) { return spec.slots.include.cats.indexOf(x) >= 0; })[0];
+        if (!clash) { var tkc = spec.normalized.replace(/[،,.؟?!:؛]/g, ' ').split(' ').map(nk).filter(Boolean); clash = spec.slots.exclude.terms.filter(function (x) { var k = nk(x); return k.length >= 3 && tkc.filter(function (t) { return t === k; }).length >= 2; })[0]; }
+        if (clash) {
+          spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'contradiction', question: 'هم «' + clash + '» را خواستی و هم «بدون ' + clash + '»؛ کدام را بخواهم؟', suggestions: [], term: clash };
+          spec.trace.push({ slot: 'action', rule: 'include_exclude_clash', evidence: [clash] }); return spec;
+        }
+        /* بازهٔ آینده («حقوق سال آینده»): دادهٔ ثبت‌شده ندارد و پیش‌بینی با این ابزار نیست */
+        if ((spec.time.kind === 'year' && spec.time.year > cyN) || (spec.time.kind === 'month' && (spec.time.year > cyN || (spec.time.year === cyN && spec.time.month > cmN))) ) {
+          spec.action = 'refuse'; spec.intent = 'refuse'; spec.clarification = { needed: false, reason: 'forecast_unsupported', question: '', suggestions: [], term: null };
+          spec.gaps.push({ code: 'future_period', detail: 'برای بازهٔ آینده دادهٔ ثبت‌شده‌ای نیست و جمع پیش‌بینی با این ابزار پشتیبانی نمی‌شود' }); spec.trace.push({ slot: 'time', rule: 'future_period', value: spec.time }); return spec;
+        }
+        /* دسته‌هایی که از واژهٔ مترادف آمده‌اند نه نام خود دسته («بنزین» ← حمل‌ونقل): ممکن است اسم ردیف باشد؛ تصمیمش با داده است (مرحلهٔ ۳) */
+        var tokKeys = spec.normalized.replace(/[،,.؟?!:؛()\[\]]/g, ' ').split(' ').map(hkAsstKey).filter(Boolean);
+        var viaSyn = [];
+        (spec.slots.include.cats || []).forEach(function (id) { var named = tokKeys.some(function (k) { return hkAsstIsCatName(id, k) || hkAsstIsCatName(id, k.replace(/(ها|های|ا|ای)$/, '')); }); if (!named) viaSyn.push(id); });
+        spec.slots.include.cats_via_synonym = viaSyn;
+        /* واژهٔ مترادفی که هر دستهٔ مترادف‌محور را آورده (برای تصمیم دسته/ردیف در مرحلهٔ ۳) */
+        var wholeCat = /(^| )(کل|کلِ|همه|همهٔ|دسته|دستهٔ)( |$)/.test(spec.normalized), synWords = {}; viaSyn.forEach(function (id) { var rawT = spec.normalized.replace(/[،,.؟?!:؛()\[\]]/g, ' ').split(' ').filter(Boolean); synWords[id] = []; rawT.forEach(function (w, i) { for (var L = 3; L >= 1; L--) { if (i + L > rawT.length) continue; var ph = rawT.slice(i, i + L).join(' '); var vs = [ph.replace(/(مون|تون|شون|م|ت|ش)$/, ''), ph.replace(/(ها|های|ا|ای)$/, ''), ph], hv = vs.filter(function (v) { return v.length >= 3 && hkAsstLookup(hkAsstKey(v)) === 'CAT_' + id && !hkAsstIsCatName(id, hkAsstKey(v)); })[0]; if (hv && !wholeCat && synWords[id].indexOf(hv) < 0) { synWords[id].push(hv); break; } } }); });
+        /* ادامهٔ گفتگو («جمعش؟» بعد از «بنزین ماه قبل»): دستهٔ ارثی هر چه در spec قبلی بود (مترادف یا نام دسته) همان می‌ماند */
+        var PS = opts.prev && opts.prev.slots && opts.prev.slots.include ? opts.prev.slots.include : null;
+        if (PS) (spec.slots.include.cats || []).forEach(function (id) {
+          var named = tokKeys.some(function (k) { return hkAsstIsCatName(id, k) || hkAsstIsCatName(id, k.replace(/(ها|های|ا|ای)$/, '')); });
+          if (named || (PS.cats || []).indexOf(id) < 0) return;
+          var wasSyn = (PS.cats_via_synonym || []).indexOf(id) >= 0;
+          if (!wasSyn) { spec.slots.include.cats_via_synonym = spec.slots.include.cats_via_synonym.filter(function (x) { return x !== id; }); spec.data_dependent = spec.data_dependent.filter(function (d) { return d !== 'category_via_synonym:' + id; }); delete synWords[id]; }
+          else if (!(synWords[id] || []).length) synWords[id] = ((PS.cats_synonym_words || {})[id] || []).slice();
+        });
+        spec.slots.include.cats_synonym_words = synWords;
+        viaSyn.forEach(function (id) { spec.data_dependent.push('category_via_synonym:' + id); });
+        /* «کم‌خرج‌ترین/پرخرج‌ترین ماه»: مقایسهٔ ماه‌ها با یک ابزار نیست */
+        if (/(ترین|بیشترین|کمترین).{0,14}ماه|ماه.{0,14}(ترین|بیشترین|کمترین)/.test(spec.normalized) && merged.tool !== 'transactions.group' && !/ماه (قبل|پیش|گذشته|جاری)|این ماه|همین ماه/.test(spec.normalized.replace(/(ترین|بیشترین|کمترین)[^ ]* ماه/g, ''))) {
+          spec.gaps.push({ code: 'extreme_month', detail: 'پیدا کردن کم‌خرج‌ترین/پرخرج‌ترین ماه با یک ابزار پشتیبانی نمی‌شود' });
+          spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'capability_gap', question: 'مقایسهٔ همهٔ ماه‌ها را یک‌جا نمی‌توانم؛ می‌خواهی هزینه‌ها را ماه‌به‌ماه ببینی؟', suggestions: ['هزینه‌ها ماه به ماه'], term: null };
+          spec.trace.push({ slot: 'action', rule: 'extreme_month_unsupported' }); return spec;
+        }
+        /* نوعِ تراکنش از واژهٔ مترادف («حقوق» ← درآمد)، نه خودِ واژهٔ درآمد/هزینه: ممکن است نام ردیف باشد؛ تصمیمش با داده است */
+        if (spec.tab) {
+          var canon = spec.tab === 'income' ? /^(درآمد|درامد|دخل|واریز|دریافت|درآمدم|درآمدها)/ : /^(خرج|هزینه|مخارج|پرداخت|برداشت|مصرف)/;
+          var synW = spec.normalized.replace(/[،,.؟?!:؛]/g, ' ').split(' ').filter(function (w) { var c = hkAsstLookup(hkAsstKey(w)); return c === (spec.tab === 'income' ? 'INC' : 'EXP') && !canon.test(w); });
+          if (synW.length && !canon.test(spec.normalized.split(' ').join(' ').replace(/.*?((?:^| )(?:درآمد|دخل|واریز|دریافت|خرج|هزینه|مخارج|پرداخت)[^ ]*).*/, '$1').trim())) { spec.warnings.push({ code: 'tab_via_synonym', word: synW[0] }); spec.data_dependent.push('tab_via_synonym:' + synW[0]); }
+        }
+        /* «و/یا» میان دو شرطِ هم‌نوع که در ساختار نه اجتماع شده نه جدا: خطر AND پنهان (مثل «برنج ماه پیش و نان ماه پیش») */
+        if (/(^| )(و|یا)( |$)/.test(spec.normalized) && spec.slots.include.cats.length && spec.slots.include.terms.length && !spec.slots.include.any_terms.length && spec.slots.include.cats_join === 'intersect' && merged.tool !== 'transactions.group') {
+          spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'ambiguous_union', question: 'منظورت جمع هر دو مورد است یا فقط مواردی که هر دو شرط را دارند؟ هر مورد را جدا بنویس.', suggestions: [], term: null };
+          spec.trace.push({ slot: 'action', rule: 'hidden_and_risk', evidence: { cats: spec.slots.include.cats, terms: spec.slots.include.terms } }); return spec;
+        }
+        /* گروه‌بندی: بُعدِ پیش‌فرض «ماه» وقتی در متن اشاره‌ای به ماه نیست حدس است؛ پرسیده می‌شود */
+        if (merged.tool === 'transactions.group') {
+          if (spec.slots.include.any_terms.length >= 2) {
+            spec.gaps.push({ code: 'group_by_terms', detail: 'جمع جدای هر مورد فهرست (' + spec.slots.include.any_terms.join('، ') + ') با یک ابزار ممکن نیست' });
+            spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'capability_gap', question: 'جمع جدای هر مورد را فعلاً با یک پرسش نمی‌توانم؛ هر مورد را جدا بپرس یا جمع هر دو را بخواه.', suggestions: spec.slots.include.any_terms.concat(['جمع هر دو']), term: null };
+            spec.trace.push({ slot: 'action', rule: 'breakdown_by_terms_unsupported' }); return spec;
+          }
+          if (A.by === 'month' && !/ماه/.test(spec.normalized) && /درآمد/.test(spec.normalized) && /(خرج|هزینه)/.test(spec.normalized)) { A.by = 'tab'; spec.group_by = 'tab'; spec.binding.args = A; spec.trace.push({ slot: 'group_by', rule: 'income_and_expense_means_by_tab' }); }
+          if (A.by === 'month' && !/ماه/.test(spec.normalized)) {
+            spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'ambiguous_group_dimension', question: 'به تفکیک چه چیزی؟ ماه، نوع (درآمد/هزینه)، بخش یا حساب؟', suggestions: ['هزینه‌ها ماه به ماه', 'درآمد و هزینه جدا'], term: null };
+            spec.trace.push({ slot: 'group_by', rule: 'default_dimension_is_a_guess', value: A.by }); return spec;
+          }
+        }
+        /* ادامهٔ گفتگو */
+        var fu = { is_follow_up: false, uses_reference: !!(frame && frame.anaphora), inherits: [], overrides: [] };
+        if (P && (merged.memory || (pre && JSON.stringify(pre.args) !== JSON.stringify(A)))) {
+          fu.is_follow_up = true;
+          Object.keys(A).forEach(function (kk) { if (P.args && P.args[kk] !== undefined && JSON.stringify(P.args[kk]) === JSON.stringify(A[kk]) && !(pre && pre.args[kk] !== undefined && JSON.stringify(pre.args[kk]) === JSON.stringify(A[kk]))) fu.inherits.push(kk); });
+          Object.keys(pre ? pre.args : {}).forEach(function (kk) { if (A[kk] !== undefined) fu.overrides.push(kk); });
+        } else if (frame && frame.follow) fu.is_follow_up = !!P;
+        spec.follow_up = fu;
+        /* ردیابی تصمیم‌ها */
+        var cc = codes || [];
+        var ev = function (list) { return cc.filter(function (c) { return list.indexOf(c) >= 0; }); };
+        if (spec.tab) spec.trace.push({ slot: 'tab', value: spec.tab, rule: ev(['EXP', 'INC']).length ? 'lexicon' : 'inferred_from_text', evidence: ev(['EXP', 'INC']) });
+        if (spec.time.explicit) spec.trace.push({ slot: 'time', value: spec.time.rel || spec.time.kind, rule: 'time_phrase', evidence: ev(['THIS_M', 'PREV_M', 'THIS_Y', 'PREV_Y', 'NEXT_Y', 'SPAN3', 'SPAN6', 'SPAN12']).concat(cc.filter(function (c) { return /^MONTH_/.test(c); })) });
+        if (spec.slots.exclude.terms.length || spec.slots.exclude.cats.length) spec.trace.push({ slot: 'exclude', value: spec.slots.exclude, rule: 'negation_cue', evidence: (spec.normalized.match(/(^| )(بدون|بجز|جز|به ?جز|غیر ?از)( |$)/) || [''])[0].trim() });
+        if (spec.slots.include.any_terms.length) spec.trace.push({ slot: 'include.any_terms', value: spec.slots.include.any_terms, rule: 'conjunction_union', evidence: /(^| )یا( |$)/.test(spec.normalized) ? 'یا' : 'و' });
+        if (Object.keys(spec.slots.amount).length) spec.trace.push({ slot: 'amount', value: spec.slots.amount, rule: 'amount_bound', evidence: ev(['OP_GT', 'OP_LT', 'OP_EQ', 'OP_BT']) });
+        if (spec.order.sort) spec.trace.push({ slot: 'order', value: spec.order, rule: 'extreme_or_recency', evidence: ev(['MAX', 'MIN']) });
+        if (spec.slots.include.status) spec.trace.push({ slot: 'status', value: spec.slots.include.status, rule: 'payment_status_phrase' });
+        if (fu.is_follow_up) spec.trace.push({ slot: 'follow_up', value: { inherits: fu.inherits, overrides: fu.overrides }, rule: 'conversation_merge' });
+        /* تصمیم‌هایی که به واژگان دادهٔ کاربر نگاه کرده‌اند */
+        (frame && frame.corrections || []).forEach(function (c) { spec.data_dependent.push('typo_correction:' + c.from + '→' + c.to); spec.trace.push({ slot: 'include.terms', rule: 'typo_correction', from: c.from, to: c.to, data_dependent: true }); });
+        if (merged.catAmb) { spec.data_dependent.push('category_vs_row:' + merged.catAmb.word); spec.trace.push({ slot: 'include.cats', rule: 'category_vs_row_ambiguity', word: merged.catAmb.word, category: merged.catAmb.id, data_dependent: true }); }
+        if (spec.app_actions.length) spec.trace.push({ slot: 'app_actions', value: spec.app_actions, rule: 'dry_run_side_effects_suppressed' });
+        return spec;
+      } catch (e) {
+        spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'analyzer_error', question: '', suggestions: [], term: null }; spec.trace.push({ slot: 'action', rule: 'exception', detail: String(e && e.message || e) });
+        return spec;
+      } finally {
+        _hkAsstDry = S.dry; _hkAsstDryLog = S.log; _hkAsstCtx = S.ctx; _hkAsstGuide = S.guide; _hkAsstLastTarget = S.target; _hkAsstPending = S.pend;
+      }
+    }
+    /* ===== ۱.۴.۴۵ (مرحلهٔ ۳): تطبیق ساختار درخواست با دادهٔ واقعی =====
+       ورودی: فقط spec مرحلهٔ ۲ (hkAsstAnalyze)؛ متن خام دوباره تفسیر نمی‌شود (spec.text فقط برای ساختن پرسش/پیشنهاد به‌کار می‌رود).
+       خروجی: «نتیجهٔ تطبیق» (match) با قرارداد روشن برای مرحلهٔ ۴: وضعیت، ابزار و آرگومان‌های نهایی، ردیف‌های انتخاب‌شده (مرجع)،
+       هر شرط چگونه و روی چه داده‌ای اعمال شد، خوانش‌های جایگزین، ابهام/هشدار/شکاف، و trace.
+       اصل‌ها: فقط خواندن؛ هیچ جمع/تعداد مبلغ/میانگینی حساب نمی‌شود (hits فقط تشخیصِ «این شرط روی چند ردیف نشست» است، نه نتیجهٔ مالی)؛
+       هیچ شرطی بی‌صدا حذف یا عوض نمی‌شود؛ تصمیم‌های data_dependent بسته می‌شوند؛ مبهم = clarify با سؤال کوتاه؛ بیرون از قابلیت = gap. */
+    var HK_ASST_MATCH_VERSION = 1;
+    function hkAsstMatchRef(r) { return { id: r.id, key: r.key, tab: r.tab, sec: r.secId, idx: r.idx }; }
+    function hkAsstMatchRefKey(r) { return r.key + '|' + r.secId + '|' + r.idx + '|' + r.tab + '|' + r.id; }
+    /* واژه در دادهٔ کاربر شناخته است؟ (واژهٔ کامل، با جمع/عامیانهٔ ساده؛ فرهنگ لغت؛ پروژه) */
+    function hkAsstMatchWordKnown(w, tokenPool) {
+      var k = hkAsstKey(w); if (k.length < 2 || /\d/.test(w)) return 'number_or_short';
+      try { if (hkAsstLookup(k)) return 'lexicon'; } catch (e) {}
+      try { if (hkAsstFindSubject(w)) return 'project'; } catch (e2) {}
+      if (hkAsstHasWord(tokenPool, k)) return 'row_word';
+      return '';
+    }
+    function hkAsstMatch(spec, opts) {
+      opts = opts || {};
+      var M = { v: HK_ASST_MATCH_VERSION, stage: 3, status: 'clarify', source: { action: spec && spec.action, intent: spec && spec.intent, explicit_search: !!(spec && spec.flags && spec.flags.explicit_search) }, exec: null,
+        selection: { basis: 'none', refs: [], incomplete_refs: [], empty: true }, conditions: [], readings: { primary: null, alternatives: [] }, clarification: null,
+        gaps: ((spec && spec.gaps) || []).slice(), warnings: ((spec && spec.warnings) || []).slice(), app_actions: ((spec && spec.app_actions) || []).slice(), data_coverage: null,
+        closed_data_decisions: [], open_data_decisions: [], resume: (spec && spec.resume) || null, trace: [] };
+      var T = function (step, detail) { M.trace.push({ step: step, detail: detail }); };
+      try {
+        if (!spec || spec.v !== HK_ASST_SPEC_VERSION) { M.clarification = { needed: true, reason: 'bad_spec', question: '', suggestions: [], term: null }; T('input', 'spec ناسازگار'); return M; }
+        /* ۱) درخواست‌هایی که به داده نیاز ندارند: همان وضعیت تحلیل‌گر */
+        if (spec.action !== 'run_tool') {
+          M.status = spec.action === 'ask' ? 'clarify' : spec.action;
+          if (spec.clarification) M.clarification = spec.clarification;
+          T('passthrough', spec.action); return M;
+        }
+        var b = spec.binding;
+        if (!b || !HK_ASST_TOOLS[b.tool]) { M.clarification = { needed: true, reason: 'not_understood', question: '', suggestions: [], term: null }; T('binding', 'ابزار نامعتبر'); return M; }
+        var A = Object.assign({}, b.args || {}), isTx = /^transactions\.(aggregate|search|group)$/.test(b.tool);
+        M.exec = { tool: b.tool, args: A, explain: b.explain || '', follow_ups: (b.followUps || []).slice(), intent: spec.intent, result_kind: spec.result_kind, operations: (spec.operations || []).slice(), order: spec.order || { sort: null, limit: null }, group_by: spec.group_by || null };
+        var rows = hkAsstRows(), pool = [], seenK = {};
+        rows.forEach(function (r) { hkAsstRowTokens(r).forEach(function (t) { if (!seenK[t]) { seenK[t] = 1; pool.push(t); } }); });
+        var keysAll = {}; rows.forEach(function (r) { keysAll[r.key] = 1; });
+        M.data_coverage = { periods_with_rows: Object.keys(keysAll).sort(), has_any_rows: rows.length > 0, requested_period_has_rows: null };
+        /* ۷) بستن تصمیم‌های وابسته به داده */
+        var closeDecisions = function () {
+          (spec.data_dependent || []).forEach(function (d) {
+            var kind = String(d).split(':')[0], val = String(d).slice(kind.length + 1), out = null;
+            if (kind === 'typo_correction') { var to = val.split('→')[1] || ''; out = { outcome: to && hkAsstMatchWordKnown(to, pool) ? 'correction_confirmed' : 'correction_target_unknown' }; M.warnings.push({ code: 'typo_corrected', from: val.split('→')[0], to: to }); }
+            else if (kind === 'row_phrase') { var pw = hkAsstNorm(val).split(' ').map(hkAsstKey), inRow = rows.some(function (r) { return hkAsstHasPhrase(hkAsstRowTokens(r), pw); }); out = { outcome: inRow ? 'phrase_in_rows' : 'phrase_not_in_rows' }; }
+            else if (kind === 'row_word') out = { outcome: hkAsstHasWord(pool, hkAsstKey(val)) ? 'row_word_confirmed' : 'row_word_not_found' };
+            else if (kind === 'project_name') out = { outcome: hkAsstFindSubject(val) ? 'project_exists' : 'project_missing' };
+            else if (kind === 'category_via_synonym' || kind === 'category_vs_row' || kind === 'tab_via_synonym') out = { outcome: M.readings.alternatives.length ? 'closed_with_alternative' : (M.readings.primary ? 'closed_primary_only' : 'closed') };
+            if (out) M.closed_data_decisions.push({ decision: d, outcome: out.outcome }); else M.open_data_decisions.push(d);
+          });
+        };
+        /* ۲) واژه‌های ناشناخته (شرط مثبت و منفی): بی عدد پرسیده می‌شود، مگر جست‌وجوی صریح */
+        var unknown = [];
+        var termList = [].concat(
+          (spec.slots.include.terms || []).map(function (t) { return { t: t, side: 'include.terms' }; }),
+          (spec.slots.include.any_terms || []).map(function (t) { return { t: t, side: 'include.any_terms' }; }),
+          (spec.slots.exclude.terms || []).map(function (t) { return { t: t, side: 'exclude.terms' }; }));
+        termList.forEach(function (x) {
+          String(x.t).split(/\s+/).filter(Boolean).forEach(function (w) {
+            var how = hkAsstMatchWordKnown(w, pool);
+            if (!how) unknown.push({ word: w, term: x.t, side: x.side });
+          });
+        });
+        var explicitOK = !!(spec.flags && spec.flags.explicit_search);
+        var blocking = unknown.filter(function (u) { return !(u.side === 'include.terms' && explicitOK); });
+        if (blocking.length) {
+          var u0 = blocking[0], near = [];
+          /* اگر همهٔ واژه‌های یک عبارت ناشناخته‌اند («ماهی قرمز»)، دربارهٔ کل عبارت می‌پرسیم نه تکه‌ای از آن */
+          var allWords = String(u0.term).split(/\s+/).filter(Boolean);
+          if (allWords.length > 1 && allWords.every(function (w) { return blocking.some(function (u) { return u.term === u0.term && u.word === w; }); })) u0 = { word: u0.term, term: u0.term, side: u0.side };
+          try { near = hkAsstSuggest(u0.word) || []; } catch (eS) {}
+          var chips = near.map(function (n) { try { return hkAsstRepl(spec.text, u0.word, n); } catch (e3) { return ''; } }).filter(function (x) { return x && x !== spec.text; }).slice(0, 3);
+          M.status = 'clarify';
+          M.clarification = { needed: true, reason: 'unknown_term', term: u0.word, side: u0.side, question: (u0.side === 'exclude.terms' ? 'نمی‌دونم «' + u0.word + '» رو کجای ردیف‌ها، دسته‌ها یا پروژه‌هات پیدا کنم تا کنارش بذارم. منظورت چیه؟' : 'منظورت از «' + u0.word + '» چیه؟ این اسم توی ردیف‌ها، دسته‌ها، پروژه‌ها و حساب‌هات نیست.'), suggestions: chips };
+          M.resume = { q: spec.text, term: u0.word };
+          M.conditions.push({ slot: u0.side, value: u0.term, outcome: 'unknown', how: 'واژه در فرهنگ لغت، پروژه‌ها و واژه‌های ردیف‌ها (واژهٔ کامل) نیست', data_basis: 'همهٔ ماه‌ها' });
+          T('unknown_term', u0); M.selection = { basis: 'none', refs: [], incomplete_refs: [], empty: true }; M.exec = null; return M;
+        }
+        if (unknown.length) { M.warnings.push({ code: 'explicit_search_unknown_term', terms: unknown.map(function (u) { return u.word; }) }); T('unknown_term', 'جست‌وجوی صریح؛ واژه‌های ناشناخته مجاز: ' + unknown.map(function (u) { return u.word; }).join('،')); }
+        /* ۳) پروژه و حساب (فقط اگر تحلیل‌گر گذاشته باشد) */
+        if (spec.slots.include.project) {
+          var okP = false; try { okP = !!hkAsstFindSubject(spec.slots.include.project) || hkAsstSubjects().some(function (s) { return s.key === hkAsstKey(spec.slots.include.project); }); } catch (e4) {}
+          if (!okP) { M.status = 'clarify'; M.clarification = { needed: true, reason: 'unknown_project', term: spec.slots.include.project, question: 'پروژه‌ای به نام «' + spec.slots.include.project + '» ندارم؛ کدام پروژه؟', suggestions: [] }; M.exec = null; T('project', 'ناشناخته'); return M; }
+          M.conditions.push({ slot: 'include.project', value: spec.slots.include.project, outcome: 'resolved', how: 'نام پروژه در فهرست پروژه‌ها' , data_basis: 'پروژه‌ها' });
+        }
+        if (spec.slots.include.account) {
+          var ak = hkAsstNorm(spec.slots.include.account), okA = rows.some(function (r) { return hkAsstNorm(r.account).indexOf(ak) >= 0; });
+          if (!okA) { M.status = 'clarify'; M.clarification = { needed: true, reason: 'unknown_account', term: spec.slots.include.account, question: 'حسابی به نام «' + spec.slots.include.account + '» روی ردیف‌ها نیست؛ کدام حساب؟', suggestions: [] }; M.exec = null; T('account', 'ناشناخته'); return M; }
+          M.conditions.push({ slot: 'include.account', value: spec.slots.include.account, outcome: 'resolved', how: 'نام حساب روی ردیف‌ها (شامل بودن)', data_basis: 'ردیف‌ها' });
+        }
+        /* ابزارهای غیرتراکنشی (تحلیل‌ها، مقایسه، فهرست‌ها): ابزار خودش داده را می‌خواند؛ ردیف‌گزینی ندارند */
+        if (!isTx) { M.status = 'ready'; M.selection = { basis: 'tool', refs: [], incomplete_refs: [], empty: false, note: 'ردیف‌گزینی با خود ابزار (' + b.tool + ')' }; T('non_transaction_tool', b.tool); M.exec.args = A; closeDecisions(); return M; }
+        /* ۴) دامنهٔ زمان و نوع، سپس هر شرط به‌تنهایی (تشخیص «چرا خالی شد») */
+        var scopeF = { keepDrafts: true }; ['year', 'month', 'dateFrom', 'dateTo', 'tab'].forEach(function (k) { if (A[k] != null) scopeF[k] = A[k]; });
+        var timeOnly = { keepDrafts: true }; ['year', 'month', 'dateFrom', 'dateTo'].forEach(function (k) { if (A[k] != null) timeOnly[k] = A[k]; });
+        var inTime = hkAsstFilter(rows, timeOnly), inScope = hkAsstFilter(rows, scopeF);
+        var has = function (arr) { return arr.some(function (r) { return r.amount !== 0; }); };
+        if (spec.time && spec.time.explicit) M.data_coverage.requested_period_has_rows = has(inTime);
+        var hit = function (f) { var m = hkAsstFilter(inScope, Object.assign({ keepDrafts: true }, f)); return { hits: m.filter(function (r) { return r.amount !== 0; }).length, incomplete_hits: m.filter(function (r) { return r.amount === 0; }).length }; };
+        var addC = function (slot, value, how, f, extra) { var h = f ? hit(f) : { hits: null, incomplete_hits: null }; M.conditions.push(Object.assign({ slot: slot, value: value, outcome: h.hits === 0 ? 'no_rows' : 'applied', how: how, data_basis: 'ردیف‌های همین بازه و نوع', hits: h.hits, incomplete_hits: h.incomplete_hits }, extra || {})); };
+        if (spec.tab) { var tabHits = hkAsstFilter(inTime, { keepDrafts: true, tab: spec.tab }).filter(function (r) { return r.amount !== 0; }).length; M.conditions.push({ slot: 'tab', value: spec.tab, outcome: tabHits ? 'applied' : 'no_rows', how: 'نوع ردیف (هزینه/درآمد) برابر مقدار', data_basis: 'همهٔ ردیف‌های بازه', hits: tabHits }); }
+        if (spec.time && spec.time.explicit) M.conditions.push({ slot: 'time', value: spec.time, outcome: M.data_coverage.requested_period_has_rows ? 'applied' : 'no_rows', how: 'سال/ماه یا بازهٔ تاریخ ردیف', data_basis: 'همهٔ ماه‌های موجود: ' + M.data_coverage.periods_with_rows.join('، '), hits: inTime.filter(function (r) { return r.amount !== 0; }).length });
+        (spec.slots.include.terms || []).forEach(function (t) { addC('include.terms', t, 'همهٔ واژه‌های عبارت در شرح یا بخش ردیف (واژهٔ کامل؛ جمع و عامیانهٔ ساده پذیرفته)', { text: t }); });
+        (spec.slots.include.any_terms || []).forEach(function (t) { addC('include.any_terms', t, 'عضو اجتماع «و/یا»: واژهٔ کامل در شرح یا بخش ردیف', { text: t }); });
+        (spec.slots.include.cats || []).forEach(function (c) { addC('include.cats', c, 'برچسب دستهٔ ذخیره‌شده روی ردیف یا مترادف دسته در شرح', { cats: [c] }, { cats_join: spec.slots.include.cats_join }); });
+        if (spec.slots.include.status) addC('include.status', spec.slots.include.status, 'وضعیت پرداخت ردیف', { status: spec.slots.include.status });
+        if (spec.slots.include.context) addC('include.context', spec.slots.include.context, 'ردیف شخصی/پروژه‌ای', { context: spec.slots.include.context });
+        (spec.slots.exclude.terms || []).forEach(function (t) {
+          var ws = hkAsstNorm(t).split(' ').map(hkAsstKey).filter(Boolean), gone = inScope.filter(function (r) { return hkAsstHasPhrase(hkAsstRowTokens(r), ws); });
+          M.conditions.push({ slot: 'exclude.terms', value: t, outcome: gone.length ? 'applied' : 'no_rows', how: 'ردیفی که عبارت (پشت‌سرهم، واژهٔ کامل) را در شرح/بخش دارد کنار می‌رود', data_basis: 'ردیف‌های همین بازه و نوع', removed_hits: gone.filter(function (r) { return r.amount !== 0; }).length });
+        });
+        (spec.slots.exclude.cats || []).forEach(function (c) { var gone = inScope.filter(function (r) { return hkAsstCatHit(r, c); }); M.conditions.push({ slot: 'exclude.cats', value: c, outcome: gone.length ? 'applied' : 'no_rows', how: 'ردیف دارای این دسته کنار می‌رود', data_basis: 'ردیف‌های همین بازه و نوع', removed_hits: gone.filter(function (r) { return r.amount !== 0; }).length }); });
+        var am = spec.slots.amount || {};
+        Object.keys(am).forEach(function (k) { var f = {}; f['amount' + k.charAt(0).toUpperCase() + k.slice(1)] = am[k]; addC('amount.' + k, am[k], 'مبلغ ردیف ' + (k === 'min' ? '≥' : k === 'max' ? '≤' : k === 'eq' ? '=' : k === 'gt' ? '>' : '<') + ' مقدار', f); });
+        /* ۵) انتخاب نهایی ردیف‌ها (بدون مرتب‌سازی/limit و بدون هیچ جمعی) */
+        var selRows = hkAsstFilter(rows, Object.assign({}, A, { keepDrafts: true }));
+        var refsOf = function (arr) { return arr.filter(function (r) { return r.amount !== 0; }).map(hkAsstMatchRef); };
+        M.selection = { basis: 'transactions', refs: refsOf(selRows), incomplete_refs: selRows.filter(function (r) { return r.amount === 0; }).map(hkAsstMatchRef), empty: !has(selRows), applied_args: A };
+        T('selection', 'ردیف‌های مطابق همهٔ شرط‌ها (مرجع)');
+        /* ۶) دسته در برابر ردیف و نوع از مترادف: خوانش پیش‌فرض + جایگزین قابل‌افشا */
+        var selKeys = {}; M.selection.refs.forEach(function (r) { selKeys[hkAsstMatchRefKey({ key: r.key, secId: r.sec, idx: r.idx, tab: r.tab, id: r.id })] = 1; });
+        var sameSet = function (refs) { if (refs.length !== M.selection.refs.length) return false; return refs.every(function (r) { return selKeys[hkAsstMatchRefKey({ key: r.key, secId: r.sec, idx: r.idx, tab: r.tab, id: r.id })]; }); };
+        var syn = (spec.slots.include.cats_synonym_words) || {}, doneW = {};
+        Object.keys(syn).forEach(function (id) { (syn[id] || []).forEach(function (w) {
+          if (doneW[w]) return; doneW[w] = 1;
+          var altArgs = Object.assign({}, A); altArgs.cats = (altArgs.cats || []).filter(function (c) { return c !== id; }); if (!altArgs.cats.length) { delete altArgs.cats; delete altArgs.unionCats; }
+          if (altArgs.text) { M.conditions.push({ slot: 'reading', value: w, outcome: 'not_evaluated', how: 'شرط متنی دیگری هست؛ خوانش ردیف جدا ساخته نشد' }); return; }
+          altArgs.text = w;
+          var altRows = hkAsstFilter(rows, Object.assign({}, altArgs, { keepDrafts: true })), altRefs = refsOf(altRows);
+          M.readings.primary = 'category';
+          if (!altRefs.length) { M.conditions.push({ slot: 'reading', value: w, outcome: 'no_row_named', how: 'ردیفی با نام «' + w + '» (واژهٔ کامل) نیست؛ فقط خوانش دسته', category: id }); }
+          else if (sameSet(altRefs)) { M.conditions.push({ slot: 'reading', value: w, outcome: 'same_rows', how: 'ردیف‌های «' + w + '» و دستهٔ ' + id + ' یکی‌اند؛ افشای جایگزین لازم نیست', category: id }); }
+          else { M.readings.alternatives.push({ reading: 'row', word: w, category: id, args: altArgs, refs: altRefs, disclose: true }); M.conditions.push({ slot: 'reading', value: w, outcome: 'alternative', how: 'پیش‌فرض: کل دستهٔ ' + id + '؛ جایگزین: فقط ردیف‌های «' + w + '»', category: id }); }
+        }); });
+        (spec.warnings || []).forEach(function (w) {
+          if (w.code !== 'tab_via_synonym' || doneW[w.word]) return; doneW[w.word] = 1;
+          var altArgs = Object.assign({}, A); if (altArgs.text) return; altArgs.text = w.word;
+          var altRefs = refsOf(hkAsstFilter(rows, Object.assign({}, altArgs, { keepDrafts: true })));
+          M.readings.primary = M.readings.primary || 'tab_total';
+          if (!altRefs.length) M.conditions.push({ slot: 'reading', value: w.word, outcome: 'no_row_named', how: 'ردیفی با نام «' + w.word + '» نیست؛ فقط کل ' + spec.tab });
+          else if (sameSet(altRefs)) M.conditions.push({ slot: 'reading', value: w.word, outcome: 'same_rows', how: 'ردیف‌های «' + w.word + '» همان کل ' + spec.tab + ' است' });
+          else { M.readings.alternatives.push({ reading: 'row', word: w.word, category: null, args: altArgs, refs: altRefs, disclose: true }); M.conditions.push({ slot: 'reading', value: w.word, outcome: 'alternative', how: 'پیش‌فرض: کل ' + spec.tab + '؛ جایگزین: فقط ردیف‌های «' + w.word + '»' }); }
+        });
+        M.status = 'ready';
+        closeDecisions();
+        return M;
+      } catch (e) {
+        M.status = 'clarify'; M.clarification = { needed: true, reason: 'matcher_error', question: '', suggestions: [], term: null }; T('exception', String(e && e.message || e)); return M;
+      }
+    }
+    /* ===== ۱.۴.۴۵ (مرحلهٔ ۴): محاسبهٔ قطعی و تولید پاسخ طبیعی فارسی =====
+       ورودی: فقط خروجی hkAsstMatch (مرحلهٔ ۳). متن خام دوباره تحلیل نمی‌شود.
+       دو لایهٔ جدا:
+         hkAsstCompute(match)  → اعداد: فقط از ردیف‌های تأییدشدهٔ match.selection (با مرجع) یا ابزار خواندنیِ موجود برای تحلیل‌ها؛ هیچ تولید متنی ندارد.
+         hkAsstRender(match, calc) → متن فارسی از روی همان اعداد؛ هر عددی که در متن می‌آید از واژهٔ ثبت‌شده می‌گذرد و hkAsstAnswerCheck آن را می‌سنجد.
+       hkAsstChain(text, state) = متن ← hkAsstAnalyze ← hkAsstMatch ← محاسبه ← پاسخ (هنوز به مسیر اصلی دستیار وصل نیست).
+       اصل‌ها: بدون API/مدل؛ بدون قابلیت مالی تازه؛ درآمد و هزینه هیچ‌گاه در یک جمع نمی‌آیند؛ ردیف بی‌مبلغ شمرده نمی‌شود و گزارش می‌شود. */
+    var HK_ASST_ANSWER_VERSION = 1;
+    /* ---------- لایهٔ ۱: محاسبهٔ قطعی ---------- */
+    function hkAsstCalcStats(rows) {
+      var o = { count: 0, sum: 0, avg: 0, min: null, max: null, incomeSum: 0, expenseSum: 0, incomeCount: 0, expenseCount: 0, unpaidCount: 0, unpaidSum: 0 };
+      rows.forEach(function (r) {
+        o.count++; o.sum += r.amount;
+        if (r.tab === 'income') { o.incomeSum += r.amount; o.incomeCount++; } else { o.expenseSum += r.amount; o.expenseCount++; }
+        if (r.status === 'unpaid') { o.unpaidCount++; o.unpaidSum += r.amount; }
+        if (o.min === null || r.amount < o.min) o.min = r.amount;
+        if (o.max === null || r.amount > o.max) o.max = r.amount;
+      });
+      o.avg = o.count ? Math.round(o.sum / o.count) : 0;
+      o.balance = o.incomeSum - o.expenseSum;
+      return o;
+    }
+    function hkAsstCalcRowView(r) { return { id: r.id, tab: r.tab, y: r.y, m: r.m, d: r.d, desc: r.desc, amount: r.amount, status: r.status, section: r.section, account: r.account, context: r.context }; }
+    function hkAsstCalcOp(ex) {
+      var i = ex.intent, k = ex.result_kind;
+      if (ex.group_by || ex.tool === 'transactions.group') return 'group';
+      if (i === 'max' || i === 'min') return i;
+      if (i === 'average' || k === 'avg') return 'avg';
+      if (i === 'count' || k === 'count') return 'count';
+      if (i === 'list_rows' || k === 'rows' || ex.tool === 'transactions.search') return 'list';
+      return 'sum';
+    }
+    function hkAsstCompute(match) {
+      var C = { v: HK_ASST_ANSWER_VERSION, ok: false, kind: 'none', reason: '', op: null, tab: null, stats: null, incomplete: 0, rows: [], groups: null, alternatives: [], extremes: null, mixed: false, card: null, tool_result: null, numbers_backed_by: null };
+      if (!match || match.stage !== 3) { C.reason = 'bad_match'; return C; }
+      if (match.status !== 'ready' || !match.exec) { C.reason = 'not_ready:' + match.status; return C; }
+      var ex = match.exec, sel = match.selection || {};
+      if (!/^transactions\.(aggregate|search|group)$/.test(ex.tool)) {
+        /* تحلیل‌ها/مقایسه/فهرست‌ها: همان ابزار خواندنیِ موجود (بدون ابزار یا فرمول تازه) */
+        var o = hkAsstExec(ex.tool, ex.args || {});
+        if (!o.ok) { C.reason = 'tool_error'; C.error = o.error; return C; }
+        C.ok = true; C.kind = 'tool'; C.op = 'tool'; C.tool_result = o.result; C.numbers_backed_by = 'existing_tool'; return C;
+      }
+      var all = hkAsstRows(), byKey = {};
+      all.forEach(function (r) { byKey[hkAsstMatchRefKey(r)] = r; });
+      var resolve = function (refs) { var out = []; for (var i = 0; i < refs.length; i++) { var r = byKey[hkAsstMatchRefKey({ key: refs[i].key, secId: refs[i].sec, idx: refs[i].idx, tab: refs[i].tab, id: refs[i].id })]; if (!r) return null; out.push(r); } return out; };
+      var rows = resolve(sel.refs || []), inc = resolve(sel.incomplete_refs || []);
+      if (!rows || !inc) { C.reason = 'ref_missing'; return C; }
+      if (rows.some(function (r) { return r.amount === 0; })) { C.reason = 'zero_amount_in_selection'; return C; }
+      var tab = (ex.args && ex.args.tab) || null;
+      C.ok = true; C.kind = 'tx'; C.op = hkAsstCalcOp(ex); C.tab = tab; C.incomplete = inc.length; C.numbers_backed_by = 'selected_rows';
+      C.stats = hkAsstCalcStats(rows);
+      C.mixed = !tab && C.stats.incomeCount > 0 && C.stats.expenseCount > 0;
+      C.eff = tab || (C.stats.count ? (C.stats.incomeCount === 0 ? 'expense' : C.stats.expenseCount === 0 ? 'income' : null) : null);
+      C.ops = (ex.operations || []).filter(function (x) { return /^(sum|count|average|avg)$/.test(x); });
+      C.rows_all = rows.length;
+      if (C.op === 'max' || C.op === 'min' || C.op === 'list') {
+        var asc = C.op === 'min' || (ex.order && ex.order.sort === 'amountAsc'), srt = ex.order && ex.order.sort;
+        var cmp = function (x, y) { return srt === 'dateAsc' ? x.dateKey - y.dateKey : srt === 'dateDesc' ? y.dateKey - x.dateKey : asc ? x.amount - y.amount || y.dateKey - x.dateKey : y.amount - x.amount || y.dateKey - x.dateKey; };
+        var lim = ex.order && ex.order.limit > 0 ? Math.max(1, parseInt(ex.order.limit, 10) || 1) : (C.op === 'list' ? 10 : 1);
+        var groupsT = C.mixed ? ['expense', 'income'] : [null];
+        C.extremes = [];
+        groupsT.forEach(function (tb) {
+          var part = rows.filter(function (r) { return !tb || r.tab === tb; }); if (!part.length) return;
+          var sorted = part.slice().sort(cmp), shown = sorted.slice(0, lim), ties = 0, isTies = false;
+          if ((C.op === 'max' || C.op === 'min') && !(ex.order && ex.order.limit > 1)) { var top = sorted[0].amount; shown = sorted.filter(function (r) { return r.amount === top; }); ties = shown.length; isTies = ties > 1; shown = shown.slice(0, 10); }
+          C.extremes.push({ tab: tb || (tab || sorted[0].tab), ties: isTies, rows: shown.map(hkAsstCalcRowView), more: Math.max(0, (ties || part.length) - shown.length), total_in_tab: part.length });
+        });
+        C.rows = [].concat.apply([], C.extremes.map(function (e) { return e.rows; }));
+      }
+      if (C.op === 'group') {
+        var by = (ex.args && ex.args.by) || ex.group_by || null, gm = {};
+        if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) { C.ok = false; C.reason = 'bad_group_by'; return C; }
+        rows.forEach(function (r) {
+          var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : (r[by] || '—'));
+          var g = gm[k] || (gm[k] = { key: k, rows: [] }); g.rows.push(r);
+        });
+        C.by = by; C.groups = Object.keys(gm).map(function (k) { var s = hkAsstCalcStats(gm[k].rows); return { key: k, count: s.count, sum: s.sum, incomeSum: s.incomeSum, expenseSum: s.expenseSum, mixed: s.incomeCount > 0 && s.expenseCount > 0 }; });
+        C.groups.sort(function (x, y) { return by === 'month' ? (x.key < y.key ? -1 : 1) : y.sum - x.sum; });
+      }
+      /* ترکیب «و/یا»: سهم هر مورد جدا از همان ردیف‌های انتخاب‌شده (همان تفکیک قبلی دستیار) */
+      if (ex.args && ex.args.textAny && ex.args.textAny.length && rows.length) {
+        C.union = ex.args.textAny.map(function (w) { var sub = hkAsstFilter(rows, { text: w, keepDrafts: true }); var st2 = hkAsstCalcStats(sub); return { term: w, count: st2.count, sum: st2.sum }; });
+        C.union_overlap = C.union.reduce(function (n, u) { return n + u.count; }, 0) > rows.length;
+      }
+      /* خوانش‌های جایگزین (همان ردیف‌های مرحلهٔ ۳؛ فقط محاسبه) */
+      (match.readings && match.readings.alternatives || []).forEach(function (al) {
+        var ar = resolve(al.refs || []); if (!ar) return;
+        var s = hkAsstCalcStats(ar); C.alternatives.push({ word: al.word, category: al.category, count: s.count, sum: s.sum, incomeSum: s.incomeSum, expenseSum: s.expenseSum, mixed: s.incomeCount > 0 && s.expenseCount > 0 });
+      });
+      try { C.card = hkAsstCardInfo(ex.args || {}, { expenseSum: C.stats.expenseSum, incomeSum: C.stats.incomeSum }, rows); } catch (eC) { C.card = null; }
+      return C;
+    }
+    /* ---------- لایهٔ ۲: تولید پاسخ ---------- */
+    function hkAsstAnsDigits(s) { return String(s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 0x06F0); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 0x0660); }); }
+    function hkAsstAnsTimeLabel(a) {
+      a = a || {};
+      if (a.dateFrom || a.dateTo) { var f = function (d) { return d ? toPersianDigits(String(d)) : ''; }; return 'از ' + (f(a.dateFrom) || 'ابتدا') + ' تا ' + (f(a.dateTo) || 'انتها'); }
+      if (a.month) return 'در ' + HK_ASST_MONTH_NAMES[a.month - 1] + (a.year ? ' ' + toPersianDigits(String(a.year)) : '');
+      if (a.year) return 'در سال ' + toPersianDigits(String(a.year));
+      return 'در همهٔ ماه‌ها';
+    }
+    var HK_ASST_STATUS_FA = { unpaid: 'پرداخت‌نشده/دریافت‌نشده', paid: 'پرداخت‌شده/دریافت‌شده' };
+    function hkAsstRender(match, calc) {
+      var out = { v: HK_ASST_ANSWER_VERSION, stage: 4, status: 'answer', kind: 'text', text: '', notes: [], suggestions: [], figures: {}, applied: [], disclosed: [], gaps: [], warnings: [], app_actions: [], source: { match_status: match && match.status, tool: match && match.exec ? match.exec.tool : null, numbers_backed_by: calc ? calc.numbers_backed_by : null }, trace: [] };
+      var allow = {}, T = function (s, d) { out.trace.push({ step: s, detail: d }); };
+      var reg = function (n) { allow[String(Math.round(Number(n)))] = 1; return n; };
+      var N = function (n) { reg(n); return toPersianDigits(String(Math.round(Number(n) || 0))); };
+      var M = function (n) { reg(n); return hkAsstMoney(n); };
+      var scan = function (s) { (hkAsstAnsDigits(s).match(/\d+/g) || []).forEach(function (d) { allow[String(parseInt(d, 10))] = 1; }); return s; };
+      var fin = function () { out.text = [out.text].concat(out.notes).filter(Boolean).join('\n'); out.allowed_numbers = Object.keys(allow).map(Number); return out; };
+      if (!match || match.stage !== 3) { out.status = 'error'; out.text = 'ورودی این مرحله نتیجهٔ تطبیق معتبر نیست.'; return fin(); }
+      var st = match.status, a = (match.exec && match.exec.args) || {};
+      /* ۱) وضعیت‌های غیرمحاسباتی */
+      if (st === 'clarify') {
+        var cl = match.clarification || {};
+        out.status = 'clarify'; out.kind = 'question'; out.text = cl.question || 'منظورت دقیقاً چیه؟ یک‌کم بیشتر توضیح بده.'; out.suggestions = (cl.suggestions || []).slice(); out.clarification = { reason: cl.reason || null, term: cl.term || null }; if (match.resume) out.resume = match.resume;
+        (match.gaps || []).forEach(function (g) { out.gaps.push(g); }); T('clarify', cl.reason); scan(out.text); return fin();
+      }
+      if (st === 'refuse') {
+        var rs = (match.clarification && match.clarification.reason) || ((match.gaps[0] && match.gaps[0].reason) || '');
+        var RF = { market_price: 'قیمت و نرخ بازار (مثل دلار یا طلا) را نمی‌دونم؛ فقط با ردیف‌های خودت کار می‌کنم.', investment_advice: 'توصیهٔ سرمایه‌گذاری نمی‌کنم؛ فقط درباره ردیف‌های ثبت‌شدهٔ خودت می‌تونم کمک کنم.', write_operation: 'من فقط می‌تونم داده‌هات رو بخونم و حساب کنم؛ ثبت، حذف و ویرایش رو باید خودت از صفحه‌های نرم‌افزار انجام بدی. قدم‌به‌قدمش رو توی بخش «راهنما» می‌بینی.', out_of_domain: 'مقایسهٔ بانک‌ها و نرخ سود و وام رو نمی‌دونم؛ فقط دربارهٔ ردیف‌های حساب‌کتابت می‌تونم جواب بدم.' };
+        out.status = 'refuse'; out.kind = 'refusal'; out.text = RF[rs] || (match.gaps[0] && match.gaps[0].detail ? 'این را نمی‌توانم انجام دهم: ' + match.gaps[0].detail + '.' : 'این کار در توان من نیست؛ فقط دربارهٔ ردیف‌های حساب‌کتابت می‌توانم جواب بدهم.');
+        (match.gaps || []).forEach(function (g) { out.gaps.push(g); }); T('refuse', rs); scan(out.text); return fin();
+      }
+      if (st === 'chat') { out.status = 'chat'; out.kind = 'chat'; out.text = 'سلام! از من دربارهٔ خرج، درآمد و ردیف‌هایت بپرس؛ مثلاً «این ماه چقدر خرج کردم؟»'; T('chat', 'passthrough'); return fin(); }
+      if (st === 'navigate' || st === 'app_action') {
+        out.status = st; out.kind = st; out.app_actions = (match.app_actions || []).slice();
+        out.text = out.app_actions.length ? 'باشه، همین کار را از مسیر اصلی برنامه انجام می‌دهم (در این مرحله اجرا نمی‌شود).' : 'این کار از مسیر اصلی برنامه انجام می‌شود.'; T(st, out.app_actions.length); scan(out.text); return fin();
+      }
+      if (st !== 'ready' || !calc || !calc.ok) {
+        out.status = 'error'; out.kind = 'error';
+        var why = calc && calc.reason || ('status:' + st);
+        out.text = 'نتوانستم این را با اطمینان حساب کنم' + (why === 'ref_missing' ? ' (ردیف‌ها بین دو مرحله تغییر کرده بودند؛ دوباره بپرس)' : '') + '؛ عدد نمی‌دهم تا اشتباه نباشد.'; out.error = why; T('error', why); return fin();
+      }
+      /* ۲) ابزار تحلیلی موجود */
+      if (calc.kind === 'tool') {
+        var tx = '';
+        try { tx = hkAsstSummary(match.exec.tool, calc.tool_result, { tool: match.exec.tool, args: a, explain: match.exec.explain, intent: match.exec.intent }) || ''; } catch (eT) { tx = ''; }
+        if (!tx) { out.status = 'error'; out.kind = 'error'; out.text = 'نتیجهٔ این تحلیل را نتوانستم بسازم.'; out.error = 'empty_summary'; return fin(); }
+        out.kind = 'tool'; out.text = tx; out.figures = { tool: match.exec.tool }; (match.gaps || []).forEach(function (g) { out.gaps.push(g); out.notes.push('نکته: ' + (g.detail || g.code) + '.'); });
+        T('tool', match.exec.tool); out.allowed_numbers = null; out.text = [out.text].concat(out.notes).join('\n'); return out;
+      }
+      /* ۳) پاسخ ردیف‌محور */
+      var S = calc.stats, tab = calc.eff, isInc = tab === 'income';
+      var subj = tab === 'income' ? 'درآمدت' : tab === 'expense' ? 'خرجت' : 'ردیف‌ها';
+      var when = hkAsstAnsTimeLabel(a), tm = match.conditions.filter(function (c) { return c.slot === 'time'; })[0];
+      /* شرط‌های اعمال‌شده به‌صورت عبارت کوتاه */
+      var q = [];
+      var anyDone = false, anyAll = match.conditions.filter(function (c) { return c.slot === 'include.any_terms'; }).map(function (c) { return '«' + c.value + '»'; }).join(' یا ');
+      match.conditions.forEach(function (c) {
+        var v = c.value, txt = null;
+        if (c.slot === 'include.terms') txt = 'فقط «' + v + '»';
+        else if (c.slot === 'include.any_terms') { if (anyDone) { out.applied.push({ slot: c.slot, value: v, outcome: c.outcome, text: 'بخشی از «' + anyAll + '»' }); return; } anyDone = true; txt = 'فقط ' + anyAll; }
+        else if (c.slot === 'include.cats') txt = 'دستهٔ «' + (HK_ASST_CAT_LABELS[v] || v) + '»';
+        else if (c.slot === 'exclude.terms') txt = 'بدون «' + v + '»';
+        else if (c.slot === 'exclude.cats') txt = 'بدون دستهٔ «' + (HK_ASST_CAT_LABELS[v] || v) + '»';
+        else if (c.slot === 'include.status') txt = v === 'unpaid' ? (tab === 'income' ? 'دریافت‌نشده' : 'پرداخت‌نشده') : 'پرداخت‌شده';
+        else if (c.slot === 'include.account') txt = 'حساب «' + v + '»';
+        else if (c.slot === 'include.project') txt = 'پروژهٔ «' + v + '»';
+        else if (c.slot === 'include.context') txt = v === 'project' ? 'فقط پروژه‌ای' : 'فقط شخصی';
+        else if (/^amount\./.test(c.slot)) { var mp = { min: 'حداقل', max: 'حداکثر', eq: 'دقیقاً', gt: 'بیشتر از', lt: 'کمتر از' }; txt = mp[c.slot.slice(7)] + ' ' + M(v); }
+        if (txt) { scan(txt); q.push(txt); out.applied.push({ slot: c.slot, value: v, outcome: c.outcome, text: txt }); }
+      });
+      scan(when);
+      var qual = q.length ? ' (' + q.join('، ') + ')' : '', statusApplied = match.conditions.some(function (c) { return c.slot === 'include.status' && c.value === 'unpaid'; });
+      var det = function (n) { return ' (' + q.concat([N(n) + ' تراکنش']).join('، ') + ')'; };
+      var catAlt = calc.alternatives, hasAlt = catAlt.length > 0;
+      /* صفر: «ثبت نشده» در برابر «با این شرط‌ها ردیفی نیست» */
+      if (S.count === 0) {
+        var noPeriod = (match.data_coverage && match.data_coverage.requested_period_has_rows === false) || !(match.data_coverage && match.data_coverage.has_any_rows);
+        var uw = (match.warnings || []).filter(function (w) { return w.code === 'explicit_search_unknown_term'; })[0];
+        out.kind = 'empty'; out.figures = { count: 0 };
+        if (!(match.data_coverage && match.data_coverage.has_any_rows)) out.text = 'هنوز هیچ ردیفی ثبت نشده؛ چیزی برای حساب‌کردن نیست.';
+        else if (noPeriod) out.text = 'برای ' + when.replace(/^در /, '') + ' هیچ ردیفی ثبت نشده، پس چیزی برای حساب نیست (این «صفر» نیست، «بدون داده» است).';
+        else if (uw) out.text = 'ردیفی با «' + uw.terms.join('، ') + '» پیدا نکردم' + (tm ? ' ' + when : '') + '.';
+        else if (match.source && match.source.explicit_search) out.text = 'چیزی با این مشخصات پیدا نکردم' + qual + (tm ? ' ' + when : '') + '.';
+        else out.text = 'برای این شرط تراکنشی' + (calc.incomplete ? ' دارای مبلغ' : '') + ' ثبت نشده است' + (q.length || tm ? ' (' + q.concat(tm ? [when] : []).join('، ') + ')' : '') + '؛ پس مبلغی هم ندارد.';
+        if (S.count === 0 && calc.incomplete) out.notes.push(N(calc.incomplete) + ' ردیف مطابق شرط‌ها هست ولی مبلغ ندارد، برای همین چیزی جمع نشد.');
+        scan(out.text); T('empty', noPeriod ? 'no_data' : 'filters');
+      } else if (calc.op === 'count') {
+        out.figures = { count: S.count };
+        out.text = N(S.count) + ' تراکنش ' + (tab === 'income' ? 'درآمد ' : tab === 'expense' ? 'خرج ' : '') + when + ' ثبت شده' + qual + '.'; out.text = out.text.replace(/\s+/g, ' ');
+        if (calc.ops.indexOf('sum') >= 0 && !calc.mixed) { out.notes.push('جمعشان ' + M(S.sum) + ' است.'); out.figures.sum = S.sum; }
+      } else if (calc.op === 'avg') {
+        out.figures = { avg: S.avg, count: S.count };
+        if (calc.mixed) { out.text = 'میانگین درآمد و هزینه را جدا بگویم: هزینه ' + M(Math.round(S.expenseSum / S.expenseCount)) + '، درآمد ' + M(Math.round(S.incomeSum / S.incomeCount)) + ' (' + when + ').'; out.figures.expenseAvg = Math.round(S.expenseSum / S.expenseCount); out.figures.incomeAvg = Math.round(S.incomeSum / S.incomeCount); }
+        else out.text = 'میانگین هر تراکنش ' + (tab === 'income' ? 'درآمد ' : tab === 'expense' ? 'خرج ' : '') + when + ' ' + M(S.avg) + ' است' + det(S.count).replace(' (', '، از ').replace(')', '') + '.';
+        out.text = out.text.replace(/\s+/g, ' ');
+      } else if (calc.op === 'max' || calc.op === 'min') {
+        var word = calc.op === 'max' ? 'بیشترین' : 'کمترین';
+        out.figures = { extremes: calc.extremes.map(function (e) { return { tab: e.tab, amount: e.rows[0].amount, rows: e.rows.length }; }) };
+        var lines = [];
+        calc.extremes.forEach(function (e) {
+          var r0 = e.rows[0], tn = e.tab === 'income' ? 'درآمد' : 'خرج';
+          var dl = function (r) { return (r.d ? N(r.d) + ' ' : '') + HK_ASST_MONTH_NAMES[r.m - 1] + ' ' + N(r.y); };
+          if (e.rows.length > 1 && !e.ties) { lines.push(N(e.rows.length) + ' ' + word.replace('بیشترین', 'بزرگ‌ترین').replace('کمترین', 'کوچک‌ترین') + ' ' + tn + ' ' + when + qual + ':'); e.rows.forEach(function (r) { lines.push('• «' + scan(r.desc) + '» — ' + M(r.amount) + ' (' + dl(r) + ')'); }); }
+          else if (e.rows.length === 1) lines.push(word + ' ' + tn + ' ' + when + qual + ': «' + scan(r0.desc) + '» با ' + M(r0.amount) + ' (' + dl(r0) + ').');
+          else { lines.push(word + ' ' + tn + ' ' + when + qual + ' ' + M(r0.amount) + ' است و ' + N(e.rows.length + e.more) + ' ردیف هم‌مبلغ دارد:'); e.rows.forEach(function (r) { lines.push('• «' + scan(r.desc) + '» (' + dl(r) + ')'); }); if (e.more) lines.push('و ' + N(e.more) + ' ردیف دیگر.'); }
+        });
+        out.text = lines.join('\n');
+      } else if (calc.op === 'list') {
+        var e0 = calc.extremes[0], tot = calc.rows_all, shownN = calc.rows.length;
+        out.figures = { count: S.count, shown: shownN };
+        var dl2 = function (r) { return (r.d ? N(r.d) + ' ' : '') + HK_ASST_MONTH_NAMES[r.m - 1] + ' ' + N(r.y); };
+        var head = N(tot) + ' ردیف ' + when + (qual || '') + (calc.mixed ? '' : ' با جمع ' + M(S.sum)) + (shownN < tot ? '؛ ' + N(shownN) + ' تای اول:' : ':');
+        out.text = head + '\n' + calc.rows.map(function (r) { return '• «' + scan(r.desc) + '» — ' + M(r.amount) + ' (' + dl2(r) + ')'; }).join('\n');
+        if (calc.mixed) out.figures.mixed = true;
+      } else if (calc.op === 'group') {
+        var by = calc.by, BY = { month: 'ماه', section: 'بخش', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' };
+        var gl = function (g) { if (by === 'month') { var p = g.key.split('-'); return HK_ASST_MONTH_NAMES[(+p[1]) - 1] + ' ' + N(+p[0]); } if (by === 'tab') return g.key === 'income' ? 'درآمد' : 'هزینه'; if (by === 'context') return g.key === 'project' ? 'پروژه‌ای' : 'شخصی'; return scan(g.key); };
+        out.figures = { groups: calc.groups.map(function (g) { return { key: g.key, sum: g.sum, count: g.count }; }) };
+        var gline = function (g) { return '• ' + gl(g) + ': ' + (g.mixed ? 'هزینه ' + M(g.expenseSum) + ' و درآمد ' + M(g.incomeSum) : M(g.sum)) + ' (' + N(g.count) + ' ردیف)'; };
+        var ex0 = match.exec.explain;
+        var lead = 'به تفکیک ' + BY[by] + ' ' + when + qual + ':';
+        if (/^(top|low)group$/.test(ex0 || '') && calc.groups.length) { var pick = calc.groups.filter(function (g) { return !g.mixed; }).sort(function (x, y) { return ex0 === 'topgroup' ? y.sum - x.sum : x.sum - y.sum; })[0]; if (pick) lead = (ex0 === 'topgroup' ? 'بیشترین' : 'کمترین') + ' «' + gl(pick) + '» با ' + M(pick.sum) + ' است. ' + lead; }
+        out.text = lead + '\n' + calc.groups.map(gline).join('\n');
+      } else {
+        /* sum */
+        if (calc.mixed) {
+          out.figures = { count: S.count, incomeSum: S.incomeSum, expenseSum: S.expenseSum, balance: S.balance };
+          out.text = when + ' (' + N(S.count) + ' تراکنش)' + qual + '؛ درآمد و هزینه را با هم جمع نمی‌زنم:\nدرآمد: ' + M(S.incomeSum) + '\nهزینه: ' + M(S.expenseSum) + '\nمانده: ' + M(S.balance);
+        } else {
+          out.figures = { sum: S.sum, count: S.count };
+          var who = tab === 'income' ? when + ' درآمدت ' + M(S.sum) + ' شده' : tab === 'expense' ? when + ' خرجت ' + M(S.sum) + ' شده' : 'جمع ردیف‌ها ' + when + ' ' + M(S.sum) + ' شده';
+          out.text = who + det(S.count) + '.';
+          if (calc.ops.indexOf('avg') >= 0 || calc.ops.indexOf('average') >= 0) { out.notes.push('میانگین هر تراکنش ' + M(S.avg) + ' است.'); out.figures.avg = S.avg; }
+          if (calc.ops.indexOf('count') >= 0) { /* تعداد همین جا آمده است */ }
+        }
+        var std = [];
+        if (S.unpaidCount && tab && !statusApplied) { std.push(M(S.unpaidSum) + ' از این ' + (isInc ? 'دریافت‌نشده' : 'پرداخت‌نشده') + ' است (' + N(S.unpaidCount) + ' ردیف).'); out.figures.unpaidSum = S.unpaidSum; out.figures.unpaidCount = S.unpaidCount; }
+        if (calc.card && calc.card.total !== S.sum) { var why = []; if (calc.card.projectRows) why.push(N(calc.card.projectRows) + ' ردیف پروژه‌ای'); if (calc.card.otherSectionRows) why.push(N(calc.card.otherSectionRows) + ' ردیف بخش‌های دیگر'); std.push('طبق کارت اصلی برنامه ' + M(calc.card.total) + ' است؛ جمع همهٔ ردیف‌ها ' + M(S.sum) + (why.length ? ' (' + why.join(' و ') + ')' : '') + '.'); out.figures.cardTotal = calc.card.total; }
+        out.__std = std;
+      }
+      if (calc.union && calc.union.length > 1 && !calc.mixed) {
+        out.notes.push('تفکیک: ' + calc.union.map(function (u) { return '«' + scan(u.term) + '» ' + M(u.sum); }).join(calc.union_overlap ? '، ' : ' + ') + (calc.union_overlap ? ' (ردیف‌های مشترک فقط یک بار شمرده شدند).' : '.'));
+        out.figures.union = calc.union.map(function (u) { return { term: u.term, sum: u.sum, count: u.count }; });
+      }
+      /* ۴) برداشت جایگزین (افشای صریح) */
+      calc.alternatives.forEach(function (al) {
+        var base = match.readings.primary === 'category' ? 'عدد بالا کل دستهٔ «' + (HK_ASST_CAT_LABELS[al.category] || al.category) + '» است' : 'عدد بالا کل ' + (tab === 'income' ? 'درآمد' : 'هزینه') + ' است';
+        var altTxt = al.mixed ? 'هزینه ' + M(al.expenseSum) + ' و درآمد ' + M(al.incomeSum) : M(al.sum);
+        var line = base + '، نه فقط ردیف‌های «' + scan(al.word) + '». فقط ردیف‌های «' + scan(al.word) + '»: ' + altTxt + ' (' + N(al.count) + ' تراکنش).';
+        out.notes.push(line); out.disclosed.push({ reading: 'row', word: al.word, sum: al.sum, count: al.count }); (out.figures.alternatives = out.figures.alternatives || []).push({ word: al.word, sum: al.sum, count: al.count });
+      });
+      /* ۵) ردیف بی‌مبلغ، هشدارها، شکاف‌ها، شرط‌های بی‌اثر */
+      var stdAll = (out.__std || []).slice(); delete out.__std;
+      if (calc.incomplete && S.count > 0) { stdAll.push(N(calc.incomplete) + ' ردیف ناقص (بدون مبلغ) شمرده نشد.'); out.figures.incomplete = calc.incomplete; }
+      if (stdAll.length) out.notes.unshift(stdAll.join(' '));
+      (match.warnings || []).forEach(function (w) {
+        out.warnings.push(w);
+        if (w.code === 'typo_corrected') out.notes.push('«' + scan(w.from) + '» را «' + scan(w.to) + '» در نظر گرفتم.');
+        else if (w.code === 'explicit_search_unknown_term') { if (S.count) out.notes.push('«' + w.terms.join('، ') + '» در ردیف‌ها پیدا نشد.'); }
+        else if (w.code === 'tab_via_synonym') { /* با خوانش جایگزین افشا شده است */ }
+        else if (w.detail) out.notes.push('نکته: ' + scan(String(w.detail)) + '.');
+      });
+      (match.gaps || []).forEach(function (g) { out.gaps.push(g); out.notes.push('نکته: ' + scan(String(g.detail || g.code)) + '.'); });
+      match.conditions.forEach(function (c) { if (c.outcome === 'no_rows' && /^exclude\./.test(c.slot)) out.notes.push('هیچ ردیفی «' + scan(String(c.value)) + '» نداشت، پس چیزی کنار نرفت.'); });
+      T('render', calc.op + (S.count === 0 ? ':empty' : ''));
+      scan(out.text); out.notes.forEach(scan);
+      return fin();
+    }
+    /* بررسی «هر عدد پشتوانه دارد»: هر رقمِ متن باید از واژهٔ ثبت‌شده یا خود پرسش/نام‌ها آمده باشد */
+    function hkAsstAnswerCheck(ans) {
+      if (!ans || !ans.allowed_numbers) return { ok: true, skipped: true, bad: [] };
+      var ok = {}; ans.allowed_numbers.forEach(function (n) { ok[String(n)] = 1; });
+      var bad = [];
+      hkAsstAnsDigits(ans.text).replace(/[٬,،]/g, '').split(/[^0-9]+/).forEach(function (d) { if (d && !ok[String(parseInt(d, 10))]) bad.push(d); });
+      return { ok: bad.length === 0, skipped: false, bad: bad };
+    }
+    function hkAsstAnswer(match) {
+      var calc = null, ans;
+      try { calc = hkAsstCompute(match); ans = hkAsstRender(match, calc); } catch (e) { ans = { v: HK_ASST_ANSWER_VERSION, stage: 4, status: 'error', kind: 'error', text: 'نتوانستم این را با اطمینان حساب کنم؛ عدد نمی‌دهم تا اشتباه نباشد.', notes: [], figures: {}, applied: [], disclosed: [], gaps: [], warnings: [], app_actions: [], suggestions: [], source: {}, trace: [{ step: 'exception', detail: String(e && e.message || e) }], error: 'exception' }; }
+      var chk = hkAsstAnswerCheck(ans);
+      if (!chk.ok) { ans.trace.push({ step: 'number_guard', detail: chk.bad.join(',') }); ans = { v: HK_ASST_ANSWER_VERSION, stage: 4, status: 'error', kind: 'error', text: 'نتوانستم عدد را با اطمینان بسازم؛ ترجیح دادم نگویم تا اشتباه نباشد.', notes: [], figures: {}, applied: [], disclosed: [], gaps: [], warnings: [], app_actions: [], suggestions: [], source: ans.source, trace: ans.trace, error: 'unbacked_number' }; }
+      ans.calc = calc;
+      return ans;
+    }
+    /* زنجیرهٔ چهارمرحله‌ای؛ state = {prev} برای ادامهٔ گفتگو. اثر جانبی ندارد (حالت dry در تحلیل‌گر/تطبیق). */
+    function hkAsstChain(text, state) {
+      state = state || {};
+      var spec = hkAsstAnalyze(text, { prev: state.prev || null }), match = hkAsstMatch(spec);
+      if (match.resume && match.status === 'clarify') spec.resume = match.resume;
+      state.prev = spec;
+      var ans = hkAsstAnswer(match);
+      return { text: text, spec: spec, match: match, calc: ans.calc, answer: ans };
+    }
+
+    /* ===== ۱.۴.۴۵: اتصال به دستیار (hkAsstAsk) =====
+       موتور پیش‌فرض «chain» است؛ کلید بازگشت به موتور قبلی (فقط داخلی، در رابط دیده نمی‌شود):
+         hkAsstSetEngine('legacy')  ← موتور قبلی؛  hkAsstSetEngine('chain') ← موتور جدید (پیش‌فرض)
+       گفتگو/ناوبری/عملیات برنامه/امتناع همچنان با مسیر قبلی اجرا می‌شوند (فقط یک‌بار: تحلیل‌گر حالت خشک است)؛
+       پرسش‌های دادهای (جمع، تعداد، فهرست، تحلیل) و پرسش‌های روشن‌کننده با موتور جدید پاسخ داده می‌شوند. */
+    var HK_ASST_ENGINE_KEY = STORAGE_KEY + '_asstEngine';
+    var _hkAsstChainState = { prev: null, at: 0 };
+    function hkAsstEngine() { try { return localStorage.getItem(HK_ASST_ENGINE_KEY) === 'legacy' ? 'legacy' : 'chain'; } catch (e) { return 'chain'; } }
+    function hkAsstSetEngine(v) {
+      try { if (v === 'legacy') localStorage.setItem(HK_ASST_ENGINE_KEY, 'legacy'); else localStorage.removeItem(HK_ASST_ENGINE_KEY); } catch (e) {}
+      _hkAsstChainState = { prev: null, at: 0 };
+      return hkAsstEngine();
+    }
+    function hkAsstChainReset() { _hkAsstChainState = { prev: null, at: 0 }; }
+    function hkAsstChainStripRows(text) { var L = String(text).split('\n').filter(function (l) { return l.indexOf('• ') !== 0; }); L[0] = L[0].replace(/[:؛]\s*$/, '.'); return L.join('\n'); }
+    function hkAsstAskChain(q) {
+      var st = _hkAsstChainState;
+      /* زمینهٔ گفتگو با حافظهٔ قبلی هم‌عمر است (۱۵ دقیقه یا پاک‌شدن آن)؛ spec در انتظار پاسخ روشن‌کننده (resume) تا همان مدت می‌ماند */
+      if (st.prev && (Date.now() - st.at > 900000 || (!hkAsstCtxValid() && !st.prev.resume))) st.prev = null;
+      var keep = st.prev, c;
+      try { c = hkAsstChain(q, st); } catch (e) { st.prev = keep; return null; }
+      var m = c.match, a = c.answer;
+      _hkAsstPending = null;
+      if (m.status === 'ready' && (m.warnings || []).some(function (w) { return w.code === 'typo_corrected'; })) { st.prev = keep; return null; } /* اصلاح غلط‌تایپی (به‌ویژه نام ماه) را مسیر قبلی با تأیید می‌پرسد */
+      if (m.status === 'clarify' && (!m.clarification || !m.clarification.question || /^(not_understood|analyzer_error|bad_spec|matcher_error|empty)$/.test(m.clarification.reason))) { st.prev = keep; return null; }
+      if (m.status === 'clarify') {
+        st.at = Date.now();
+        var cl = m.clarification || {}, term = cl.reason === 'unknown_term' && cl.term ? [cl.term] : null;
+        var chips = (a.suggestions || []).slice();
+        if (cl.reason === 'vague_size' && !chips.length) {
+          try {
+            var dw = (m.clarification.question.match(/«([^»]+)»/) || [])[1] || '', big = /^(درشت|سنگین|بزرگ|کلان|گنده)$/.test(dw);
+            var bounds = big ? ['بالای ۲۰۰ هزار تومن', 'بالای ۵۰۰ هزار تومن', 'بالای ۱ میلیون تومن'] : ['زیر ۱۰ هزار تومن', 'زیر ۵۰ هزار تومن', 'زیر ۱۰۰ هزار تومن'];
+            chips = bounds.map(function (bd) { return hkAsstRepl(q, dw, bd); }).filter(function (x) { return x && x !== q; });
+          } catch (eV) {}
+        }
+        var fr = { role: 'bot', kind: 'text', text: a.text, suggestions: chips, chipRaw: true, final: true, decision: 'ask', why: cl.reason || 'ask', engine: 'chain' };
+        if (term) fr.unknown = term;
+        hkAsstMissedLog(q, fr);
+        return fr;
+      }
+      if (a.status === 'refuse') { st.prev = keep; return { role: 'bot', kind: 'text', text: a.text, suggestions: [], final: true, decision: 'refuse', why: (m.clarification && m.clarification.reason) || 'refuse', engine: 'chain' }; }
+      if (a.status === 'error') { st.prev = keep; return { role: 'bot', kind: 'text', text: a.text, suggestions: [], final: true, decision: 'ask', why: a.error || 'error', engine: 'chain' }; }
+      if (a.status !== 'answer' || m.status !== 'ready' || !m.exec) { st.prev = keep; return null; }
+      var ex = m.exec, out = hkAsstExec(ex.tool, ex.args);
+      if (!out.ok) { st.prev = keep; return { role: 'bot', kind: 'text', text: 'نشد انجامش بدم: ' + out.error, engine: 'chain' }; }
+      var b = c.spec.binding || {}, cmd = { tool: ex.tool, args: Object.assign({}, ex.args), explain: ex.explain || '', intent: b.intent || '', understood: '', corrections: [], followUps: ex.follow_ups || [], chipRaw: true, yearExplicit: !!b.yearExplicit, catAmb: b.catAmb || null, rawQ: q };
+      var text = /^transactions\.(search|group)$/.test(ex.tool) && out.result && (out.result.items || out.result.groups) ? hkAsstChainStripRows(a.text) : a.text;
+      var msg = { role: 'bot', kind: 'result', tool: ex.tool, head: '', text: text, data: out.result, cmd: cmd, suggestions: [], engine: 'chain' };
+      if (cmd.followUps.length) { msg.suggestions = cmd.followUps; msg.chipRaw = true; }
+      if (m.selection && m.selection.empty && ex.args && ex.args.text) { try { msg.suggestions = hkAsstSuggest(ex.args.text); } catch (eS) { msg.suggestions = []; } }
+      st.at = Date.now();
+      hkAsstCtxSave(cmd, msg); hkAsstSetTarget(msg); hkAsstMissedLog(q, msg);
+      return msg;
+    }
+    /* مقایسهٔ دو موتور بدون اثر جانبی (برای آزمون): هر موتور با زمینهٔ گفتگوی خودش؛ حالت خشک + بازگرداندن همهٔ حالت‌ها */
+    function hkAsstCompareEngines(q, context) {
+      var S = { dry: _hkAsstDry, log: _hkAsstDryLog, ctx: _hkAsstCtx, target: _hkAsstLastTarget, pend: _hkAsstPending, guide: _hkAsstGuide, chain: _hkAsstChainState, missed: null };
+      try { S.missed = localStorage.getItem(HK_ASST_MISSED_KEY); } catch (e0) {}
+      var one = function (engine) {
+        _hkAsstDry = true; _hkAsstDryLog = []; _hkAsstCtx = null; _hkAsstLastTarget = null; _hkAsstPending = null; _hkAsstGuide = null; _hkAsstChainState = { prev: null, at: 0 };
+        var r = null;
+        (context || []).forEach(function (cq) { hkAsstAsk(cq, engine); });
+        r = hkAsstAsk(q, engine);
+        var d = r && r.data || {};
+        return { kind: r && r.kind, tool: r && r.tool || null, text: r && r.text || '', engine: r && r.engine || (engine === 'legacy' ? 'legacy' : 'legacy-path'), count: d.count != null ? d.count : null, sum: d.sum != null ? d.sum : (d.total != null ? d.total : null), dryLog: _hkAsstDryLog.length };
+      };
+      try { return { legacy: one('legacy'), chain: one('chain') }; }
+      finally {
+        _hkAsstDry = S.dry; _hkAsstDryLog = S.log; _hkAsstCtx = S.ctx; _hkAsstLastTarget = S.target; _hkAsstPending = S.pend; _hkAsstGuide = S.guide; _hkAsstChainState = S.chain;
+        try { if (S.missed == null) localStorage.removeItem(HK_ASST_MISSED_KEY); else localStorage.setItem(HK_ASST_MISSED_KEY, S.missed); } catch (e1) {}
+      }
     }
     /* ===== ۱.۴.۲۴: دستیار هوشمند — تفسیر درخواست فارسی =====
        متن را با واژه‌نامهٔ 18f به کدهای معنایی تبدیل می‌کند، غلط‌تایپی‌ها را اصلاح می‌کند و یک فرمان ساختاریافته می‌سازد.
@@ -57153,7 +58091,7 @@ function openProjectRowPicker(secId) {
     /* ۱.۴.۴۳: کنار گذاشتنِ ماه/پروژه/حساب هنوز پشتیبانی نمی‌شود؛ به‌جای نادیده گرفتنِ بی‌صدا، همان‌جا متوقف می‌شود و عددی داده نمی‌شود */
     function hkAsstNegUnsupported(list) {
       var one = list[0];
-      return { ask: 'کنار گذاشتنِ «' + one.w + '» (' + one.kind + ') رو هنوز نمی‌تونم انجام بدم؛ فقط دسته یا کلمه‌ای از شرح ردیف‌ها رو می‌تونم کنار بذارم، مثلاً «بدون بنزین» یا «به‌جز قبوض».', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
+      return { why: 'unsupported_negation', ask: 'کنار گذاشتنِ «' + one.w + '» (' + one.kind + ') رو هنوز نمی‌تونم انجام بدم؛ فقط دسته یا کلمه‌ای از شرح ردیف‌ها رو می‌تونم کنار بذارم، مثلاً «بدون بنزین» یا «به‌جز قبوض».', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
     }
     function hkAsstNegArgs(negWords, curTab) {
       var exT = [], exC = [], negFlow = '', unsup = [], dataWords = hkAsstDataWords();
@@ -57182,15 +58120,19 @@ function openProjectRowPicker(secId) {
       return out;
     }
     /* آیا دو واژهٔ پشت‌سرهم، با هم، عبارتی‌اند که در شرح یکی از ردیف‌ها آمده؟ («قسط وام»، «قبض آب») */
+    /* دو واژهٔ پشت‌سرهم که هر دو از مترادف‌های «یک» دسته‌اند («قسط وام»، «قبض آب»، «قبض برق») یک عبارت‌اند؛ برای این تصمیم به داده نیازی نیست */
+    function hkAsstSameCatPair(a, b) { try { var x = hkAsstLookup(hkAsstKey(a)), y = hkAsstLookup(hkAsstKey(b)); return !!x && x === y && x.indexOf('CAT_') === 0; } catch (e) { return false; } }
     var _hkAsstJoinHay = null;
+    /* تصمیم‌هایی که به واژگان دادهٔ کاربر نگاه می‌کنند را اینجا ثبت می‌کنیم تا تحلیل‌گر (۱.۴.۴۴) آن‌ها را «وابسته به داده» علامت بزند */
+    var _hkAsstDataNotes = [];
     function hkAsstJoinedInData(a, b) {
-      try { if (_hkAsstJoinHay === null) _hkAsstJoinHay = hkAsstHayAll(); return _hkAsstJoinHay.indexOf(hkAsstKey(String(a) + ' ' + String(b))) >= 0; } catch (e) { return false; }
+      try { if (_hkAsstJoinHay === null) _hkAsstJoinHay = hkAsstHayAll(); var ok = _hkAsstJoinHay.indexOf(hkAsstKey(String(a) + ' ' + String(b))) >= 0; if (ok) _hkAsstDataNotes.push('row_phrase:' + a + ' ' + b); return ok; } catch (e) { return false; }
     }
     function hkAsstSemantic(raw) {
-      _hkAsstJoinHay = null;
+      _hkAsstJoinHay = null; _hkAsstDataNotes = [];
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
+      if (!text) return { why: 'empty', ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
       /* ۱.۴.۳۷: «سال ۴۰۳» و «آذر ۰۳» را «۱۴۰۳» می‌کند */
       text = hkAsstNormYears(text);
       /* ۱.۴.۴۶: «چند تومن/چند تومان» یعنی «چقدر» (مبلغ)، نه «چند تا» (تعداد) */
@@ -57207,7 +58149,7 @@ function openProjectRowPicker(secId) {
       text = text.replace(/(^| )(تراکنش|ردیف|خرید|هزینه|مخارج|درآمد|واریزی|برداشتی|خرج)(ام|هام|هامو)(?= |$)/g, '$1$2');
       text = text.replace(/(^| )(همونو|همونا|همینو|همینا|اونو|اونا|اون یکی)(?= |$)/g, function (a) { anaphora = true; return a; });
       if (/(^| )منظورم( |$)/.test(text)) { anaphora = true; text = text.replace(/(^| )(نه |نخیر )?(اشتباه فهمیدی |اشتباه شد )?منظورم ?/, '$1').replace(/ بود$/, '').trim(); }
-      text = text.replace(/(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
+      text = text.replace(/(^| )نپرداخت(?:ه|م|ی|یم|ن|ید)?(?= |$)|(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; /* ۱.۴.۴۳: «نپرداختم» نفی «پرداخت» است (هزینهٔ پرداخت‌نشده) و هرگز «پرداختم» حساب نمی‌شود */ if (/نپرداخت/.test(m)) unpaidTab = 'expense'; else if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
       text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
       text = text.replace(/\s+/g, ' ').trim();
       /* ۱.۴.۴۱: «بدون اسنپ»، «جز قبوض»، «به‌جز هزینه‌ها»، «غیر از X»، «X رو حساب نکن»: بخش کنار گذاشته‌شده از متن جدا و بعداً به شرط «نه» تبدیل می‌شود (نه شرط مثبت) */
@@ -57230,9 +58172,9 @@ function openProjectRowPicker(secId) {
           if (/^دسته[\u0654\u06c0ی]*(ای|ها)?$/.test(f1.replace(/[\u0654\u0670]/g, '')) || /^دسته/.test(f1) && f1.length <= 6) { catMark = '\u0001'; j++; if (!toks[j]) { out.push(toks[i]); continue; } }
           var phrase = catMark + toks[j]; j++;
           /* ۱.۴.۴۶: «به‌جز قسط وام / بدون قبض آب»: اگر دو واژه با هم نام یک ردیف‌اند، جدا نشوند (وگرنه واژهٔ دوم که در فرهنگ لغت دسته است شرط «مثبت» می‌ماند و جواب وارونه/خالی می‌شود) */
-          if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]))) { phrase += ' ' + toks[j]; j++; }
+          if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]) || hkAsstSameCatPair(toks[j - 1], toks[j]))) { phrase += ' ' + toks[j]; j++; }
           negWords.push(phrase);
-          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]))) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
+          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]) || hkAsstSameCatPair(toks[j - 1], toks[j]))) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
           i = j - 1;
         }
         text = out.join(' ');
@@ -57292,6 +58234,8 @@ function openProjectRowPicker(secId) {
         var keyN = key.replace(/[\u0654\u0670\u064B-\u065F]/g, '');
         if (keyN !== key) { var cN = hkAsstLookup(keyN); if (cN) { codes.push(cN); if (cN.indexOf('CAT_') === 0) { catSrc.push({ id: cN.slice(4), phrase: keyN }); ents.push({ s: i0, e: i0 + 1, kind: 'cat', id: cN.slice(4), phrase: keyN, code: cN }); } continue; } }
         var fz = hkAsstFuzzyCode(key);
+        /* ۱.۴.۴۳: غلط‌یاب هرگز نفی را مثبت نمی‌کند («نپرداختم» ← «پرداختم») */
+        if (fz && key.charAt(0) === 'ن' && hkAsstKey(fz.word) === key.slice(1)) fz = null;
         if (fz) { codes.push(fz.code); corrections.push({ from: t, to: fz.word }); continue; }
         ents.push({ s: i0, e: i0 + 1, kind: 'text', raw: t, wis: [words.length] });
         words.push(_plural(t));
@@ -57312,7 +58256,7 @@ function openProjectRowPicker(secId) {
           /* «قبض برق» که هر دو واژه‌اش در فرهنگ لغت دسته‌اند ولی نام یک ردیف است: یک عنصر متنی */
           if (L && L.e === e.s && !conj[L.e] && (L.kind === 'cat' || L.fixed) && (e.kind === 'cat' || e.kind === 'text')) {
             var j = (L.fixed || L.phrase) + ' ' + (e.kind === 'cat' ? e.phrase : words[e.wis[0]]);
-            if (hayM.indexOf(hkAsstKey(j)) >= 0) { merged[merged.length - 1] = { kind: 'text', s: L.s, e: e.e, wis: (L.wis || []).concat(e.kind === 'text' ? e.wis : []), fixed: j.split(' ').map(dataSurface).join(' '), rmCodes: (L.rmCodes || [L.code]).concat(e.kind === 'cat' ? [e.code] : []) }; return; }
+            if (hayM.indexOf(hkAsstKey(j)) >= 0) { _hkAsstDataNotes.push('row_phrase:' + j); merged[merged.length - 1] = { kind: 'text', s: L.s, e: e.e, wis: (L.wis || []).concat(e.kind === 'text' ? e.wis : []), fixed: j.split(' ').map(dataSurface).join(' '), rmCodes: (L.rmCodes || [L.code]).concat(e.kind === 'cat' ? [e.code] : []) }; return; }
           }
           merged.push(e);
         });
@@ -57371,6 +58315,9 @@ function openProjectRowPicker(secId) {
             if (plr.test(pk)) cands.push([pk.replace(plr, ''), String(m.phrase).replace(plr, '')]);
             var isName = cands.some(function (c) { return hkAsstIsCatName(m.id, c[0]); });
             var hit = !isName ? cands.filter(function (c) { return c[0].length >= 3 && hayG.indexOf(c[0]) >= 0; })[0] : null;
+            /* تحلیل‌گر (حالت خشک): در فهرست «و/یا» واژهٔ مترادفِ دسته (نه نام دسته) یک «مورد» است؛ برای این تصمیم به داده نگاه نمی‌کنیم */
+            if (hit) _hkAsstDataNotes.push('row_word:' + hit[1]);
+            if (!hit && !isName && _hkAsstDry) hit = cands[cands.length - 1];
             if (hit) {
               /* واژه‌ای مثل «بنزین/نان» که ردیف هم هست: در فهرست «و/یا» یعنی همان ردیف‌ها، نه کل دسته */
               var dwG = dataWords.filter(function (d) { return d.key === hit[0]; })[0], wG = dwG ? dwG.word : hit[1];
@@ -57389,12 +58336,12 @@ function openProjectRowPicker(secId) {
       }
       words.forEach(function (w, wi) {
         if (grpWi[wi] || fixedWi[wi]) return;
-        if (!subj) { var sm = hkAsstFindSubject(w); if (sm) { subj = sm; return; } }
+        if (!subj) { var sm = hkAsstFindSubject(w); if (sm) { _hkAsstDataNotes.push('project_name:' + w); subj = sm; return; } }
         textWords.push(resolveTxt(w));
       });
       fixedTexts.forEach(function (ft) { textWords.push(ft); });
       if (grp && !chainAsk && textWords.length && anyList.length) chainAsk = 'کنار «' + anyList.join(' و ') + '» واژهٔ «' + textWords.join(' ') + '» هم آمده؛ منظورت کدام ترکیب است؟ (مثلاً هر دو را جدا بنویس)';
-      if (chainAsk) return { ask: chainAsk, final: true, understood: '', corrections: [], suggestions: [], decision: 'ask' };
+      if (chainAsk) return { why: 'ambiguous_union', ask: chainAsk, final: true, understood: '', corrections: [], suggestions: [], decision: 'ask' };
       /* مرحلهٔ ۳: مبلغ و عملگر آن */
       /* سال کامل (۱۳xx/۱۴xx بی‌واحد) مبلغ نیست */
       var amts = hkAsstAmountAt(text.replace(/(^|\s)(13|14)\d\d(?=\s|$)(?!\s*(میلیون|هزار|میلیارد|ملیارد|تومان|تومن|ریال))/g, ' '));
@@ -57432,6 +58379,11 @@ function openProjectRowPicker(secId) {
       var hasE = codes.indexOf('EXP') >= 0, hasI = codes.indexOf('INC') >= 0;
       if (hasE && !hasI) args.tab = 'expense';
       if (hasI && !hasE) args.tab = 'income';
+      /* ۱.۴.۴۳: «بیشترین خرج/هزینه»، «کمترین هزینه»، «بزرگ‌ترین خرج»: عبارت فرهنگ لغت واژهٔ خرج/هزینه را می‌بلعد؛ نوع باید از خود متن گرفته شود تا ردیف درآمد وارد نتیجه نشود */
+      if (!args.tab && (codes.indexOf('MAX') >= 0 || codes.indexOf('MIN') >= 0)) {
+        var wExp = /(^| )(خرج|هزینه|مخارج)/.test(text), wInc = /(^| )(درآمد|دخل|واریز)/.test(text);
+        if (wExp && !wInc) args.tab = 'expense'; else if (wInc && !wExp) args.tab = 'income';
+      }
       /* ۱.۴.۴۵: «دستهٔ خوراکی / مجموع دستهٔ قبوض» = جمع همان دسته؛ فقط تفکیک/دسته‌ها/دسته‌بندی/هر دسته گزارش گروه‌بندی‌شده است */
       if (codes.indexOf('GRP') >= 0 && codes.some(function (c) { return c.indexOf('CAT_') === 0; }) && /(^| )دسته( |$)/.test(text.replace(/\u0654/g, '')) && !/(تفکیک|دسته[\s\u200c]*(ها|های|بندی)|گروه|هر[\s\u200c]*(دسته|ماه)|بر[\s\u200c]*اساس|جدا|ماه به ماه)/.test(text)) {
         var gi = codes.indexOf('GRP'); if (gi >= 0) codes.splice(gi, 1);
@@ -57450,6 +58402,9 @@ function openProjectRowPicker(secId) {
         if (!isName && !/(^| )(کل|کلِ|همه|همهٔ|مجموع|دسته|دستهٔ)( |$)/.test(text)) {
           var hayA = ''; try { hayA = hkAsstHayAll(); } catch (eAm) {}
           var hit = cands.filter(function (c) { return c[0].length >= 3 && hayA.indexOf(c[0]) >= 0; })[0];
+          /* تحلیل‌گر (حالت خشک): نشانهٔ صریح «ردیف/تراکنش …» خودش کافی است و به وجود ردیف در داده بستگی ندارد؛ ردیفِ نبوده را مرحلهٔ تطبیق با داده «ثبت نشده» می‌گوید */
+          if (hit) _hkAsstDataNotes.push('row_word:' + hit[1]);
+          if (!hit && _hkAsstDry && /(^| )(ردیف|تراکنش|اسم|عنوان)(ها|های|ای)?( |$)/.test(text)) hit = cands[cands.length - 1];
           if (hit) {
             var dwA = dataWords.filter(function (d) { return d.key === hit[0]; })[0], wordA = dwA ? dwA.word : hit[1];
             if (/(^| )(ردیف|تراکنش|اسم|عنوان)(ها|های|ای)?( |$)/.test(text)) { delete args.cats; args.text = wordA; catIds = []; }
@@ -57479,13 +58434,13 @@ function openProjectRowPicker(secId) {
       /* ۱.۴.۳۷: گفتگوی عادی و قصدهای تحلیلی (وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه، هدف…) */
       if (!special && !unpaidFlag && !transferFlag) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
       var chatK = hkAsstChatKind(codes, textWords, amts, text);
-      if (chatK) return { ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
+      if (chatK) return { why: 'chat:' + chatK, ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
       if (special) {
         var sc = hkAsstSpecialCmd(special, codes, args, text, amts);
         if (sc) { sc.corrections = corrections; return sc; }
       }
       /* ۱.۴.۴۳: نشانهٔ استثنای شناسایی‌نشده («به استثنای قبض»، «منهای اسنپ»، «مگر قبوض»، «قبض نباشه»): اگر این‌جا ادامه بدهیم، کلمهٔ بعدش شرط «مثبت» می‌شود و معنا برعکس؛ پس عدد نمی‌دهیم */
-      if (/(^| )(به ?استثنای|استثنای|استثنا|منهای|منها|مگر|نباشه|نباشد|نباشن|نباشند)( |$)|(^| )غیر( |$)/.test(text)) return { ask: 'منظورت کنار گذاشتنِ چیزیه؟ دقیق‌تر بگو، مثلاً «بدون X» یا «به‌جز X»، تا عددی که می‌گم همون چیزی باشه که می‌خوای.', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
+      if (/(^| )(به ?استثنای|استثنای|استثنا|منهای|منها|مگر|نباشه|نباشد|نباشن|نباشند)( |$)|(^| )غیر( |$)/.test(text)) return { why: 'unsupported_exception_cue', ask: 'منظورت کنار گذاشتنِ چیزیه؟ دقیق‌تر بگو، مثلاً «بدون X» یا «به‌جز X»، تا عددی که می‌گم همون چیزی باشه که می‌خوای.', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
       /* مرحلهٔ ۶: قصد (intent) */
       var intent = null;
       if (codes.indexOf('CMP') >= 0) intent = 'compare';
@@ -57508,9 +58463,9 @@ function openProjectRowPicker(secId) {
       }
       /* ۱.۴.۴۶: «چقدر شد؟» / «جمعش؟» بی‌هیچ موضوع، نوع، بازه یا شرط: جمع همهٔ داده‌ها یک عدد بی‌معنا می‌شود؛ پرسیده می‌شود */
       if (intent === 'sum' && !hasFilter && !transferFlag && !unpaidFlag && !args.text && !args.textAny && args.amountEq == null && args.amountMin == null && args.amountMax == null && !args.status && !args.excludeText && !args.excludeCats && !/(تراکنش|ردیف|همه|کل|مجموع|حساب|پروژه|ماه|سال)/.test(text.replace(/جمعش/g, '')) && !(anaphora && _hkAsstCtx && Date.now() - _hkAsstCtx.at < 900000)) {
-        return { ask: 'چقدرِ چی؟ بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟» یا «بنزین چقدر شد؟»).', final: true, understood: '', corrections: [], suggestions: ['این ماه چقدر خرج کردم؟', 'درآمد این ماه چقدره؟'], chipRaw: true, decision: 'ask' };
+        return { why: 'missing_scope', ask: 'چقدرِ چی؟ بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟» یا «بنزین چقدر شد؟»).', final: true, understood: '', corrections: [], suggestions: ['این ماه چقدر خرج کردم؟', 'درآمد این ماه چقدره؟'], chipRaw: true, decision: 'ask' };
       }
-      if (!intent) return { ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
+      if (!intent) return { why: 'not_understood', ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
 
       /* ۱.۴.۴۵: «فقط ردیف‌های بنزین رو حساب کن» بعد از «بنزین این ماه»: پالایش همان سؤال است؛ فقط موجودیت عوض می‌شود و بازه و شرط‌های دیگر می‌ماند */
       var refine = false;
@@ -58133,11 +59088,18 @@ function openProjectRowPicker(secId) {
       return out && out !== P.q ? out : '';
     }
     /* یک پیام کاربر را پردازش می‌کند؛ خروجی یک پیام دستیار است (بدون تغییر داده). حالت قاعده‌ای، همگام */
-    function hkAsstAsk(text) {
+    function hkAsstAsk(text, engine) {
       var q = String(text || '').trim();
       if (!q) return { role: 'bot', kind: 'text', text: 'چیزی ننوشتی. مثلاً: «بیمه تویوتا را پیدا کن».' };
       var gs = hkAsstGuideStep(q);
       if (gs) return gs;
+      /* ۱.۴.۴۵: موتور چهارمرحله‌ای (تحلیل ← تطبیق ← محاسبه ← پاسخ) پیش‌فرض است؛ جز در سؤال‌های گفتگو/ناوبری/عملیات که همان مسیر قبلی اجرایشان می‌کند.
+         بازگشت به موتور قبلی: hkAsstSetEngine('legacy') (کلید داخلی، در رابط دیده نمی‌شود). */
+      if ((engine || hkAsstEngine()) === 'chain') { var cr = hkAsstAskChain(q); if (cr) return cr; }
+      return hkAsstAskLegacy(q);
+    }
+    /* مسیر قبلی دستیار (بی‌تغییر): پس از مرحلهٔ راهنمای گام‌به‌گام */
+    function hkAsstAskLegacy(q) {
       /* پاسخ کوتاهِ کاربر به یک پرسش روشن‌کننده («بنزین»، «منظورم قبض بود»): واژهٔ ناشناخته با همین پاسخ عوض می‌شود و سؤال اصلی دوباره اجرا می‌شود */
       var rep = hkAsstPendingRewrite(q); if (rep) q = rep;
       var cmd;
