@@ -1010,7 +1010,7 @@ function askBackupUserCards(selectedParts) {
         dst.ledger = mergeLedgerBlocks(dst.ledger, src.ledger);
         /* موجودی‌های اول ماه، موجودی کارت‌ها و تنظیمات کارت‌های فایل ورودی هم بیایند (فقط کلیدهایی که اینجا نیست؛ داده‌های محلی دست نمی‌خورد).
            قبلاً این‌ها برای ماه‌های مشترک دور ریخته می‌شد و موجودی حساب‌های کاربر دوم ناقص حساب می‌شد. */
-        ['accountOpeningInstant', 'personOpeningInstant', 'cardMeta'].forEach(function (f) {
+        ['accountOpeningInstant', 'accountOpeningBase', 'personOpeningInstant', 'cardMeta'].forEach(function (f) {
           const sm = src[f];
           if (!sm || typeof sm !== 'object') return;
           if (!dst[f] || typeof dst[f] !== 'object') dst[f] = {};

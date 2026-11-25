@@ -812,3 +812,146 @@
       return '<span class="ib-proj-dots" aria-label="پروژه">' + cols.map(function (c) { return '<i style="background:' + escapeHtml(c) + '"></i>'; }).join('') + '</span>';
     }
 
+
+    /* ===== ۱.۴.۴۵: زنجیرهٔ موجودی اول ماه کارت‌ها =====
+       موجودی اول هر ماه یک بار (وقتی ماه ساخته می‌شود) ذخیره می‌شد. اگر بعداً ردیفی در ماه قبل ثبت یا ویرایش می‌شد (مثلاً پیامک ساعت ۱۱ شب
+       آخر ماه که بعد از نیمه‌شب تأیید شد)، موجودی اول ماه‌های بعد کهنه می‌ماند و مغایرتِ ساختگی («ردیف اختلاف») می‌ساخت.
+       راه‌حل بی‌خطر برای عددهای دستیِ کاربر: کنار هر موجودی اول ماه، «پایان ماه قبلِ همان لحظه» (accountOpeningBase) نگه داشته می‌شود؛
+       هر بار پایان ماه قبل عوض شد، موجودی اول ماه بعد فقط به‌اندازهٔ همان تغییر جابه‌جا می‌شود (اختلافِ دستیِ قبلی حفظ می‌شود).
+       ماه ایجاد کارت دست نمی‌خورد. موجودی کل از جمع همین موجودی‌ها می‌آید، پس با آن درست می‌شود.
+       legacy=true (فقط تبدیل شمارهٔ ۵، برای دادهٔ قدیمی بی‌نشانه): موجودی اول فقط وقتی اصلاح می‌شود که اختلافش با پایان ماه قبل دقیقاً برابر
+       جمع علامت‌دار یک تا سه ردیف پرداخت‌شدهٔ همان کارت در ماه قبل باشد (یعنی آن ردیف‌ها بعد از ذخیرهٔ موجودی ثبت شده‌اند)؛ وگرنه دست نمی‌خورد.
+       apply=false فقط گزارش می‌دهد. خروجی: { changes:[{k,y,m,label,from,to}], gaps:[...] } (gaps: ردیف اختلاف دقیقاً هم‌اندازهٔ اصلاح). */
+    function hkOpeningMonthRows(pd, lb, list) {
+      var sum = 0;
+      ['income', 'expense'].forEach(function (tab) {
+        var sign = tab === 'income' ? 1 : -1;
+        var side = pd && (pd[tab] || (tab === 'expense' && pd.sections ? { sections: pd.sections } : null));
+        ((side && side.sections) || []).forEach(function (sec) {
+          ((sec && sec.rows) || []).forEach(function (r) {
+            if (!r || r.deletedAt || (r.status || 'paid') !== 'paid') return;
+            if ((r.account || '').trim() !== lb) return;
+            var v = sign * (Number(r.amount) || 0);
+            sum += v;
+            if (list && v) list.push(v);
+          });
+        });
+      });
+      return sum;
+    }
+    function hkOpeningExplained(vals, target) {
+      /* آیا جمع یک تا سه مقدار از vals دقیقاً target است؟ */
+      var n = Math.min(vals.length, 40), i, j, k;
+      for (i = 0; i < n; i++) {
+        if (vals[i] === target) return true;
+        for (j = i + 1; j < n; j++) {
+          if (vals[i] + vals[j] === target) return true;
+          for (k = j + 1; k < n; k++) if (vals[i] + vals[j] + vals[k] === target) return true;
+        }
+      }
+      return false;
+    }
+    function hkOpeningResync(apply, legacy) {
+      var res = { changes: [], gaps: [] };
+      try {
+        var curK = periodKey(currentYear, currentMonth);
+        var keys = Object.keys(archive || {}); if (keys.indexOf(curK) < 0) keys.push(curK);
+        var items = keys.map(function (k) { var p = String(k).split('-'); return { k: k, y: parseInt(p[0], 10), m: parseInt(p[1], 10) }; })
+          .filter(function (x) { return x.y > 1300 && x.m >= 1 && x.m <= 12; })
+          .sort(function (a, b) { return (a.y * 100 + a.m) - (b.y * 100 + b.m); });
+        var labels = [];
+        (selectedBankAccounts || []).forEach(function (a) {
+          if (!a) return;
+          var lb = (typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '');
+          if (lb && labels.indexOf(lb) < 0) labels.push(lb);
+        });
+        var setVal = function (it, field, lb, v) {
+          var pd = it.k === curK ? periodData : archive[it.k], arc = archive[it.k];
+          [pd, it.k === curK ? arc : null].forEach(function (o) {
+            if (!o || typeof o !== 'object') return;
+            if (!o[field] || typeof o[field] !== 'object') o[field] = {};
+            o[field][lb] = v;
+          });
+        };
+        labels.forEach(function (lb) {
+          var ck = _hkAccCreationKey(lb), carry = null, prevItem = null;
+          items.forEach(function (it) {
+            if (it.y * 100 + it.m < ck) return;
+            var pd = it.k === curK ? periodData : archive[it.k];
+            if (!pd || typeof pd !== 'object') return;
+            var map = (pd.accountOpeningInstant && typeof pd.accountOpeningInstant === 'object') ? pd.accountOpeningInstant : null;
+            var bmap = (pd.accountOpeningBase && typeof pd.accountOpeningBase === 'object') ? pd.accountOpeningBase : null;
+            var stored = (map && map[lb] != null && map[lb] !== '') ? (Number(map[lb]) || 0) : null;
+            var base = (bmap && bmap[lb] != null && bmap[lb] !== '') ? (Number(bmap[lb]) || 0) : null;
+            var open;
+            if (carry === null) {
+              open = stored;
+              if (open == null) { open = 0; (selectedBankAccounts || []).forEach(function (a) { if (a && ((typeof accountLabel === 'function') ? accountLabel(a) : (a.label || '')) === lb) open += Number(a.openingBalance) || 0; }); }
+            } else if (stored == null) {
+              open = carry;
+            } else if (base != null) {
+              open = stored;
+              if (base !== carry) {
+                open = stored + (carry - base);
+                res.changes.push({ k: it.k, y: it.y, m: it.m, label: lb, from: stored, to: open });
+                if (apply) { setVal(it, 'accountOpeningInstant', lb, open); setVal(it, 'accountOpeningBase', lb, carry); }
+              }
+            } else {
+              open = stored;
+              if (stored === carry) { if (apply) setVal(it, 'accountOpeningBase', lb, carry); }
+              else if (legacy) {
+                var vals = []; hkOpeningMonthRows(prevItem.k === curK ? periodData : archive[prevItem.k], lb, vals);
+                if (hkOpeningExplained(vals, carry - stored)) {
+                  open = carry;
+                  res.changes.push({ k: it.k, y: it.y, m: it.m, label: lb, from: stored, to: open });
+                  if (apply) { setVal(it, 'accountOpeningInstant', lb, open); setVal(it, 'accountOpeningBase', lb, carry); }
+                } else if (apply) setVal(it, 'accountOpeningBase', lb, carry);   /* اختلاف دستی/ناشناخته: همان‌طور می‌ماند و از این به بعد فقط جابه‌جایی‌ها اعمال می‌شود */
+              } else if (apply) setVal(it, 'accountOpeningBase', lb, carry);
+            }
+            carry = open + hkOpeningMonthRows(pd, lb);
+            prevItem = it;
+          });
+        });
+        /* ردیف اختلافی که دقیقاً همین اصلاح را جبران کرده بود (مبلغ علامت‌دار ردیف = تغییر موجودی اول) */
+        var firstOf = {};
+        res.changes.forEach(function (c) { if (!firstOf[c.label]) firstOf[c.label] = c; });
+        Object.keys(firstOf).forEach(function (lb) {
+          var c = firstOf[lb], pd = c.k === curK ? periodData : archive[c.k], d = c.to - c.from, hit = null;
+          ['income', 'expense'].forEach(function (tab) {
+            var sign = tab === 'income' ? 1 : -1;
+            ((pd && pd[tab] && pd[tab].sections) || []).forEach(function (sec) {
+              ((sec && sec.rows) || []).forEach(function (r) {
+                if (hit || !r || r.deletedAt || !r.reconGap || (r.status || 'paid') !== 'paid' || (r.account || '').trim() !== lb) return;
+                if (sign * (Number(r.amount) || 0) === d) hit = { k: c.k, label: lb, desc: r.desc || '', amount: Number(r.amount) || 0, day: r.day || '', tab: tab };
+              });
+            });
+          });
+          if (hit) res.gaps.push(hit);
+        });
+      } catch (e) {}
+      return res;
+    }
+    /* هر ذخیره: اگر ماه قبل عوض شده، موجودی اول ماه‌های بعد (و ماه بازِ فعلی) هم‌زمان به‌روز می‌شود. فقط بعد از تبدیل شمارهٔ ۵ */
+    var _hkOpeningBusy = false;
+    function hkOpeningResyncLive() {
+      if (_hkOpeningBusy) return 0;
+      _hkOpeningBusy = true;
+      try {
+        if (typeof hkDataVer === 'function' && hkDataVer() < 5) return 0;
+        var r = hkOpeningResync(true);
+        if (!r.changes.length) return 0;
+        var curK = periodKey(currentYear, currentMonth);
+        if (r.changes.some(function (c) { return c.k === curK; })) { setTimeout(function () { try { renderAll(); } catch (e) {} }, 0); }
+        return r.changes.length;
+      } catch (e) { return 0; } finally { _hkOpeningBusy = false; }
+    }
+    /* پیام یک‌باره بعد از اصلاح قدیمی‌ها */
+    function hkOpeningNoticeText(res) {
+      var by = {}; res.changes.forEach(function (c) { (by[c.label] = by[c.label] || []).push(c); });
+      var lines = Object.keys(by).map(function (lb) {
+        var a = by[lb], first = a[0], tot = a[a.length - 1].to - a[a.length - 1].from;
+        return '«' + lb + '»: موجودی اول ' + toPersianDigits(String(a.length)) + ' ماه از ' + (MONTHS[first.m - 1] || '') + ' ' + toPersianDigits(String(first.y)) + ' اصلاح شد (' + (tot > 0 ? '+' : '−') + toPersianDigits(formatNum(Math.abs(tot))) + ' تومان).';
+      });
+      res.gaps.forEach(function (g) { lines.push('ردیف اختلاف «' + g.desc + '» (' + toPersianDigits(formatNum(g.amount)) + ' تومان، روز ' + toPersianDigits(String(g.day)) + ') در «' + g.label + '» برای جبران همین اختلاف ثبت شده بود؛ اگر درست است حذفش کن تا دوبار حساب نشود.'); });
+      return lines.join('\n');
+    }

@@ -41,26 +41,41 @@
       });
       return out;
     }
+    /* ۱.۴.۴۳: تطبیق «واژهٔ کامل» (نه زیررشته): «نان» با «دانانو» نمی‌خواند. شرح و بخش ردیف به واژه شکسته می‌شود و هر واژه با جمع/عامیانهٔ ساده (ها، های، ا، ای) پذیرفته می‌شود */
+    function hkAsstRowTokens(r) {
+      if (r._hkTok) return r._hkTok;
+      var t = hkAsstNorm(String(r.desc || '') + ' ' + String(r.section || '')).replace(/[،,.؛:!؟?()\[\]\-_\/\\]/g, ' ').split(' ').map(hkAsstKey).filter(Boolean);
+      try { r._hkTok = t; } catch (e) {}
+      return t;
+    }
+    function hkAsstTokEq(tok, w) { return tok === w || (w.length >= 2 && (tok === w + 'ها' || tok === w + 'های' || tok === w + 'ا' || tok === w + 'ای')); }
+    function hkAsstHasWord(tokens, w) { for (var i = 0; i < tokens.length; i++) if (hkAsstTokEq(tokens[i], w)) return true; return false; }
+    /* عبارت چندواژه‌ای به‌صورت پشت‌سرهم (برای «بدون قبض آب») */
+    function hkAsstHasPhrase(tokens, words) {
+      if (!words.length) return false;
+      for (var i = 0; i + words.length <= tokens.length; i++) { var ok = true; for (var j = 0; j < words.length; j++) if (!hkAsstTokEq(tokens[i + j], words[j])) { ok = false; break; } if (ok) return true; }
+      return false;
+    }
     function hkAsstFilter(rows, f) {
       f = f || {};
       var text = hkAsstNorm(f.text).split(' ').filter(Boolean);
       var acct = hkAsstNorm(f.account);
       /* هر عضو اجتماع مثل text است: همهٔ کلمه‌های همان عضو باید در ردیف باشند؛ ردیف با هر عضو بخواند عبور می‌کند */
-      var anyT = (f.textAny || []).map(function (x) { return hkAsstNorm(x).split(' ').filter(Boolean); }).filter(function (ws) { return ws.length; });
-      var exT = (f.excludeText || []).map(function (x) { return hkAsstKey(x); }).filter(Boolean), exC = f.excludeCats || [];
+      var anyT = (f.textAny || []).map(function (x) { return hkAsstNorm(x).split(' ').filter(Boolean).map(hkAsstKey); }).filter(function (ws) { return ws.length; });
+      var exT = (f.excludeText || []).map(function (x) { return hkAsstNorm(x).split(' ').map(hkAsstKey).filter(Boolean); }).filter(function (w) { return w.length; }), exC = f.excludeCats || [];
       var from = f.dateFrom ? hkAsstDateKey(f.dateFrom) : null, to = f.dateTo ? hkAsstDateKey(f.dateTo) : null;
       return rows.filter(function (r) {
         /* ۱.۴.۴۱: فقط ردیف‌های دارای مبلغ تراکنش شمرده می‌شوند؛ ردیف ناقص (بی‌مبلغ) فقط با keepDrafts برای گزارش جدا می‌آید */
         if (!f.keepDrafts && r.amount === 0 && f.amountEq == null) return false;
         if (!f.includeTransfers && r.transfer) return false;
         if (exT.length || exC.length) {
-          var hk = hkAsstKey(r.desc + ' ' + r.section);
-          for (var ei = 0; ei < exT.length; ei++) if (hk.indexOf(exT[ei]) >= 0) return false;
+          var rt = hkAsstRowTokens(r);
+          for (var ei = 0; ei < exT.length; ei++) if (hkAsstHasPhrase(rt, exT[ei])) return false;
           for (var ci = 0; ci < exC.length; ci++) if (hkAsstCatHit(r, exC[ci])) return false;
         }
         if (text.length) {
-          var hay = hkAsstNorm(r.desc + ' ' + r.section);
-          for (var i = 0; i < text.length; i++) if (hay.indexOf(text[i]) < 0) return false;
+          var tk = hkAsstRowTokens(r);
+          for (var i = 0; i < text.length; i++) if (!hkAsstHasWord(tk, hkAsstKey(text[i]))) return false;
         }
         if (f.amountEq != null && r.amount !== Number(f.amountEq)) return false;
         if (f.amountMin != null && r.amount < Number(f.amountMin)) return false;
@@ -78,8 +93,8 @@
         /* ۱.۴.۴۵: «برنج و نان / برنج یا نان»: اجتماع (OR)؛ ردیفی که با هر دو می‌خواند فقط یک بار شمرده می‌شود. با unionCats دسته‌ها هم عضو همین اجتماع‌اند (نه اشتراک) */
         var anyHit = true;
         if (anyT.length) {
-          var hayA = hkAsstNorm(r.desc + ' ' + r.section);
-          anyHit = anyT.some(function (ws) { return ws.every(function (w) { return hayA.indexOf(w) >= 0; }); });
+          var tkA = hkAsstRowTokens(r);
+          anyHit = anyT.some(function (ws) { return ws.every(function (w) { return hkAsstHasWord(tkA, w); }); });
           if (!anyHit && f.unionCats && f.cats && f.cats.length) anyHit = f.cats.some(function (c) { return hkAsstCatHit(r, c); });
           if (!anyHit) return false;
         }

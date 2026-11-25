@@ -23,6 +23,8 @@
     function hkAsstAliasAdd(from, to) {
       from = String(from || '').trim(); to = String(to || '').trim();
       if (!from || !to || from.length > 40 || to.length > 40 || hkAsstKey(from) === hkAsstKey(to)) return false;
+      /* تحلیل‌گر (۱.۴.۴۴): حالت خشک؛ اصطلاح ذخیره نمی‌شود و فقط ثبت می‌شود که چنین درخواستی بوده */
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'alias', from: from, to: to }); return true; }
       var a = hkAsstAliasList().filter(function (x) { return hkAsstKey(x.from) !== hkAsstKey(from); });
       a.push({ from: from, to: to }); hkAsstAliasSave(a); return true;
     }
@@ -47,7 +49,7 @@
         || new RegExp('^منظور(?:م)?\\s+(?:از\\s+)?[«"“]([^«»"“”]{2,40})[»"”]\\s*[«"“]([^«»"“”]{2,40})[»"”]\\s*(?:بود|است|هست|باشه)?$').exec(q);
       if (!m) return null;
       if (!hkAsstAliasAdd(m[1], m[2])) return null;
-      return { ask: hkAsstPick(['باشه، از این به بعد «' + m[1].trim() + '» رو «' + m[2].trim() + '» حساب می‌کنم. (برای حذفش: نگه داشتن عنوان دستیار ← «واژه‌های من»)', 'یاد گرفتم: «' + m[1].trim() + '» یعنی «' + m[2].trim() + '». هر وقت خواستی از «واژه‌های من» پاکش کن.']), final: true, understood: '', corrections: [], suggestions: [] };
+      return { why: 'app_action:alias', ask: hkAsstPick(['باشه، از این به بعد «' + m[1].trim() + '» رو «' + m[2].trim() + '» حساب می‌کنم. (برای حذفش: نگه داشتن عنوان دستیار ← «واژه‌های من»)', 'یاد گرفتم: «' + m[1].trim() + '» یعنی «' + m[2].trim() + '». هر وقت خواستی از «واژه‌های من» پاکش کن.']), final: true, understood: '', corrections: [], suggestions: [] };
     }
 
     /* ---------- نمای خوانا از قاب معنایی (برای آزمون و گزارش) ---------- */
@@ -58,7 +60,7 @@
     }
 
     /* ---------- تصمیم: آماده / پیشنهاد جایگزین / پرسش روشن‌کننده ---------- */
-    function hkAsstAsking(ask, chips) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: chips || [], chipRaw: true, decision: 'ask' }; }
+    function hkAsstAsking(ask, chips, why) { return { why: why || 'missing_scope', ask: ask, final: true, understood: '', corrections: [], suggestions: chips || [], chipRaw: true, decision: 'ask' }; }
     function hkAsstPeriodLabel(a) {
       if (a.month) return HK_ASST_MONTH_NAMES[a.month - 1] + (a.year && a.year !== hkAsstCY() ? ' ' + toPersianDigits(String(a.year)) : '');
       if (a.year) return 'سال ' + toPersianDigits(String(a.year));
@@ -89,7 +91,7 @@
       }
       /* ۳) «ده تا … بزرگ» که هم دسته و هم تراکنش در آن آمده */
       if (/(^| )(\d+|ده|پنج|سه|بیست|دو|چهار|شش|هفت|هشت|نه)\s*تا/.test(hkAsstFaDigits(T)) && /(^| )دسته/.test(T) && /تراکنش|ردیف/.test(T)) {
-        return hkAsstAsking('منظورت چند تراکنشِ بزرگه یا چند دستهٔ پرهزینه؟', ['ده تراکنش با بیشترین مبلغ', 'پولم بیشتر کجا رفته؟']);
+        return hkAsstAsking('منظورت چند تراکنشِ بزرگه یا چند دستهٔ پرهزینه؟', ['ده تراکنش با بیشترین مبلغ', 'پولم بیشتر کجا رفته؟'], 'ambiguous_reading');
       }
       return null;
     }

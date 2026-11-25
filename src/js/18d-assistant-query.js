@@ -54,7 +54,7 @@
     /* ۱.۴.۴۳: کنار گذاشتنِ ماه/پروژه/حساب هنوز پشتیبانی نمی‌شود؛ به‌جای نادیده گرفتنِ بی‌صدا، همان‌جا متوقف می‌شود و عددی داده نمی‌شود */
     function hkAsstNegUnsupported(list) {
       var one = list[0];
-      return { ask: 'کنار گذاشتنِ «' + one.w + '» (' + one.kind + ') رو هنوز نمی‌تونم انجام بدم؛ فقط دسته یا کلمه‌ای از شرح ردیف‌ها رو می‌تونم کنار بذارم، مثلاً «بدون بنزین» یا «به‌جز قبوض».', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
+      return { why: 'unsupported_negation', ask: 'کنار گذاشتنِ «' + one.w + '» (' + one.kind + ') رو هنوز نمی‌تونم انجام بدم؛ فقط دسته یا کلمه‌ای از شرح ردیف‌ها رو می‌تونم کنار بذارم، مثلاً «بدون بنزین» یا «به‌جز قبوض».', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
     }
     function hkAsstNegArgs(negWords, curTab) {
       var exT = [], exC = [], negFlow = '', unsup = [], dataWords = hkAsstDataWords();
@@ -83,15 +83,19 @@
       return out;
     }
     /* آیا دو واژهٔ پشت‌سرهم، با هم، عبارتی‌اند که در شرح یکی از ردیف‌ها آمده؟ («قسط وام»، «قبض آب») */
+    /* دو واژهٔ پشت‌سرهم که هر دو از مترادف‌های «یک» دسته‌اند («قسط وام»، «قبض آب»، «قبض برق») یک عبارت‌اند؛ برای این تصمیم به داده نیازی نیست */
+    function hkAsstSameCatPair(a, b) { try { var x = hkAsstLookup(hkAsstKey(a)), y = hkAsstLookup(hkAsstKey(b)); return !!x && x === y && x.indexOf('CAT_') === 0; } catch (e) { return false; } }
     var _hkAsstJoinHay = null;
+    /* تصمیم‌هایی که به واژگان دادهٔ کاربر نگاه می‌کنند را اینجا ثبت می‌کنیم تا تحلیل‌گر (۱.۴.۴۴) آن‌ها را «وابسته به داده» علامت بزند */
+    var _hkAsstDataNotes = [];
     function hkAsstJoinedInData(a, b) {
-      try { if (_hkAsstJoinHay === null) _hkAsstJoinHay = hkAsstHayAll(); return _hkAsstJoinHay.indexOf(hkAsstKey(String(a) + ' ' + String(b))) >= 0; } catch (e) { return false; }
+      try { if (_hkAsstJoinHay === null) _hkAsstJoinHay = hkAsstHayAll(); var ok = _hkAsstJoinHay.indexOf(hkAsstKey(String(a) + ' ' + String(b))) >= 0; if (ok) _hkAsstDataNotes.push('row_phrase:' + a + ' ' + b); return ok; } catch (e) { return false; }
     }
     function hkAsstSemantic(raw) {
-      _hkAsstJoinHay = null;
+      _hkAsstJoinHay = null; _hkAsstDataNotes = [];
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!text) return { ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
+      if (!text) return { why: 'empty', ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
       /* ۱.۴.۳۷: «سال ۴۰۳» و «آذر ۰۳» را «۱۴۰۳» می‌کند */
       text = hkAsstNormYears(text);
       /* ۱.۴.۴۶: «چند تومن/چند تومان» یعنی «چقدر» (مبلغ)، نه «چند تا» (تعداد) */
@@ -108,7 +112,7 @@
       text = text.replace(/(^| )(تراکنش|ردیف|خرید|هزینه|مخارج|درآمد|واریزی|برداشتی|خرج)(ام|هام|هامو)(?= |$)/g, '$1$2');
       text = text.replace(/(^| )(همونو|همونا|همینو|همینا|اونو|اونا|اون یکی)(?= |$)/g, function (a) { anaphora = true; return a; });
       if (/(^| )منظورم( |$)/.test(text)) { anaphora = true; text = text.replace(/(^| )(نه |نخیر )?(اشتباه فهمیدی |اشتباه شد )?منظورم ?/, '$1').replace(/ بود$/, '').trim(); }
-      text = text.replace(/(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
+      text = text.replace(/(^| )نپرداخت(?:ه|م|ی|یم|ن|ید)?(?= |$)|(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; /* ۱.۴.۴۳: «نپرداختم» نفی «پرداخت» است (هزینهٔ پرداخت‌نشده) و هرگز «پرداختم» حساب نمی‌شود */ if (/نپرداخت/.test(m)) unpaidTab = 'expense'; else if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
       text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
       text = text.replace(/\s+/g, ' ').trim();
       /* ۱.۴.۴۱: «بدون اسنپ»، «جز قبوض»، «به‌جز هزینه‌ها»، «غیر از X»، «X رو حساب نکن»: بخش کنار گذاشته‌شده از متن جدا و بعداً به شرط «نه» تبدیل می‌شود (نه شرط مثبت) */
@@ -131,9 +135,9 @@
           if (/^دسته[\u0654\u06c0ی]*(ای|ها)?$/.test(f1.replace(/[\u0654\u0670]/g, '')) || /^دسته/.test(f1) && f1.length <= 6) { catMark = '\u0001'; j++; if (!toks[j]) { out.push(toks[i]); continue; } }
           var phrase = catMark + toks[j]; j++;
           /* ۱.۴.۴۶: «به‌جز قسط وام / بدون قبض آب»: اگر دو واژه با هم نام یک ردیف‌اند، جدا نشوند (وگرنه واژهٔ دوم که در فرهنگ لغت دسته است شرط «مثبت» می‌ماند و جواب وارونه/خالی می‌شود) */
-          if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]))) { phrase += ' ' + toks[j]; j++; }
+          if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]) || hkAsstSameCatPair(toks[j - 1], toks[j]))) { phrase += ' ' + toks[j]; j++; }
           negWords.push(phrase);
-          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]))) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
+          while (toks[j] === 'و' && toks[j + 1]) { var p2 = toks[j + 1]; j += 2; if (toks[j] && (!boundary(j) || hkAsstJoinedInData(toks[j - 1], toks[j]) || hkAsstSameCatPair(toks[j - 1], toks[j]))) { p2 += ' ' + toks[j]; j++; } negWords.push(p2); }
           i = j - 1;
         }
         text = out.join(' ');
@@ -193,6 +197,8 @@
         var keyN = key.replace(/[\u0654\u0670\u064B-\u065F]/g, '');
         if (keyN !== key) { var cN = hkAsstLookup(keyN); if (cN) { codes.push(cN); if (cN.indexOf('CAT_') === 0) { catSrc.push({ id: cN.slice(4), phrase: keyN }); ents.push({ s: i0, e: i0 + 1, kind: 'cat', id: cN.slice(4), phrase: keyN, code: cN }); } continue; } }
         var fz = hkAsstFuzzyCode(key);
+        /* ۱.۴.۴۳: غلط‌یاب هرگز نفی را مثبت نمی‌کند («نپرداختم» ← «پرداختم») */
+        if (fz && key.charAt(0) === 'ن' && hkAsstKey(fz.word) === key.slice(1)) fz = null;
         if (fz) { codes.push(fz.code); corrections.push({ from: t, to: fz.word }); continue; }
         ents.push({ s: i0, e: i0 + 1, kind: 'text', raw: t, wis: [words.length] });
         words.push(_plural(t));
@@ -213,7 +219,7 @@
           /* «قبض برق» که هر دو واژه‌اش در فرهنگ لغت دسته‌اند ولی نام یک ردیف است: یک عنصر متنی */
           if (L && L.e === e.s && !conj[L.e] && (L.kind === 'cat' || L.fixed) && (e.kind === 'cat' || e.kind === 'text')) {
             var j = (L.fixed || L.phrase) + ' ' + (e.kind === 'cat' ? e.phrase : words[e.wis[0]]);
-            if (hayM.indexOf(hkAsstKey(j)) >= 0) { merged[merged.length - 1] = { kind: 'text', s: L.s, e: e.e, wis: (L.wis || []).concat(e.kind === 'text' ? e.wis : []), fixed: j.split(' ').map(dataSurface).join(' '), rmCodes: (L.rmCodes || [L.code]).concat(e.kind === 'cat' ? [e.code] : []) }; return; }
+            if (hayM.indexOf(hkAsstKey(j)) >= 0) { _hkAsstDataNotes.push('row_phrase:' + j); merged[merged.length - 1] = { kind: 'text', s: L.s, e: e.e, wis: (L.wis || []).concat(e.kind === 'text' ? e.wis : []), fixed: j.split(' ').map(dataSurface).join(' '), rmCodes: (L.rmCodes || [L.code]).concat(e.kind === 'cat' ? [e.code] : []) }; return; }
           }
           merged.push(e);
         });
@@ -272,6 +278,9 @@
             if (plr.test(pk)) cands.push([pk.replace(plr, ''), String(m.phrase).replace(plr, '')]);
             var isName = cands.some(function (c) { return hkAsstIsCatName(m.id, c[0]); });
             var hit = !isName ? cands.filter(function (c) { return c[0].length >= 3 && hayG.indexOf(c[0]) >= 0; })[0] : null;
+            /* تحلیل‌گر (حالت خشک): در فهرست «و/یا» واژهٔ مترادفِ دسته (نه نام دسته) یک «مورد» است؛ برای این تصمیم به داده نگاه نمی‌کنیم */
+            if (hit) _hkAsstDataNotes.push('row_word:' + hit[1]);
+            if (!hit && !isName && _hkAsstDry) hit = cands[cands.length - 1];
             if (hit) {
               /* واژه‌ای مثل «بنزین/نان» که ردیف هم هست: در فهرست «و/یا» یعنی همان ردیف‌ها، نه کل دسته */
               var dwG = dataWords.filter(function (d) { return d.key === hit[0]; })[0], wG = dwG ? dwG.word : hit[1];
@@ -290,12 +299,12 @@
       }
       words.forEach(function (w, wi) {
         if (grpWi[wi] || fixedWi[wi]) return;
-        if (!subj) { var sm = hkAsstFindSubject(w); if (sm) { subj = sm; return; } }
+        if (!subj) { var sm = hkAsstFindSubject(w); if (sm) { _hkAsstDataNotes.push('project_name:' + w); subj = sm; return; } }
         textWords.push(resolveTxt(w));
       });
       fixedTexts.forEach(function (ft) { textWords.push(ft); });
       if (grp && !chainAsk && textWords.length && anyList.length) chainAsk = 'کنار «' + anyList.join(' و ') + '» واژهٔ «' + textWords.join(' ') + '» هم آمده؛ منظورت کدام ترکیب است؟ (مثلاً هر دو را جدا بنویس)';
-      if (chainAsk) return { ask: chainAsk, final: true, understood: '', corrections: [], suggestions: [], decision: 'ask' };
+      if (chainAsk) return { why: 'ambiguous_union', ask: chainAsk, final: true, understood: '', corrections: [], suggestions: [], decision: 'ask' };
       /* مرحلهٔ ۳: مبلغ و عملگر آن */
       /* سال کامل (۱۳xx/۱۴xx بی‌واحد) مبلغ نیست */
       var amts = hkAsstAmountAt(text.replace(/(^|\s)(13|14)\d\d(?=\s|$)(?!\s*(میلیون|هزار|میلیارد|ملیارد|تومان|تومن|ریال))/g, ' '));
@@ -333,6 +342,11 @@
       var hasE = codes.indexOf('EXP') >= 0, hasI = codes.indexOf('INC') >= 0;
       if (hasE && !hasI) args.tab = 'expense';
       if (hasI && !hasE) args.tab = 'income';
+      /* ۱.۴.۴۳: «بیشترین خرج/هزینه»، «کمترین هزینه»، «بزرگ‌ترین خرج»: عبارت فرهنگ لغت واژهٔ خرج/هزینه را می‌بلعد؛ نوع باید از خود متن گرفته شود تا ردیف درآمد وارد نتیجه نشود */
+      if (!args.tab && (codes.indexOf('MAX') >= 0 || codes.indexOf('MIN') >= 0)) {
+        var wExp = /(^| )(خرج|هزینه|مخارج)/.test(text), wInc = /(^| )(درآمد|دخل|واریز)/.test(text);
+        if (wExp && !wInc) args.tab = 'expense'; else if (wInc && !wExp) args.tab = 'income';
+      }
       /* ۱.۴.۴۵: «دستهٔ خوراکی / مجموع دستهٔ قبوض» = جمع همان دسته؛ فقط تفکیک/دسته‌ها/دسته‌بندی/هر دسته گزارش گروه‌بندی‌شده است */
       if (codes.indexOf('GRP') >= 0 && codes.some(function (c) { return c.indexOf('CAT_') === 0; }) && /(^| )دسته( |$)/.test(text.replace(/\u0654/g, '')) && !/(تفکیک|دسته[\s\u200c]*(ها|های|بندی)|گروه|هر[\s\u200c]*(دسته|ماه)|بر[\s\u200c]*اساس|جدا|ماه به ماه)/.test(text)) {
         var gi = codes.indexOf('GRP'); if (gi >= 0) codes.splice(gi, 1);
@@ -351,6 +365,9 @@
         if (!isName && !/(^| )(کل|کلِ|همه|همهٔ|مجموع|دسته|دستهٔ)( |$)/.test(text)) {
           var hayA = ''; try { hayA = hkAsstHayAll(); } catch (eAm) {}
           var hit = cands.filter(function (c) { return c[0].length >= 3 && hayA.indexOf(c[0]) >= 0; })[0];
+          /* تحلیل‌گر (حالت خشک): نشانهٔ صریح «ردیف/تراکنش …» خودش کافی است و به وجود ردیف در داده بستگی ندارد؛ ردیفِ نبوده را مرحلهٔ تطبیق با داده «ثبت نشده» می‌گوید */
+          if (hit) _hkAsstDataNotes.push('row_word:' + hit[1]);
+          if (!hit && _hkAsstDry && /(^| )(ردیف|تراکنش|اسم|عنوان)(ها|های|ای)?( |$)/.test(text)) hit = cands[cands.length - 1];
           if (hit) {
             var dwA = dataWords.filter(function (d) { return d.key === hit[0]; })[0], wordA = dwA ? dwA.word : hit[1];
             if (/(^| )(ردیف|تراکنش|اسم|عنوان)(ها|های|ای)?( |$)/.test(text)) { delete args.cats; args.text = wordA; catIds = []; }
@@ -380,13 +397,13 @@
       /* ۱.۴.۳۷: گفتگوی عادی و قصدهای تحلیلی (وضعیت، روند، پیشنهاد، پیش‌بینی، بودجه، هدف…) */
       if (!special && !unpaidFlag && !transferFlag) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
       var chatK = hkAsstChatKind(codes, textWords, amts, text);
-      if (chatK) return { ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
+      if (chatK) return { why: 'chat:' + chatK, ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
       if (special) {
         var sc = hkAsstSpecialCmd(special, codes, args, text, amts);
         if (sc) { sc.corrections = corrections; return sc; }
       }
       /* ۱.۴.۴۳: نشانهٔ استثنای شناسایی‌نشده («به استثنای قبض»، «منهای اسنپ»، «مگر قبوض»، «قبض نباشه»): اگر این‌جا ادامه بدهیم، کلمهٔ بعدش شرط «مثبت» می‌شود و معنا برعکس؛ پس عدد نمی‌دهیم */
-      if (/(^| )(به ?استثنای|استثنای|استثنا|منهای|منها|مگر|نباشه|نباشد|نباشن|نباشند)( |$)|(^| )غیر( |$)/.test(text)) return { ask: 'منظورت کنار گذاشتنِ چیزیه؟ دقیق‌تر بگو، مثلاً «بدون X» یا «به‌جز X»، تا عددی که می‌گم همون چیزی باشه که می‌خوای.', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
+      if (/(^| )(به ?استثنای|استثنای|استثنا|منهای|منها|مگر|نباشه|نباشد|نباشن|نباشند)( |$)|(^| )غیر( |$)/.test(text)) return { why: 'unsupported_exception_cue', ask: 'منظورت کنار گذاشتنِ چیزیه؟ دقیق‌تر بگو، مثلاً «بدون X» یا «به‌جز X»، تا عددی که می‌گم همون چیزی باشه که می‌خوای.', final: true, decision: 'ask', understood: '', corrections: [], suggestions: [], chipRaw: true };
       /* مرحلهٔ ۶: قصد (intent) */
       var intent = null;
       if (codes.indexOf('CMP') >= 0) intent = 'compare';
@@ -409,9 +426,9 @@
       }
       /* ۱.۴.۴۶: «چقدر شد؟» / «جمعش؟» بی‌هیچ موضوع، نوع، بازه یا شرط: جمع همهٔ داده‌ها یک عدد بی‌معنا می‌شود؛ پرسیده می‌شود */
       if (intent === 'sum' && !hasFilter && !transferFlag && !unpaidFlag && !args.text && !args.textAny && args.amountEq == null && args.amountMin == null && args.amountMax == null && !args.status && !args.excludeText && !args.excludeCats && !/(تراکنش|ردیف|همه|کل|مجموع|حساب|پروژه|ماه|سال)/.test(text.replace(/جمعش/g, '')) && !(anaphora && _hkAsstCtx && Date.now() - _hkAsstCtx.at < 900000)) {
-        return { ask: 'چقدرِ چی؟ بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟» یا «بنزین چقدر شد؟»).', final: true, understood: '', corrections: [], suggestions: ['این ماه چقدر خرج کردم؟', 'درآمد این ماه چقدره؟'], chipRaw: true, decision: 'ask' };
+        return { why: 'missing_scope', ask: 'چقدرِ چی؟ بگو دربارهٔ چی می‌پرسی (مثلاً «این ماه چقدر خرج کردم؟» یا «بنزین چقدر شد؟»).', final: true, understood: '', corrections: [], suggestions: ['این ماه چقدر خرج کردم؟', 'درآمد این ماه چقدره؟'], chipRaw: true, decision: 'ask' };
       }
-      if (!intent) return { ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
+      if (!intent) return { why: 'not_understood', ask: hkAsstPick(['منظورت رو کامل نگرفتم؛ می‌شه یه کم دقیق‌تر بگی؟ مثلاً «بیمه تویوتا را پیدا کن» یا «جمع هزینه‌های آبان».', 'این یکی رو نفهمیدم. یه جور دیگه بپرس؛ مثلاً «این ماه چقدر خرج کردم؟» یا «وضعیت مالی‌ام چطوره؟».', 'هنوز نتونستم بفهمم چی می‌خوای. اگه نمونه می‌خوای بگو «چه کارایی بلدی؟».']), suggestions: HK_ASST_EXAMPLES_TEXT() };
 
       /* ۱.۴.۴۵: «فقط ردیف‌های بنزین رو حساب کن» بعد از «بنزین این ماه»: پالایش همان سؤال است؛ فقط موجودیت عوض می‌شود و بازه و شرط‌های دیگر می‌ماند */
       var refine = false;

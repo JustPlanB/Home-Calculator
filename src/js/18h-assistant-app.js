@@ -129,7 +129,7 @@
     /* ---- تشخیص قصد ---- */
     function hkAsstAppIntent(text) {
       var T = hkAsstFaDigits(text);
-      var fin = function (ask) { return { ask: ask, final: true, understood: '', corrections: [], suggestions: HK_ASST_EXAMPLES_TEXT() }; };
+      var fin = function (ask) { return { why: 'app_info', ask: ask, final: true, understood: '', corrections: [], suggestions: HK_ASST_EXAMPLES_TEXT() }; };
       var tool = function (name, args, follow) { return { tool: name, args: args || {}, explain: name.slice(9), understood: '', followUps: follow || [], chipRaw: true, corrections: [] }; };
       var money = /هزینه|خرج|مخارج|درآمد|درامد|واریز|برداشت|تراکنش|قبض|اسنپ|ماه|ردیف/.test(T);
       var nv = hkAsstNavIntent(T); if (nv) return nv;
@@ -264,7 +264,7 @@
       /* «کدوم دسته بیشترین خرج رو داره»: دسته‌های پرهزینه */
       if (/(کدوم|چه|کدام) دسته/.test(T) && /بیشتر|بیشترین|زیاد|گرون|کمتر|کمترین/.test(T)) return tool('insights.top', { tab: tb || 'expense' }, '');
       /* «فردا هوا چطوره»: دربارهٔ هوا، نه پیش‌بینی مالی */
-      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
+      if (/(^| )هوا( |$)/.test(T) && !/خرج|هزینه|درآمد|تراکنش|پول/.test(T)) return { why: 'out_of_domain', ask: hkAsstChatReply('WEATH', [], T), final: true, understood: '', corrections: [], suggestions: [] };
       /* کدوم ماه/دسته/حساب/پروژه بیشتر/کمتر */
       var gm = /(کدوم|چه|کدام) (ماه|حساب|کارت|پروژه)/.exec(T);
       if (gm && /بیشتر|کمتر|زیاد|کم|گرون|بیشترین|کمترین|بهتر|بدتر/.test(T)) {
@@ -331,6 +331,7 @@
       return null;
     }
     function hkAsstGuideGo(g) {
+      if (_hkAsstDry) { _hkAsstDryLog.push({ kind: 'guide', id: (g && g.id) || '' }); return; }
       hkAsstGoAway();
       setTimeout(function () { try { g.go(); } catch (e2) { try { showToast('نتوانستم این بخش را باز کنم.'); } catch (e3) {} } }, 280);
     }
@@ -353,8 +354,8 @@
       var g = hkAsstGuideFor(T);
       var nav = /(^| )(برو|ببر|ببرم|باز کن|بازش کن|هدایت|منو ببر|ببرمت)( |$)/.test(T);
       if (!how && !(nav && g)) return null;
-      if (nav && g && !how) { hkAsstGuideGo(g); return { ask: hkAsstPick(['باشه، «' + g.name + '» رو باز می‌کنم.', 'حله، «' + g.name + '» باز می‌شه.']), final: true, understood: '', corrections: [], suggestions: [] }; }
-      if (!g) { _hkAsstGuide = HK_ASST_HELPGUIDE; return { ask: hkAsstPick(HK_ASST_HOWTO) + '\nمی‌خوای راهنما رو برات باز کنم؟', final: true, understood: '', corrections: [], suggestions: ['آره، باز کن', 'نه، ممنون'], chipRaw: true }; }
+      if (nav && g && !how) { hkAsstGuideGo(g); return { why: 'navigate', ask: hkAsstPick(['باشه، «' + g.name + '» رو باز می‌کنم.', 'حله، «' + g.name + '» باز می‌شه.']), final: true, understood: '', corrections: [], suggestions: [] }; }
+      if (!g) { _hkAsstGuide = HK_ASST_HELPGUIDE; return { why: 'app_help', ask: hkAsstPick(HK_ASST_HOWTO) + '\nمی‌خوای راهنما رو برات باز کنم؟', final: true, understood: '', corrections: [], suggestions: ['آره، باز کن', 'نه، ممنون'], chipRaw: true }; }
       _hkAsstGuide = g;
-      return { ask: g.text + '\nمی‌خوای ببرمت به «' + g.name + '»؟', final: true, understood: '', corrections: [], suggestions: ['آره، ببر', 'نه، ممنون'], chipRaw: true };
+      return { why: 'app_help', ask: g.text + '\nمی‌خوای ببرمت به «' + g.name + '»؟', final: true, understood: '', corrections: [], suggestions: ['آره، ببر', 'نه، ممنون'], chipRaw: true };
     }
