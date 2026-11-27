@@ -70,9 +70,9 @@
       }
       if (C.op === 'group') {
         var by = (ex.args && ex.args.by) || ex.group_by || null, gm = {};
-        if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) { C.ok = false; C.reason = 'bad_group_by'; return C; }
+        if (['month', 'section', 'account', 'tab', 'context', 'category'].indexOf(by) < 0) { C.ok = false; C.reason = 'bad_group_by'; return C; }
         rows.forEach(function (r) {
-          var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : (r[by] || '—'));
+          var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : by === 'category' ? (r.tab === 'income' ? 'income' : hkAsstCatOf(r)) : (r[by] || '—'));
           var g = gm[k] || (gm[k] = { key: k, rows: [] }); g.rows.push(r);
         });
         C.by = by; C.groups = Object.keys(gm).map(function (k) { var s = hkAsstCalcStats(gm[k].rows); return { key: k, count: s.count, sum: s.sum, incomeSum: s.incomeSum, expenseSum: s.expenseSum, mixed: s.incomeCount > 0 && s.expenseCount > 0 }; });
@@ -89,12 +89,42 @@
         var s = hkAsstCalcStats(ar); C.alternatives.push({ word: al.word, category: al.category, count: s.count, sum: s.sum, incomeSum: s.incomeSum, expenseSum: s.expenseSum, mixed: s.incomeCount > 0 && s.expenseCount > 0 });
       });
       try { C.card = hkAsstCardInfo(ex.args || {}, { expenseSum: C.stats.expenseSum, incomeSum: C.stats.incomeSum }, rows); } catch (eC) { C.card = null; }
+      /* ۱.۴.۴۶: توضیح طبیعی از همان داده‌های واقعی: سهم بزرگ‌ترین دسته و مقایسه با ماه قبل (فقط برای جمع ساده بدون شرط اضافه) */
+      try {
+        var ea = ex.args || {};
+        var plain = C.op === 'sum' && tab === 'expense' && !C.mixed && rows.length >= 3 && !ea.cats && !ea.text && !ea.textAny && !ea.excludeText && !ea.excludeCats && !ea.status && !ea.project && !ea.account && ea.amountEq == null && ea.amountMin == null && ea.amountMax == null && ea.amountGt == null && ea.amountLt == null;
+        if (plain) {
+          var ct = hkAsstCatTotals(rows);
+          if (ct.list.length >= 2 && ct.total > 0) C.catTop = { label: ct.list[0].label, share: Math.round(ct.list[0].share * 100), sum: ct.list[0].sum };
+          if (ea.month && ea.year && !ea.dateFrom && !ea.dateTo) {
+            var pmm = ea.month - 1, pyy = ea.year; if (pmm < 1) { pmm = 12; pyy--; }
+            var pr = hkAsstFilter(hkAsstRows(), { tab: 'expense', year: pyy, month: pmm, context: ea.context });
+            if (pr.length) C.prev = { y: pyy, m: pmm, sum: hkAsstSum(pr), count: pr.length, partial: ea.year === hkAsstCY() && ea.month === hkAsstCM() };
+          }
+        }
+      } catch (eIn) {}
       return C;
     }
     /* ---------- لایهٔ ۲: تولید پاسخ ---------- */
     function hkAsstAnsDigits(s) { return String(s).replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 0x06F0); }).replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 0x0660); }); }
     function hkAsstAnsTimeLabel(a) {
       a = a || {};
+      /* ۱.۴.۴۶: بازهٔ ماه‌های کامل را با نام ماه می‌گوید («از مهر تا آذر ۱۴۰۵») نه با تاریخ خام */
+      if (a.dateFrom && a.dateTo) {
+        var pd = function (s) { var p = String(s).split('-'); return { y: +p[0], m: +p[1], d: +p[2] }; }, df = pd(a.dateFrom), dt = pd(a.dateTo), MN = HK_ASST_MONTH_NAMES, fy = function (y) { return toPersianDigits(String(y)); };
+        if (df.y && df.m && dt.y && dt.m && df.d === 1 && dt.d >= 28) {
+          if (df.m === 1 && df.y === dt.y) return 'از ابتدای سال ' + fy(df.y) + ' تا ' + MN[dt.m - 1];
+          if (df.y === dt.y) return 'از ' + MN[df.m - 1] + ' تا ' + MN[dt.m - 1] + ' ' + fy(dt.y);
+          return 'از ' + MN[df.m - 1] + ' ' + fy(df.y) + ' تا ' + MN[dt.m - 1] + ' ' + fy(dt.y);
+        }
+      }
+      if (a.dateFrom && a.dateTo) {
+        var pd2 = function (s) { var p = String(s).split('-'); return { y: +p[0], m: +p[1], d: +p[2] }; }, d1 = pd2(a.dateFrom), d2 = pd2(a.dateTo), fd = function (x, withY) { return toPersianDigits(String(x.d)) + ' ' + HK_ASST_MONTH_NAMES[x.m - 1] + (withY ? ' ' + toPersianDigits(String(x.y)) : ''); };
+        if (d1.y && d1.m && d1.d && d2.y && d2.m && d2.d) {
+          if (a.dateFrom === a.dateTo) return 'در ' + fd(d1, true);
+          return 'از ' + fd(d1, d1.y !== d2.y) + ' تا ' + fd(d2, true);
+        }
+      }
       if (a.dateFrom || a.dateTo) { var f = function (d) { return d ? toPersianDigits(String(d)) : ''; }; return 'از ' + (f(a.dateFrom) || 'ابتدا') + ' تا ' + (f(a.dateTo) || 'انتها'); }
       if (a.month) return 'در ' + HK_ASST_MONTH_NAMES[a.month - 1] + (a.year ? ' ' + toPersianDigits(String(a.year)) : '');
       if (a.year) return 'در سال ' + toPersianDigits(String(a.year));
@@ -136,7 +166,7 @@
       /* ۲) ابزار تحلیلی موجود */
       if (calc.kind === 'tool') {
         var tx = '';
-        try { tx = hkAsstSummary(match.exec.tool, calc.tool_result, { tool: match.exec.tool, args: a, explain: match.exec.explain, intent: match.exec.intent }) || ''; } catch (eT) { tx = ''; }
+        try { tx = hkAsstSummary(match.exec.tool, calc.tool_result, { tool: match.exec.tool, args: a, explain: match.exec.explain, intent: match.exec.intent, rawQ: match.source && match.source.raw_text }) || ''; } catch (eT) { tx = ''; }
         if (!tx) { out.status = 'error'; out.kind = 'error'; out.text = 'نتیجهٔ این تحلیل را نتوانستم بسازم.'; out.error = 'empty_summary'; return fin(); }
         out.kind = 'tool'; out.text = tx; out.figures = { tool: match.exec.tool }; (match.gaps || []).forEach(function (g) { out.gaps.push(g); out.notes.push('نکته: ' + (g.detail || g.code) + '.'); });
         T('tool', match.exec.tool); out.allowed_numbers = null; out.text = [out.text].concat(out.notes).join('\n'); return out;
@@ -172,7 +202,7 @@
         var uw = (match.warnings || []).filter(function (w) { return w.code === 'explicit_search_unknown_term'; })[0];
         out.kind = 'empty'; out.figures = { count: 0 };
         if (!(match.data_coverage && match.data_coverage.has_any_rows)) out.text = 'هنوز هیچ ردیفی ثبت نشده؛ چیزی برای حساب‌کردن نیست.';
-        else if (noPeriod) out.text = 'برای ' + when.replace(/^در /, '') + ' هیچ ردیفی ثبت نشده، پس چیزی برای حساب نیست (این «صفر» نیست، «بدون داده» است).';
+        else if (noPeriod) out.text = 'برای ' + when.replace(/^(در|از) /, '') + ' هیچ ردیفی ثبت نشده، پس چیزی برای حساب نیست (این «صفر» نیست، «بدون داده» است).';
         else if (uw) out.text = 'ردیفی با «' + uw.terms.join('، ') + '» پیدا نکردم' + (tm ? ' ' + when : '') + '.';
         else if (match.source && match.source.explicit_search) out.text = 'چیزی با این مشخصات پیدا نکردم' + qual + (tm ? ' ' + when : '') + '.';
         else out.text = 'برای این شرط تراکنشی' + (calc.incomplete ? ' دارای مبلغ' : '') + ' ثبت نشده است' + (q.length || tm ? ' (' + q.concat(tm ? [when] : []).join('، ') + ')' : '') + '؛ پس مبلغی هم ندارد.';
@@ -203,12 +233,18 @@
         var e0 = calc.extremes[0], tot = calc.rows_all, shownN = calc.rows.length;
         out.figures = { count: S.count, shown: shownN };
         var dl2 = function (r) { return (r.d ? N(r.d) + ' ' : '') + HK_ASST_MONTH_NAMES[r.m - 1] + ' ' + N(r.y); };
+        var exO = match.exec && match.exec.order;
+        if (shownN === 1 && exO && exO.limit === 1 && (!exO.sort || exO.sort === 'dateDesc') && !calc.mixed) {
+          var r1 = calc.rows[0], tn1 = r1.tab === 'income' ? 'درآمد' : 'خرج';
+          out.text = 'آخرین ' + tn1 + (when === 'در همهٔ ماه‌ها' ? '' : ' ' + when) + qual + ': «' + scan(r1.desc) + '» با ' + M(r1.amount) + ' (' + dl2(r1) + ').';
+          out.figures.last = r1.amount; var lastDone = true;
+        }
         var head = N(tot) + ' ردیف ' + when + (qual || '') + (calc.mixed ? '' : ' با جمع ' + M(S.sum)) + (shownN < tot ? '؛ ' + N(shownN) + ' تای اول:' : ':');
-        out.text = head + '\n' + calc.rows.map(function (r) { return '• «' + scan(r.desc) + '» — ' + M(r.amount) + ' (' + dl2(r) + ')'; }).join('\n');
+        if (!lastDone) out.text = head + '\n' + calc.rows.map(function (r) { return '• «' + scan(r.desc) + '» — ' + M(r.amount) + ' (' + dl2(r) + ')'; }).join('\n');
         if (calc.mixed) out.figures.mixed = true;
       } else if (calc.op === 'group') {
-        var by = calc.by, BY = { month: 'ماه', section: 'بخش', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' };
-        var gl = function (g) { if (by === 'month') { var p = g.key.split('-'); return HK_ASST_MONTH_NAMES[(+p[1]) - 1] + ' ' + N(+p[0]); } if (by === 'tab') return g.key === 'income' ? 'درآمد' : 'هزینه'; if (by === 'context') return g.key === 'project' ? 'پروژه‌ای' : 'شخصی'; return scan(g.key); };
+        var by = calc.by, BY = { month: 'ماه', section: 'بخش', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی', category: 'دسته' };
+        var gl = function (g) { if (by === 'month') { var p = g.key.split('-'); return HK_ASST_MONTH_NAMES[(+p[1]) - 1] + ' ' + N(+p[0]); } if (by === 'tab') return g.key === 'income' ? 'درآمد' : 'هزینه'; if (by === 'context') return g.key === 'project' ? 'پروژه‌ای' : 'شخصی'; if (by === 'category') return g.key === 'income' ? 'درآمد' : scan(hkAsstCatLabel(g.key)); return scan(g.key); };
         out.figures = { groups: calc.groups.map(function (g) { return { key: g.key, sum: g.sum, count: g.count }; }) };
         var gline = function (g) { return '• ' + gl(g) + ': ' + (g.mixed ? 'هزینه ' + M(g.expenseSum) + ' و درآمد ' + M(g.incomeSum) : M(g.sum)) + ' (' + N(g.count) + ' ردیف)'; };
         var ex0 = match.exec.explain;
@@ -224,6 +260,15 @@
           out.figures = { sum: S.sum, count: S.count };
           var who = tab === 'income' ? when + ' درآمدت ' + M(S.sum) + ' شده' : tab === 'expense' ? when + ' خرجت ' + M(S.sum) + ' شده' : 'جمع ردیف‌ها ' + when + ' ' + M(S.sum) + ' شده';
           out.text = who + det(S.count) + '.';
+          /* توضیح طبیعی در همان خط جملهٔ اصلی (پاسخ‌ها کوتاه می‌ماند؛ ۱ خط) */
+          var insP = [];
+          if (calc.catTop && calc.catTop.share >= 25) insP.push('بیشترین سهم مربوط به «' + scan(calc.catTop.label) + '» بوده (' + N(calc.catTop.share) + '٪ از کل)');
+          if (calc.prev && calc.prev.sum > 0) {
+            var pct = Math.round((S.sum - calc.prev.sum) / calc.prev.sum * 100), pl = HK_ASST_MONTH_NAMES[calc.prev.m - 1] + (calc.prev.y !== hkAsstCY() ? ' ' + toPersianDigits(String(calc.prev.y)) : '');
+            insP.push(Math.abs(pct) < 3 ? 'تقریباً هم‌اندازهٔ ' + pl + ' (' + M(calc.prev.sum) + ')' : 'نسبت به ' + pl + ' (' + M(calc.prev.sum) + ') حدود ' + N(Math.abs(pct)) + '٪ ' + (pct > 0 ? 'بیشتر' : 'کمتر') + ' شده' + (calc.prev.partial ? ' (این ماه هنوز تمام نشده)' : ''));
+            out.figures.prevSum = calc.prev.sum;
+          }
+          if (insP.length) out.text += ' ' + insP.join('؛ ') + '.';
           if (calc.ops.indexOf('avg') >= 0 || calc.ops.indexOf('average') >= 0) { out.notes.push('میانگین هر تراکنش ' + M(S.avg) + ' است.'); out.figures.avg = S.avg; }
           if (calc.ops.indexOf('count') >= 0) { /* تعداد همین جا آمده است */ }
         }
@@ -281,7 +326,9 @@
       state = state || {};
       var spec = hkAsstAnalyze(text, { prev: state.prev || null }), match = hkAsstMatch(spec);
       if (match.resume && match.status === 'clarify') spec.resume = match.resume;
-      state.prev = spec;
+      /* ۱.۴.۴۶: پرسش روشن‌کننده/گفتگو/رد (بی‌ابزار) زمینهٔ سؤال قبلی را پاک نمی‌کند؛ «جمع کن» بعد از یک پرسش هنوز به همان سؤال برمی‌گردد */
+      var prevB = state.prev && state.prev.binding;
+      state.prev = (!spec.binding && prevB && !spec.resume && /^(ask|chat|refuse)$/.test(spec.action)) ? Object.assign({}, spec, { binding: prevB }) : spec;
       var ans = hkAsstAnswer(match);
       return { text: text, spec: spec, match: match, calc: ans.calc, answer: ans };
     }

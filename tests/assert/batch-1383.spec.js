@@ -94,7 +94,7 @@ const allErrors = [];
     let half = null;
     if (info) { const a = info.getBoundingClientRect(), c = p2p.querySelector('i').getBoundingClientRect(); half = a.left < c.left && a.right > c.left && a.top < c.top && a.bottom > c.top; }
     const span = p2p.querySelector('span'); const full = span.scrollWidth <= span.clientWidth + 1 && getComputedStyle(span).textOverflow !== 'ellipsis';
-    document.querySelector('#hkCatPick .sms-cat[data-cat="in_bonus"]').click(); await w(150);
+    document.querySelector('#hkCatPick .sms-cat[data-cat="in_bonus"]').click(); await w(100); document.querySelector('#hkCatPick .hk-cp-ok').click(); await w(150);   /* ۱.۴.۴۸: انتخاب ← تأیید */
     const shown = document.querySelector('#hkRowEdit .hk-re-sel .hk-re-rv') ? [...document.querySelectorAll('#hkRowEdit .hk-re-sel')].find(x => /دسته/.test(x.textContent)).textContent : '';
     document.querySelector('#hkRowEdit .hk-re-ok').click(); await w(400);
     return { tiles, half, sub, full, shown, inCat: row.inCat, desc: row.desc };

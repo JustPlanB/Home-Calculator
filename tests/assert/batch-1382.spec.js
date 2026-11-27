@@ -76,7 +76,7 @@ const allErrors = [];
     const tile = document.querySelector('#hkCatPick .sms-cat[data-cat="p2p"]');
     const sub = tile && tile.querySelector('.hk-p2p-sub') && tile.querySelector('.hk-p2p-sub').textContent;
     const info = !!(tile && tile.querySelector('.hk-p2p-info'));
-    tile.click(); await w(300);
+    tile.click(); await w(150); document.querySelector('#hkCatPick .hk-cp-ok').click(); await w(300);   /* ۱.۴.۴۸: درآمد: انتخاب ← تأیید */
     const intro = !!document.getElementById('hkP2PIntro');
     const okb = document.querySelector('#hkP2PIntro .hk-p2p-ok'); if (okb) okb.click(); await w(200);
     document.querySelector('#hkRowEdit .hk-re-ok').click(); await w(400);

@@ -102,7 +102,7 @@ const NUM = /[۰-۹][۰-۹,]{3,}/;
   const P = await mt(['موجودیم چقدره؟', 'قیمت دلار چنده؟', 'هر دسته چقدر خرج شد؟', 'خرجای کوچیک چقدر شد', 'این ماه رو با ماه قبل مقایسه کن']);
   ok(P[0].m.status === 'ready' && P[0].m.selection.basis === 'tool' && P[0].m.exec.tool === 'insights.balance', 'ابزار تحلیلی: ready، ردیف‌گزینی با خود ابزار');
   ok(P[1].m.status === 'refuse' && P[1].m.clarification.reason === 'market_price', 'بیرون از قابلیت: refuse با همان دلیل');
-  ok(P[2].m.gaps.some(g => g.code === 'group_by_category') && P[3].m.status === 'clarify' && P[3].m.clarification.reason === 'vague_size', 'gap و پرسش vague_size منتقل شد');
+  ok(!P[2].m.gaps.some(g => g.code === 'group_by_category') && P[3].m.status === 'clarify' && P[3].m.clarification.reason === 'vague_size', 'گروه‌بندی بر اساس دسته بی‌gap (۱.۴.۴۶) و پرسش vague_size منتقل شد');
   ok(P[4].m.exec.tool === 'reports.compare', 'مقایسه به ابزار خودش می‌رود');
   // ۹) ادامهٔ گفتگو و resume
   const Q = await mt([['خرج این ماه چقدر شد؟', 'فقط ردیف‌های بنزین'], ['بنزین این ماه چقدر شد؟', 'جمعش؟'], ['خرج بدون زرتی', 'نه منظورم اسنپ بود'], ['خرجای کوچیک بدون بنزین', 'زیر ۵۰ هزار']]);

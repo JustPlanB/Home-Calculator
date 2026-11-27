@@ -17,7 +17,7 @@
     }
     function hkAsstMatch(spec, opts) {
       opts = opts || {};
-      var M = { v: HK_ASST_MATCH_VERSION, stage: 3, status: 'clarify', source: { action: spec && spec.action, intent: spec && spec.intent, explicit_search: !!(spec && spec.flags && spec.flags.explicit_search) }, exec: null,
+      var M = { v: HK_ASST_MATCH_VERSION, stage: 3, status: 'clarify', source: { action: spec && spec.action, intent: spec && spec.intent, raw_text: spec && spec.text, explicit_search: !!(spec && spec.flags && spec.flags.explicit_search) }, exec: null,
         selection: { basis: 'none', refs: [], incomplete_refs: [], empty: true }, conditions: [], readings: { primary: null, alternatives: [] }, clarification: null,
         gaps: ((spec && spec.gaps) || []).slice(), warnings: ((spec && spec.warnings) || []).slice(), app_actions: ((spec && spec.app_actions) || []).slice(), data_coverage: null,
         closed_data_decisions: [], open_data_decisions: [], resume: (spec && spec.resume) || null, trace: [] };

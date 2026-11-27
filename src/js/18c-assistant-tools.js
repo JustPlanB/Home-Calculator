@@ -115,6 +115,12 @@
       for (var i = 0; i < keys.length; i++) if (hay.indexOf(keys[i]) >= 0) return true;
       return false;
     }
+    /* ۱.۴.۴۶: حساب‌ها/کارت‌های واقعیِ ردیف‌ها: [{norm, key}]؛ key بدون واژهٔ «کارت/بانک/حساب» برای تطبیق با گفتهٔ کاربر */
+    function hkAsstAccountNames() {
+      var seen = {}, out = [];
+      try { hkAsstRows().forEach(function (r) { var n = hkAsstNorm(r.account); if (!n || seen[n]) return; seen[n] = 1; var k = hkAsstKey(n.replace(/(^| )(کارت|بانک|حساب)(?= |$)/g, ' ')); if (k) out.push({ norm: n, key: k }); }); } catch (e) {}
+      return out;
+    }
     /* پروژه‌های برنامه: [{id, name, key}] */
     function hkAsstSubjects() {
       var list = [];
@@ -257,10 +263,10 @@
         readOnly: true, args: ['by', 'text', 'textAny', 'unionCats', 'excludeText', 'excludeCats', 'cats', 'project', 'account', 'tab', 'context', 'amountMin', 'amountMax', 'year', 'month', 'dateFrom', 'dateTo', 'includeTransfers', 'status', 'transferOnly'],
         run: function (a) {
           var by = a.by;
-          if (['month', 'section', 'account', 'tab', 'context'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');
+          if (['month', 'section', 'account', 'tab', 'context', 'category'].indexOf(by) < 0) throw new Error('گروه‌بندی نامعتبر');
           var groups = {};
           hkAsstFilter(hkAsstRows(), a).forEach(function (r) {
-            var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : (r[by] || '—'));
+            var k = by === 'month' ? (r.y + '-' + (r.m < 10 ? '0' : '') + r.m) : (by === 'tab' ? r.tab : by === 'category' ? (r.tab === 'income' ? 'income' : hkAsstCatOf(r)) : (r[by] || '—'));
             var g = groups[k] || (groups[k] = { key: k, count: 0, sum: 0 });
             g.count++; g.sum += r.amount;
           });

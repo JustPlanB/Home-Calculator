@@ -135,6 +135,18 @@
           on.understood = L.intent ? hkAsstUnderstood(L.intent, Mn) : '';
           return on;
         }
+        /* ۱.۴.۴۶: «نسبت به این ماه چطور؟» بعد از «درآمد ماه پیش»: مقایسه همان نوع/شرط‌ها را نگه می‌دارد */
+        if (L && Date.now() - L.at <= 900000 && raw && raw.tool === 'reports.compare' && raw.args && !raw.args.tab && !raw.args.cats && !raw.args.text && /^transactions\.(aggregate|search)$/.test(L.tool) && L.args && L.args.tab) {
+          var Mc = Object.assign({}, raw.args, { tab: L.args.tab }); if (L.args.cats) Mc.cats = L.args.cats; if (L.args.text) Mc.text = L.args.text; if (L.args.context) Mc.context = L.args.context;
+          return Object.assign({}, raw, { args: Mc, memory: true });
+        }
+        /* ۱.۴.۴۶: «و درآمد؟»: فقط نوع عوض می‌شود؛ بازه، پروژه، حساب و زمینهٔ سؤال قبلی می‌ماند و شرط‌های مخصوص یک نوع (دسته، کلمه) کنار می‌رود */
+        if (L && Date.now() - L.at <= 900000 && raw && raw.tabSwap && raw.args && raw.args.tab && /^transactions\.(aggregate|search)$/.test(raw.tool || '') && /^transactions\.(aggregate|search)$/.test(L.tool)) {
+          var Ms = Object.assign({}, L.args); Ms.tab = raw.args.tab;
+          ['text', 'textAny', 'unionCats', 'cats', 'excludeText', 'excludeCats', 'sort', 'limit', 'amountEq', 'amountMin', 'amountMax', 'amountGt', 'amountLt', 'status'].forEach(function (k) { delete Ms[k]; });
+          var os = { tool: 'transactions.aggregate', args: Ms, explain: raw.explain || 'sum', corrections: raw.corrections || [], intent: raw.intent || 'sum', yearExplicit: L.yearExplicit, follow: false, memory: true };
+          os.understood = hkAsstUnderstood(os.intent || 'sum', Ms); return os;
+        }
         if (!L || Date.now() - L.at > 900000 || !raw || !raw.tool || !raw.follow || !/^transactions\.(aggregate|search)$/.test(raw.tool)) return raw;
         var N = raw.args || {}, M = Object.assign({}, L.args), TK = ['year', 'month', 'dateFrom', 'dateTo'], EK = ['text', 'textAny', 'unionCats', 'cats', 'project', 'context'];
         var hasT = TK.some(function (k) { return N[k] != null; }), hasE = EK.some(function (k) { return N[k] != null; });

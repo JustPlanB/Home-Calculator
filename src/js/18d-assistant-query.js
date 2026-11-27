@@ -91,13 +91,66 @@
     function hkAsstJoinedInData(a, b) {
       try { if (_hkAsstJoinHay === null) _hkAsstJoinHay = hkAsstHayAll(); var ok = _hkAsstJoinHay.indexOf(hkAsstKey(String(a) + ' ' + String(b))) >= 0; if (ok) _hkAsstDataNotes.push('row_phrase:' + a + ' ' + b); return ok; } catch (e) { return false; }
     }
+    var _hkAsstByAcct = false;
     function hkAsstSemantic(raw) {
-      _hkAsstJoinHay = null; _hkAsstDataNotes = [];
+      _hkAsstJoinHay = null; _hkAsstDataNotes = []; _hkAsstByAcct = false;
       hkAsstBuildLex();
       var text = hkAsstNorm(raw).replace(/[،,؟?!.:؛"«»()\/]/g, ' ').replace(/\s+/g, ' ').trim();
       if (!text) return { why: 'empty', ask: 'چه چیزی را بگردم یا حساب کنم؟', suggestions: HK_ASST_EXAMPLES_TEXT(), final: true };
       /* ۱.۴.۳۷: «سال ۴۰۳» و «آذر ۰۳» را «۱۴۰۳» می‌کند */
       text = hkAsstNormYears(text);
+      /* ۱.۴.۴۶: «یه میلیون»، «نیم میلیون»، «دو و نیم میلیون» ← عدد (وگرنه شرط مبلغ بی‌صدا حذف می‌شد) */
+      text = text.replace(/(^| )(یه|یک|یکی|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده) و نیم (میلیون|میلیارد|هزار)(?= |$)/g, function (a, p0, w, u) { var n = w === 'یه' || w === 'یکی' ? 1 : (HK_ASST_NUMWORDS[w] || 0); return p0 + (n + 0.5) + ' ' + u; });
+      text = text.replace(/(^| )نیم (میلیون|میلیارد|هزار)(?= |$)/g, '$10.5 $2').replace(/(^| )(یه|یکی) (میلیون|میلیارد|هزار)(?= |$)/g, '$11 $3');
+      /* «سه ماه اخیرم»، «اخیرشو»: پسوند ملکی/ضمیر به «اخیر» چسبیده؛ خودِ بازه است نه واژهٔ ناشناخته */
+      text = text.replace(/(^| )(اخیر|گذشته)(م|ت|ش|شو|مون|تون|شون)(?= |$)/g, '$1$2');
+      /* «از اول سال (تا الان)»، «از ابتدای امسال»: از ۱ فروردینِ امسال تا پایان ماه جاری */
+      var ytdFlag = false;
+      text = text.replace(/(^| )از (اول|ابتدای|ابتدا|شروع)( | ?)(امسال|این سال|سال جاری|سال)( جاری)?( تا (الان|حالا|اکنون|امروز|این ماه|حال))?(?= |$)/g, function (a, p0) { ytdFlag = true; return p0; });
+      /* «دو ماه اخیر»، «۴ ماه گذشته»، «پنج ماهِ اخیر»: بازهٔ N ماه تا ماه جاری (۳/۶/۱۲ را فرهنگ لغت می‌شناسد) */
+      var spanN = 0;
+      text = text.replace(/(^| )(\d+|دو|چهار|پنج|هفت|هشت|نه|ده|یازده|9|یه) ?ماه(?:ه|ِ)? (?:اخیر|گذشته|اخیرا)(?= |$)/g, function (a, p0, w) { var n = /^\d+$/.test(w) ? parseInt(w, 10) : (HK_ASST_NUMWORDS[w] || (w === 'یه' ? 1 : 0)); if (n >= 2 && n <= 12 && n !== 3 && n !== 6 && n !== 12) { spanN = n; return p0; } return a; });
+      /* «هزینه‌های تفریحی»: صفت «ی» روی واژهٔ دستهٔ شناخته‌شده؛ غلط‌تایپی نیست */
+      (function () {
+        var tk = text.split(' '), ch = false;
+        for (var ai2 = 0; ai2 < tk.length; ai2++) {
+          var t0 = tk[ai2]; if (!/^[^ ]{4,}ی$/.test(t0)) continue; var k0 = hkAsstKey(t0); if (hkAsstLookup(k0)) continue;
+          var b0 = hkAsstLookup(hkAsstKey(t0.replace(/ی$/, ''))); if (b0 && b0.indexOf('CAT_') === 0) { tk[ai2] = t0.replace(/ی$/, ''); ch = true; }
+        }
+        if (ch) text = tk.join(' ');
+      })();
+      /* «نانی که خریدم»، «بنزینی که زدم»: «ی» نکره روی واژهٔ موجود (فرهنگ لغت یا داده) نشانهٔ «که» است؛ خود واژه می‌ماند */
+      (function () {
+        var tk = text.split(' '), ch = false, dw = null;
+        for (var ni = 0; ni < tk.length - 1; ni++) {
+          if (tk[ni + 1] !== 'که' || !/[^ ]{3,}ی$/.test(tk[ni])) continue;
+          var base = tk[ni].replace(/ی$/, ''), bk = hkAsstKey(base);
+          if (!dw) { try { dw = hkAsstDataWords(); } catch (eD) { dw = []; } }
+          if (hkAsstLookup(bk) || dw.some(function (d) { return d.key === bk; })) { tk[ni] = base; ch = true; }
+        }
+        if (ch) text = tk.join(' ');
+      })();
+      /* «مخارجی که / هزینه‌ای که / خرجی که»: «ی/ای» نشانهٔ نکره است نه غلط املایی */
+      text = text.replace(/(^| )(مخارج|هزینه|خرج|درآمد|دخل)(?:‌?ای|ی)(?= که)/g, '$1$2');
+      /* «بر اساس حساب/کارت»، «به تفکیک بانک»: بُعد گروه‌بندی است نه واژهٔ جست‌وجو */
+      text = text.replace(/(^| )(?:بر ?اساس|براساس|به ?تفکیک|تفکیک)( ?)(?:حساب|کارت|بانک)(?:‌?ها)?(?= |$)/g, function (a, p0) { _hkAsstByAcct = true; return p0 + 'تفکیک'; });
+      /* «از مهر تا آذر»، «بین مهر و آذر»، «از مهر تا الان»: بازهٔ ماه‌ها */
+      var rangeM = null;
+      (function () {
+        var tk = text.split(' '), mon = function (w) { var c = hkAsstLookup(hkAsstKey(w || '')); return c && c.indexOf('MONTH_') === 0 ? parseInt(c.slice(6), 10) : 0; };
+        for (var ri = 0; ri < tk.length - 3; ri++) {
+          var h0 = hkAsstKey(tk[ri]);
+          if ((h0 === 'از' || h0 === 'بین') && mon(tk[ri + 1]) && /^(تا|و)$/.test(hkAsstKey(tk[ri + 2]))) {
+            var m1 = mon(tk[ri + 1]), m2 = mon(tk[ri + 3]), nowTo = /^(الان|حالا|اکنون|امروز)$/.test(hkAsstKey(tk[ri + 3]));
+            if (m2 || nowTo) { rangeM = { m1: m1, m2: nowTo ? 0 : m2 }; tk.splice(ri, 4); text = tk.join(' '); break; }
+          }
+        }
+      })();
+      /* ارجاع به سؤال قبلی: «همین گزارش رو برای درآمدها بگیر»، «همون ماه برای رستوران چی؟» (فقط «همون/اون»؛ «همین ماه» یعنی ماه جاری) */
+      var anaphoraEarly = false;
+      text = text.replace(/(^| )(همین|همون|اون) (گزارش|آمار|ارقام|اعداد|حساب|محاسبه|موارد|مورد)( رو| را)?( برای| برا| واسه)?(?= |$)/g, function (a, p0) { anaphoraEarly = true; return p0; });
+      text = text.replace(/(^| )(همون|اون) (ماه|بازه|دوره|سال|مدت|تاریخ)( رو| را)?(?= |$)/g, function (a, p0) { anaphoraEarly = true; return p0; });
+      text = text.replace(/(^| )(بگیر|بده|بگو|درآر|دربیار|بکش)(?= |$)/g, function (a, p0, v) { return anaphoraEarly ? p0 : a; }).replace(/\s+/g, ' ').trim();
       /* ۱.۴.۴۶: «چند تومن/چند تومان» یعنی «چقدر» (مبلغ)، نه «چند تا» (تعداد) */
       text = text.replace(/(^| )چند ?(تومن|تومان|ریال)( |$)/g, '$1چقدر$3');
       /* ۱.۴.۳۷: «ثبت شده/ثبت‌شده/ثبت شد…» فعلِ همان تراکنش است نه کلمهٔ جست‌وجو (مثلاً «چند تراکنش براش ثبت شده؟») */
@@ -107,14 +160,32 @@
       text = text.replace(/(^| )(ماه|هفته|سال|امروز|دیروز)(م|ت|ش|مون|تون)(?= |$)/g, '$1$2');
       /* ۱.۴.۴۲: ارجاع به سؤال قبلی: «جمعش»، «تعدادش»، «درآمدشم»، «ماه قبلشو»، «ماه پیشش»، «همونو»، «منظورم …»؛ پسوند جدا می‌شود و پیام «ادامه» حساب می‌شود */
       text = text.replace(/(^| )(ماه|سال|هفته) (گذشت|گذشته|قبل|قبلی|پیش)(م|ت|ش|مون|تون)(?= |$)/g, function (a, p0, u, w) { return p0 + u + ' ' + (w === 'گذشت' ? 'گذشته' : w); });
-      var anaphora = false;
-      text = text.replace(/(^| )(قبل|پیش|بعد|جمع|تعداد|درآمد|خرج|هزینه|مخارج|برداشت|واریز|میانگین|بیشترین|کمترین)(ش|شو|شم|شون|شونو)(?= |$)/g, function (a, pre, w) { anaphora = true; return pre + w; });
+      var anaphora = false; if (anaphoraEarly) anaphora = true;
+      /* «جمع کن»، «جمع بزن»، «حساب کن» تنها: جمعِ همان سؤال قبلی */
+      if (/^(حالا |خب |پس )?(جمع( کل)? ?(کن|بزن|بکن|کنش|بزنش)|حساب کن)( لطفا)?$/.test(text)) anaphora = true;
+      text = text.replace(/(^| )(قبل|پیش|بعد|جمع|تعداد|درآمد|خرج|هزینه|مخارج|برداشت|واریز|میانگین|بیشترین|کمترین|تفکیک|گروه‌?بندی)(ش|شو|شم|شون|شونو)(?= |$)/g, function (a, pre, w) { anaphora = true; return pre + w; });
       text = text.replace(/(^| )(تراکنش|ردیف|خرید|هزینه|مخارج|درآمد|واریزی|برداشتی|خرج)(ام|هام|هامو)(?= |$)/g, '$1$2');
       text = text.replace(/(^| )(همونو|همونا|همینو|همینا|اونو|اونا|اون یکی)(?= |$)/g, function (a) { anaphora = true; return a; });
       if (/(^| )منظورم( |$)/.test(text)) { anaphora = true; text = text.replace(/(^| )(نه |نخیر )?(اشتباه فهمیدی |اشتباه شد )?منظورم ?/, '$1').replace(/ بود$/, '').trim(); }
       text = text.replace(/(^| )نپرداخت(?:ه|م|ی|یم|ن|ید)?(?= |$)|(پرداخت|دریافت|تسویه|وصول)[ \u200c]*(نشده|نشدن|نکردم|نکرده|نگرفتم|نگرفته)|هنوز [^ ]+ نشده|هنوز نشده|معوق(ه)?|نگرفتم/g, function (m) { unpaidFlag = true; /* ۱.۴.۴۳: «نپرداختم» نفی «پرداخت» است (هزینهٔ پرداخت‌نشده) و هرگز «پرداختم» حساب نمی‌شود */ if (/نپرداخت/.test(m)) unpaidTab = 'expense'; else if (/^دریافت|نگرفتم/.test(m)) unpaidTab = 'income'; else if (/^پرداخت|نکردم/.test(m)) unpaidTab = 'expense'; return ' '; });
       text = text.replace(/جیب[ \u200c]*به[ \u200c]*جیب([ \u200c]*(ها|های))?/g, function () { transferFlag = true; return ' '; });
       text = text.replace(/\s+/g, ' ').trim();
+      /* ۱.۴.۴۶: حساب/کارت: «کارت ملت»، «با بانک ملی»، «از حساب پس‌انداز»؛ فقط اگر در ردیف‌های واقعی چنین حسابی باشد شرط حساب می‌شود (وگرنه مثل قبل واژهٔ ناشناخته پرسیده می‌شود) */
+      var acctArg = null;
+      try {
+        var AN = hkAsstAccountNames();
+        if (AN.length) {
+          var at0 = text.split(' ');
+          outerA: for (var ai = 0; ai < at0.length; ai++) {
+            for (var al = 3; al >= 1; al--) {
+              if (ai + al > at0.length) continue;
+              var ph = at0.slice(ai, ai + al).join(' '), pk = hkAsstKey(ph), hasMark = ai > 0 && /^(کارت|بانک|حساب)$/.test(hkAsstKey(at0[ai - 1]));
+              var hit = AN.filter(function (a) { return a.key === pk && (hasMark || (pk.length >= 4 && !hkAsstLookup(pk) && !hkAsstIsStop(pk))); })[0];
+              if (hit && !(at0.slice(Math.max(0, (hasMark ? ai - 1 : ai) - 2), hasMark ? ai - 1 : ai).join(' ').search(/بدون|جز|غیر|منها|مگر|استثنا/) >= 0)) { acctArg = hit.norm; at0.splice(hasMark ? ai - 1 : ai, al + (hasMark ? 1 : 0)); text = at0.join(' '); break outerA; }
+            }
+          }
+        }
+      } catch (eAc) { acctArg = null; }
       /* ۱.۴.۴۱: «بدون اسنپ»، «جز قبوض»، «به‌جز هزینه‌ها»، «غیر از X»، «X رو حساب نکن»: بخش کنار گذاشته‌شده از متن جدا و بعداً به شرط «نه» تبدیل می‌شود (نه شرط مثبت) */
       var negWords = [];
       var negJoin = function (first, more) { negWords.push(first); String(more || '').split(/\s+و\s+/).forEach(function (x) { x = x.trim(); if (x) negWords.push(x); }); };
@@ -235,6 +306,8 @@
         var k = hkAsstKey(w);
         var exact = dataWords.filter(function (d) { return d.key === k; })[0];
         if (!exact) { var k2 = k.replace(/(ای|ا)$/, ''); if (k2 !== k && k2.length >= 3) exact = dataWords.filter(function (d) { return d.key === k2; })[0]; }
+        /* «اقامتش»، «بنزینم»: پسوند ضمیری روی واژهٔ موجود در داده؛ غلط‌تایپی نیست و بی‌صدا حذف می‌شود */
+        if (!exact) { var k3 = k.replace(/(مون|تون|شون|شو|م|ت|ش)$/, ''); if (k3 !== k && k3.length >= 3) exact = dataWords.filter(function (d) { return d.key === k3; })[0]; }
         if (exact || !dataWords.length) return exact ? exact.word : w;
         var near = hkAsstNearest(k, dataWords, 2);
         if (near) { corrections.push({ from: w, to: near.word }); return near.word; }
@@ -335,9 +408,18 @@
       var span = codes.indexOf('SPAN3') >= 0 ? 3 : codes.indexOf('SPAN6') >= 0 ? 6 : codes.indexOf('SPAN12') >= 0 ? 12 : 0;
       if (span) {
         var fy = cy, fm = cm - (span - 1); while (fm < 1) { fm += 12; fy--; }
-        args.dateFrom = fy + '-' + fm + '-1'; args.dateTo = cy + '-' + cm + '-31';
+        args.dateFrom = fy + '-' + fm + '-1'; args.dateTo = cy + '-' + cm + '-' + daysInMonth(cy, cm);
         delete args.year; delete args.month;
       }
+      if (spanN && !span) {
+        var fyN = cy, fmN = cm - (spanN - 1); while (fmN < 1) { fmN += 12; fyN--; }
+        args.dateFrom = fyN + '-' + fmN + '-1'; args.dateTo = cy + '-' + cm + '-' + daysInMonth(cy, cm); delete args.year; delete args.month;
+      }
+      if (rangeM && !span) {
+        var yBase = codes.indexOf('PREV_Y') >= 0 ? cy - 1 : (hkAsstPersianDate(text) || cy), tmM = rangeM.m2 || cm, tyM = (!rangeM.m2 || (rangeM.m2 <= cm) || codes.indexOf('THIS_Y') >= 0 || yBase !== cy) ? yBase : yBase - 1, fyM = rangeM.m1 <= tmM ? tyM : tyM - 1;
+        args.dateFrom = fyM + '-' + rangeM.m1 + '-1'; args.dateTo = tyM + '-' + tmM + '-' + daysInMonth(tyM, tmM); delete args.year; delete args.month;
+      }
+      if (ytdFlag && !args.month && !span) { args.dateFrom = cy + '-1-1'; args.dateTo = cy + '-' + cm + '-' + daysInMonth(cy, cm); delete args.year; }
       /* مرحلهٔ ۵: نوع، بخش، دسته */
       var hasE = codes.indexOf('EXP') >= 0, hasI = codes.indexOf('INC') >= 0;
       if (hasE && !hasI) args.tab = 'expense';
@@ -382,6 +464,7 @@
       /* شرط‌های «نه»: دسته → excludeCats؛ «درآمد/هزینه» → فقط طرف دیگر؛ هر چیز دیگر → کلمهٔ حذفی */
       if (negWords.length) { var ng = hkAsstNegArgs(negWords, args.tab); if (ng.unsupported && ng.unsupported.length) return hkAsstNegUnsupported(ng.unsupported); if (ng.excludeText) args.excludeText = ng.excludeText; if (ng.excludeCats) args.excludeCats = ng.excludeCats; if (ng.tab && !args.tab) args.tab = ng.tab; }
       if (subj) args.project = subj.name;
+      if (acctArg) args.account = acctArg;
       if (unpaidFlag) { args.status = 'unpaid'; if (!args.tab && unpaidTab) args.tab = unpaidTab; }
       if (transferFlag) { args.includeTransfers = true; args.transferOnly = true; }
       /* «میانگین خرج ماهانه‌ام» (بدون دسته و کلمه): میانگین جمع هر ماه */
@@ -398,6 +481,7 @@
       if (!special && !unpaidFlag && !transferFlag) special = hkAsstSpecialKind(codes, text);       /* غلط‌یاب هم ممکن است نشانهٔ تحلیلی پیدا کرده باشد («عجیبی» ← عجیب) */
       var chatK = hkAsstChatKind(codes, textWords, amts, text);
       if (chatK) return { why: 'chat:' + chatK, ask: hkAsstChatReply(chatK, codes, text), final: true, understood: '', corrections: [], suggestions: (chatK === 'HI' || chatK === 'HELP' || chatK === 'WHO') ? HK_ASST_EXAMPLES_TEXT() : [] };
+      if (special && acctArg && /^(OVW|BAL)$/.test(special)) return hkAsstAsking('موجودی جدا برای هر کارت را نمی‌توانم بگویم؛ فقط مجموع همهٔ حساب‌ها را دارم. می‌خوای همان را بگویم؟', ['موجودی کل چقدره؟', 'هزینه‌های کارت ' + acctArg + ' این ماه'], 'capability_gap');
       if (special) {
         var sc = hkAsstSpecialCmd(special, codes, args, text, amts);
         if (sc) { sc.corrections = corrections; return sc; }
@@ -415,7 +499,7 @@
       else if (codes.indexOf('SUM') >= 0) intent = 'sum';
       else if (codes.indexOf('SRCH') >= 0) intent = 'search';
       /* پروژه: اگر نام پروژه آمده باشد خلاصهٔ همان؛ اگر فقط «پروژه‌ها» آمده باشد فهرست پروژه‌ها */
-      if (args.project && (!intent || intent === 'sum')) intent = 'projsum';
+      if (args.project && (!intent || intent === 'sum') && !(args.year != null || args.month != null || args.dateFrom || args.cats || args.text || args.textAny || args.status || args.account)) intent = 'projsum';
       if (!intent && codes.indexOf('PROJ') >= 0 && !args.project) intent = 'projlist';
       if (args.status && /(^| )(کدوم|کدام|لیست|فهرست|نشون|نشان)/.test(text)) intent = 'search';
       var hasFilter = !!(args.tab || args.year || args.month || args.dateFrom || args.cats || args.context || args.project || args.textAny);
@@ -439,7 +523,11 @@
         refine = refCue && noScope && !!(args.text || args.textAny || args.cats) && ctoks.length <= 4 && intent !== 'compare';
       } catch (eR) { refine = false; }
       var _ic = ['CMP', 'GRP', 'AVG', 'MAX', 'MIN', 'CNT', 'SUM', 'SRCH', 'EXP', 'INC'].some(function (c) { return codes.indexOf(c) >= 0; });
+      /* «و درآمد؟»، «حالا درآمدها»: فقط نوع عوض می‌شود و بازه/حساب/پروژهٔ سؤال قبلی می‌ماند */
+      var tabSwap = false;
+      try { tabSwap = !!args.tab && !args.text && !args.textAny && !args.cats && !args.project && !args.context && !args.account && args.year == null && args.month == null && !args.dateFrom && !args.status && args.amountEq == null && args.amountMin == null && args.amountMax == null && !args.excludeText && !args.excludeCats && !ytdFlag && ['CMP', 'GRP', 'AVG', 'MAX', 'MIN', 'CNT', 'SRCH'].every(function (c) { return codes.indexOf(c) < 0; }) && text.split(' ').filter(function (t) { return t && !hkAsstIsStop(hkAsstKey(t)); }).length <= 3; } catch (eTs) { tabSwap = false; }
       return {
+        tabSwap: tabSwap,
         __frame: true, raw: raw, text: text, intent: intent, args: args, codes: codes, corrections: corrections, anaphora: anaphora,
         textWords: textWords, catAmb: catAmb, hasProject: !!subj, intentCode: _ic,
         yearExplicit: !!(typeof explicitY !== 'undefined' && explicitY) || !!yy,
@@ -454,10 +542,13 @@
         var cy = hkAsstCY(), cm = hkAsstCM(), pm = cm - 1, py = cy; if (pm < 1) { pm = 12; py = cy - 1; }
         var a = { year: cy, month: cm }, b = { year: py, month: pm };
         if (args.month) { a = { year: args.year || cy, month: args.month }; b = { year: a.month === 1 ? a.year - 1 : a.year, month: a.month === 1 ? 12 : a.month - 1 }; }
+        /* ۱.۴.۴۶: «ماه پیش و این ماه»، «نسبت به ماه پیش»: مبنا ماه جاری است و با ماه قبل سنجیده می‌شود (نه ماه قبل با دو ماه پیش) */
+        var hasThisM = codes.indexOf('THIS_M') >= 0, hasPrevM = codes.indexOf('PREV_M') >= 0;
+        if ((hasThisM && hasPrevM) || (hasPrevM && !hasThisM && /(نسبت به|در مقایسه با|مقایسه با|به نسبت)/.test(text))) { a = { year: cy, month: cm }; b = { year: py, month: pm }; }
         return { tool: 'reports.compare', args: { a: a, b: b, tab: args.tab, context: args.context, text: args.text, cats: args.cats } };
       }
       if (intent === 'group') {
-        var by = codes.indexOf('PROJ') >= 0 ? 'context' : /حساب|کارت|بانک/.test(text) ? 'account' : /(^| )(دسته|بخش)/.test(text) ? 'section' : /درآمد و هزینه|نوع/.test(text) ? 'tab' : 'month';
+        var by = codes.indexOf('PROJ') >= 0 ? 'context' : (_hkAsstByAcct || /حساب|کارت|بانک/.test(text)) ? 'account' : /(^| )دسته/.test(text) ? 'category' : /(^| )بخش/.test(text) ? 'section' : /درآمد و هزینه|نوع/.test(text) ? 'tab' : 'month';
         var g = Object.assign({}, args);
         if (by === 'context') delete g.context;
         return { tool: 'transactions.group', args: Object.assign({ by: by }, g) };

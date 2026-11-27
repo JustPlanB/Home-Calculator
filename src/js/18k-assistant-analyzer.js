@@ -125,7 +125,7 @@
         /* شرط‌هایی که ابزار انتخاب‌شده نمی‌شناسد: بی‌صدا حذف نمی‌شوند، به‌عنوان gap می‌آیند */
         var allowed = HK_ASST_TOOLS[merged.tool].args || [];
         Object.keys(A).forEach(function (kk) { if (allowed.indexOf(kk) < 0) spec.gaps.push({ code: 'arg_not_supported', detail: kk + ' برای ' + merged.tool + ' پشتیبانی نمی‌شود', arg: kk }); });
-        if (merged.tool === 'transactions.group' && A.by === 'section' && /(^| )دسته/.test(spec.normalized)) spec.gaps.push({ code: 'group_by_category', detail: 'گروه‌بندی بر اساس «بخش» دفتر است نه دستهٔ مالی؛ ابزار دقیق گروه‌بندی بر اساس دسته وجود ندارد' });
+        /* ۱.۴.۴۶: گروه‌بندی بر اساس «دسته» اکنون پشتیبانی می‌شود (by=category)؛ بخش دفتر فقط وقتی «بخش» گفته شود */
         /* صفت اندازهٔ بی‌مرز («خرجای کوچیک»): شرط داده نیست و بی مرز مبلغ نمی‌شود اجرا کرد؛ پرسش روشن‌کننده (بدون نگاه به داده) */
         var degree = [], dropDeg = function (arr) { return arr.filter(function (t) { var w = String(t).split(' ').filter(function (x) { return hkAsstIsDegree(hkAsstKey(x)); }); if (w.length) { degree = degree.concat(w); return false; } return true; }); };
         spec.slots.include.terms = dropDeg(spec.slots.include.terms); spec.slots.include.any_terms = dropDeg(spec.slots.include.any_terms); spec.slots.exclude.terms = dropDeg(spec.slots.exclude.terms);
@@ -210,7 +210,16 @@
             spec.trace.push({ slot: 'action', rule: 'breakdown_by_terms_unsupported' }); return spec;
           }
           if (A.by === 'month' && !/ماه/.test(spec.normalized) && /درآمد/.test(spec.normalized) && /(خرج|هزینه)/.test(spec.normalized)) { A.by = 'tab'; spec.group_by = 'tab'; spec.binding.args = A; spec.trace.push({ slot: 'group_by', rule: 'income_and_expense_means_by_tab' }); }
-          if (A.by === 'month' && !/ماه/.test(spec.normalized)) {
+          /* ۱.۴.۴۶: «حالا تفکیکش کن» بعد از یک جمع/فهرست: همان شرط‌ها می‌ماند و بُعد هوشمند انتخاب می‌شود (چندماهه ← ماه؛ یک ماهِ هزینه ← دسته؛ درآمد ← بخش؛ با دسته/کلمه ← حساب) نه پرسش بی‌مورد */
+          var pureGroup = Object.keys(A).filter(function (k) { return k !== 'by'; }).length === 0 && /(تفکیک|گروه)/.test(spec.normalized);
+          if (P && /^transactions\.(aggregate|search)$/.test(P.tool) && frame && (frame.anaphora || pureGroup) && (A.by !== 'month' || !/ماه/.test(spec.normalized) || pureGroup)) {
+            var PA = Object.assign({}, P.args || {}); ['sort', 'limit', 'by'].forEach(function (k) { delete PA[k]; });
+            var single = !!(PA.month && PA.year && !PA.dateFrom), narrow = !!(PA.cats || PA.text || PA.textAny), explicitDim = /(ماه|حساب|کارت|بانک|دسته|بخش)/.test(spec.normalized);
+            PA.by = explicitDim ? A.by : (!single ? 'month' : narrow ? 'account' : (PA.tab === 'income' ? 'section' : 'category'));
+            A = PA; spec.binding.args = A; spec.tab = A.tab || null; spec.time = hkAsstSpecTime(A); spec.slots = hkAsstSpecSlots(A, merged); spec.group_by = A.by;
+            spec.trace.push({ slot: 'group_by', rule: 'follow_up_group_dimension', value: A.by });
+          }
+          if (A.by === 'month' && !/ماه/.test(spec.normalized) && !(P && frame && (frame.anaphora || pureGroup) && /^transactions\.(aggregate|search)$/.test(P.tool))) {
             spec.action = 'ask'; spec.intent = 'clarify'; spec.clarification = { needed: true, reason: 'ambiguous_group_dimension', question: 'به تفکیک چه چیزی؟ ماه، نوع (درآمد/هزینه)، بخش یا حساب؟', suggestions: ['هزینه‌ها ماه به ماه', 'درآمد و هزینه جدا'], term: null };
             spec.trace.push({ slot: 'group_by', rule: 'default_dimension_is_a_guess', value: A.by }); return spec;
           }

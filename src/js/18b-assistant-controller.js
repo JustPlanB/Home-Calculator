@@ -125,7 +125,7 @@
       }
       if (tool === 'transactions.group') {
         if (!res.groups.length) return 'تراکنشی برای گروه‌بندی پیدا نکردم.';
-        var gtxt = 'اینم به تفکیک ' + ({ month: 'ماه', section: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
+        var gtxt = 'اینم به تفکیک ' + ({ month: 'ماه', section: 'بخش', category: 'دسته', account: 'حساب', tab: 'نوع', context: 'پروژه/شخصی' })[res.by] + ':';
         if (cmd && /^(top|low)group$/.test(cmd.explain || '')) {
           var gl = res.groups.slice().sort(function (x, y) { return cmd.explain === 'topgroup' ? y.sum - x.sum : x.sum - y.sum; })[0];
           var gk = res.by === 'month' ? (function (k) { var q = String(k).split('-'); return HK_ASST_MONTH_NAMES[(+q[1]) - 1] + ' ' + hkAsstNum(+q[0]); })(gl.key) : gl.key;
@@ -135,6 +135,14 @@
       }
       if (tool === 'reports.compare') {
         var ml = function (x) { var p = String(x.label).split('-'); return HK_ASST_MONTH_NAMES[(+p[1]) - 1] ? HK_ASST_MONTH_NAMES[(+p[1]) - 1] + ' ' + hkAsstNum(+p[0]) : x.label; };
+        /* ۱.۴.۴۶: وقتی نوع مشخص است (خرج/درآمد) جواب مستقیم و فقط همان نوع؛ «بیشتر/کمتر» را صریح می‌گوید */
+        var ctab = cmd && cmd.args && cmd.args.tab, rq = String((cmd && cmd.rawQ) || '');
+        if (ctab === 'expense' || ctab === 'income') {
+          var va = ctab === 'income' ? res.a.incomeSum : res.a.expenseSum, vb = ctab === 'income' ? res.b.incomeSum : res.b.expenseSum, nm = ctab === 'income' ? 'درآمدت' : 'خرجت', diff = va - vb;
+          var yn = /بیشتر/.test(rq) ? (diff > 0 ? 'بله، ' : diff < 0 ? 'نه، ' : '') : /کمتر/.test(rq) ? (diff < 0 ? 'بله، ' : diff > 0 ? 'نه، ' : '') : '';
+          var lead = diff === 0 ? 'هر دو ماه ' + nm + ' برابر است: ' + hkAsstMoney(va) + '.' : yn + nm + ' در ' + ml(res.a) + ' ' + hkAsstMoney(Math.abs(diff)) + (diff > 0 ? ' بیشتر' : ' کمتر') + ' از ' + ml(res.b) + ' بوده.';
+          return lead + '\n' + ml(res.a) + ': ' + hkAsstMoney(va) + '\n' + ml(res.b) + ': ' + hkAsstMoney(vb);
+        }
         return 'مقایسهٔ ' + ml(res.a) + ' با ' + ml(res.b) + ':\n' +
           'درآمد: ' + hkAsstMoney(res.a.incomeSum) + ' در برابر ' + hkAsstMoney(res.b.incomeSum) + '\n' +
           'هزینه: ' + hkAsstMoney(res.a.expenseSum) + ' در برابر ' + hkAsstMoney(res.b.expenseSum) + hkAsstWhichText(res, cmd);

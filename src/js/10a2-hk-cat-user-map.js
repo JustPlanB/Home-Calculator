@@ -188,7 +188,10 @@
       var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
       var close = function () { ov.remove(); };
       var sel = Array.isArray(multi) ? multi.slice() : null;
+      /* ۱.۴.۴۸: تک‌انتخابی (درآمد) هم مثل مخارج: زدن دسته فقط انتخاب است و با «تأیید» اعمال می‌شود (قبلاً بلافاصله اعمال و بسته می‌شد) */
+      var one = sel ? null : String(cur || '');
       var commit = function () { ov.remove(); onPick(sel.slice()); };
+      var commit1 = function () { ov.remove(); onPick(one); if (one === 'p2p') { try { hkP2PIntro(false); } catch (eI) {} } };
       ov._hkCancel = sel ? commit : close;
       var paintM = function () { gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { var id = x.dataset.cat; x.classList.toggle('on', id && id !== 'p2p' ? sel.indexOf(id) >= 0 : (id === '' ? !sel.length && cur !== 'p2p' : cur === 'p2p' && !sel.length)); }); };
       /* ۱.۳.۸۰: «نامشخص» آخرین دسته */
@@ -198,6 +201,7 @@
         b.innerHTML = '<i>' + hkCatIco(c.id) + '</i><span>' + escapeHtml(c.label) + '</span>';
         if (c.id === 'p2p') hkP2PDecorate(b);
         b.onclick = function () {
+          if (!sel) { one = c.id; gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { x.classList.toggle('on', x.dataset.cat === one); }); return; }
           if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
           close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false);
         };
@@ -231,7 +235,7 @@
         gg.appendChild(plus);
       }
       bx.appendChild(gg);
-      if (sel) { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = commit; bx.appendChild(okB); }
+      { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = sel ? commit : commit1; bx.appendChild(okB); }
       ov.appendChild(bx);
       ov.addEventListener('click', function (e) { if (e.target === ov) (sel ? commit : close)(); });
       document.body.appendChild(ov);
@@ -568,6 +572,12 @@
     try { window.hkOpenSmsUnread = hkOpenSmsUnread; window.hkSmsUnreadAdd = hkSmsUnreadAdd; window.hkSmsLearnedParse = hkSmsLearnedParse; window.hkSmsUnreadLoad = hkSmsUnreadLoad; } catch (eWu) {}
     try { setTimeout(function () { try { hkSmsUnreadMenu(); } catch (e) {} }, 1200); } catch (eUm) {}
 
+    function hkSmsMarkDone(nid) {
+      nid = Number(nid) || 0; if (!nid) return;
+      window._hkDoneSmsNids = window._hkDoneSmsNids || {}; window._hkDoneSmsNids[nid] = 1;
+      var B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BankSms;
+      if (B && typeof B.markHandled === 'function') { try { var p = B.markHandled({ nid: nid }); if (p && p.catch) p.catch(function () {}); } catch (eM) {} }
+    }
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) return false;
@@ -577,6 +587,8 @@
         if (_ins) {
           var _ir = hkInstIngest(_ins, String(smsText || ''));
           try { cancelNativeSmsNotification(opts.nid); } catch (eNc) {}
+          /* ۱.۴.۴۷: پیامک «واریز قسط» همین‌جا تعیین تکلیف می‌شود؛ از صف نیتیو هم پاک شود وگرنه همیشه در صف می‌ماند و ویجت هر بار دوباره روی موجودی اعمالش می‌کرد (موجودی کل بیش‌ازحد/حساب منفی) */
+          try { hkSmsMarkDone(opts.nid); } catch (eMd) {}
           if (_ir && !_ir.dup && !opts.silent) showToast('پرداخت قسط در «' + hkInstName(_ir.card) + '» ثبت شد');
           return true;
         } }

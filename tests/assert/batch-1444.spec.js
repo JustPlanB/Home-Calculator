@@ -87,7 +87,7 @@ const NUM = /[۰-۹][۰-۹,]{3,}/;
   ok(/تراکنشی دارای مبلغ ثبت نشده/.test(Z3) && /ردیف.*مبلغ ندارد/.test(Z3), 'ردیف‌های موجود ولی همه بی‌مبلغ: صفر نمی‌گوید؛ دلیلش را می‌گوید');
   // ۷) شکاف و هشدار
   const G = await run(['هر دسته چقدر خرج شد؟']);
-  ok(G[0].gaps.length > 0 && /نکته:/.test(G[0].text) && /بخش/.test(G[0].text), 'شکاف قابلیت پنهان نمی‌شود');
+  ok(G[0].gaps.length === 0 && /به تفکیک دسته/.test(G[0].text), 'هر دسته چقدر خرج شد؟ (۱.۴.۴۶): گروه‌بندی واقعی بر اساس دسته، بی‌شکاف');
   // ۸) ادامهٔ گفتگو
   const dbg = await page.evaluate(() => { const a = periodData.expense.sections[0].rows; a.push({ id: 'tie', day: '3', desc: 'دوم قسط', amount: 700000, status: 'paid', account: '', deletedAt: null, createdAt: 1, updatedAt: 1 }); const c = hkAsstChain('بیشترین خرج ماه جاری', {}); a.pop(); const st = {}; const e = (() => { const A = archive, P = periodData; archive = {}; periodData = emptyPeriodData(); const x = hkAsstChain('سرچ کن نان', {}); archive = A; periodData = P; return x; })(); return [c.answer.text, e.answer.text, e.match.status]; });
   const Q = await run([['خرج این ماه چقدر شد؟', 'فقط ردیف‌های بنزین'], ['بنزین این ماه چقدر شد؟', 'جمعش؟'], ['خرج بدون زرتی', 'نه منظورم اسنپ بود'], ['خرجای کوچیک بدون بنزین', 'زیر ۵۰ هزار']]);
