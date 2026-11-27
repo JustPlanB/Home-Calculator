@@ -161,7 +161,7 @@
       } else if (msg.tool === 'transactions.group' && d.groups) {
         d.groups.forEach(function (g) {
           var row = hkAsstEl('div', 'hk-asst-grp');
-          row.appendChild(hkAsstEl('span', 'hk-asst-gk', d.by === 'month' ? toPersianDigits(g.key.replace('-', '/')) : (g.key === 'income' ? 'درآمد' : g.key === 'expense' ? 'هزینه' : g.key)));
+          row.appendChild(hkAsstEl('span', 'hk-asst-gk', d.by === 'month' ? toPersianDigits(g.key.replace('-', '/')) : (d.by === 'category' ? (g.key === 'income' ? 'درآمد' : hkAsstCatLabel(g.key)) : (g.key === 'income' ? 'درآمد' : g.key === 'expense' ? 'هزینه' : g.key))));
           row.appendChild(hkAsstEl('span', 'hk-asst-gv', toPersianDigits(String(g.count)) + ' تراکنش · ' + hkAsstMoney(g.sum)));
           wrap.appendChild(row);
         });

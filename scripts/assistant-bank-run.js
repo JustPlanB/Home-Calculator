@@ -23,7 +23,7 @@ const P = 'hesabKetabArchive_v5', LS = { [P + '_tourDone']: '1', [P + '_bankSetu
     const cur = mk('this_month'), prev = mk('prev_month');
     periodData = cur; archive = {}; archive[periodKey(cy, cm)] = JSON.parse(JSON.stringify(cur)); archive[periodKey(py, pm)] = prev; _savings = { v: 1, items: [], prices: {} };
     const snap = (r) => ({ ask: r.decision === 'ask' && !r.tool, tool: r.tool || '', args: (r.cmd && r.cmd.args) || {}, text: String(r.text || ''), kind: r.kind });
-    const reset = () => { _hkAsstCtx = null; _hkAsstLastTarget = null; try { _hkAsstPending = null; } catch (e) {} };
+    const reset = () => { _hkAsstCtx = null; _hkAsstLastTarget = null; try { _hkAsstPending = null; } catch (e) {} try { hkAsstChainReset(); } catch (e) {} };
     return { cy, cm, py, pm, out: samples.map((s) => { reset(); (s.context || []).forEach((q) => hkAsstAsk(q)); return { id: s.id, got: snap(hkAsstAsk(s.text)) }; }) };
   }, { samples, fx: fixture });
   await b.close();

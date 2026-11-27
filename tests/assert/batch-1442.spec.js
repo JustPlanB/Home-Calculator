@@ -90,7 +90,7 @@ const NUM = /[۰-۹][۰-۹,]{3,}/;
   ok(C[0].action === 'ask' && C[0].clarification.reason === 'missing_scope', 'ابهام بی‌موضوع: ask');
   ok(C[1].action === 'refuse' && C[1].clarification.reason === 'market_price' && C[2].clarification.reason === 'investment_advice' && C[3].clarification.reason === 'write_operation' && C[4].clarification.reason === 'forecast_unsupported', 'بیرون از قابلیت: refuse با دلیل و gap out_of_scope/future_period');
   ok(C[1].gaps[0].code === 'out_of_scope' && C[4].gaps[0].code === 'future_period', 'gap ثبت شده');
-  ok(C[5].gaps.some(g => g.code === 'group_by_category'), 'گروه‌بندی بر اساس دسته: gap');
+  ok(!C[5].gaps.some(g => g.code === 'group_by_category') && C[5].group_by === 'category', 'گروه‌بندی بر اساس دسته (۱.۴.۴۶): دیگر gap نیست؛ by=category');
   ok(C[6].operations.length === 2 && C[6].gaps.some(g => g.code === 'multi_part'), 'سؤال چندبخشی: operations و gap multi_part');
   ok(C[7].action === 'ask' && C[7].clarification.reason === 'capability_gap' && C[7].gaps[0].code === 'group_by_terms', 'جمع جدای هر مورد: capability_gap');
   ok(C[8].gaps.some(g => g.code === 'extreme_month') && C[9].action === 'refuse' && C[9].clarification.reason === 'write_operation' && C[10].action === 'chat', 'کم‌خرج‌ترین ماه=gap؛ «پاک کن»=refuse؛ سلام=chat');
