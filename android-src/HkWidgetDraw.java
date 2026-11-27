@@ -144,6 +144,9 @@ final class HkWidgetDraw {
       SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
       if(!sp.contains("balRaw")) return false;
       String t=BankSmsReceiver.normFa(text);
+      /* ۱.۴.۴۷: «واریز قسط … تعداد اقساط» پیامک قسط وام است؛ نرم‌افزار آن را فقط در کارت قسط ثبت می‌کند و موجودی حساب‌ها را تغییر نمی‌دهد.
+         قبلاً «واریز» و «مبلغ» آن به‌عنوان درآمد روی ویجت اعمال می‌شد و چون در صف می‌ماند، هر به‌روزرسانی دوباره اضافه‌اش می‌کرد */
+      if(java.util.regex.Pattern.compile("واریز\\s*قسط").matcher(t).find() && java.util.regex.Pattern.compile("تعداد\\s*اقساط").matcher(t).find()) return false;
       long amt=smsAmount(t);
       if(amt<=0) return false;
       int sgn=smsSign(t);

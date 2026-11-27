@@ -39189,6 +39189,12 @@ function confirmSmsEntry() {
     try { window.hkOpenSmsUnread = hkOpenSmsUnread; window.hkSmsUnreadAdd = hkSmsUnreadAdd; window.hkSmsLearnedParse = hkSmsLearnedParse; window.hkSmsUnreadLoad = hkSmsUnreadLoad; } catch (eWu) {}
     try { setTimeout(function () { try { hkSmsUnreadMenu(); } catch (e) {} }, 1200); } catch (eUm) {}
 
+    function hkSmsMarkDone(nid) {
+      nid = Number(nid) || 0; if (!nid) return;
+      window._hkDoneSmsNids = window._hkDoneSmsNids || {}; window._hkDoneSmsNids[nid] = 1;
+      var B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BankSms;
+      if (B && typeof B.markHandled === 'function') { try { var p = B.markHandled({ nid: nid }); if (p && p.catch) p.catch(function () {}); } catch (eM) {} }
+    }
     function enqueueBankSms(smsText, opts) {
       opts = opts || {};
       if (typeof isOtpOrAuthSms === 'function' && isOtpOrAuthSms(smsText)) return false;
@@ -39198,6 +39204,8 @@ function confirmSmsEntry() {
         if (_ins) {
           var _ir = hkInstIngest(_ins, String(smsText || ''));
           try { cancelNativeSmsNotification(opts.nid); } catch (eNc) {}
+          /* ۱.۴.۴۷: پیامک «واریز قسط» همین‌جا تعیین تکلیف می‌شود؛ از صف نیتیو هم پاک شود وگرنه همیشه در صف می‌ماند و ویجت هر بار دوباره روی موجودی اعمالش می‌کرد (موجودی کل بیش‌ازحد/حساب منفی) */
+          try { hkSmsMarkDone(opts.nid); } catch (eMd) {}
           if (_ir && !_ir.dup && !opts.silent) showToast('پرداخت قسط در «' + hkInstName(_ir.card) + '» ثبت شد');
           return true;
         } }
