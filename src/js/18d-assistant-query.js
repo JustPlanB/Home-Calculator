@@ -106,7 +106,7 @@
       text = text.replace(/(^| )(اخیر|گذشته)(م|ت|ش|شو|مون|تون|شون)(?= |$)/g, '$1$2');
       /* «از اول سال (تا الان)»، «از ابتدای امسال»: از ۱ فروردینِ امسال تا پایان ماه جاری */
       var ytdFlag = false;
-      text = text.replace(/(^| )(از )?(اول|ابتدای|ابتدا|شروع)( | ?)(امسال|این سال|سال جاری|سال)( جاری)?( تا (الان|حالا|اکنون|امروز|این ماه|حال))?(?= |$)/g, function (a, p0) { ytdFlag = true; return p0; });
+      text = text.replace(/(^| )از (اول|ابتدای|ابتدا|شروع)( | ?)(امسال|این سال|سال جاری|سال)( جاری)?( تا (الان|حالا|اکنون|امروز|این ماه|حال))?(?= |$)/g, function (a, p0) { ytdFlag = true; return p0; });
       /* «دو ماه اخیر»، «۴ ماه گذشته»، «پنج ماهِ اخیر»: بازهٔ N ماه تا ماه جاری (۳/۶/۱۲ را فرهنگ لغت می‌شناسد) */
       var spanN = 0;
       text = text.replace(/(^| )(\d+|دو|چهار|پنج|هفت|هشت|نه|ده|یازده|9|یه) ?ماه(?:ه|ِ)? (?:اخیر|گذشته|اخیرا)(?= |$)/g, function (a, p0, w) { var n = /^\d+$/.test(w) ? parseInt(w, 10) : (HK_ASST_NUMWORDS[w] || (w === 'یه' ? 1 : 0)); if (n >= 2 && n <= 12 && n !== 3 && n !== 6 && n !== 12) { spanN = n; return p0; } return a; });
@@ -181,7 +181,7 @@
               if (ai + al > at0.length) continue;
               var ph = at0.slice(ai, ai + al).join(' '), pk = hkAsstKey(ph), hasMark = ai > 0 && /^(کارت|بانک|حساب)$/.test(hkAsstKey(at0[ai - 1]));
               var hit = AN.filter(function (a) { return a.key === pk && (hasMark || (pk.length >= 4 && !hkAsstLookup(pk) && !hkAsstIsStop(pk))); })[0];
-              if (hit) { acctArg = hit.norm; at0.splice(hasMark ? ai - 1 : ai, al + (hasMark ? 1 : 0)); text = at0.join(' '); break outerA; }
+              if (hit && !(at0.slice(Math.max(0, (hasMark ? ai - 1 : ai) - 2), hasMark ? ai - 1 : ai).join(' ').search(/بدون|جز|غیر|منها|مگر|استثنا/) >= 0)) { acctArg = hit.norm; at0.splice(hasMark ? ai - 1 : ai, al + (hasMark ? 1 : 0)); text = at0.join(' '); break outerA; }
             }
           }
         }
@@ -499,7 +499,7 @@
       else if (codes.indexOf('SUM') >= 0) intent = 'sum';
       else if (codes.indexOf('SRCH') >= 0) intent = 'search';
       /* پروژه: اگر نام پروژه آمده باشد خلاصهٔ همان؛ اگر فقط «پروژه‌ها» آمده باشد فهرست پروژه‌ها */
-      if (args.project && (!intent || intent === 'sum') && !(args.tab || args.year != null || args.month != null || args.dateFrom || args.cats || args.text || args.textAny || args.status || args.account)) intent = 'projsum';
+      if (args.project && (!intent || intent === 'sum') && !(args.year != null || args.month != null || args.dateFrom || args.cats || args.text || args.textAny || args.status || args.account)) intent = 'projsum';
       if (!intent && codes.indexOf('PROJ') >= 0 && !args.project) intent = 'projlist';
       if (args.status && /(^| )(کدوم|کدام|لیست|فهرست|نشون|نشان)/.test(text)) intent = 'search';
       var hasFilter = !!(args.tab || args.year || args.month || args.dateFrom || args.cats || args.context || args.project || args.textAny);

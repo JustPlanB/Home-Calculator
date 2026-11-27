@@ -260,12 +260,15 @@
           out.figures = { sum: S.sum, count: S.count };
           var who = tab === 'income' ? when + ' درآمدت ' + M(S.sum) + ' شده' : tab === 'expense' ? when + ' خرجت ' + M(S.sum) + ' شده' : 'جمع ردیف‌ها ' + when + ' ' + M(S.sum) + ' شده';
           out.text = who + det(S.count) + '.';
-          if (calc.catTop && calc.catTop.share >= 25) out.notes.push('بیشترین سهم مربوط به «' + scan(calc.catTop.label) + '» بوده (' + N(calc.catTop.share) + '٪ از کل؛ ' + M(calc.catTop.sum) + ').');
+          /* توضیح طبیعی در همان خط جملهٔ اصلی (پاسخ‌ها کوتاه می‌ماند؛ ۱ خط) */
+          var insP = [];
+          if (calc.catTop && calc.catTop.share >= 25) insP.push('بیشترین سهم مربوط به «' + scan(calc.catTop.label) + '» بوده (' + N(calc.catTop.share) + '٪ از کل)');
           if (calc.prev && calc.prev.sum > 0) {
             var pct = Math.round((S.sum - calc.prev.sum) / calc.prev.sum * 100), pl = HK_ASST_MONTH_NAMES[calc.prev.m - 1] + (calc.prev.y !== hkAsstCY() ? ' ' + toPersianDigits(String(calc.prev.y)) : '');
-            out.notes.push(Math.abs(pct) < 3 ? 'تقریباً هم‌اندازهٔ ' + pl + ' است (' + M(calc.prev.sum) + ').' : 'نسبت به ' + pl + ' (' + M(calc.prev.sum) + ') حدود ' + N(Math.abs(pct)) + '٪ ' + (pct > 0 ? 'بیشتر' : 'کمتر') + ' شده' + (calc.prev.partial ? ' (این ماه هنوز تمام نشده)' : '') + '.');
+            insP.push(Math.abs(pct) < 3 ? 'تقریباً هم‌اندازهٔ ' + pl + ' (' + M(calc.prev.sum) + ')' : 'نسبت به ' + pl + ' (' + M(calc.prev.sum) + ') حدود ' + N(Math.abs(pct)) + '٪ ' + (pct > 0 ? 'بیشتر' : 'کمتر') + ' شده' + (calc.prev.partial ? ' (این ماه هنوز تمام نشده)' : ''));
             out.figures.prevSum = calc.prev.sum;
           }
+          if (insP.length) out.text += ' ' + insP.join('؛ ') + '.';
           if (calc.ops.indexOf('avg') >= 0 || calc.ops.indexOf('average') >= 0) { out.notes.push('میانگین هر تراکنش ' + M(S.avg) + ' است.'); out.figures.avg = S.avg; }
           if (calc.ops.indexOf('count') >= 0) { /* تعداد همین جا آمده است */ }
         }
