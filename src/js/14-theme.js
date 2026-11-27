@@ -244,6 +244,15 @@
         '<div class="upd-prompt-actions"><button type="button" class="upd-prompt-go" id="updPromptGo">بروزرسانی</button>' +
         (critical ? '' : '<button type="button" class="backup-pick-cancel upd-prompt-later" id="updPromptLater">بعداً</button>') + '</div></div>';
       document.body.appendChild(ov);
+      /* ۱.۴.۴۸: باکس هرگز اسکرول نمی‌خواهد: اگر بلندتر از صفحه شد، اول فونت و فاصلهٔ توضیح‌ها کم می‌شود، بعد توضیح‌های آخر کنار می‌رود */
+      try {
+        var pn = ov.querySelector('.upd-prompt-panel'), ul = ov.querySelector('.upd-notes'), avail = function () { return (window.innerHeight || document.documentElement.clientHeight || 640) - 28; };
+        if (pn && ul) {
+          var fs = parseFloat(getComputedStyle(ul).fontSize) || 13, guard = 0;
+          while (pn.getBoundingClientRect().height > avail() && fs > 10.5 && guard++ < 12) { fs -= 0.5; ul.style.fontSize = fs + 'px'; ul.style.lineHeight = '1.6'; }
+          while (pn.getBoundingClientRect().height > avail() && ul.children.length > 1) ul.removeChild(ul.lastElementChild);
+        }
+      } catch (eFit) {}
       ov.querySelector('#updPromptGo').onclick = function () {
         ov.remove();
         var mm = Object.assign({}, m, { _critical: critical });

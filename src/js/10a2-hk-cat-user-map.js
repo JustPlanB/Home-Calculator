@@ -188,7 +188,10 @@
       var gg = document.createElement('div'); gg.className = 'sms-cat-grid hk-cat-colored';
       var close = function () { ov.remove(); };
       var sel = Array.isArray(multi) ? multi.slice() : null;
+      /* ۱.۴.۴۸: تک‌انتخابی (درآمد) هم مثل مخارج: زدن دسته فقط انتخاب است و با «تأیید» اعمال می‌شود (قبلاً بلافاصله اعمال و بسته می‌شد) */
+      var one = sel ? null : String(cur || '');
       var commit = function () { ov.remove(); onPick(sel.slice()); };
+      var commit1 = function () { ov.remove(); onPick(one); if (one === 'p2p') { try { hkP2PIntro(false); } catch (eI) {} } };
       ov._hkCancel = sel ? commit : close;
       var paintM = function () { gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { var id = x.dataset.cat; x.classList.toggle('on', id && id !== 'p2p' ? sel.indexOf(id) >= 0 : (id === '' ? !sel.length && cur !== 'p2p' : cur === 'p2p' && !sel.length)); }); };
       /* ۱.۳.۸۰: «نامشخص» آخرین دسته */
@@ -198,6 +201,7 @@
         b.innerHTML = '<i>' + hkCatIco(c.id) + '</i><span>' + escapeHtml(c.label) + '</span>';
         if (c.id === 'p2p') hkP2PDecorate(b);
         b.onclick = function () {
+          if (!sel) { one = c.id; gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { x.classList.toggle('on', x.dataset.cat === one); }); return; }
           if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
           close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false);
         };
@@ -231,7 +235,7 @@
         gg.appendChild(plus);
       }
       bx.appendChild(gg);
-      if (sel) { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = commit; bx.appendChild(okB); }
+      { var okB = document.createElement('button'); okB.type = 'button'; okB.className = 'modal-btn hk-cp-ok'; okB.textContent = 'تأیید'; okB.onclick = sel ? commit : commit1; bx.appendChild(okB); }
       ov.appendChild(bx);
       ov.addEventListener('click', function (e) { if (e.target === ov) (sel ? commit : close)(); });
       document.body.appendChild(ov);
