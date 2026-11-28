@@ -141,6 +141,7 @@ final class HkWidgetDraw {
   static boolean applySmsTo(Context c,String text,String sender,long at){
     try{
       if(BankSmsReceiver.isPersonal(sender)) return false;
+      if(BankSmsReceiver.isOtpSms(text)) return false; /* ۱.۴.۴۹: رمز یک‌بارمصرف هرگز روی ویجت اثر نمی‌گذارد */
       SharedPreferences sp=c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
       if(!sp.contains("balRaw")) return false;
       String t=BankSmsReceiver.normFa(text);
@@ -302,6 +303,25 @@ final class HkWidgetDraw {
     if(pct<50) return light ? 0xFFE0B800 : 0xFFFFEC0A;
     return incC(light);
   }
+  /** سفید یا مشکیِ پرکنتراست‌تر روی یک رنگ پس‌زمینه */
+  static int contrastOn(int bg){
+    double r=Color.red(bg)/255.0, g=Color.green(bg)/255.0, b=Color.blue(bg)/255.0;
+    r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4); g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4); b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);
+    double L=0.2126*r+0.7152*g+0.0722*b;
+    double cw=1.05/(L+0.05), cb=(L+0.05)/0.061; /* کنتراست با سفید در برابر مشکی #1C1C1E */
+    return cb>=cw ? 0xFF1C1C1E : Color.WHITE;
+  }
+  /** متن را دو بار می‌کشد: چپِ مرز با رنگ colFill و راستِ مرز با colEmpty (مرز = لبهٔ بخش پُر کپسول) */
+  static void splitText(Canvas cv, String t, float x, float y, Paint p, float boundary, int colFill, int colEmpty){
+    int old=p.getColor(); float w=p.measureText(t);
+    float left = p.getTextAlign()==Paint.Align.CENTER ? x-w/2f : (p.getTextAlign()==Paint.Align.RIGHT ? x-w : x);
+    if(boundary<=left || colFill==colEmpty){ p.setColor(colEmpty); cv.drawText(t,x,y,p); p.setColor(old); return; }
+    if(boundary>=left+w){ p.setColor(colFill); cv.drawText(t,x,y,p); p.setColor(old); return; }
+    float top=y-p.getTextSize()*1.3f, bot=y+p.getTextSize()*0.7f;
+    cv.save(); cv.clipRect(0, top, boundary, bot); p.setColor(colFill); cv.drawText(t,x,y,p); cv.restore();
+    cv.save(); cv.clipRect(boundary, top, cv.getWidth(), bot); p.setColor(colEmpty); cv.drawText(t,x,y,p); cv.restore();
+    p.setColor(old);
+  }
   static final float LINE_H=154f/180f;
   static Bitmap line(Context c, int W, int H, float k, Data d){
     fonts(c);
@@ -314,11 +334,13 @@ final class HkWidgetDraw {
     Paint bg=new Paint(Paint.ANTI_ALIAS_FLAG); bg.setColor(withAlpha(d.light ? 0xFFFFFFFF : 0xFF1B1B1B, d.alpha));
     cv.drawRoundRect(box, r, r, bg);
     boolean show=!d.mask && d.pct>=0;
+    float fillR=box.left; int fillCol=0;
     if(show && d.pct>0){
       android.graphics.Path clip=new android.graphics.Path(); clip.addRoundRect(box, r, r, android.graphics.Path.Direction.CW);
       cv.save(); cv.clipPath(clip);
       float fw=Math.max(2*r, box.width()*d.pct/100f);
-      Paint fp=new Paint(Paint.ANTI_ALIAS_FLAG); fp.setColor(capColor(d.pct, d.light));
+      fillR=box.left+fw; fillCol=capColor(d.pct, d.light);
+      Paint fp=new Paint(Paint.ANTI_ALIAS_FLAG); fp.setColor(fillCol);
       /* ۱.۴.۲۱: مرز بخش رنگی و خالی خط صاف است (نه گرد): فقط لبهٔ چپ از گوشهٔ کپسول (clip) گرد می‌ماند */
       cv.drawRect(box.left, box.top, box.left+fw, box.bottom, fp);
       cv.restore();
@@ -330,8 +352,10 @@ final class HkWidgetDraw {
     /* ۱.۴.۲۲: بی هالهٔ نور: پشت هیچ عدد یا نوشته‌ای سایه/هاله نیست؛ هر کدام یک رنگ سالید مخصوص تم خودش */
     if(show){
       String ps=faDigits(d.pct)+"٪";
+      /* ۱.۴.۴۹: رنگ نوشته با پس‌زمینهٔ پشتش هماهنگ است: روی بخش پُر (رنگی) رنگِ متضاد با همان رنگ، روی بخش خالی رنگ عادی تم؛ متنی که مرز را قطع کند دو رنگ می‌شود */
+      int onFill=fillCol!=0 ? contrastOn(fillCol) : tc;
       Paint pp=paint(BOLD, size, tc, Paint.Align.LEFT);
-      cv.drawText(ps, padX, cy+size*0.36f, pp);
+      splitText(cv, ps, padX, cy+size*0.36f, pp, fillR, onFill, tc);
       String v=d.balance==null?"—":d.balance;
       /* مبلغ و «موجودی کل» کمی بزرگ‌تر از قبل و هر دو دقیقاً وسط‌چین نسبت به هم (مرکز مشترک؛ مبلغ لبهٔ راست را نگه می‌دارد) */
       float ns=Math.min(hb*0.40f, 21*k), ls=Math.min(hb*0.24f, 13*k), blockH=ns+ls+3*k, top=cy-blockH/2f;
@@ -339,9 +363,9 @@ final class HkWidgetDraw {
       Paint vp=paint(BOLD, vs, tc, Paint.Align.CENTER);
       float cx=W-padX-vp.measureText(v)/2f;
       float nb=top+vs*0.82f;
-      cv.drawText(v, cx, nb, vp);
+      splitText(cv, v, cx, nb, vp, fillR, onFill, tc);
       Paint lp=paint(REG, ls, d.light ? 0xFF6E6E76 : 0xFF98989F, Paint.Align.CENTER);
-      cv.drawText("موجودی کل", cx, nb+3*k+ls*0.95f, lp);
+      splitText(cv, "موجودی کل", cx, nb+3*k+ls*0.95f, lp, fillR, fillCol!=0 ? (contrastOn(fillCol)==Color.WHITE ? 0xCCFFFFFF : 0xB31C1C1E) : lp.getColor(), lp.getColor());
     }else if(d.mask){
       Paint mp=paint(BOLD, size, tc, Paint.Align.CENTER);
       cv.drawText("••••••", W/2f, cy+size*0.36f, mp);

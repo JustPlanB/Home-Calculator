@@ -186,6 +186,13 @@
         if (ov) ov.classList.remove('open');
       } catch (e) {}
     }
+    function hkIsPastView() {
+      try { var t = getTodayPersian(); return (currentYear * 100 + currentMonth) < (t.y * 100 + t.m); } catch (e) { return false; }
+    }
+    /* ۱.۴.۴۹: یک لمس: برگشت به ماه جاری */
+    function hkGoToCurrentMonth() {
+      try { var t = getTodayPersian(); closeInstantBalance(); navigateToPeriod(t.y, t.m); } catch (e) {}
+    }
     function openInstantBalance(title) {
       try {
         const ov = document.getElementById('instantBalOverlay');
@@ -200,8 +207,14 @@
           if (ia < 0) ia = 1e6; if (ib < 0) ib = 1e6;
           return (ia - ib) || String(a).localeCompare(String(b), 'fa');
         });
-        let html = '<div class="instant-bal-head">موجودی آنی' +
-          '<div class="instant-bal-sub">موجودی واقعی کارت (شامل موجودی اولیه و پول پروژه‌ها)</div></div>';
+        var _pastV = hkIsPastView();
+        let html = '<div class="instant-bal-head">' + (_pastV ? 'موجودی پایان ' + escapeHtml(MONTHS[currentMonth - 1] || '') + ' — نه امروز' : 'موجودی آنی') +
+          '<div class="instant-bal-sub">' + (_pastV ? 'موجودی حساب‌ها در پایان همین ماه (نه موجودی لحظه‌ای)' : 'موجودی واقعی کارت (شامل موجودی اولیه و پول پروژه‌ها)') + '</div></div>';
+        if (_pastV) {
+          var _tb = window._hkTodayBal;
+          html += '<div class="ib-past-bar">' + (typeof _tb === 'number' ? '<span class="ib-past-today">موجودی امروز: <b>' + (_tb < 0 ? '-' : '') + formatNum(Math.abs(_tb)) + '</b></span>' : '') +
+            '<button type="button" class="ib-gonow" onclick="hkGoToCurrentMonth()">رفتن به ماه جاری</button></div>';
+        }
         var shown = 0;
         /* فقط حساب‌هایی که کاربر ساخته/بازیابی کرده */
         var allowed = {};
@@ -858,6 +871,13 @@
       try { if (typeof sumGlobalAccountBalances === 'function') iv = Number(sumGlobalAccountBalances()) || 0; } catch (e) {}
       try { var _pd = hkPendingDelta(); if (_pd.n && !hkIsFutureView()) iv += _pd.tot; } catch (ePd) {}
       if (!isFinite(iv)) iv = 0;
+      /* ۱.۴.۴۹: ماه گذشته: دایره قرمز ملایم + برچسب «پایان <ماه>»؛ عدد، موجودی پایان همان ماه است نه امروز */
+      try {
+        var _past = hkIsPastView(), _bc = document.getElementById('homeBalanceCircle'), _lb = _bc && _bc.querySelector('.hbc-label');
+        if (_bc) _bc.classList.toggle('hbc-past', _past);
+        if (_lb) _lb.textContent = _past ? 'پایان ' + (MONTHS[currentMonth - 1] || '') : 'موجودی';
+        if (!_past && !hkIsFutureView()) window._hkTodayBal = iv;
+      } catch (ePast) {}
       var txt = (iv < 0 ? '-' : '') + formatNum(Math.abs(iv));
       try { pushHomeWidget(); } catch (eW) {}
       if (hkIsFutureView()) {
@@ -865,7 +885,7 @@
         _hbcLast = '—';
         amt._hbcBusy = false;
         amt.textContent = '—';
-        amt.style.color = 'var(--muted)';
+        amt.style.color = ''; amt.classList.add('hbc-muted'); amt.classList.remove('hbc-neg');
         try { var btnF = document.getElementById('homeBalanceCircle'); if (btnF) btnF.setAttribute('aria-label', 'موجودی ماه آینده هنوز مشخص نیست'); } catch (eF) {}
         return;
       }
@@ -873,7 +893,8 @@
       /* force: از null بچرخان روی عدد درست (افکت کامل حفظ شود؛ عدد موقت نشان داده نشود) */
       var prev = force ? null : _hbcLast;
       _hbcLast = txt;
-      amt.style.color = iv < 0 ? '#ff6b4a' : (document.documentElement.getAttribute('data-theme') === 'light' ? '#17834a' : '#9ee858');
+      /* ۱.۴.۴۹: رنگ از کلاس و متغیر تم (نه رنگ ثابتِ لحظهٔ رسم) تا با عوض شدن تم بی‌درنگ عوض شود */
+      amt.style.color = ''; amt.classList.remove('hbc-muted'); amt.classList.toggle('hbc-neg', iv < 0);
       /* ۱.۳.۶۸: مبلغ درشت داخل دایره؛ عددهای خیلی بلند کمی کوچک‌تر تا در دایره جا شوند */
       try { var _n = txt.length; amt.style.setProperty('--hbc-fs', _n <= 8 ? '19px' : (_n <= 10 ? '16px' : (_n <= 12 ? '14px' : '12px'))); } catch (eFs) {}
       var btn = document.getElementById('homeBalanceCircle');

@@ -692,10 +692,8 @@
       const st0 = row.status || 'paid';
       function applyAmountStatusColor(v) {
         const paid = v === 'paid';
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        const green = theme === 'light' ? '#17834a' : '#9ee858';
-        const red = theme === 'light' ? '#dc2626' : '#bc2402';
-        const c = paid ? green : red;
+        /* ۱.۴.۴۹: متغیر رنگ تم (نه هگزِ لحظهٔ رسم) تا با عوض شدن تم بی‌درنگ عوض شود */
+        const c = paid ? 'var(--hk-income)' : 'var(--hk-amt-unpaid-red)';
         amtInp.style.setProperty('color', c, 'important');
         amtInp.style.setProperty('-webkit-text-fill-color', c, 'important');
         amtInp.style.setProperty('caret-color', c, 'important');

@@ -720,6 +720,29 @@
         }
       } catch (eM) {}
     }
+
+    /* ۱.۴.۴۹: نگه‌داشتن انگشت روی حباب گفتگو، کل متن همان حباب را انتخاب می‌کند (نه فقط یک واژه) */
+    (function hkAsstWholeBubbleSelect() {
+      var touchAt = 0, touchBub = null, busy = false;
+      document.addEventListener('touchstart', function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('.hk-asst-bub') : null;
+        touchBub = (b && !(e.target.closest && e.target.closest('button'))) ? b : null;
+        touchAt = Date.now();
+      }, { passive: true, capture: true });
+      document.addEventListener('selectionchange', function () {
+        if (busy || !touchBub || Date.now() - touchAt > 1500) return;
+        try {
+          var sel = window.getSelection(); if (!sel || !sel.rangeCount || !sel.anchorNode) return;
+          var an = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentNode;
+          if (!an || !an.closest || an.closest('.hk-asst-bub') !== touchBub) return;
+          if (sel.toString().length && sel.toString() === touchBub.innerText) return;
+          busy = true;
+          var r = document.createRange(); r.selectNodeContents(touchBub);
+          sel.removeAllRanges(); sel.addRange(r);
+          setTimeout(function () { busy = false; }, 0);
+        } catch (eS) { busy = false; }
+      });
+    })();
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hkAsstInit);
     else hkAsstInit();
     try { window.hkAsstAsk = hkAsstAsk; window.hkAsstOpen = hkAsstOpen; window.hkAsstClose = hkAsstClose; window.hkAsstIsOpen = hkAsstIsOpen; window.hkAsstBack = hkAsstBack; } catch (eW) {}

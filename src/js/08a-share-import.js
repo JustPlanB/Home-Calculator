@@ -768,11 +768,11 @@ container.innerHTML = '';
         function applyAmtColor() {
           if (preApp) { ['color', '-webkit-text-fill-color'].forEach(function (k) { amt.style.setProperty(k, 'var(--muted, #8e8e93)', 'important'); }); return; }
           const paid = (row.status || 'paid') === 'paid';
-          const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-          const green = theme === 'light' ? '#17834a' : '#9ee858';
-          const red = theme === 'light' ? '#dc2626' : '#ff6b4a';
+          /* ۱.۴.۴۹: رنگ‌ها متغیر تم‌اند (با عوض شدن تم بی‌درنگ عوض می‌شوند) */
+          const green = 'var(--hk-income)';
+          const red = 'var(--hk-expense)';
           /* ۱.۳.۴۸: پرداخت‌نشده و دریافت‌نشده زرد کمی تیره (جدا از نارنجیِ مخارج) */
-          const deep = theme === 'light' ? '#a87a00' : '#ffec0a';
+          const deep = 'var(--hk-amt-deep)';
           const col = tab === 'income' ? (paid ? green : deep) : (paid ? red : deep);
           amt.classList.toggle('pd-unpaid-deep', !paid);
           amt.classList.toggle('status-paid', paid);

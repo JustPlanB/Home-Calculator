@@ -987,7 +987,7 @@ async function openPdfPrintWindow(){
       if (!menu || !menu.classList.contains('open')) return;
       if (menu.contains(e.target)) return;
       /* پنجره‌های روی منو (بروزرسانی، پشتیبان و …) لمس خودشان را بگیرند */
-      try { if (e.target && e.target.closest && e.target.closest('.backup-pick-overlay, .hk-av-pop, .hk-av-view, .hk-av-crop')) return; } catch (eO) {}
+      try { if (e.target && e.target.closest && e.target.closest('.backup-pick-overlay, #hkAsk3, .hk-av-pop, .hk-av-view, .hk-av-crop')) return; } catch (eO) {}
       const btn = document.getElementById('menuBtn');
       if (btn && btn.contains(e.target)) return;
       // تاچ/کلیک بیرون منو: جلوگیری از عبور به نرم‌افزار

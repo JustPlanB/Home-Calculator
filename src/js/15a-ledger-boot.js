@@ -636,10 +636,7 @@
       const isCredit = r.status === 'credit';
       function applyLedgerAmountColor(v) {
         const credit = v === 'credit';
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        const green = theme === 'light' ? '#17834a' : '#9ee858';
-        const red = theme === 'light' ? '#dc2626' : '#ff6b4a';
-        const c = credit ? green : red;
+        const c = credit ? 'var(--hk-income)' : 'var(--hk-expense)'; /* ۱.۴.۴۹: متغیر تم */
         amtInp.style.setProperty('color', c, 'important');
         amtInp.style.setProperty('-webkit-text-fill-color', c, 'important');
         amtInp.style.setProperty('caret-color', c, 'important');

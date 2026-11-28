@@ -138,6 +138,8 @@
       return [gy, gm, gd];
     }
     var HK_GM = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var HK_WD_FA = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+    function hkWeekdayFa(y, m, d) { if (!y || !m || !d) return ''; var g = hkJ2G(y, m, d); return HK_WD_FA[new Date(Date.UTC(g[0], g[1] - 1, g[2])).getUTCDay()]; }
     function hkGregStr(y, m, d) { if (!y || !m || !d) return ''; var g = hkJ2G(y, m, d); return g[2] + ' ' + HK_GM[g[1] - 1] + ' ' + g[0]; }
     /* ===== ۱.۳.۷۶: پیشنهاد شرح — از اولین حرف، شرح‌های قبلی همان نوع (درآمد/خرج) به ترتیب بیشترین استفاده.
        ردیف‌های همهٔ ماه‌ها شمرده می‌شوند؛ زدن پیشنهاد = همان متن در فیلد ===== */
@@ -222,8 +224,8 @@
       var dVal = mkPill('تاریخ'), tVal = mkPill('زمان');
       /* ۱.۳.۵۶: تاریخ میلادی هم زیر تاریخ شمسی */
       var dGreg = document.createElement('small'); dGreg.className = 'hk-re-greg'; dGreg.dir = 'ltr'; dVal.appendChild(dGreg);
-      /* ۱.۳.۶۶: زمان هم مثل تاریخ یک خط دوم با رقم لاتین دارد */
-      var tGreg = document.createElement('small'); tGreg.className = 'hk-re-greg'; tGreg.dir = 'ltr'; tVal.appendChild(tGreg);
+      /* ۱.۴.۴۹: زیر ساعت ایرانی به‌جای ساعت انگلیسی، نام روز هفته (از تاریخ شمسی) */
+      var tGreg = document.createElement('small'); tGreg.className = 'hk-re-greg'; tGreg.dir = 'rtl'; tVal.appendChild(tGreg);
       var fD = document.createElement('div'); fD.className = 'hk-re-pnl'; box.appendChild(fD);
       var years = []; for (var yy = 1390; yy <= 1420; yy++) years.push(yy);
       var days = ['—']; for (var dd = 1; dd <= 31; dd++) days.push(toPersianDigits(String(dd)));
@@ -279,7 +281,7 @@
         try { dGreg.textContent = d ? hkGregStr(y, m, d) : ''; } catch (eG) {}
         var hi = wH.getIndex();
         tVal.querySelector('b').textContent = hi ? (p2(hi - 1) + ':' + p2(wMi.getIndex())) : '—';
-        tGreg.textContent = hi ? (String(hi - 1).padStart(2, '0') + ':' + String(wMi.getIndex()).padStart(2, '0')) : '';
+        try { tGreg.textContent = d ? hkWeekdayFa(y, m, d) : ''; } catch (eW) {}
         wMi.classList.toggle('hk-wheel-off', !hi);
       }
       /* شرح — ۱.۳.۶۸: بالای مبلغ */

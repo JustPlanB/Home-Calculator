@@ -190,7 +190,9 @@
       var sel = Array.isArray(multi) ? multi.slice() : null;
       /* ۱.۴.۴۸: تک‌انتخابی (درآمد) هم مثل مخارج: زدن دسته فقط انتخاب است و با «تأیید» اعمال می‌شود (قبلاً بلافاصله اعمال و بسته می‌شد) */
       var one = sel ? null : String(cur || '');
-      var commit = function () { ov.remove(); onPick(sel.slice()); };
+      /* ۱.۴.۴۹: «جیب به جیب» و «نامشخص» (تک‌انتخابی در حالت چنددسته‌ای) هم فقط انتخاب می‌شوند و با «تأیید» اعمال می‌شوند */
+      var solo = null;
+      var commit = function () { ov.remove(); if (solo !== null) { onPick(solo); if (solo === 'p2p') { try { hkP2PIntro(false); } catch (eI) {} } } else onPick(sel.slice()); };
       var commit1 = function () { ov.remove(); onPick(one); if (one === 'p2p') { try { hkP2PIntro(false); } catch (eI) {} } };
       ov._hkCancel = sel ? commit : close;
       var paintM = function () { gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { var id = x.dataset.cat; x.classList.toggle('on', id && id !== 'p2p' ? sel.indexOf(id) >= 0 : (id === '' ? !sel.length && cur !== 'p2p' : cur === 'p2p' && !sel.length)); }); };
@@ -202,8 +204,8 @@
         if (c.id === 'p2p') hkP2PDecorate(b);
         b.onclick = function () {
           if (!sel) { one = c.id; gg.querySelectorAll('.sms-cat[data-cat]').forEach(function (x) { x.classList.toggle('on', x.dataset.cat === one); }); return; }
-          if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
-          close(); onPick(c.id); if (c.id === 'p2p') hkP2PIntro(false);
+          if (sel && c.id && c.id !== 'p2p') { var k = sel.indexOf(c.id); if (solo !== null) { solo = null; sel.length = 0; k = -1; } if (k >= 0) sel.splice(k, 1); else sel.push(c.id); cur = ''; paintM(); return; }
+          sel.length = 0; solo = c.id; cur = c.id === 'p2p' ? 'p2p' : ''; paintM();
         };
         gg.appendChild(b);
       });

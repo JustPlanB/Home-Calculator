@@ -166,7 +166,7 @@ async function fresh(b, theme) {
     document.getElementById('hkRowEdit')._hkCancel();
     return out;
   });
-  ok(re.t === '۱۴:۰۵' && re.tg === '14:05' && !!re.dg, 'زمان: زیر ساعت شمسی، همان ساعت با رقم لاتین (' + re.t + ' / ' + re.tg + ')');
+  ok(re.t === '۱۴:۰۵' && /^(شنبه|یکشنبه|دوشنبه|سه‌شنبه|چهارشنبه|پنجشنبه|جمعه)$/.test(re.tg) && !!re.dg, 'زمان: زیر ساعت شمسی، نام روز هفته (۱.۴.۴۹) (' + re.t + ' / ' + re.tg + ')');
   ok(re.same && re.focus && re.label === 'حساب جدید:', 'باکس «حساب جدید» دقیقاً جای منوی حساب با همان پهنا و ارتفاع (' + re.dims + ')');
   ok(re.back && re.listN >= 2, 'فلش کنار باکس: برگشت به فهرست حساب‌ها بی‌آنکه پنجرهٔ ویرایش بسته شود');
   const ap = await R.page.evaluate(async () => {
