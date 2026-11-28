@@ -427,6 +427,15 @@
       /* «هیچ‌کدام تکراری نیست»: همهٔ هشدارهای تکرار این کارت برداشته می‌شوند و اسلاید از بین می‌رود */
       var ds = (one && one.length) ? one : (id === '__all__' ? all0 : all0.slice(0, 2));
       if (!ds.length) return;
+      /* ۱.۴.۴۹: چند ردیف کاملاً یکسان (مثلاً ۳ بار «وام مسکن» در یک روز) برای هر دوتایی یک هشدار می‌سازند؛ «تکراری نیست» فقط یک جفت را برمی‌داشت و جفت بعدی با متن عیناً یکسان برمی‌گشت.
+         حالا همهٔ هشدارهای همان گروه از ردیف‌های یکسان (زنجیرهٔ ردیف‌های هم‌پیوند) با هم برداشته می‌شود */
+      try {
+        var rowsIn = [], addR = function (r) { if (r && rowsIn.indexOf(r) < 0) { rowsIn.push(r); return true; } return false; };
+        ds.forEach(function (d) { addR(d.ra); addR(d.rb); });
+        var grew = true;
+        while (grew) { grew = false; all0.forEach(function (x) { if (rowsIn.indexOf(x.ra) >= 0 || rowsIn.indexOf(x.rb) >= 0) { if (addR(x.ra)) grew = true; if (addR(x.rb)) grew = true; } }); }
+        ds = all0.filter(function (x) { return rowsIn.indexOf(x.ra) >= 0 && rowsIn.indexOf(x.rb) >= 0; });
+      } catch (eGrp) {}
       askConfirm(ds.length > 1 ? 'اگر این تراکنش‌ها واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟' : 'اگر این دو تراکنش واقعاً جدا هستند (تکراری نیستند)، هشدار برداشته شود؟', function () {
         ds.forEach(function (d) { HKAlerts.dismiss(d.id); });
         try { renderHomeCards(); } catch (e) {}

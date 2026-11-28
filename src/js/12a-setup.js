@@ -334,6 +334,48 @@
       } catch (e) {}
       return out.slice(0, 2).join('، ');
     }
+    /* ۱.۴.۴۹: کشیدن حساب برای تغییر ترتیب (pointer events؛ هنگام کشیدن ردیف با انگشت می‌رود و جای بقیه عوض می‌شود) */
+    function hkAccDragInit(handle, row, wrap) {
+      handle.style.touchAction = 'none';
+      handle.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var rows = Array.prototype.slice.call(wrap.querySelectorAll('.hk-bank-acc-row'));
+        var from = rows.indexOf(row); if (from < 0) return;
+        var rects = rows.map(function (r) { var b = r.getBoundingClientRect(); return { t: b.top, h: b.height }; });
+        var y0 = e.clientY, to = from;
+        try { handle.setPointerCapture(e.pointerId); } catch (eC) {}
+        row.classList.add('hk-acc-dragging');
+        var move = function (ev) {
+          var dy = ev.clientY - y0;
+          row.style.transform = 'translateY(' + dy + 'px)';
+          var mid = rects[from].t + rects[from].h / 2 + dy; to = from;
+          rects.forEach(function (rc, i) { if (mid > rc.t && mid < rc.t + rc.h) to = i; });
+          rows.forEach(function (r, i) {
+            if (r === row) return;
+            var sh = 0;
+            if (from < to && i > from && i <= to) sh = -rects[from].h;
+            else if (from > to && i < from && i >= to) sh = rects[from].h;
+            r.style.transition = 'transform .15s'; r.style.transform = sh ? 'translateY(' + sh + 'px)' : '';
+          });
+        };
+        var up = function () {
+          handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up);
+          rows.forEach(function (r) { r.style.transform = ''; r.style.transition = ''; });
+          row.classList.remove('hk-acc-dragging');
+          if (to !== from) {
+            try {
+              var it = selectedBankAccounts.splice(from, 1)[0]; selectedBankAccounts.splice(to, 0, it);
+              saveBankAccountsSelection();
+              try { renderHomeCards(); } catch (e1) {}
+              try { updateHomeBalanceCircle(true); } catch (e2) {}
+              try { pushHomeWidget(); } catch (e3) {}
+            } catch (eMv) {}
+          }
+          renderBankAccountsList();
+        };
+        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
+      });
+    }
     function renderBankAccountsList() {
       const box = document.getElementById('bankAccountsList');
       if (!box) return;
@@ -473,6 +515,12 @@
               renderBankAccountsList();
             });
           };
+          /* ۱.۴.۴۹: دستگیرهٔ جابه‌جایی: کشیدن ردیف حساب، ترتیب حساب‌ها را عوض می‌کند (جعبهٔ موجودی و ویجت هم از همین ترتیب پیروی می‌کنند) */
+          const dragH = document.createElement('button');
+          dragH.type = 'button'; dragH.className = 'hk-bank-acc-drag'; dragH.title = 'جابه‌جایی'; dragH.setAttribute('aria-label', 'جابه‌جایی حساب');
+          dragH.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 8h14M5 12h14M5 16h14"/></svg>';
+          hkAccDragInit(dragH, row, selectedWrap);
+          row.appendChild(dragH);
           row.appendChild(info);
           row.appendChild(editBtn);
           row.appendChild(delBtn);

@@ -90,7 +90,7 @@
       var pickH = '', dayOpts = [];
       if (sd > 1 || (sd && from && from < sd)) {
         var todayP = getTodayPersian(), isNow = todayP && todayP.y === snap.y && todayP.m === snap.m;
-        for (var d = sd; d >= 1; d--) dayOpts.push({ value: String(d), label: ((isNow && d === todayP.d) ? 'امروز · ' : (isNow && d === todayP.d - 1 ? 'دیروز · ' : '')) + dLbl(d) });
+        for (var d = sd; d >= Math.max(1, sd - 9); d--) dayOpts.push({ value: String(d), label: ((isNow && d === todayP.d) ? 'امروز - ' : (isNow && d === todayP.d - 1 ? 'دیروز - ' : '')) + dLbl(d) }); /* ۱.۴.۴۹: حداکثر ۱۰ روز تا امروز (همان ماه)؛ جداکنندهٔ «-» */
         pickH = '<div class="hk-recon-when"><span>روز ثبت ردیف اختلاف</span><span class="hk-recon-daywrap"></span></div>';
       }
       var miss = diff < 0 ? 'خرج' : 'درآمد', amt = Math.abs(diff);

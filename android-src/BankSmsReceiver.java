@@ -148,7 +148,20 @@ public class BankSmsReceiver extends BroadcastReceiver {
     return b.toString();
   }
 
+  /* ۱.۴.۴۹: پیامک رمز یک‌بارمصرف / پویا / کد تأیید / ورود: هرگز ذخیره، صف، اعلان یا ویجت نمی‌شود (قبل از هر کار دیگر) */
+  static boolean isOtpSms(String s){
+    String t=normFa(s);
+    if(t.length()==0) return false;
+    t=t.replace('\u064a','\u06cc').replace('\u0643','\u06a9');
+    if(t.matches("(?s).*(شناسه\\s*تأ?ی?ید|شناسه\\s*تاييد|رمز\\s*(پویا|موقت|لحظه|یک\\s*بار|اینترنتی|ورود|عبور|پیامکی|دوم|اول|دینامیک|تراکنش|یکبار)|رمزپویا|رمزلحظه|کد\\s*(تایید|تأیید|تاييد|تاییدیه|ورود|امنیتی|فعال\\s*سازی|احراز|یک\\s*بار|یکبار|اعتبار\\s*سنجی|بازیابی|عبور|ثبت\\s*نام|دسترسی)|otp|one[- ]?time|verification|passcode|password|cvv2?|\\bpin\\b|2fa|auth\\s*code).*")) return true;
+    if(t.matches("(?s).*(رمز|کد|پین)\\s*[:：]?\\s*[0-9]{4,8}([^0-9].*)?")) return true;
+    if(t.contains("محرمانه") && (t.contains("رمز") || t.contains("کد") || t.contains("شناسه"))) return true;
+    if(t.contains("هشدار") && t.contains("شناسه") && t.contains("برداشت")) return true;
+    return false;
+  }
+
   static boolean looksLikeBankTransaction(String s, String sender){
+    if(isOtpSms(s)) return false;
     String t=normFa(s), sd=normFa(sender);
     // رد فوری OTP / رمز پویا / شناسه تأیید برداشت (حتی با مبلغ)
     if(t.contains("شناسه تایید") || t.contains("شناسه تأيید") || t.contains("شناسه تايید")
