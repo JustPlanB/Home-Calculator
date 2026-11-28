@@ -48,7 +48,7 @@ function ok(c, m) { if (c) { passed++; console.log('  ✓ ' + m); } else { faile
   const dr = fs.readFileSync(path.join(__dirname, '../../android-src/HkWidgetDraw.java'), 'utf8');
   const ln = dr.slice(dr.indexOf('static Bitmap line('), dr.indexOf('static Bitmap full('));
   ok(!/setShadowLayer/.test(ln), 'پشت هیچ عدد یا نوشته‌ای هاله/سایه نیست');
-  ok(/Paint vp=paint\(BOLD, vs, tc, Paint\.Align\.CENTER\)/.test(ln) && /Paint lp=paint\(REG, ls, [^;]*Paint\.Align\.CENTER\)/.test(ln) && /cv\.drawText\(v, cx, nb, vp\)/.test(ln) && /cv\.drawText\("موجودی کل", cx, /.test(ln), 'مبلغ و «موجودی کل» حول یک مرکز مشترک (وسط‌چین نسبت به هم)');
+  ok(/Paint vp=paint\(BOLD, vs, tc, Paint\.Align\.CENTER\)/.test(ln) && /Paint lp=paint\(REG, ls, [^;]*Paint\.Align\.CENTER\)/.test(ln) && /splitText\(cv, v, cx, nb, vp/.test(ln) && /splitText\(cv, "موجودی کل", cx, /.test(ln), 'مبلغ و «موجودی کل» حول یک مرکز مشترک (وسط‌چین نسبت به هم)');
   ok(/hb\*0\.40f, 21\*k/.test(ln) && /hb\*0\.24f, 13\*k/.test(ln), 'مبلغ و «موجودی کل» کمی بزرگ‌تر شدند');
   ok(errs.length === 0, 'خطای اسکریپت ندارد ' + errs.join('|').slice(0, 120));
   console.log('batch-1417: ' + passed + ' passed, ' + failed + ' failed');
